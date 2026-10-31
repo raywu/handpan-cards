@@ -1,0 +1,15 @@
+# kills: FT: a horizontal drag steps the chord, a slow 30px drag included
+# suite: node --test --test-name-pattern ^FT:.a.horizontal.drag.steps.the.chord,.a.slow.30px.drag.included$ tests/e2e.test.js
+# The swipe commit threshold is 60px instead of the app's 18px.
+diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
+--- a/scales/d-kurd-9/index.html
++++ b/scales/d-kurd-9/index.html
+@@ -195,7 +195,7 @@
+ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+ HPE.swipe = (function () {
+   "use strict";
+-  const SWIPE_COMMIT_PX = 18, SWIPE_FLING_PX_MS = 0.15, SWIPE_FLING_WINDOW_MS = 100, SWIPE_SLOP_PX = 10;
++  const SWIPE_COMMIT_PX = 60, SWIPE_FLING_PX_MS = 0.15, SWIPE_FLING_WINDOW_MS = 100, SWIPE_SLOP_PX = 10;
+   const SWIPE_TILT_DEG_PER_PX = 0.05, SWIPE_TILT_MAX_DEG = 8;
+   const SWIPE_OUT_MS = 220, SWIPE_BACK_MS = 260, SWIPE_IN_MS = 180, SWIPE_IN_PX = 24;
+   const SWIPE_EASE = "cubic-bezier(.2,.7,.25,1)", SWIPE_OUT_EASE = "cubic-bezier(.4,0,1,1)";

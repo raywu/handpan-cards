@@ -2060,3 +2060,185 @@ test("PD: a palette 6 to 9 deck keeps the deck id of its palette 0 twin", () => 
     assert.equal(core.deckId(parsed(PD_SCALE, { palette }).fields), base);
   }
 });
+
+test("ANZ: the C# Annaziska 9 and 13 share links are pinned", () => {
+  const rows = [
+    ["(C#3) G#3 A3 B3 C#4 D#4 E4 F#4 G#4", "C# Annaziska 9", 0,
+      "6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"],
+    ["(C#3) [E3] [F#3] G#3 A3 B3 C#4 D#4 E4 F#4 G#4 [B4] [C#5]", "C# Annaziska 13", 1,
+      "6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"],
+  ];
+  for (const [scale, name, palette, code] of rows) {
+    const seed = seedNew(scale, { name, palette });
+    assert.equal(encoded(seed), code, `${name} link`);
+    assert.deepStrictEqual(decoded(code), seed, `${name} link decodes`);
+  }
+});
+
+/* ---------------- section 18: wire v7 and record v5 ------------------------ */
+
+const PSH = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+PSH.core.PROFILE_ENABLED = true;
+const PSEEDS = {
+  hijaz: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
+  pygmy: "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+  amara: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+  kurd: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+  amara10: "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5"
+};
+const pj = (x) => JSON.parse(JSON.stringify(x));
+const pSeed = (str, opts) => {
+  const base = PSH.core.parseSeed(str).value;
+  const map = PSH.layout.proposeProfile(base.fields).value;
+  const r = PSH.core.parseSeed(str, Object.assign({ profile: { id: "paired", rev: 1, map } }, opts));
+  assert.equal(r.ok, true, r.reason);
+  return r.value;
+};
+const hex6 = (text) => ("000000" + (core.fnv1a32(text) >>> 8).toString(16)).slice(-6);
+// A hand-built readable link: the checksum is recomputed so only the rule under test can refuse it.
+const craft = (version, scaleSeg, nameSeg, options) => {
+  const meaning = [version, scaleSeg, nameSeg.charAt(0) === "*" ? "\t" : nameSeg].concat(options);
+  return [version, scaleSeg, nameSeg].concat(options, [hex6(meaning.join("\n"))]).join("/");
+};
+const KURD_SEG = "(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5";
+const KURD_PAIR = "pair-r57.r58.r60.r62.r64.r65.r67.r69.r72.-.-.-.-.-.-.-.-.-";
+
+test("PV: the version constants are 6, 7, 4 and 5", () => {
+  assert.equal(PSH.share.VERSION, 6);
+  assert.equal(PSH.share.PROFILE_VERSION, 7);
+  assert.equal(PSH.share.RECORD_VERSION, 4);
+  assert.equal(PSH.share.PROFILE_RECORD_VERSION, 5);
+});
+
+test("PV: recordVersion is 4 for an acoustic seed and 5 for a profile seed", () => {
+  for (const str of Object.values(PSEEDS)) {
+    assert.equal(PSH.share.recordVersion(PSH.core.parseSeed(str).value), 4, str);
+    assert.equal(PSH.share.recordVersion(pSeed(str)), 5, str);
+  }
+});
+
+test("PV: a profile seed encodes at v7 with one pair- segment after parent-, an acoustic seed stays v6", () => {
+  const link = PSH.share.encode(pSeed(PSEEDS.kurd, { name: "My pan", palette: 2, parent: 3 })).value;
+  const segs = link.split("/");
+  assert.equal(segs[0], "7");
+  assert.equal(segs.filter((s) => s.startsWith("pair-")).length, 1);
+  const at = (prefix) => segs.findIndex((s) => s.startsWith(prefix));
+  assert.ok(at("palette-") < at("parent-") && at("parent-") < at("pair-"), link);
+  assert.match(segs[at("pair-")], /^pair-(?:[rib]\d{1,3}|-)(?:\.(?:[rib]\d{1,3}|-)){17}$/);
+  for (const str of Object.values(PSEEDS)) {
+    const acoustic = PSH.share.encode(PSH.core.parseSeed(str).value).value;
+    assert.ok(acoustic.startsWith("6/"), acoustic);
+    assert.ok(!acoustic.includes("pair-"), acoustic);
+  }
+});
+
+test("PV: every built-in with its proposal round-trips through v7", () => {
+  for (const [id, str] of Object.entries(PSEEDS)) {
+    const seed = pSeed(str);
+    const enc = PSH.share.encode(seed);
+    assert.equal(enc.ok, true, id);
+    const back = PSH.share.decode(enc.value);
+    assert.equal(back.ok, true, `${id}: ${back.code} ${back.reason}`);
+    assert.deepEqual(pj(back.value.fields), pj(seed.fields), id);
+    assert.deepEqual(pj(back.value.options), pj(seed.options), id);
+  }
+});
+
+test("PV: 200 seeded random injective maps round-trip through v7", () => {
+  let state = 987654;
+  const rnd = () => { state = (state * 1103515245 + 12345) & 0x7fffffff; return state / 0x7fffffff; };
+  const base = PSH.core.parseSeed(PSEEDS.pygmy).value;
+  const keys = PSH.layout.proposeProfile(base.fields).value.filter(Boolean);
+  for (let n = 0; n < 200; n += 1) {
+    const slots = Array.from({ length: 18 }, (_, i) => i);
+    for (let i = 17; i > 0; i -= 1) {
+      const j = Math.floor(rnd() * (i + 1));
+      [slots[i], slots[j]] = [slots[j], slots[i]];
+    }
+    const map = Array(18).fill(null);
+    keys.forEach((k, i) => { map[slots[i]] = k; });
+    const seed = PSH.core.parseSeed(PSEEDS.pygmy, { profile: { id: "paired", rev: 1, map } }).value;
+    const enc = PSH.share.encode(seed);
+    assert.equal(enc.ok, true);
+    const back = PSH.share.decode(enc.value);
+    assert.equal(back.ok, true, `${back.code} ${back.reason}`);
+    assert.deepEqual(pj(back.value.options.profile.map), map);
+  }
+});
+
+test("PV: an 18-note v7 link is well under the cap", () => {
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const wide = Array.from({ length: 19 }, (_, i) => names[(52 + i) % 12] + (Math.floor((52 + i) / 12) - 1));
+  const str = "(" + wide[0] + ") " + wide.slice(1).join(" ");
+  const base = PSH.core.parseSeed(str).value;
+  const map = PSH.layout.proposeProfile(base.fields).value;
+  assert.equal(map.filter(Boolean).length, 18);
+  const enc = PSH.share.encode(PSH.core.parseSeed(str, { profile: { id: "paired", rev: 1, map } }).value);
+  assert.equal(enc.ok, true);
+  assert.ok(enc.value.length < 400, String(enc.value.length));
+  assert.equal(PSH.share.decode(enc.value).ok, true);
+});
+
+test("PV: every single-character flip of a v7 link is refused (the auto label is outside the check)", () => {
+  const link = PSH.share.encode(pSeed(PSEEDS.pygmy, { name: "Flip me" })).value;
+  assert.equal(PSH.share.decode(link).ok, true);
+  for (let i = 0; i < link.length; i += 1) {
+    const flipped = link.slice(0, i) + (link.charAt(i) === "x" ? "y" : "x") + link.slice(i + 1);
+    assert.equal(PSH.share.decode(flipped).ok, false, `flip at ${i}: ${flipped}`);
+  }
+});
+
+test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v8 always is", () => {
+  const link = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
+  const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+  assert.equal(off.core.PROFILE_ENABLED, false);
+  const r = off.share.decode(link);
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "NEEDS_NEWER_APP");
+  assert.equal(PSH.share.decode("8" + link.slice(1)).code, "NEEDS_NEWER_APP");
+});
+
+test("PV: v7 shapes the grammar forbids are BAD_NOTE, and the good crafted link decodes", () => {
+  const good = craft("7", KURD_SEG, "*Label", [KURD_PAIR]);
+  const ok = PSH.share.decode(good);
+  assert.equal(ok.ok, true, `${ok.code} ${ok.reason}`);
+  assert.equal(ok.value.options.profile.map[0], "r57");
+  const refuse = (link, why) => {
+    const r = PSH.share.decode(link);
+    assert.equal(r.ok, false, why);
+    assert.equal(r.code, "BAD_NOTE", why);
+  };
+  refuse(craft("7", KURD_SEG, "*Label", []), "v7 without pair-");
+  refuse(craft("7", KURD_SEG, "*Label", [KURD_PAIR, KURD_PAIR]), "two pair- segments");
+  refuse(craft("7", KURD_SEG, "*Label", [KURD_PAIR, "mirror"]), "mirror");
+  refuse(craft("7", KURD_SEG, "*Label", [KURD_PAIR, "between"]), "between");
+  refuse(craft("7", KURD_SEG, "*Label", ["mirror-top", KURD_PAIR]), "mirror-top before pair");
+  refuse(craft("7", KURD_SEG, "*Label", [KURD_PAIR, "seats-1,0;;"]), "seats");
+  refuse(craft("7", KURD_SEG, "*Label", [KURD_PAIR, "at-,,,,,,,,5"]), "at");
+  refuse(craft("7", KURD_SEG, "*Label", [KURD_PAIR.split(".").slice(0, 17).join(".")]), "17 tokens");
+  refuse(craft("7", KURD_SEG, "*Label", [KURD_PAIR.replace("r57", "x57")]), "bad token");
+  assert.equal(PSH.share.decode(craft("7", KURD_SEG, "*Label", [KURD_PAIR.replace("r57", "r99")])).code, "PROFILE_MAP_INVALID");
+  refuse(craft("6", KURD_SEG, "*Label", [KURD_PAIR]), "v6 with pair-");
+  refuse(craft("5", KURD_SEG, "*Label", [KURD_PAIR]), "v5 with pair-");
+});
+
+test("PV: option order is palette, parent, pair, and a v6 palette-10 still parses under v7", () => {
+  const ordered = craft("7", KURD_SEG, "*Label", ["palette-10", "parent-aeolian", KURD_PAIR]);
+  const r = PSH.share.decode(ordered);
+  assert.equal(r.ok, true, `${r.code} ${r.reason}`);
+  assert.equal(r.value.options.palette, 9);
+  const reversed = craft("7", KURD_SEG, "*Label", [KURD_PAIR, "palette-10"]);
+  assert.equal(PSH.share.decode(reversed).ok, false);
+  const v6 = PSH.share.decode(craft("6", KURD_SEG, "*Label", ["palette-10"]));
+  assert.equal(v6.ok, true);
+  assert.equal(v6.value.options.palette, 9);
+});
+
+test("PV: a v7 link that names a note the scale lacks reports the profile code", () => {
+  const swapped = craft("7", KURD_SEG, "*Label", [KURD_PAIR.replace("r72", "r57")]);
+  const r = PSH.share.decode(swapped);
+  assert.equal(r.ok, false);
+  assert.equal(r.code, "PROFILE_NOTE_TWICE");
+  const missing = craft("7", KURD_SEG, "*Label", [KURD_PAIR.replace("r72", "-")]);
+  assert.equal(PSH.share.decode(missing).code, "PROFILE_NOTE_MISSING");
+});

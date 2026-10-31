@@ -1,15 +1,15 @@
-# kills: PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, beside Handpan Helpers
+# kills: PM rule 7: HANDPAN 101 is the second Resources link, the /handpan-101/ page in the same tab, alone in a full-width row
 # suite: node --test --test-name-pattern PM.rule.7 tests/app.test.js
-# Lane PM. HANDPAN 101 loses target=_blank, so it replaces the app in the same tab.
+# Lane PM. HANDPAN 101 gains target=_blank again, so it opens a new tab instead of the same tab.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1760,7 +1760,7 @@ html.about-open{overflow:hidden}
+@@ -1839,7 +1839,7 @@ html.about-open{overflow:hidden}
+     <div class="modebar">
        <a class="mode" id="res-handpan-101"
-          href="https://docs.google.com/document/d/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco/edit?usp=drivesdk"
-          aria-label="Handpan 101 (Google Doc)"
--         target="_blank" rel="noopener"><span>HANDPAN <br>101</span></a>
-+         rel="noopener"><span>HANDPAN <br>101</span></a>
+          href="/handpan-101/"
+-         aria-label="Handpan 101">HANDPAN 101</a>
++         aria-label="Handpan 101" target="_blank">HANDPAN 101</a>
      </div>
      <div class="modebar">
        <button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT</button>

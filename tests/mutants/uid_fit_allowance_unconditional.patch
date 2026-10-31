@@ -4,7 +4,7 @@
 diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
 --- a/tools/probe/panel_fit.js
 +++ b/tools/probe/panel_fit.js
-@@ -51,7 +51,7 @@ const FIT_TOL = 1, CTRL_TOL = 0.5, EQ_TOL = 0.5;
+@@ -52,7 +52,7 @@ const FIT_TOL = 1, CTRL_TOL = 0.5, EQ_TOL = 0.5;
  const HEADING_ALLOWANCE_PX = 24;
  const ALLOWANCE_EXEMPT = ["modeA", "modeB"];
  function headingAllowance(baseHas, candHas) {
@@ -12,4 +12,4 @@ diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
 +  return HEADING_ALLOWANCE_PX;
  }
  
- // AD7 (docs/plans/2026-10-05-menu-resources-amy.md): the second Resources row costs
+ // Resources row (docs/plans/2026-10-05-menu-resources-amy.md): the second row costs

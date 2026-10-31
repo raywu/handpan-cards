@@ -7,8 +7,8 @@ diff --git a/index.html b/index.html
 @@ -344,6 +344,7 @@ a.mode{text-decoration:none}
    #settings-panel{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
      align-content:start; align-items:start}
-   #settings-panel > .panel-group{width:auto}
-+  #settings-panel > .panel-group:has(#res-handpaner){display:none}
+   #settings-panel .panel-group{width:auto}
++  #settings-panel .panel-group:has(#res-explore){display:none}
  }
  #settings-trigger[aria-expanded="true"] .glyph{background:transparent}
  #settings-trigger[aria-expanded="true"] .glyph::before{top:0; transform:rotate(45deg)}

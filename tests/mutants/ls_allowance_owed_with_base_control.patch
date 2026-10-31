@@ -10,5 +10,5 @@
 -  return "lang-select" in candControls && !("lang-select" in baseControls) ? LANG_ALLOWANCE_PX : 0;
 +  return "lang-select" in candControls ? LANG_ALLOWANCE_PX : 0;
  }
- 
- const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],
+
+ // LS (short iPhone landscape): mode S, with the progression note, takes an explicit

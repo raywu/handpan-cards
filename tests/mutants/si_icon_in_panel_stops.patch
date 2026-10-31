@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14417,7 +14417,7 @@ function panelStops() {
-   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
-           document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
-           document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
--          document.getElementById("deck-add"), restoreBtn,
-+          document.getElementById("deck-add"), document.getElementById("share-copy"), restoreBtn,
-           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
-           // Eng review amendment 1: the Resources links join the Tab trap
-           // after the print controls, in DOM order.
+@@ -14682,7 +14682,7 @@ let panelOpen = false;
+ const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
+ function panelStops() {
+   const prints = [...settingsPanel.querySelectorAll(".prints button, .prints select")];
+-  const scales = [document.getElementById("deck-add"), restoreBtn];
++  const scales = [document.getElementById("deck-add"), document.getElementById("share-copy"), restoreBtn];
+   const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"], #about-open')];
+   const lang = document.getElementById("lang-select");
+   const col = document.querySelector("#settings-panel > .panel-col");

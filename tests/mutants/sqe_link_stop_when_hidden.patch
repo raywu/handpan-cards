@@ -1,25 +1,13 @@
 # kills: the sequence source link opens in a new tab, is a real 44px target, and joins the real Tab cycle only while visible
 # suite: node --test --test-name-pattern ^the.sequence.source.link.opens.in.a.new.tab..is.a.real.44px.target..and.joins.the.real.Tab.cycle.only.while.visible$ tests/e2e.test.js
-# Refreshed 2026-09-29 (lane S2, ordered by review, item 10) for a title/body
-# change only: the killing test now drives real forward and backward Tab
-# key cycles through the panel instead of only checking panelStops()
-# membership; the guard this mutant removes is unchanged and still caught.
-# Lane S2, E8. panelStops()'s seqLink drops the `!seqNote.hidden` half of its
-# guard, so #seq-source-link stays a Tab stop even in modes A/B where the
-# credit paragraph (and the link inside it) is hidden - a keyboard user can
-# Tab onto an invisible, unreachable-by-sight link.
-# Refreshed 2026-10-02 (D2 re-plan step 2, R-2): the seqNote.hidden special
-# case this mutant used to drop is deleted; the same fault is now panelStops()
-# filtering on !disabled only, so the hidden credit paragraph's link is a stop
-# again. The killing test is unchanged.
-# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
+# Lane S2, E8. panelStops() filters on !disabled only, so the hidden credit paragraph's link is a Tab stop again.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14424,7 +14424,7 @@ function panelStops() {
-           ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
-           document.getElementById("about-open"),
-           document.getElementById("lang-select")]
+@@ -14695,7 +14695,7 @@ function panelStops() {
+           // Eng review amendment 1: the Resources links join the Tab trap
+           // after the print controls, in DOM order.
+           ...(grid ? [...prints, ...scales, ...res, lang] : [...scales, ...prints, ...res, lang])]
 -    .filter(isStop);
 +    .filter(el => el && !el.disabled);
  }

@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13256,7 +13256,6 @@ function showSheet(opener) {
+@@ -13539,7 +13539,6 @@ function showSheet(opener) {
    setLip(false, { instant: true });
    setInert(true, background);
    resyncSheet(true);
 -  applyKbOffset();
-   history.pushState({ scalePage: true }, "", sheetRoute());
-   sheetRouted = true;
-   // The owner's second request: do not steal focus into the box, so the whole
+   if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
+   else history.pushState({ scalePage: true }, "", sheetRoute());
+   reuseEntry = false;

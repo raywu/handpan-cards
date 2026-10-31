@@ -2,6 +2,7 @@ import glob
 import os
 import re
 import subprocess
+import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 
@@ -109,12 +110,12 @@ class SiteFilesTest(unittest.TestCase):
             self.assertTrue(loc.endswith("/"), loc)
             self.assertNotIn("#", loc)
 
-    def test_sitemap_lists_the_root_and_every_scale_page(self):
+    def test_sitemap_lists_the_root_every_scale_page_and_handpan_101(self):
         locs = {e.text.strip() for e in sitemap_tree().iter(NS + "loc")}
         pages = {SITE + os.path.relpath(os.path.dirname(f), ROOT) + "/"
                  for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))}
         self.assertTrue(pages)
-        self.assertEqual(locs, {SITE} | pages)
+        self.assertEqual(locs, {SITE} | pages | {SITE + "handpan-101/", SITE + "scales/"})
 
     def test_no_lastmod_and_nojekyll_is_empty(self):
         self.assertEqual(list(sitemap_tree().iter(NS + "lastmod")), [])
@@ -122,9 +123,81 @@ class SiteFilesTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
         self.assertEqual(os.path.getsize(path), 0)
 
-    def test_headers_file_sends_noindex_for_every_path(self):
-        self.assertEqual(read("_headers"), "/*\n  X-Robots-Tag: noindex\n")
+    def header_rules(self):
+        lines = [l for l in read("_headers").splitlines() if l.strip()]
+        rules = [l for l in lines if not l[0].isspace()]
+        headers = [l.strip() for l in lines if l[0].isspace()]
+        return rules, headers
 
+    def test_headers_noindex_is_scoped_to_the_dev_and_preview_hosts(self):
+        rules, headers = self.header_rules()
+        self.assertTrue(rules)
+        for rule in rules:
+            self.assertTrue(rule.startswith("https://"), rule)
+            host = rule[len("https://"):].split("/")[0]
+            self.assertTrue(host.endswith(".pages.dev"), rule)
+        self.assertEqual(headers, ["X-Robots-Tag: noindex"] * len(rules))
+
+    def test_headers_noindex_names_the_dev_and_prod_projects_and_their_previews(self):
+        rules, _ = self.header_rules()
+        self.assertEqual(sorted(rules), sorted([
+            "https://handpan-cards-dev.pages.dev/*",
+            "https://:version.handpan-cards-dev.pages.dev/*",
+            "https://handpan-cards.pages.dev/*",
+            "https://:version.handpan-cards.pages.dev/*",
+        ]))
+
+    def test_no_headers_rule_matches_a_production_hostname(self):
+        rules, _ = self.header_rules()
+        for rule in rules:
+            self.assertFalse(rule.startswith("/"), "bare path rule applies to every host: " + rule)
+            host = rule[len("https://"):].split("/")[0]
+            rx = re.compile("^" + re.sub(r":[a-z]+", "[^.]+", re.escape(host).replace(r"\*", ".*").replace(r"\:", ":")) + "$")
+            for prod in ("handpan.raywu.org", "handpantheory.com", "www.handpantheory.com"):
+                self.assertIsNone(rx.match(prod), "%s matches %s" % (rule, prod))
+
+    def test_404_page_exists_and_is_neither_noindex_nor_a_canonical_of_the_app(self):
+        page = read("404.html")
+        self.assertIn("<title>", page)
+        self.assertIn('href="/"', page)
+        self.assertIn('href="/scales/"', page)
+        self.assertNotRegex(page, r"(?i)rel=[\"']canonical")
+        self.assertNotRegex(page, r"(?i)http-equiv=[\"']refresh")
+
+    def test_publish_script_builds_exactly_the_allowlist_byte_for_byte(self):
+        allow_files = ["index.html", "404.html", "sitemap.xml", "robots.txt", "llms.txt",
+                       "_headers", "og.png", "apple-touch-icon.png"]
+        allow_dirs = ["scales", "handpan-101"]
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT, check=True)
+            built = set()
+            for base, _, names in os.walk(out):
+                for n in names:
+                    built.add(os.path.relpath(os.path.join(base, n), out))
+            expected = set(allow_files)
+            for d in allow_dirs:
+                for f in tracked_files():
+                    if f.startswith(d + "/"):
+                        expected.add(f)
+            self.assertEqual(built, expected)
+            for rel in expected:
+                with open(os.path.join(out, rel), "rb") as a, open(os.path.join(ROOT, rel), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), rel)
+            for banned in ("tests", "docs", "tools", "src", "data", "CLAUDE.md", "AGENTS.md", "CNAME", ".git"):
+                self.assertFalse(any(b == banned or b.startswith(banned + os.sep) for b in built), banned)
+
+    def test_publish_script_refuses_an_output_dir_that_already_has_files(self):
+        with tempfile.TemporaryDirectory() as out:
+            open(os.path.join(out, "stale.txt"), "w").close()
+            r = subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT)
+            self.assertNotEqual(r.returncode, 0)
+
+    def test_llms_txt_lists_exactly_the_sitemap_locs(self):
+        listed = set(re.findall(r"\((https://[^)\s]+)\)", read("llms.txt")))
+        locs = {e.text.strip() for e in sitemap_tree().iter(NS + "loc")}
+        self.assertEqual(listed, locs)
+        self.assertIn(SITE + "handpan-101/", listed)
+        self.assertIn(SITE + "scales/", listed)
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,22 +1,15 @@
 # kills: Tab is trapped inside the settings panel and cycles every stop, wrapping both ways
 # suite: node --test --test-name-pattern Tab.is.trapped.inside.the.settings.panel.and.cycles.every.stop..wrapping.both.ways tests/e2e.test.js
-# Eng review amendment 1 (docs/plans/2026-10-01-resources-menu.md). Drops the
-# Resources-links querySelectorAll from panelStops()'s returned array, so the
-# #res-* anchors never join the panel's own Tab/Shift+Tab cycle: a
-# keyboard user tabbing through the panel reaches "CHORD-ONLY PDF" and then
-# wraps straight back to the trigger, skipping every Resources link entirely. Every other stop (modeA/B/S, the print controls,
-# deck-add) is untouched, so only the forward-cycle assertion that now
-# requires all three res-* ids to appear in `seen` can see this.
+# Eng review amendment 1. panelStops() drops the Resources stops, so the #res-* links and ABOUT never join the panel's Tab cycle.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14419,9 +14419,6 @@ function panelStops() {
-           document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),
-           document.getElementById("deck-add"), restoreBtn,
-           ...settingsPanel.querySelectorAll(".prints button, .prints select"),
--          // Eng review amendment 1: the Resources links join the Tab trap
--          // after the print controls, in DOM order.
--          ...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]'),
-           document.getElementById("about-open"),
-           document.getElementById("lang-select")]
+@@ -14694,7 +14694,7 @@ function panelStops() {
+           // Language closes the list, so Tab follows what the eye sees.
+           // Eng review amendment 1: the Resources links join the Tab trap
+           // after the print controls, in DOM order.
+-          ...(grid ? [...prints, ...scales, ...res, lang] : [...scales, ...prints, ...res, lang])]
++          ...(grid ? [...prints, ...scales, lang] : [...scales, ...prints, lang])]
      .filter(isStop);
+ }
+ function openPanel() {

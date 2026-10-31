@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -356,7 +356,7 @@ a.mode{text-decoration:none}
-   color:#c4bcab; margin:0}
+@@ -375,7 +375,7 @@ a.mode{text-decoration:none}
+ }
  /* LE: wide landscape phones lay the groups out in two balanced CSS columns. */
  @media (min-height:360px) and (max-height:520px) and (min-width:740px){
 -  #settings-panel{display:block; column-count:2; column-gap:var(--sp-4); column-fill:balance;
 +  #settings-panel{display:block; column-count:1; column-gap:var(--sp-4); column-fill:balance;
-     padding:9px 62px 9px}
-   #settings-panel > .panel-group{break-inside:avoid; margin-bottom:var(--sp-3)}
- }
+     padding:9px max(62px, calc(env(safe-area-inset-right) + 50px)) 9px max(62px, calc(env(safe-area-inset-left) + 50px))}
+   #settings-panel .panel-group{break-inside:avoid; margin-bottom:var(--sp-4)}
+   #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])){display:grid;

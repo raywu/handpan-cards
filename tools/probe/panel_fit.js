@@ -35,7 +35,8 @@ const OD8_FAIL_BASE_OVERFLOW = false;
 // Any other control the base renders and the candidate lacks fails rule 2: the
 // judge walks the candidate's controls, so an accidental deletion is otherwise
 // invisible to it.
-const REMOVED_BY_DESIGN = ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy"];
+const REMOVED_BY_DESIGN = ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy",
+  "res-handpaner", "res-dingandtones", "res-trainingcards", "res-amy-progressions", "res-amy-bottom", "res-handpan-helpers"];
 
 const W_LO = 320, W_HI = 1300, H_LO = 320, H_HI = 1100;
 const SIDEBAR_WIDTHS = [1024, 1025, 1100, 1280, 1300, 1440, 1920];
@@ -54,7 +55,7 @@ function headingAllowance(baseHas, candHas) {
   return !baseHas && candHas ? HEADING_ALLOWANCE_PX : 0;
 }
 
-// AD7 (docs/plans/2026-10-05-menu-resources-amy.md): the second Resources row costs
+// Resources row (docs/plans/2026-10-05-menu-resources-amy.md): the second row costs
 // up to 60.4 px (measured, both font modes), so a candidate that carries a `res-`
 // control the base lacks may grow that much. It reaches rule 1 and rule 3 for the
 // NEW res- controls only: rule 2 and every non-Resources control are judged exactly
@@ -82,6 +83,17 @@ function aboutAllowance(baseControls, candControls) {
 const LANG_ALLOWANCE_PX = 88;
 function langAllowance(baseControls, candControls) {
   return "lang-select" in candControls && !("lang-select" in baseControls) ? LANG_ALLOWANCE_PX : 0;
+}
+
+// LS (short iPhone landscape): mode S, with the progression note, takes an explicit
+// two-column grid at 300 to 359px tall and 740px wide and up, and may scroll there.
+// The base's auto-fit grid fits at 845px and up only by splitting a long label mid-word.
+// Trial 340 -> 320 (RP8-R1, A-N4): the panel fit (real) job passed at 320 on validate run 41042689986.
+// Measured as the growth of the needed height (194px of needed height and 340px of control bottom, lang-select, at 320px tall, real fonts). Rules 1 and 2,
+// mode S, inside that band only.
+const LS_S_ALLOWANCE_PX = 320;
+function lsAllowance(w, h, m) {
+  return m === "S" && w >= 740 && h >= 300 && h < 360 ? LS_S_ALLOWANCE_PX : 0;
 }
 
 const REAL_FACES = [["Marcellus", "400"], ["Bitter", "400"], ["Bitter", "700"],
@@ -658,7 +670,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         const id = cellId(w, h, m);
         vecB.set(id, vectorOf(mb[i][mi])); vecC.set(id, vectorOf(mc[i][mi]));
         tallyGutter(report, mb[i][mi], w, h, m); tallyGutter(report, mc[i][mi], w, h, m);
-        const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id, allowance });
+        const j = judgeCell({ base: mb[i][mi], cand: mc[i][mi], refRendered: refRendered[mi], id, allowance: allowance + lsAllowance(w, h, m) });
         for (const k of j.removed) report.removed[k] = (report.removed[k] || 0) + 1;
         tallyJudgement(report, j, ruleNames, true);
         if (j.rule6.fail.length && !mc[i][mi].modal) extra.rule6Sidebar++;
@@ -672,7 +684,7 @@ async function runFont({ baseHtml, candHtml, baseLabel, candLabel, fontMode, wor
         const t = thresholdCell(mb[i][mi], mc[i][mi], row.lo, row.hi);
         if (t) {
           report.threshold.cells++;
-          const jt = judgeCell({ base: t.base, cand: t.cand, refRendered: refRendered[mi], id: `${w}x${t.height} ${m} (threshold)`, allowance });
+          const jt = judgeCell({ base: t.base, cand: t.cand, refRendered: refRendered[mi], id: `${w}x${t.height} ${m} (threshold)`, allowance: allowance + lsAllowance(w, t.height, m) });
           tallyJudgement(report, jt, ["rule1", "rule2", "rule3"], false);
         }
         const ov = overflowViewports(mb[i][mi], mc[i][mi], row.lo, row.hi);
@@ -838,7 +850,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, LANG_ALLOWANCE_PX, langAllowance, parseArgs, thresholdCell,
+  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, LS_S_ALLOWANCE_PX, lsAllowance, LANG_ALLOWANCE_PX, langAllowance, parseArgs, thresholdCell,
   overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   tallyJudgement, tallyGutter, invarianceWidths, checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,

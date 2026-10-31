@@ -1131,3 +1131,115 @@ sheets); the rule is that phases APPEND, never renumber or rename.
 - DECIDED(plan "Degenerate cases") Symmetric-scale naming is asserted on the
   octatonic diminished and augmented hexatonic fixture seeds, which do contain
   fifths.
+
+## 18. Paired-area profile (planned: engine lane E, renderers P, app U)
+
+Plan: `docs/plans/2026-10-30-neotone-build.md` (Refs TRI-17). Everything here is
+the contract lane E builds to; nothing in it is shipped until lane U flips
+`PROFILE_ENABLED`. The word in visible copy is "Paired areas"; no vendor or
+model is named. Roles do not change: voicing, tiers, badges, number lines and
+highlighting read the SOURCE zone (`rim`, `inner`, `bottom`) exactly as today,
+and the ding is unmapped, drawn at centre, and never in a voicing.
+
+### 18.1 The frozen profile
+
+`tests/fixtures/paired_profile_v1.json` is the one profile (`id` `paired`, `rev`
+1), written once by hand and pinned by sha256 in
+`tests/test_fixture_integrity.py`. Area k sits at `angles[k-1]`; slot `pk` is the
+primary on that angle, `sk` the secondary outward of it (orbits and radii are
+fractions of R). `slots` lists `p1..p9` then `s1..s9`: capacity is 18 non-ding
+notes. Empty slots draw nothing on a card (app and print); only the sheet
+preview shows a faint dashed outline with the area number. The print extent is
+the furthest of slot orbit + r + `n_out` + number height (number size = slot r x
+0.64) and the ding edge, plus `extent_margin`; R = round(74 / extent, 1) in
+`HPE.pdfcards`, `tools/hifi.py` and `tools/decks.py` identically. At that R every
+glyph of every slot is at least 3.6 pt and a name exceeds its number
+(`tests/test_fixture_integrity.py`).
+
+### 18.2 Seed option and occurrence key
+
+`options.profile = {id:"paired", rev:1, map:[18 entries]}`; entry k is the
+occurrence placed in `slots[k]`, or `null`. The occurrence key is the zone letter
+plus the MIDI number: `r57`, `i77`, `b48`, matching `/^[rib]\d{1,3}$/`. It is
+unique because `NOTE_REPEATED` forbids a repeated pitch within the top zones and
+within the bottom zone (an exact top/bottom pair is legal, and the letters tell
+them apart). The option is valid iff: its own keys are exactly `id,rev,map`;
+`id` is `"paired"` and `rev` is `1`; `map` has length 18; every non-null entry
+matches the key pattern and names a non-ding field of the seed; the entries are
+injective; and every non-ding field appears exactly once. With a profile,
+`mirror`, `mirrorBottom`, `anchor`, `seats` and `angles` must be absent. The
+sheet keeps the acoustic draft separately and drops it from the committed
+record. Validation lives only in `HPE.core.parseSeed`; `profile` joins its
+option whitelist (other unknown options still drop). Until
+`HPE.core.PROFILE_ENABLED` is true, `parseSeed` refuses `profile` with
+`PROFILE_UNKNOWN` and `HPE.share.decode` of a version 7 link returns
+`NEEDS_NEWER_APP`.
+
+### 18.3 Refusals
+
+Added to `HPE.core.REASONS` by lane E, verbatim, and to the
+`tests/scale.test.js` "every refused row carries its code and its sentence"
+table. They are kept out of the section 2 table until E lands, because
+`tests/core.test.js` holds that table equal to `REASONS`.
+
+| code | kind | reason |
+|---|---|---|
+| `PROFILE_UNKNOWN` | error | `This paired-area layout is not one this app knows.` |
+| `PROFILE_MAP_INVALID` | error | `The paired-area layout is malformed: it must list 18 areas, each empty or one of your notes.` |
+| `PROFILE_NOTE_MISSING` | error | `The paired-area layout leaves out one of your notes. Every note needs an area.` |
+| `PROFILE_NOTE_TWICE` | error | `The paired-area layout places the same note in two areas.` |
+| `PROFILE_FULL` | error | `Paired areas hold at most 18 notes besides the ding. Remove some notes.` |
+| `PROFILE_CONFLICT` | error | `Paired areas set their own placement, so mirror, anchor, seats and angles cannot be combined with them.` |
+
+### 18.4 Proposal and layout
+
+`HPE.layout.proposeProfile(fields)`: top notes (rim then inner, in field-number
+order) fill `p1..p9`, then `s1..s9`; bottom notes fill the remaining secondaries
+from `s1`, then the remaining primaries. Deterministic, pinned by a fixture.
+`HPE.layout.solve` with a valid profile returns the ordinary geom plus
+`geom.place = {fieldId: [angle, orbitFrac, rFrac]}` for every non-ding field,
+with the ding at centre at `ding.r`. Fields keep their zone, label and angle
+semantics; `ext` and the `f_*` keys are unchanged for acoustic decks, and
+renderers branch only on `geom.place`.
+
+### 18.5 Wire version 7
+
+`HPE.share.VERSION` stays 6; `PROFILE_VERSION = 7`. `NEWEST` stays `VERSION`;
+decode reads up to `PROFILE_VERSION` only while `HPE.core.PROFILE_ENABLED` is on.
+`HPE.share.encode` picks 7 if and only if the seed has a profile, otherwise it
+writes the exact current version 6 bytes. Version 7 is the version 6 segment
+grammar with profile options forbidden from mixing with `mirror`, `between`,
+`seats-` and `at-`, plus one option segment `pair-` followed by 18 tokens joined
+by `.`, `-` standing for an empty area (for example `pair-r57.r62.r64.-.`),
+placed after `parent-` and `palette-` and inside the checksum meaning.
+`decodeSeed` accepts 6 as today and 7; a version 7 link without exactly one
+`pair-` segment, or carrying `mirror*`, `between`, `seats-` or `at-`, is
+`BAD_NOTE`; a version 6 link carrying `pair-` is `BAD_NOTE`. Option gates that
+key on the version character are written as explicit sets, so a version 6
+`palette-10` still parses under version 7. A client that only knows version 6
+answers a version 7 link with `NEEDS_NEWER_APP`.
+
+### 18.6 Record version 5 and rule I1
+
+`RECORD_VERSION` stays 4. `PROFILE_RECORD_VERSION = 5` is used for a record
+whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4 or 5:
+the app never chooses it. `savedCandidate` accepts 4 for an acoustic record and
+5 for a profile record, and refuses 5 without a profile or 4 with one;
+`savedMeaning` appends the canonical profile map (null for acoustic, so the
+meaning of every existing acoustic record is unchanged).
+
+Rule I1: a profile record never carries `replaces` and never owns a seeded
+slot. SAVE on a seeded scale with the profile active saves a new custom entry,
+Edit of a slot owner into a profile saves separately, and `replace-builtin` with
+a profile candidate is refused; a version 5 record with `replaces` is read as
+opaque. Reason: a shipped client treats a record it cannot read as an opaque row
+kept byte-for-byte, but fails its slot-authority check, and so protects the
+whole library, when an opaque row owns a slot.
+
+### 18.7 Fixtures that pin the contract
+
+`tests/fixtures/paired_profile_v1.json` (the profile) and
+`tests/fixtures/shipped_client_ee5438d0.html.txt` (a verbatim
+`git show ee5438d0:index.html`, the shipped client for the mixed-version
+isolation suite). Both are sha256-pinned in `tests/test_fixture_integrity.py`; a
+change is a new revision, never an in-place edit.

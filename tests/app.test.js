@@ -5,7 +5,7 @@
 // colours in CSS vars + markup, shuffle toggling, absence of German, 177 cards.
 //
 // Everything asserted here is derived from CLAUDE.md ("verified card conventions",
-// "instrument layouts", "app data model") or from user-observable behaviour, never
+// "instrument layouts", "data model") or from user-observable behaviour, never
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
@@ -17,6 +17,13 @@ const { boot: sandboxBoot } = require("./helpers/sandbox.js");
 // asynchronous shared-origin model below. Explicit negative capabilities win.
 const boot = (options = {}) => sandboxBoot({ crypto: require("node:crypto").webcrypto,
   abortController: true, ...options });
+
+const coarse = (app, on = true) => {
+  app.sandbox.matchMedia = (query) => ({
+    matches: on && /pointer:\s*coarse/.test(query), media: query,
+    addEventListener() {}, removeEventListener() {},
+  });
+};
 
 async function idbConnection(realm) {
   assert.ok(realm.sandbox.indexedDB, "precondition: reviewed model exposes the standard IndexedDB API");
@@ -148,7 +155,7 @@ async function hashChange(app,hash,options={}) {
 
 /* ------------------------------------------------------------------ helpers */
 
-// Field tuple layout, per CLAUDE.md "App data model":
+// Field tuple layout, per CLAUDE.md "Data model":
 // fields{id:[name, octave, midi, zone, angle, label]}
 const F_NAME = 0, F_OCT = 1, F_MIDI = 2, F_ZONE = 3, F_LABEL = 5;
 
@@ -634,7 +641,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence"]) {
+                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -645,7 +652,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence"]);
+                                 "share", "sequence", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -3248,7 +3255,7 @@ test("closing a page that is already closed changes nothing", async () => {
 });
 
 test("booting on a page route opens nothing and leaves a clean hash", async () => {
-  for (const hash of ["#add", "#edit-custom:abc"]) {
+  for (const hash of ["#edit-custom:abc"]) {
     const app = boot({ href: "https://example.test/index.html" + hash });
     assert.strictEqual(app.sheetOpen(), false,
       `booting on ${hash} opened a page for a deck this session never had`);
@@ -3258,6 +3265,23 @@ test("booting on a page route opens nothing and leaves a clean hash", async () =
     assert.deepStrictEqual(app.history.calls.map((c) => c.type), ["replace"],
       `booting on ${hash} pushed an entry instead of replacing the one it found`);
   }
+});
+
+test("AA: a boot on #add opens the Add sheet and Back closes it to the deck's route", async () => {
+  const app = boot({ href: "https://example.test/index.html#add" });
+  assert.strictEqual(app.sheetOpen(), true, "a boot on #add opened no sheet");
+  assert.strictEqual(ROUTE(app), "#add");
+  assert.deepStrictEqual(app.history.calls.map((c) => c.type + ":" + c.url), ["replace:/index.html#deck=d-kurd-10", "push:#add"],
+    "boot replaces the entry with the deck route, then showSheet pushes #add");
+  app.els["scale-back"].click();
+  assert.strictEqual(app.sheetOpen(), false);
+  assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1);
+});
+
+test("AA: a protected-mode boot on #add opens no sheet", async () => {
+  const app = await durableBoot({ storage: { hpfc: JSON.stringify({ deck: 5, mode: "A" }) }, href: "https://example.test/index.html#add" });
+  assert.strictEqual(app.get("savedMode"), "protected");
+  assert.strictEqual(app.sheetOpen(), false);
 });
 
 test("the page routes do not shadow a share URL", async () => {
@@ -3538,56 +3562,77 @@ test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byt
   }
 });
 
-test("PM rule 7: HANDPAN 101 is the last Resources link, a Google Doc in a new tab, beside Handpan Helpers", () => {
+test("PM rule 7: HANDPAN 101 is the second Resources link, the /handpan-101/ page in the same tab, alone in a full-width row", () => {
   const panel = pmPanel();
   const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
   const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  assert.strictEqual(links.length, 7, "seven Resources links");
-  const first = links[links.length - 1];
-  assert.match(first, /\bid="res-handpan-101"/);
-  assert.match(first, /href="https:\/\/docs\.google\.com\/document\/d\/1C1BIyjEPIXPXdBq-3ezpVPeIqSWUxHswfdx0TpxEjco\/edit\?usp=drivesdk"/);
-  assert.match(first, /target="_blank"/);
-  assert.match(first, /rel="noopener"/);
-  assert.match(first, /aria-label="Handpan 101 \(Google Doc\)"/);
-  assert.match(first, /class="mode"/);
-  assert.ok(!/onclick/.test(first), "a link click must not close the panel");
-  assert.strictEqual(strip(first).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives presentational wrapping");
+  assert.strictEqual(links.length, 2, "two Resources links");
+  const link = links[1];
+  assert.match(link, /\bid="res-handpan-101"/);
+  assert.match(link, /href="\/handpan-101\/"/);
+  assert.ok(!/\btarget=/.test(link), "the page opens in the same tab");
+  assert.ok(!/\brel=/.test(link), "a same-site link carries no rel");
+  assert.match(link, /aria-label="Handpan 101"/);
+  assert.match(link, /class="mode"/);
+  assert.ok(!/onclick/.test(link), "a link click must not close the panel");
+  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN 101", "the complete name survives");
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
-  assert.strictEqual(rows.length, 4, "four modebar rows");
-  assert.strictEqual((rows[0][2].match(/<a\b/g) || []).length, 3, "the site row keeps three siblings");
-  assert.strictEqual((rows[1][2].match(/<a\b/g) || []).length, 2, "the Amy row keeps two");
-  assert.strictEqual((rows[2][2].match(/<a\b/g) || []).length, 2, "Helpers and HANDPAN 101 share the third row");
-  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["res-handpan-helpers", "res-handpan-101"], "Helpers immediately precedes HANDPAN 101");
-  assert.ok(rows[3][2].includes('id="about-open"'), "the fourth row holds ABOUT");
-  assert.ok(!/<a\b/.test(rows[3][2]), "the ABOUT row holds no link");
+  assert.strictEqual(rows.length, 3, "three modebar rows");
+  assert.deepStrictEqual([...rows[1][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]), ["res-handpan-101"], "HANDPAN 101 is alone in the second row");
+  assert.strictEqual(rows[1][1], "", "the row is a plain full-width modebar");
 });
 
-
-// Owner-approved Resources addition: the destination and safe native anchor
-// semantics are literal requirements, independent of the app's link table.
-test("HHR: the Helpers resource is a native new-tab link immediately before HANDPAN 101", () => {
+test("RR: Resources rows are EXPLORE SCALES, HANDPAN 101, ABOUT, each alone and full width, and the group has no external link", () => {
   const panel = pmPanel();
-  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
-  const links = [...group.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
-  const helpers = links.filter((link) => /\bid="res-handpan-helpers"/.test(link));
-  assert.strictEqual(helpers.length, 1, "exactly one Helpers resource anchor must exist");
-  const link = helpers[0];
-  assert.match(link, /\bhref="https:\/\/handpanhelpers\.klangzeug\.de\/"/, "the literal Helpers destination");
-  assert.match(link, /\btarget="_blank"/, "Helpers opens in a separate tab");
-  assert.match(link, /\brel="noopener"/, "Helpers cannot access the app through window.opener");
-  assert.match(link, /\bclass="mode"/, "Helpers shares the existing control treatment");
-  assert.strictEqual(strip(link).replace(/\s+/g, " ").trim(), "HANDPAN HELPERS", "the complete proper name survives presentational wrapping");
-  assert.ok(!/\bon(?:click|keydown)\s*=/.test(link), "the resource uses native activation without inline script");
-  assert.ok(!/\b(?:hidden|disabled|aria-hidden|tabindex)(?=\s|=|>)/.test(link), "Helpers remains a normal keyboard-reachable anchor");
-  const index = links.indexOf(link);
-  assert.match(links[index + 1] || "", /\bid="res-handpan-101"/, "Helpers immediately precedes HANDPAN 101");
-  assert.strictEqual(index, links.length - 2, "HANDPAN 101 stays the final outbound Resources link");
+  const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'), panel.indexOf('id="panel-lang-heading"'));
   const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
-  assert.strictEqual(rows.length, 4, "adding Helpers does not add a Resources row");
-  assert.match(rows[2][1], /\bduo\b/, "the approved third row is an equal-width duo");
-  assert.deepStrictEqual([...rows[2][2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]),
-    ["res-handpan-helpers", "res-handpan-101"], "the third row contains only the approved pair");
+  assert.strictEqual(rows.length, 3);
+  assert.deepStrictEqual(rows.map((r) => [...r[2].matchAll(/\bid="([^"]+)"/g)].map((m) => m[1])),
+    [["res-explore"], ["res-handpan-101"], ["about-open"]]);
+  for (const r of rows) assert.strictEqual(r[1], "", "each row is a plain full-width modebar");
+  assert.match(rows[0][2], /href="\/scales\/"/);
+  assert.ok(!/\btarget=|\brel=/.test(rows[0][2]), "EXPLORE SCALES opens in the same tab");
+  assert.strictEqual(strip(rows[0][2]).replace(/\s+/g, " ").trim(), "EXPLORE SCALES");
+  assert.match(rows[2][2], /<button class="mode" type="button" id="about-open"/);
+  assert.ok(!/href="https?:/.test(group), "no external link in the group");
+  assert.ok(!/target="_blank"/.test(group), "no new-tab link in the group");
+});
+
+test("RR: no served markup, selector row or i18n table carries a removed res- id or panel.res_amy key", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const removedRes = require("../tools/probe/panel_fit.js").REMOVED_BY_DESIGN.filter((id) => id.startsWith("res-"));
+  assert.strictEqual(removedRes.length, 6);
+  for (const dead of [...removedRes, "panel.res_amy"]) {
+    assert.ok(!html.includes(dead), dead + " is still served");
+  }
+});
+
+test("RR: panel.explore is in every i18n table", () => {
+  const dir = path.join(__dirname, "..", "data", "i18n");
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+  assert.strictEqual(files.length, 8);
+  for (const f of files) {
+    const t = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+    assert.ok(typeof t["panel.explore"] === "string" && t["panel.explore"].length > 0, f + " lacks panel.explore");
+    assert.ok(!Object.keys(t).some((k) => k.startsWith("panel.res_amy")), f + " keeps a panel.res_amy key");
+  }
+});
+
+test("RR: panelStops lists the Resources group in visual order in single column and both grid modes", () => {
+  const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(stubIds, ["res-explore", "res-handpan-101", "about-open"], "DOM order is visual order");
+  for (const display of ["block", "flex"]) {
+    const app = boot();
+    app.run(`settingsPanel.querySelectorAll = (sel) => ${JSON.stringify(stubIds)}.filter((id) => id === "about-open" ? sel.includes("#about-open") : sel.includes('[id^="res-"]')).map((id) => ({ id, disabled: false, getClientRects: () => [{}] }))`);
+    app.run(`globalThis.getComputedStyle = () => ({ display: "${display}" }); document.querySelector = () => ({})`);
+    app.run("openPanel()");
+    assert.strictEqual(app.get("getComputedStyle(null).display"), display);
+    const ids = app.get("panelStops().map((e) => e.id)");
+    const at = stubIds.map((id) => ids.indexOf(id));
+    assert.ok(at.every((i) => i >= 0), display + ": every Resources stop is present");
+    assert.deepStrictEqual([...at].sort((x, y) => x - y), at, display + ": Resources stops are in visual order");
+    assert.strictEqual(ids[ids.length - 1], "lang-select", "Language closes the list");
+  }
 });
 
 /* D-3's type guard on printPaper must reject a TRUTHY but invalid stored
@@ -4570,7 +4615,8 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual(pf.REMOVED_BY_DESIGN, ["modeS", "button:FULL DECK PDF", "button:CHORD-ONLY PDF", "share-copy"]);
+    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the ten known ids");
+    assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
     assert.strictEqual(noS.rule2.reported.length, 0);
@@ -4813,6 +4859,17 @@ describe("panel fit judge", () => {
     assert.strictEqual(pf.aboutAllowance(keys("res-a"), keys("res-a")), 0, "no new key");
     assert.strictEqual(pf.aboutAllowance(keys("res-a"), keys("res-a", "res-b", "deck-add2")), 0, "other new controls earn nothing");
     assert.strictEqual(pf.aboutAllowance(keys("about-open"), keys("about-open")), 0, "the allowance expires once main has the row");
+  });
+
+  test("panel fit: the LS allowance is 320, owed to mode S at 740px wide and up and 300 to 359px tall only", async () => {
+    assert.strictEqual(pf.LS_S_ALLOWANCE_PX, 320);
+    assert.strictEqual(pf.lsAllowance(852, 330, "S"), 320);
+    assert.strictEqual(pf.lsAllowance(740, 300, "S"), 320);
+    assert.strictEqual(pf.lsAllowance(932, 359, "S"), 320);
+    assert.strictEqual(pf.lsAllowance(852, 330, "A"), 0, "modes A and B fit two columns");
+    assert.strictEqual(pf.lsAllowance(739, 330, "S"), 0, "narrower than 740");
+    assert.strictEqual(pf.lsAllowance(852, 299, "S"), 0, "shorter than 300");
+    assert.strictEqual(pf.lsAllowance(852, 360, "S"), 0, "360 and up keeps the LE block");
   });
 
   test("panel fit rule 1 and rule 3: a new about-open earns the About-row allowance and nothing else does", async () => {
@@ -5242,8 +5299,108 @@ test("US-3 one wheel gesture over WHEEL_COMMIT_PX steps once", async () => {
   assert.strictEqual(running().length, 1, "past 80px accumulated the card flies out, once");
   running()[0].finish();
   await settle();
+  const before = running().length;
+  for (const dx of [5, 3, 2]) wheelEv(dx);
+  assert.strictEqual(running().length, before, "the tail of a committed gesture starts no second fly-out");
   app.flushTimers();
   assert.strictEqual(idx(), 1);
+});
+
+async function landFlight({ app, running }) {
+  running().forEach((a) => a.finish());
+  await settle();
+  app.flushTimers();
+}
+
+test("SW2 A: two swipes back to back, each with a momentum tail, advance two cards", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  assert.strictEqual(running().length, 1);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
+test("SW2 B: one swipe with a long monotone tail with flat repeats steps once", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 30, 30, 25, 25, 20, 20, 15, 15, 10, 10, 6, 6, 3, 3, 2, 2, 1, 1, 1, 0, 0]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 C: a small bump above a third of the peak does not start a gesture", async () => {
+  const rig = swipeRig();
+  for (const dx of [11, 11, 11, 11, 11, 11, 11, 11, 10, 8, 6, 5, 4, 5, 4, 4, 3, 2, 1]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 D: a second stroke begun during the flight counts once the card lands", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 5, 2, 1]) wheelEv(dx);
+  for (const dx of [30, 30]) wheelEv(dx);
+  assert.strictEqual(running().length, 1, "the in-flight stroke starts no second flight");
+  assert.strictEqual(idx(), 0);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
+async function playTail(rig, head, tail, landAfter) {
+  const { wheelEv } = rig;
+  for (const dx of head) wheelEv(dx);
+  tail.slice(0, landAfter).forEach((dx) => wheelEv(dx));
+  rig.running().forEach((a) => a.finish());
+  await settle();
+  tail.slice(landAfter).forEach((dx) => wheelEv(dx));
+  await landFlight(rig);
+}
+
+test("SW2 E: a coalesced merge of three tail frames is not a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 150 }, (_, i) => 40 * 0.96 ** i);
+  tail.splice(30, 3, tail[30] + tail[31] + tail[32]);
+  await playTail(rig, [10, 25, 40], tail, 10);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 F: a zero-delta event at the lift does not make the tail a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 80 }, (_, i) => 25 * 0.93 ** i);
+  await playTail(rig, [10, 25, 40, 40, 0], tail, 5);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 G: a stroke that starts at 1px does not leave a stale trough after the commit", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running } = rig;
+  for (const dx of [30, 1, 30, 30, 30]) wheelEv(dx);
+  running().forEach((a) => a.finish());
+  await settle();
+  const before = running().length;
+  for (let i = 0; i < 14; i++) wheelEv(8);
+  assert.strictEqual(running().length, before);
+});
+
+test("SW2 H: the gap timer firing mid-flight does not spring the card back", async () => {
+  const { app, wheelEv, running } = swipeRig();
+  for (const dx of [30, 30, 30, 30]) wheelEv(dx);
+  app.flushTimers();
+  wheelEv(30);
+  app.flushTimers();
+  assert.strictEqual(running().length, 1);
+});
+
+test("SW2 I: a rise inside a gesture that has not fired does not restart it", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 1, 1, 30, 30]) rig.wheelEv(dx);
+  assert.strictEqual(rig.running().length, 1);
 });
 
 test("US-3 wheel is ignored mid-flight", async () => {
@@ -9755,8 +9912,23 @@ describe("discoverability: deck route", () => {
     assert.strictEqual(gone.location.hash, "#deck=d-kurd-10");
   });
 
+  test("AA: a hashchange to #add opens the Add sheet, Back closes it and the next Back leaves the previous entry", async () => {
+    const app = await at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
+    const before = app.history.calls.length;
+    await hashChange(app, "#add");
+    assert.strictEqual(app.sheetOpen(), true, "a hashchange to #add opened no sheet");
+    assert.deepStrictEqual(app.history.calls.slice(before).map((c) => c.type + ":" + c.url), ["replace:#add"],
+      "the entry the browser already pushed is reused: one replace, no push");
+    assert.strictEqual(app.get("sheetRouted"), true);
+    assert.strictEqual(app.get("selection.id"), "amara");
+    app.els["scale-back"].click();
+    assert.strictEqual(app.sheetOpen(), false);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1, "closing pops exactly the one entry");
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "push").length, 0, "no duplicate entry was pushed");
+  });
+
   test("hashchange ignores the other routes", async () => {
-    for (const h of ["#add", "#edit-x", "#something"]) {
+    for (const h of ["#edit-x", "#something"]) {
       const app = await at("", { storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A" }) } });
       const before = app.history.calls.length;
       await hashChange(app,h);
@@ -10058,8 +10230,15 @@ describe("share url", () => {
       ctx.local.location.hash = fragment;
       const historyBefore = JSON.stringify(ctx.local.history.calls);
       dispatchCurrent(ctx.local);
-      assert.strictEqual(ctx.local.location.hash, fragment, name + ": handler keeps the ignored raw fragment");
-      assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, name + ": ignored handler writes no history");
+      if (fragment === "#add") {
+        assert.strictEqual(ctx.local.sheetOpen(), true, name + ": #add opens the Add sheet");
+        ctx.local.els["scale-back"].click();
+        ctx.local.popstate();
+        await writeBarrier(ctx.local);
+      } else {
+        assert.strictEqual(ctx.local.location.hash, fragment, name + ": handler keeps the ignored raw fragment");
+        assert.strictEqual(JSON.stringify(ctx.local.history.calls), historyBefore, name + ": ignored handler writes no history");
+      }
       await peerCommand(ctx, kind);
       const canonical = resultShown(ctx.local, kind);
       assert.strictEqual(ctx.local.location.hash, canonical, name + ": later peer publication still canonicalizes the URL");
@@ -10466,16 +10645,17 @@ describe("share url", () => {
     assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
   });
 
-  test("SU: COPY LINK falls back to navigator.share when the clipboard rejects", async () => {
+  test("SU: COPY LINK falls back to the clipboard when the share sheet fails", async () => {
     const app = boot();
-    const shared = [];
-    app.sandbox.navigator.clipboard = { writeText: async () => { throw new Error("denied"); } };
-    app.sandbox.navigator.share = async (o) => { shared.push(o); };
+    coarse(app);
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    app.sandbox.navigator.share = async () => { const e = new Error("x"); e.name = "NotAllowedError"; throw e; };
     app.els["share-copy"].click();
     await flush();
     app.flushTimers();
-    assert.deepStrictEqual(plain(shared), [{ url: app.location.href }]);
-    assert.strictEqual(app.announcer().textContent, "LINK SHARED");
+    assert.deepStrictEqual(written, [app.location.href]);
+    assert.strictEqual(app.announcer().textContent, "LINK COPIED");
   });
 
   test("SU: COPY LINK reveals the readonly input when both are absent", async () => {
@@ -10500,6 +10680,7 @@ describe("share url", () => {
 
   test("SU: COPY LINK says nothing when the share sheet is dismissed", async () => {
     const app = boot();
+    coarse(app);
     delete app.sandbox.navigator.clipboard;
     app.sandbox.navigator.share = async () => { const e = new Error("x"); e.name = "AbortError"; throw e; };
     const before = app.announcer().textContent;
@@ -10707,7 +10888,7 @@ describe("share icon", () => {
     assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
   });
 
-  test("SI: the glyph is two rotated stadiums at stroke-width 2.4", async () => {
+  test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {
     assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
   });
 });
@@ -10856,11 +11037,31 @@ describe("about overlay", () => {
     assert.ok(priv, "the Privacy paragraph is missing");
     assert.ok(textOf(priv[0]).includes(PRIVACY), "the Privacy paragraph does not say scales stay here and how to share one");
     assert.ok(textOf(priv[0]).includes("The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland."), "the Privacy paragraph does not state its Google Analytics sentence");
-    const own = /<h3>Your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
-    assert.ok(own, "the Your own scale paragraph is missing");
+    const own = /<h3>Add your own scale<\/h3>\s*<p>([^<]*)<\/p>/.exec(aboutHtml());
+    assert.ok(own, "the Add your own scale paragraph is missing");
     assert.strictEqual(textOf(own[1]).trim(), "Type any scale and the app generates its chords.");
     const text = textOf(aboutHtml());
     assert.ok(!/lives only in your browser/.test(text) && !/never leave your browser/.test(text));
+  });
+
+  test("About lists 16 popular scale links in five groups, each to an existing /scales/<slug>/ page, then the hub link", async () => {
+    const rows = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "tools", "scale_pages.json"), "utf8"));
+    const groups = ["Minor", "Celtic minor", "Pentatonic minor", "Major and bright", "Middle Eastern and Japanese"];
+    const m = /<h3>Popular scales<\/h3>([\s\S]*?)<h3>Privacy<\/h3>/.exec(aboutHtml());
+    assert.ok(m, "no Popular scales section before Privacy");
+    assert.ok(/^\s*<p>Chord charts for 16 common handpan scales\.<\/p>/.test(m[1]), "the intro is missing");
+    assert.deepStrictEqual([...m[1].matchAll(/<h4>(.*?)<\/h4>/g)].map((x) => x[1]), groups);
+    const links = [...m[1].matchAll(/<li><a href="(\/scales\/[a-z0-9-]+\/)">(.*?)<\/a><\/li>/g)];
+    assert.deepStrictEqual(links.map((x) => x[1]), rows.map((r) => `/scales/${r.slug}/`));
+    assert.deepStrictEqual(links.map((x) => x[2]), rows.map((r) => `${r.name} handpan chords`));
+    for (const r of rows) assert.ok(fs.existsSync(path.join(__dirname, "..", "scales", r.slug, "index.html")), r.slug);
+    for (const g of groups) {
+      const block = new RegExp(`<h4>${g}</h4>\\s*<ul>([\\s\\S]*?)</ul>`).exec(m[1]);
+      assert.ok(block, `no <ul> under ${g}`);
+      assert.strictEqual([...block[1].matchAll(/<li><a href="\/scales\/([a-z0-9-]+)\/">/g)].map((x) => x[1]).join(),
+        rows.filter((r) => r.group === g).map((r) => r.slug).join());
+    }
+    assert.ok(/<ul>\s*<li><a href="\/scales\/">All scale chord charts<\/a><\/li>\s*<\/ul>\s*$/.test(m[1]), "the hub link is not a one-item list at the end");
   });
 
   test("AO: the about section ships hidden as a dialog, in place after #app, with every existing sentence", async () => {
@@ -11054,7 +11255,7 @@ describe("about overlay", () => {
     assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
   });
 
-  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last stop before Language", async () => {
+  test("AO: ABOUT is a full-width button alone in the last Resources row, and the last Resources stop before Language", async () => {
     const panel = pmPanel();
     const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
     const rows = [...group.matchAll(/<div class="modebar([^"]*)">([\s\S]*?)<\/div>/g)];
@@ -11063,9 +11264,8 @@ describe("about overlay", () => {
     assert.match(last[2], /^\s*<button class="mode" type="button" id="about-open" aria-haspopup="dialog">ABOUT<\/button>\s*$/);
     assert.ok(group.lastIndexOf('id="about-open"') > group.lastIndexOf("res-handpan-101"), "ABOUT is not after HANDPAN 101");
     const app = boot();
-    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    assert.ok(resIds.length >= 6 && resIds.includes("res-handpan-101"), "the Resources links are in the markup");
-    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     const ids = app.get("panelStops().map((e) => e.id)");
     assert.strictEqual(ids[ids.length - 2], "about-open", "about-open is not the stop before Language");
@@ -13743,7 +13943,7 @@ describe("DS: the visible word is scale", () => {
 
   test("DS1b: the pinned strings are served", async () => {
     const h = html();
-    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Built-in scales",
+    for (const s of ["or pick a built-in scale.", "Pick a built-in scale, or type your own.", "Try these scales",
       "DELETE THIS SCALE", "RESET SEEDED SCALES", "Print this scale"]) {
       assert.ok(h.includes(s), `missing ${s}`);
     }
@@ -15125,9 +15325,10 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16,"frozen base plus the sixteen approved saved-variants messages");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign) and header.share (native share)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
-    const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key));
+    const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
       .update(JSON.stringify(baseKeys.sort())).digest("hex"),contract.sortedKeySha256,"all frozen baseline key identities remain unchanged");
     assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
@@ -15239,10 +15440,8 @@ describe("I18N", () => {
   });
 
   const langPanelStops = (app) => {
-    const panel = pmPanel();
-    const group = panel.slice(panel.indexOf('<h3 class="panel-heading">Resources</h3>'));
-    const resIds = [...group.matchAll(/<a[^>]*id="(res-[\w-]+)"/g)].map((m) => m[1]);
-    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(resIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
+    const stubIds = [...pmPanel().matchAll(/<(?:a|button)\b[^>]*id="(res-[\w-]+|about-open)"/g)].map((m) => m[1]);
+    app.run(`settingsPanel.querySelectorAll = (sel) => /res-/.test(sel) ? ${JSON.stringify(stubIds)}.map((id) => ({ id, disabled: false, getClientRects: () => [{}] })) : []`);
     app.run("openPanel()");
     return app.get("panelStops().map((e) => e.id)");
   };
@@ -16610,7 +16809,7 @@ describe("SHC asynchronous LINK ownership", () => {
     const calls = [];
     const accept = (payload) => { const d = deferred(); calls.push({ payload, ...d }); return d.promise; };
     if (method === "clipboard") app.sandbox.navigator.clipboard = { writeText: accept };
-    else { delete app.sandbox.navigator.clipboard; app.sandbox.navigator.share = accept; }
+    else { coarse(app); delete app.sandbox.navigator.clipboard; app.sandbox.navigator.share = accept; }
     return calls;
   };
   const copy = async (app, calls) => {
@@ -16769,22 +16968,21 @@ describe("SHC asynchronous LINK ownership", () => {
       if (outcome === "failure") assert.strictEqual(app.els["share-url"].value, call.payload.url);
       else { hidden(app); assert.strictEqual(live(app), outcome === "success" ? "LINK SHARED" : ""); }
     }
-    const app = boot({ href: PAGE }), calls = sink(app);
-    const shared = [];
-    app.sandbox.navigator.share = async (payload) => { shared.push(payload); };
+    const app = boot({ href: PAGE }), calls = sink(app, "share");
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
     const call = await copy(app, calls);
     await settle(call); app.flushTimers();
-    assert.deepStrictEqual(plain(shared), [{ url: call.payload }], "clipboard rejection uses the same captured URL");
-    assert.strictEqual(live(app), "LINK SHARED");
-    const late = boot(), lateCalls = sink(late);
+    assert.deepStrictEqual(plain(written), [call.payload.url], "share failure uses the same captured URL on the clipboard");
+    assert.strictEqual(live(app), "LINK COPIED");
+    const late = boot(), lateCalls = sink(late, "share");
     let invoked = 0;
-    // Access occurs between rejection and Promise-scheduled native invocation.
-    // Retire there, without depending on callback-chain microtask depth.
-    Object.defineProperty(late.sandbox.navigator, "share", { configurable: true, get() {
-      late.select(late.get("selection.id")); return async () => { invoked++; };
+    const lateCall = await copy(late, lateCalls);
+    Object.defineProperty(late.sandbox.navigator, "clipboard", { configurable: true, get() {
+      late.select(late.get("selection.id")); return { writeText: async () => { invoked++; } };
     } });
-    await settle(await copy(late, lateCalls));
-    assert.strictEqual(invoked, 0, "retirement at native scheduling boundary must suppress a new native operation");
+    await settle(lateCall);
+    assert.strictEqual(invoked, 0, "retirement before the clipboard fallback must suppress it");
     for (const success of [false, true]) {
       const active = boot(), nativeCalls = sink(active, "share"), pending = await copy(active, nativeCalls);
       active.select(active.get("selection.id"));
@@ -16900,6 +17098,7 @@ describe("SHC asynchronous LINK ownership", () => {
     ga.select(ga.get("selection.id")); await settle(first, true); ga.flushTimers();
     delete ga.sandbox.navigator.clipboard; delete ga.sandbox.navigator.share;
     ga.els["share-copy"].click(); await drain();
+    coarse(ga);
     ga.sandbox.navigator.share = async () => {};
     ga.els["share-copy"].click(); await drain(); ga.flushTimers();
     assert.deepStrictEqual(events(), [
@@ -18351,3 +18550,187 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
 }
+
+test("NS1: About links underline at 1.5px and 2.5px on hover, like the scale pages", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const rest = /#about a\{([^}]*)\}/.exec(html);
+  assert.ok(rest, "no #about a rule");
+  assert.match(rest[1], /text-decoration-thickness:\s*1\.5px/);
+  assert.match(rest[1], /text-underline-offset:\s*3px/);
+  assert.match(html, /#about a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
+});
+
+describe("NS: native share", () => {
+  const PAGE = "https://example.test/index.html";
+  const flush = () => new Promise((r) => setImmediate(r));
+  const json = (v) => JSON.parse(JSON.stringify(v));
+  const i18n = (code) => JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", code + ".json"), "utf8"));
+  const named = (name) => { const e = new Error(name); e.name = name; return e; };
+  const shareable = (opts = {}) => {
+    const app = boot({ href: PAGE, ...opts });
+    coarse(app);
+    const calls = [];
+    app.sandbox.navigator.share = (payload) => { calls.push(json(payload)); return Promise.resolve(); };
+    return { app, calls };
+  };
+  const tap = async (app) => { app.els["share-copy"].click(); await flush(); app.flushTimers(); };
+  const shareEvents = (app) => json(Array.from(app.get("window.dataLayer"))).filter((e) => e[0] === "event" && e[1] === "share_copy");
+
+  test("NS 1: coarse pointer with navigator.share calls share once with exactly {url} inside the tap and leaves the clipboard alone", async () => {
+    const { app, calls } = shareable();
+    let written = 0;
+    app.sandbox.navigator.clipboard = { writeText: async () => { written++; } };
+    app.els["share-copy"].click();
+    assert.deepStrictEqual(calls, [{ url: app.location.href }], "share was not called synchronously with exactly {url}");
+    await flush(); app.flushTimers();
+    assert.strictEqual(written, 0);
+    assert.strictEqual(app.announcer().textContent, "LINK SHARED");
+  });
+
+  test("NS 2: AbortError is silent: no clipboard write, no reveal, no share_copy", async () => {
+    const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE });
+    coarse(app);
+    let written = 0;
+    app.sandbox.navigator.clipboard = { writeText: async () => { written++; } };
+    app.sandbox.navigator.share = () => Promise.reject(named("AbortError"));
+    const before = app.announcer().textContent;
+    await tap(app);
+    assert.strictEqual(written, 0);
+    assert.strictEqual(app.announcer().textContent, before);
+    assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), true);
+    assert.deepStrictEqual(shareEvents(app), []);
+  });
+
+  test("NS 3: NotAllowedError falls to the clipboard: LINK COPIED, method clipboard", async () => {
+    const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE });
+    coarse(app);
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    app.sandbox.navigator.share = () => Promise.reject(named("NotAllowedError"));
+    await tap(app);
+    assert.deepStrictEqual(written, [app.location.href]);
+    assert.strictEqual(app.announcer().textContent, "LINK COPIED");
+    assert.deepStrictEqual(shareEvents(app).map((e) => e[2]), [{ deck_kind: "seeded", method: "clipboard" }]);
+  });
+
+  test("NS 4: share rejects then the clipboard rejects: the field is revealed with share.select, in en and ja", async () => {
+    for (const lang of ["en", "ja"]) {
+      const { app } = shareable();
+      if (lang !== "en") app.run(`setLang(${JSON.stringify(lang)})`);
+      app.sandbox.navigator.share = () => Promise.reject(named("NotAllowedError"));
+      app.sandbox.navigator.clipboard = { writeText: async () => { throw new Error("denied"); } };
+      app.els["share-url"].select = () => {};
+      await tap(app);
+      assert.strictEqual(app.els["share-url"].hasAttribute("hidden"), false);
+      assert.strictEqual(app.announcer().textContent, i18n(lang)["share.select"]);
+    }
+  });
+
+  test("NS 5: a tap while a share is pending does nothing, and every settle path unlocks the button", async () => {
+    for (const outcome of ["resolve", "abort", "other"]) {
+      const app = boot({ href: PAGE });
+      coarse(app);
+      app.sandbox.navigator.clipboard = { writeText: async () => {} };
+      const pending = [];
+      app.sandbox.navigator.share = () => new Promise((resolve, reject) => pending.push({ resolve, reject }));
+      app.els["share-copy"].click();
+      app.els["share-copy"].click();
+      await flush();
+      assert.strictEqual(pending.length, 1, "a second tap reached navigator.share");
+      if (outcome === "resolve") pending[0].resolve();
+      if (outcome === "abort") pending[0].reject(named("AbortError"));
+      if (outcome === "other") pending[0].reject(named("InvalidStateError"));
+      await flush(); app.flushTimers();
+      app.els["share-copy"].click();
+      await flush();
+      assert.strictEqual(pending.length, 2, outcome + " left the button locked");
+    }
+  });
+
+  test("NS 6: a fine pointer with navigator.share copies and never opens the sheet", async () => {
+    const app = boot({ href: PAGE });
+    coarse(app, false);
+    const written = [];
+    let shared = 0;
+    app.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    app.sandbox.navigator.share = async () => { shared++; };
+    await tap(app);
+    assert.deepStrictEqual(written, [app.location.href]);
+    assert.strictEqual(shared, 0);
+  });
+
+  test("NS 7: no share uses the clipboard, neither reveals, and canShare false uses the clipboard", async () => {
+    const a = boot({ href: PAGE });
+    coarse(a);
+    const written = [];
+    a.sandbox.navigator.clipboard = { writeText: async (u) => { written.push(u); } };
+    delete a.sandbox.navigator.share;
+    await tap(a);
+    assert.deepStrictEqual(written, [a.location.href]);
+
+    const b = boot({ href: PAGE });
+    coarse(b);
+    delete b.sandbox.navigator.clipboard;
+    delete b.sandbox.navigator.share;
+    b.els["share-url"].select = () => {};
+    await tap(b);
+    assert.strictEqual(b.els["share-url"].hasAttribute("hidden"), false);
+
+    const c = boot({ href: PAGE });
+    coarse(c);
+    let shared = 0;
+    const cw = [];
+    c.sandbox.navigator.share = async () => { shared++; };
+    c.sandbox.navigator.canShare = () => false;
+    c.sandbox.navigator.clipboard = { writeText: async (u) => { cw.push(u); } };
+    await tap(c);
+    assert.strictEqual(shared, 0);
+    assert.deepStrictEqual(cw, [c.location.href]);
+  });
+
+  test("NS 8: label and glyph follow the share state and survive a language change", async () => {
+    const { app } = shareable();
+    app.run("paintShare()");
+    const btn = app.els["share-copy"];
+    assert.strictEqual(btn.getAttribute("aria-label"), i18n("en")["header.share"]);
+    assert.match(btn.innerHTML, /glyph-share/);
+    assert.ok(!/rotate\(-45/.test(btn.innerHTML));
+    for (const code of ["ja", "de", "zh-Hant"]) {
+      app.run(`setLang(${JSON.stringify(code)})`);
+      assert.strictEqual(btn.getAttribute("aria-label"), i18n(code)["header.share"], code);
+    }
+    app.run('setLang("en")');
+    delete app.sandbox.navigator.share;
+    app.run("paintShare()");
+    assert.strictEqual(btn.getAttribute("aria-label"), i18n("en")["header.share_copy"]);
+    assert.ok(!/glyph-share/.test(btn.innerHTML), "the share glyph stayed");
+    app.run('setLang("ja")');
+    assert.strictEqual(btn.getAttribute("aria-label"), i18n("ja")["header.share_copy"]);
+  });
+
+  test("NS 9: share_copy carries only deck_kind and method, method in clipboard|share|select", async () => {
+    const methods = new Set();
+    for (const mode of ["share", "clipboard", "select"]) {
+      const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: PAGE });
+      coarse(app, mode === "share");
+      if (mode === "share") app.sandbox.navigator.share = async () => {};
+      else delete app.sandbox.navigator.share;
+      if (mode === "select") delete app.sandbox.navigator.clipboard;
+      else app.sandbox.navigator.clipboard = { writeText: async () => {} };
+      app.els["share-url"].select = () => {};
+      await tap(app);
+      const ev = shareEvents(app);
+      assert.strictEqual(ev.length, 1, mode);
+      assert.deepStrictEqual(Object.keys(ev[0][2]).sort(), ["deck_kind", "method"]);
+      methods.add(ev[0][2].method);
+    }
+    assert.deepStrictEqual([...methods].sort(), ["clipboard", "select", "share"]);
+  });
+
+  test("NS 10: header.share exists in all eight tables", async () => {
+    for (const code of ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"]) {
+      const v = i18n(code)["header.share"];
+      assert.ok(typeof v === "string" && v.length > 0, code);
+    }
+  });
+});
