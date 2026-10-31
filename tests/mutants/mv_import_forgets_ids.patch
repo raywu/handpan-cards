@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11013,7 +11013,6 @@
+@@ -11055,7 +11055,6 @@ function applySavedCommand(staged, command, candidate) {
      const have = new Set(staged.meanings.values()), identities = new Map(staged.identities);
      for (const item of command.items) {
        if (known.has(item.key)) continue;
 -      known.add(item.key);
-       const read = item.read, held = identities.get(read.value.id);
-       if (have.has(read.meaning) || (held !== undefined && held !== read.identity)) continue;
-       const record = savedClone(read.record);
+       if (item.opaque) {
+         if (!allocate(savedClone(item.opaque))) return savedFailure("allocation", "instance-id");
+         imported++;
