@@ -2,7 +2,8 @@
 
 Shared operating instructions for Claude, Codex, humans and command-capable
 harnesses. Run commands from the root of the **isolated worktree being tested**.
-Project behavior remains specified in [CLAUDE.md](../../CLAUDE.md); test and
+Project behavior remains specified in [CLAUDE.md](../../CLAUDE.md) and
+[docs/CARD-SPEC.md](../CARD-SPEC.md); test and
 mutation design remains specified in [tests/CONTRACT.md](../../tests/CONTRACT.md).
 This document routes execution and evidence; it does not install or activate
 global workflows.
@@ -38,6 +39,8 @@ before execution. Do not invent a generic test count: suites change by branch.
 | Browser/CDP or test infrastructure | Existing lifecycle/error/cleanup tests plus a spec-first regression test for the demonstrated defect. Any repair needs reviewed scope and red-before/green-after evidence. |
 | Browser printing/PDF changes | Relevant browser PDF tests and existing Python print/parity tests; provisioned PDF-library prerequisites must be available. |
 | Final delivery | Full exact-head Linux `validate`, independent addressed review, then actual deployed DEV revision and affected journeys. Targeted smoke tests do not replace these gates. |
+
+Test UI work at a 380px viewport.
 
 For the Naturalness workstream, only UI text is translated. Scale input keeps
 the existing English A–G note conventions, accidentals, octave numbers and
