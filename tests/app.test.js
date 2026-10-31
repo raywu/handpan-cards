@@ -18918,10 +18918,71 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
   });
 
-  test("a payload over MOVE_CAP does not forward and the app boots", async () => {
-    const app = await boot2({ host: OLD_HOST, records: [rec("A")], cap: 10 });
-    assert.strictEqual(app.get("window.__replaced"), undefined);
-    assert.strictEqual(app.get("booted"), true);
+  const codeOf = url => /#move=([A-Za-z0-9_-]*)&then=/.exec(url)[1];
+  const rowsOf = code => JSON.parse(Buffer.from(code, "base64url").toString()).r;
+  const manyRecs = n => Array.from({ length: n }, (_, i) => rec(`S${i + 1} ${"x".repeat(30)}`));
+
+  for (const total of [116, 200]) {
+    test(`over-cap store of ${total} still forwards, carrying exactly the largest prefix under MOVE_CAP`, async () => {
+      const records = manyRecs(total);
+      const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records, extra: { hidden: ["kurd"] } });
+      const to = old.get("window.__replaced");
+      assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
+      assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
+      const code = codeOf(to);
+      assert.ok(code.length <= 20000);
+      const rows = rowsOf(code);
+      assert.ok(rows.length > 0 && rows.length < total, `carried ${rows.length}`);
+      assert.deepStrictEqual(rows.map(r => r.r.o.name), records.slice(0, rows.length).map(r => r.o.name));
+      const more = Buffer.from(JSON.stringify({ r: records.slice(0, rows.length + 1).map((r, i) => ({ i: uid(i + 1), r })), h: ["kurd"] })).toString("base64url");
+      assert.ok(more.length > 20000, "one more record would not fit");
+      assert.deepStrictEqual(JSON.parse(Buffer.from(code, "base64url").toString()).h, ["kurd"]);
+      assert.deepStrictEqual(envelopeAt(old.fixtureOrigin, OLD_HOST).entries.length, total, "old storage untouched");
+      const origin = createOrigin({});
+      const hash = `#move=${code}&then=`;
+      const first = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+      assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), records.slice(0, rows.length).map(r => r.o.name));
+      assert.deepStrictEqual(envelopeAt(origin).hidden, ["kurd"]);
+      assert.match(first.get("moveNoticeEl.textContent"), new RegExp(`Your ${rows.length} saved scales moved here`));
+      await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+      assert.strictEqual(envelopeAt(origin).entries.length, rows.length, "second visit adds no duplicates");
+    });
+  }
+
+  test("an over-cap store with a #s= hash forwards with the hash preserved and no notice path on the old host", async () => {
+    const hash = "#s=6/D3-A3-C4/x/y";
+    const app = await boot2({ host: OLD_HOST, hash, records: manyRecs(200) });
+    const to = app.get("window.__replaced");
+    assert.ok(to.startsWith(TARGET + "/#move="), String(to));
+    assert.ok(to.endsWith("&then=" + encodeURIComponent(hash)), to);
+    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true);
+  });
+
+  test("saved scales with accented, CJK and emoji names move intact, once, and count UTF-8 bytes toward MOVE_CAP", async () => {
+    const names = ["\u00c9cho", "\u65e5\u672c\u8a9e\u306e\u97f3", "\ud83c\udfb5 Tune"];
+    const records = names.map(n => rec(n));
+    const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records });
+    const to = old.get("window.__replaced");
+    assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
+    const code = codeOf(to);
+    assert.deepStrictEqual(rowsOf(code).map(r => r.r.o.name), names);
+    assert.deepStrictEqual(envelopeAt(old.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), names);
+    const origin = createOrigin({});
+    const hash = `#move=${code}&then=`;
+    const first = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), names);
+    assert.match(first.get("moveNoticeEl.textContent"), /Your 3 saved scales moved here/);
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.strictEqual(envelopeAt(origin).entries.length, 3, "revisit adds no duplicates");
+    const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
+    const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
+    assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+  });
+
+  test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], cap: 10 });
+    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+    assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
   });
 
   test("the new host never forwards", async () => {
