@@ -10,7 +10,7 @@ diff --git a/index.html b/index.html
     the file's only border-top. The boundary it describes is .sheetbody's own
     edge, so that is where it belongs: moving a child across it cannot unhook it
     again. Pinned by "a hairline divides the pinned footer from the scroll". */
--.sheetbody{border-bottom:1px solid #332c22}
+-.sheetbody{border-bottom:1px solid #3a352d}
 +.sheetbody{}
  /* The pinned message slot between the scrollport and the primary. It reserves
     nothing: with no visible message it is out of flow and 0px tall with no

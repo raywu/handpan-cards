@@ -4986,7 +4986,7 @@ function run() {
     }
   });
 
-  test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
+  test("DR1 line 38: each drawer control shows the global 2px teal #44e0d8 focus ring from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
       await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
@@ -4994,7 +4994,7 @@ function run() {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
           return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
-        assert.deepStrictEqual(o, { w: "2px", c: "rgb(227, 178, 92)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
+        assert.deepStrictEqual(o, { w: "2px", c: "rgb(68, 224, 216)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5213,7 +5213,7 @@ function run() {
       assert.ok(st.name.length > 0, "the Name field is empty");
       assert.strictEqual(st.primary, "SAVE CHANGES");
       assert.strictEqual(st.del, "DELETE THIS SCALE");
-      assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
+      assert.strictEqual(st.delColor, "rgb(169, 163, 154)", "the delete link is not #a9a39a");
       assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
       assert.ok(st.body.sw <= st.body.cw + 1,
@@ -5540,8 +5540,8 @@ function run() {
       assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
         "the armed delete button keeps its amber under the thumb - the press that "
         + "destroys the deck is the one control on the page that does not answer");
-      assert.strictEqual(held.color, "rgb(234, 230, 223)",
-        "the armed delete button presses to something other than #eae6df, which is "
+      assert.strictEqual(held.color, "rgb(246, 244, 237)",
+        "the armed delete button presses to something other than #f6f4ed, which is "
         + "the pressed colour every other control on this page uses");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the held press was released" });
@@ -7058,7 +7058,7 @@ function run() {
       assert.strictEqual(m.msgParent, "scale-guidance");
       assert.strictEqual(m.noteParent, "scale-guidance");
       assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
-      assert.strictEqual(m.noteColor, "rgb(196, 188, 171)", "N-A9: the notice is not the sheet's neutral #c4bcab inside the slot");
+      assert.strictEqual(m.noteColor, "rgb(169, 163, 154)", "N-A9: the notice is not the sheet's neutral #a9a39a inside the slot");
       assert.strictEqual(m.warnColor, "rgb(227, 178, 92)", "N-A9: #scale-msg.warn is not amber #e3b25c");
       assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
       assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
@@ -8583,7 +8583,7 @@ function run() {
       }
     });
 
-    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px cream underline on the selected one, 44px tall`, async () => {
+    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px teal underline on the selected one, 44px tall`, async () => {
       try {
         await freshLoad();
         await b.setViewport(vw, vh, true);
@@ -8600,10 +8600,10 @@ function run() {
         assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
         assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
         assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
-        const cream = "rgb(241, 236, 225)";
-        const underlined = (t) => (t.bw === "2px" && t.bc === cream) || (t.afH === "2px" && t.afBg === cream);
-        assert.ok(underlined(sel), `the selected tab has no 2px cream underline: ${JSON.stringify(sel)}`);
-        assert.ok(!underlined(other), "the unselected tab is underlined in cream");
+        const teal = "rgb(68, 224, 216)";
+        const underlined = (t) => (t.bw === "2px" && t.bc === teal) || (t.afH === "2px" && t.afBg === teal);
+        assert.ok(underlined(sel), `the selected tab has no 2px teal underline: ${JSON.stringify(sel)}`);
+        assert.ok(!underlined(other), "the unselected tab is underlined in teal");
         assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
         assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
       } finally {
@@ -8941,8 +8941,8 @@ function run() {
       [1280, 800, "desktop"],
     ];
 
-    const TABLE = [26, 24, 21];   // #1a1815
-    const TABLE2 = [38, 34, 28];  // #26221c
+    const TABLE = [15, 14, 11];   // #0f0e0b
+    const TABLE2 = [15, 14, 11];  // #0f0e0b
     const FRAME = 4;              // outer pixel frame width to sample
 
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
@@ -9059,7 +9059,7 @@ function run() {
       await freshLoad();
       const bg = await b.eval(
         `return getComputedStyle(document.documentElement).backgroundColor;`);
-      assert.strictEqual(bg, "rgb(26, 24, 21)");
+      assert.strictEqual(bg, "rgb(15, 14, 11)");
     });
 
     test("under print media, html computes to a white background", async () => {
@@ -10720,7 +10720,7 @@ function run() {
           }
           const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
             const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
-          assert.deepStrictEqual(ring, ["2px", "rgb(227, 178, 92)", "solid"], `${w}x${h}: global focus ring`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(68, 224, 216)", "solid"], `${w}x${h}: global focus ring`);
         }
       } finally { await b.setViewport(900, 900, false); }
     });
@@ -11225,8 +11225,8 @@ function run() {
         assert.ok(m.fontSize >= 18, `${deckId}: #count font-size is ${m.fontSize}px, needs >= 18px`);
         assert.strictEqual(m.textAlign, "center", `${deckId}: #count text-align is "${m.textAlign}"`);
         assert.ok(m.color, `${deckId}: the rail's current chord <b> was not found`);
-        const ratio = contrastRatio(m.color, [0x1a, 0x18, 0x15]);
-        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #1a1815, needs ${AA_NORMAL}`);
+        const ratio = contrastRatio(m.color, [0x0f, 0x0e, 0x0b]);
+        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #0f0e0b, needs ${AA_NORMAL}`);
         assert.ok(m.decorationLine.includes("underline"), `${deckId}: rail current chord lost its underline`);
         assert.deepStrictEqual(m.decorationColor, hexToRgb(m.root),
           `${deckId}: underline colour must be the deck's root colour`);

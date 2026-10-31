@@ -1048,14 +1048,14 @@ class SharedBrownHeadTest(unittest.TestCase):
         css = read("index.html")
         about = css[css.index("#about{position:fixed"):css.index("html.about-open{")]
         self.assertNotIn("#1f1b15", about)
-        self.assertIn("background:#1a1815", about)
-        self.assertRegex(about, r"\.abouthead\{[^}]*background:#1a1815")
-        self.assertRegex(about, r"color:#eae6df; font:400 16px/1\.55 \"Nunito Sans\"")
+        self.assertIn("background:#0f0e0b", about)
+        self.assertRegex(about, r"\.abouthead\{[^}]*background:#0f0e0b")
+        self.assertRegex(about, r"color:#f6f4ed; font:400 16px/1\.55 \"Nunito Sans\"")
         self.assertRegex(about, r'#about h2\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
-        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#e3b25c')
+        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#f6f4ed')
         self.assertNotIn("text-transform:uppercase", about)
-        self.assertRegex(about, r"#about h4\{[^}]*color:#c4bcab")
-        self.assertRegex(about, r"#about a\{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
+        self.assertRegex(about, r"#about h4\{[^}]*color:#a9a39a")
+        self.assertRegex(about, r"#about a\{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
         self.assertIn("calc((100% - 520px) / 2)", about)
 
     def test_every_primary_passes_contrast_on_the_brown(self):
