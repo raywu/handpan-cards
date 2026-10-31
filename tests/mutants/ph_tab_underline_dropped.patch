@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
    color:#a9a39a; font:600 10.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase; cursor:pointer}
  #scale-tabs [role=tab].on{color:#f6f4ed}
  #scale-tabs [role=tab]::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:transparent}
--#scale-tabs [role=tab].on::after{background:#f6f4ed}
+-#scale-tabs [role=tab].on::after{background:#44e0d8}
  #scale-sheet.kbup.side #scale-tabs{display:none}
  #scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0;
    padding-bottom:calc(var(--lip-over) + var(--sp-2))}

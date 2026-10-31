@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1045,13 +1045,13 @@ footer.seq{row-gap:var(--sp-1)}
+@@ -1109,13 +1109,13 @@ footer.seq{row-gap:var(--sp-1)}
     A target that IS the element has neither failure mode, at any alignment.
     The dot keeps its 14px spec; the visible gap widens to 30px, which is the
     pitch 44px targets require. */
@@ -26,6 +26,6 @@ diff --git a/index.html b/index.html
 +#scale-swatches .dot::after{content:""; position:absolute; left:50%; top:50%;
 +  width:44px; height:44px; transform:translate(-50%,-50%)}
 +#scale-swatches .dot.sel{box-shadow:0 0 0 2px #f6f4ed}
- #scale-generate, #scale-next{width:100%; min-height:52px; border-radius:10px; cursor:pointer;
+ #scale-generate, #scale-next{width:100%; min-height:52px; border-radius:12px; cursor:pointer;
    border:1px solid #f6f4ed; background:#f6f4ed; color:#0f0e0b;
    font:600 11.5px/1 "Nunito Sans"; letter-spacing:.12em}
