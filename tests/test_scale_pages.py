@@ -877,6 +877,7 @@ class ContrastTest(unittest.TestCase):
                 self.assertIn("left:50%", rule)
                 self.assertIn("transform:translateX(-50%)", rule)
                 self.assertIn("top:-12px", rule)
+                self.assertIn("border-radius:12px", rule)
 
     def test_the_light_text_and_focus_tokens_meet_contrast_on_the_light_ground(self):
         for slug in ROWS:
