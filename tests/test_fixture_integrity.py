@@ -170,6 +170,8 @@ class TestMakerStrings(unittest.TestCase):
 
 
 # ---- Neotone (paired-area profile), lane T ---------------------------------
+# paired_profile_v1.json below is SUPERSEDED by paired_profile_v2.json (Option B,
+# lane T2). It stays, pinned, because a change is a new rev; no engine code reads it.
 # docs/plans/2026-10-30-neotone-build.md, "Frozen profile fixture". The fixture
 # is written once by hand and is never derived from the implementation; the
 # sha256 below is the reviewer-visible pin. A change is a new rev, before merge
@@ -179,7 +181,9 @@ FIXTURES = os.path.join(ROOT, "tests", "fixtures")
 PROFILE_FIXTURE = os.path.join(FIXTURES, "paired_profile_v1.json")
 SHIPPED_CLIENT = os.path.join(FIXTURES, "shipped_client_ee5438d0.html.txt")
 SPEC_PATH = os.path.join(ROOT, "docs", "ENGINE-SPEC.md")
-PLAN_PATH = os.path.join(ROOT, "docs", "plans", "2026-10-30-neotone-build.md")
+PLAN_PATH = os.path.join(ROOT, "docs", "plans", "2026-10-30-neotone-option-b.md")
+PROFILE_V2_FIXTURE = os.path.join(FIXTURES, "paired_profile_v2.json")
+FONTS = os.path.join(ROOT, "tools", "fonts")
 
 EXPECTED_PROFILE_SHA256 = "ebcffe2fa4283191cd0f83a821aa814fa62fb9b29f102050a6856560f97c57fc"
 EXPECTED_SHIPPED_CLIENT_SHA256 = "112bae85da8601f969b6ed1af2259f1e7ae5a6ba9c1d6a2fbd70abbe7796514c"
@@ -288,6 +292,156 @@ class TestPairedProfileFixture(unittest.TestCase):
         self.assertGreaterEqual(ding * OCTAVE_RATIO, FLOOR_PT)
 
 
+EXPECTED_PROFILE_V2_SHA256 = "a0a182b70451d984108d1e1b9895e1380c90543d8b09d8681ee275b4992ed373"
+
+V2 = {
+    "id": "paired", "rev": 2, "tonefields": 9,
+    "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
+    "main": {"orbit": 0.745, "r": 0.19},
+    "mutant": {"depth": 0.5, "r": 0.19},
+    "ding": {"r": 0.2, "dy": 0},
+    "n_in": 0.085, "number_out": 1.0758, "extent_margin": 0.06,
+    "slots": ["p%d" % i for i in range(1, 10)] + ["s%d" % i for i in range(1, 10)]}
+MAIN_BAND, LENS_BAND, OUTLINE = 0.046, 0.024, 0.012
+
+
+def load_v2():
+    with open(PROFILE_V2_FIXTURE, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def lens_geometry(p):
+    """Frozen design: lens = circle of radius mutant.r on the main radial line,
+    depth = 2 x main.r x mutant.depth, centre at orbit - (2r - depth)."""
+    r = p["main"]["r"]
+    depth = 2 * r * p["mutant"]["depth"]
+    return {"depth": depth, "centre": p["main"]["orbit"] - (2 * r - depth)}
+
+
+def v2_print_radius(p):
+    num = NUM_RATIO * p["main"]["r"]
+    reach = max(p["number_out"] + num / 2, p["ding"]["r"])
+    return round(BAND_HALF / (reach + p["extent_margin"]), 1)
+
+
+def pol(radius, ang):
+    a = math.radians(ang)
+    return radius * math.cos(a), radius * math.sin(a)
+
+
+def rect_circle_gap(cx, cy, hw, hh, ox, oy, r):
+    dx = max(abs(ox - cx) - hw, 0.0)
+    dy = max(abs(oy - cy) - hh, 0.0)
+    return math.hypot(dx, dy) - r
+
+
+def fitted(name, octv, size, maxw):
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    if "V2Label" not in pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont("V2Label", os.path.join(FONTS, "NunitoSans-Regular.ttf")))
+    width = lambda s: (pdfmetrics.stringWidth(name, "V2Label", s)  # noqa: E731
+                       + pdfmetrics.stringWidth(str(octv), "V2Label", s * OCTAVE_RATIO))
+    while size > 2.5 and width(size) > maxw:
+        size -= 0.1
+    return size
+
+
+class TestPairedProfileV2Fixture(unittest.TestCase):
+    def test_exact_frozen_content(self):
+        self.assertEqual(load_v2(), V2)
+
+    def test_sha256_is_pinned(self):
+        with open(PROFILE_V2_FIXTURE, "rb") as fh:
+            self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_PROFILE_V2_SHA256,
+                             "the v2 profile is frozen. Change = rev 3 with a rev-2 reader.")
+
+    def test_v1_is_kept_pinned_and_superseded(self):
+        v1 = load_profile()
+        self.assertEqual(v1["rev"], 1)
+        with open(PROFILE_FIXTURE, "rb") as fh:
+            self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_PROFILE_SHA256)
+        with open(__file__, encoding="utf-8") as fh:
+            self.assertIn("SUPERSEDED by paired_profile_v2.json", fh.read())
+
+    def test_main_circles_disjoint_inside_pan_clear_of_ding(self):
+        p = load_v2()
+        o, r = p["main"]["orbit"], p["main"]["r"]
+        pts = [pol(o, a) for a in p["angles"]]
+        self.assertLess(o + r, 1.0)
+        self.assertGreater(o - r, p["ding"]["r"])
+        for i, a in enumerate(pts):
+            for b in pts[i + 1:]:
+                self.assertGreater(math.hypot(a[0] - b[0], a[1] - b[1]), 2 * r)
+
+    def test_each_lens_inside_its_main_circle_on_the_ding_side_at_frozen_depth(self):
+        p = load_v2()
+        o, r = p["main"]["orbit"], p["main"]["r"]
+        g = lens_geometry(p)
+        self.assertAlmostEqual(g["depth"], 2 * r * p["mutant"]["depth"])
+        self.assertAlmostEqual(g["centre"], o - (2 * r - g["depth"]))
+        self.assertLess(g["centre"], o, "lens centre must be on the ding side")
+        self.assertAlmostEqual(g["centre"] + p["mutant"]["r"] - (o - r), g["depth"],
+                               msg="lens spans `depth` radially from the main inner edge")
+        self.assertAlmostEqual(p["mutant"]["r"], r)
+        self.assertTrue(0.49 <= p["mutant"]["depth"] <= 0.50 or abs(p["mutant"]["depth"] - 1 / 3) < 1e-9)
+        self.assertLessEqual(g["centre"] + p["mutant"]["r"], o + r, "lens leaves its main circle")
+
+    def test_every_glyph_at_least_floor_at_print_radius(self):
+        """G1: fitted name, octave digit and M-number at the R the extent rule yields.
+        Fit = hifi.fit_note's rule (shrink until width <= 1.47 x r) with r the radius
+        of the largest circle inscribed in the drawn shape."""
+        p = load_v2()
+        R = v2_print_radius(p)
+        r = p["main"]["r"] * R
+        g = lens_geometry(p)
+        lens_ri = g["depth"] * R / 2
+        crescent_ri = (2 * p["main"]["r"] - g["depth"]) * R / 2
+        number = NUM_RATIO * r
+        self.assertGreaterEqual(number, FLOOR_PT, "M-number / main number")
+        for nm, oc in (("Bb", 3), ("C#", 3), ("Db", 4), ("Ab", 5), ("Eb", 5), ("F#", 4), ("G#", 3), ("D", 4)):
+            for label, zone_ratio, ri in (("lens", RATIO["bottom"], lens_ri),
+                                          ("crescent", RATIO["rim"], crescent_ri)):
+                size = fitted(nm, oc, r * zone_ratio, 1.47 * ri)
+                with self.subTest(glyph=label, note=nm + str(oc), R=R):
+                    self.assertGreaterEqual(size, FLOOR_PT, "%s name %.2f pt" % (label, size))
+                    self.assertGreaterEqual(size * OCTAVE_RATIO, FLOOR_PT,
+                                            "%s octave digit %.2f pt" % (label, size * OCTAVE_RATIO))
+        self.assertGreaterEqual(p["ding"]["r"] * R * RATIO["ding"] * OCTAVE_RATIO, FLOOR_PT)
+
+    def test_rule_sizes_name_exceeds_number(self):
+        p = load_v2()
+        r = p["main"]["r"]
+        for zone in ("rim", "bottom"):
+            self.assertGreater(r * RATIO[zone], r * NUM_RATIO)
+
+    def test_numbers_do_not_overlap_neighbouring_fields(self):
+        p = load_v2()
+        R = v2_print_radius(p)
+        o, r, ding = p["main"]["orbit"], p["main"]["r"], p["ding"]["r"]
+        size = NUM_RATIO * r
+        hh, hw = 0.705 * size / 2, 0.6 * size * 2 / 2
+        circles = [pol(o, a) for a in p["angles"]]
+        for k, ang in enumerate(p["angles"]):
+            mx, my = pol(o - r - p["n_in"], ang)
+            with self.subTest(number="M%d" % (k + 1)):
+                self.assertGreater(math.hypot(mx, my) - hw, ding)
+                for j, (ox, oy) in enumerate(circles):
+                    gap = rect_circle_gap(mx, my, hw, hh, ox, oy, r)
+                    self.assertGreater(gap, 0, "M%d number touches field %d" % (k + 1, j + 1))
+            nx, ny = pol(p["number_out"], ang)
+            self.assertGreater(math.hypot(nx, ny), 1.0, "main number must sit outside the pan")
+            for j, (ox, oy) in enumerate(circles):
+                self.assertGreater(rect_circle_gap(nx, ny, hw, hh, ox, oy, r), 0)
+        self.assertLessEqual(p["number_out"] + size / 2 + p["extent_margin"], BAND_HALF / R + 1e-9)
+
+    def test_frozen_stroke_widths_fit_inside_the_lens(self):
+        p = load_v2()
+        g = lens_geometry(p)
+        self.assertGreater(g["depth"], 2 * (LENS_BAND + OUTLINE))
+        self.assertGreater(2 * p["main"]["r"] - g["depth"], 2 * (MAIN_BAND + OUTLINE))
+
+
 class TestShippedClientFixture(unittest.TestCase):
     def test_is_verbatim_ee5438d0_index_html_and_pinned(self):
         with open(SHIPPED_CLIENT, "rb") as fh:
@@ -348,6 +502,9 @@ class TestEngineSpecProfileSection(unittest.TestCase):
                        "PROFILE_RECORD_VERSION = 5", "I1", "proposeProfile",
                        "geom.place", "`id,rev,map`", "NEEDS_NEWER_APP",
                        "BAD_NOTE", "tests/fixtures/paired_profile_v1.json",
+                       "tests/fixtures/paired_profile_v2.json", "tonefield",
+                       "mutant tonefield", "lens", "ring-strict", "unplaced",
+                       "pitch order", "rev 2", "M<n>",
                        "tests/fixtures/shipped_client_ee5438d0.html.txt"):
             with self.subTest(needle=needle):
                 self.assertIn(needle, self.section)
@@ -367,6 +524,13 @@ class TestPlanIsCommitted(unittest.TestCase):
             plan = fh.read()
         self.assertIn("Recorded harness command", plan)
         self.assertIn("python3 -m unittest tests.test_fixture_integrity", plan)
+
+    def test_plan_holds_the_exact_v2_fixture(self):
+        with open(PLAN_PATH, encoding="utf-8") as fh:
+            plan = fh.read()
+        with open(PROFILE_V2_FIXTURE, encoding="utf-8") as fh:
+            raw = fh.read().strip()
+        self.assertIn(raw, plan, "the plan's Frozen v2 fixture section must hold the exact JSON")
 
 
 if __name__ == "__main__":
