@@ -15890,8 +15890,18 @@ async function moveForward() {
   });
   const hidden = savedState.hidden.slice();
   if (!rows.length && !hidden.length) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
-  const code = moveEncode(JSON.stringify({ r: rows, h: hidden }));
-  if (code.length > MOVE_CAP) return false;
+  const encodeRows = n => moveEncode(JSON.stringify({ r: rows.slice(0, n), h: hidden }));
+  let carried = rows.length, code = encodeRows(carried);
+  if (code.length > MOVE_CAP) {
+    let lo = 0, hi = rows.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (encodeRows(mid).length <= MOVE_CAP) lo = mid; else hi = mid - 1;
+    }
+    carried = lo;
+    code = encodeRows(carried);
+    if (code.length > MOVE_CAP) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
+  }
   location.replace(MOVE_TARGET + "/" + location.search + "#move=" + code + "&then=" + encodeURIComponent(location.hash));
   return true;
 }
