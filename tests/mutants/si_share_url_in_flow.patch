@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
  #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;
 -  position:absolute; left:0; right:0; top:44px; z-index:29;
 +  position:static; left:0; right:0; top:44px; z-index:29;
-   background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
+   background:#1a1814; border:1px solid #3a352d; border-radius:8px; color:#f6f4ed}
  #share-url[hidden]{display:none}
- #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
+ #settings-trigger[aria-expanded="true"]{background:#f6f4ed; color:#0f0e0b; border-color:#f6f4ed}

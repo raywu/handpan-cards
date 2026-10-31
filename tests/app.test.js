@@ -3891,7 +3891,7 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
   assert.ok(tableToken, "the --table token itself is missing");
   assert.strictEqual(themeColor[1].toLowerCase(), tableToken[1].toLowerCase(),
     "theme-color does not equal the --table token");
-  assert.strictEqual(themeColor[1].toLowerCase(), "#1a1815");
+  assert.strictEqual(themeColor[1].toLowerCase(), "#0f0e0b");
   assert.match(html, /<meta\s+name="color-scheme"\s+content="dark">/,
     "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
 });
@@ -4099,7 +4099,7 @@ test("the re-roll control reads as a button in mode S and reverts outside it", a
   app.run('setMode("A")');
   assert.ok(!app.els.shuffle.classList.contains("reroll"), "leaving S must drop .reroll");
   const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
-  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #433b2c/,
+  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #3a352d/,
     ".reroll must borrow button.nav's border so it reads as a button");
   assert.match(html, /\.shuffle\.reroll:active\{background:#2e281e\}/,
     ".reroll must press like button.nav:active, not only recolour its text");
@@ -10885,7 +10885,7 @@ describe("share icon", () => {
     assert.match(r, /font-size:16px/);
     assert.match(rule(c, "header") || "", /position:relative/);
     assert.match(rule(c, "#share-copy:disabled") || "", /opacity:\.5/);
-    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
+    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#1a1814/);
   });
 
   test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {

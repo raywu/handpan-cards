@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -898,7 +898,6 @@ footer.seq{row-gap:var(--sp-1)}
-    plate dims, not the SVG inside it: an undimmed #f1ece1 plate on a #1f1b15 sheet is the
+    plate dims, not the SVG inside it: an undimmed #f6f4ed plate on a #1a1814 sheet is the
     loudest thing in the drawer. The held plate stops at .62 because the pan is role="img"
     content, so the rim ink has to keep its contrast. */
 -#scale-preview.stale{opacity:.62}
