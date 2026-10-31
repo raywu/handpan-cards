@@ -795,8 +795,6 @@ class SwipeScriptTest(unittest.TestCase):
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
         html = html.replace('<div class="hint">Tap to reveal the notes</div>', "")
         html = re.sub(r'<div class="nav">.*?</div></div>', '<div class="nav"></div></div>', html)
-        html = re.sub(r"\.prog\{(?:--g:[^;]*;)?display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--t\);outline-offset:2px\}",
-                      ".prog{}", html, flags=re.S)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 
     def test_js_off_markup_is_unchanged(self):
@@ -866,6 +864,33 @@ class ContrastTest(unittest.TestCase):
         self.assertGreaterEqual(ratio(light, BG_LIGHT), 4.5)
         self.assertLess(ratio(light, BG_LIGHT), 4.8)
         self.assertEqual(dark, "#E2761B")
+
+    def test_the_light_plate_is_capped_and_sits_inside_the_flow_gap(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            with self.subTest(page=slug):
+                self.assertIn("@media (prefers-color-scheme:light){.prog{isolation:isolate;--bg:#0f0e0b;", html)
+                m = re.search(r"\.prog::before\{([^}]*)\}", html)
+                self.assertTrue(m)
+                rule = m.group(1)
+                self.assertIn("width:min(calc(100% + 24px),372px)", rule)
+                self.assertIn("left:50%", rule)
+                self.assertIn("transform:translateX(-50%)", rule)
+                self.assertIn("top:-12px", rule)
+
+    def test_the_light_text_and_focus_tokens_meet_contrast_on_the_light_ground(self):
+        for slug in ROWS:
+            root = re.search(r":root\{color-scheme:light dark;([^}]*)\}", html_of(slug)).group(1)
+            tokens = dict(t.split(":") for t in root.split(";"))
+            with self.subTest(page=slug):
+                self.assertGreaterEqual(ratio(tokens["--muted"], tokens["--bg"]), 4.5)
+                self.assertGreaterEqual(ratio(tokens["--t"], tokens["--bg"]), 3)
+                self.assertGreaterEqual(ratio(tokens["--fg"], tokens["--bg"]), 7)
+
+    def test_the_theme_colour_is_the_rows_light_accent(self):
+        for slug, row in table().items():
+            with self.subTest(page=slug):
+                self.assertEqual(Page(html_of(slug)).meta("theme-color"), row["accent_light"])
 
     def test_cta_buttons_are_at_least_44px_and_dark_theme_overrides_exist(self):
         for slug in ROWS:
