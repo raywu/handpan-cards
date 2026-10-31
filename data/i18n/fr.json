@@ -283,5 +283,10 @@
   "saved.resetFailure": "Impossible de rétablir les gammes d’origine. Vérifiez-les et réessayez.",
   "saved.ackPending": "L’enregistrement est terminé, mais cette vue n’a pas pu être actualisée. Rechargez la page pour vérifier vos gammes enregistrées.",
   "saved.sessionAckPending": "L’enregistrement reste dans cet onglet uniquement et cette vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez votre brouillon. Recharger ou fermer l’onglet efface les modifications temporaires.",
-  "saved.sessionImportAckPending": "Cette gamme partagée est temporaire et sa vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez le lien reçu. Recharger ou fermer l’onglet efface les modifications temporaires."
+  "saved.sessionImportAckPending": "Cette gamme partagée est temporaire et sa vue n’a pas pu être actualisée. Gardez cet onglet ouvert et conservez le lien reçu. Recharger ou fermer l’onglet efface les modifications temporaires.",
+  "move.notice": {
+    "one": "Votre gamme enregistrée a déménagé ici.",
+    "other": "Vos {n} gammes enregistrées ont déménagé ici."
+  },
+  "move.failed": "Vos gammes enregistrées sont toujours à l'ancienne adresse. Rouvrez l'ancienne adresse pour les déplacer."
 }

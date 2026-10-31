@@ -283,5 +283,10 @@
   "saved.resetFailure": "No se pudieron restablecer las escalas iniciales. Revísalas e inténtalo de nuevo.",
   "saved.ackPending": "Se ha completado el guardado, pero no se pudo actualizar esta vista. Recarga la página para revisar tus escalas guardadas.",
   "saved.sessionAckPending": "El guardado es solo para esta pestaña y no se pudo actualizar la vista. Mantén la pestaña abierta y conserva tu borrador. Recargarla o cerrarla borra los cambios temporales.",
-  "saved.sessionImportAckPending": "Esta escala compartida es temporal y no se pudo actualizar su vista. Mantén la pestaña abierta y conserva el enlace recibido. Recargarla o cerrarla borra los cambios temporales."
+  "saved.sessionImportAckPending": "Esta escala compartida es temporal y no se pudo actualizar su vista. Mantén la pestaña abierta y conserva el enlace recibido. Recargarla o cerrarla borra los cambios temporales.",
+  "move.notice": {
+    "one": "Tu escala guardada se ha mudado aquí.",
+    "other": "Tus {n} escalas guardadas se han mudado aquí."
+  },
+  "move.failed": "Tus escalas guardadas siguen en la dirección anterior. Abre de nuevo la dirección anterior para moverlas."
 }
