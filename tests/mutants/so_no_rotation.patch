@@ -12,4 +12,4 @@ diff --git a/src/engine/layout.js b/src/engine/layout.js
 +    for (i = 0; i < n; i += 1) fields[ids[P[i].i]][5] = H[i].label;
    }
  
-   function solve(seedOrFields, options) {
+   /* ---- the paired-area profile (ENGINE-SPEC 18) -------------------------- *

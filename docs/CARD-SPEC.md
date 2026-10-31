@@ -63,8 +63,13 @@ exactly where its diagram has it.
 - One direction: odd rim notes right, even left. `anchor: one` (default) puts
   note 1 at bottom centre; `anchor: between` (Pygmy) puts bottom centre between
   notes 1 and 2, note 1 on the right. "left-first"/"right-first" are retired words.
-- MIRROR reflects rim and inner rings and is the only thing that puts odd notes
-  on the left; `mirrorBottom` reflects the bottom ring and defaults to `mirror`.
+- MIRROR reflects the NOTES of the rim and inner rings; `mirrorBottom` does the
+  same for the bottom ring and defaults to `mirror`. Index numbers never move:
+  each position keeps its unmirrored number and the note mirrored into it takes
+  that number on the diagram, the number line and the drawer (owner 2026-10-30;
+  rule N extended). Under `options.angles` MIRROR BOTTOM moves only the notes
+  whose entry is null (to their mirrored solved angle); explicitly placed notes
+  stay, and every number stays at its angle.
 - Inner notes (after the inner bar): one at top centre, two at 128 and 52, more
   fan across the top half; they push the ding toward the player by at least
   0.1425R, raised step by step while an inner index number would touch the ding

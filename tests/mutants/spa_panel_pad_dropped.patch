@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1103,7 +1103,7 @@ footer.seq{row-gap:var(--sp-1)}
- #scale-tabs [role=tab].on::after{background:#f1ece1}
+@@ -1167,7 +1167,7 @@ footer.seq{row-gap:var(--sp-1)}
+ #scale-tabs [role=tab].on::after{background:#44e0d8}
  #scale-sheet.kbup.side #scale-tabs{display:none}
  #scale-panel-scale, #scale-panel-layout{display:flex; flex-direction:column; gap:var(--sp-3); min-width:0;
 -  padding-bottom:calc(var(--lip-over) + var(--sp-2))}
 +  padding-bottom:0}
  #scale-panel-scale[hidden], #scale-panel-layout[hidden]{display:none}
  #scale-or{display:flex; align-items:center; gap:var(--sp-3)}
- #scale-or::before, #scale-or::after{content:""; flex:1 1 0; height:1px; background:#433b2c}
+ #scale-or::before, #scale-or::after{content:""; flex:1 1 0; height:1px; background:#3a352d}
