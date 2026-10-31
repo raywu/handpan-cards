@@ -312,7 +312,7 @@ a.mode{text-decoration:none}
 #settings-panel .mode{text-align:center}
 #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;
   position:absolute; left:0; right:0; top:44px; z-index:29;
-  background:#1a1814; border:1px solid #3a352d; border-radius:8px; color:#f6f4ed}
+  background:#1a1814; border:1px solid #3a352d; border-radius:12px; color:#f6f4ed}
 #share-url[hidden]{display:none}
 #settings-trigger[aria-expanded="true"]{background:#221f1a; color:#f6f4ed; border-color:#a9a39a}
 .sr-only{position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0;
@@ -448,8 +448,8 @@ a.mode{text-decoration:none}
        samples a thin band at every edge of the viewport and expects it
        table-coloured on every deck, desktop included. A flush top:0/bottom:0
        would paint the panel's own #3a352d border-left straight across that
-       band at y=0 and y=h-1. Right stays flush - the panel's own #1a1814
-       background there is already close enough to --table to pass the same
+       band at y=0 and y=h-1. Right stays flush - the panel's own #0f0e0b
+       background there is --table itself, so that edge passes the same
        check, and it is that one edge (right) the design puts the sidebar on. */
     display:flex; position:fixed; top:var(--sp-1); right:0; bottom:var(--sp-1); left:auto;
     align-items:stretch;
