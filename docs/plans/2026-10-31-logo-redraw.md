@@ -1,7 +1,17 @@
 # Plan: redraw the Handpan Theory mark to match the brand board
 
-Status: PLAN, awaiting owner approval. Nothing shipped: `docs/brand/logo/`
-is unchanged. Prompt: `docs/prompts/2026-10-31-logo-redraw-plan.md`.
+Status: DONE 2026-10-31. The owner approved the plan with every default
+below; `docs/brand/logo/` is regenerated from the measured geometry and
+`python3 docs/brand/redraw/check_mark.py` passes (worst landmark 0.6% of W,
+bright-stroke F1 0.934, pan F1 0.944, rings F1 0.783). Prompt:
+`docs/prompts/2026-10-31-logo-redraw-plan.md`.
+
+What shipped differs from the steps below in one place: `mark-small` was
+checked at 16-64px and needed more than step 7 says. It uses strokes x3.2
+(not x2.2), dots x1.6, field dots of 6 U, and drops the top shell's front
+edge, which merges with the bottom shell at icon sizes. It reads from 24px;
+at 16px every version smudges, so the favicon size is left to the rebrand
+plan.
 
 ## Result in one line
 
@@ -152,7 +162,7 @@ All in `docs/brand/make_logo.py`; no SVG is edited by hand.
 Effort: steps 1-6 are a port of `candidates.py` into the generator (about
 an hour); 7-10 about another hour including review renders.
 
-## Open questions (default in bold)
+## Owner decisions (2026-10-31: all defaults, shown in bold)
 
 1. The mock's right half of the pan is crossed by the orbit and is
    ambiguous; draw the pan **symmetric**, or follow the raster's slight
