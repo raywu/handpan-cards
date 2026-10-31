@@ -232,7 +232,7 @@
   "sheet.seat_is_now": "{name} 的编号改为 {label}",
   "sheet.list_and": "{rest} 和 {last}",
   "sheet.mirror_reflow": " 放好的音保持原位，位置编号改为反向排列。",
-  "sheet.mirror_keeps_numbers": "放好的音保持原位，其余的音换到另一侧。编号保持原位。",
+  "sheet.mirror_keeps_numbers": "所有的音（包括放好的音）都换到另一侧。编号跟着位置走。",
   "sheet.seat_stays": " 位置 {label} 的编号不变。",
   "sheet.cannot_trade": "未移动。{a} 和 {b} 无法在每隔 {step}° 的位置间交换。",
   "sheet.pick_bottom_one": "已选中 {name}。沿圈拖动即可移动。",

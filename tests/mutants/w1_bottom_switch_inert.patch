@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14132,7 +14132,7 @@ mirrorBot.onclick = () => {
+@@ -14355,7 +14355,7 @@ mirrorBot.onclick = () => {
+   const was = bottomLabels();
    const before = layoutAngles;
-   const held = holdBeforeMirror();
-   if (held) layoutAngles = { bottom: held };
+   if (layoutAngles) layoutAngles = HPE.layout.reflectAngles(layoutAngles);
 -  bottomHeld = !bottomHeld;
 +  bottomHeld = bottomHeld;
    if (!toggleFits()) { bottomHeld = !bottomHeld; layoutAngles = before; layoutStatus(TOGGLE_REFUSED(), true); return; }
-   if (layoutAngles) releaseRedundantPins(layoutAngles.bottom);
    paintLayout(); resyncSheet(true);
+   let text = t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off");

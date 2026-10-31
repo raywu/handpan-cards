@@ -913,11 +913,18 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   so the odd numbers stay on the right and each note takes the number of the
   position it lands on (owner 2026-10-30). `mirrorBottom` (boolean) does the
   same for the bottom ring and, when absent, follows `mirror`; with no bottom
-  notes it is false. `solve` itself is unchanged under `angles`: it reflects every null-entry note. The sheet's toggle
-  applies rule S first through `layout.holdForMirror(seed, preFlipOptions)` (pure; returns `{bottom: list}` with
-  each null entry whose mirror partner is explicit set to its drawn angle, or `null` with no angles or on
-  a refused solve), so no number moves (tests "MN2: holdForMirror on Pygmy [270,null x5] holds Db3 at 240",
-  "MN2: holdForMirror with the post-flip mirror gives a different list than with the pre-flip mirror").
+  notes it is false. `solve` itself is unchanged under `angles`: it reflects every null-entry
+  note and draws every explicit entry at the angle it names. The sheet's toggle
+  reflects the explicit entries too through `HPE.layout.reflectAngles(angles)`
+  (pure; each explicit `a` becomes `norm(180 - a)`, null stays null, it is its own
+  inverse; owner 2026-10-31), so every note swaps sides and numbers stay with
+  positions (rule N cyclic match against the unmirrored home). MN2's rule S
+  (`holdForMirror`, hold the orphans) is SUPERSEDED and removed. Records and links
+  need no conversion: `angles` always meant the drawn angle in its own frame, so
+  RECORD_VERSION and the wire VERSION do not change. Tests: "MN3: reflectAngles
+  reflects explicit entries across the vertical axis, keeps null, and is its own
+  inverse", "MN3: Pygmy C3 slid 300 -> 285 ...", "MN3 release safety ..." and the
+  2..8-ring sweep.
   `layout.resolveMirrors` is the one place the two are resolved.
 - DECIDED(owner 2026-10) `anchor` is `"one"` (default: note 1 at bottom centre)
   or `"between"` (bottom centre between notes 1 and 2, note 1 on the right).
