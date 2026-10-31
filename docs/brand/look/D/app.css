@@ -1,0 +1,51 @@
+/* Direction D - "the measured stage".
+   The ground under the card is the warm black that measure.py ranks best for
+   the 10 frames (#080706: 9/10 >= 3:1, worst purple 2.79, white card 20:1).
+   The chrome (header band, sidebar, sheets) is one step up, brand surface
+   #1A1814 - it never sits next to a card, so its weaker frame numbers do not
+   matter. Chips sit on the stage colour so their dots get the stage numbers. */
+:root{
+  --table:#080706; --table2:#080706;            /* stage: flat, no radial lift */
+  --d-surface:#1A1814; --d-hair:#3A352D;
+  --d-text:#F6F4ED; --d-text2:#A9A39A; --d-teal:#44E0D8; --d-gold:#F5C78E;
+}
+html{background-color:#080706}
+body{background:#080706; color:var(--d-text)}
+
+/* header band: full-bleed surface strip behind lockup + chips */
+header{background:var(--d-surface); box-shadow:0 0 0 100vmax var(--d-surface); clip-path:inset(-100px -100vmax 0 -100vmax);
+  border-bottom:1px solid var(--d-hair); padding-bottom:var(--sp-3); margin-bottom:var(--sp-4)}
+.hrow{grid-template-rows:64px}
+/* lockup: text kept for SEO, painted as the full-colour horizontal lockup (dark ground) */
+h1{height:64px; font-size:0; color:transparent; overflow:hidden;
+   background:url(/_look/logo/horizontal-full.svg) center/contain no-repeat}
+
+/* buttons: surface squares, hairline, primary text */
+.mode, .nav{background:var(--d-surface); border:1px solid var(--d-hair); color:var(--d-text);
+  border-radius:8px}
+.mode.on, #settings-trigger[aria-expanded="true"]{background:var(--d-text); color:#0F0E0B; border-color:var(--d-text)}
+.mode:focus-visible, .nav:focus-visible, .chip:focus-visible{outline:2px solid var(--d-teal); outline-offset:2px}
+
+/* chips: stage-coloured pills inside the band, hairline edge */
+.chip{background:#080706; border:1px solid var(--d-hair); color:var(--d-text2)}
+.chip.on{color:var(--d-text); background:#080706}
+.chip:active{background:#14120f}
+
+/* footer text */
+.count{color:var(--d-text)}
+.shuffle{color:var(--d-text2)}
+
+/* sheets, settings, About: chrome surface, never the stage */
+#settings-panel, .sheetsurf{background:var(--d-surface)}
+@media (min-width:1024px) and (min-height:700px){
+  #settings-panel{border-left:1px solid var(--d-hair)}
+}
+#about{background:var(--d-surface); color:var(--d-text)}
+#about h2{color:var(--d-text)}
+#about h3{color:var(--d-gold)}
+#about h4{color:var(--d-text2)}
+#about a{color:var(--d-text); text-decoration-color:var(--d-teal)}
+
+/* settings controls that are not .mode (PDF, letter, language) */
+#settings-panel button, #settings-panel select, #settings-panel a{background-color:#0F0E0B; border-color:var(--d-hair)}
+#settings-panel .mode.on{background:var(--d-text)}
