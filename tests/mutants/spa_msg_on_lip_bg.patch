@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
  #scale-sheet.lipped #scale-delete-row{margin-top:var(--lip-gd, 0px)}
  #scale-sheet.lipshut #scale-footslide{transform:translateY(var(--lip-h, 0px)); visibility:hidden;
    transition:transform 180ms var(--lip-ease), visibility 0s linear 180ms}
--#scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1f1b15;
+-#scale-sheet.lipped #scale-guidance{position:relative; z-index:1; background:#1a1814;
 +#scale-sheet.lipped #scale-guidance{position:relative; z-index:1;
    transform:translateY(var(--lip-g, 0px)); transition:transform 180ms var(--lip-ease)}
  #scale-sheet.lipshut #scale-guidance{transform:none}

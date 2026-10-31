@@ -18,10 +18,10 @@ diff --git a/index.html b/index.html
     visual change, accepted as the price of the target. */
  .shuffle{grid-row:2; justify-self:center; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
 +  position:relative;
-   justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
+   justify-content:center; background:none; border:none; color:#a9a39a; cursor:pointer;
    font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
 +/* the whole footer strip should toggle shuffle, not just the 95px label */
 +.shuffle::after{content:""; position:absolute; top:0; height:44px; left:-200px; right:-200px}
- .shuffle.on{color:#f1ece1}
+ .shuffle.on{color:#f6f4ed}
  /* Mode S: the same control re-rolls the progression, an action rather than a
     toggle, so it borrows button.nav's frame to read as a button - and (D-icon,

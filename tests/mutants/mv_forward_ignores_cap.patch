@@ -1,0 +1,14 @@
+# kills: a payload over MOVE_CAP does not forward and the app boots
+# suite: node --test --test-name-pattern=a.payload.over.MOVE_CAP.does.not.forward.and.the.app.boots tests/app.test.js
+# fault: Drop the MOVE_CAP check so an oversized payload still forwards to the new host.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15830,7 +15830,6 @@
+   const hidden = savedState.hidden.slice();
+   if (!rows.length && !hidden.length) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
+   const code = moveEncode(JSON.stringify({ r: rows, h: hidden }));
+-  if (code.length > MOVE_CAP) return false;
+   location.replace(MOVE_TARGET + "/" + location.search + "#move=" + code + "&then=" + encodeURIComponent(location.hash));
+   return true;
+ }

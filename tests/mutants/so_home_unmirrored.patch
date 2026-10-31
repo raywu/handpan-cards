@@ -1,15 +1,15 @@
-# kills: SO: under MIRROR BOTTOM the swap labels against the mirrored home: Db3 at 120 reads U5 and Db4 at 300 reads U2
-# suite: node --test --test-name-pattern ^SO..under.MIRROR.BOTTOM.the.swap.labels.against.the.mirrored.home..Db3.at.120.reads.U5.and.Db4.at.300.reads.U2$ tests/layout.test.js
-# The home seats ignore MIRROR BOTTOM.
+# kills: SO: under MIRROR BOTTOM the swap labels against the unmirrored home: Db3 at 120 reads U6 and Db4 at 300 reads U1
+# suite: node --test --test-name-pattern ^SO..under.MIRROR.BOTTOM.the.swap.labels.against.the.unmirrored.home..Db3.at.120.reads.U6.and.Db4.at.300.reads.U1$ tests/layout.test.js
+# The home seats follow MIRROR BOTTOM instead of staying unmirrored.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -635,7 +635,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -664,7 +664,7 @@
        if (Object.prototype.hasOwnProperty.call(seats.value, key)) out[key] = seats.value[key];
      }
      out.angles = effective;
--    out.home = home.bottoms;
-+    out.home = placeZones(counts, mirrors.top, !mirrors.bottom, anchor).bottoms;
+-    out.home = plainHome.bottoms;
++    out.home = home.bottoms;
      return { ok: true, value: out };
    }
  

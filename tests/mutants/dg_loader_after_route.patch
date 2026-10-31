@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15193,3 +15193,2 @@ window.addEventListener("hashchange", async () => {
+@@ -15874,3 +15874,2 @@
  /* ---------------- go ---------------- */
--loadAnalytics();
+-if (!MOVE_ON_OLD) loadAnalytics();
  sheet.setAttribute("hidden", "");buildSwatches();paintLayout();resyncSheet(true);
-@@ -15224,2 +15223,3 @@ function finishSavedBoot() {
+@@ -15907,2 +15906,3 @@
    finish();
 +  loadAnalytics();
  }

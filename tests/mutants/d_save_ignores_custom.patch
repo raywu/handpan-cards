@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10623,7 +10623,7 @@ function applySavedCommand(staged, command, candidate) {
+@@ -11007,7 +11007,7 @@ function applySavedCommand(staged, command, candidate) {
    } else if (command.type === "prefer") {
      const resolved = savedResolve(command.selection, next, views);
      if (!savedEqual(command.selection, resolved)) return conflict();
 -    desired = resolved;
 +    desired = resolved.kind === "saved" ? {kind:"builtin",id:DEFAULT_DECK} : resolved;
-   } else return savedFailure("invalid", "command-type");
-   if (desired) next.preferredSelection = desired;
-   else next.preferredSelection = savedResolve(next.preferredSelection, next, views);
+   } else if (command.type === "move-import") {
+     const known = new Set(Array.isArray(current.importedIds) ? current.importedIds : []), knownBefore = known.size;
+     const have = new Set(staged.meanings.values()), identities = new Map(staged.identities);
