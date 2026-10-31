@@ -232,7 +232,7 @@
   "sheet.seat_is_now": "{name}の位置番号：{label}",
   "sheet.list_and": "{rest}、{last}",
   "sheet.mirror_reflow": " 配置したノートはそのままで、位置番号が逆回りになりました。",
-  "sheet.mirror_keeps_numbers": "配置したノートはそのままで、ほかのノートは反対側に移ります。番号は元の位置のままです。",
+  "sheet.mirror_keeps_numbers": "配置したノートも含め、すべてのノートが反対側に移ります。番号は位置に付いたままです。",
   "sheet.seat_stays": " 位置{label}の番号はそのままです。",
   "sheet.cannot_trade": "移動しませんでした。{a}と{b}は{step}°刻みの位置では入れ替えられません。",
   "sheet.pick_bottom_one": "{name}を選択しました。リングに沿ってドラッグすると動かせます。",

@@ -237,7 +237,7 @@
   "sheet.seat_is_now": "{name} ahora ocupa la posición {label}",
   "sheet.list_and": "{rest} y {last}",
   "sheet.mirror_reflow": " Las notas colocadas no se mueven, pero sus posiciones ahora se numeran en sentido contrario.",
-  "sheet.mirror_keeps_numbers": "Las notas colocadas no se mueven; las demás cambian de lado. Los números se quedan donde están.",
+  "sheet.mirror_keeps_numbers": "Todas las notas cambian de lado, también las que colocaste. Los números se quedan en su sitio.",
   "sheet.seat_stays": " La posición {label} conserva su número.",
   "sheet.cannot_trade": "No se movieron. {a} y {b} no pueden intercambiar posiciones en los pasos de {step}°.",
   "sheet.pick_bottom_one": "{name} seleccionada. Arrástrala por el anillo para moverla.",

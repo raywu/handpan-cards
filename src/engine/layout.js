@@ -832,33 +832,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       partnersOf(counts, mirrors.top, mirrors.bottom, anchor)) } };
   }
 
-  /* Rule S (owner 2026-10-31): before MIRROR BOTTOM flips a ring that carries
-   * hand-placed notes, every note whose own entry is null and whose mirror
-   * partner's entry is not is pinned at the angle it is drawn at. `options`
-   * are the PRE-flip solve options. Returns the held bottom list, or null when
-   * there are no angles or the solve is refused. */
-  function holdForMirror(seedOrFields, options) {
-    var seedOptions = (seedOrFields && seedOrFields.options) || {};
-    var raw = (options && "angles" in options) ? options.angles : seedOptions.angles;
-    var zones = collect(fieldsOf(seedOrFields));
-    var read = readAngles(raw, countsOf(zones));
-    if (!read.ok || !read.value) return null;
-    var solved = solve(seedOrFields, options);
-    if (!solved.ok) return null;
-    var list = read.value.bottom;
-    var partner = mirrorPartner(bottomAngles(list.length), true);
-    var out = [];
-    for (var i = 0; i < list.length; i += 1) {
-      if (list[i] !== null) out.push(list[i]);
-      else if (list[partner[i]] !== null) out.push(solved.value.fields[zones.bottom[i]][4]);
-      else out.push(null);
-    }
-    return { bottom: out };
+  /* MN3 (owner 2026-10-31): MIRROR BOTTOM reflects every bottom note across
+   * the vertical axis, hand-placed ones included. An explicit entry `a` of
+   * `options.angles` becomes `norm(180 - a)`; a null entry stays null, because
+   * `solve` already reflects it. The toggle writes this list; `solve` itself
+   * is unchanged, so a stored `angles` keeps meaning "the drawn angle".
+   * Returns null when there is no list. A multiple of 5 stays one. */
+  function reflectAngles(angles) {
+    var list = angles && typeof angles === "object" ? angles.bottom : null;
+    if (!isArray(list)) return null;
+    return { bottom: list.map(function (a) { return a === null ? null : norm(180 - a); }) };
   }
 
   HPE.layout = {
     solve: solve,
-    holdForMirror: holdForMirror,
+    reflectAngles: reflectAngles,
     proposeProfile: proposeProfile,
     PROFILE: PROFILE,
     slotOrder: slotOrder,

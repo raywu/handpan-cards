@@ -237,7 +237,7 @@
   "sheet.seat_is_now": "{name} is now {label}",
   "sheet.list_and": "{rest} and {last}",
   "sheet.mirror_reflow": " The notes you placed stay put, and their seat numbers now run the other way round.",
-  "sheet.mirror_keeps_numbers": "The notes you placed stay put; the others swap sides. Numbers stay where they are.",
+  "sheet.mirror_keeps_numbers": "Every note swaps sides, the ones you placed too. Numbers stay with their places.",
   "sheet.seat_stays": " Seat {label} stays its number.",
   "sheet.cannot_trade": "Not moved. {a} and {b} cannot trade places on the {step}° steps.",
   "sheet.pick_bottom_one": "Picked up {name}. Drag it along the ring to move it.",
