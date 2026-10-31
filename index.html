@@ -15830,8 +15830,8 @@ window.addEventListener("hashchange", async () => {
 });
 
 /* ---------------- saved-scale handoff (switched off: both constants null) ---------------- */
-const MOVE_FROM = null;
-const MOVE_TARGET = null;
+const MOVE_FROM = "claude-move-e2e-from.handpan-cards-dev.pages.dev";
+const MOVE_TARGET = "https://claude-move-e2e-to.handpan-cards-dev.pages.dev";
 const MOVE_CAP = 20000;
 const MOVE_ARMED = MOVE_FROM !== null && MOVE_TARGET !== null;
 const MOVE_ON_OLD = MOVE_ARMED && location.hostname === MOVE_FROM;
