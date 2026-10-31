@@ -6,7 +6,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -1200,8 +1200,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #scale-preview .panhit:active{fill:rgba(226,112,5,.22)}
- #scale-fine-toggle{background:none; border:none; color:#a79d8b; cursor:pointer; align-self:flex-start;
+ #scale-fine-toggle{background:none; border:none; color:#a9a39a; cursor:pointer; align-self:flex-start;
    min-height:44px; padding:0 4px;
 -  font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase;
 -  text-decoration:underline; text-underline-offset:.18em}

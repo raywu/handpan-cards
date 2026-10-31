@@ -1,20 +1,15 @@
-# kills: rule N: mirrors and orientation change no label
-# suite: node --test --test-name-pattern ^rule.N..mirrors.and.orientation.change.no.label$ tests/layout.test.js
-# A top mirror reverses the rim numbers as well as the angles.
+# kills: rule N: a mirror keeps every number at its unmirrored angle
+# suite: node --test --test-name-pattern ^rule.N..a.mirror.keeps.every.number.at.its.unmirrored.angle$ tests/layout.test.js
+# A mirror renumbers: the note takes the number of its own default index, not of the position it lands on.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -544,7 +544,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var geom = geometry(counts, placed);
-     if (wanted.value) placed = reseat(placed, wanted.value);
- 
--    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
-+    var merged = merge(source, zones, placed, wanted.value);
-+    if (mirrors.top) {
-+      var rl = zones.rim.map(function (x) { return merged[x][5]; }).reverse();
-+      zones.rim.forEach(function (x, k) { merged[x][5] = rl[k]; });
-+    }
-+    return { ok: true, value: { geom: geom, fields: merged } };
-   }
- 
-   HPE.layout = {
+@@ -694,7 +694,7 @@
+       var ids = zones[ZONES[z]];
+       for (i = 0; i < ids.length; i += 1) {
+         var seat = list ? list[i] : i;
+-        fields[ids[i]][5] = source[ids[map ? map[seat] : seat]][5];
++        fields[ids[i]][5] = source[ids[list ? list[i] : i]][5];
+       }
+     }
+     if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);

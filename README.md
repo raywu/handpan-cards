@@ -1,6 +1,6 @@
 # Handpan Chords
 
-Chord flashcards and chord progressions for handpan scales. It runs in the browser with no account: https://handpan.raywu.org/
+Chord flashcards and chord progressions for handpan scales. It runs in the browser with no account: https://handpantheory.com/
 
 ## Practising with it
 
@@ -79,7 +79,7 @@ Tests:
     python3 tests/suite_health.py   # per-file test-count floors
     ./tests/run.sh mutants          # mutation gate (slow)
 
-There are 29 node suites and 18 python suites. The mutation gate applies 1699 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
+There are 29 node suites and 18 python suites. The mutation gate applies 1707 mutant patches from `tests/mutants/`, and a test must fail under each one. It edits the tree in place and refuses to start on uncommitted changes to a file a patch touches, `README.md` among them, so commit first.
 
 CI runs on pull requests into `main` and on pushes to `main`. A PR that changes only `docs/plans/` or `docs/prompts/` skips every job.
 

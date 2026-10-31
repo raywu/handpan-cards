@@ -25,11 +25,11 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLE = os.path.join(ROOT, "tools", "scale_pages.json")
 FIXTURE = os.path.join(ROOT, "tests", "fixtures", "scale_pages_v1.json")
-SITE = "https://handpan.raywu.org/"
+SITE = "https://handpantheory.com/"
 UPDATED = "2026-10-28"
-BG_LIGHT = "#fbfaf8"
-BG_DARK = "#15181b"
-BG_BROWN = "#1a1815"
+BG_LIGHT = "#f6f4ed"
+BG_DARK = "#0f0e0b"
+BG_BROWN = "#0f0e0b"
 WORDS = {8: "Eight", 9: "Nine", 10: "Ten", 18: "Eighteen", 20: "Twenty"}
 AN_LETTERS = set("AEFHILMNORSX")
 
@@ -243,21 +243,21 @@ def notes_line(fields):
     return line
 
 
-CSS_HEAD = """:root{color-scheme:light dark;--bg:#fbfaf8;--fg:#1f2328;--muted:#5d646c;--r:@LIGHT@}
-@media (prefers-color-scheme:dark){:root{--bg:#15181b;--fg:#e8eaec;--muted:#9aa2aa;--r:@DARK@}}
+CSS_HEAD = """:root{color-scheme:light dark;--bg:#f6f4ed;--fg:#0f0e0b;--muted:#5e5850;--s:#ece8de;--h:#cfc8ba;--t:#0e7f79;--r:@LIGHT@}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--s:#1a1814;--h:#3a352d;--t:#44e0d8;--r:@DARK@}}
 body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
 main{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
 h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}
 h2{font-family:Marcellus,serif;font-weight:400;font-size:26px;margin:0;color:var(--r)}
 p{margin:0;max-width:66ch}
 .muted{color:var(--muted);font-size:14px}
-section.scale{border-top:3px solid var(--r);padding-top:16px;display:flex;flex-direction:column;gap:12px}
+section.scale{border-top:2px solid var(--r);padding-top:16px;display:flex;flex-direction:column;gap:12px}
 section.plain h2,section.history h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 .slot{width:min(322px,100%);display:flex;flex-direction:column;align-items:center}
 .ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.open{align-self:flex-start;background:var(--r);color:#fff;text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:8px;padding:12px 16px}
-@media (prefers-color-scheme:dark){.open{color:#15181b}}
-.open.ghost{background:transparent;color:var(--r);border:2px solid var(--r);padding:10px 14px}
+.open{align-self:flex-start;background:var(--fg);color:var(--bg);border:1px solid var(--fg);text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:12px;padding:11px 15px}
+.open.ghost{background:var(--s);color:var(--fg);border-color:var(--h)}
+@media (prefers-color-scheme:light){.prog{isolation:isolate;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--s:#1a1814;--h:#3a352d;--t:#44e0d8;--r:@DARK@}.prog::before{content:"";position:absolute;inset:-14px -12px;z-index:-1;border-radius:16px;background:var(--bg)}}
 ol{margin:0;padding-left:20px;max-width:66ch}
 dl.who{margin:8px 0 0;display:grid;grid-template-columns:max-content 1fr;gap:2px 10px}
 dl.who dt{font-weight:700}
@@ -265,9 +265,9 @@ dl.who dd{margin:0}
 a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
 a.open{text-decoration:none}
 a:hover{text-decoration-thickness:2.5px}
-a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
+a:focus-visible{outline:2px solid var(--t);outline-offset:2px;border-radius:2px}
 ul.rel{list-style:none;margin:0;padding:0}
-ul.rel li{border-bottom:1px solid var(--muted)}
+ul.rel li{border-bottom:1px solid var(--h)}
 ul.rel a{display:flex;align-items:center;min-height:44px}
 section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 """
@@ -309,18 +309,18 @@ L("keydown",e=>{var s={ArrowRight:1,ArrowLeft:-1}[e.key];if(s&&!z&&e.target.clas
 
 SWIPE_JS = SWIPE_MODULE + "\n" + SWIPE_DRIVER
 
-INDEX_CSS_HEAD = """:root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c}
+INDEX_CSS_HEAD = """:root{color-scheme:dark;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--r:#f6f4ed}
 body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
 main{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
 h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}
 h2{font-family:Marcellus,serif;font-weight:400;font-size:24px;margin:0;color:var(--r)}
 p{margin:0;max-width:66ch}
 .muted{color:var(--muted);font-size:14px}
-a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}
 a:hover{text-decoration-thickness:2.5px}
-a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
+a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}
 ul.rel{list-style:none;margin:0;padding:0}
-ul.rel li{border-bottom:1px solid var(--muted)}
+ul.rel li{border-bottom:1px solid #3a352d}
 ul.rel a{display:flex;align-items:center;min-height:44px}
 section.group h2{margin:0 0 4px}
 """
@@ -340,11 +340,11 @@ CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:1
 .prog .step{font-weight:700;font-size:14px;letter-spacing:.06em;color:var(--muted);padding:2px 6px;border-radius:4px}
 .prog .nav{display:flex;justify-content:space-between;width:100%}
 .prog .nav label,.prog .nav span{width:56px;height:44px;box-sizing:border-box}
-.prog .nav label{cursor:pointer;font-size:0;line-height:42px;text-align:center;color:#eae6df;background:#211d16;border:1px solid #433b2c;border-radius:10px}
+.prog .nav label{cursor:pointer;font-size:0;line-height:42px;text-align:center;color:var(--fg);background:var(--s);border:1px solid var(--h);border-radius:12px}
 .nav label::before{font-size:18px;content:"\\2192"}
 .nav label:first-child::before{content:"\\2190"}
 #p1:checked~.cards .slot:nth-child(1),#p2:checked~.cards .slot:nth-child(2),#p3:checked~.cards .slot:nth-child(3){display:flex}
-#p1:focus-visible~.cards .slot:nth-child(1),#p2:focus-visible~.cards .slot:nth-child(2),#p3:focus-visible~.cards .slot:nth-child(3){outline:2px solid var(--r);outline-offset:2px}
+#p1:focus-visible~.cards .slot:nth-child(1),#p2:focus-visible~.cards .slot:nth-child(2),#p3:focus-visible~.cards .slot:nth-child(3){outline:2px solid var(--t);outline-offset:2px}
 """
 
 CARD_CSS = """:host{display:block;width:min(322px,100%%);--root:%(root)s;--tone:%(tone)s}
