@@ -1,0 +1,24 @@
+# kills: an over-cap store still forwards, carrying exactly the largest prefix under MOVE_CAP
+# suite: node --test --test-name-pattern=over.cap.store.of.116 tests/app.test.js
+# fault: Restore the old behaviour where an over-cap store returns false and the user stays on the old host.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15892,16 +15892,7 @@
+   if (!rows.length && !hidden.length) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
+   const encodeRows = n => moveEncode(JSON.stringify({ r: rows.slice(0, n), h: hidden }));
+   let carried = rows.length, code = encodeRows(carried);
+-  if (code.length > MOVE_CAP) {
+-    let lo = 0, hi = rows.length - 1;
+-    while (lo < hi) {
+-      const mid = (lo + hi + 1) >> 1;
+-      if (encodeRows(mid).length <= MOVE_CAP) lo = mid; else hi = mid - 1;
+-    }
+-    carried = lo;
+-    code = encodeRows(carried);
+-    if (code.length > MOVE_CAP) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
+-  }
++  if (code.length > MOVE_CAP) return false;
+   location.replace(MOVE_TARGET + "/" + location.search + "#move=" + code + "&then=" + encodeURIComponent(location.hash));
+   return true;
+ }

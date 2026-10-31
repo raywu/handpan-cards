@@ -1,0 +1,15 @@
+# kills: MN2: a refused MIRROR BOTTOM toggle restores layoutAngles as well as the mirror (a 5-note bottom cannot pin a held note at a non-multiple of 5)
+# suite: node --test --test-name-pattern MN2..a.refused.MIRROR.BOTTOM.toggle.restores tests/app.test.js
+# A refused toggle undoes the mirror but keeps the held angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14133,7 +14133,7 @@ mirrorBot.onclick = () => {
+   const held = holdBeforeMirror();
+   if (held) layoutAngles = { bottom: held };
+   bottomHeld = !bottomHeld;
+-  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutAngles = before; layoutStatus(TOGGLE_REFUSED(), true); return; }
++  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED(), true); return; }
+   if (layoutAngles) releaseRedundantPins(layoutAngles.bottom);
+   paintLayout(); resyncSheet(true);
+   let text = t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off");

@@ -13,8 +13,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import gen_scale_page as gen  # noqa: E402
 
-SITE = "https://handpan.raywu.org/"
-ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.w3.org",
+SITE = "https://handpantheory.com/"
+ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpantheory.com", "www.w3.org",
                  "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world",
                  "handpaner.com", "schema.org", "handpanhelpers.klangzeug.de", "svenkirchhofer.de",
                  "yataoshop.com", "isthmusinstruments.com", "www.drumland.com", "maginstruments.com",
@@ -26,17 +26,17 @@ ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org
 SIZE_CAP = 62 * 1024 - 800
 PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#2563B0", "#3B7A2A",
             "#C0452C", "#B3263A"]
-BG_LIGHT = "#fbfaf8"
-BG_DARK = "#15181b"
-BROWN = "#1a1815"
-SHARED_ROOT = ":root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c;"
+BG_LIGHT = "#f6f4ed"
+BG_DARK = "#0f0e0b"
+BROWN = "#0f0e0b"
+SHARED_ROOT = ":root{color-scheme:dark;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--r:#f6f4ed;"
 SHARED_RULES = [
     "body{background:var(--bg);color:var(--fg);font-family:\"Nunito Sans\",system-ui,sans-serif;line-height:1.55;",
     "h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}",
     "font-size:24px;",
-    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
+    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}",
     "a:hover{text-decoration-thickness:2.5px}",
-    "a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}",
+    "a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}",
 ]
 
 # Independent oracle for the plan's page table (Round 4 dispositions, row 0 from Round 7 H3,
@@ -278,12 +278,12 @@ class TableOracleTest(unittest.TestCase):
 
 class GeneratorTest(unittest.TestCase):
     KURD_10_LINKS = {
-        "canonical": "https://handpan.raywu.org/scales/d-kurd-10/",
+        "canonical": "https://handpantheory.com/scales/d-kurd-10/",
         "cta": "/#deck=d-kurd-10",
         "cross": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038",
         "also_try": [
-            "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
-            "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
+            "https://handpantheory.com/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
+            "https://handpantheory.com/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
         ],
     }
 
@@ -770,9 +770,9 @@ class SwipeScriptTest(unittest.TestCase):
         self.assertIn("\\2190", css)
         self.assertIn("\\2192", css)
         self.assertIn("width:56px", css)
-        self.assertIn("border-radius:10px", css)
-        self.assertIn("background:#211d16", css)
-        self.assertIn("border:1px solid #433b2c", css)
+        self.assertIn("border-radius:12px", css)
+        self.assertIn("background:var(--s)", css)
+        self.assertIn("border:1px solid var(--h)", css)
         self.assertIn("font-size:0", css)
         for slug in ROWS:
             html = read("scales/%s/index.html" % slug)
@@ -790,10 +790,12 @@ class SwipeScriptTest(unittest.TestCase):
 
     @staticmethod
     def without_card_css(html):
+        html = re.sub(r'<meta name="theme-color" content="#\w+">', '<meta name="theme-color">', html)
+        html = re.sub(r"<style>\n:root\{color-scheme:light dark;.*?</style>\n", "<style></style>\n", html, flags=re.S)
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
         html = html.replace('<div class="hint">Tap to reveal the notes</div>', "")
         html = re.sub(r'<div class="nav">.*?</div></div>', '<div class="nav"></div></div>', html)
-        html = re.sub(r"\.prog\{(?:--g:[^;]*;)?display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
+        html = re.sub(r"\.prog\{(?:--g:[^;]*;)?display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--t\);outline-offset:2px\}",
                       ".prog{}", html, flags=re.S)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 
@@ -845,7 +847,7 @@ class ContrastTest(unittest.TestCase):
 
     def test_the_kurd_accents_are_the_shipped_pair(self):
         row = table()["d-kurd-10"]
-        self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#7fb0ee"))
+        self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#357CD4"))
 
     def test_non_frozen_accents_are_the_generator_rule(self):
         for slug, row in table().items():
@@ -869,7 +871,8 @@ class ContrastTest(unittest.TestCase):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
-                self.assertIn("padding:12px 16px", html)
+                self.assertIn("padding:11px 15px", html)
+                self.assertIn("border-radius:12px", html)
                 self.assertIn("font-size:14px", html)
                 self.assertIn("@media (prefers-color-scheme:dark){:root{", html)
                 self.assertIn("background:#fff;color:#242424", html)
@@ -1002,8 +1005,8 @@ if __name__ == "__main__":
 
 class AlsoTryTest(unittest.TestCase):
     LINKS = [
-        ("C# Annaziska 9", "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
-        ("C# Annaziska 13", "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
+        ("C# Annaziska 9", "https://handpantheory.com/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
+        ("C# Annaziska 13", "https://handpantheory.com/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
     ]
 
     def anchors(self, slug):
@@ -1048,16 +1051,16 @@ class SharedBrownHeadTest(unittest.TestCase):
         css = read("index.html")
         about = css[css.index("#about{position:fixed"):css.index("html.about-open{")]
         self.assertNotIn("#1f1b15", about)
-        self.assertIn("background:#1a1815", about)
-        self.assertRegex(about, r"\.abouthead\{[^}]*background:#1a1815")
-        self.assertRegex(about, r"color:#eae6df; font:400 16px/1\.55 \"Nunito Sans\"")
+        self.assertIn("background:#0f0e0b", about)
+        self.assertRegex(about, r"\.abouthead\{[^}]*background:#0f0e0b")
+        self.assertRegex(about, r"color:#f6f4ed; font:400 16px/1\.55 \"Nunito Sans\"")
         self.assertRegex(about, r'#about h2\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
-        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#e3b25c')
+        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#f6f4ed')
         self.assertNotIn("text-transform:uppercase", about)
-        self.assertRegex(about, r"#about h4\{[^}]*color:#c4bcab")
-        self.assertRegex(about, r"#about a\{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
+        self.assertRegex(about, r"#about h4\{[^}]*color:#a9a39a")
+        self.assertRegex(about, r"#about a\{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
         self.assertIn("calc((100% - 520px) / 2)", about)
 
     def test_every_primary_passes_contrast_on_the_brown(self):
-        for colour in ("#e3b25c", "#eae6df", "#c4bcab"):
+        for colour in ("#f5c78e", "#f6f4ed", "#a9a39a"):
             self.assertGreaterEqual(ratio(colour, BROWN), 4.5)
