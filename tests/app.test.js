@@ -5899,6 +5899,42 @@ test("W1 line 12: MIRROR TOP sets the deck's mirror option and moves the preview
   assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
 });
 
+const MN_KURD = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const mnNumberLine = (deck, main) => {
+  const chord = deck.chords.find((c) => c.main === main && !c.sup);
+  return chord.fields.map((f) => deck.fields[f][5]).join("-");
+};
+
+test("MN: D Kurd 10 with MIRROR TOP reads Bb3 as 3 and the Dm number line 5-7-9, and unmirrored it reads 4-6-8", async () => {
+  const plain = (await w1Generate(MN_KURD)).deck;
+  const mirrored = (await w1Generate(MN_KURD, ["scale-mirror"])).deck;
+  assert.strictEqual(mnNumberLine(plain, "Dm"), "4-6-8");
+  assert.strictEqual(mnNumberLine(mirrored, "Dm"), "5-7-9");
+  const bb = Object.values(mirrored.fields).find((f) => f[0] === "Bb" && f[1] === 3);
+  assert.strictEqual(bb[5], "3");
+  assert.strictEqual(bb[4], 310);
+});
+
+test("MN: app and print agree on a mirrored deck: the pdfcards deck carries the diagram's slot 5 for every field", async () => {
+  const { deck } = await w1Generate(MN_KURD, ["scale-mirror"]);
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const built = E.pdfdeck.fromGenerated({ deck });
+  for (const id of Object.keys(deck.fields)) {
+    if (deck.fields[id][3] === "ding") continue;
+    assert.strictEqual(built.spec[String(id)][5], deck.fields[id][5], `field ${id}`);
+  }
+});
+
+test("MN: the title card omits the TONEFIELD NUMBERS line when the top is mirrored, and keeps it unmirrored or with only the bottom mirrored", async () => {
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const lines = async (seed, ids) => E.pdfdeck.fromGenerated({ deck: (await w1Generate(seed, ids)).deck }).legend_lines;
+  const has = (l) => l.some((x) => x.startsWith("TONEFIELD NUMBERS RUN 1 - "));
+  assert.strictEqual(has(await lines(W1_BOTTOM, [])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror-bottom"])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror"])), false);
+  assert.strictEqual(has(await lines(MN_KURD, ["scale-mirror"])), false);
+});
+
 test("W1 line 110: MIRROR TOP moves every off-axis rim and inner field and no bottom field; MIRROR BOTTOM moves bottom fields only", async () => {
   const base = fieldAngles((await w1Generate(W1_FULL)).deck);
   const top = fieldAngles((await w1Generate(W1_FULL, ["scale-mirror"])).deck);
@@ -15225,8 +15261,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign) and header.share (native share)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share) and sheet.mirror_keeps_numbers (MN)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -15596,7 +15632,7 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     assert.strictEqual(soLabel(app, 105), "U2");
   });
 
-  test("SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone", async () => {
+  test("SO: MIRROR BOTTOM after the fold moves no note and no number and says so, and MIRROR TOP leaves every bottom number alone", async () => {
     const app = await soOpen();
     app.run("layoutAngles = { bottom: [300, 60, 0, 180, 240, 120] }; resyncSheet(true)");
     const ang = [101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id));
@@ -15606,13 +15642,10 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     app.els["scale-mirror"].click();
     app.els["scale-mirror-bottom"].click();
     assert.strictEqual(d2Status(app),
-      "Bottom mirror on. The notes you placed stay put, and their seat numbers now run the other way round.");
+      "Bottom mirror on. The notes you placed stay put; the others swap sides. Numbers stay where they are.");
     assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang);
-    const after = soLabels(app);
-    assert.deepStrictEqual(after, ["U2", "U6", "U4", "U3", "U1", "U5"]);
-    const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
-    assert.ok(changed.length > 0, "the mirror renumbered");
-    assert.deepStrictEqual(soFlash(app), changed.sort());
+    assert.deepStrictEqual(soLabels(app), labels);
+    assert.deepStrictEqual(soFlash(app), []);
   });
 });
 
