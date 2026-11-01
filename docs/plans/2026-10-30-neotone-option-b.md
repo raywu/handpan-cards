@@ -52,7 +52,7 @@ changes to `data/decks.json`; any built-in scale page URL change.
 | S7 | Seed-option validity "every non-null entry names a non-ding field" (any slot) and `PROFILE_FULL` = more than 18 notes | E2: p-slots hold only `r` keys, s-slots only `b` keys, `i` keys never; `PROFILE_FULL` = a note without a tonefield (more than 9 rim, more than 9 bottom, or any inner note). |
 | S8 | Lane U "Editing the scale keeps assignments ... others become unassigned rows" | U2 (g). |
 | S9 | Q2 visual clause "keeps its badge, dashed ring and orange accents wherever placed" | Gate G2 (recommendation below). Engine half of Q2 kept. |
-| S10 | D4 empty slots: "sheet preview draws a faint dashed outline plus its area number" | Empty tonefields draw neutral (decision 8) on cards, print and preview; preview adds its tonefield number. |
+| S10 | D4 empty slots: "sheet preview draws a faint dashed outline plus its area number" | On a card with a mutant note, empty tonefields draw neutral (decision 8) on cards, print and preview; preview adds its tonefield number. A card with no mutant note draws the Standard geometry and has none (owner D2). |
 
 ## Questions answered with evidence
 
@@ -66,17 +66,9 @@ validator and proposal do not.
 - Gaps: `readProfile` accepts any key in any slot and requires every non-ding note
   mapped with a cap of 18 total; `proposeProfile` puts top notes into s-slots and
   bottoms into p-slots. Option B forbids both.
-- Change (E2): ring-strict validation, new proposal, `PROFILE_FULL` meaning, rev 2.
+- Change (E2): ring-strict validation, new proposal, `PROFILE_FULL` meaning, rev 2, and the rev-1 migration `HPE.core.migrateProfile` (course correction A5).
   The wire grammar, version numbers, option order and record shape do not change.
-- Safe to change without a reader for the old meaning: `git log -p origin/dev -S
-  PROFILE_ENABLED -- src/engine/core.js index.html` shows exactly one commit
-  (8fd2e65e, lane E) adding `PROFILE_ENABLED: false` (engine and inlined copy) and
-  no commit setting it true; #749/#751 (the only branch that flips it, U) are not on
-  dev; main has no lane E code (#744 held). With the flag false, `decode` of v7
-  returns `NEEDS_NEWER_APP` and `parseSeed` refuses `profile`, so no served build
-  (DEV or prod) has ever produced or accepted a v7 link or v5 record. Rev 1 data
-  exists only inside tests. Verify at E2 start (re-run the `git log -S` command; if
-  any commit sets the flag true on dev, stop: E2 must then keep a rev-1 reader).
+- Superseded 2026-11-01: #752 (f2d8d2a1) set `PROFILE_ENABLED` true on dev, so served DEV wrote rev-1 v5 records and v7 links. E2 keeps a rev-1 migration (A5); main has no lane E code.
 
 **Q-B. Lens geometry: what changes.** All three layers, via a new fixture:
 - T2: new `tests/fixtures/paired_profile_v2.json` (rev 2). The v1 file stays,
@@ -116,18 +108,9 @@ validator and proposal do not.
     Passes only if T2 shows the fitted name (box = the lens shape) stays ≥ 3.6 pt.
   The label rule and the 3.6 pt floor never change. Gate G1.
 
-**Q-C. Open PRs.** Rework on the same branches; close nothing.
-- #749/#750 (P) and #751/#752 (U) are not on dev (both OPEN), so no dev revert is
-  needed. Each lane merges the E2 head into its branch (merge commit, no
-  force-push, no history loss), then reworks. U2 deletes the Option A UI code in a
-  new commit; the earlier commits stay in history. PR titles/bodies are updated to
-  "Neotone" and Option B. #744 (E, main, held) gains the E2 commits; E2 opens a new
-  dev PR from the same head (#745 is merged). T2 is a new branch
-  `claude/neotone-t2` stacked on the E head 701c06fc, with its own held main PR and a
-  dev PR; E2 merges T2 into `claude/neotone-e`.
-- Nothing on dev conflicts with Option B in a way that needs reverting: dev has T
-  (fixture v1, spec 18) and E (permissive validator, flag off). Both are corrected
-  forward by T2/E2; with the flag off neither is user-reachable.
+**Q-C. Open PRs.** Superseded 2026-11-01 by `2026-11-01-neotone-course-correction.md` A2/A3.
+- #750, #752 and #794 are merged to dev and are corrected forward (owner D1). E2: `claude/neotone-e` fast-forwards to T2 head 98281e35, then adds E2; #744 in place. P2: `claude/pa-p` merges the E2 head; #749 in place. U2: new `claude/neotone-u2` from the E2 head plus cherry-picks f2d8d2a1 d364fdba dc1e967a e0ef8268 83c54ce6 c908b95a bd71c358; new main PR; #751 and #793 close as superseded after owner QA. No force-push. E2, P2 and U2 are combined once on `claude/neotone-m`; after `validate` succeeds at its head, one `claude/dev-sync-neotone` PR merges that head into dev.
+- Dev has T2, E, P, U and PA-N, with `PROFILE_ENABLED` true since #752; all are corrected forward in the combined landing.
 
 **Q-D. Q2 once mutant notes are lenses (gate G2).**
 - Engine half kept (base plan Q2): voicing, tiers, cluster rule and highlighting
@@ -170,9 +153,9 @@ LAYOUT; listed for owner QA.
 
 | Assumption | Status |
 |---|---|
-| No v7 link or v5 record was ever producible on a served build | Verified (Q-A); re-verified at E2 start |
+| Rev-1 v7 links and v5 records exist on DEV only (flag on since #752) | Verified 2026-11-01; E2 migrates them (A5) |
 | Map halves = main / mutant rings | Verified (`placeProfile` on origin/dev) |
-| P and U branches are not on dev | Verified (`gh pr view 750/752`: OPEN) |
+| P, U and PA-N are on dev (#750, #752, #794) | Verified 2026-11-01; corrected forward (D1) |
 | No vendor-name ban test exists to edit | Verified (S4 grep) |
 | Existing drawer swap/drag is per ring and can take a second "ring" made of discrete slots | Read in `tests/drawer_grid.test.js`/`drawer_drag.test.js` by U2 before coding; if the drawer code cannot address slot rings without changing Standard behaviour, U2 stops and reports (no widening) |
 | Lens labels meet the floor | Gated (G1) |
@@ -196,19 +179,13 @@ held + PR D). Ownership is exclusive per wave.
 | Wave | Lane | Branch | Owns | Prereqs |
 |---|---|---|---|---|
 | 1 | **T2** fixture v2 + spec | `claude/neotone-t2` from 701c06fc | `tests/fixtures/paired_profile_v2.json`, `tests/test_fixture_integrity.py`, `docs/ENGINE-SPEC.md` section 18, the "Frozen v2 fixture" section of this plan | G1 answered |
-| 2 | **E2** engine | `claude/neotone-e` (merge T2) | `src/engine/core.js` (not the flag line), `layout.js`, `share.js` only if a test needs it, engine regions via `tools/inline_engine.py`, `tests/core.test.js`, `layout.test.js`, `share.test.js`, `scale.test.js`, `link_corpus.test.js`; refusal sentences in ENGINE-SPEC section 18 table (verbatim with REASONS) | T2 on dev |
-| 3 | **P2** renderers | `claude/pa-p` (merge E2) | `pan`/`panField` in `index.html`, `src/engine/pdfcards.js` (+ inline), `tools/hifi.py`, `tools/decks.py` passthrough, `tests/pdfcards.test.js`, `test_pdf_parity.py`, `test_render_agreement.py`, `tests/fixtures/profile_case_*_v1.json` (regenerated as `_v2`), `tests/helpers/dump_app_render.js` | E2 on dev (G2 default = recommendation) |
-| 3 | **U2** app | `claude/pa-u` (merge E2) | `index.html` outside engine regions except `pan`/`panField`; the `PROFILE_ENABLED` line in `core.js` (+ inline); `data/i18n/*.json` (+ `tools/sync_i18n.py`); `tests/app.test.js` (incl. the Neotone word audit), `e2e.test.js`, `storage_corpus.test.js`, `tests/fixtures/i18n_english_dom_v1.json`, `drawer_*.test.js` (regressions + Neotone rings), `tools/sandbox.js` (the file #751 edits; `tests/helpers/sandbox.js` is not owned) | E2 on dev |
-| 4 | **M** mutants + floors | `claude/neotone-m` from the stack head | `tests/mutants/pa_*.patch`, FLOORS in `tests/suite_health.py`, README mutant count | P2, U2 on dev |
+| 2 | **E2** engine | `claude/neotone-e` (merge T2) | `src/engine/core.js` (not the flag line), `layout.js`, `share.js` only if a test needs it, engine regions via `tools/inline_engine.py`, `tests/core.test.js`, `layout.test.js`, `share.test.js`, `scale.test.js`, `link_corpus.test.js`; `docs/ENGINE-SPEC.md` section 18 (refusal table verbatim with REASONS, and course-correction rows E-S1..E-S13) | T2 head 98281e35 |
+| 3 | **P2** renderers | `claude/pa-p` (merge E2) | `pan`/`panField` in `index.html`, `src/engine/pdfcards.js` (+ inline), `tools/hifi.py`, `tools/decks.py` passthrough, `tests/pdfcards.test.js`, `test_pdf_parity.py`, `test_render_agreement.py`, `tests/fixtures/profile_case_*_v1.json` (regenerated as `_v2`), `tests/helpers/dump_app_render.js` | E2 head green on #744 (G2 default = recommendation) |
+| 3 | **U2** app | `claude/neotone-u2` (new; course correction A2) | `index.html` outside engine regions except `pan`/`panField`; the `PROFILE_ENABLED` line in `core.js` (+ inline); `data/i18n/*.json` (+ `tools/sync_i18n.py`); `tests/app.test.js` (incl. the Neotone word audit), `e2e.test.js`, `storage_corpus.test.js`, `tests/fixtures/i18n_english_dom_v1.json`, `drawer_*.test.js` (regressions + Neotone rings), `tools/sandbox.js` (the file #751 edits; `tests/helpers/sandbox.js` is not owned) | E2 head green on #744 |
+| 4 | **M** mutants + floors | `claude/neotone-m` from the E2 head, merging the P2 and U2 heads | `tests/mutants/pa_*.patch`, FLOORS in `tests/suite_health.py`, README mutant count | E2, P2 and U2 each with `validate` success at a verified head and a reviewer pass; dev receives the M head only after M's own `validate` success (course correction A3) |
 | 4 | **Q** QA guide refresh (integrator, not a lane) | none | the scratchpad file `/private/tmp/claude-501/-Users-ray-Projects-handpan-cards/86550be0-8308-46ce-9e79-1d7585ec807b/scratchpad/neotone-qa.html` (not in the repo) | U2 on DEV |
 
-Lanes refreshing context-shifted existing mutant patches in their own diffs (as #749
-did) is allowed; new `pa_*` mutants belong to M. Second lander of P2/U2 resolves
-`index.html` conflicts by hand within its own symbols; engine regions are re-inlined,
-never hand-merged (base R4). #751 also edits T2/E2-owned files (`docs/ENGINE-SPEC.md`,
-`tests/test_fixture_integrity.py`, `src/engine/*.js`, `tests/core|layout|share|scale|
-link_corpus.test.js`, `tests/fixtures/engine_corpus_v1.json`): in U2's merge of E2,
-every conflict in those files takes the T2/E2 side.
+Lanes refreshing context-shifted existing mutant patches in their own diffs is allowed; new `pa_*` mutants belong to M. P2 and U2 never merge each other; their conflicts are resolved once on `claude/neotone-m` (course correction A3), where CI runs: engine regions re-inlined, never hand-merged (base R4); E2 side in E2-owned files; U2 side in `index.html` app code and `data/i18n`; P2 side in `pan`/`panField`, pdfcards and hifi; every Option A symbol and key from #752/#794 deleted. `claude/dev-sync-neotone` only merges that CI-green M head into dev.
 
 ### T2 acceptance
 - `paired_profile_v2.json` holds the G1 values; its SHA256 pinned; v1 kept, pinned,
@@ -227,7 +204,7 @@ every conflict in those files takes the T2/E2 side.
 - Verify: `python3 -m unittest tests.test_fixture_integrity tests.test_readme_currency -v`.
 
 ### E2 acceptance (tests first)
-- `readProfile`: rev 2 only; p-slots accept only `r` keys, s-slots only `b` keys, an
+- `readProfile`: rev 2, or rev 1 after `HPE.core.migrateProfile` (identity on a ring-strict complete map, else the pitch-order proposal; A5); p-slots accept only `r` keys, s-slots only `b` keys, an
   `i` key or a cross-ring key is `PROFILE_MAP_INVALID`; every note still mapped once
   (`PROFILE_NOTE_MISSING`/`TWICE` unchanged); `PROFILE_FULL` when rim > 9, bottom > 9
   or any inner note; sentences rewritten in decision-2 words (no "area").
@@ -236,24 +213,22 @@ every conflict in those files takes the T2/E2 side.
   inner notes in `unplaced` (pitch order). Pygmy: 9 rim placed, `unplaced` = F5, G5;
   6 mutant filled, s7-s9 empty. Kurd 10 (no bottoms): all s empty, `unplaced` empty.
   A scale with no rim beyond the ding is valid with an empty map half.
-- `solve` with a profile: `geom.place` per v2; field labels "N" (main) and "Ns"
+- `solve` with a profile: on a scale with a mutant note, `geom.place` per v2; on a scale with none, the Standard solve of its notes with `place` = Standard angle, `rim`, `r_note`, kind "main", the main half ordering the Standard seats (A7); Kurd 9 `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4` at its proposal equals `tools/gen_deck.js` output; field labels "N" (main) and "Ns"
   (mutant); ding at centre, never in the map; acoustic solve unchanged (no `place`,
   engine corpus `--check` clean).
 - Wire: v7 grammar, `pair-` token order and every v1-v6 corpus byte unchanged;
   round-trips over every built-in's proposal (for built-ins with `unplaced` notes,
   the test first removes those notes from the scale, then proposes, so every
-  remaining note is mapped and `PROFILE_NOTE_MISSING` does not fire) and 200 seeded ring-strict maps; a cross-ring v7 link
-  is refused with the profile code; flag off still `NEEDS_NEWER_APP`.
+  remaining note is mapped and `PROFILE_NOTE_MISSING` does not fire) and 200 seeded ring-strict maps; a cross-ring or inner-key v7 link decodes as rev 1 and migrates per A5 (no refusal); a ring-strict map decodes as rev 2 and round-trips unchanged; links written by dev b5aed492 are pinned in `link_corpus.test.js`; flag off still `NEEDS_NEWER_APP`.
 - Re-verify Q-A's `git log -S` at start; record the output in the PR body.
 - Verify: `python3 tools/inline_engine.py --check && node --test tests/core.test.js tests/layout.test.js tests/share.test.js tests/scale.test.js tests/link_corpus.test.js && node tools/regen_engine_corpus.js --check && python3 tools/validate.py`.
 
 ### P2 acceptance
 - Built-in PDFs and all existing parity/agreement tests unchanged.
-- Profile cases (Pygmy minus F5/G5 with 6 mutant notes; Kurd 9 with empty mutant
-  tonefields; Hijaz 8 rim, one empty main tonefield) through app SVG, `HPE.pdfcards` and hifi agree on lens and crescent
+- Profile cases (Pygmy minus F5/G5 with 6 mutant notes; Kurd 9 `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4`, no mutant note, drawn as Standard; Hijaz `[B2] (C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4`, one mutant note, main tonefield 9 empty) through app SVG, `HPE.pdfcards` and hifi agree on lens and crescent
   geometry, label and number sizes, highlighting, number lines ("4s") within the
   existing tolerances; every glyph drawn after `fit_note`/`fitNote` ≥ 3.6 pt.
-- Empty mutant or main tonefield: neutral outline only (decision 8), never error colour.
+- On a card with a mutant note, an empty mutant or main tonefield: neutral outline only (decision 8), never error colour.
 - Mutant styling per G2 (default: the recommendation); no Neotone footer tag (decision 13).
 - Verify: `node --test tests/pdfcards.test.js && python3 -m unittest tests.test_pdf_parity tests.test_render_agreement -v`.
 
@@ -335,16 +310,15 @@ Verify: `python3 tools/refresh_mutants.py --check && ./tests/mutation_check.sh` 
 ### Q (QA guide refresh)
 Rewrite `neotone-qa.html` (scratchpad) for Option B: replace the three "Paired
 areas" rows with Neotone switch, swap/drag within ring, cross-ring no-op, Pygmy
-F5/G5 hold, one message per cause (main, mutant, inner overflow), empty mutant and
-empty main tonefields (8-rim scale) neutral, tap-to-empty move, built-in conversion
+F5/G5 hold, one message per cause (main, mutant, inner overflow), empty mutant and empty main tonefields neutral on Hijaz plus one bottom note, Kurd 9 with no mutant note drawn as Standard, the first bottom note re-laying the pan, Scale-form checkbox and Layout switch following each other, ticking on Pygmy naming F5/G5 with SAVE held, a DEV-era rev-1 Pygmy record opening per A6, tap-to-empty move, built-in conversion
 lines and prefilled name, saved Neotone reopens its map, Neotone custom saved as
 Standard, AD1 toggle-back, G2 card style, v7 link in an older app, print lens labels. Done when no "Paired"/"area"
-wording remains and every decision 3-10 has a row.
+wording remains and every decision 3-10 and course-correction D2, D4, A6, A7, A8 has a row.
 
 ## Interfaces
 
 - `HPE.layout.proposeProfile(fields) -> {ok, value:{map[18], unplaced[fieldId]}}`.
-- `HPE.core.readProfile(raw, options, fields)`: ring-strict, rev 2.
+- `HPE.core.readProfile(raw, options, fields)`: ring-strict, rev 2; rev 1 via `HPE.core.migrateProfile(raw, fields) -> {map, unplaced}`.
 - `geom.place[fieldId] = [angle, orbit, r, kind, lensOrbit?, lensR?]`; renderers
   branch only on `geom.place`; `HPE.layout.profileLabelRadius(kind)`.
 - Labels: `fields[id][5]` = "N" or "Ns" for profile decks.
@@ -368,10 +342,10 @@ wording remains and every decision 3-10 has a row.
 ## Edge cases
 
 - Ding never a tonefield; never in the map; drawn at centre.
-- Empty bottom field: Neotone allowed, every mutant tonefield empty and neutral.
+- Empty bottom field: Neotone allowed; the card draws the Standard geometry of its notes, no lenses (owner D2).
 - More than 9 rim or any inner note: `unplaced`, SAVE held (decisions 8, G3).
 - More than 9 bottom notes: the extras by pitch in `unplaced`; SAVE held.
-- Fewer than 9 rim notes: empty main tonefields drawn neutral; legal.
+- Fewer than 9 rim notes: legal. With a mutant note, main tonefields past the rim count are empty, neutral and accept a move; with none, only the Standard seats exist (A7).
 - Scale edits after swaps: U2 (g).
 - Switching Neotone -> Standard -> Neotone in one sheet session re-applies the
   proposal (AD1, auto-decision for owner QA); a saved Neotone scale reopens with its
@@ -388,31 +362,27 @@ Base R1, R2, R4, R5 stand. R3 is replaced by G1 (floor arithmetic fails at 1/3).
   touching Standard. Mitigation: U2 reads `drawer_*` tests first; Standard drawer
   tests must pass unchanged; stop and report if they cannot.
 - R7 Main crescent labels shrink with lens depth (G1 table covers both).
-- R8 A rev-1 record appears from an unforeseen path: E2 start check (Q-A); if found,
-  keep a rev-1 reader rather than refusing.
+- R8 Rev-1 records exist on DEV (Q-A as amended): E2 keeps `migrateProfile`; corpus tests pin it.
 
 ## Recovery
 
-Base-plan rollback stands: revert U2 on dev (`claude/dev-revert-pa-u`); flag false;
+Base-plan rollback stands: revert the combined landing on dev (`claude/dev-revert-neotone`); flag false;
 v7 = NEEDS_NEWER_APP; v5 rows opaque and kept. Once U2 is on DEV, never redefine
-rev 2; a further geometry change is rev 3 with a rev-2 reader. T2/E2 can be fixed
-forward freely while the flag is false on every served build.
+rev 2; a further geometry change is rev 3 with a rev-2 reader. The rev-1 migration stays for good (served DEV wrote rev 1).
 
 ## Continuation point
 
-Owner answers G1 (G2 optional). Then create `claude/neotone-t2` from 701c06fc,
-re-run `git log -p origin/dev -S PROFILE_ENABLED -- src/engine/core.js index.html`,
-compute the G1 table, freeze v2. Then E2, then P2 ∥ U2, then M, then Q and owner
-DEV QA.
+Superseded 2026-11-01: follow `2026-11-01-neotone-course-correction.md` Phases.
 
 ## Stop
 
 This workstream stops when P2 and U2 are on dev, M merged to dev, the QA guide is
-refreshed and the owner has done DEV QA; every main PR (#744, T2's, #749, #751, M's)
+refreshed and the owner has done DEV QA; every main PR (#744, #754, #749, the U2 main PR, M's)
 stays held until the owner says merge.
 
 ## Frozen v2 fixture
 
+Superseded 2026-11-01 by owner decision OD1 (course correction): fixture rev 3 `tests/fixtures/paired_profile_v3.json` (orbit 0.745R, r 0.19R, ding 0.2R, n_in 0.085R, number_out 1.0758, depth 1/3 of the diameter, decor ring 0.355R). v2 below is kept pinned and superseded, as v1 is.
 Frozen by lane T2 (branch `claude/neotone-t2`, from 701c06fc). File:
 `tests/fixtures/paired_profile_v2.json`, sha256
 `611b59a2cce11d0c72c0bdf0e0549f9d73e10329917838559bc7dc57b2947e33`, pinned in
@@ -472,7 +442,7 @@ A#2 are the tightest). Name / octave digit in pt. Lens rule size 12.28 pt, numbe
 | 0.45 | 5.58 / 3.68 | 6.88 / 4.54 | pass |
 | 0.50 | 6.28 / 4.15 | 6.28 / 4.15 | pass |
 
-Depth 1/3 fails, so the fixture takes the smallest 0.01 step that passes the 3.6 pt
+(Superseded by OD1: depth is 1/3 by owner decision; lens glyphs meet the floor through the K8 factor, course correction O1.) Depth 1/3 fails, so the fixture takes the smallest 0.01 step that passes the 3.6 pt
 floor for every spelling: 0.44. An earlier draft of this table called 0.44
 "borderline" at R 59.8 (number_out 1.1); at the owner's number_out 1.0758 (R 60.9) it
 passes.
@@ -558,10 +528,10 @@ This supersedes decision 7's "next to the main number". The orange "Ns" sits on 
 A lit main tonefield's highlight band traces the whole crescent: the outer rim plus an inner arc along the lens border. Where the lens is lit too, a thin white gap separates the two bands. This applies to P2 renderers (app and print).
 
 ### Owner change 2026-10-31 (card mock comment): bigger tonefields at the rim
-Main tonefields sit as close to the rim as possible, evenly spaced (40 degrees for nine), and as large as possible until neighbours nearly touch (mock: r = 0.245R, orbit = 0.74R). The lens stays at about 1/3 depth. Main numbers move just outside the rim. This replaces the v1 fixture's primary {orbit 0.58, r 0.16} in T2's v2 fixture. Because the tonefields are larger, the 3.6 pt floor check in G1 gets more headroom.
+Main tonefields sit as close to the rim as possible, evenly spaced (40 degrees for nine), and as large as possible until neighbours nearly touch (superseded by OD1: r 0.19R, orbit 0.745R). The lens stays at about 1/3 depth. Main numbers move just outside the rim. This replaces the v1 fixture's primary {orbit 0.58, r 0.16} in T2's v2 fixture. Because the tonefields are larger, the 3.6 pt floor check in G1 gets more headroom.
 
 ### Owner change 2026-10-31 (card mock comment): ding matches rim size
-The Neotone ding is drawn at the same radius as the main tonefields (mock 0.245R), centred. The "Ns" labels (about 0.44R from centre) still clear it. If T2 finds crowding at print size, the rim tonefields and the ding shrink together so they stay matched.
+The Neotone ding is drawn at the same radius as the main tonefields (superseded by OD1: ding 0.2R), centred. The "Ns" labels (about 0.44R from centre) still clear it. If T2 finds crowding at print size, the rim tonefields and the ding shrink together so they stay matched.
 
 ### Owner change 2026-10-31: borders, bands, M# labels
 - Solid black outline on every main tonefield, lens and the ding; inner black hairline at 0.74r kept (owner 2026-10-30, convention 4).
@@ -579,11 +549,11 @@ The Neotone ding is drawn at the same radius as the main tonefields (mock 0.245R
 
 Source: https://claude.ai/artifact/TgFMSuaPN4ZZbkp6y71cte v17 (scratchpad `neotone-card.html`). This section is the single spec for P2 renderers (app, `HPE.pdfcards`, `tools/hifi.py`) and T2's v2 fixture. It supersedes every "Owner change 2026-10-31" subsection above, decision 7's "4s" style, G2's orange "Ns" and P2's "4s" number-line acceptance (now `M<n>`), and the geometry in "bigger tonefields at the rim" and "ding matches rim size". Values are fractions of the pan radius R.
 
-**Superseded by T2 (owner G1 answer, 2026-10-30, "bigger tonefields").** Every number below is superseded for P2 and U2 by ENGINE-SPEC section 18 and `tests/fixtures/paired_profile_v2.json` (main r 0.245, orbit 0.74, lens depth 0.44, `n_in` 0.145, main number 1.0758, ding 0.2). Take geometry from those, not from this section; its structure (which element goes where) still stands.
+**Owner OD1, 2026-11-01:** the v17 Chord Card numbers in this section are the spec again, frozen as fixture rev 3; ENGINE-SPEC section 18 follows rev 3.
 
 **Shared geometry (both kinds of Neotone card).** Use the Standard engine geom for the scale's own top notes (`node tools/gen_deck.js "<scale>"`; the mock's values for an 8- or 9-note rim: orbit 0.745, field r 0.19, ding r 0.2 centred, decor ring 0.355 drawn on both kinds). Angles, count and anchor are the engine's output for that scale (Kurd 9 = 8 rim fields at 45 degrees, anchor one; Pygmy = 9 fields, anchor between). A Neotone card draws only the main tonefields that hold a top note; it does not pad to nine. Nothing is hard-coded beyond what the engine emits.
 
-**Superseded (integrator AFK 2026-10-30, owner may overturn at QA):** the angles/count/anchor-are-engine-output and no-padding-to-nine lines above are replaced by ENGINE-SPEC 18.1 and 18.4: the fixture's fixed nine angles, empty tonefields drawn neutral, and `geom.place` taken from the fixture.
+**Scope (owner D2, 2026-11-01):** on a card with a mutant note, the fixture's nine angles, empty tonefields neutral and `geom.place` from the fixture apply (ENGINE-SPEC 18.1, 18.4). On a card with no mutant note the lines above hold: Standard engine output, no padding to nine.
 
 **Mutant card (one or more mutant notes).**
 - Lens: a circle of radius r, centre on the field's radial line at `orbit - (2r - depth)`, depth = 2r/3; only the overlap with the main field is drawn. Lens centre formula goes into the v2 fixture and ENGINE-SPEC section 18 (R2-2).
@@ -597,7 +567,7 @@ Source: https://claude.ai/artifact/TgFMSuaPN4ZZbkp6y71cte v17 (scratchpad `neoto
 
 **Unchanged.** Card frame stays the single root-colour four-sided frame (CLAUDE.md design system); header, chord name, note/number lines (as Standard except `M<n>` entries), footer and palettes as Standard. Mock-only scaling factors (the `.62`/`.42` font multipliers) are not part of the spec; renderers apply the label rule.
 
-**Acceptance (P2).** Tests first: P2 adds a fixture of the v17 field centres, radii and number positions for both mock cards, plus a test that a non-mutant Neotone geom equals the Standard engine geom. (Superseded by ENGINE-SPEC 18.1/18.4 and the fixture: fixed fixture angles, empty tonefields neutral, `geom.place` from the fixture; integrator AFK 2026-10-30, owner may overturn at QA.) The comparison covers positions only, not glyph size (renderers apply the label rule, the mock does not). App and print match that fixture within 0.5 pt at print R; tests/test_render_agreement passes; every diagram glyph ≥ 3.6 pt in print; the non-mutant card's field centres, radii and number positions equal a Standard render of the same scale. (Same supersede note: 18.1/18.4 and the fixture win.) Owner DEV QA compares against the mock.
+**Acceptance (P2).** Tests first: P2 adds a fixture of the v17 field centres, radii and number positions for both mock cards, plus a test that a non-mutant Neotone geom equals the Standard engine geom. (Owner D2, 2026-11-01: the non-mutant equality holds; mutant cards take positions from the v2 fixture.) The comparison covers positions only, not glyph size (renderers apply the label rule, the mock does not). App and print match that fixture within 0.5 pt at print R; tests/test_render_agreement passes; every diagram glyph ≥ 3.6 pt in print; the non-mutant card's field centres, radii and number positions equal a Standard render of the same scale. Owner DEV QA compares against the mock.
 
 ### AFK decision 2026-10-31
 - Inner hairline: owner 2026-10-30 chose to keep it (convention 4 holds for Neotone); no CLAUDE.md patch. The mock's missing hairline is mock-only.
@@ -630,4 +600,4 @@ Verdict after fix: READY.
 - Hairline: keep (convention 4); no CLAUDE.md patch.
 - M-number size: label rule, 0.64r.
 - Frame: root colour.
-- Input limit (owner 2026-10-30): with Neotone, the top rim takes at most 9 notes and no cyclops (inner, after `|`) notes. A "Neotone" checkbox on the Scale form, beside the bottom-notes field, turns this on: while it is ticked the form refuses a 10th top note and the `|` marker inline, like other input errors. The Layout tab's Standard/Neotone switch follows the checkbox. This supersedes decision 3's "pan only on Layout" for this control, and decision 8's "flag extras, hold SAVE" for typed input. Converting a built-in with extras (Pygmy F5/G5) still shows the flags until the notes are removed. Owner: U2 (UI, i18n key); E2's PROFILE_FULL refusal stays the engine guard.
+- Input limit (owner 2026-10-30): with Neotone, the top rim takes at most 9 notes and no cyclops (inner, after `|`) notes. A "Neotone" checkbox on the Scale form, beside the bottom-notes field, turns this on: while it is ticked the form refuses a 10th top note and the `|` marker inline, like other input errors. The Layout tab's Standard/Neotone switch follows the checkbox. This supersedes decision 3's "pan only on Layout" for this control, and decision 8's "flag extras, hold SAVE" for typed input. Converting a built-in with extras (Pygmy F5/G5) still shows the flags until the notes are removed. Ticking the checkbox does exactly what the Layout switch does (course correction A8): Neotone on, extras named, SAVE held; ticking is never refused. The typed-input error key is `reason.NEOTONE_INPUT`. Owner: U2 (UI, i18n key); E2's PROFILE_FULL refusal stays the engine guard.
