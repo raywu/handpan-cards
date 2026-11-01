@@ -11,7 +11,7 @@ diff --git a/index.html b/index.html
     its margins is still a drawer. Nothing behind it is visible, which is also
     why the layer-tap-to-close gesture is gone: there is no backdrop to aim at,
     and on a wide viewport the flanks beside the surface are page, not scrim. */
--#scale-sheet{position:fixed; inset:0; z-index:30; background:#1f1b15;
+-#scale-sheet{position:fixed; inset:0; z-index:30; background:#1a1814;
 +#scale-sheet{position:fixed; inset:0; z-index:30; background:transparent;
    display:flex; align-items:flex-end; justify-content:center}
  [hidden]{display:none !important}

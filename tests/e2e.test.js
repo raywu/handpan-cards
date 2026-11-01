@@ -2624,6 +2624,88 @@ function run() {
       { label: "the sheet to close after Generate" });
   }
 
+  test("PAU: at 380px the Layout tab's Standard / Paired areas toggle and all 18 area rows are reachable 44px targets with no horizontal scroll, and a paired SAVE closes the sheet", async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    try {
+      await openSheet();
+      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      await b.click("#scale-tab-layout");
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-paired");
+      await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "the Paired areas panel" });
+      const m = await b.eval(`
+        const rect = (e) => e.getBoundingClientRect();
+        const targets = [document.getElementById("scale-mode-standard"), document.getElementById("scale-mode-paired"),
+          document.getElementById("scale-areas-reset"), ...document.querySelectorAll("#scale-areas select")];
+        return {
+          count: document.querySelectorAll("#scale-areas select").length,
+          short: targets.filter((e) => rect(e).height < 44 || rect(e).width < 44).map((e) => e.id),
+          outside: targets.filter((e) => rect(e).left < 0 || rect(e).right > window.innerWidth).map((e) => e.id),
+          smallFont: [...document.querySelectorAll("#scale-areas select")].filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16).length,
+          scrollX: document.documentElement.scrollWidth - window.innerWidth,
+          bodyScrollX: document.querySelector("#scale-sheet .sheetbody").scrollWidth - document.querySelector("#scale-sheet .sheetbody").clientWidth,
+          standardHidden: document.getElementById("scale-standard").hidden,
+        };
+      `);
+      assert.strictEqual(m.count, 18);
+      assert.deepStrictEqual(m.short, [], "a control is under 44px");
+      assert.deepStrictEqual(m.outside, [], "a control leaves the 380px viewport");
+      assert.strictEqual(m.smallFont, 0, "a select under 16px would zoom iOS Safari");
+      assert.ok(m.scrollX <= 0, "the page scrolls sideways: " + m.scrollX);
+      assert.ok(m.bodyScrollX <= 0, "the sheet body scrolls sideways: " + m.bodyScrollX);
+      assert.strictEqual(m.standardHidden, true);
+
+      await b.eval(`document.getElementById("scale-mode-standard").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-standard");
+      await b.waitFor(`!document.getElementById("scale-standard").hidden`, { label: "Standard back" });
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-paired");
+      await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "Paired again" });
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after a paired SAVE" });
+      const placed = await b.eval(`return !!savedEntries.get(selection.id).deck.geom.place;`);
+      assert.strictEqual(placed, true, "the saved scale is placed by area");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("PAU: in every locale at 380px the Paired areas rows, hint and reset button fit inside the sheet", async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    try {
+      const langs = await b.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+      assert.ok(langs.length >= 8);
+      await openSheet();
+      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      await b.click("#scale-tab-layout");
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-paired");
+      await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "the Paired areas panel" });
+      for (const lang of langs) {
+        await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+        const m = await b.eval(`
+          const body = document.querySelector("#scale-sheet .sheetbody");
+          const box = body.getBoundingClientRect();
+          const ids = ["scale-mode-label", "scale-mode-standard", "scale-mode-paired", "scale-paired-hint", "scale-paired-count", "scale-areas-reset"];
+          const els = [...ids.map((id) => document.getElementById(id)), ...document.querySelectorAll("#scale-areas label"), ...document.querySelectorAll("#scale-areas select")];
+          return {
+            outside: els.filter((e) => { const r = e.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; }).map((e) => e.id || e.textContent.trim()),
+            clipped: els.filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow !== "visible").map((e) => e.id || e.textContent.trim()),
+            scrollX: body.scrollWidth - body.clientWidth,
+          };
+        `);
+        assert.deepStrictEqual(m.outside, [], lang + ": a Paired areas control leaves the sheet");
+        assert.deepStrictEqual(m.clipped, [], lang + ": a Paired areas control clips its text");
+        assert.ok(m.scrollX <= 0, lang + ": the sheet scrolls sideways");
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("the page is a modal dialog with the spec'd anatomy", async () => {
     await freshLoad();
     const before = await b.eval(`
@@ -4669,6 +4751,39 @@ function run() {
     }
   });
 
+  test("MSJ: tapping a layout toggle leaves the tapped button where it was in both scrollers", async () => {
+    try {
+      for (const edit of [false, true]) for (const [w, h] of [[380, 667], [380, 780]]) {
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await generate(DR1_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else await addWithDrawer(w, h);
+        for (const id of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between", "scale-anchor-one", "scale-mirror-bottom", "scale-mirror"]) {
+          await b.eval(`const s = ${body}; s.scrollTop = s.scrollHeight - s.clientHeight - 0;
+            const u = document.querySelector("#scale-sheet .sheetsurf"); u.scrollTop = u.scrollHeight; return true;`);
+          await b.eval(`const s = ${body}, el = document.getElementById(${JSON.stringify(id)});
+            const hit = () => { const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && el.contains(t); };
+            while (!hit() && s.scrollTop > 0) s.scrollTop = Math.max(0, s.scrollTop - 10);
+            return hit();`);
+          await b.settle();
+          const at = () => b.eval(`return { top: document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top,
+            body: ${body}.scrollTop, surf: document.querySelector("#scale-sheet .sheetsurf").scrollTop };`);
+          const before = await at();
+          await b.click("#" + id);
+          await b.settle();
+          const after = await at();
+          assert.ok(Math.abs(after.top - before.top) <= 1,
+            `${id} moved ${before.top} -> ${after.top} (${edit ? "Edit" : "Add"} ${w} x ${h}): ${JSON.stringify({ before, after })}`);
+        }
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("UX: Adjust layout is two columns at 844x390 with the pan >=270px with no message, one column at 500x390", async () => {
     try {
       await addWithDrawer(844, 390);
@@ -5002,7 +5117,7 @@ function run() {
     }
   });
 
-  test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
+  test("DR1 line 38: each drawer control shows the global 2px teal #44e0d8 focus ring from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
       await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
@@ -5010,7 +5125,7 @@ function run() {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
           return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
-        assert.deepStrictEqual(o, { w: "2px", c: "rgb(227, 178, 92)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
+        assert.deepStrictEqual(o, { w: "2px", c: "rgb(68, 224, 216)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5229,7 +5344,7 @@ function run() {
       assert.ok(st.name.length > 0, "the Name field is empty");
       assert.strictEqual(st.primary, "SAVE CHANGES");
       assert.strictEqual(st.del, "DELETE THIS SCALE");
-      assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
+      assert.strictEqual(st.delColor, "rgb(169, 163, 154)", "the delete link is not #a9a39a");
       assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
       assert.ok(st.body.sw <= st.body.cw + 1,
@@ -5392,7 +5507,7 @@ function run() {
         const panhit = await b.eval(`const el = document.querySelector('#scale-preview .panhit[tabindex="0"]'); return el ? (el.id || el.getAttribute("aria-label") || "") : null;`);
         assert.notStrictEqual(panhit, null, `${mode}: the plate is not a tab stop`);
         const layoutCycle = ["scale-back", "scale-tab-layout", panhit, "scale-anchor-one", "scale-anchor-between", "scale-mirror",
-          "scale-fine-toggle", "scale-layout-reset", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
+          "scale-fine-toggle", "scale-layout-reset", "scale-mode-standard", "scale-mode-paired", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
         await both(`${mode} Layout tab`, layoutCycle);
         ran.push(`${mode}/layout`);
         assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null, `${mode}: the sheet holds a select`);
@@ -5556,8 +5671,8 @@ function run() {
       assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
         "the armed delete button keeps its amber under the thumb - the press that "
         + "destroys the deck is the one control on the page that does not answer");
-      assert.strictEqual(held.color, "rgb(234, 230, 223)",
-        "the armed delete button presses to something other than #eae6df, which is "
+      assert.strictEqual(held.color, "rgb(246, 244, 237)",
+        "the armed delete button presses to something other than #f6f4ed, which is "
         + "the pressed colour every other control on this page uses");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the held press was released" });
@@ -7074,7 +7189,7 @@ function run() {
       assert.strictEqual(m.msgParent, "scale-guidance");
       assert.strictEqual(m.noteParent, "scale-guidance");
       assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
-      assert.strictEqual(m.noteColor, "rgb(196, 188, 171)", "N-A9: the notice is not the sheet's neutral #c4bcab inside the slot");
+      assert.strictEqual(m.noteColor, "rgb(169, 163, 154)", "N-A9: the notice is not the sheet's neutral #a9a39a inside the slot");
       assert.strictEqual(m.warnColor, "rgb(227, 178, 92)", "N-A9: #scale-msg.warn is not amber #e3b25c");
       assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
       assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
@@ -8599,7 +8714,7 @@ function run() {
       }
     });
 
-    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px cream underline on the selected one, 44px tall`, async () => {
+    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px teal underline on the selected one, 44px tall`, async () => {
       try {
         await freshLoad();
         await b.setViewport(vw, vh, true);
@@ -8616,10 +8731,10 @@ function run() {
         assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
         assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
         assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
-        const cream = "rgb(241, 236, 225)";
-        const underlined = (t) => (t.bw === "2px" && t.bc === cream) || (t.afH === "2px" && t.afBg === cream);
-        assert.ok(underlined(sel), `the selected tab has no 2px cream underline: ${JSON.stringify(sel)}`);
-        assert.ok(!underlined(other), "the unselected tab is underlined in cream");
+        const teal = "rgb(68, 224, 216)";
+        const underlined = (t) => (t.bw === "2px" && t.bc === teal) || (t.afH === "2px" && t.afBg === teal);
+        assert.ok(underlined(sel), `the selected tab has no 2px teal underline: ${JSON.stringify(sel)}`);
+        assert.ok(!underlined(other), "the unselected tab is underlined in teal");
         assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
         assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
       } finally {
@@ -8957,8 +9072,8 @@ function run() {
       [1280, 800, "desktop"],
     ];
 
-    const TABLE = [26, 24, 21];   // #1a1815
-    const TABLE2 = [38, 34, 28];  // #26221c
+    const TABLE = [15, 14, 11];   // #0f0e0b
+    const TABLE2 = [15, 14, 11];  // #0f0e0b
     const FRAME = 4;              // outer pixel frame width to sample
 
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
@@ -9075,7 +9190,7 @@ function run() {
       await freshLoad();
       const bg = await b.eval(
         `return getComputedStyle(document.documentElement).backgroundColor;`);
-      assert.strictEqual(bg, "rgb(26, 24, 21)");
+      assert.strictEqual(bg, "rgb(15, 14, 11)");
     });
 
     test("under print media, html computes to a white background", async () => {
@@ -10736,7 +10851,7 @@ function run() {
           }
           const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
             const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
-          assert.deepStrictEqual(ring, ["2px", "rgb(227, 178, 92)", "solid"], `${w}x${h}: global focus ring`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(68, 224, 216)", "solid"], `${w}x${h}: global focus ring`);
         }
       } finally { await b.setViewport(900, 900, false); }
     });
@@ -11241,8 +11356,8 @@ function run() {
         assert.ok(m.fontSize >= 18, `${deckId}: #count font-size is ${m.fontSize}px, needs >= 18px`);
         assert.strictEqual(m.textAlign, "center", `${deckId}: #count text-align is "${m.textAlign}"`);
         assert.ok(m.color, `${deckId}: the rail's current chord <b> was not found`);
-        const ratio = contrastRatio(m.color, [0x1a, 0x18, 0x15]);
-        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #1a1815, needs ${AA_NORMAL}`);
+        const ratio = contrastRatio(m.color, [0x0f, 0x0e, 0x0b]);
+        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #0f0e0b, needs ${AA_NORMAL}`);
         assert.ok(m.decorationLine.includes("underline"), `${deckId}: rail current chord lost its underline`);
         assert.deepStrictEqual(m.decorationColor, hexToRgb(m.root),
           `${deckId}: underline colour must be the deck's root colour`);

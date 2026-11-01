@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10689,7 +10689,7 @@ function savedEditedRecord(target, candidate) {
+@@ -10923,7 +10923,7 @@ function savedEditedRecord(target, candidate) {
  }
  function applySavedCommand(staged, command, candidate) {
    const current = staged.envelope;
