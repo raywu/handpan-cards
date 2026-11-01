@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11659,7 +11659,7 @@ let bandPad = "", plateRoom = "", pinPad = "";
+@@ -12217,7 +12217,7 @@ let bandPad = "", plateRoom = "", pinPad = "";
     which is the more recent and the more actionable of the two, and the
     summary comes straight back on the next keystroke. */
  function refreshSavedSubmit() {
--  const disabled=!!savePending || buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly");
-+  const disabled=!!savePending || buildRefused || !submitParseValid || fieldsStale || scaleBox.hasAttribute("readonly");
+-  const disabled=!!savePending || buildRefused || !submitParseValid || (inputPath === "fields" && lineStale) || scaleBox.hasAttribute("readonly") || (neotoneOn() && boxOk && unplacedNotes().length > 0);
++  const disabled=!!savePending || buildRefused || !submitParseValid || fieldsStale || scaleBox.hasAttribute("readonly") || (neotoneOn() && boxOk && unplacedNotes().length > 0);
    genBtn.disabled=disabled;
    document.getElementById("scale-conflict-separate").disabled=disabled;
  }

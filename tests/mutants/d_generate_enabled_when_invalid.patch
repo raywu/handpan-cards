@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13045,7 +13045,7 @@ function syncParseState({ paint }) {
-     typedNow = null;
+@@ -14070,7 +14070,7 @@ function syncParseState({ paint }) {
      paintLayout();
-     scaleBox.classList.add("bad");
+     showParse(PARSE_HINT());
+     scaleBox.classList.remove("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
      document.getElementById("scale-conflict-separate").disabled=true;
-     if (paint) holdPanPreview();
-     showRefusal(reasonText(res));
+     if (paint) showPlaceholderPan();
+     say("", "");

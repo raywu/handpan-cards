@@ -5,15 +5,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1534,6 +1534,7 @@ html.about-open{overflow:hidden}
+@@ -1649,6 +1649,7 @@ html.about-open{overflow:hidden}
        <p class="sheethint" id="scale-line-note"></p>
      </div>
      </div>
 +   </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
-     <div id="scale-plate-band">
-       <div id="scale-preview" role="img"
-@@ -1627,7 +1628,6 @@ html.about-open{overflow:hidden}
+     <div class="editrow" id="scale-mode-row" hidden>
+       <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>
+@@ -1757,7 +1758,6 @@ html.about-open{overflow:hidden}
        </div>
      </div>
      </div>
