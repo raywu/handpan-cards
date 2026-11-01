@@ -1,0 +1,14 @@
+# kills: test_every_chord_card_has_one_mark_reading_bottom_to_top
+# suite: python3 -m unittest -k test_every_chord_card_has_one_mark_reading_bottom_to_top tests.test_print
+# drop the URL mark call from the chord card (py).
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -537,7 +537,6 @@ def chord_card(c, x, y, deck, num, chord):
+     if deg:
+         tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE)
+     side_credit(c, x, y, CW, CH, deck["credit"])
+-    url_mark(c, x, y, CW, CH)
+     draw_pan(c, x + CW / 2, y + deck["cy"], deck["R"], spec, active_all, roots_all)
+ 
+     nb = len([f for f in fields if spec[f][3] == "bottom"])
