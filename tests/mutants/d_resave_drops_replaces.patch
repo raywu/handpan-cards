@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10575,6 +10575,7 @@ function applySavedCommand(staged, command, candidate) {
-     const row = existing();
+@@ -11043,6 +11043,7 @@ function applySavedCommand(staged, command, candidate) {
      if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     if (candidate.deck.options.profile && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
      const record = savedEditedRecord(row.record, candidate);
 +    delete record.o.replaces;
      if (!savedEqual(record, row.record)) {
