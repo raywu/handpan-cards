@@ -107,6 +107,8 @@
   "sheet.reset_areas": "BEREICHE ZURÜCKSETZEN",
   "sheet.areas_reset": "Bereiche zurückgesetzt.",
   "sheet.paired_incomplete": "Noten ohne Bereich: {n}. Gib jeder Note einen Bereich.",
+  "sheet.paired_dropped": "Paarbereiche fassen höchstens 18 Noten, daher ist die Anordnung wieder Standard.",
+  "sheet.areas_label": "Bereiche und ihre Noten",
   "sheet.palette": "KARTENFARBEN",
   "sheet.palette_n": "Farbpalette {n}",
   "sheet.next": "WEITER",

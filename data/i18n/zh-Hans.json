@@ -107,6 +107,8 @@
   "sheet.reset_areas": "重置区域",
   "sheet.areas_reset": "区域已重置。",
   "sheet.paired_incomplete": "有 {n} 个音没有区域。请为每个音选一个区域。",
+  "sheet.paired_dropped": "配对区域最多容纳 18 个音，因此布局已恢复为标准。",
+  "sheet.areas_label": "区域及其音符",
   "sheet.palette": "卡片配色",
   "sheet.palette_n": "配色 {n}",
   "sheet.next": "下一步",

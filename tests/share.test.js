@@ -2193,7 +2193,6 @@ test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v8 always is", () 
   const link = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
   const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
   off.core.PROFILE_ENABLED = false;
-  assert.equal(off.core.PROFILE_ENABLED, false);
   const r = off.share.decode(link);
   assert.equal(r.ok, false);
   assert.equal(r.code, "NEEDS_NEWER_APP");

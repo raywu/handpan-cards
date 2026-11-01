@@ -454,3 +454,70 @@ test("PAU-I: a corpus record's saved meaning is identical in the shipped client 
   }
   assert.ok(compared > 5, "the corpus supplied records to compare");
 });
+
+const openChipOf = (app, name) => {
+  const row = envelopeOf(app).entries.find((e) => e.record.o && e.record.o.name === name);
+  app.select(row.instanceId);
+  app.clickChip(name);
+};
+
+test("PAU-I: the old client's Edit, Delete of another scale and RESET SEEDED leave the v5 row untouched and the library unprotected", async () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = createOrigin({ storage: {} });
+  const fresh = await sharedBoot(origin, NEW_HTML);
+  await saveAcoustic(fresh, PA_AMARA, "ACOU A");
+  await saveAcoustic(fresh, "(E3) B3 D4 E4 F#4 G#4", "ACOU B");
+  await savePaired(fresh, PA_HIJAZ, "PAIRED ONE");
+  const pairedRow = envelopeOf(fresh).entries.find((e) => e.record.v === 5);
+  assert.ok(pairedRow, "the new client wrote a v5 row");
+
+  const old = await sharedBoot(origin, OLD_HTML);
+  assert.notStrictEqual(old.get("savedMode"), "protected");
+
+  openChipOf(old, "ACOU A");
+  old.els["scale-name"].value = "ACOU A2";
+  old.els["scale-name"].dispatchEvent({ type: "input" });
+  await old.getAsync("runGenerate()");
+  await settle();
+  const afterEdit = envelopeOf(old);
+  assert.ok(afterEdit.entries.some((e) => e.record.o && e.record.o.name === "ACOU A2"), "the edit landed");
+  assert.deepStrictEqual(afterEdit.entries.find((e) => e.record.v === 5), pairedRow, "Edit left the v5 row alone");
+
+  openChipOf(old, "ACOU B");
+  old.els["scale-delete"].click();
+  await settle();
+  old.els["scale-delete"].click();
+  await settle();
+  await new Promise((r) => setTimeout(r, 300));
+  await settle();
+  const afterDelete = envelopeOf(old);
+  assert.ok(!afterDelete.entries.some((e) => e.record.o && e.record.o.name === "ACOU B"), "the other scale is gone");
+  assert.deepStrictEqual(afterDelete.entries.find((e) => e.record.v === 5), pairedRow, "Delete left the v5 row alone");
+
+  old.els["deck-restore"].click();
+  old.els["deck-restore"].click();
+  await settle();
+  assert.deepStrictEqual(envelopeOf(old).entries.find((e) => e.record.v === 5), pairedRow, "RESET SEEDED left the v5 row alone");
+  assert.notStrictEqual(old.get("savedMode"), "protected");
+
+  const back = await sharedBoot(origin, NEW_HTML);
+  assert.ok(chips(back).some((c) => c.includes("PAIRED ONE")), "the new client still shows the paired scale");
+});
+
+test("PAU-I: a stored preferredSelection naming the v5 row falls back to a visible scale in the old client and writes nothing", async () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = createOrigin({ storage: {} });
+  const fresh = await sharedBoot(origin, NEW_HTML);
+  await savePaired(fresh, PA_HIJAZ, "PAIRED ONE");
+  const env = envelopeOf(fresh);
+  const pairedRow = env.entries.find((e) => e.record.v === 5);
+  assert.deepStrictEqual(env.preferredSelection, { kind: "saved", id: pairedRow.instanceId }, "the paired row is the preferred selection");
+  const before = JSON.stringify(env);
+
+  const old = await sharedBoot(origin, OLD_HTML);
+  const shown = plain(old.get("selection"));
+  assert.notDeepStrictEqual(shown, { kind: "saved", id: pairedRow.instanceId }, "the opaque row is not selected");
+  assert.strictEqual(shown.kind, "builtin", "the old client falls back to a visible scale");
+  assert.strictEqual(JSON.stringify(envelopeOf(old)), before, "the fallback did not rewrite the library");
+  assert.notStrictEqual(old.get("savedMode"), "protected");
+});

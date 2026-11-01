@@ -107,6 +107,8 @@
   "sheet.reset_areas": "RESET AREAS",
   "sheet.areas_reset": "Areas reset.",
   "sheet.paired_incomplete": "Notes without an area: {n}. Give each note an area.",
+  "sheet.paired_dropped": "Paired areas hold at most 18 notes, so the layout is back to Standard.",
+  "sheet.areas_label": "Areas and their notes",
   "sheet.palette": "CARD PALETTE",
   "sheet.palette_n": "Palette {n}",
   "sheet.next": "NEXT",
