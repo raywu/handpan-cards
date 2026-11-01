@@ -9845,6 +9845,31 @@ describe("discoverability: analytics events", () => {
   });
 });
 
+describe("NAN: analytics with a non-ASCII-named scale", () => {
+  test("no queued entry, event name or param holds a character above 0x7E", async () => {
+    const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: "https://example.test/index.html" });
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.els["scale-name"].value = "Café 日本 🥁";
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    await generateClick(app);
+    assert.ok(chipRow(app).some((c) => c.label.startsWith("Café")), "the scale did not save under its name");
+    app.sandbox.navigator.clipboard = { writeText: async () => {} };
+    app.els["share-copy"].click();
+    await new Promise((r) => setImmediate(r));
+    app.run('flip(); setTier("basic"); downloadDeckPDF("shop"); selectDeck("hijaz");');
+    const queue = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+    const sent = queue.filter((e) => e[0] === "event");
+    assert.ok(sent.length >= 5, "too few events to mean anything: " + sent.length);
+    assert.ok(!/[^\x00-\x7e]/.test(JSON.stringify(queue)), "a non-ASCII character reached the analytics queue");
+    for (const e of sent) {
+      for (const v of Object.values(e[2] || {})) {
+        if (typeof v === "string") assert.ok(!/[^\x20-\x7e]/.test(v), e[1] + " " + JSON.stringify(v));
+      }
+    }
+  });
+});
+
 describe("discoverability: deck route", () => {
   const REAL_ID = "G-TEST123456";
   const SLUGS = { "d-kurd-10": "kurd", "d-amara-10": "amara10", "d-amara-9": "amara", "f-low-pygmy-18": "pygmy", "c-sharp-hijaz-9": "hijaz" };
