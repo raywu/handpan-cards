@@ -163,6 +163,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -329,20 +335,12 @@
     "aria-pressed": "true"
    }
   },
-  "scale-mode-paired": {
-   "text": "PAIRED AREAS",
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
    "html": "",
    "hidden": false,
    "attrs": {
     "aria-pressed": "false"
-   }
-  },
-  "scale-mode-full": {
-   "text": "",
-   "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
    }
   },
   "scale-standard": {
@@ -351,7 +349,7 @@
    "hidden": false,
    "attrs": {}
   },
-  "scale-paired": {
+  "scale-neotone-pair": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -359,29 +357,71 @@
     "hidden": ""
    }
   },
-  "scale-paired-hint": {
-   "text": "Choose a note for each area. Set an area to Empty to free its note.",
+  "scale-neotone-extra": {
+   "text": "",
    "html": "",
-   "hidden": false,
-   "attrs": {}
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
-  "scale-paired-count": {
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas": {
+  "scale-neotone-wrap": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas-reset": {
-   "text": "RESET AREAS",
+  "scale-neotone-text": {
+   "text": "Neotone",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -833,6 +873,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -999,20 +1045,12 @@
     "aria-pressed": "true"
    }
   },
-  "scale-mode-paired": {
-   "text": "PAIRED AREAS",
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
    "html": "",
    "hidden": false,
    "attrs": {
     "aria-pressed": "false"
-   }
-  },
-  "scale-mode-full": {
-   "text": "",
-   "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
    }
   },
   "scale-standard": {
@@ -1021,7 +1059,7 @@
    "hidden": false,
    "attrs": {}
   },
-  "scale-paired": {
+  "scale-neotone-pair": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -1029,29 +1067,71 @@
     "hidden": ""
    }
   },
-  "scale-paired-hint": {
-   "text": "Choose a note for each area. Set an area to Empty to free its note.",
+  "scale-neotone-extra": {
+   "text": "",
    "html": "",
-   "hidden": false,
-   "attrs": {}
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
-  "scale-paired-count": {
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas": {
+  "scale-neotone-wrap": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas-reset": {
-   "text": "RESET AREAS",
+  "scale-neotone-text": {
+   "text": "Neotone",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -1507,6 +1587,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -1673,20 +1759,12 @@
     "aria-pressed": "true"
    }
   },
-  "scale-mode-paired": {
-   "text": "PAIRED AREAS",
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
    "html": "",
    "hidden": false,
    "attrs": {
     "aria-pressed": "false"
-   }
-  },
-  "scale-mode-full": {
-   "text": "",
-   "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
    }
   },
   "scale-standard": {
@@ -1695,7 +1773,7 @@
    "hidden": false,
    "attrs": {}
   },
-  "scale-paired": {
+  "scale-neotone-pair": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -1703,29 +1781,71 @@
     "hidden": ""
    }
   },
-  "scale-paired-hint": {
-   "text": "Choose a note for each area. Set an area to Empty to free its note.",
+  "scale-neotone-extra": {
+   "text": "",
    "html": "",
-   "hidden": false,
-   "attrs": {}
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
-  "scale-paired-count": {
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas": {
+  "scale-neotone-wrap": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas-reset": {
-   "text": "RESET AREAS",
+  "scale-neotone-text": {
+   "text": "Neotone",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -2195,6 +2315,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -2363,20 +2489,12 @@
     "aria-pressed": "true"
    }
   },
-  "scale-mode-paired": {
-   "text": "PAIRED AREAS",
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
    "html": "",
    "hidden": false,
    "attrs": {
     "aria-pressed": "false"
-   }
-  },
-  "scale-mode-full": {
-   "text": "",
-   "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
    }
   },
   "scale-standard": {
@@ -2385,7 +2503,7 @@
    "hidden": false,
    "attrs": {}
   },
-  "scale-paired": {
+  "scale-neotone-pair": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -2393,29 +2511,71 @@
     "hidden": ""
    }
   },
-  "scale-paired-hint": {
-   "text": "Choose a note for each area. Set an area to Empty to free its note.",
+  "scale-neotone-extra": {
+   "text": "",
    "html": "",
-   "hidden": false,
-   "attrs": {}
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
-  "scale-paired-count": {
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas": {
+  "scale-neotone-wrap": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas-reset": {
-   "text": "RESET AREAS",
+  "scale-neotone-text": {
+   "text": "Neotone",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -2883,6 +3043,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -3045,20 +3211,12 @@
     "aria-pressed": "true"
    }
   },
-  "scale-mode-paired": {
-   "text": "PAIRED AREAS",
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
    "html": "",
    "hidden": false,
    "attrs": {
     "aria-pressed": "false"
-   }
-  },
-  "scale-mode-full": {
-   "text": "",
-   "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
    }
   },
   "scale-standard": {
@@ -3067,7 +3225,7 @@
    "hidden": false,
    "attrs": {}
   },
-  "scale-paired": {
+  "scale-neotone-pair": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -3075,29 +3233,71 @@
     "hidden": ""
    }
   },
-  "scale-paired-hint": {
-   "text": "Choose a note for each area. Set an area to Empty to free its note.",
+  "scale-neotone-extra": {
+   "text": "",
    "html": "",
-   "hidden": false,
-   "attrs": {}
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
-  "scale-paired-count": {
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas": {
+  "scale-neotone-wrap": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas-reset": {
-   "text": "RESET AREAS",
+  "scale-neotone-text": {
+   "text": "Neotone",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -3571,6 +3771,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -3737,20 +3943,12 @@
     "aria-pressed": "true"
    }
   },
-  "scale-mode-paired": {
-   "text": "PAIRED AREAS",
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
    "html": "",
    "hidden": false,
    "attrs": {
     "aria-pressed": "false"
-   }
-  },
-  "scale-mode-full": {
-   "text": "",
-   "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
    }
   },
   "scale-standard": {
@@ -3759,7 +3957,7 @@
    "hidden": false,
    "attrs": {}
   },
-  "scale-paired": {
+  "scale-neotone-pair": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -3767,29 +3965,71 @@
     "hidden": ""
    }
   },
-  "scale-paired-hint": {
-   "text": "Choose a note for each area. Set an area to Empty to free its note.",
+  "scale-neotone-extra": {
+   "text": "",
    "html": "",
-   "hidden": false,
-   "attrs": {}
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
-  "scale-paired-count": {
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas": {
+  "scale-neotone-wrap": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas-reset": {
-   "text": "RESET AREAS",
+  "scale-neotone-text": {
+   "text": "Neotone",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -4257,6 +4497,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -4423,20 +4669,12 @@
     "aria-pressed": "true"
    }
   },
-  "scale-mode-paired": {
-   "text": "PAIRED AREAS",
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
    "html": "",
    "hidden": false,
    "attrs": {
     "aria-pressed": "false"
-   }
-  },
-  "scale-mode-full": {
-   "text": "",
-   "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
    }
   },
   "scale-standard": {
@@ -4445,7 +4683,7 @@
    "hidden": false,
    "attrs": {}
   },
-  "scale-paired": {
+  "scale-neotone-pair": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -4453,29 +4691,71 @@
     "hidden": ""
    }
   },
-  "scale-paired-hint": {
-   "text": "Choose a note for each area. Set an area to Empty to free its note.",
+  "scale-neotone-extra": {
+   "text": "",
    "html": "",
-   "hidden": false,
-   "attrs": {}
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
-  "scale-paired-count": {
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas": {
+  "scale-neotone-wrap": {
    "text": "",
    "html": "",
    "hidden": false,
    "attrs": {}
   },
-  "scale-areas-reset": {
-   "text": "RESET AREAS",
+  "scale-neotone-text": {
+   "text": "Neotone",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",

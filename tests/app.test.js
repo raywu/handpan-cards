@@ -7374,10 +7374,10 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", async () =
         if (here === "scale-back") break;
         seen.push(here);
       }
-      const want = ["scale-tab-layout", "plate", "scale-anchor-one",
+      const want = ["scale-tab-layout", "scale-mode-standard", "scale-mode-neotone", "plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset", "scale-mode-standard", "scale-mode-paired", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
+        "scale-layout-reset", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
       assert.deepStrictEqual(seen, want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
@@ -9354,7 +9354,7 @@ test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script car
   const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
     .replace(/<!--[\s\S]*?-->/g, "");
   assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
-    ["scale-name-row", undefined, "scale-mode-row", undefined],
+    ["scale-name-row", "scale-mode-row", undefined, undefined],
     "an .editrow other than the name row, the layout zone's own and the palette's is in .sheetbody");
   assert.ok(/class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">/.test(body), "the last .editrow is not the palette's");
 
@@ -11232,13 +11232,13 @@ describe("DI: dual input", () => {
   const fillAmara = (app) => { fieldType(app, "ding", AMARA_FIELDS.ding); fieldType(app, "top", AMARA_FIELDS.top); };
   const src = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 
-  test("DI: the sheet serves DING, TOP RIM NOTES, TOP INNER (CYCLOPS/MUTANT) NOTE and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", async () => {
+  test("DI: the sheet serves DING, Top Notes, TOP INNER (CYCLOPS) NOTE and Bottom Notes in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", async () => {
     const h = src();
     const at = (id) => h.indexOf(`id="${id}"`);
     const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
     assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
     assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
-    const labels = { ding: "DING", top: "TOP RIM NOTES", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)", bottom: "BOTTOM NOTES (OPTIONAL)" };
+    const labels = { ding: "DING", top: "Top Notes", inner: "TOP INNER (CYCLOPS) NOTE (OPTIONAL)", bottom: "Bottom Notes / Neotone Mutant Notes (optional)" };
     for (const k of FIELDS) {
       const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
       assert.match(tag, /type="text"/, k);
@@ -11459,8 +11459,8 @@ describe("DI: dual input", () => {
 
   test("IB: no sheet label or hint says low to high except the octave sentence", async () => {
     const h = src();
-    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE \(OPTIONAL\)</);
-    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES \(OPTIONAL\)</);
+    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\) NOTE \(OPTIONAL\)</);
+    assert.match(h, /id="scale-bottom-label"[^>]*>Bottom Notes \/ Neotone Mutant Notes \(optional\)</);
     const sentence = "Octaves are optional: without one, we assume the notes run low to high.";
     const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
     assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
@@ -11555,7 +11555,7 @@ describe("DI: dual input", () => {
     assert.strictEqual(el(app, "scale-msg").hidden, true);
     fieldType(app, "ding", "D3");
     fieldSettle(app, "ding");
-    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    assert.match(el(app, "scale-field-msg").textContent, /^Top Notes: /);
     fieldType(app, "top", "A3 C4 D4");
     fieldSettle(app, "top");
     assert.strictEqual(el(app, "scale-field-msg").textContent, "");
@@ -11618,7 +11618,7 @@ describe("DI: dual input", () => {
     assert.strictEqual(el(app, "scale-field-msg").textContent, "");
     assert.strictEqual(cls(app, "scale-top", "bad"), false);
     fieldSettle(app, "top");
-    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    assert.match(el(app, "scale-field-msg").textContent, /^Top Notes: /);
     assert.strictEqual(cls(app, "scale-top", "bad"), true);
     assert.strictEqual(el(app, "scale-top").getAttribute("aria-invalid"), "true");
   });
@@ -11676,10 +11676,10 @@ describe("DI: dual input", () => {
     };
     const add = openAdd();
     el(add, "scale-back").focus();
-    assert.deepStrictEqual(walk(add, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    assert.deepStrictEqual(walk(add, 8), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box"]);
     const edit = openBuiltin("amara");
     el(edit, "scale-back").focus();
-    assert.deepStrictEqual(walk(edit, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    assert.deepStrictEqual(walk(edit, 8), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box"]);
   });
 
   test("DI: a typed line keeps its spelling until a field edit rewrites it canonically", async () => {
@@ -11753,7 +11753,7 @@ describe("DI: dual input", () => {
     assert.strictEqual(cls(app, "scale-box", "stale"), true);
     assert.strictEqual(el(app, "scale-refusal").textContent, "");
     assert.strictEqual(el(app, "scale-line-note").textContent, "Not updated: the notes above have a problem.");
-    assert.match(el(app, "scale-field-msg").textContent, /TOP RIM NOTES/);
+    assert.match(el(app, "scale-field-msg").textContent, /Top Notes/);
     assert.strictEqual(el(app, "scale-generate").disabled, true);
     assert.deepStrictEqual(fieldTexts(app), fields);
   });
@@ -12082,12 +12082,12 @@ describe("TB: the sheet's tabs", () => {
   });
 
   test("TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop", async () => {
-    const scaleAdd = ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"];
+    const scaleAdd = ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box"];
     let app = boot();
     openSheet(app);
     let seen = tbStops(app, "scale-back", 16);
-    assert.deepStrictEqual(seen.slice(0, 8), scaleAdd);
-    assert.ok(seen.slice(8).includes("scale-next"), seen.join());
+    assert.deepStrictEqual(seen.slice(0, 9), scaleAdd);
+    assert.ok(seen.slice(9).includes("scale-next"), seen.join());
     assert.ok(!seen.includes("scale-generate"));
     assert.ok(!seen.includes("scale-layout-reset"));
     app = boot();
@@ -12295,11 +12295,11 @@ describe("O1: the duplicate-bottom warning on the field line", () => {
     assert.strictEqual(both.els["scale-field-msg"].textContent, WARN_DING);
     type(both, "top", "A3 X4");
     settle(both, "top");
-    assert.ok(both.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), both.els["scale-field-msg"].textContent);
+    assert.ok(both.els["scale-field-msg"].textContent.startsWith("Top Notes: "), both.els["scale-field-msg"].textContent);
     assert.ok(!both.els["scale-field-msg"].classList.contains("warn"));
     type(app, "top", "A3 X4");
     settle(app, "top");
-    assert.ok(app.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), app.els["scale-field-msg"].textContent);
+    assert.ok(app.els["scale-field-msg"].textContent.startsWith("Top Notes: "), app.els["scale-field-msg"].textContent);
     assert.ok(!app.els["scale-field-msg"].classList.contains("warn"));
   });
   test("O1: with inner f guessed under D3 / A3 C4, bottoms c d still show the duplicate warning on the field line over the inner Octaves-guessed line", async () => {
@@ -13763,12 +13763,12 @@ describe("CN: SCALE NAME on the Add sheet", () => {
     const app = boot();
     openSheet(app);
     const seen = [app.activeId()];
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 9; i += 1) {
       app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
       seen.push(app.activeId());
     }
-    assert.deepStrictEqual(seen.slice(0, 9), ["scale-back", "scale-tab-scale", "scale-name", "scale-ding",
-      "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"]);
+    assert.deepStrictEqual(seen.slice(0, 10), ["scale-back", "scale-tab-scale", "scale-name", "scale-ding",
+      "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-next"]);
   });
 
   test("CN8: Add with a different typed name preserves the original and exact repeats reuse the named instance", async () => {
@@ -15225,14 +15225,14 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],pairedKeys=["sheet.layout_mode","sheet.mode_standard","sheet.mode_paired","sheet.paired_hint","sheet.paired_count","sheet.paired_area_main","sheet.paired_area_small","sheet.paired_empty","sheet.paired_note_bottom","sheet.paired_note_in","sheet.reset_areas","sheet.areas_reset","sheet.paired_incomplete","reason.PROFILE_UNKNOWN","reason.PROFILE_MAP_INVALID","reason.PROFILE_NOTE_MISSING","reason.PROFILE_NOTE_TWICE","reason.PROFILE_FULL","reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share",...pairedKeys];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share) and the nineteen Paired areas keys (Neotone lane U)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share",...neotoneKeys];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
       .update(JSON.stringify(baseKeys.sort())).digest("hex"),contract.sortedKeySha256,"all frozen baseline key identities remain unchanged");
     assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
-      [...contract.pluralKeys].sort(), "frozen plural keys");
+      [...contract.pluralKeys, ...neotoneKeys.filter((k) => isPlural(en[k]))].sort(), "frozen plural keys plus the Neotone plurals");
     assert.deepStrictEqual(Object.keys(contract.pluralFormsByLocale).sort(), [...locales].sort());
     // This is the single independently reviewed baseline exception. Adding an
     // exception to make a changed table pass requires a new semantic decision.
@@ -15244,7 +15244,7 @@ describe("I18N", () => {
       const table = JSON.parse(fs.readFileSync(path.join(dir, locale + ".json"), "utf8"));
       assert.deepStrictEqual(Object.keys(table).sort(), Object.keys(en).sort(), locale + ": key parity with en");
       for (const k of Object.keys(en)) {
-        const plural = contract.pluralKeys.includes(k);
+        const plural = contract.pluralKeys.includes(k) || (neotoneKeys.includes(k) && isPlural(en[k]));
         const label = locale + " " + k;
         assert.strictEqual(isPlural(table[k]), plural, label + ": scalar/plural type");
         if (plural) {
@@ -18639,169 +18639,257 @@ describe("NS: native share", () => {
  * Profile scales save as v5 records and share as v7 links. A profile record
  * never carries `replaces` (owner rule I1), so a profile SAVE on a seeded scale
  * is a separate custom entry and never a slot owner. */
-describe("PAU: paired areas sheet, saves and links", () => {
-  const areaSelects = (app) => app.els["scale-areas"].children.map((row) => row.children[1]);
-  const pickArea = (app, i, value) => {
-    const select = areaSelects(app)[i];
-    select.value = value;
-    select.onchange();
-  };
-  const openPaired = (app, text = AMARA_STRING) => {
+describe("NEO: Neotone sheet, saves and links", () => {
+  const EN = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"));
+  const BOTTOM_AMARA = "[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const TOP_PYGMY = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]";
+  const OWNER = "00000000-0000-4000-8000-000000000001";
+  const entries = (app) => savedEnvelope(app).entries;
+  const goLayout = (app) => app.click(app.els["scale-tab-layout"]);
+  const openNeo = (app, text = AMARA_STRING) => {
     openSheet(app);
     app.type(text);
-    app.click(app.els["scale-tab-layout"]);
-    app.els["scale-mode-paired"].click();
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
   };
+  const map = (app) => plain(app.get("profileMap"));
+  const nhits = (app) => [...String(app.els["scale-preview"].innerHTML || "").matchAll(/<circle class="nhit"[^>]*\/>/g)].map((m) => m[0]);
   const profileOf = (app, text, extra = {}) => plain(app.get(`(() => {
     const s = HPE.core.parseSeed(${JSON.stringify(text)});
     const p = HPE.layout.proposeProfile(s.value.fields);
-    return { palette: 1, ...${JSON.stringify(extra)}, profile: { id: "paired", rev: 1, map: p.value } };
+    return { palette: 1, ...${JSON.stringify(extra)}, profile: { id: "paired", rev: 2, map: p.value.map } };
   })()`));
-  const entries = (app) => savedEnvelope(app).entries;
-  const OWNER = "00000000-0000-4000-8000-000000000001";
+  const openBuiltin = (app, id) => {
+    const d = decks(app).find((x) => x.id === id);
+    app.select(d.id);
+    app.clickChip(d.name);
+    return d;
+  };
 
-  test("PAU1: the Layout tab offers Standard and Paired areas; Paired areas lists 18 areas, every note assigned", async () => {
+  test("NEO1: the labels, the switch and the checkbox carry the approved en values, and no Option A control is served", async () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const app = boot();
+    openSheet(app);
+    const served = (id) => (html.match(new RegExp(`id="${id}"[^>]*>([^<]*)<`)) || [])[1];
+    assert.strictEqual(served("scale-top-label"), "Top Notes");
+    assert.strictEqual(served("scale-inner-label"), "TOP INNER (CYCLOPS) NOTE (OPTIONAL)");
+    assert.strictEqual(served("scale-bottom-label"), "Bottom Notes / Neotone Mutant Notes (optional)");
+    assert.strictEqual(served("scale-neotone-text"), "Neotone");
+    assert.strictEqual(app.els["scale-neotone"].checked, false);
+    goLayout(app);
+    assert.strictEqual(app.els["scale-mode-label"].textContent, "LAYOUT");
+    assert.strictEqual(app.els["scale-mode-standard"].textContent, "STANDARD");
+    assert.strictEqual(app.els["scale-mode-neotone"].textContent, "NEOTONE");
+    for (const gone of ["scale-mode-paired", "scale-paired", "scale-areas", "scale-areas-reset", "scale-paired-hint", "scale-paired-count"]) {
+      assert.strictEqual(html.includes(`id="${gone}"`), false, gone + " is still served");
+    }
+    const shown = [...html.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(!shown.some((k) => /paired|areas/.test(k)), "an Option A key is still bound");
+    for (const gone of ["sheet.paired_hint", "sheet.mode_paired", "sheet.reset_areas", "sheet.areas_reset", "sheet.areas_label", "sheet.paired_dropped", "sheet.paired_incomplete"]) {
+      assert.strictEqual(gone in EN, false, gone);
+    }
+  });
+
+  test("NEO2: A10 sheet.inner is exact in all eight tables and none says mutant", async () => {
+    const want = {
+      en: "TOP INNER (CYCLOPS) NOTE (OPTIONAL)", de: "OBERER INNENTON (CYCLOPS, OPTIONAL)", es: "NOTA INTERIOR (CYCLOPS) (OPCIONAL)",
+      fr: "NOTE INTÉRIEURE DU DESSUS (CYCLOPS) (FACULTATIVE)", it: "NOTA INTERNA (CYCLOPS) (OPZIONALE)", ja: "内側のノート（サイクロプス・任意）",
+      "zh-Hans": "正面内圈音（Cyclops，可选）", "zh-Hant": "上殼內圈音（Cyclops，選填）",
+    };
+    for (const [loc, value] of Object.entries(want)) {
+      const t = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", loc + ".json"), "utf8"));
+      assert.strictEqual(t["sheet.inner"], value, loc);
+      assert.ok(!/mutant/i.test(t["sheet.inner"]), loc);
+      for (const k of ["sheet.neotone_check", "sheet.mode_neotone", "sheet.top", "sheet.bottom_opt"]) assert.ok(t[k], loc + " " + k);
+      if (loc !== "en") for (const k of ["sheet.top", "sheet.bottom_opt", "sheet.neotone_rearrange", "reason.NEOTONE_INPUT"]) {
+        assert.notStrictEqual(JSON.stringify(t[k]), JSON.stringify(EN[k]), loc + " " + k + " is still English");
+      }
+    }
+  });
+
+  test("NEO3: the checkbox and the Layout switch are two-way and ticking is never refused", async () => {
     const app = boot();
     openSheet(app);
     app.type(AMARA_STRING);
-    app.click(app.els["scale-tab-layout"]);
-    assert.strictEqual(app.els["scale-mode-row"].hidden, false);
-    assert.strictEqual(app.els["scale-mode-standard"].textContent, "STANDARD");
-    assert.strictEqual(app.els["scale-mode-paired"].textContent, "PAIRED AREAS");
-    assert.strictEqual(app.els["scale-mode-standard"].getAttribute("aria-pressed"), "true");
-    assert.strictEqual(app.els["scale-paired"].hidden, true);
-    app.els["scale-mode-paired"].click();
-    assert.strictEqual(app.els["scale-paired"].hidden, false);
+    assert.strictEqual(app.els["scale-neotone"].disabled, false);
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    assert.strictEqual(app.get("neotoneOn()"), true);
+    goLayout(app);
+    assert.strictEqual(app.els["scale-mode-neotone"].getAttribute("aria-pressed"), "true");
+    assert.strictEqual(app.els["scale-mode-standard"].getAttribute("aria-pressed"), "false");
     assert.strictEqual(app.els["scale-standard"].hidden, true);
-    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true");
-    const selects = areaSelects(app);
-    assert.strictEqual(selects.length, 18);
-    const notes = app.get("profileNoteList.length");
-    assert.strictEqual(selects.filter((s) => s.value !== "").length, notes);
-    assert.strictEqual(app.els["scale-paired-count"].textContent, `Assigned ${notes} of ${notes}`);
-    assert.strictEqual(selects[0].children[0].textContent, "Empty");
-    assert.strictEqual(app.els["scale-areas"].children[0].children[0].textContent, "Area 1 · main");
-    assert.strictEqual(app.els["scale-areas"].children[9].children[0].textContent, "Area 1 · small");
-  });
-
-  test("PAU2: Standard restores the draft and the sheet options carry no profile", async () => {
-    const app = boot();
-    openPaired(app);
-    assert.deepStrictEqual(Object.keys(plain(app.get("sheetOptions()"))).sort(), ["palette"],
-      "paired options hold no mirror, anchor, seats, angles or replaces");
     app.els["scale-mode-standard"].click();
+    assert.strictEqual(app.els["scale-neotone"].checked, false, "the switch off unticks the box");
     assert.strictEqual(app.els["scale-standard"].hidden, false);
-    assert.strictEqual(app.els["scale-paired"].hidden, true);
-    const o = plain(app.get("sheetOptions()"));
-    assert.ok("anchor" in o && "mirror" in o && "mirrorBottom" in o);
-    assert.strictEqual(app.get("commitOptions().profile"), undefined);
+    assert.strictEqual(app.els["scale-box"].value, AMARA_LINE_OF(app), "notes kept");
+    app.els["scale-mode-neotone"].click();
+    assert.strictEqual(app.els["scale-neotone"].checked, true, "the switch on ticks the box");
   });
+  const AMARA_LINE_OF = (app) => app.els["scale-box"].value;
 
-  test("PAU3: an incomplete map blocks SAVE with the message and focuses the first empty area", async () => {
-    const app = boot();
-    openPaired(app);
-    const before = decks(app).length;
-    pickArea(app, 0, "");
-    assert.strictEqual(app.get("unassignedNotes().length"), 1);
-    await generateClick(app);
-    assert.strictEqual(decks(app).length, before, "nothing was saved");
-    assert.strictEqual(app.sheetOpen(), true);
-    assert.strictEqual(app.announcer().textContent, "Notes without an area: 1. Give each note an area.");
-    assert.strictEqual(app.get("document.activeElement === areasBox.children[0].children[1]"), true);
-  });
-
-  test("PAU4: a note already in another area is disabled in the other selects, and RESET AREAS restores the proposal", async () => {
-    const app = boot();
-    openPaired(app);
-    const proposal = plain(app.get("profileMap"));
-    const taken = proposal.find((k) => k !== null);
-    const at = proposal.indexOf(taken);
-    const other = areaSelects(app)[at === 0 ? 1 : 0].children.find((o) => o.value === taken);
-    assert.strictEqual(other.disabled, true);
-    pickArea(app, at, "");
-    assert.strictEqual(plain(app.get("profileMap"))[at], null);
-    app.els["scale-areas-reset"].click();
-    assert.deepStrictEqual(plain(app.get("profileMap")), proposal);
-    assert.strictEqual(app.get("document.activeElement === areasReset"), true);
-  });
-
-  test("PAU5: a paired SAVE writes a v5 record with the profile, no mirror, anchor or replaces", async () => {
+  test("NEO4: M1, a Pygmy built-in with inner notes F5 and G5, shows the exact message and holds SAVE", async () => {
     const app = await durableBoot();
-    openPaired(app);
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    const m1 = "Neotone has 9 main tonefields. Inner notes F5 and G5 have no tonefield: remove them to save.";
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent, m1);
+    assert.strictEqual(app.els["scale-neotone-msg"].hidden, false);
+    assert.strictEqual(app.els["scale-generate"].disabled, true, "SAVE is held");
+    goLayout(app);
+    assert.strictEqual(app.els["scale-neotone-extra"].textContent, m1);
+    const before = entries(app).length;
     await generateClick(app);
-    await writeBarrier(app);
-    const rows = entries(app);
-    assert.strictEqual(rows.length, 1);
-    const r = rows[0].record;
-    assert.strictEqual(r.v, 5);
-    assert.strictEqual(r.o.profile.id, "paired");
-    assert.strictEqual(r.o.profile.rev, 1);
-    assert.strictEqual(r.o.profile.map.length, 18);
-    for (const name of ["mirror", "mirrorBottom", "anchor", "seats", "angles", "replaces"]) {
-      assert.strictEqual(name in r.o, false, name + " is absent from a profile record");
-    }
-    assert.ok(app.currentDeck().geom.place, "the saved deck is placed by area");
+    assert.strictEqual(entries(app).length, before, "nothing was saved");
   });
 
-  test("PAU6: a paired SAVE on a seeded scale is a separate custom entry, never a slot owner (rule I1)", async () => {
+  test("NEO5: M2 and M2b: top notes past the ninth, and bottoms past the ninth", async () => {
+    const app = boot();
+    openNeo(app, TOP_PYGMY);
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent,
+      "Neotone has 9 main tonefields. Remove 2 top notes (F5 and G5 have no tonefield).");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    const many = "[A2] [B2] [C3] [D3] [E3] [F3] [G3] [A3] [B3] [C4] (D4) A4 C5 D5";
+    const b = boot();
+    openNeo(b, many);
+    assert.strictEqual(b.els["scale-neotone-msg"].textContent,
+      "Neotone has 9 mutant tonefields. C4 has no mutant tonefield. Remove it to save.");
+    assert.strictEqual(b.els["scale-generate"].disabled, true);
+  });
+
+  test("NEO6: M3, M4 and M5 are neutral hints with the exact en values", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    assert.strictEqual(app.els["scale-neotone-pair"].textContent, "Mutant notes pair with tonefields: note N goes in tonefield N.");
+    assert.strictEqual(app.els["scale-neotone-unused"].textContent, "Tonefields 3 to 9 have no mutant note. That's fine.");
+    assert.strictEqual(app.els["scale-neotone-rearrange"].textContent,
+      "Tap a note, then another in the same ring, to swap them, or hold a note and drag it.");
+    assert.strictEqual(app.els["scale-generate"].disabled, false, "the neutral hint does not hold SAVE");
+    assert.ok(!app.els["scale-neotone-unused"].classList.contains("warn"));
+  });
+
+  test("NEO7: the plate draws 18 tonefield buttons with their names, and an empty one reads empty", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    const hits = nhits(app);
+    assert.strictEqual(hits.length, 18);
+    assert.ok(hits.every((h) => /role="button"/.test(h)));
+    const label = (h) => (h.match(/aria-label="([^"]*)"/) || [])[1];
+    assert.ok(hits.some((h) => /^Tonefield 1 main, /.test(label(h))));
+    assert.ok(hits.some((h) => /^Tonefield 1 mutant, /.test(label(h))));
+    assert.ok(hits.some((h) => /^Tonefield 9 mutant, empty$/.test(label(h))));
+    assert.strictEqual(hits.filter((h) => /tabindex="0"/.test(h)).length, 1, "one roving stop");
+  });
+
+  test("NEO8: a swap inside a ring, a move to an empty tonefield, and a refused cross-ring drop", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    const m0 = map(app);
+    app.run("neoTap(0)");
+    assert.match(app.els["scale-drawer-status"].textContent, /^.* picked up\. Tap another tonefield in the same ring\.$/);
+    app.run("neoTap(1)");
+    const m1 = map(app);
+    assert.strictEqual(m1[0], m0[1]);
+    assert.strictEqual(m1[1], m0[0]);
+    assert.match(app.els["scale-drawer-status"].textContent, /^Swapped .+ and .+\.$/);
+    app.run("neoTap(NEO_MAIN)");
+    const before = map(app);
+    app.run("neoTap(0)");
+    assert.strictEqual(app.els["scale-drawer-status"].textContent, "A note moves only within its own ring.");
+    assert.deepStrictEqual(map(app), before, "a cross-ring drop moves nothing");
+    app.run("neoTap(NEO_MAIN + 8)");
+    const moved = map(app);
+    assert.strictEqual(moved[NEO_SLOT_LAST(app)], before[NEO_SLOT_LAST(app) - 8]);
+    assert.strictEqual(moved[NEO_SLOT_LAST(app) - 8], null);
+  });
+  const NEO_SLOT_LAST = (app) => app.get("NEO_MAIN") + 8;
+
+  test("NEO9: Add-sheet name: a built-in converts to a prefilled name, a typed name is kept, duplicates are allowed", async () => {
     const app = await durableBoot();
-    const builtIn = decks(app)[0];
-    app.select(builtIn.id);
-    app.clickChip(builtIn.name);
-    app.click(app.els["scale-tab-layout"]);
-    app.els["scale-mode-paired"].click();
+    const d = openBuiltin(app, "amara");
+    const before = app.els["scale-name"].value;
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone Mutant`);
+    assert.strictEqual(app.els["scale-name-label"].textContent, "Name");
+    assert.strictEqual(app.els["scale-neotone-name-hint"].textContent, "Suggested name; you can change it.");
+    assert.match(app.els["scale-neotone-builtin"].textContent, /is a built-in\. Saving creates a new scale; the built-in stays as it is\.$/);
+    app.els["scale-neotone"].checked = false;
+    app.els["scale-neotone"].onchange();
+    assert.strictEqual(app.els["scale-name"].value, before, "untick restores an untouched name");
+    assert.strictEqual(app.els["scale-name-label"].textContent, "SCALE NAME");
+    assert.ok(d);
+  });
+
+  test("NEO10: a Neotone SAVE on a seeded scale writes a v5 rev 2 record as a separate entry with no replaces", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "amara");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
     await generateClick(app);
     await writeBarrier(app);
     const env = savedEnvelope(app);
     assert.strictEqual(env.entries.length, 1);
-    assert.strictEqual(env.entries[0].record.v, 5);
-    assert.strictEqual("replaces" in env.entries[0].record.o, false);
-    assert.deepStrictEqual(env.slots, {}, "no slot is owned");
-    assert.deepStrictEqual(env.hidden, [], "the seeded scale stays visible");
-    assert.ok(decks(app).some((d) => d.id === builtIn.id), "the seeded scale is still in the list");
+    const r = env.entries[0].record;
+    assert.strictEqual(r.v, 5);
+    assert.strictEqual(r.o.profile.id, "paired");
+    assert.strictEqual(r.o.profile.rev, 2);
+    assert.strictEqual(r.o.profile.map.length, 18);
+    for (const name of ["mirror", "mirrorBottom", "anchor", "seats", "angles", "replaces"]) assert.strictEqual(name in r.o, false, name);
+    assert.deepStrictEqual(env.slots, {});
+    assert.deepStrictEqual(env.hidden, []);
+    assert.ok(app.currentDeck().geom.place, "the saved scale is placed by tonefield");
+    assert.ok(decks(app).some((d) => d.id === "amara"), "the built-in is still listed");
   });
 
-  test("PAU7: editing a profile scale and switching to Standard writes a v4 record without profile", async () => {
+  test("NEO11: a typed Neotone scale saves a v5 rev 2 record and its link is v7", async () => {
     const app = await durableBoot();
-    openPaired(app);
+    openNeo(app);
     await generateClick(app);
     await writeBarrier(app);
-    assert.strictEqual(entries(app)[0].record.v, 5);
-    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
-    app.click(app.els["scale-tab-layout"]);
-    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true", "an edit of a profile scale opens in Paired areas");
-    app.els["scale-mode-standard"].click();
+    const r = entries(app)[0].record;
+    assert.strictEqual(r.v, 5);
+    assert.strictEqual(r.o.profile.rev, 2);
+    const link = plain(app.get(`shareLink(savedEntries.get(selection.id).deck)`));
+    assert.strictEqual(link.ok, true);
+    assert.match(link.value, /#s=7\//);
+  });
+
+  test("NEO12: editing a Neotone scale opens in Neotone, a rearrangement keeps v5, and Standard rewrites in place as v4 with the same handle", async () => {
+    const app = await durableBoot();
+    openNeo(app, BOTTOM_AMARA);
     await generateClick(app);
     await writeBarrier(app);
-    const rows = entries(app);
-    assert.strictEqual(rows.length, 1, "the edit replaced the row in place");
+    const handle = entries(app)[0].instanceId;
+    openEdit(app, { ...app.currentDeck(), instanceId: handle });
+    assert.strictEqual(app.get("neotoneOn()"), true, "an edit of a profile scale opens in Neotone");
+    assert.strictEqual(app.els["scale-neotone"].checked, true);
+    app.run("neoTap(0)");
+    app.run("neoTap(1)");
+    const moved = map(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    let rows = entries(app);
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].record.v, 5);
+    assert.deepStrictEqual(rows[0].record.o.profile.map, moved);
+    openEdit(app, { ...app.currentDeck(), instanceId: handle });
+    app.els["scale-neotone"].checked = false;
+    app.els["scale-neotone"].onchange();
+    await generateClick(app);
+    await writeBarrier(app);
+    rows = entries(app);
+    assert.strictEqual(rows.length, 1, "rewritten in place");
+    assert.strictEqual(rows[0].instanceId, handle, "same local handle");
     assert.strictEqual(rows[0].record.v, 4);
     assert.strictEqual("profile" in rows[0].record.o, false);
   });
 
-  test("PAU8: editing a profile scale keeps v5 and the edited map", async () => {
-    const app = await durableBoot();
-    openPaired(app);
-    await generateClick(app);
-    await writeBarrier(app);
-    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
-    app.click(app.els["scale-tab-layout"]);
-    const map = plain(app.get("profileMap"));
-    const at = map.findIndex((k) => k !== null);
-    const taken = map[at];
-    const to = map.findIndex((k, i) => k === null && i > at);
-    pickArea(app, at, "");
-    pickArea(app, to, taken);
-    await generateClick(app);
-    await writeBarrier(app);
-    const rows = entries(app);
-    assert.strictEqual(rows.length, 1);
-    assert.strictEqual(rows[0].record.v, 5);
-    assert.strictEqual(rows[0].record.o.profile.map[at], null);
-    assert.strictEqual(rows[0].record.o.profile.map[to], taken);
-  });
-
-  test("PAU9: a slot-owning replacement edited into Paired areas saves a separate entry and keeps the owner", async () => {
+  test("NEO13: a slot-owning replacement edited into Neotone saves a separate entry and keeps the owner byte-identical", async () => {
     const record = { v: 4, s: AMARA_STRING, o: { name: "MY AMARA", palette: 2, replaces: "amara" } };
     const env = {
       schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
@@ -18812,23 +18900,95 @@ describe("PAU: paired areas sheet, saves and links", () => {
       migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
     };
     const app = await durableBoot({ idbRaw: JSON.stringify(env) });
-    assert.strictEqual(app.currentDeck().name, "MY AMARA");
     openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
-    app.click(app.els["scale-tab-layout"]);
-    app.els["scale-mode-paired"].click();
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
     await generateClick(app);
     await writeBarrier(app);
     const after = savedEnvelope(app);
-    assert.strictEqual(after.entries.length, 2, "a separate entry was added");
+    assert.strictEqual(after.entries.length, 2);
     const owner = after.entries.find((e) => e.instanceId === OWNER);
-    assert.deepStrictEqual(owner.record, record, "the slot owner is byte-identical");
+    assert.deepStrictEqual(owner.record, record);
     assert.deepStrictEqual(after.slots, { amara: OWNER });
     const added = after.entries.find((e) => e !== owner);
     assert.strictEqual(added.record.v, 5);
     assert.strictEqual("replaces" in added.record.o, false);
   });
 
-  test("PAU10: readSavedRecord treats a v5 record with replaces as opaque, and a v5 without a profile or a v4 with one", async () => {
+  test("NEO14: a stored rev 1 record keeps its bytes until saved, opens in Neotone, and a SAVE writes rev 2", async () => {
+    const probe = boot();
+    const rev1 = profileOf(probe, AMARA_STRING);
+    rev1.profile.rev = 1;
+    const record = { v: 5, s: AMARA_STRING, o: rev1 };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    assert.ok(app.currentDeck().geom.place, "a readable rev 1 profile renders Neotone");
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record, "boot rewrote nothing");
+    openEdit(app, { ...app.currentDeck(), instanceId: OWNER });
+    assert.strictEqual(app.get("neotoneOn()"), true);
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record, "opening Edit rewrote nothing");
+    await generateClick(app);
+    await writeBarrier(app);
+    assert.strictEqual(savedEnvelope(app).entries[0].record.o.profile.rev, 2);
+  });
+
+  test("NEO15: a rev 1 record whose profile has unplaced notes renders Standard, opens Neotone with the cause and holds SAVE", async () => {
+    const probe = boot();
+    const fields = plain(probe.get(`HPE.core.parseSeed(${JSON.stringify(TOP_PYGMY)}).value.fields`));
+    assert.ok(fields);
+    const map1 = plain(probe.get(`(() => { const f = HPE.core.parseSeed(${JSON.stringify(TOP_PYGMY)}).value.fields;
+      const notes = Object.values(f).filter((n) => n[3] === "rim" || n[3] === "bottom");
+      const keys = notes.map((n) => (n[3] === "rim" ? "r" : "b") + n[2]);
+      const out = new Array(18).fill(null);
+      keys.slice(0, 18).forEach((k, i) => { out[i] = k; });
+      return out; })()`));
+    const record = { v: 5, s: TOP_PYGMY, o: { palette: 1, profile: { id: "paired", rev: 1, map: map1 } } };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record, "bytes untouched");
+    openEdit(app, { ...app.currentDeck(), instanceId: OWNER });
+    assert.strictEqual(app.get("neotoneOn()"), true);
+    assert.strictEqual(app.els["scale-generate"].disabled, true, "SAVE is held while a note has no tonefield");
+    assert.ok(app.els["scale-neotone-msg"].textContent.startsWith("Neotone has 9 main tonefields."), app.els["scale-neotone-msg"].textContent);
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record);
+  });
+
+  test("NEO16: a typed 10th top note or an inner note while ticked shows its inline error on the line", async () => {
+    const app = boot();
+    openNeo(app, AMARA_STRING);
+    app.type(AMARA_STRING + " D5 E5");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.ok(app.els["scale-neotone-msg"].textContent.includes("Remove"), app.els["scale-neotone-msg"].textContent);
+    const shown = app.els["scale-refusal"].textContent;
+    assert.strictEqual(shown, EN["reason.NEOTONE_INPUT"]);
+  });
+
+  test("NEO17: the sheet footer order is Cancel (BACK) then SAVE, and no Option A string is shown", async () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const foot = html.slice(html.indexOf('id="scale-foot"'));
+    assert.ok(foot.indexOf('id="scale-delete"') === -1 || foot.indexOf('id="scale-generate"') !== -1);
+    for (const gone of ["Paired areas", "PAIRED AREAS", "area", "zigzag"]) {
+      const body = html.slice(0, html.indexOf("const I18N")).replace(/<!--[\s\S]*?-->/g, "").replace(/<style[\s\S]*?<\/style>/g, "").replace(/<script[\s\S]*?<\/script>/g, "");
+      const visible = body.replace(/<[^>]*>/g, " ");
+      assert.ok(!new RegExp(gone === "area" ? "\\barea\\b" : gone).test(visible), gone + " is visible in the served text");
+    }
+  });
+
+  test("NEO18: readSavedRecord and savedCandidate accept rev 2 profile records and refuse the malformed pairings", async () => {
     const app = boot();
     const base = profileOf(app, AMARA_STRING);
     const ok = (record) => app.get(`readSavedRecord(${JSON.stringify(record)}).ok`);
@@ -18838,39 +18998,19 @@ describe("PAU: paired areas sheet, saves and links", () => {
     assert.strictEqual(ok({ v: 4, s: AMARA_STRING, o: base }), false, "v4 carrying a profile");
   });
 
-  test("PAU11: savedCandidate refuses 5 without a profile and 4 with a profile, and a profile replace-builtin", async () => {
-    const app = boot();
-    const base = profileOf(app, AMARA_STRING);
-    const accepts = (v, withProfile, type = "import") => app.get(`(() => {
-      const o = ${JSON.stringify(withProfile ? base : { palette: 1 })};
-      const b = buildGenerated(${JSON.stringify(AMARA_STRING)}, o);
-      return savedCandidate({ type: ${JSON.stringify(type)}, candidate: { record: { ...scaleRecord(seedOf(b.value)), v: ${v} }, deck: b.value } }).ok;
-    })()`);
-    assert.strictEqual(accepts(5, true), true);
-    assert.strictEqual(accepts(4, false), true);
-    assert.strictEqual(accepts(5, false), false);
-    assert.strictEqual(accepts(4, true), false);
-    assert.strictEqual(accepts(5, true, "replace-builtin"), false);
-  });
-
-  test("PAU12: a v7 link decodes to a paired scale; a Standard scale still shares as a v6 link", async () => {
+  test("NEO19: a v7 link decodes to a Neotone scale, a Standard scale still shares as a v6 link, and the map joins the saved meaning", async () => {
     const app = boot();
     const options = profileOf(app, AMARA_STRING);
     const wire = (opts) => plain(app.get(`(() => { const s = HPE.core.parseSeed(${JSON.stringify(AMARA_STRING)}); return HPE.share.encode({ fields: s.value.fields, options: ${JSON.stringify(opts)} }); })()`));
     const v7 = wire(options);
     assert.strictEqual(v7.ok, true, v7.reason);
     assert.strictEqual(v7.value.charAt(0), "7");
-    assert.strictEqual(wire({ palette: 1 }).value.charAt(0), "6", "an acoustic link is still a v6 link");
+    assert.strictEqual(wire({ palette: 1 }).value.charAt(0), "6");
     assert.strictEqual(app.get(`HPE.share.decode(${JSON.stringify(v7.value)}).value.options.profile.id`), "paired");
-  });
-
-  test("PAU13: the profile map joins a scale's saved meaning; an acoustic scale's meaning is unchanged", async () => {
-    const app = boot();
     const meaning = (opts) => JSON.parse(app.get(`savedMeaning(buildGenerated(${JSON.stringify(AMARA_STRING)}, ${JSON.stringify(opts)}).value)`));
     const acoustic = meaning({ palette: 1 });
-    const paired = meaning(profileOf(app, AMARA_STRING));
+    const paired = meaning(options);
     assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
-    assert.deepStrictEqual(paired.slice(0, acoustic.length).slice(2), acoustic.slice(2));
     assert.strictEqual(paired[paired.length - 1].length, 18);
   });
 });

@@ -376,8 +376,8 @@ const savePaired = async (app, text, name) => {
   app.type(text);
   app.els["scale-name"].value = name;
   app.els["scale-name"].dispatchEvent({ type: "input" });
-  app.els["scale-tab-layout"].click();
-  app.els["scale-mode-paired"].click();
+  app.els["scale-neotone"].checked = true;
+  app.els["scale-neotone"].onchange();
   await app.getAsync("runGenerate()");
   await settle();
 };
@@ -429,7 +429,7 @@ test("PAU-I: a v7 link opened in the shipped client is NEEDS_NEWER_APP and saves
   const fresh = await sharedBoot(createOrigin({ storage: {} }), NEW_HTML);
   const link = fresh.get(`(() => { const s = HPE.core.parseSeed(${JSON.stringify(PA_AMARA)});
     const p = HPE.layout.proposeProfile(s.value.fields);
-    return HPE.share.encode({ fields: s.value.fields, options: { palette: 1, profile: { id: "paired", rev: 1, map: p.value } } }).value; })()`);
+    return HPE.share.encode({ fields: s.value.fields, options: { palette: 1, profile: { id: "paired", rev: 2, map: p.value.map } } }).value; })()`);
   assert.strictEqual(link.charAt(0), "7");
   const old = await sharedBoot(createOrigin({ storage: {} }), OLD_HTML);
   const res = plain(old.get(`HPE.share.decode(${JSON.stringify(link)})`));
