@@ -3351,7 +3351,7 @@ test("the sheet's text inputs stay at 16px in every rule that sets their size, m
  * everywhere else (labels/UI, and the page's own body font). Parsed straight
  * out of the CSS text rather than restated as a DOM check, since the sandbox
  * has no layout engine to read computed styles from. */
-test("the visual system's three fonts land on the elements CLAUDE.md names them for", async () => {
+test("the visual system's three fonts land on the elements docs/CARD-SPEC.md names them for", async () => {
   const css = require("node:fs").readFileSync(
     require("node:path").join(__dirname, "..", "index.html"), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "");
