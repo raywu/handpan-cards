@@ -6,9 +6,9 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -380,7 +380,7 @@ HPE.pdfcards = (function () {
+@@ -633,7 +633,7 @@ HPE.pdfcards = (function () {
      }
-     if (g.bottom && !placed) {
+     if (g.bottom) {
        c.setStrokeColor([0.90, 0.90, 0.90]); c.setLineWidth(0.7);
 -      c.setDash(2.2, 2.2);
 +      c.setDash(2.4, 2.4);

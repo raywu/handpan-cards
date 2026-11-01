@@ -4,9 +4,9 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -432,7 +432,7 @@ HPE.pdfcards = (function () {
-           fnt = zone === "bottom" ? "LabelSB" : "Label";
-         } else if (zone === "bottom") {
+@@ -671,7 +671,7 @@ HPE.pdfcards = (function () {
+         var nr, col, fnt;
+         if (zone === "bottom") {
            nr = orb + rr + R * g.n_out;
 -          col = ORANGE; fnt = "LabelSB";
 +          col = INK; fnt = "LabelSB";

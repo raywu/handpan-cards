@@ -4,8 +4,8 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -464,7 +464,7 @@
-     var nb = fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
+@@ -767,7 +767,7 @@ HPE.pdfcards = (function () {
+         fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
      if (nb) {
        tracked(c, x + CW / 2, y + deck.y_note + 13,
 -              nb + " BOTTOM NOTE" + (nb > 1 ? "S" : ""),
