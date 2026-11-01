@@ -7,8 +7,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12762,7 +12762,7 @@ function sheetOptions() {
-   // normalised back to ASCII before it ever reaches the engine.
+@@ -13163,7 +13163,7 @@ function sheetOptions() {
+   // ASCII so the name stays printable on paper (owner 2026-10-31, D4a).
    const n = String(nameBox.value || "")
      .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
 -    .replace(/[–—]/g, "-").replace(/…/g, "...")

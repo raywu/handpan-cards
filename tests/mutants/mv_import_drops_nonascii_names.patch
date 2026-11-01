@@ -1,13 +1,13 @@
-# kills: saved scales with accented, CJK and emoji names move intact, once, and count UTF-8 bytes toward MOVE_CAP
-# suite: node --test --test-name-pattern=accented..CJK.and.emoji.names.move.intact tests/app.test.js
-# fault: Skip records the reader refuses only for their non-ASCII name, so they never reach the new host.
+# kills: NAN: a name the grammar still refuses moves by the opaque branch
+# suite: node --test --test-name-pattern ^NAN..a.name.the.grammar.still.refuses.moves.by.the.opaque.branch$ tests/app.test.js
+# fault: Skip records the reader refuses only for their name, so they never reach the new host.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15921,7 +15921,7 @@
+@@ -15670,7 +15670,7 @@ async function moveImport(code) {
      if (!savedObject(row) || typeof row.i !== "string" || row.i.length > 64) continue;
      const read = readSavedRecord(row.r);
-     if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(read.record)), read });
+     if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), read });
 -    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
 +    else if (false && savedObject(row.r.o)) {
        const { name, ...bare } = row.r.o;
