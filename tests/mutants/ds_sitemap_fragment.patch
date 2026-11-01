@@ -8,8 +8,8 @@ diff --git a/sitemap.xml b/sitemap.xml
  <?xml version="1.0" encoding="UTF-8"?>
  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
    <url>
--    <loc>https://handpantheory.com/</loc>
-+    <loc>https://handpantheory.com/#deck=kurd</loc>
+-    <loc>https://handpan.raywu.org/</loc>
++    <loc>https://handpan.raywu.org/#deck=kurd</loc>
    </url>
    <url>
-     <loc>https://handpantheory.com/scales/</loc>
+     <loc>https://handpan.raywu.org/scales/</loc>
