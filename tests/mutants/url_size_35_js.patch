@@ -1,0 +1,15 @@
+# kills: URL mark: every chord card of all five decks has one mark, bottom to top, 4.0 pt, URL grey, lower end at the footer baseline, inside the rounded frame, clear of the credit and the warning column
+# suite: node --test --test-reporter=tap --test-name-pattern ^URL.mark..every.chord.card tests/pdfcards.test.js
+# mark size 3.5, under the 3.6 floor (js).
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -197,7 +197,7 @@ HPE.pdfcards = (function () {
+     c.roundRect(x, y, w, h, rad === undefined ? 7.0 : rad, 1, 1);
+   }
+ 
+-  var URL_MARK = { text: "handpantheory.com", size: 4.0, track: 0.3,
++  var URL_MARK = { text: "handpantheory.com", size: 3.5, track: 0.3,
+                    grey: [0.604, 0.604, 0.604], creditY: 50.4 };
+ 
+   function urlMark(c, x, y, w, h) {

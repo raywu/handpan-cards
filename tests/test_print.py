@@ -592,8 +592,9 @@ ASCENT, DESCENT = 1.011, 0.353
 
 
 def _url_glyphs(canvas):
-    return [t for t in canvas.texts if t["rotated"] and t["text"] in set(URL)
-            and abs(t["size"] - 4.0) < 1e-9]
+    rot = [t for t in canvas.texts if t["rotated"]]
+    tail = rot[-len(URL):] if len(rot) >= len(URL) else []
+    return tail if "".join(t["text"] for t in tail) == URL else []
 
 
 def _rotated_box(glyphs, size):
@@ -654,7 +655,8 @@ class PrintUrlMarkTest(unittest.TestCase):
             gl = _url_glyphs(render_chord_card(deck, i, chord))
             for g in gl:
                 self.assertGreaterEqual(g["size"], 3.6)
-                self.assertEqual(rgb(g["fill"]), rgb(hifi.URL_GREY))
+                self.assertEqual(g["size"], 4.0)
+                self.assertEqual(rgb(g["fill"]), (0.604, 0.604, 0.604))
 
     def test_inside_the_frame_and_its_rounded_corner(self):
         for deck, i, chord in every_card():

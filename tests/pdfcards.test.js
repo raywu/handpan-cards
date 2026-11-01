@@ -1101,7 +1101,7 @@ test("URL mark: every chord card of all five decks has one mark, bottom to top, 
     assert.ok(Math.abs(ys[0] - 6.0) < 1e-9);
     glyphs.forEach((g) => {
       assert.ok(g.size >= 3.6);
-      assert.deepEqual(g.fill, P.URL_MARK.grey);
+      assert.deepEqual(g.fill, [0.604, 0.604, 0.604]);
       assert.ok(Math.abs(g.x - (P.GEOM.CW - 6.0)) < 1e-9);
     });
     const last = glyphs[glyphs.length - 1];

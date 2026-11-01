@@ -1,0 +1,15 @@
+# kills: test_inside_the_frame_and_its_rounded_corner
+# suite: python3 -m unittest -k test_inside_the_frame_and_its_rounded_corner tests.test_print
+# shift the mark column outward past the frame (py).
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -209,7 +209,7 @@ CREDIT_Y = 50.4
+ 
+ def url_mark(c, x, y, w, h):
+     c.saveState()
+-    c.translate(x + w - 6.0, y + 6.0)
++    c.translate(x + w - 1.0, y + 6.0)
+     c.rotate(90)
+     tracked(c, 0, 0, URL_TEXT, "Label", URL_SIZE, URL_TRACK, "l", URL_GREY)
+     c.restoreState()
