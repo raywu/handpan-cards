@@ -1045,3 +1045,96 @@ test("PA: the app pan() draws a profile deck at geom.place, on the print extent,
   assert.ok(Math.abs(-ext - 100 * P.profileExtent(d.geom)) < 1e-6, "the viewBox is the print extent");
   assert.equal((svg.match(/<circle r="/g) || []).length, 1, "only the rim is a centred ring");
 });
+
+// docs/plans/2026-10-31-print-url-mark.md: the print-only handpantheory.com mark.
+function ctmRecorder() {
+  const texts = [];
+  let m = [1, 0, 0, 1, 0, 0];
+  const stack = [];
+  const mul = (a, b) => [
+    a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3],
+    a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5]];
+  let fill = null;
+  const noop = () => {};
+  return {
+    texts: texts,
+    text: (x, y, s, face, size) => {
+      texts.push({ x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5], s, face, size,
+        rotated: Math.abs(m[1]) > 1e-9, fill: fill, w: HPE.pdf.stringWidth(s, face, size) });
+    },
+    setFill: (r, g, b) => { fill = [r, g, b]; },
+    save: () => stack.push([m.slice(), fill]),
+    restore: () => { [m, fill] = stack.pop(); },
+    translate: (dx, dy) => { m = mul([1, 0, 0, 1, dx, dy], m); },
+    rotate: (d) => {
+      const a = d * Math.PI / 180;
+      m = mul([Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a), 0, 0], m);
+    },
+    line: noop, circle: noop, roundRect: noop, rect: noop, setStroke: noop,
+    setLineWidth: noop, setDash: noop,
+  };
+}
+
+function urlMarkOf(deck, chord) {
+  const page = ctmRecorder();
+  P._internal.chordCard(new P._internal.Canvas(page), 0, 0, deck, 1, chord);
+  const glyphs = page.texts.filter((t) => t.rotated && t.size === 4.0 && "handpantheory.com".includes(t.s));
+  const credit = page.texts.filter((t) => t.rotated && !glyphs.includes(t));
+  return { page, glyphs, credit };
+}
+
+
+const URL_DECKS = () => DECK_DATA.filter((d) => d.print).map(
+  (d) => HPE.pdfdeck.fromBuiltin(d, d.print));
+
+test("URL mark: every chord card of all five decks has one mark, bottom to top, 4.0 pt, URL grey, lower end at the footer baseline, inside the rounded frame, clear of the credit and the warning column", () => {
+  const decks = URL_DECKS();
+  assert.equal(decks.length, 5);
+  let cards = 0;
+  decks.forEach((deck) => deck.chords.forEach((chord) => {
+    cards++;
+    const { glyphs, credit, page } = urlMarkOf(deck, chord);
+    assert.equal(glyphs.map((g) => g.s).join(""), "handpantheory.com", deck.name);
+    const ys = glyphs.map((g) => g.y);
+    assert.deepEqual(ys, ys.slice().sort((a, b) => a - b));
+    assert.ok(Math.abs(ys[0] - 6.0) < 1e-9);
+    glyphs.forEach((g) => {
+      assert.ok(g.size >= 3.6);
+      assert.deepEqual(g.fill, P.URL_MARK.grey);
+      assert.ok(Math.abs(g.x - (P.GEOM.CW - 6.0)) < 1e-9);
+    });
+    const last = glyphs[glyphs.length - 1];
+    const top = last.y + last.w;
+    assert.ok(top <= P.GEOM.CH - 2.8);
+    const x0 = glyphs[0].x - 4.0 * 1.011, x1 = glyphs[0].x + 4.0 * 0.353;
+    assert.ok(x0 >= 2.8 && x1 <= P.GEOM.CW - 2.8);
+    assert.ok(Math.hypot(x1 - (P.GEOM.CW - 7.0), ys[0] - 7.0) <= 4.2);
+    const cMin = Math.min(...credit.map((t) => t.y));
+    assert.ok(Math.abs(cMin - 50.4) < 1e-9, "credit starts at CREDIT_Y");
+    assert.ok(cMin - top >= 3.9, "4 pt between the mark and the credit");
+    page.texts.filter((t) => !t.rotated && t.y < 12).forEach((t) => {
+      assert.ok(t.x + t.w <= P.GEOM.CW - 16 + 1e-6, "warning stays left of the mark column");
+    });
+  }));
+  assert.equal(cards, 177);
+});
+
+test("URL mark: constants", () => {
+  assert.equal(P.URL_MARK.text, "handpantheory.com");
+  assert.equal(P.URL_MARK.size, 4.0);
+  assert.equal(P.URL_MARK.track, 0.3);
+  assert.equal(P.URL_MARK.creditY, 50.4);
+});
+
+test("URL mark: title, legend and blank cards carry none", () => {
+  const deck = pygmyDeck();
+  const I = P._internal;
+  ["titleCard", "legendCard", "blankCard"].forEach((fn) => {
+    assert.equal(typeof I[fn], "function", fn);
+    const page = ctmRecorder();
+    I[fn](new I.Canvas(page), 0, 0, deck);
+    assert.ok(page.texts.some((t) => t.rotated), fn + " still draws its credit");
+    assert.equal(page.texts.filter((t) => t.rotated && t.size === 4.0).length, 0, fn);
+  });
+});

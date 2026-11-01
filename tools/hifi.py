@@ -200,9 +200,24 @@ def plain_frame(c, x, y, w, h, col=NAME, bw=1.0, rad=7.0):
     c.roundRect(x, y, w, h, rad, stroke=1, fill=1)
 
 
+URL_TEXT = "handpantheory.com"
+URL_SIZE = 4.0
+URL_TRACK = 0.3
+URL_GREY = Color(0.604, 0.604, 0.604)
+CREDIT_Y = 50.4
+
+
+def url_mark(c, x, y, w, h):
+    c.saveState()
+    c.translate(x + w - 6.0, y + 6.0)
+    c.rotate(90)
+    tracked(c, 0, 0, URL_TEXT, "Label", URL_SIZE, URL_TRACK, "l", URL_GREY)
+    c.restoreState()
+
+
 def side_credit(c, x, y, w, h, text):
     c.saveState()
-    c.translate(x + w - 6.0, y + 12)
+    c.translate(x + w - 6.0, y + CREDIT_Y)
     c.rotate(90)
     tracked(c, 0, 0, text, "Label", 3.5, 0.55, "l", FAINT)
     c.restoreState()
@@ -522,6 +537,7 @@ def chord_card(c, x, y, deck, num, chord):
     if deg:
         tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE)
     side_credit(c, x, y, CW, CH, deck["credit"])
+    url_mark(c, x, y, CW, CH)
     draw_pan(c, x + CW / 2, y + deck["cy"], deck["R"], spec, active_all, roots_all)
 
     nb = len([f for f in fields if spec[f][3] == "bottom"])

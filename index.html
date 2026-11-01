@@ -3307,9 +3307,21 @@ HPE.pdfcards = (function () {
     c.roundRect(x, y, w, h, rad === undefined ? 7.0 : rad, 1, 1);
   }
 
+  var URL_MARK = { text: "handpantheory.com", size: 4.0, track: 0.3,
+                   grey: [0.604, 0.604, 0.604], creditY: 50.4 };
+
+  function urlMark(c, x, y, w, h) {
+    c.saveState();
+    c.translate(x + w - 6.0, y + 6.0);
+    c.rotate(90);
+    tracked(c, 0, 0, URL_MARK.text, "Label", URL_MARK.size, URL_MARK.track, "l",
+            URL_MARK.grey);
+    c.restoreState();
+  }
+
   function sideCredit(c, x, y, w, h, text) {
     c.saveState();
-    c.translate(x + w - 6.0, y + 12);
+    c.translate(x + w - 6.0, y + URL_MARK.creditY);
     c.rotate(90);
     tracked(c, 0, 0, text, "Label", 3.5, 0.55, "l", FAINT);
     c.restoreState();
@@ -3632,6 +3644,7 @@ HPE.pdfcards = (function () {
       tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
     }
     sideCredit(c, x, y, CW, CH, deck.credit);
+    urlMark(c, x, y, CW, CH);
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
 
     var nb = fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
@@ -3828,12 +3841,14 @@ HPE.pdfcards = (function () {
     profileRadius: profileRadius,
     profileExtent: profileExtent,
     PROFILE_DRAW: PROFILE_DRAW,
+    URL_MARK: URL_MARK,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
       tw: tw, fit: fit, labelSize: labelSize,
       numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout,
-      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip
+      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip,
+      titleCard: titleCard, legendCard: legendCard, blankCard: blankCard
     }
   };
 }());

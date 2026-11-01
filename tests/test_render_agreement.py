@@ -864,6 +864,39 @@ class PdfEmitterGeometryTest(unittest.TestCase):
             self.assertIsNotNone(m, "%s is gone from core.js" % name)
             self.assertEqual(float(m.group(1)), want, name)
 
+    def test_the_url_mark_carries_the_same_constants(self):
+        """docs/plans/2026-10-31-print-url-mark.md: text, size, track, grey, credit start."""
+        out = subprocess.run(
+            ["node", "-e",
+             "const {loadEngine}=require('./tools/engine_loader.js');"
+             "const H=loadEngine(['core','fontdata','pdf','pdfdeck','pdfcards']);"
+             "process.stdout.write(JSON.stringify(H.pdfcards.URL_MARK));"],
+            capture_output=True, text=True, cwd=paths.ROOT, timeout=120)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        js = json.loads(out.stdout)
+        self.assertEqual(js["text"], hifi.URL_TEXT)
+        self.assertEqual(js["size"], hifi.URL_SIZE)
+        self.assertEqual(js["track"], hifi.URL_TRACK)
+        self.assertEqual(js["creditY"], hifi.CREDIT_Y)
+        self.assertEqual([round(v, 6) for v in js["grey"]],
+                         [round(hifi.URL_GREY.red, 6), round(hifi.URL_GREY.green, 6),
+                          round(hifi.URL_GREY.blue, 6)])
+
+    def test_each_url_mark_constant_is_written_once_per_language(self):
+        def read(path):
+            with open(path, encoding="utf-8") as fh:
+                return fh.read()
+
+        skip = re.compile(r"\s*(#|\*|//|/\*)")
+        js = read(os.path.join(paths.ROOT, "src", "engine", "pdfcards.js"))
+        py = read(os.path.join(paths.ROOT, "tools", "hifi.py"))
+        for lang, text in (("JS", js), ("Python", py)):
+            for f in ('"handpantheory.com"', "50.4", "0.604"):
+                n = sum(1 for ln in text.splitlines()
+                        if not skip.match(ln)
+                        and re.search(r"(?<![0-9.])%s(?![0-9])" % re.escape(f), ln))
+                self.assertEqual(n, 1, "%s writes %s on %d lines" % (lang, f, n))
+
     def test_each_label_rule_number_is_written_once_per_language(self):
         """The label rule's six figures are literals once in JS, once in Python."""
         import glob
