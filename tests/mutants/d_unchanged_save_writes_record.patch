@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13483,7 +13483,7 @@ async function deleteDeck(id) {
+@@ -14375,7 +14375,7 @@ async function deleteDeck(id) {
  async function runGenerate(separate = false) {
    separate = separate === true;
    if(genBtn.disabled || savePending)return;
 -  if(!separate && seeded() && sheetKey()===seedPrefill){closeScaleSheet();return;}
 +  if(false && !separate && seeded() && sheetKey()===seedPrefill){closeScaleSheet();return;}
-   const generation=sheetGeneration, draft=sheetKey(), base=editingBase;
-   const controller=new AbortController(), operation={controller,generation};savePending=operation;
-   const label=genBtn.textContent; refreshSavedSubmit();genBtn.textContent=t(editingId?"sheet.saving":"sheet.generating");
+   if(pairedOn() && unassignedNotes().length){
+     say(t("sheet.paired_incomplete",{n:unassignedNotes().length}),"warn");
+     const firstEmpty=Array.from(areasBox.children).map(row=>row.children[1]).find(el=>el.value==="");

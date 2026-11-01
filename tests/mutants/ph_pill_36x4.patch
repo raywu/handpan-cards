@@ -9,9 +9,9 @@ diff --git a/index.html b/index.html
    z-index:2; margin:0; padding:0; border:0; background:transparent; cursor:pointer;
    touch-action:none; -webkit-tap-highlight-color:transparent}
 -#scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:32px; height:3px;
--  margin-left:-16px; border-radius:2px; background:#a79d8b}
+-  margin-left:-16px; border-radius:2px; background:#a9a39a}
 +#scale-lip::after{content:""; position:absolute; left:50%; bottom:3px; width:36px; height:4px;
-+  margin-left:-18px; border-radius:2px; background:#a79d8b}
++  margin-left:-18px; border-radius:2px; background:#a9a39a}
  #scale-lip:focus-visible{outline-offset:-2px}
  #scale-sheet.lipped .sheetbody{scroll-padding-bottom:21px}
  #scale-sheet.lipnow #scale-footslide, #scale-sheet.lipnow #scale-guidance{transition:none}

@@ -40,6 +40,11 @@ A chord-card system for handpans, two outputs from one data source:
   `python3 tools/sync_decks.py` (`tools/validate.py` check 1/1b). Same conflict rule.
   Any writer of that line substitutes through a lambda AND re-parses the JSON back out
   of the written file (degrees contain U+00B0; a naive `re.sub` silently fails).
+- **The brand lockup region and the favicon URI are GENERATED.** Everything between
+  `<!-- brand:lockup begin -->` and `<!-- brand:lockup end -->`, and the SVG favicon data URI, come from
+  `brand/*.svg` via `python3 tools/make_icons.py`, which also renders `apple-touch-icon.png` and `og.png`
+  (`--check` reports drift; `tools/validate.py` fails on it). Edit the SVG in `brand/`, re-run the tool.
+  Same conflict rule as engine regions.
 - **The `const I18N` block is GENERATED** from `data/i18n/*.json` by
   `python3 tools/sync_i18n.py` (`tools/validate.py` check 6). Every UI feature ends with
   an i18n step: keys in all eight tables, sync, audit, fit check (owner 2026-10-23).

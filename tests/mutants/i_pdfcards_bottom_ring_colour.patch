@@ -7,10 +7,10 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -324,7 +324,7 @@ HPE.pdfcards = (function () {
+@@ -379,7 +379,7 @@ HPE.pdfcards = (function () {
        c.circle(cx, cy, R * g.inner_ring, 1, 0);
      }
-     if (g.bottom) {
+     if (g.bottom && !placed) {
 -      c.setStrokeColor([0.90, 0.90, 0.90]); c.setLineWidth(0.7);
 +      c.setStrokeColor([0.88, 0.88, 0.88]); c.setLineWidth(0.7);
        c.setDash(2.2, 2.2);
