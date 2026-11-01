@@ -1651,16 +1651,6 @@ html.about-open{overflow:hidden}
     <div id="scale-layout-zone">
       <div id="scale-drawer" role="group" aria-label="Layout">
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
-        <div class="editrow" id="scale-mode-row" hidden>
-          <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>
-          <div class="ctlrow" role="group" aria-labelledby="scale-mode-label">
-            <div class="mirror">
-              <button class="mode" type="button" id="scale-mode-standard" aria-pressed="true" disabled>STANDARD</button>
-              <button class="mode" type="button" id="scale-mode-paired" aria-pressed="false" disabled>PAIRED AREAS</button>
-            </div>
-          </div>
-          <p class="sheethint" id="scale-mode-full" hidden></p>
-        </div>
         <div id="scale-standard">
         <div class="editrow">
           <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
@@ -1703,6 +1693,16 @@ html.about-open{overflow:hidden}
         <div class="ctlrow">
           <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
         </div>
+        </div>
+        <div class="editrow" id="scale-mode-row" hidden>
+          <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>
+          <div class="ctlrow" role="group" aria-labelledby="scale-mode-label">
+            <div class="mirror">
+              <button class="mode" type="button" id="scale-mode-standard" aria-pressed="true" disabled>STANDARD</button>
+              <button class="mode" type="button" id="scale-mode-paired" aria-pressed="false" disabled>PAIRED AREAS</button>
+            </div>
+          </div>
+          <p class="sheethint" id="scale-mode-full" hidden></p>
         </div>
         <div id="scale-paired" hidden>
           <p class="sheethint" id="scale-paired-hint">Choose a note for each area. Set an area to Empty to free its note.</p>
@@ -15286,6 +15286,7 @@ sheet.addEventListener("keydown", e => {
     ? [backBtn, document.getElementById("scale-conflict-separate"), onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
        notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,
+       modeStandard, modePaired, ...areasBox.querySelectorAll("select"), areasReset,
        ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
     : [backBtn, document.getElementById("scale-conflict-separate"), onTab,
        nameBox,
