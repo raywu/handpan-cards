@@ -10,7 +10,7 @@
 // suppresses the degree sign".
 //
 // Spec-first per tests/CONTRACT.md rule 1: every assertion comes from
-// docs/ENGINE-SPEC.md sections 5, 8, 9, 10, 16 and 17, from CLAUDE.md, or from
+// docs/ENGINE-SPEC.md sections 5, 8, 9, 10, 16 and 17, from docs/CARD-SPEC.md, or from
 // the fixtures. The QUALITIES / PARENTS tables are compared to the spec
 // fixtures under rule 2's carve-out: the fixture IS the spec and the module
 // carries its own literal copy that this file holds to it.
@@ -591,7 +591,7 @@ test("outside the parent, a natural fifth on the pan suppresses the degree sign"
 });
 
 test("the built-in non-root degrees the deck data does not carry are pinned", () => {
-  // Coordination row 30: neither label appears in CLAUDE.md's per-deck degree
+  // Coordination row 30: neither label appears in docs/CARD-SPEC.md's per-deck degree
   // map, so pin what the engine derives for them.
   const hijaz = golden.decks.find((d) => d.id === "hijaz");
   const hijazPcs = deckPitchClasses(hijaz);

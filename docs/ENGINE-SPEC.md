@@ -1023,6 +1023,13 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   `CompressionStream`, so the engine may not depend on it. The test realm
   (`tools/engine_loader.js`) does inject `btoa`, `atob`, `TextEncoder` and
   `TextDecoder`, so the test realm is not a guard for those.
+- DECIDED(plan 2026-10-23, free note placement) Angles change the share string,
+  never the deck id.
+- DECIDED(plan 2026-10-17, share readable) `HPE.share.VERSION` is the wire
+  version; `HPE.share.RECORD_VERSION` is the stored-record version and changes
+  independently, so a wire bump rewrites no stored deck. Readers for every older
+  version stay. Detail: `docs/plans/2026-10-17-share-readable.md`,
+  `docs/plans/2026-10-23-free-placement.md`.
 
 ## 15. UI element ids
 

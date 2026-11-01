@@ -4,7 +4,7 @@
 // boot order guard, every card in both modes rendering, <svg> presence, deck
 // colours in CSS vars + markup, shuffle toggling, absence of German, 177 cards.
 //
-// Everything asserted here is derived from CLAUDE.md ("verified card conventions",
+// Everything asserted here is derived from docs/CARD-SPEC.md ("verified card conventions",
 // "instrument layouts", "data model") or from user-observable behaviour, never
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
@@ -155,7 +155,7 @@ async function hashChange(app,hash,options={}) {
 
 /* ------------------------------------------------------------------ helpers */
 
-// Field tuple layout, per CLAUDE.md "Data model":
+// Field tuple layout, per docs/CARD-SPEC.md "Data model":
 // fields{id:[name, octave, midi, zone, angle, label]}
 const F_NAME = 0, F_OCT = 1, F_MIDI = 2, F_ZONE = 3, F_LABEL = 5;
 
@@ -187,7 +187,7 @@ function callWithChord(app, fn, deckId, main) {
 }
 
 /**
- * CLAUDE.md verified convention #1 (pitch-class-complete highlighting), derived
+ * docs/CARD-SPEC.md verified convention #1 (pitch-class-complete highlighting), derived
  * here from note NAMES rather than from midi arithmetic: every field whose note
  * name matches a chord note lights up - ding and bottom notes included - root
  * name in the root colour on ALL its instances, other chord tones in the tone
@@ -283,7 +283,7 @@ test("chordSets: Amara Gsus4 lights the ding as a chord tone", async () => {
   const d = decks(app)[deckIndex(app, "amara")];
   const { blue, green } = callWithChord(app, "chordSets", "amara", "Gsus4");
 
-  // Gsus4 = G + C + D. Amara (CLAUDE.md): ding D3, 1 A3, 2 C4, 3 D4, 4 E4,
+  // Gsus4 = G + C + D. Amara (docs/CARD-SPEC.md): ding D3, 1 A3, 2 C4, 3 D4, 4 E4,
   // 5 F4, 6 G4, 7 A4, 8 C5 -> root G on field 6; tones C on 2 and 8, D on the
   // ding (0) and 3.
   assert.deepStrictEqual(sorted(blue), [6]);
@@ -339,7 +339,7 @@ test("linesHTML keeps chord-spelling order, not pitch order (Amara Fmaj7)", asyn
   const ch = d.chords[chordIndex(d, "Fmaj7")];
   const html = callWithChord(app, "linesHTML", "amara", "Fmaj7");
 
-  // CLAUDE.md convention #2: lines run in chord-spelling order from the root.
+  // docs/CARD-SPEC.md convention #2: lines run in chord-spelling order from the root.
   // Fmaj7 is spelled F4 - A3 - C4 - E4 / 5 - 1 - 2 - 4; pitch order would be
   // A3 - C4 - E4 - F4, which must NOT appear.
   const notes = colouredSpans(block(html, "notesline"));
@@ -706,7 +706,7 @@ test("generation runs once at submit, never inside deck() or render()", async ()
   assert.strictEqual(builds(), 0, "deck() or render() ran select.build again");
 });
 
-// Q17: CLAUDE.md "Known pitfalls" says render()'s empty-order guard
+// Q17: render()'s empty-order guard
 // (index.html ~6378-6379) must stay, because the boot order must not render
 // before the card-order array exists. Driven directly through the sandbox,
 // with an empty `order` never reached through GENERATE or a stored scale
@@ -2884,7 +2884,7 @@ test("pan() with a hit layer adds one hit target per non-ding field, and none fo
  * catch it, because rotating the centres among the targets leaves every one of
  * them on a real field while every tap picks up the neighbouring note. So the
  * centre is re-derived here from the field the target names, out of the deck
- * DATA and the layout convention in CLAUDE.md (math-convention degrees, 0 =
+ * DATA and the layout convention in docs/CARD-SPEC.md (math-convention degrees, 0 =
  * right, 90 = up, y-up), never from the renderer.
  *
  * data-r is checked in the same place because it is the drawn radius the sizer
@@ -3346,7 +3346,7 @@ test("the sheet's text inputs stay at 16px in every rule that sets their size, m
   }
 });
 
-/* Q26: CLAUDE.md "Design system" names the three fonts of the visual system -
+/* Q26: docs/CARD-SPEC.md "Design system" names the three fonts of the visual system -
  * Marcellus for the chord name, Bitter for the note/number lines, Nunito Sans
  * everywhere else (labels/UI, and the page's own body font). Parsed straight
  * out of the CSS text rather than restated as a DOM check, since the sandbox
@@ -5299,8 +5299,108 @@ test("US-3 one wheel gesture over WHEEL_COMMIT_PX steps once", async () => {
   assert.strictEqual(running().length, 1, "past 80px accumulated the card flies out, once");
   running()[0].finish();
   await settle();
+  const before = running().length;
+  for (const dx of [5, 3, 2]) wheelEv(dx);
+  assert.strictEqual(running().length, before, "the tail of a committed gesture starts no second fly-out");
   app.flushTimers();
   assert.strictEqual(idx(), 1);
+});
+
+async function landFlight({ app, running }) {
+  running().forEach((a) => a.finish());
+  await settle();
+  app.flushTimers();
+}
+
+test("SW2 A: two swipes back to back, each with a momentum tail, advance two cards", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  assert.strictEqual(running().length, 1);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30, 20, 10, 5, 3, 2, 1, 1]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
+test("SW2 B: one swipe with a long monotone tail with flat repeats steps once", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 30, 30, 25, 25, 20, 20, 15, 15, 10, 10, 6, 6, 3, 3, 2, 2, 1, 1, 1, 0, 0]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 C: a small bump above a third of the peak does not start a gesture", async () => {
+  const rig = swipeRig();
+  for (const dx of [11, 11, 11, 11, 11, 11, 11, 11, 10, 8, 6, 5, 4, 5, 4, 4, 3, 2, 1]) rig.wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 D: a second stroke begun during the flight counts once the card lands", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running, idx } = rig;
+  for (const dx of [30, 30, 30, 5, 2, 1]) wheelEv(dx);
+  for (const dx of [30, 30]) wheelEv(dx);
+  assert.strictEqual(running().length, 1, "the in-flight stroke starts no second flight");
+  assert.strictEqual(idx(), 0);
+  running()[0].finish();
+  await settle();
+  for (const dx of [30, 30, 30]) wheelEv(dx);
+  await landFlight(rig);
+  assert.strictEqual(idx(), 2);
+});
+
+async function playTail(rig, head, tail, landAfter) {
+  const { wheelEv } = rig;
+  for (const dx of head) wheelEv(dx);
+  tail.slice(0, landAfter).forEach((dx) => wheelEv(dx));
+  rig.running().forEach((a) => a.finish());
+  await settle();
+  tail.slice(landAfter).forEach((dx) => wheelEv(dx));
+  await landFlight(rig);
+}
+
+test("SW2 E: a coalesced merge of three tail frames is not a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 150 }, (_, i) => 40 * 0.96 ** i);
+  tail.splice(30, 3, tail[30] + tail[31] + tail[32]);
+  await playTail(rig, [10, 25, 40], tail, 10);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 F: a zero-delta event at the lift does not make the tail a new stroke", async () => {
+  const rig = swipeRig();
+  const tail = Array.from({ length: 80 }, (_, i) => 25 * 0.93 ** i);
+  await playTail(rig, [10, 25, 40, 40, 0], tail, 5);
+  assert.strictEqual(rig.idx(), 1);
+});
+
+test("SW2 G: a stroke that starts at 1px does not leave a stale trough after the commit", async () => {
+  const rig = swipeRig();
+  const { wheelEv, running } = rig;
+  for (const dx of [30, 1, 30, 30, 30]) wheelEv(dx);
+  running().forEach((a) => a.finish());
+  await settle();
+  const before = running().length;
+  for (let i = 0; i < 14; i++) wheelEv(8);
+  assert.strictEqual(running().length, before);
+});
+
+test("SW2 H: the gap timer firing mid-flight does not spring the card back", async () => {
+  const { app, wheelEv, running } = swipeRig();
+  for (const dx of [30, 30, 30, 30]) wheelEv(dx);
+  app.flushTimers();
+  wheelEv(30);
+  app.flushTimers();
+  assert.strictEqual(running().length, 1);
+});
+
+test("SW2 I: a rise inside a gesture that has not fired does not restart it", async () => {
+  const rig = swipeRig();
+  for (const dx of [30, 1, 1, 30, 30]) rig.wheelEv(dx);
+  assert.strictEqual(rig.running().length, 1);
 });
 
 test("US-3 wheel is ignored mid-flight", async () => {
@@ -7083,7 +7183,7 @@ async function d2Case(ring, n, start, edit) {
 const d2AllRings = [["rim", 20], ["inner", 8], ["bottom", 8]];
 
 /* Rule P. The fixture is D Amara 9's maker string: its rim angles are the
- * verified ones of CLAUDE.md (1 A3 @270 ... 8 C5 @90), so the place word of
+ * verified ones of docs/CARD-SPEC.md (1 A3 @270 ... 8 C5 @90), so the place word of
  * every seat is a literal here. */
 const D2_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
 const D2_NOTES = ["A3", "C4", "D4", "E4", "F4", "G4", "A4", "C5"];
@@ -7525,7 +7625,7 @@ test("DR2a item 6 (91): on Edit a changed count resets the rim and the notice sa
 });
 
 /* Rule R (item 8, F1). Pygmy's rim, inner and bottom angles: the first table is
- * CLAUDE.md's anchor-between listing (rim and bottom as verified, inner 128/52),
+ * docs/CARD-SPEC.md's anchor-between listing (rim and bottom as verified, inner 128/52),
  * the second is the engine's anchor-one output for the same maker string. */
 const D2_PYGMY_BETWEEN = { G3: 290, Ab3: 250, C4: 330, Eb4: 210, F4: 10, G4: 170, Ab4: 50, C5: 130, Eb5: 90,
   F5: 128, G5: 52, C3: 300, Db3: 240, Eb3: 0, Bb3: 180, Db4: 60, Ab5: 120 };
@@ -15225,14 +15325,14 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share",...neotoneKeys];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share) and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), move.notice / move.failed (domain move handoff) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
       .update(JSON.stringify(baseKeys.sort())).digest("hex"),contract.sortedKeySha256,"all frozen baseline key identities remain unchanged");
     assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
-      [...contract.pluralKeys, ...neotoneKeys.filter((k) => isPlural(en[k]))].sort(), "frozen plural keys plus the Neotone plurals");
+      [...contract.pluralKeys, ...addedPluralKeys, ...neotoneKeys.filter((k) => isPlural(en[k]))].sort(), "frozen plural keys plus the handoff notice and the Neotone plurals");
     assert.deepStrictEqual(Object.keys(contract.pluralFormsByLocale).sort(), [...locales].sort());
     // This is the single independently reviewed baseline exception. Adding an
     // exception to make a changed table pass requires a new semantic decision.
@@ -15244,7 +15344,7 @@ describe("I18N", () => {
       const table = JSON.parse(fs.readFileSync(path.join(dir, locale + ".json"), "utf8"));
       assert.deepStrictEqual(Object.keys(table).sort(), Object.keys(en).sort(), locale + ": key parity with en");
       for (const k of Object.keys(en)) {
-        const plural = contract.pluralKeys.includes(k) || (neotoneKeys.includes(k) && isPlural(en[k]));
+        const plural = contract.pluralKeys.includes(k) || addedPluralKeys.includes(k) || (neotoneKeys.includes(k) && isPlural(en[k]));
         const label = locale + " " + k;
         assert.strictEqual(isPlural(table[k]), plural, label + ": scalar/plural type");
         if (plural) {
@@ -19012,5 +19112,194 @@ describe("NEO: Neotone sheet, saves and links", () => {
     const paired = meaning(options);
     assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
     assert.strictEqual(paired[paired.length - 1].length, 18);
+  });
+});
+
+describe("MV: the saved-scale handoff (switched off in the committed bytes)", () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const webcrypto = require("node:crypto").webcrypto;
+  const OLD_HOST = "old.example", NEW_HOST = "new.example", TARGET = "https://new.example";
+  const uid = n => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const rec = (name, s = "(D3) A3 C4 D4 E4 F4 G4 A4 C5") => ({ v: 4, s, o: { name } });
+  const envelopeOf = (records, extra = {}) => ({
+    schema: 1, collectionId: "11111111-1111-4111-8111-111111111111", revision: 1, slotStateRevision: 0,
+    entries: records.map((record, i) => ({ instanceId: uid(i + 1), revision: 1, displayOrdinal: i + 1, record })),
+    usedInstanceIds: records.map((_, i) => uid(i + 1)), nextDisplayOrdinal: records.length + 1,
+    preferredSelection: records.length ? { kind: "saved", id: uid(1) } : { kind: "builtin", id: "kurd" },
+    slots: {}, hidden: [],
+    migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] }, ...extra });
+  const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
+  function movePage({ on = true, cap = 20000, referrer = "" } = {}) {
+    let html = INDEX_HTML();
+    if (on) html = html.replace("const MOVE_FROM = null;", () => `const MOVE_FROM = "${OLD_HOST}";`)
+      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = "${TARGET}";`)
+      .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
+    return `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + html;
+  }
+  const settle = async app => { for (let i = 0; i < 40 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
+  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage }) {
+    if (records) {
+      const realm = realmAt(origin, host);
+      await idbRecord(realm, { write: true, value: JSON.stringify(envelopeOf(records, extra)) });
+    }
+    const app = boot({ origin, storage, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true, crypto: webcrypto,
+      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer }) });
+    await settle(app);
+    app.fixtureOrigin = origin;
+    return app;
+  }
+  const gtag = app => app.head.children.filter(c => /googletagmanager\.com\/gtag\/js/.test(c.src || ""));
+  const realmAt = (origin, host) => boot({ origin, indexedDB: true, broadcastChannel: true, href: `https://${host}/index.html`,
+    html: "<script>window.__savedIdbFixtureOnly=true;</script>" });
+  const envelopeAt = (origin, host = NEW_HOST) => JSON.parse(savedRaw(realmAt(origin, host)));
+
+  test("the committed bytes have both switches null", () => {
+    const html = INDEX_HTML();
+    assert.match(html, /^const MOVE_FROM = null;$/m);
+    assert.match(html, /^const MOVE_TARGET = null;$/m);
+  });
+
+  test("with the switches null the old host boots normally and a #move= hash is left alone", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#move=abc&then=", records: [rec("A")], on: false });
+    assert.strictEqual(app.get("window.__replaced"), undefined);
+    assert.strictEqual(app.get("booted"), true);
+    assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
+    assert.strictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).importedIds, undefined);
+  });
+
+  test("the old host forwards before any render, with the payload, and never loads analytics", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
+    const to = app.get("window.__replaced");
+    assert.ok(to.startsWith(TARGET + "/#move="), to);
+    assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
+    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true, "the app did not boot");
+    assert.strictEqual(gtag(app).length, 0);
+  });
+
+  test("an empty old store forwards with no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [] });
+    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+  });
+
+  const codeOf = url => /#move=([A-Za-z0-9_-]*)&then=/.exec(url)[1];
+  const rowsOf = code => JSON.parse(Buffer.from(code, "base64url").toString()).r;
+  const manyRecs = n => Array.from({ length: n }, (_, i) => rec(`S${i + 1} ${"x".repeat(30)}`));
+
+  for (const total of [116, 200]) {
+    test(`over-cap store of ${total} still forwards, carrying exactly the largest prefix under MOVE_CAP`, async () => {
+      const records = manyRecs(total);
+      const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records, extra: { hidden: ["kurd"] } });
+      const to = old.get("window.__replaced");
+      assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
+      assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
+      const code = codeOf(to);
+      assert.ok(code.length <= 20000);
+      const rows = rowsOf(code);
+      assert.ok(rows.length > 0 && rows.length < total, `carried ${rows.length}`);
+      assert.deepStrictEqual(rows.map(r => r.r.o.name), records.slice(0, rows.length).map(r => r.o.name));
+      const more = Buffer.from(JSON.stringify({ r: records.slice(0, rows.length + 1).map((r, i) => ({ i: uid(i + 1), r })), h: ["kurd"] })).toString("base64url");
+      assert.ok(more.length > 20000, "one more record would not fit");
+      assert.deepStrictEqual(JSON.parse(Buffer.from(code, "base64url").toString()).h, ["kurd"]);
+      assert.deepStrictEqual(envelopeAt(old.fixtureOrigin, OLD_HOST).entries.length, total, "old storage untouched");
+      const origin = createOrigin({});
+      const hash = `#move=${code}&then=`;
+      const first = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+      assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), records.slice(0, rows.length).map(r => r.o.name));
+      assert.deepStrictEqual(envelopeAt(origin).hidden, ["kurd"]);
+      assert.match(first.get("moveNoticeEl.textContent"), new RegExp(`Your ${rows.length} saved scales moved here`));
+      await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+      assert.strictEqual(envelopeAt(origin).entries.length, rows.length, "second visit adds no duplicates");
+    });
+  }
+
+  test("an over-cap store with a #s= hash forwards with the hash preserved and no notice path on the old host", async () => {
+    const hash = "#s=6/D3-A3-C4/x/y";
+    const app = await boot2({ host: OLD_HOST, hash, records: manyRecs(200) });
+    const to = app.get("window.__replaced");
+    assert.ok(to.startsWith(TARGET + "/#move="), String(to));
+    assert.ok(to.endsWith("&then=" + encodeURIComponent(hash)), to);
+    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true);
+  });
+
+  test("saved scales with accented, CJK and emoji names move intact, once, and count UTF-8 bytes toward MOVE_CAP", async () => {
+    const names = ["\u00c9cho", "\u65e5\u672c\u8a9e\u306e\u97f3", "\ud83c\udfb5 Tune"];
+    const records = names.map(n => rec(n));
+    const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records });
+    const to = old.get("window.__replaced");
+    assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
+    const code = codeOf(to);
+    assert.deepStrictEqual(rowsOf(code).map(r => r.r.o.name), names);
+    assert.deepStrictEqual(envelopeAt(old.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), names);
+    const origin = createOrigin({});
+    const hash = `#move=${code}&then=`;
+    const first = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), names);
+    assert.match(first.get("moveNoticeEl.textContent"), /Your 3 saved scales moved here/);
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.strictEqual(envelopeAt(origin).entries.length, 3, "revisit adds no duplicates");
+    const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
+    const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
+    assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+  });
+
+  test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], cap: 10 });
+    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+    assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
+  });
+
+  test("the new host never forwards", async () => {
+    const app = await boot2({ host: NEW_HOST, records: [rec("A")] });
+    assert.strictEqual(app.get("window.__replaced"), undefined);
+    assert.strictEqual(app.get("booted"), true);
+  });
+
+  test("a move link is stripped to the then hash and imports once, however often it is replayed", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("ONE")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`;
+    const first = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.strictEqual(first.get("location.hash"), "#deck=f-low-pygmy-18");
+    assert.ok(first.history.calls.some(c => c.type === "replace" && !String(c.url).includes("move=")));
+    const one = envelopeAt(origin);
+    assert.deepStrictEqual(one.entries.map(r => r.record.o.name), ["ONE"]);
+    assert.strictEqual(one.importedIds.length, 1);
+    const second = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.ok(second.get("booted"));
+    assert.deepStrictEqual(envelopeAt(origin), one, "the second import changes nothing");
+  });
+
+  test("a move link from the wrong or missing referrer writes nothing", async () => {
+    for (const referrer of ["", "https://evil.example/", "not a url"]) {
+      const origin = createOrigin({});
+      const hash = `#move=${payloadOf([[uid(1), rec("ONE")]])}&then=`;
+      const app = await boot2({ host: NEW_HOST, hash, referrer, origin });
+      assert.ok(app.get("booted"), referrer);
+      assert.deepStrictEqual(envelopeAt(origin).entries, [], referrer);
+      assert.ok(!app.get("location.hash").includes("move="), referrer);
+    }
+  });
+
+  test("a then hash outside the allowed forms is dropped", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([])}&then=${encodeURIComponent("javascript:alert(1)")}`;
+    const app = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.ok(!/javascript/.test(app.get("location.href")));
+  });
+
+  test("a record the app cannot read is skipped and the rest import", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["GOOD"]);
+  });
+
+  test("an older build's edit keeps the top-level importedIds", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("ONE")]])}&then=`;
+    const app = await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    const before = envelopeAt(origin);
+    await app.getAsync(`(async()=>{const e=savedState,row=e.entries[0];
+      return commitSaved({type:'prefer',collectionId:e.collectionId,selection:{kind:'saved',id:row.instanceId}});})()`);
+    assert.deepStrictEqual(envelopeAt(origin).importedIds, before.importedIds);
   });
 });

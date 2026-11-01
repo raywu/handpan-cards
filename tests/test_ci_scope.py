@@ -26,7 +26,7 @@ class CiScopeTest(unittest.TestCase):
         self.assertFalse(code_changed(["docs/plans/a.md", "docs/prompts/b.md"]))
 
     def test_every_doc_a_test_reads_runs_ci(self):
-        for path in ("README.md", "CLAUDE.md", "docs/ENGINE-SPEC.md"):
+        for path in ("README.md", "CLAUDE.md", "docs/ENGINE-SPEC.md", "docs/CARD-SPEC.md"):
             self.assertTrue(code_changed([path]), path)
         self.assertTrue(code_changed(["docs/plans/a.md", "index.html"]))
 

@@ -1,0 +1,15 @@
+# kills: over-cap store of 116 still forwards, carrying exactly the largest prefix under MOVE_CAP
+# suite: node --test --test-name-pattern=over.cap.store.of.116 tests/app.test.js
+# fault: Skip the over-cap truncation so the whole store is encoded and forwarded past MOVE_CAP.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15892,7 +15892,7 @@
+   if (!rows.length && !hidden.length) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
+   const encodeRows = n => moveEncode(JSON.stringify({ r: rows.slice(0, n), h: hidden }));
+   let carried = rows.length, code = encodeRows(carried);
+-  if (code.length > MOVE_CAP) {
++  if (false) {
+     let lo = 0, hi = rows.length - 1;
+     while (lo < hi) {
+       const mid = (lo + hi + 1) >> 1;
