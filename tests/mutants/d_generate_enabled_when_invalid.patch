@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14070,7 +14070,7 @@ function syncParseState({ paint }) {
+@@ -14172,7 +14172,7 @@ function syncParseState({ paint }) {
+     neoTyping = false;
      paintLayout();
-     showParse(PARSE_HINT());
-     scaleBox.classList.remove("bad");
+     scaleBox.classList.add("bad");
 -    genBtn.disabled = true;
 +    genBtn.disabled = false;
      document.getElementById("scale-conflict-separate").disabled=true;
-     if (paint) showPlaceholderPan();
-     say("", "");
+     if (paint) holdPanPreview();
+     showRefusal(reasonText(res));
