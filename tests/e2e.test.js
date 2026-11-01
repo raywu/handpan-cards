@@ -14417,14 +14417,14 @@ function run() {
   });
 
   describe("discoverability", () => {
-    // .scene rect measured on origin/main (2b7dadc, before #app and #about
+    // .scene rect, origin/main (2b7dadc) re-measured with the header lockup (logo-in-app D10) (before #app and #about
     // existed) with the e2e launch (fallback fonts, scrollbars hidden) at
     // these viewports, desktop emulation (mobile: false). The wrapper and the
     // section below the first screen must not move the card (plan D20).
     const ORIGIN_SCENE = {
-      "380x780": { width: 334.390625, height: 461.78125, left: 22.796875, top: 166.265625 },
-      "320x568": { width: 247.890625, height: 342.328125, left: 36.046875, top: 120 },
-      "1024x700": { width: 321.984375, height: 444.65625, left: 351, top: 134.828125 },
+      "380x780": { width: 334.390625, height: 461.78125, left: 22.796875, top: 176.265625 },
+      "320x568": { width: 239.90625, height: 331.3125, left: 40.046875, top: 131.015625 },
+      "1024x700": { width: 314.515625, height: 434.34375, left: 354.734375, top: 149.984375 },
     };
     const VIEWPORTS = { "380x780": [380, 780], "320x568": [320, 568], "1024x700": [1024, 700] };
 
