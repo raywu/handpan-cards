@@ -7377,7 +7377,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", async () =
       const want = ["scale-tab-layout", "plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
+        "scale-layout-reset", "scale-mode-standard", "scale-mode-paired", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
       assert.deepStrictEqual(seen, want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
