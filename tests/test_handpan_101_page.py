@@ -41,7 +41,7 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertEqual(p.meta("og:url", "property"), URL)
         self.assertEqual(p.meta("og:title", "property"), TITLE)
         self.assertEqual(p.meta("og:description", "property"), desc)
-        self.assertEqual(p.meta("og:site_name", "property"), "Handpan Chords")
+        self.assertEqual(p.meta("og:site_name", "property"), "Handpan Theory")
         self.assertEqual(p.meta("og:image", "property"), SITE + "og.png")
         self.assertEqual(p.meta("og:type", "property"), "article")
 
@@ -112,7 +112,8 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertEqual(data["@type"], "Article")
         self.assertEqual(data["headline"], TITLE)
         self.assertEqual(data["mainEntityOfPage"], URL)
-        self.assertEqual(data["publisher"]["name"], "Handpan Chords")
+        self.assertEqual(data["publisher"]["name"], "Handpan Theory")
+        self.assertEqual(data["author"]["name"], "Handpan Theory")
         self.assertEqual(data["publisher"]["url"], SITE)
         self.assertRegex(data["dateModified"], r"^\d{4}-\d{2}-\d{2}$")
         self.assertIn('<time datetime="%s">' % data["dateModified"], html)
@@ -126,7 +127,7 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertGreaterEqual(len(re.findall(r'<a href="https://', sources)), 2)
         text = " ".join(page().text)
         self.assertRegex(text, r"Last updated\s+\d{4}-\d{2}-\d{2}")
-        self.assertIn("Handpan Chords", text)
+        self.assertIn("Handpan Theory", text)
 
     def test_materials_h2_names_the_five_materials(self):
         m = re.search(r"<h2>Materials</h2>(.*?)</section>", read(PATH), re.S)

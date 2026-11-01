@@ -3918,7 +3918,7 @@ function linkHref(html, rel, extra = "") {
   return m[1];
 }
 
-const POSITIONING_TITLE = "Handpan Chords: Custom Scale Chord and Progression Practice";
+const POSITIONING_TITLE = "Handpan Theory: Custom Scale Chord and Progression Practice";
 
 test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)", async () => {
   const html = headHtml();
@@ -9659,7 +9659,7 @@ describe("discoverability: structured data", () => {
     assert.strictEqual(hits.length, 1, `expected exactly one ${type} node`);
     return hits[0];
   };
-  const SITE_NAME = "Handpan Chords";
+  const SITE_NAME = "Handpan Theory";
 
   test("SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node", async () => {
     const ld = ldBlock();
@@ -9669,19 +9669,37 @@ describe("discoverability: structured data", () => {
     assert.deepStrictEqual(ld["@graph"].map((n) => n["@type"]).sort(), ["WebApplication", "WebSite"]);
   });
 
-  test("SN: the WebSite node is named as the site name, at the canonical and og:url, with only the lowercase subdomain as alternateName", async () => {
+  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with Handpan Chords and the lowercase host as alternateName", async () => {
     const html = INDEX_HTML();
     const site = node("WebSite");
     assert.strictEqual(site.name, SITE_NAME, `expected a WebSite node named ${SITE_NAME}`);
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["handpan.raywu.org"]);
-    for (const a of site.alternateName) {
-      assert.strictEqual(a, a.toLowerCase());
-      assert.strictEqual(a, new URL(canonical).host);
-    }
+    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpan.raywu.org"]);
+    const hostEntry = site.alternateName[1];
+    assert.strictEqual(hostEntry, hostEntry.toLowerCase());
+    assert.strictEqual(hostEntry, new URL(canonical).host);
     assert.deepStrictEqual(Object.keys(site).sort(), ["@type", "alternateName", "name", "url"]);
+  });
+
+  test("SN: WebApplication carries Handpan Chords as its only alternateName", async () => {
+    assert.deepStrictEqual(node("WebApplication").alternateName, ["Handpan Chords"]);
+  });
+
+  test("NS: no visible text says Handpan Chords", async () => {
+    const root = path.join(__dirname, "..");
+    const bad = /Handpan Chords|Handpan Chord Cards/;
+    const files = ["404.html", "scales/index.html", "handpan-101/index.html", "llms.txt", "README.md"];
+    for (const d of fs.readdirSync(path.join(root, "scales"), { withFileTypes: true })) {
+      if (d.isDirectory()) files.push(`scales/${d.name}/index.html`);
+    }
+    for (const f of files) {
+      const src = fs.readFileSync(path.join(root, f), "utf8").replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "");
+      assert.ok(!bad.test(src), `${f} still shows the old name`);
+    }
+    const idx = INDEX_HTML().replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "").replace(/<script>const I18N[\s\S]*?<\/script>/, "").replace(/<!--[\s\S]*?-->/g, "");
+    assert.ok(!bad.test(idx), "index.html still shows the old name");
   });
 
   test("SN: og:site_name equals the WebSite name and appears once", async () => {

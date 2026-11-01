@@ -1,4 +1,4 @@
-# Handpan Chords
+# Handpan Theory
 
 Chord flashcards and chord progressions for handpan scales. It runs in the browser with no account: https://handpan.raywu.org/
 
