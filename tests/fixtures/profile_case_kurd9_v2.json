@@ -1,30 +1,30 @@
 {
- "_generated_by": "const W = \"/Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a6c6ece55aef5924b\";\nconst fs = require(\"fs\");\nconst { loadEngine } = require(W + \"/tools/engine_loader.js\");\nconst H = loadEngine([\"core\", \"voicing\", \"layout\", \"naming\", \"select\"]);\nH.core.PROFILE_ENABLED = true;\n\nconst GEN = fs.readFileSync(__filename, \"utf8\");\nfunction make(file, seed, mapOf, note) {\n  const p = H.core.parseSeed(seed, {});\n  if (!p.ok) throw new Error(JSON.stringify(p));\n  const map = mapOf(p.value.fields);\n  const q = H.core.parseSeed(seed, { profile: { id: \"paired\", rev: 1, map } });\n  if (!q.ok) throw new Error(JSON.stringify(q));\n  const b = H.select.build(p.value);\n  const s = H.layout.solve(q.value);\n  if (!s.ok) throw new Error(JSON.stringify(s));\n  b.value.geom = s.value.geom;\n  b.value.fields = s.value.fields;\n  fs.writeFileSync(W + \"/tests/fixtures/\" + file, JSON.stringify({\n    _generated_by: GEN, note: note,\n    seed: H.core.formatSeed(q.value), map, deck: b.value }, null, 1) + \"\\n\");\n}\n\nconst PYGMY = \"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]\";\nmake(\"profile_case_pygmy_v1.json\", PYGMY, (f) => H.layout.proposeProfile(f).value,\n  \"Pygmy with HPE.layout.proposeProfile: tops in p1..p9,s1,s2; six bottom notes in s3..s8.\");\n\nconst KURD = \"(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5\";\nmake(\"profile_case_kurd9_v1.json\", KURD, (f) => {\n  const keys = Object.values(f).filter((v) => v[3] === \"rim\").map((v) => \"r\" + v[2]);\n  const slots = [0, 1, 2, 4, 5, 6, 8, 12, 16];\n  const map = new Array(18).fill(null);\n  keys.forEach((k, i) => { map[slots[i]] = k; });\n  return map;\n}, \"Nine rim notes in p1,p2,p3,p5,p6,p7,p9,s4,s8: p4 and p8 stay empty.\");\n",
- "note": "Nine rim notes in p1,p2,p3,p5,p6,p7,p9,s4,s8: p4 and p8 stay empty.",
- "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+ "_generated_by": "const W = process.argv[2];\nconst fs = require(\"fs\");\nconst { loadEngine } = require(W + \"/tools/engine_loader.js\");\nconst H = loadEngine([\"core\", \"voicing\", \"layout\", \"naming\", \"select\"]);\nH.core.PROFILE_ENABLED = true;\n\nconst GEN = fs.readFileSync(__filename, \"utf8\");\nfunction make(file, seed, note) {\n  const p = H.core.parseSeed(seed, {});\n  if (!p.ok) throw new Error(JSON.stringify(p));\n  const prop = H.layout.proposeProfile(p.value.fields).value;\n  if (prop.unplaced.length) throw new Error(\"unplaced \" + prop.unplaced);\n  const map = prop.map;\n  const q = H.core.parseSeed(seed, { profile: { id: \"paired\", rev: 2, map } });\n  if (!q.ok) throw new Error(JSON.stringify(q));\n  const b = H.select.build(p.value);\n  const s = H.layout.solve(q.value);\n  if (!s.ok) throw new Error(JSON.stringify(s));\n  b.value.geom = s.value.geom;\n  b.value.fields = s.value.fields;\n  fs.writeFileSync(W + \"/tests/fixtures/\" + file, JSON.stringify({\n    _generated_by: GEN, note: note,\n    seed: H.core.formatSeed(q.value), map, deck: b.value }, null, 1) + \"\\n\");\n}\n\nmake(\"profile_case_pygmy_v2.json\",\n  \"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]\",\n  \"Pygmy without F5 and G5, HPE.layout.proposeProfile: nine main tonefields p1..p9 and six mutant notes s1..s6.\");\nmake(\"profile_case_kurd9_v2.json\", \"(D3) A3 Bb3 C4 D4 E4 F4 G4 A4\",\n  \"Kurd 9, eight rim notes, no bottom note: no mutant note, so the card is the Standard layout in Neotone styling.\");\nmake(\"profile_case_hijaz_v2.json\", \"[B2] (C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4\",\n  \"Hijaz plus one mutant note: eight main tonefields, main tonefield 9 empty, one mutant note in s1, eight empty lenses.\");\n",
+ "note": "Kurd 9, eight rim notes, no bottom note: no mutant note, so the card is the Standard layout in Neotone styling.",
+ "seed": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
  "map": [
   "r57",
   "r58",
   "r60",
-  null,
   "r62",
   "r64",
   "r65",
-  null,
   "r67",
-  null,
-  null,
-  null,
   "r69",
   null,
   null,
   null,
-  "r72",
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
   null
  ],
  "deck": {
-  "id": "custom:cb5fe66a",
-  "name": "D AEOLIAN 10",
+  "id": "custom:8eaa659e",
+  "name": "D AEOLIAN 9",
   "options": {
    "palette": 0,
    "mirror": false,
@@ -51,12 +51,12 @@
    "rim": 0.745,
    "inner": 0,
    "bottom": 0,
-   "r_ding": 0.21,
+   "r_ding": 0.2,
    "ding_dy": 0,
    "r_note": 0.19,
    "r_bnote": 0,
    "inner_ring": 0.355,
-   "f_ding": 0.126,
+   "f_ding": 0.12,
    "f_note": 0.1454,
    "f_bnote": 0,
    "f_num": 0.1216,
@@ -67,48 +67,51 @@
    "place": {
     "1": [
      270,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "2": [
-     230,
-     0.58,
-     0.16
+     225,
+     0.745,
+     0.19,
+     "main"
     ],
     "3": [
-     310,
-     0.58,
-     0.16
+     315,
+     0.745,
+     0.19,
+     "main"
     ],
     "4": [
-     350,
-     0.58,
-     0.16
+     180,
+     0.745,
+     0.19,
+     "main"
     ],
     "5": [
-     150,
-     0.58,
-     0.16
+     0,
+     0.745,
+     0.19,
+     "main"
     ],
     "6": [
-     30,
-     0.58,
-     0.16
+     135,
+     0.745,
+     0.19,
+     "main"
     ],
     "7": [
-     70,
-     0.58,
-     0.16
+     45,
+     0.745,
+     0.19,
+     "main"
     ],
     "8": [
-     190,
-     0.86,
-     0.11
-    ],
-    "9": [
-     110,
-     0.86,
-     0.11
+     90,
+     0.745,
+     0.19,
+     "main"
     ]
    }
   },
@@ -134,7 +137,7 @@
     3,
     58,
     "rim",
-    230,
+    225,
     "2"
    ],
    "3": [
@@ -142,7 +145,7 @@
     4,
     60,
     "rim",
-    310,
+    315,
     "3"
    ],
    "4": [
@@ -150,7 +153,7 @@
     4,
     62,
     "rim",
-    190,
+    180,
     "4"
    ],
    "5": [
@@ -158,7 +161,7 @@
     4,
     64,
     "rim",
-    350,
+    0,
     "5"
    ],
    "6": [
@@ -166,7 +169,7 @@
     4,
     65,
     "rim",
-    150,
+    135,
     "6"
    ],
    "7": [
@@ -174,7 +177,7 @@
     4,
     67,
     "rim",
-    30,
+    45,
     "7"
    ],
    "8": [
@@ -182,16 +185,8 @@
     4,
     69,
     "rim",
-    110,
+    90,
     "8"
-   ],
-   "9": [
-    "C",
-    5,
-    72,
-    "rim",
-    70,
-    "9"
    ]
   },
   "chords": [
@@ -240,8 +235,8 @@
     "fields": [
      4,
      7,
-     8,
-     9
+     1,
+     3
     ],
     "roots": [
      4
@@ -254,8 +249,8 @@
     "fields": [
      4,
      6,
-     8,
-     9
+     1,
+     3
     ],
     "roots": [
      4
@@ -282,8 +277,8 @@
     "fields": [
      4,
      6,
-     8,
-     9,
+     1,
+     3,
      5
     ],
     "roots": [
@@ -297,8 +292,8 @@
     "fields": [
      4,
      6,
-     8,
-     9,
+     1,
+     3,
      5,
      7
     ],
@@ -339,8 +334,8 @@
     "subtitle": "F MAJOR",
     "fields": [
      6,
-     8,
-     9
+     1,
+     3
     ],
     "roots": [
      6
@@ -352,7 +347,7 @@
     "subtitle": "POWER CHORD",
     "fields": [
      6,
-     9
+     3
     ],
     "roots": [
      6
@@ -405,8 +400,8 @@
     "subtitle": "F MAJOR ADD 9",
     "fields": [
      6,
-     8,
-     9,
+     1,
+     3,
      7
     ],
     "roots": [
@@ -563,7 +558,7 @@
      4,
      6,
      8,
-     9
+     3
     ],
     "roots": [
      7

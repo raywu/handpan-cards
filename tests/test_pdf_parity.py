@@ -63,9 +63,11 @@ FREE_FIXTURE = os.path.join(paths.ROOT, "tests", "fixtures",
 # geom.place. Pygmy with its proposal, and a 9-note Kurd with two empty slots.
 PROFILE_CASES = {
     "profile_pygmy": os.path.join(paths.ROOT, "tests", "fixtures",
-                                  "profile_case_pygmy_v1.json"),
+                                  "profile_case_pygmy_v2.json"),
     "profile_kurd9": os.path.join(paths.ROOT, "tests", "fixtures",
-                                  "profile_case_kurd9_v1.json"),
+                                  "profile_case_kurd9_v2.json"),
+    "profile_hijaz": os.path.join(paths.ROOT, "tests", "fixtures",
+                                  "profile_case_hijaz_v2.json"),
 }
 
 # Every case the glyph/vector sweeps below iterate: generated seeds first
@@ -335,13 +337,14 @@ class PrintParityTest(unittest.TestCase):
     def test_PA_the_profile_cases_are_swept_and_carry_geom_place(self):
         # Neotone lane P: a sweep that silently dropped the paired-area decks
         # would still pass every other check here.
-        self.assertEqual(set(PROFILE_CASES), {"profile_pygmy", "profile_kurd9"})
+        self.assertEqual(set(PROFILE_CASES),
+                         {"profile_pygmy", "profile_kurd9", "profile_hijaz"})
         self.assertTrue(set(PROFILE_CASES).issubset(set(CASES)))
         for case, path in PROFILE_CASES.items():
             with open(path, encoding="utf8") as fh:
                 payload = json.load(fh)
             self.assertIn("place", payload["deck"]["geom"], case)
-            self.assertEqual(decks.from_generated(payload)["R"], 63.3, case)
+            self.assertEqual(decks.from_generated(payload)["R"], 61.8, case)
 
     def test_the_sweep_covers_every_builtin_and_both_variants(self):
         # Review C1's coverage floor: a parameterization that silently

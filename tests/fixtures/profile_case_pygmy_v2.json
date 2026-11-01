@@ -1,7 +1,7 @@
 {
- "_generated_by": "const W = \"/Users/ray/Projects/handpan-cards/.claude/worktrees/agent-a6c6ece55aef5924b\";\nconst fs = require(\"fs\");\nconst { loadEngine } = require(W + \"/tools/engine_loader.js\");\nconst H = loadEngine([\"core\", \"voicing\", \"layout\", \"naming\", \"select\"]);\nH.core.PROFILE_ENABLED = true;\n\nconst GEN = fs.readFileSync(__filename, \"utf8\");\nfunction make(file, seed, mapOf, note) {\n  const p = H.core.parseSeed(seed, {});\n  if (!p.ok) throw new Error(JSON.stringify(p));\n  const map = mapOf(p.value.fields);\n  const q = H.core.parseSeed(seed, { profile: { id: \"paired\", rev: 1, map } });\n  if (!q.ok) throw new Error(JSON.stringify(q));\n  const b = H.select.build(p.value);\n  const s = H.layout.solve(q.value);\n  if (!s.ok) throw new Error(JSON.stringify(s));\n  b.value.geom = s.value.geom;\n  b.value.fields = s.value.fields;\n  fs.writeFileSync(W + \"/tests/fixtures/\" + file, JSON.stringify({\n    _generated_by: GEN, note: note,\n    seed: H.core.formatSeed(q.value), map, deck: b.value }, null, 1) + \"\\n\");\n}\n\nconst PYGMY = \"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]\";\nmake(\"profile_case_pygmy_v1.json\", PYGMY, (f) => H.layout.proposeProfile(f).value,\n  \"Pygmy with HPE.layout.proposeProfile: tops in p1..p9,s1,s2; six bottom notes in s3..s8.\");\n\nconst KURD = \"(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5\";\nmake(\"profile_case_kurd9_v1.json\", KURD, (f) => {\n  const keys = Object.values(f).filter((v) => v[3] === \"rim\").map((v) => \"r\" + v[2]);\n  const slots = [0, 1, 2, 4, 5, 6, 8, 12, 16];\n  const map = new Array(18).fill(null);\n  keys.forEach((k, i) => { map[slots[i]] = k; });\n  return map;\n}, \"Nine rim notes in p1,p2,p3,p5,p6,p7,p9,s4,s8: p4 and p8 stay empty.\");\n",
- "note": "Pygmy with HPE.layout.proposeProfile: tops in p1..p9,s1,s2; six bottom notes in s3..s8.",
- "seed": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]",
+ "_generated_by": "const W = process.argv[2];\nconst fs = require(\"fs\");\nconst { loadEngine } = require(W + \"/tools/engine_loader.js\");\nconst H = loadEngine([\"core\", \"voicing\", \"layout\", \"naming\", \"select\"]);\nH.core.PROFILE_ENABLED = true;\n\nconst GEN = fs.readFileSync(__filename, \"utf8\");\nfunction make(file, seed, note) {\n  const p = H.core.parseSeed(seed, {});\n  if (!p.ok) throw new Error(JSON.stringify(p));\n  const prop = H.layout.proposeProfile(p.value.fields).value;\n  if (prop.unplaced.length) throw new Error(\"unplaced \" + prop.unplaced);\n  const map = prop.map;\n  const q = H.core.parseSeed(seed, { profile: { id: \"paired\", rev: 2, map } });\n  if (!q.ok) throw new Error(JSON.stringify(q));\n  const b = H.select.build(p.value);\n  const s = H.layout.solve(q.value);\n  if (!s.ok) throw new Error(JSON.stringify(s));\n  b.value.geom = s.value.geom;\n  b.value.fields = s.value.fields;\n  fs.writeFileSync(W + \"/tests/fixtures/\" + file, JSON.stringify({\n    _generated_by: GEN, note: note,\n    seed: H.core.formatSeed(q.value), map, deck: b.value }, null, 1) + \"\\n\");\n}\n\nmake(\"profile_case_pygmy_v2.json\",\n  \"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]\",\n  \"Pygmy without F5 and G5, HPE.layout.proposeProfile: nine main tonefields p1..p9 and six mutant notes s1..s6.\");\nmake(\"profile_case_kurd9_v2.json\", \"(D3) A3 Bb3 C4 D4 E4 F4 G4 A4\",\n  \"Kurd 9, eight rim notes, no bottom note: no mutant note, so the card is the Standard layout in Neotone styling.\");\nmake(\"profile_case_hijaz_v2.json\", \"[B2] (C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4\",\n  \"Hijaz plus one mutant note: eight main tonefields, main tonefield 9 empty, one mutant note in s1, eight empty lenses.\");\n",
+ "note": "Pygmy without F5 and G5, HPE.layout.proposeProfile: nine main tonefields p1..p9 and six mutant notes s1..s6.",
+ "seed": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]",
  "map": [
   "r55",
   "r56",
@@ -12,19 +12,19 @@
   "r68",
   "r72",
   "r75",
-  "r77",
-  "r79",
   "b48",
   "b49",
   "b51",
   "b58",
   "b61",
   "b80",
+  null,
+  null,
   null
  ],
  "deck": {
-  "id": "custom:b936039c",
-  "name": "F AEOLIAN 12",
+  "id": "custom:ee545915",
+  "name": "F AEOLIAN 10",
   "options": {
    "palette": 0,
    "mirror": false,
@@ -51,104 +51,121 @@
    "rim": 0.745,
    "inner": 0,
    "bottom": 1.15,
-   "r_ding": 0.21,
+   "r_ding": 0.2,
    "ding_dy": 0,
-   "r_note": 0.1783,
+   "r_note": 0.19,
    "r_bnote": 0.1188,
    "inner_ring": 0.355,
-   "f_ding": 0.126,
-   "f_note": 0.1364,
+   "f_ding": 0.12,
+   "f_note": 0.1454,
    "f_bnote": 0.0931,
-   "f_num": 0.1141,
+   "f_num": 0.1216,
    "n_in": 0.085,
    "n_out": 0.068,
    "rim_num_out": false,
-   "ext": 1.4767,
+   "ext": 1.4819,
    "place": {
     "1": [
      270,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "2": [
      230,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "3": [
      310,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "4": [
      190,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "5": [
      350,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "6": [
      150,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "7": [
      30,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "8": [
      110,
-     0.58,
-     0.16
+     0.745,
+     0.19,
+     "main"
     ],
     "9": [
      70,
-     0.58,
-     0.16
-    ],
-    "10": [
-     270,
-     0.86,
-     0.11
-    ],
-    "11": [
-     230,
-     0.86,
-     0.11
+     0.745,
+     0.19,
+     "main"
     ],
     "101": [
-     310,
-     0.86,
-     0.11
+     270,
+     0.745,
+     0.19,
+     "mutant",
+     0.4917,
+     0.19
     ],
     "102": [
-     190,
-     0.86,
-     0.11
+     230,
+     0.745,
+     0.19,
+     "mutant",
+     0.4917,
+     0.19
     ],
     "103": [
-     350,
-     0.86,
-     0.11
+     310,
+     0.745,
+     0.19,
+     "mutant",
+     0.4917,
+     0.19
     ],
     "104": [
-     150,
-     0.86,
-     0.11
+     190,
+     0.745,
+     0.19,
+     "mutant",
+     0.4917,
+     0.19
     ],
     "105": [
-     30,
-     0.86,
-     0.11
+     350,
+     0.745,
+     0.19,
+     "mutant",
+     0.4917,
+     0.19
     ],
     "106": [
-     110,
-     0.86,
-     0.11
+     150,
+     0.745,
+     0.19,
+     "mutant",
+     0.4917,
+     0.19
     ]
    }
   },
@@ -174,7 +191,7 @@
     3,
     56,
     "rim",
-    237.3,
+    230,
     "2"
    ],
    "3": [
@@ -182,7 +199,7 @@
     4,
     60,
     "rim",
-    302.7,
+    310,
     "3"
    ],
    "4": [
@@ -190,7 +207,7 @@
     4,
     63,
     "rim",
-    204.5,
+    190,
     "4"
    ],
    "5": [
@@ -198,7 +215,7 @@
     4,
     65,
     "rim",
-    335.5,
+    350,
     "5"
    ],
    "6": [
@@ -206,7 +223,7 @@
     4,
     67,
     "rim",
-    171.8,
+    150,
     "6"
    ],
    "7": [
@@ -214,7 +231,7 @@
     4,
     68,
     "rim",
-    8.2,
+    30,
     "7"
    ],
    "8": [
@@ -222,7 +239,7 @@
     5,
     72,
     "rim",
-    139.1,
+    110,
     "8"
    ],
    "9": [
@@ -230,24 +247,8 @@
     5,
     75,
     "rim",
-    40.9,
+    70,
     "9"
-   ],
-   "10": [
-    "F",
-    5,
-    77,
-    "rim",
-    106.4,
-    "10"
-   ],
-   "11": [
-    "G",
-    5,
-    79,
-    "rim",
-    73.6,
-    "11"
    ],
    "101": [
     "C",
@@ -255,7 +256,7 @@
     48,
     "bottom",
     300,
-    "U1"
+    "M1"
    ],
    "102": [
     "Db",
@@ -263,7 +264,7 @@
     49,
     "bottom",
     240,
-    "U2"
+    "M2"
    ],
    "103": [
     "Eb",
@@ -271,7 +272,7 @@
     51,
     "bottom",
     0,
-    "U3"
+    "M3"
    ],
    "104": [
     "Bb",
@@ -279,7 +280,7 @@
     58,
     "bottom",
     180,
-    "U4"
+    "M4"
    ],
    "105": [
     "Db",
@@ -287,7 +288,7 @@
     61,
     "bottom",
     60,
-    "U5"
+    "M5"
    ],
    "106": [
     "Ab",
@@ -295,7 +296,7 @@
     80,
     "bottom",
     120,
-    "U6"
+    "M6"
    ]
   },
   "chords": [
@@ -542,24 +543,10 @@
     "sup": "7",
     "subtitle": "Ab MAJOR 7 - HIGH VOICING",
     "fields": [
-     7,
-     8,
-     9,
-     11
-    ],
-    "roots": [
-     7
-    ]
-   },
-   {
-    "main": "Abmaj",
-    "sup": "7",
-    "subtitle": "Ab MAJOR 7 - HIGH VOICING",
-    "fields": [
      106,
      8,
      9,
-     11
+     6
     ],
     "roots": [
      106
@@ -658,19 +645,6 @@
     ]
    },
    {
-    "main": "Cm",
-    "sup": "",
-    "subtitle": "C MINOR - HIGH VOICING",
-    "fields": [
-     8,
-     9,
-     11
-    ],
-    "roots": [
-     8
-    ]
-   },
-   {
     "main": "C5",
     "sup": "",
     "subtitle": "POWER CHORD",
@@ -692,18 +666,6 @@
     ],
     "roots": [
      101
-    ]
-   },
-   {
-    "main": "C5",
-    "sup": "",
-    "subtitle": "POWER CHORD - HIGH VOICING",
-    "fields": [
-     8,
-     11
-    ],
-    "roots": [
-     8
     ]
    },
    {
@@ -730,19 +692,6 @@
     ],
     "roots": [
      101
-    ]
-   },
-   {
-    "main": "Csus",
-    "sup": "4",
-    "subtitle": "SUSPENDED CHORD - HIGH VOICING",
-    "fields": [
-     8,
-     10,
-     11
-    ],
-    "roots": [
-     8
     ]
    },
    {
