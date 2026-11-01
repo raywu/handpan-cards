@@ -1,4 +1,5 @@
 import contextlib
+import glob
 import io
 import tempfile
 import json
@@ -793,6 +794,7 @@ class SwipeScriptTest(unittest.TestCase):
         html = re.sub(r'<meta name="theme-color" content="#\w+">', '<meta name="theme-color">', html)
         html = re.sub(r"<style>\n:root\{color-scheme:light dark;.*?</style>\n", "<style></style>\n", html, flags=re.S)
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
+        html = re.sub(r"<header>.*?(?=<h1>)", "<header>", html, count=1, flags=re.S)
         html = html.replace('<div class="hint">Tap to reveal the notes</div>', "")
         html = re.sub(r'<div class="nav">.*?</div></div>', '<div class="nav"></div></div>', html)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
@@ -944,7 +946,10 @@ class SeoDeltaTest(unittest.TestCase):
                 self.assertEqual(graph["publisher"], {"@type": "Organization", "name": "Handpan Chords"})
                 self.assertNotIn("description", graph)
                 visible = p.norm()
+                self.assertIn('<a href="/" aria-label="Handpan Theory home"', html_of(slug))
                 for s in strings(graph):
+                    if s == "Home":
+                        continue
                     self.assertIn(re.sub(r"\s+", " ", s), visible)
 
     def test_json_ld_urls_are_canonical_or_a_sitemap_loc(self):
@@ -970,7 +975,7 @@ class SeoDeltaTest(unittest.TestCase):
         for slug in self.new_slugs():
             p = Page(html_of(slug))
             with self.subTest(page=slug):
-                self.assertIn("Home › %s chords" % table()[slug]["name"], p.norm())
+                self.assertNotIn("Home ›", p.norm())
                 self.assertNotIn("← Handpan Chords", p.norm())
                 self.assertIn("Handpan Chords is free in your browser", p.norm())
 
@@ -1090,3 +1095,38 @@ class SharedBrownHeadTest(unittest.TestCase):
     def test_every_primary_passes_contrast_on_the_brown(self):
         for colour in ("#f5c78e", "#f6f4ed", "#a9a39a"):
             self.assertGreaterEqual(ratio(colour, BROWN), 4.5)
+
+
+class HeaderLockupTest(unittest.TestCase):
+    PAGES = sorted(os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))
+                   + glob.glob(os.path.join(ROOT, "scales", "index.html"))) + ["handpan-101/index.html", "404.html"]
+
+    def header(self, name):
+        m = re.search(r"<header>(.*?)</header>", read(name), re.S)
+        self.assertTrue(m, name)
+        return m.group(1)
+
+    def test_first_header_link_is_the_lockup_home_link(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                head = self.header(name)
+                first = re.search(r"<a\b[^>]*>.*?</a>", head, re.S).group(0)
+                self.assertRegex(first, r'^<a href="/" aria-label="Handpan Theory home"[ >]')
+                self.assertEqual(re.findall(r"<img\b[^>]*>", first), ['<img src="/brand/horizontal-full.svg" alt="" width="223" height="64">'])
+                sources = re.findall(r"<source\b[^>]*>", first)
+                if re.fullmatch(r"scales/[^/]+/index\.html", name):
+                    self.assertEqual(sources, ['<source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg">'])
+                    self.assertRegex(first, r"<picture>.*</picture>")
+                else:
+                    self.assertEqual(sources, [])
+                    self.assertNotIn("<picture", first)
+                self.assertNotIn("&larr;", head)
+                self.assertNotIn("Home", head)
+
+    def test_h1_follows_the_lockup_and_no_back_link_remains(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                src = read(name)
+                self.assertNotIn("&larr; Handpan Chords", src)
+                self.assertEqual(len(re.findall(r"<h1\b", src)), 1)
+                self.assertRegex(self.header(name), r"</a></p>\n(<p>.*</p>\n)?<h1>[^<]+</h1>\n")
