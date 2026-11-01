@@ -3966,7 +3966,7 @@ test("the touch icon and the preview image exist and are named once", async () =
     "the PNG rel=icon must reuse apple-touch-icon.png");
   assert.ok(fs.existsSync(path.join(ROOT, touch)), `${touch} missing at the repo root`);
   const og = metaContent(html, "property", "og:image");
-  assert.strictEqual(og, "https://handpantheory.com/og.png");
+  assert.strictEqual(og, "https://handpan.raywu.org/og.png");
   assert.ok(fs.existsSync(path.join(ROOT, "og.png")), "og.png missing at the repo root");
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
@@ -9626,7 +9626,7 @@ describe("discoverability: structured data", () => {
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["handpantheory.com"]);
+    assert.deepStrictEqual(site.alternateName, ["handpan.raywu.org"]);
     for (const a of site.alternateName) {
       assert.strictEqual(a, a.toLowerCase());
       assert.strictEqual(a, new URL(canonical).host);
@@ -9645,7 +9645,7 @@ describe("discoverability: structured data", () => {
     const ld = ldBlock();
     assert.strictEqual(ld["@context"], "https://schema.org");
     const app = node("WebApplication");
-    assert.strictEqual(app.url, "https://handpantheory.com/");
+    assert.strictEqual(app.url, "https://handpan.raywu.org/");
     assert.strictEqual(app.applicationCategory, "MusicApplication");
     assert.strictEqual(app.operatingSystem, "Any");
     assert.strictEqual(app.browserRequirements, "Requires JavaScript");
