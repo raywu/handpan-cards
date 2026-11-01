@@ -6832,8 +6832,9 @@ test("DR1 line 81: the status line is the panel's next element after the band, h
   assert.strictEqual(app.els["scale-preview"]._markupParent, app.els["scale-plate-band"]);
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
   assert.ok(html.indexOf('id="scale-preview"') < html.indexOf('id="scale-drawer-status"'));
-  assert.match(html, /<p class="sheethint" id="scale-layout-hint">[^<]*<\/p>\s*<\/div>\s*<div id="scale-drawer-status"[^>]*><\/div>\s*<div id="scale-layout-zone">/,
-    "the band closes, the status follows it as its next sibling, and the layout zone follows the status");
+  assert.match(html, /<p class="sheethint" id="scale-layout-hint">[^<]*<\/p>\s*<\/div>\s*<div id="scale-drawer-status"[^>]*><\/div>\s*<div class="editrow" id="scale-mode-row"/,
+    "the band closes, the status follows it as its next sibling, and the mode row follows the status");
+  assert.ok(html.indexOf('id="scale-mode-row"') < html.indexOf('id="scale-layout-zone"'), "the layout zone follows the mode row");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-live"), "polite");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-atomic"), "true");
   dr1Open(app);
@@ -7276,9 +7277,9 @@ for (const edit of [false, true]) {
     assert.deepStrictEqual(d2Rover(app), ["E4"]);
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     app.press(d2Hit(app, "E4"), "Tab");
-    assert.strictEqual(app.activeId(), "scale-anchor-one");
+    assert.strictEqual(app.activeId(), "scale-mode-standard");
     assert.deepStrictEqual(d2Rover(app), ["C4"], "tab entry is not the picked note");
-    app.press(app.els["scale-anchor-one"], "Tab", { shiftKey: true });
+    app.press(app.els["scale-mode-standard"], "Tab", { shiftKey: true });
     assert.strictEqual(d2Focus(app), "C4");
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     assert.strictEqual(d2Seats(app), null);
