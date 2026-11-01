@@ -2624,6 +2624,88 @@ function run() {
       { label: "the sheet to close after Generate" });
   }
 
+  test("PAU: at 380px the Layout tab's Standard / Paired areas toggle and all 18 area rows are reachable 44px targets with no horizontal scroll, and a paired SAVE closes the sheet", async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    try {
+      await openSheet();
+      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      await b.click("#scale-tab-layout");
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-paired");
+      await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "the Paired areas panel" });
+      const m = await b.eval(`
+        const rect = (e) => e.getBoundingClientRect();
+        const targets = [document.getElementById("scale-mode-standard"), document.getElementById("scale-mode-paired"),
+          document.getElementById("scale-areas-reset"), ...document.querySelectorAll("#scale-areas select")];
+        return {
+          count: document.querySelectorAll("#scale-areas select").length,
+          short: targets.filter((e) => rect(e).height < 44 || rect(e).width < 44).map((e) => e.id),
+          outside: targets.filter((e) => rect(e).left < 0 || rect(e).right > window.innerWidth).map((e) => e.id),
+          smallFont: [...document.querySelectorAll("#scale-areas select")].filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16).length,
+          scrollX: document.documentElement.scrollWidth - window.innerWidth,
+          bodyScrollX: document.querySelector("#scale-sheet .sheetbody").scrollWidth - document.querySelector("#scale-sheet .sheetbody").clientWidth,
+          standardHidden: document.getElementById("scale-standard").hidden,
+        };
+      `);
+      assert.strictEqual(m.count, 18);
+      assert.deepStrictEqual(m.short, [], "a control is under 44px");
+      assert.deepStrictEqual(m.outside, [], "a control leaves the 380px viewport");
+      assert.strictEqual(m.smallFont, 0, "a select under 16px would zoom iOS Safari");
+      assert.ok(m.scrollX <= 0, "the page scrolls sideways: " + m.scrollX);
+      assert.ok(m.bodyScrollX <= 0, "the sheet body scrolls sideways: " + m.bodyScrollX);
+      assert.strictEqual(m.standardHidden, true);
+
+      await b.eval(`document.getElementById("scale-mode-standard").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-standard");
+      await b.waitFor(`!document.getElementById("scale-standard").hidden`, { label: "Standard back" });
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-paired");
+      await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "Paired again" });
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after a paired SAVE" });
+      const placed = await b.eval(`return !!savedEntries.get(selection.id).deck.geom.place;`);
+      assert.strictEqual(placed, true, "the saved scale is placed by area");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("PAU: in every locale at 380px the Paired areas rows, hint and reset button fit inside the sheet", async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    try {
+      const langs = await b.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+      assert.ok(langs.length >= 8);
+      await openSheet();
+      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      await b.click("#scale-tab-layout");
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-mode-paired");
+      await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "the Paired areas panel" });
+      for (const lang of langs) {
+        await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+        const m = await b.eval(`
+          const body = document.querySelector("#scale-sheet .sheetbody");
+          const box = body.getBoundingClientRect();
+          const ids = ["scale-mode-label", "scale-mode-standard", "scale-mode-paired", "scale-paired-hint", "scale-paired-count", "scale-areas-reset"];
+          const els = [...ids.map((id) => document.getElementById(id)), ...document.querySelectorAll("#scale-areas label"), ...document.querySelectorAll("#scale-areas select")];
+          return {
+            outside: els.filter((e) => { const r = e.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; }).map((e) => e.id || e.textContent.trim()),
+            clipped: els.filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow !== "visible").map((e) => e.id || e.textContent.trim()),
+            scrollX: body.scrollWidth - body.clientWidth,
+          };
+        `);
+        assert.deepStrictEqual(m.outside, [], lang + ": a Paired areas control leaves the sheet");
+        assert.deepStrictEqual(m.clipped, [], lang + ": a Paired areas control clips its text");
+        assert.ok(m.scrollX <= 0, lang + ": the sheet scrolls sideways");
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("the page is a modal dialog with the spec'd anatomy", async () => {
     await freshLoad();
     const before = await b.eval(`
@@ -5425,7 +5507,7 @@ function run() {
         const panhit = await b.eval(`const el = document.querySelector('#scale-preview .panhit[tabindex="0"]'); return el ? (el.id || el.getAttribute("aria-label") || "") : null;`);
         assert.notStrictEqual(panhit, null, `${mode}: the plate is not a tab stop`);
         const layoutCycle = ["scale-back", "scale-tab-layout", panhit, "scale-anchor-one", "scale-anchor-between", "scale-mirror",
-          "scale-fine-toggle", "scale-layout-reset", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
+          "scale-fine-toggle", "scale-layout-reset", "scale-mode-standard", "scale-mode-paired", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
         await both(`${mode} Layout tab`, layoutCycle);
         ran.push(`${mode}/layout`);
         assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null, `${mode}: the sheet holds a select`);

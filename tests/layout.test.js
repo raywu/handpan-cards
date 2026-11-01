@@ -2641,6 +2641,7 @@ test("PL: solve of an acoustic seed has no place key, and a profile with the fla
   }
   const seed = plSeed(PL_SEEDS.kurd, plPropose(PL_SEEDS.kurd));
   const off = loadEngine(["core", "layout"]);
+  off.core.PROFILE_ENABLED = false;
   const refused = off.layout.solve(JSON.parse(JSON.stringify(seed)));
   assert.equal(refused.ok, false);
   assert.equal(refused.code, "PROFILE_UNKNOWN");
@@ -2652,5 +2653,17 @@ test("PL: solve with a profile puts the ding at centre with the profile radius, 
     assert.equal(geom.r_ding, PAIRED.ding.r, id);
     assert.equal(geom.ding_dy, PAIRED.ding.dy, id);
     assert.equal(geom.f_ding, Math.round(0.6 * PAIRED.ding.r * 1e4) / 1e4, id);
+  }
+});
+
+test("PL: solve with a profile ignores the caller's placement options, so none can throw or leak in", () => {
+  for (const [id, str] of Object.entries(PL_SEEDS)) {
+    const seed = plSeed(str, plPropose(str));
+    const base = JSON.stringify(PHPE.layout.solve(seed, {}));
+    const asked = [{ mirror: true, mirrorBottom: true }, { anchor: "between" },
+      { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, { angles: { bottom: [5, null] } }];
+    for (const options of asked) {
+      assert.equal(JSON.stringify(PHPE.layout.solve(seed, options)), base, id + " " + JSON.stringify(options));
+    }
   }
 });
