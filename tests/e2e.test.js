@@ -56,8 +56,8 @@ function run() {
       "var fail=false;try{fail=localStorage.getItem('moveFail')==='1'&&String(arguments[0]).indexOf('importedIds')>=0;}catch(e){}" +
       "if(fail)throw new Error('injected write failure');return p.apply(this,arguments);};})();</script>";
     return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
-      .replace("const MOVE_FROM = null;", () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
-      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
+      .replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
+      .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
       .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${moveMode.cap || 20000};`)
       .replace("<head>", () => "<head>" + inject);
   }
