@@ -306,6 +306,31 @@ test("a name option is trimmed of leading and trailing whitespace (Q25)", () => 
     "A");
 });
 
+test("a non-ASCII name is accepted and stored exactly as typed (NAN)", () => {
+  for (const name of ["Caf\u00e9 Kurd", "\u65e5\u672c\u306e\u30d1\u30f3", "D Kurd \ud83c\udfb5", "e\u0301"]) {
+    assert.equal(parsed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", { name }).options.name, name);
+  }
+});
+
+test("the 40 limit counts code points, not UTF-16 units (NAN)", () => {
+  const seed = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  for (const unit of ["\u00e9", "\ud83c\udfb5"]) {
+    assert.equal(core.parseSeed(seed, { name: unit.repeat(40) }).ok, true, "40 accepted");
+    assert.equal(core.parseSeed(seed, { name: unit.repeat(41) }).code, "BAD_NOTE", "41 refused");
+  }
+});
+
+test("controls, bidi controls, line separators and lone surrogates are refused in a name (NAN)", () => {
+  const seed = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  for (const ch of ["\u0009", "\u000a", "\u0007", "\u007f", "\u0085", "\u009f", "\u2028", "\u2029",
+    "\u202a", "\u202e", "\u2066", "\u2069", "\ud800", "\udc00"]) {
+    const name = "A" + ch + "B";
+    assert.equal(core.parseSeed(seed, { name }).code, "BAD_NOTE", "U+" + ch.charCodeAt(0).toString(16));
+    assert.equal(core.parseLegacySeed(seed, { name }).code, "BAD_NOTE");
+  }
+  assert.equal(core.parseSeed(seed, { name: "\ud83c\udfb5" }).ok, true, "a paired surrogate is fine");
+});
+
 /* ---------------- section 3: grammar details ------------------------------ */
 
 test("an omitted ding octave is octave 3 and reseeds the inference", () => {
@@ -1088,7 +1113,7 @@ test("R4-E options that are not a plain value of the right kind are BAD_NOTE, in
     assert.equal(parse(OK_SEED, { parent: 11 }).code, "BAD_NOTE");
     assert.equal(parse(OK_SEED, { parent: -1 }).code, "BAD_NOTE");
     assert.equal(parse(OK_SEED, { name: 5 }).code, "BAD_NOTE", "name is a string");
-    assert.equal(parse(OK_SEED, { name: "café" }).code, "BAD_NOTE", "name is printable ASCII");
+    assert.equal(parse(OK_SEED, { name: "caf\u0007" }).code, "BAD_NOTE", "name refuses controls");
     assert.equal(parse(OK_SEED, { name: "x".repeat(41) }).code, "BAD_NOTE", "name is at most 40 long");
     assert.equal(parse(OK_SEED, { mirror: "yes" }).code, "BAD_NOTE", "mirror is a boolean");
     assert.equal(parse(OK_SEED, { mirror: 1 }).code, "BAD_NOTE");

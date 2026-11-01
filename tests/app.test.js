@@ -1269,6 +1269,40 @@ test("a custom chip label is capped at 16 characters with an ellipsis", async ()
   assert.ok(label.endsWith("…"), `chip label "${label}" is not ellipsised`);
 });
 
+test("NAN: a chip label clips by code point, never leaving half an emoji", async () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  await generateClick(app);
+  const id = app.get("selection.id");
+  const emoji = "\ud83c\udfb5";
+  for (const name of [emoji.repeat(20), "a" + emoji.repeat(20), "\u65e5\u672c".repeat(10)]) {
+    app.run(`savedEntries.get(${JSON.stringify(id)}).deck.name = ${JSON.stringify(name)}`);
+    app.select(id);
+    const label = chipRow(app).find((c) => c.on).label;
+    assert.strictEqual(Array.from(label).length, 16, `chip label ${JSON.stringify(label)} is not 16 code points`);
+    assert.ok(label.endsWith("\u2026"));
+    assert.ok(!/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(label), "a lone surrogate in " + JSON.stringify(label));
+  }
+});
+
+test("NAN: a non-ASCII name saves, shows in its chip and survives a reload; the download name is never empty", async () => {
+  for (const [name, stem] of [["Caf\u00e9", /^Cafe_/], ["\u65e5\u672c", /^D_[A-Z]+_\d+_/]]) {
+    const app = await durableBoot();
+    const d = await makeCustom(app);
+    openEdit(app, d);
+    app.els["scale-name"].value = name;
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    await generateClick(app);
+    assert.ok(chipRow(app).some((c) => c.label === name && c.on), name);
+    const again = await durableBoot({ origin: app.fixtureOrigin });
+    assert.strictEqual(savedViews(again)[d.instanceId].name, name);
+    again.select(d.instanceId);
+    again.run('downloadDeckPDF("shop")');
+    assert.match(anchor(again).download, stem, name);
+  }
+});
+
 test("arrow keys do not step the card while the sheet is open", async () => {
   const app = boot();
   app.keydown("ArrowRight");
@@ -1665,12 +1699,11 @@ test("renaming keeps both identities, relabels its chip and survives a reload", 
   const again=await durableBoot({origin:app.fixtureOrigin});assert.strictEqual(savedViews(again)[d.instanceId].name,"RAY'S PAN");assert.strictEqual(again.currentDeck().id,d.id);
 });
 
-// Q29: core.js's NAME_RE is ASCII-only (`/^[\x20-\x7E]*$/`), so a name typed
-// with iOS Smart Punctuation - which turns a plain ' into a curly U+2019 -
-// would otherwise be refused by the engine on submit. sheetOptions()
-// normalises curly quotes back to ASCII before the name ever reaches
-// generateDeck, so a name containing U+2019 must save exactly as if it had
-// been typed with a straight apostrophe.
+// Q29: a name typed with iOS Smart Punctuation - which turns a plain ' into a
+// curly U+2019 - would print as a missing glyph. sheetOptions() folds curly
+// quotes back to ASCII before the name ever reaches generateDeck (kept by
+// owner decision D4a), so a name containing U+2019 must save exactly as if it
+// had been typed with a straight apostrophe.
 test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII", async () => {
   const app = await durableBoot();
   const d = await makeCustom(app);
@@ -1693,9 +1726,8 @@ test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII",
 
 // Q29b: iOS Smart Punctuation also turns a typed -- into an em dash (U+2014)
 // and ... into a single ellipsis glyph (U+2026), and a pasted name can carry
-// a straight en dash (U+2013) - all of which core.js's ASCII-only NAME_RE
-// would otherwise refuse. sheetOptions() normalises these back to ASCII the
-// same way it does curly quotes, so a name carrying them must save exactly
+// a straight en dash (U+2013) - all of which would print as missing glyphs.
+// sheetOptions() folds these back to ASCII the same way it does curly quotes, so a name carrying them must save exactly
 // as if it had been typed with plain "-" and "...".
 test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", async () => {
   const app = await durableBoot();
@@ -8736,7 +8768,7 @@ test("DR3 reset on Edit gives the generated default, not the stored layout", asy
 
 /* ---- Lane F: drawer follow-up (docs/plans/2026-10-09-lane-f-drawer-follow-up.md) ---- */
 
-const LF_BAD_NAME = "D Kürd";
+const LF_BAD_NAME = "D K\u0007urd";
 const lfEditBadName = async (text = D2_AMARA) => {
   const app = boot();
   openEdit(app, await makeCustom(app, D2_AMARA));
@@ -8746,7 +8778,7 @@ const lfEditBadName = async (text = D2_AMARA) => {
   return app;
 };
 
-test("LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name", async () => {
+test("LF F-1 (a): a refused name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name", async () => {
   const app = await lfEditBadName();
   assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false, "a bad name disabled the Layout tab");
   assert.strictEqual(app.els["scale-generate"].disabled, true);
@@ -8759,7 +8791,7 @@ test("LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabl
   assert.strictEqual(crowded.els["scale-msg"].classList.contains("pan"), true, "the name-refusal branch did not mark its warning .pan");
 });
 
-test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables the Layout controls", async () => {
+test("LF F-1 (b): a refused name with an unparseable scale still disables the Layout controls", async () => {
   const app = await lfEditBadName("(D3) zzz");
   app.click(app.els["scale-tab-layout"]);
   assert.strictEqual(app.els["scale-fine-toggle"].disabled, true);
@@ -18860,6 +18892,25 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
     const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
     assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+  });
+
+  const nanCanon = v => Array.isArray(v) ? "[" + v.map(nanCanon).join(",") + "]" :
+    v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + nanCanon(v[k])).join(",") + "}" : JSON.stringify(v);
+  const nanKey = (id, row) => id + ":" + require("node:crypto").createHash("sha256").update(nanCanon(row), "utf8").digest("hex").slice(0, 16);
+
+  test("NAN: a record carried by the opaque path and one read normally share one dedupe key", async () => {
+    const row = { ...rec("Caf\u00e9"), v: 3 };
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), row]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin, records: [], extra: { importedIds: [nanKey(uid(1), row)] } });
+    assert.deepStrictEqual(envelopeAt(origin).entries, [], "a key recorded from the raw row did not stop a re-import");
+  });
+
+  test("NAN: a name the grammar still refuses moves by the opaque branch", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("Bad\u0007name")], [uid(2), rec("Caf\u00e9")]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["Bad\u0007name", "Caf\u00e9"]);
   });
 
   test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {

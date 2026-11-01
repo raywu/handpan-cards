@@ -295,7 +295,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- options ---------------------------------------------------------- */
 
-  var NAME_RE = /^[\x20-\x7E]*$/;
+  // A name may hold any Unicode except C0/C1 controls and DEL (so tab and
+  // newline stay out of the packed share payload), U+2028/U+2029, the bidi
+  // embedding/override/isolate controls and lone surrogates.
+  var NAME_REFUSED_RE = new RegExp("[\\u0000-\\u001F\\u007F-\\u009F\\u2028\\u2029\\u202A-\\u202E\\u2066-\\u2069]" +
+    "|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?:^|[^\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]");
+
+  function codePointLength(text) {
+    var n = 0;
+    for (var i = 0; i < text.length; i += 1, n += 1) {
+      var c = text.charCodeAt(i);
+      if (c >= 0xD800 && c <= 0xDBFF && i + 1 < text.length) i += 1;
+    }
+    return n;
+  }
 
   // Section 13/14. There is no options code in the section 2 enum, and the spec
   // forbids inventing one, so a rejected option is BAD_NOTE naming the value.
@@ -325,7 +338,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var name = options.name;
       if (typeof name !== "string") return badNote(name);
       name = name.replace(/^\s+/, "").replace(/\s+$/, "");
-      if (!NAME_RE.test(name) || name.length < 1 || name.length > 40) {
+      var nameLength = codePointLength(name);
+      if (NAME_REFUSED_RE.test(name) || nameLength < 1 || nameLength > 40) {
         return badNote(name);
       }
       out.name = name;

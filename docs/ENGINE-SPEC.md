@@ -944,9 +944,15 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   synthetic pan = `C IONIAN 12`). Uppercase, at most 16 characters, ellipsised
   beyond that.
 - DECIDED(swarm-2026-09-08) A user-supplied name (Phase 4 Edit sheet) is
-  validated as printable ASCII only (0x20-0x7E), trimmed of leading and
-  trailing whitespace, and 1 to 40 characters after trimming; anything else is
-  rejected, never repaired. The 16-character cap is a DISPLAY cap: the chip
+  validated as any Unicode text except C0 and C1 controls and DEL (so tab and
+  newline stay out of the packed share payload), U+2028, U+2029, the bidi
+  embedding, override and isolate controls U+202A-U+202E and U+2066-U+2069,
+  and lone surrogates; it is trimmed of leading and trailing whitespace, and is
+  1 to 40 code points after trimming (not UTF-16 units: an emoji counts one);
+  anything else is rejected, never repaired. It is stored exactly as typed,
+  with no normalisation. The print faces draw only printable ASCII and the
+  degree sign, so print strips accents from the name and, if anything is still
+  undrawable, prints the scale's auto label (see `HPE.pdfcards.printName`). The 16-character cap is a DISPLAY cap: the chip
   ellipsises beyond 16, the stored name keeps up to 40.
 
 ## 14. Sharing

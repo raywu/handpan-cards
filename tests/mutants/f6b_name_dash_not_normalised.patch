@@ -3,7 +3,7 @@
 # Drops the em/en-dash normalisation from sheetOptions(), leaving the
 # ellipsis replace in place. A name typed on iOS with -- (which Smart
 # Punctuation turns into an em dash, U+2014) or pasted with an en dash
-# (U+2013) is then refused by core.js's ASCII-only NAME_RE instead of saving.
+# (U+2013) is then stored un-normalised instead of folded to a plain hyphen.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

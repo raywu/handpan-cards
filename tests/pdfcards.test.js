@@ -878,3 +878,48 @@ test("R4-E build with no options, colours, degrees, grad or warnings falls back 
   assert.ok(own.includes("0.1 0.2 0.3 rg") && own.includes("0.4 0.5 0.6 rg"));
   assert.ok(!own.includes("0.043 0.482 0.459 rg"), "a deck's own colours replace the defaults");
 });
+
+/* NAN: names the print faces cannot draw ---------------------------------- */
+
+test("NAN: printName strips accents, else the auto label, else SCALE; never empty, always inside the charset", () => {
+  assert.equal(P.printName({ name: "Caf\u00e9 Kurd" }), "Cafe Kurd");
+  assert.equal(P.printName({ name: "\u00dcber" }), "Uber");
+  assert.equal(P.printName({ name: "\u65e5\u672c", auto_name: "D AEOLIAN 9" }), "D AEOLIAN 9");
+  assert.equal(P.printName({ name: "\u65e5\u672c", auto_name: "D PHRYGIAN DOMIN\u2026" }), "D PHRYGIAN DOMIN...");
+  assert.equal(P.printName({ name: "\u65e5\u672c" }), "SCALE");
+  assert.equal(P.printName({ name: "D Kurd \ud83c\udfb5", auto_name: "D KURD 10" }), "D KURD 10");
+  assert.equal(P.printName({ name: "Plain 10\u00b0" }), "Plain 10\u00b0");
+});
+
+test("NAN: a PDF builds for an accented and a CJK name and draws only printable text", () => {
+  const base = fixture("(C3) G3 D4 G4 D5");
+  for (const [name, expected] of [["Caf\u00e9", "Cafe"], ["\u65e5\u672c", "D AEOLIAN 5"]]) {
+    const deck = Object.assign({}, base, { name, auto_name: "D AEOLIAN 5" });
+    for (const variant of ["full", "shop"]) {
+      const bytes = P.build(deck, { variant });
+      assert.ok(bytes.length > 1000, name + " " + variant);
+      const joined = pdfGlyphs(bytes).map((g) => g.ch).join("");
+      if (variant === "full") assert.ok(joined.replace(/ /g, "").includes(expected.replace(/ /g, "")), name + " title text: " + expected);
+    }
+    const foot = runAt(cardRuns(deck, deck.chords[0]), 6.5, "Label").filter((r) => r.size !== 4.4);
+    assert.equal(foot.length, 1);
+    assert.ok(foot[0].s.startsWith(expected.slice(0, 4)), foot[0].s);
+  }
+});
+
+test("NAN: the title card sizes its fit from the printed name, not the typed one", () => {
+  const base = fixture("(C3) G3 D4 G4 D5");
+  const page = recorder();
+  const deck = Object.assign({}, base, { name: "Caf\u00e9 Caf\u00e9 Caf\u00e9 Caf\u00e9", auto_name: "X" });
+  P._internal.titleCard(new P._internal.Canvas(page), 0, 0, deck);
+  const drawn = page.ops.filter((o) => o.op === "text" && o.face === "Display" && o.y > 60).map((o) => o.s).join("");
+  assert.ok(drawn.replace(/ /g, "").startsWith("CafeCafe"), drawn.slice(0, 20));
+});
+
+test("NAN: the side credit, which carries the upper-cased name, is printable too", () => {
+  const base = fixture("(C3) G3 D4 G4 D5");
+  const deck = Object.assign({}, base, { name: "Caf\u00e9", credit: "CAF\u00c9" });
+  assert.ok(P.build(deck, { variant: "full" }).length > 1000);
+  const empty = Object.assign({}, base, { name: "\u65e5\u672c", credit: "\u65e5\u672c" });
+  assert.ok(P.build(empty, { variant: "shop" }).length > 1000);
+});
