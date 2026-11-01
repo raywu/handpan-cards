@@ -188,9 +188,9 @@ def link_item(row):
     return '<li><a href="/scales/%s/">%s handpan chords</a></li>' % (row["slug"], esc(row["name"]))
 
 
-LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" alt="" width="223" height="64"></a>'
-SCALE_LOCKUP_IMG = '<picture><source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg"><img src="/brand/horizontal-full.svg" alt="" width="223" height="64"></picture>'
-SCALE_LOCKUP = LOCKUP.replace('<img src="/brand/horizontal-full.svg" alt="" width="223" height="64">', SCALE_LOCKUP_IMG)
+LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" srcset="/brand/horizontal-full@2x.png 2x, /brand/horizontal-full@3x.png 3x" alt="" width="223" height="64"></a>'
+SCALE_LOCKUP_IMG = '<picture><source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg 1x, /brand/horizontal-mono-light@2x.png 2x, /brand/horizontal-mono-light@3x.png 3x"><img src="/brand/horizontal-full.svg" srcset="/brand/horizontal-full@2x.png 2x, /brand/horizontal-full@3x.png 3x" alt="" width="223" height="64"></picture>'
+SCALE_LOCKUP = LOCKUP.replace('<img src="/brand/horizontal-full.svg" srcset="/brand/horizontal-full@2x.png 2x, /brand/horizontal-full@3x.png 3x" alt="" width="223" height="64">', SCALE_LOCKUP_IMG)
 
 
 def head(title, description, og_description, url, theme, brand=True):

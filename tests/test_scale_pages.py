@@ -1097,7 +1097,23 @@ class SharedBrownHeadTest(unittest.TestCase):
             self.assertGreaterEqual(ratio(colour, BROWN), 4.5)
 
 
+FULL_IMG = ('<img src="/brand/horizontal-full.svg" srcset="/brand/horizontal-full@2x.png 2x, '
+            '/brand/horizontal-full@3x.png 3x" alt="" width="223" height="64">')
+MONO_SOURCE = ('<source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg 1x, '
+               '/brand/horizontal-mono-light@2x.png 2x, /brand/horizontal-mono-light@3x.png 3x">')
+
+
 class HeaderLockupTest(unittest.TestCase):
+    def test_lockup_rasters_exist_at_two_and_three_times_the_slot(self):
+        # iOS Safari rasterizes a filtered SVG loaded through <img> at low resolution
+        import struct
+        for name in ("horizontal-full", "horizontal-mono-light"):
+            for scale in (2, 3):
+                with open(os.path.join(ROOT, "brand", "%s@%dx.png" % (name, scale)), "rb") as f:
+                    head = f.read(24)
+                self.assertEqual(head[:8], b"\x89PNG\r\n\x1a\n")
+                self.assertEqual(struct.unpack(">II", head[16:24]), (223 * scale, 64 * scale), name)
+
     PAGES = sorted(os.path.relpath(f, ROOT) for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))
                    + glob.glob(os.path.join(ROOT, "scales", "index.html"))) + ["handpan-101/index.html", "404.html"]
 
@@ -1112,10 +1128,10 @@ class HeaderLockupTest(unittest.TestCase):
                 head = self.header(name)
                 first = re.search(r"<a\b[^>]*>.*?</a>", head, re.S).group(0)
                 self.assertRegex(first, r'^<a href="/" aria-label="Handpan Theory home"[ >]')
-                self.assertEqual(re.findall(r"<img\b[^>]*>", first), ['<img src="/brand/horizontal-full.svg" alt="" width="223" height="64">'])
+                self.assertEqual(re.findall(r"<img\b[^>]*>", first), [FULL_IMG])
                 sources = re.findall(r"<source\b[^>]*>", first)
                 if re.fullmatch(r"scales/[^/]+/index\.html", name):
-                    self.assertEqual(sources, ['<source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg">'])
+                    self.assertEqual(sources, [MONO_SOURCE])
                     self.assertRegex(first, r"<picture>.*</picture>")
                 else:
                     self.assertEqual(sources, [])
