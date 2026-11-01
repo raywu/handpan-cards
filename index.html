@@ -13966,10 +13966,12 @@ function syncParseState({ paint }) {
     if (paint) showPanPreview(res.value);
     const solved = solvePreviewLayout(res.value);
     const crowded = solved && HPE.select.smallLabels(solved.geom);
-    const dropText = droppedToStandard ? t("sheet.paired_dropped") : "";
-    if (crowded) { say([dropText, reasonText(crowded)].filter(Boolean).join(" "), "warn"); msgLine.classList.add("pan"); }
-    else if (dropText) say(dropText, "warn");
+    if (crowded) { say(reasonText(crowded), "warn"); msgLine.classList.add("pan"); }
     else say("", "");
+    if (droppedToStandard) {
+      say([t("sheet.paired_dropped"), crowded && reasonText(crowded)].filter(Boolean).join(" "), "warn");
+      if (crowded) msgLine.classList.add("pan");
+    }
   } else {
     const second = opts.name !== undefined ? HPE.core.parseSeed(text, layoutOptions()) : null;
     if (second && second.ok) {
