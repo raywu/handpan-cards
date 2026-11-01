@@ -18735,7 +18735,7 @@ describe("NS: native share", () => {
   });
 });
 
-describe("MV: the saved-scale handoff (armed for production in the committed bytes)", () => {
+describe("MV: the saved-scale handoff (switched off in the committed bytes)", () => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const webcrypto = require("node:crypto").webcrypto;
   const OLD_HOST = "old.example", NEW_HOST = "new.example", TARGET = "https://new.example";
@@ -18751,9 +18751,9 @@ describe("MV: the saved-scale handoff (armed for production in the committed byt
   const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
   function movePage({ on = true, cap = 20000, referrer = "" } = {}) {
     let html = INDEX_HTML();
-    html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
-      .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
-    if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
+    if (on) html = html.replace("const MOVE_FROM = null;", () => `const MOVE_FROM = "${OLD_HOST}";`)
+      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = "${TARGET}";`)
+      .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
     return `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + html;
   }
   const settle = async app => { for (let i = 0; i < 40 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
@@ -18773,10 +18773,10 @@ describe("MV: the saved-scale handoff (armed for production in the committed byt
     html: "<script>window.__savedIdbFixtureOnly=true;</script>" });
   const envelopeAt = (origin, host = NEW_HOST) => JSON.parse(savedRaw(realmAt(origin, host)));
 
-  test("the committed bytes arm the move for the production hosts", () => {
+  test("the committed bytes have both switches null", () => {
     const html = INDEX_HTML();
-    assert.match(html, /^const MOVE_FROM = "handpan\.raywu\.org";$/m);
-    assert.match(html, /^const MOVE_TARGET = "https:\/\/handpantheory\.com";$/m);
+    assert.match(html, /^const MOVE_FROM = null;$/m);
+    assert.match(html, /^const MOVE_TARGET = null;$/m);
   });
 
   test("with the switches null the old host boots normally and a #move= hash is left alone", async () => {
