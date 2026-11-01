@@ -213,7 +213,7 @@ Lanes refreshing context-shifted existing mutant patches in their own diffs is a
   inner notes in `unplaced` (pitch order). Pygmy: 9 rim placed, `unplaced` = F5, G5;
   6 mutant filled, s7-s9 empty. Kurd 10 (no bottoms): all s empty, `unplaced` empty.
   A scale with no rim beyond the ding is valid with an empty map half.
-- `solve` with a profile: on a scale with a mutant note, `geom.place` per v2; on a scale with none, the Standard solve of its notes with `place` = Standard angle, `rim`, `r_note`, kind "main", the main half ordering the Standard seats (A7); Kurd 9 `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4` at its proposal equals `tools/gen_deck.js` output; field labels "N" (main) and "Ns"
+- `solve` with a profile: on a scale with a mutant note, `geom.place` per map v2; on a scale with none, the Standard solve of its notes with `place` = Standard angle, `rim`, `r_note`, kind "main", the main half ordering the Standard seats (A7); Kurd 9 `(D3) A3 Bb3 C4 D4 E4 F4 G4 A4` at its proposal equals `tools/gen_deck.js` output; field labels "N" (main) and "Ns"
   (mutant); ding at centre, never in the map; acoustic solve unchanged (no `place`,
   engine corpus `--check` clean).
 - Wire: v7 grammar, `pair-` token order and every v1-v6 corpus byte unchanged;
@@ -383,6 +383,7 @@ stays held until the owner says merge.
 ## Frozen v2 fixture
 
 Superseded 2026-11-01 by owner decision OD1 (course correction): fixture rev 3 `tests/fixtures/paired_profile_v3.json` (orbit 0.745R, r 0.19R, ding 0.2R, n_in 0.085R, number_out 1.0758, depth 1/3 of the diameter, decor ring 0.355R). v2 below is kept pinned and superseded, as v1 is.
+
 Frozen by lane T2 (branch `claude/neotone-t2`, from 701c06fc). File:
 `tests/fixtures/paired_profile_v2.json`, sha256
 `611b59a2cce11d0c72c0bdf0e0549f9d73e10329917838559bc7dc57b2947e33`, pinned in
@@ -567,7 +568,7 @@ Source: https://claude.ai/artifact/TgFMSuaPN4ZZbkp6y71cte v17 (scratchpad `neoto
 
 **Unchanged.** Card frame stays the single root-colour four-sided frame (CLAUDE.md design system); header, chord name, note/number lines (as Standard except `M<n>` entries), footer and palettes as Standard. Mock-only scaling factors (the `.62`/`.42` font multipliers) are not part of the spec; renderers apply the label rule.
 
-**Acceptance (P2).** Tests first: P2 adds a fixture of the v17 field centres, radii and number positions for both mock cards, plus a test that a non-mutant Neotone geom equals the Standard engine geom. (Owner D2, 2026-11-01: the non-mutant equality holds; mutant cards take positions from the v2 fixture.) The comparison covers positions only, not glyph size (renderers apply the label rule, the mock does not). App and print match that fixture within 0.5 pt at print R; tests/test_render_agreement passes; every diagram glyph ≥ 3.6 pt in print; the non-mutant card's field centres, radii and number positions equal a Standard render of the same scale. Owner DEV QA compares against the mock.
+**Acceptance (P2).** Tests first: P2 adds a fixture of the v17 field centres, radii and number positions for both mock cards, plus a test that a non-mutant Neotone geom equals the Standard engine geom. (Owner D2, 2026-11-01: the non-mutant equality holds; mutant cards take positions from fixture rev 3 (OD1).) The comparison covers positions only, not glyph size (renderers apply the label rule, the mock does not). App and print match that fixture within 0.5 pt at print R; tests/test_render_agreement passes; every diagram glyph ≥ 3.6 pt in print; the non-mutant card's field centres, radii and number positions equal a Standard render of the same scale. Owner DEV QA compares against the mock.
 
 ### AFK decision 2026-10-31
 - Inner hairline: owner 2026-10-30 chose to keep it (convention 4 holds for Neotone); no CLAUDE.md patch. The mock's missing hairline is mock-only.
