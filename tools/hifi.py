@@ -318,6 +318,246 @@ def draw_ring(c, x, y, r, state):
     c.circle(x, y, r * 0.74, stroke=1, fill=0)
 
 
+# The paired-area profile's draw figures (tests/fixtures/paired_profile_v3.json,
+# ENGINE-SPEC section 18, plus the stroke and glyph figures of the Neotone
+# card), held equal to the fixture by a test. A deck whose geom carries
+# `place` is drawn from it; every other deck takes the acoustic path.
+PROFILE_DRAW = {
+    "tonefields": 9,
+    "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
+    "main": {"orbit": 0.745, "r": 0.19},
+    "mutant": {"depth": 0.3333, "r": 0.19},
+    "ding": {"r": 0.2, "dy": 0},
+    "decor": {"r": 0.355},
+    "n_in": 0.085, "number_out": 1.0758, "extent_margin": 0.06,
+    "stroke": {"outline": 0.012, "decor": 0.0076, "main_band": 0.046,
+               "lens_band": 0.024},
+    "glyph": {"main": 0.62, "number": 0.62, "ding": 0.623, "lens": 0.565,
+              "mnum": 0.5},
+}
+DECOR_GREY = Color(0.7333, 0.7333, 0.7333)
+LENS_EMPTY = Color(0.9529, 0.9451, 0.9608)
+
+
+def profile_radius(geom, band_half=74.0):
+    """Print radius of a deck drawn from geom["place"], or None for an acoustic
+    geom. The reach is fixed by the profile, not by which slots are occupied:
+    the main numbers outside the rim and the ding edge, plus the margin."""
+    if not geom.get("place"):
+        return None
+    pd = PROFILE_DRAW
+    reach = pd["number_out"] + NUM_RATIO * pd["main"]["r"] / 2
+    ding = geom["r_ding"] + abs(geom.get("ding_dy", 0.0))
+    return round(band_half / (max(reach, ding) + pd["extent_margin"]), 1)
+
+
+# ---- Neotone card shapes (analytic: no clip paths) ------------------------
+# Closed paths of cubic arcs of at most a quarter turn in a local frame (u
+# along the radial line, v across it), in units of R. See
+# src/engine/pdfcards.js; the two files emit the same vectors.
+def _arc_ops(cu, cv, r, t0, t1, ops):
+    n = max(1, math.ceil(abs(t1 - t0) / (math.pi / 2) - 1e-9))
+    d = (t1 - t0) / n
+    k = 4 / 3 * math.tan(d / 4)
+    for i in range(n):
+        ta = t0 + i * d
+        tb = ta + d
+        ca, sa, cb, sb = math.cos(ta), math.sin(ta), math.cos(tb), math.sin(tb)
+        ops.append(("c",
+                    cu + r * (ca - k * sa), cv + r * (sa + k * ca),
+                    cu + r * (cb + k * sb), cv + r * (sb - k * cb),
+                    cu + r * cb, cv + r * sb))
+
+
+def _two_circles(a, ra, b, rb):
+    d = a - b
+    xb = (d * d + rb * rb - ra * ra) / (2 * d)
+    h = math.sqrt(rb * rb - xb * xb)
+    return b + xb, h, math.atan2(h, b + xb - a), math.atan2(h, xb)
+
+
+def lens_ops(a, ra, b, rb):
+    up, h, aa, ab = _two_circles(a, ra, b, rb)
+    ops = [("m", up, h)]
+    _arc_ops(a, 0, ra, aa, 2 * math.pi - aa, ops)
+    _arc_ops(b, 0, rb, -ab, ab, ops)
+    ops.append(("h",))
+    return ops
+
+
+def crescent_ops(a, ra, b, rb):
+    up, h, aa, ab = _two_circles(a, ra, b, rb)
+    ops = [("m", up, h)]
+    _arc_ops(a, 0, ra, aa, -aa, ops)
+    _arc_ops(b, 0, rb, -ab, ab, ops)
+    ops.append(("h",))
+    return ops
+
+
+def _mutant_figures():
+    pd = PROFILE_DRAW
+    r = pd["main"]["r"]
+    depth = 2 * r * pd["mutant"]["depth"]
+    lens_c = round(pd["main"]["orbit"] - (2 * r - depth), 4)
+    st = pd["stroke"]
+    dm = st["decor"] + st["main_band"] / 2
+    dl = st["decor"] + st["outline"] + st["lens_band"] / 2
+    o, rl = pd["main"]["orbit"], pd["mutant"]["r"]
+    return {
+        "depth": depth, "lens_c": lens_c, "rl": rl,
+        "lens": lens_ops(o, r, lens_c, rl),
+        "crescent_band": crescent_ops(o, r - dm, lens_c, rl + dm),
+        "lens_band": lens_ops(o, r - dl, lens_c, rl - dl),
+    }
+
+
+def _place_ops(c, ops, ox, oy, R, theta, stroke, fill):
+    a = math.radians(theta)
+    ca, sa = math.cos(a), math.sin(a)
+    p = c.beginPath()
+    for op in ops:
+        if op[0] == "h":
+            p.close()
+            continue
+        pts = []
+        for i in range(1, len(op), 2):
+            pts += [round(ox + R * (op[i] * ca - op[i + 1] * sa), 4),
+                    round(oy + R * (op[i] * sa + op[i + 1] * ca), 4)]
+        (p.moveTo if op[0] == "m" else p.curveTo)(*pts)
+    c.drawPath(p, stroke=stroke, fill=fill)
+
+
+def _neo_fit(name, octv, size, cap, floor):
+    while size - 0.1 >= floor and note_w(name, octv, "Label", size) > cap:
+        size -= 0.1
+    return size
+
+
+def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
+    """The Neotone card's pan: a deck whose geom carries `place`."""
+    pd = PROFILE_DRAW
+    g = spec["_geom"]
+    place = g["place"]
+    stk, gl = pd["stroke"], pd["glyph"]
+    main, mut, ding = {}, {}, None
+    for i, val in spec.items():
+        if i == "_geom":
+            continue
+        if val[3] == "ding":
+            ding = i
+            continue
+        pl = place.get(str(i))
+        if pl is None:
+            continue
+        (mut if pl[3] == "mutant" else main)[pl[0]] = i
+    has_mut = bool(mut)
+    fig = _mutant_figures() if has_mut else None
+
+    def st(i):
+        return "root" if i in roots else "on" if i in active else "off"
+
+    def colour(s):
+        return BLUE if s == "root" else GREEN
+
+    if has_mut:
+        tones = [(a, pd["main"]["orbit"], pd["main"]["r"], main.get(a),
+                  mut.get(a)) for a in pd["angles"]]
+    else:
+        tones = [(pl[0], pl[1], pl[2], int(k), None)
+                 for k, pl in sorted(place.items(), key=lambda kv: int(kv[0]))]
+
+    ding_dy = R * g.get("ding_dy", 0.0)
+    floor = 3.6 / OCTAVE_RATIO
+    out = R * stk["outline"]
+    band = R * stk["main_band"]
+    inset = R * (stk["decor"] + stk["main_band"] / 2)
+
+    def pos(u, th):
+        a = math.radians(th)
+        return cx + R * u * math.cos(a), cy + R * u * math.sin(a)
+
+    def name(x, y, nm, ov, size, cap):
+        fs = _neo_fit(nm, ov, size * R, cap * R, floor)
+        note_text(c, x, y - fs * 0.34, nm, ov, "Label", fs, INK)
+
+    c.setStrokeColor(DECOR_GREY)
+    c.setLineWidth(R * stk["decor"])
+    c.circle(cx, cy, R * pd["decor"]["r"], stroke=1, fill=0)
+
+    dr = R * g["r_ding"]
+    c.setDash()
+    c.setFillColor(white)
+    c.setStrokeColor(black)
+    c.setLineWidth(out)
+    c.circle(cx, cy - ding_dy, dr, stroke=1, fill=1)
+    if st(ding) != "off":
+        c.setStrokeColor(colour(st(ding)))
+        c.setLineWidth(band)
+        c.circle(cx, cy - ding_dy, dr - inset, stroke=1, fill=0)
+    dn = spec[ding]
+    name(cx, cy - ding_dy, dn[0], dn[1],
+         LABEL_RATIO_DING * gl["ding"] * g["r_ding"], LABEL_WIDTH_RATIO * g["r_ding"])
+
+    c.setLineJoin(1)
+    for th, orbit, r, mid, lid in tones:
+        px, py = pos(orbit, th)
+        rr = R * r
+        c.setDash()
+        c.setFillColor(white)
+        c.setStrokeColor(black)
+        c.setLineWidth(out)
+        c.circle(px, py, rr, stroke=1, fill=1)
+        if has_mut:
+            c.setFillColor(white if lid is not None else LENS_EMPTY)
+            _place_ops(c, fig["lens"], cx, cy, R, th, 0, 1)
+            if mid is not None and st(mid) != "off":
+                c.setStrokeColor(colour(st(mid)))
+                c.setLineWidth(band)
+                _place_ops(c, fig["crescent_band"], cx, cy, R, th, 1, 0)
+            if lid is not None and st(lid) != "off":
+                c.setStrokeColor(colour(st(lid)))
+                c.setLineWidth(R * stk["lens_band"])
+                _place_ops(c, fig["lens_band"], cx, cy, R, th, 1, 0)
+            c.setStrokeColor(black)
+            c.setLineWidth(out)
+            c.circle(px, py, rr, stroke=1, fill=0)
+            _place_ops(c, fig["lens"], cx, cy, R, th, 1, 0)
+        elif st(mid) != "off":
+            c.setStrokeColor(colour(st(mid)))
+            c.setLineWidth(band)
+            c.circle(px, py, rr - inset, stroke=1, fill=0)
+    c.setLineJoin(0)
+
+    for th, orbit, r, mid, lid in tones:
+        if mid is not None:
+            u = orbit + fig["depth"] / 2 if has_mut else orbit
+            x, y = pos(u, th)
+            mn = spec[mid]
+            name(x, y, mn[0], mn[1], LABEL_RATIO_NOTE * gl["main"] * r,
+                 LABEL_WIDTH_RATIO * (fig["depth"] if has_mut else r))
+        if lid is not None:
+            x, y = pos(fig["lens_c"] + fig["rl"] - fig["depth"] / 2, th)
+            ln = spec[lid]
+            name(x, y, ln[0], ln[1], LABEL_RATIO_BNOTE * gl["lens"] * fig["rl"],
+                 LABEL_WIDTH_RATIO * fig["depth"] / 2)
+    if not numbers:
+        return
+    for th, orbit, r, mid, lid in tones:
+        if mid is not None:
+            u = pd["number_out"] if has_mut else orbit - r - g["n_in"]
+            x, y = pos(u, th)
+            size = max(NUM_RATIO * gl["number"] * r * R, 3.6)
+            c.setFillColor(INK)
+            c.setFont("Label", size)
+            c.drawCentredString(x, y - size * 0.36, spec[mid][5])
+        if lid is not None:
+            x, y = pos(pd["main"]["orbit"] - pd["main"]["r"] - pd["n_in"], th)
+            size = max(NUM_RATIO * gl["mnum"] * r * R, 3.6)
+            c.setFillColor(ORANGE)
+            c.setFont("LabelSB", size)
+            c.drawCentredString(x, y - size * 0.36, spec[lid][5])
+
+
 def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
              numbers=True):
     """spec: dict field -> (name, octave, midi, zone, angle, label)"""
@@ -325,6 +565,9 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
     nfs = num_size(R * g["r_note"])
     c.setStrokeColor(black); c.setLineWidth(1.15); c.setDash()
     c.circle(cx, cy, R, stroke=1, fill=0)
+    if g.get("place"):
+        draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers)
+        return
     if g.get("inner_ring"):
         c.setLineWidth(0.6)
         c.circle(cx, cy, R * g["inner_ring"], stroke=1, fill=0)
@@ -486,7 +729,8 @@ def chord_card(c, x, y, deck, num, chord):
     side_credit(c, x, y, CW, CH, deck["credit"])
     draw_pan(c, x + CW / 2, y + deck["cy"], deck["R"], spec, active_all, roots_all)
 
-    nb = len([f for f in fields if spec[f][3] == "bottom"])
+    nb = 0 if spec["_geom"].get("place") else \
+        len([f for f in fields if spec[f][3] == "bottom"])
     if nb:
         tracked(c, x + CW / 2, y + deck["y_note"] + 13, 
                 "%d BOTTOM NOTE%s" % (nb, "S" if nb > 1 else ""),

@@ -42,6 +42,7 @@ class RecordingCanvas:
 
     def __init__(self):
         self.circles = []
+        self.paths = []
         self.texts = []
         self.rects = []
         self._stroke = None
@@ -67,6 +68,14 @@ class RecordingCanvas:
     def circle(self, x, y, r, stroke=1, fill=0):
         self.circles.append({"x": x, "y": y, "r": r, "lw": self._lw,
                              "stroke": self._stroke, "dashed": self._dashed})
+
+    def beginPath(self):
+        return _PathRec()
+
+    def drawPath(self, p, stroke=1, fill=0):
+        self.paths.append({"start": p.pts[0], "lw": self._lw,
+                           "stroke": self._stroke if stroke else None,
+                           "fill": self._fill if fill else None})
 
     def rect(self, x, y, w, h, stroke=1, fill=0):
         self.rects.append({"x": x, "y": y, "w": w, "h": h,
@@ -95,6 +104,44 @@ class RecordingCanvas:
         return lambda *a, **k: _Null()
 
 
+class _PathRec:
+    """Collects the points of a reportlab path object."""
+
+    def __init__(self):
+        self.pts = []
+
+    def moveTo(self, x, y):
+        self.pts.append((x, y))
+
+    def curveTo(self, *a):
+        self.pts.extend(zip(a[0::2], a[1::2]))
+
+    def close(self):
+        pass
+
+
+def neo_fields(circles, paths, root_hex, tone_hex, outline_w):
+    """The Neotone card's fields from its drawing: a field is a black outline
+    circle of width 0.012R (a main tonefield or the ding); a lit one carries a
+    root or tone band, a ring circle where the card has no lens and a crescent
+    path where it has. Circles are (x, y, r, stroke, width, ...) in R = 100,
+    y-down; paths are (x, y, stroke, width) at their start point."""
+    fields = {}
+    for x, y, r, stroke, w in circles:
+        if stroke == "#000000" and abs(w - outline_w) < 0.01:
+            fields.setdefault((x, y), {"x": x, "y": y, "r": r, "state": "off"})
+    state_of = {root_hex: "root", tone_hex: "tone"}
+    for x, y, r, stroke, w in circles:
+        if (x, y) in fields and stroke in state_of:
+            fields[(x, y)].update(state=state_of[stroke], bandWidth=w)
+    mains = [f for f in fields.values() if f["r"] < 25]
+    for x, y, stroke, w in paths:
+        if stroke in state_of and abs(w - 4.6) < 0.01 and mains:
+            f = min(mains, key=lambda m: math.hypot(m["x"] - x, m["y"] - y))
+            f.update(state=state_of[stroke], bandWidth=w)
+    return sorted(fields.values(), key=lambda f: (f["x"], f["y"]))
+
+
 class _Null:
     """Swallows any call or attribute, so paths/graphics-state calls no-op."""
 
@@ -120,15 +167,26 @@ def render_print(deck):
             # exactly those - a positional filter would also drop the ding on
             # decks whose ding_dy is 0 (Hijaz, Amara).
             g = deck["spec"]["_geom"]
-            chrome = 1 + bool(g.get("inner_ring")) + bool(g.get("bottom"))
+            chrome = 1 if g.get("place") else \
+                1 + bool(g.get("inner_ring")) + bool(g.get("bottom"))
 
+            if g.get("place"):
+                k = 100 / R
+                circles = [(round((c["x"] - cx) * k, 3), round(-(c["y"] - cy) * k, 3),
+                            round(c["r"] * k, 3), c["stroke"], round(c["lw"] * k, 3))
+                           for c in rec.circles[chrome:]]
+                paths = [(round((q["start"][0] - cx) * k, 3), round(-(q["start"][1] - cy) * k, 3),
+                          q["stroke"], round(q["lw"] * k, 3)) for q in rec.paths if q["fill"] is None]
+                fields = neo_fields(circles, paths, root_hex, tone_hex, 1.2)
+            else:
+                fields = None
             groups = {}
-            for c in rec.circles[chrome:]:
+            for c in ([] if fields is not None else rec.circles[chrome:]):
                 key = (round((c["x"] - cx) / R * 100, 3),
                        round(-(c["y"] - cy) / R * 100, 3))   # y-up -> y-down
                 groups.setdefault(key, []).append(c)
 
-            fields = []
+            fields = [] if fields is None else fields
             for (x, y), group in groups.items():
                 strokes = {g["stroke"] for g in group}
                 if root_hex in strokes:
@@ -353,13 +411,17 @@ class BorderAgreementTest(unittest.TestCase):
 
 
 class RenderAgreement(unittest.TestCase):
+    decks = DECK_BY_ID
+    dump_args = []
+
     @classmethod
     def setUpClass(cls):
         dump = subprocess.run(
-            ["node", os.path.join(paths.ROOT, "tests", "helpers", "dump_app_render.js")],
+            ["node", os.path.join(paths.ROOT, "tests", "helpers", "dump_app_render.js")]
+            + cls.dump_args,
             capture_output=True, text=True, check=True, cwd=paths.ROOT)
         cls.app = json.loads(dump.stdout)
-        cls.print_ = {k: render_print(v) for k, v in DECK_BY_ID.items()}
+        cls.print_ = {k: render_print(v) for k, v in cls.decks.items()}
 
     def each_card(self):
         for card in self.app:
@@ -484,7 +546,7 @@ class RenderAgreement(unittest.TestCase):
         for app_c, print_c in self.each_card():
             if app_c["deck"] not in PRE_RULE_IDS:
                 continue
-            deck = DECK_BY_ID[app_c["deck"]]
+            deck = self.decks[app_c["deck"]]
             geom = deck["spec"]["_geom"]
             spec = deck["spec"]
             zone_of = {v[0] + str(v[1]): v[3]
@@ -552,7 +614,7 @@ class RenderAgreement(unittest.TestCase):
             % (app_badge_css, orange_hex))
         for app_c, print_c in self.each_card():
             where = "%s %s" % (app_c["deck"], app_c["name"])
-            deck = DECK_BY_ID[app_c["deck"]]
+            deck = self.decks[app_c["deck"]]
             bottom_labels = {v[5] for k, v in deck["spec"].items()
                              if k != "_geom" and v[3] == "bottom"}
             for lab in bottom_labels:
@@ -571,6 +633,182 @@ class RenderAgreement(unittest.TestCase):
                     print_c["badgeFill"], orange_hex,
                     "%s: print badge fill %s != hifi.ORANGE"
                     % (where, print_c["badgeFill"]))
+
+
+PROFILE_FIXTURES = {
+    "profile_pygmy": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_pygmy_v2.json"),
+    "profile_kurd9": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_kurd9_v2.json"),
+    "profile_hijaz": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_hijaz_v2.json"),
+}
+PROFILE_FILE = os.path.join(paths.ROOT, "tests", "fixtures", "paired_profile_v3.json")
+
+
+def _profile_payload(name):
+    with open(PROFILE_FIXTURES[name], encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+class ProfileRenderAgreement(RenderAgreement):
+    """Neotone lane P: a paired-area deck (geom.place) drawn by the app SVG
+    and by hifi must agree on everything the inherited checks compare, on the
+    two generated profile decks. The inherited tests run unchanged."""
+
+    decks = {}
+    dump_args = list(PROFILE_FIXTURES.values())
+
+    @classmethod
+    def setUpClass(cls):
+        cls.decks = {k: decks.from_generated(_profile_payload(k)) for k in PROFILE_FIXTURES}
+        super().setUpClass()
+
+    def test_every_card_is_compared(self):
+        self.assertEqual(len(self.app), sum(len(d["chords"]) for d in self.decks.values()))
+        self.assertEqual(sum(len(v) for v in self.print_.values()), len(self.app))
+        self.assertEqual({c["deck"] for c in self.app}, set(PROFILE_FIXTURES))
+
+    def test_the_name_is_always_larger_than_the_number_beside_it(self):
+        """Per field, not card-wide: a primary field's number (r 0.16) is
+        legitimately larger than a secondary field's name (r 0.11)."""
+        for app_c, print_c in self.each_card():
+            spec = self.decks[app_c["deck"]]["spec"]
+            by_label = {v[5]: v[0] + str(v[1]) for k, v in spec.items()
+                        if k != "_geom" and v[3] != "ding"}
+            for side, card in (("app", app_c), ("print", print_c)):
+                for label, num in card["numberSizes"].items():
+                    self.assertGreater(
+                        card["labelSizes"][by_label[label]], num,
+                        "%s %s (%s) field %s" % (app_c["deck"], app_c["name"], side, label))
+
+    def _expected_centres(self, name):
+        """Every main tonefield and the ding, in R = 100, y-down. A card with a
+        mutant note seats all nine tonefields on the profile's angles, empty
+        ones included; a card without one keeps the Standard positions."""
+        deck = _profile_payload(name)["deck"]
+        g, place = deck["geom"], deck["geom"]["place"]
+        with open(PROFILE_FILE, encoding="utf-8") as fh:
+            prof = json.load(fh)
+        if any(v[3] == "mutant" for v in place.values()):
+            seats = [(a, prof["main"]["orbit"], prof["main"]["r"]) for a in prof["angles"]]
+        else:
+            seats = [(v[0], v[1], v[2]) for v in place.values() if v[3] == "main"]
+        out = []
+        for angle, orbit, r in seats:
+            a = math.radians(angle)
+            out.append((round(orbit * 100 * math.cos(a), 3),
+                        round(-orbit * 100 * math.sin(a), 3), round(r * 100, 3)))
+        out.append((0.0, round(g["ding_dy"] * 100, 3), round(g["r_ding"] * 100, 3)))
+        return sorted(out)
+
+    def test_both_renderers_draw_the_fields_where_geom_place_says(self):
+        for app_c, print_c in self.each_card():
+            want = self._expected_centres(app_c["deck"])
+            for side, card in (("app", app_c), ("print", print_c)):
+                got = sorted((f["x"], f["y"], f["r"]) for f in card["fields"])
+                self.assertEqual(len(got), len(want), "%s %s" % (side, app_c["name"]))
+                for g, w in zip(got, want):
+                    for a, b in zip(g, w):
+                        self.assertAlmostEqual(a, b, delta=TOL,
+                                               msg="%s %s %s vs %s" % (side, app_c["name"], g, w))
+
+    def test_an_empty_tonefield_still_draws_its_outline(self):
+        kurd = next(c for c in self.app if c["deck"] == "profile_kurd9")
+        self.assertEqual(len(kurd["fields"]), 9)
+        hijaz = next(c for c in self.app if c["deck"] == "profile_hijaz")
+        self.assertEqual(len(hijaz["fields"]), 10)
+
+    def test_a_neotone_card_has_no_dashed_ring_and_no_bottom_badge(self):
+        for app_c, print_c in self.each_card():
+            for side, card in (("app", app_c), ("print", print_c)):
+                self.assertNotIn("off-bottom", [f["state"] for f in card["fields"]])
+                self.assertEqual(card["badgeText"], "", "%s %s" % (side, app_c["name"]))
+
+    def test_band_and_hairline_agree(self):
+        """Neotone has no inner hairline (K3): a lit main or ding carries one
+        band of 4.6, in both renderers."""
+        for app_c, print_c in self.each_card():
+            for side, card in (("app", app_c), ("print", print_c)):
+                for f in card["fields"]:
+                    self.assertNotIn("hairlineR", f)
+                    if f["state"] != "off":
+                        self.assertAlmostEqual(f["bandWidth"], 4.6, delta=0.01,
+                                               msg="%s %s %s" % (side, app_c["name"], f))
+
+    def test_kurd9_places_every_note_where_the_standard_card_does(self):
+        deck = _profile_payload("profile_kurd9")["deck"]
+        g = deck["geom"]
+        for fid, v in g["place"].items():
+            self.assertEqual(v[3], "main")
+            self.assertEqual(v[0], deck["fields"][fid][4])
+            self.assertEqual(v[1], g["rim"])
+            self.assertEqual(v[2], g["r_note"])
+
+    def test_the_print_floor_holds_for_every_glyph(self):
+        for name in PROFILE_FIXTURES:
+            deck = self.decks[name]
+            R = deck["R"]
+            for card in self.print_[name]:
+                for field, size in card["labelSizes"].items():
+                    pt = size / 100 * R
+                    self.assertGreaterEqual(pt, 3.6, "%s %s name" % (name, field))
+                    self.assertGreaterEqual(pt * 0.66, 3.6 - 1e-6,
+                                            "%s %s octave digit" % (name, field))
+                for lab, size in card["numberSizes"].items():
+                    self.assertGreaterEqual(size / 100 * R, 3.6, "%s number %s" % (name, lab))
+
+    def test_the_print_radius_is_the_frozen_extent_rule(self):
+        with open(PROFILE_FILE, encoding="utf-8") as fh:
+            p = json.load(fh)
+        reach = max(p["number_out"] + 0.64 * p["main"]["r"] / 2,
+                    p["ding"]["r"] + abs(p["ding"]["dy"]))
+        want = round(74.0 / (reach + p["extent_margin"]), 1)
+        self.assertEqual(want, 61.8)
+        for name, deck in self.decks.items():
+            self.assertEqual(deck["R"], want, name)
+        self.assertEqual(hifi.profile_radius(_profile_payload("profile_kurd9")["deck"]["geom"]), want)
+
+    def test_hifi_profile_figures_equal_the_frozen_fixture(self):
+        with open(PROFILE_FILE, encoding="utf-8") as fh:
+            p = json.load(fh)
+        for k in ("tonefields", "angles", "main", "mutant", "ding", "decor",
+                  "n_in", "number_out", "extent_margin"):
+            self.assertEqual(hifi.PROFILE_DRAW[k], p[k], k)
+        self.assertEqual(hifi.PROFILE_DRAW["stroke"], {
+            "outline": 0.012, "decor": 0.0076, "main_band": 0.046, "lens_band": 0.024})
+        self.assertEqual(hifi.PROFILE_DRAW["glyph"], {
+            "main": 0.62, "number": 0.62, "ding": 0.623, "lens": 0.565, "mnum": 0.5})
+
+    def _number_centre(self, name, chord_index, label):
+        deck = self.decks[name]
+        rec = RecordingCanvas()
+        hifi.chord_card(rec, 0.0, 0.0, deck, 1, deck["chords"][chord_index])
+        cx, cy = hifi.CW / 2, deck["cy"]
+        hit = [t for t in rec.texts if t["text"] == label and t["anchor"] == "c"
+               and t["font"] in ("Label", "LabelSB")
+               and math.hypot(t["x"] - cx, t["y"] - cy) <= deck["R"] * 1.2]
+        self.assertTrue(hit, label)
+        return hit[0], cx, cy, deck["R"]
+
+    def test_a_card_without_a_mutant_note_numbers_each_note_inward_of_its_field(self):
+        deck = _profile_payload("profile_kurd9")["deck"]
+        g, n_in = deck["geom"], hifi.PROFILE_DRAW["n_in"]
+        for fid, (angle, orbit, r, _kind) in g["place"].items():
+            label = deck["fields"][fid][5]
+            t, cx, cy, R = self._number_centre("profile_kurd9", 0, label)
+            nfs = max(0.64 * 0.62 * r * R, 3.6)
+            a = math.radians(angle)
+            nr = orbit - r - n_in
+            self.assertAlmostEqual(t["x"], cx + nr * R * math.cos(a), delta=0.01)
+            self.assertAlmostEqual(t["y"], cy + nr * R * math.sin(a) - nfs * 0.36, delta=0.01)
+
+    def test_a_mutant_card_numbers_the_main_outside_the_rim_and_the_lens_note_inside(self):
+        t, cx, cy, R = self._number_centre("profile_pygmy", 0, "1")
+        nfs = max(0.64 * 0.62 * 0.19 * R, 3.6)
+        a = math.radians(270)
+        self.assertAlmostEqual(t["y"], cy + 1.0758 * R * math.sin(a) - nfs * 0.36, delta=0.01)
+        m, cx, cy, R = self._number_centre("profile_pygmy", 0, "M1")
+        mfs = max(0.64 * 0.5 * 0.19 * R, 3.6)
+        self.assertEqual(m["font"], "LabelSB")
+        self.assertAlmostEqual(m["y"], cy + 0.47 * R * math.sin(a) - mfs * 0.36, delta=0.01)
 
 
 class PrintStylesheetTest(unittest.TestCase):

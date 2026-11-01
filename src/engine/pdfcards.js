@@ -37,6 +37,8 @@ HPE.pdfcards = (function () {
   var SEP = [0.451, 0.451, 0.451];
   var ORANGE = [0.8863, 0.4392, 0.0196];
   var FAINT = [0.78, 0.78, 0.78];
+  var FAINT_DECOR = [0.7333, 0.7333, 0.7333];
+  var LENS_EMPTY = [0.9529, 0.9451, 0.9608];
 
   var BLUE = BLUE0;
   var GREEN = GREEN0;
@@ -98,6 +100,19 @@ HPE.pdfcards = (function () {
   Canvas.prototype.line = function (x1, y1, x2, y2) {
     this.p.line(x1, y1, x2, y2);
   };
+  Canvas.prototype.setLineJoin = function (j) { this.p.op(j + " j"); };
+  Canvas.prototype.pathOps = function (ops, stroke, fill) {
+    var p = this.p;
+    function n(v) {
+      var t = (Math.round(v * 10000) / 10000).toFixed(4);
+      return t.replace(/0+$/, "").replace(/\.$/, "");
+    }
+    ops.forEach(function (op) {
+      p.op(op.slice(1).map(n).join(" ") + (op.length > 1 ? " " : "") +
+           (op[0] === "m" ? "m" : op[0] === "c" ? "c" : "h"));
+    });
+    p.op(mode(stroke, fill));
+  };
   Canvas.prototype.saveState = function () { this.p.save(); };
   Canvas.prototype.restoreState = function () { this.p.restore(); };
   Canvas.prototype.translate = function (x, y) { this.p.translate(x, y); };
@@ -149,6 +164,10 @@ HPE.pdfcards = (function () {
   function rule() { return core().LABEL_RULE; }
 
   function labelRatio(zone) {
+    var gl = PROFILE_DRAW.glyph;
+    if (zone === "neo-main") return rule().LABEL_RATIO_NOTE * gl.main;
+    if (zone === "neo-ding") return rule().LABEL_RATIO_DING * gl.ding;
+    if (zone === "neo-lens") return rule().LABEL_RATIO_BNOTE * gl.lens;
     if (zone === "ding") return rule().LABEL_RATIO_DING;
     if (zone === "bottom") return rule().LABEL_RATIO_BNOTE;
     return rule().LABEL_RATIO_NOTE;
@@ -333,6 +352,269 @@ HPE.pdfcards = (function () {
       .sort(function (a, b) { return Number(a) - Number(b); });
   }
 
+  // The paired-area profile's draw figures: a literal copy of
+  // tests/fixtures/paired_profile_v3.json (ENGINE-SPEC section 18) plus the
+  // stroke and glyph figures of the Neotone card (course-correction plan K3
+  // and K8), held equal to the fixture and to HPE.layout.PROFILE by a test.
+  // pdf_build.js loads no layout module, so the figures cannot be read from
+  // it. A geom that carries `place` is drawn from it; every other geom takes
+  // the acoustic path.
+  var PROFILE_DRAW = {
+    tonefields: 9,
+    angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
+    main: { orbit: 0.745, r: 0.19 },
+    mutant: { depth: 0.3333, r: 0.19 },
+    ding: { r: 0.2, dy: 0 },
+    decor: { r: 0.355 },
+    n_in: 0.085, number_out: 1.0758, extent_margin: 0.06,
+    stroke: { outline: 0.012, decor: 0.0076, main_band: 0.046, lens_band: 0.024 },
+    glyph: { main: 0.62, number: 0.62, ding: 0.623, lens: 0.565, mnum: 0.5 }
+  };
+
+  // Print radius of a placed deck, or null for an acoustic geom: the reach is
+  // fixed by the profile (the main numbers outside the rim and the ding
+  // edge), not by which slots are occupied.
+  function profileExtent(geom) {
+    if (!geom.place) return null;
+    var pd = PROFILE_DRAW;
+    var reach = pd.number_out + rule().NUM_RATIO * pd.main.r / 2;
+    var ding = geom.r_ding + Math.abs(geom.ding_dy || 0);
+    return Math.max(reach, ding) + pd.extent_margin;
+  }
+
+  function profileRadius(geom) {
+    var ext = profileExtent(geom);
+    return ext === null ? null : HPE.pdfdeck.bankers(74.0 / ext, 1);
+  }
+
+  // ---- Neotone card shapes (analytic: no clip paths) -----------------------
+  // Every shape is a closed path of cubic arcs of at most a quarter turn, in a
+  // local frame (u along the radial line, v across it) in units of R. The
+  // lens is the intersection of two disks and the crescent the first disk
+  // less the second; both come from the two circle-circle intersection
+  // points, so print, app and tools/hifi.py draw identical vectors.
+  function arcOps(cu, cv, r, t0, t1, ops) {
+    var n = Math.max(1, Math.ceil(Math.abs(t1 - t0) / (Math.PI / 2) - 1e-9));
+    var d = (t1 - t0) / n;
+    var k = 4 / 3 * Math.tan(d / 4);
+    for (var i = 0; i < n; i++) {
+      var ta = t0 + i * d, tb = ta + d;
+      var ca = Math.cos(ta), sa = Math.sin(ta), cb = Math.cos(tb), sb = Math.sin(tb);
+      ops.push(["c",
+        cu + r * (ca - k * sa), cv + r * (sa + k * ca),
+        cu + r * (cb + k * sb), cv + r * (sb - k * cb),
+        cu + r * cb, cv + r * sb]);
+    }
+  }
+
+  function twoCircles(a, ra, b, rb) {
+    var d = a - b;
+    var xb = (d * d + rb * rb - ra * ra) / (2 * d);
+    var h = Math.sqrt(rb * rb - xb * xb);
+    return { up: b + xb, h: h, aa: Math.atan2(h, b + xb - a), ab: Math.atan2(h, xb) };
+  }
+
+  function lensOps(a, ra, b, rb) {
+    var t = twoCircles(a, ra, b, rb);
+    var ops = [["m", t.up, t.h]];
+    arcOps(a, 0, ra, t.aa, 2 * Math.PI - t.aa, ops);
+    arcOps(b, 0, rb, -t.ab, t.ab, ops);
+    ops.push(["h"]);
+    return ops;
+  }
+
+  function crescentOps(a, ra, b, rb) {
+    var t = twoCircles(a, ra, b, rb);
+    var ops = [["m", t.up, t.h]];
+    arcOps(a, 0, ra, t.aa, -t.aa, ops);
+    arcOps(b, 0, rb, -t.ab, t.ab, ops);
+    ops.push(["h"]);
+    return ops;
+  }
+
+  function neoRound(v) { return Math.round(v * 10000) / 10000; }
+
+  function neoMutantFigures() {
+    var pd = PROFILE_DRAW, r = pd.main.r;
+    var depth = 2 * r * pd.mutant.depth;
+    var lensC = neoRound(pd.main.orbit - (2 * r - depth));
+    var st = pd.stroke;
+    var dm = st.decor + st.main_band / 2;
+    var dl = st.decor + st.outline + st.lens_band / 2;
+    return {
+      depth: depth, lensC: lensC, r: r, rl: pd.mutant.r,
+      lens: lensOps(pd.main.orbit, r, lensC, pd.mutant.r),
+      crescentBand: crescentOps(pd.main.orbit, r - dm, lensC, pd.mutant.r + dm),
+      lensBand: lensOps(pd.main.orbit, r - dl, lensC, pd.mutant.r - dl)
+    };
+  }
+
+  // The card as data, in units of R, polar around the pan centre: what the
+  // print drawer and the app both draw. `st(id)` is "root" | "on" | "off".
+  function neoPlan(spec, g, st) {
+    var pd = PROFILE_DRAW, place = g.place;
+    var main = {}, mut = {};
+    var ding = null;
+    Object.keys(spec).forEach(function (k) {
+      if (k === "_geom") return;
+      var v = spec[k];
+      if (v[3] === "ding") { ding = k; return; }
+      var pl = place[k];
+      if (!pl) return;
+      (pl[3] === "mutant" ? mut : main)[pl[0]] = k;
+    });
+    var hasMut = Object.keys(mut).length > 0;
+    var fig = hasMut ? neoMutantFigures() : null;
+    var tones = [];
+    function entry(id) {
+      var v = spec[id];
+      return { id: id, name: v[0], oct: v[1], label: v[5], st: st(id) };
+    }
+    if (hasMut) {
+      pd.angles.forEach(function (ang) {
+        var t = { theta: ang, orbit: pd.main.orbit, r: pd.main.r,
+                  main: main[ang] === undefined ? null : entry(main[ang]),
+                  lens: mut[ang] === undefined ? null : entry(mut[ang]) };
+        tones.push(t);
+      });
+    } else {
+      Object.keys(place).sort(function (a, b) { return Number(a) - Number(b); })
+        .forEach(function (k) {
+          var pl = place[k];
+          tones.push({ theta: pl[0], orbit: pl[1], r: pl[2],
+                       main: entry(k), lens: null });
+        });
+    }
+    var gl = pd.glyph, ru = rule();
+    return {
+      hasMut: hasMut, fig: fig, tones: tones,
+      ding: ding === null ? null : entry(ding),
+      numberU: function (t) {
+        return hasMut ? pd.number_out : t.orbit - t.r - g.n_in;
+      },
+      mnumU: pd.main.orbit - pd.main.r - pd.n_in,
+      nameU: function (t) { return hasMut ? t.orbit + fig.depth / 2 : t.orbit; },
+      lensNameU: hasMut ? fig.lensC + fig.rl - fig.depth / 2 : 0,
+      nameSize: function (t) { return ru.LABEL_RATIO_NOTE * gl.main * t.r; },
+      nameCap: function (t) {
+        return ru.LABEL_WIDTH_RATIO * (hasMut ? fig.depth : t.r);
+      },
+      numSize: function (t) { return ru.NUM_RATIO * gl.number * t.r; },
+      mnumSize: function (t) { return ru.NUM_RATIO * gl.mnum * t.r; },
+      lensSize: hasMut ? ru.LABEL_RATIO_BNOTE * gl.lens * fig.rl : 0,
+      lensCap: hasMut ? ru.LABEL_WIDTH_RATIO * fig.depth / 2 : 0,
+      dingSize: ru.LABEL_RATIO_DING * gl.ding * g.r_ding,
+      dingCap: ru.LABEL_WIDTH_RATIO * g.r_ding,
+      nameFloor: 3.6 / ru.OCTAVE_RATIO
+    };
+  }
+
+  function neoPoint(ops, ox, oy, R, theta, sign) {
+    var a = theta * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    return ops.map(function (op) {
+      var out = [op[0]];
+      for (var i = 1; i < op.length; i += 2) {
+        out.push(ox + R * (op[i] * ca - op[i + 1] * sa),
+                 oy + sign * R * (op[i] * sa + op[i + 1] * ca));
+      }
+      return out;
+    });
+  }
+
+  function neoFit(name, oct, size, cap, floor) {
+    while (size - 0.1 >= floor && noteW(name, oct, "Label", size) > cap) size -= 0.1;
+    return size;
+  }
+
+  function neoDrawPan(c, cx, cy, R, spec, active, roots, numbers) {
+    var pd = PROFILE_DRAW, g = spec._geom, stk = pd.stroke;
+    var plan = neoPlan(spec, g, function (id) {
+      var i = Number(id);
+      return roots.indexOf(i) >= 0 ? "root" : active.indexOf(i) >= 0 ? "on" : "off";
+    });
+    var out = R * stk.outline;
+    function colour(s) { return s === "root" ? BLUE : GREEN; }
+    function name(x, y, nm, oct, size, cap, floor) {
+      var fs = neoFit(nm, oct, size * R, cap * R, floor);
+      noteText(c, x, y - fs * 0.34, nm, oct, "Label", fs, INK);
+    }
+    function pos(u, th) {
+      var a = th * Math.PI / 180;
+      return [cx + R * u * Math.cos(a), cy + R * u * Math.sin(a)];
+    }
+    c.setStrokeColor(FAINT_DECOR); c.setLineWidth(R * stk.decor);
+    c.circle(cx, cy, R * pd.decor.r, 1, 0);
+
+    var dr = R * g.r_ding;
+    c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
+    c.setLineWidth(out);
+    c.circle(cx, cy - R * (g.ding_dy || 0), dr, 1, 1);
+    if (plan.ding.st !== "off") {
+      c.setStrokeColor(colour(plan.ding.st));
+      c.setLineWidth(R * stk.main_band);
+      c.circle(cx, cy - R * (g.ding_dy || 0),
+               dr - R * (stk.decor + stk.main_band / 2), 1, 0);
+    }
+    name(cx, cy - R * (g.ding_dy || 0), plan.ding.name, plan.ding.oct,
+         plan.dingSize, plan.dingCap, plan.nameFloor);
+
+    c.setLineJoin(1);
+    plan.tones.forEach(function (t) {
+      var th = t.theta, p = pos(t.orbit, th), rr = R * t.r;
+      c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
+      c.setLineWidth(out);
+      c.circle(p[0], p[1], rr, 1, 1);
+      if (plan.hasMut) {
+        var f = plan.fig;
+        c.setFillColor(t.lens ? WHITE : LENS_EMPTY);
+        c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 0, 1);
+        if (t.main && t.main.st !== "off") {
+          c.setStrokeColor(colour(t.main.st)); c.setLineWidth(R * stk.main_band);
+          c.pathOps(neoPoint(f.crescentBand, cx, cy, R, th, 1), 1, 0);
+        }
+        if (t.lens && t.lens.st !== "off") {
+          c.setStrokeColor(colour(t.lens.st)); c.setLineWidth(R * stk.lens_band);
+          c.pathOps(neoPoint(f.lensBand, cx, cy, R, th, 1), 1, 0);
+        }
+        c.setStrokeColor(BLACK); c.setLineWidth(out);
+        c.circle(p[0], p[1], rr, 1, 0);
+        c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
+      } else if (t.main.st !== "off") {
+        c.setStrokeColor(colour(t.main.st)); c.setLineWidth(R * stk.main_band);
+        c.circle(p[0], p[1], rr - R * (stk.decor + stk.main_band / 2), 1, 0);
+      }
+    });
+    c.setLineJoin(0);
+    plan.tones.forEach(function (t) {
+      if (t.main) {
+        var q = pos(plan.nameU(t), t.theta);
+        name(q[0], q[1], t.main.name, t.main.oct, plan.nameSize(t),
+             plan.nameCap(t), plan.nameFloor);
+      }
+      if (t.lens) {
+        var l = pos(plan.lensNameU, t.theta);
+        name(l[0], l[1], t.lens.name, t.lens.oct, plan.lensSize,
+             plan.lensCap, plan.nameFloor);
+      }
+    });
+    if (!numbers) return;
+    plan.tones.forEach(function (t) {
+      function num(u, label, size, col, font) {
+        var q = pos(u, t.theta);
+        c.setFillColor(col); c.setFont(font, size);
+        c.drawCentredString(q[0], q[1] - size * 0.36, label);
+      }
+      if (t.main) {
+        num(plan.numberU(t), t.main.label, Math.max(plan.numSize(t) * R, 3.6),
+            INK, "Label");
+      }
+      if (t.lens) {
+        num(plan.mnumU, t.lens.label, Math.max(plan.mnumSize(t) * R, 3.6),
+            ORANGE, "LabelSB");
+      }
+    });
+  }
+
   function drawPan(c, cx, cy, R, spec, active, roots, numbers) {
     active = active || [];
     roots = roots || [];
@@ -341,6 +623,10 @@ HPE.pdfcards = (function () {
     var nfs = numSize(R * g.r_note);
     c.setStrokeColor(BLACK); c.setLineWidth(1.15); c.setDash();
     c.circle(cx, cy, R, 1, 0);
+    if (g.place) {
+      neoDrawPan(c, cx, cy, R, spec, active, roots, numbers);
+      return;
+    }
     if (g.inner_ring) {
       c.setLineWidth(0.6);
       c.circle(cx, cy, R * g.inner_ring, 1, 0);
@@ -477,7 +763,8 @@ HPE.pdfcards = (function () {
     sideCredit(c, x, y, CW, CH, deck.credit);
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
 
-    var nb = fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
+    var nb = spec._geom && spec._geom.place ? 0 :
+        fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
     if (nb) {
       tracked(c, x + CW / 2, y + deck.y_note + 13,
               nb + " BOTTOM NOTE" + (nb > 1 ? "S" : ""),
@@ -605,6 +892,8 @@ HPE.pdfcards = (function () {
 
     BLUE = deck.col_root || BLUE0;
     GREEN = deck.col_tone || GREEN0;
+    var placedR = profileRadius(deck.spec._geom);
+    if (placedR) deck = Object.assign({}, deck, { R: placedR });
 
     var doc = HPE.pdf.doc(page[0], page[1]);
     var S = slots(paper);
@@ -666,6 +955,12 @@ HPE.pdfcards = (function () {
     labelRatio: labelRatio,
     labelSize: labelSize,
     numSize: numSize,
+    profileRadius: profileRadius,
+    profileExtent: profileExtent,
+    PROFILE_DRAW: PROFILE_DRAW,
+    neoPlan: neoPlan,
+    lensOps: lensOps,
+    crescentOps: crescentOps,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,

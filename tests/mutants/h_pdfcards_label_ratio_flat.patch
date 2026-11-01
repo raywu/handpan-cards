@@ -7,10 +7,10 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -149,8 +149,6 @@ HPE.pdfcards = (function () {
-   function rule() { return core().LABEL_RULE; }
- 
-   function labelRatio(zone) {
+@@ -168,8 +168,6 @@ HPE.pdfcards = (function () {
+     if (zone === "neo-main") return rule().LABEL_RATIO_NOTE * gl.main;
+     if (zone === "neo-ding") return rule().LABEL_RATIO_DING * gl.ding;
+     if (zone === "neo-lens") return rule().LABEL_RATIO_BNOTE * gl.lens;
 -    if (zone === "ding") return rule().LABEL_RATIO_DING;
 -    if (zone === "bottom") return rule().LABEL_RATIO_BNOTE;
      return rule().LABEL_RATIO_NOTE;
