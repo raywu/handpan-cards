@@ -4,11 +4,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1535,10 +1535,10 @@ html.about-open{overflow:hidden}
+@@ -1650,6 +1650,7 @@ html.about-open{overflow:hidden}
      </div>
      </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
 +    <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+     <div class="editrow" id="scale-mode-row" hidden>
+       <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>
+       <div class="ctlrow" role="group" aria-labelledby="scale-mode-label">
+@@ -1666,7 +1667,6 @@ html.about-open{overflow:hidden}
      <div id="scale-plate-band">
        <div id="scale-preview" role="img"
             aria-label="Preview of where the notes sit on the pan" hidden></div>

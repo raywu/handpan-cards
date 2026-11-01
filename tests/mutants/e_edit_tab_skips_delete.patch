@@ -4,15 +4,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14351,13 +14351,12 @@ sheet.addEventListener("keydown", e => {
-     ? [backBtn, document.getElementById("scale-conflict-separate"), onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+@@ -15578,13 +15578,12 @@ sheet.addEventListener("keydown", e => {
+        previewBox.querySelector('.panhit[tabindex="0"]'), previewBox.querySelector('.nhit[tabindex="0"]'),
         anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
         notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,
 -       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
 +       ...swatches.children, shut ? lipBtn : genBtn]
      : [backBtn, document.getElementById("scale-conflict-separate"), onTab,
         nameBox,
-        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
+        fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom, neoCheck,
         scaleBox,
 -       shut ? lipBtn : editingId ? genBtn : nextBtn,
 -       editingId && !shut ? delBtn : null])

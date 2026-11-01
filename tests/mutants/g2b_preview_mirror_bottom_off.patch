@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12803,7 +12803,7 @@ function sheetOptions() {
-  *  layout.solve refuses a seat list of the wrong length (BAD_NOTE) - which would
-  *  show up as a mock that silently stopped repainting. */
- function solvePreviewLayout(seed) {
+@@ -13853,7 +13853,7 @@ function solvePreviewLayout(seed) {
+     const solved = solveNeotonePreview(seed);
+     if (solved) return solved;
+   }
 -  const solveOptions = { mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor,
 +  const solveOptions = { mirror: mirror, mirrorBottom: false, anchor: anchor,
      seats: fitSeats(seed.fields), angles: fitAngles(seed.fields) };
