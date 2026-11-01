@@ -188,7 +188,7 @@ def link_item(row):
     return '<li><a href="/scales/%s/">%s handpan chords</a></li>' % (row["slug"], esc(row["name"]))
 
 
-LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" alt="" height="64"></a>'
+LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" alt="" width="223" height="64"></a>'
 
 
 def head(title, description, og_description, url, theme, brand=True):

@@ -1108,16 +1108,18 @@ class HeaderLockupTest(unittest.TestCase):
 
     def test_first_header_link_is_the_lockup_home_link(self):
         for name in self.PAGES:
-            src = "/brand/horizontal-mono-light.svg" if name == "404.html" else "/brand/horizontal-full.svg"
             with self.subTest(page=name):
                 head = self.header(name)
                 first = re.search(r"<a\b[^>]*>.*?</a>", head, re.S).group(0)
                 self.assertRegex(first, r'^<a href="/" aria-label="Handpan Theory home"[ >]')
-                self.assertEqual(re.findall(r"<img\b[^>]*>", first), ['<img src="%s" alt="" height="64">' % src])
+                self.assertEqual(re.findall(r"<img\b[^>]*>", first), ['<img src="/brand/horizontal-full.svg" alt="" width="223" height="64">'])
                 self.assertNotIn("&larr;", head)
                 self.assertNotIn("Home", head)
 
-    def test_h1_is_unchanged_and_no_back_link_remains(self):
+    def test_h1_follows_the_lockup_and_no_back_link_remains(self):
         for name in self.PAGES:
             with self.subTest(page=name):
-                self.assertNotIn("&larr; Handpan Chords", read(name))
+                src = read(name)
+                self.assertNotIn("&larr; Handpan Chords", src)
+                self.assertEqual(len(re.findall(r"<h1\b", src)), 1)
+                self.assertRegex(self.header(name), r"</a></p>\n(<p>.*</p>\n)?<h1>[^<]+</h1>\n")
