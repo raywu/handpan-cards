@@ -1,10 +1,10 @@
-# kills: DI: the sheet serves DING, TOP RIM NOTES, TOP INNER (CYCLOPS/MUTANT) NOTE and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done
+# kills: DI: the sheet serves DING, Top Notes, TOP INNER (CYCLOPS) NOTE and Bottom Notes in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done
 # suite: node --test --test-name-pattern ^DI:.the.sheet.serves.DING tests/app.test.js
 # The scale line goes back above the four note fields.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1594,6 +1594,32 @@ html.about-open{overflow:hidden}
+@@ -1598,6 +1598,32 @@ html.about-open{overflow:hidden}
           parseSeed); focusing one dims the other. One variable, inputPath, says
           which is active. The live region is the last child so the order the
           SG: N-A2 tests pin is untouched. -->
@@ -37,7 +37,7 @@ diff --git a/index.html b/index.html
      <div id="scale-fields" role="group" aria-labelledby="scale-fields-head">
        <p class="sheetlabel" id="scale-fields-head">YOUR SCALE, NOTE BY NOTE</p>
        <div class="fieldrow">
-@@ -1622,32 +1648,6 @@ html.about-open{overflow:hidden}
+@@ -1626,32 +1652,6 @@ html.about-open{overflow:hidden}
        <p class="sr-only" id="scale-fields-live" aria-live="polite"></p>
      </div>
      <div id="scale-or" role="separator" aria-label="or"><span>OR</span></div>
@@ -69,4 +69,4 @@ diff --git a/index.html b/index.html
 -    </div>
      </div>
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
-     <div class="editrow" id="scale-mode-row" hidden>
+     <div id="scale-plate-band">

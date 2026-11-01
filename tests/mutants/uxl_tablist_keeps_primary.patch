@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15578,12 +15578,12 @@ sheet.addEventListener("keydown", e => {
-        previewBox.querySelector('.panhit[tabindex="0"]'), previewBox.querySelector('.nhit[tabindex="0"]'),
+@@ -15626,12 +15626,12 @@ sheet.addEventListener("keydown", e => {
+        modeStandard, modeNeotone,
         anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
         notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,
 -       ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]

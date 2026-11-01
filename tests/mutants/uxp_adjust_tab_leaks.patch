@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15573,7 +15573,7 @@ sheet.addEventListener("keydown", e => {
+@@ -15620,7 +15620,7 @@ sheet.addEventListener("keydown", e => {
    if (e.key !== "Tab") return;
    const onTab = sheetTab === "layout" ? tabLayout : tabScale;
    const shut = isLipShut();
 -  const stops = (sheetTab === "layout"
 +  const stops = (false
-     ? [backBtn, document.getElementById("scale-conflict-separate"), onTab, modeStandard, modeNeotone,
+     ? [backBtn, document.getElementById("scale-conflict-separate"), onTab,
         previewBox.querySelector('.panhit[tabindex="0"]'), previewBox.querySelector('.nhit[tabindex="0"]'),
-        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
+        modeStandard, modeNeotone,
