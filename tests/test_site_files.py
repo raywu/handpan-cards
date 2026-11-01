@@ -174,7 +174,7 @@ class SiteFilesTest(unittest.TestCase):
     def test_publish_script_builds_exactly_the_allowlist_byte_for_byte(self):
         allow_files = ["index.html", "404.html", "sitemap.xml", "robots.txt", "llms.txt",
                        "_headers", "og.png", "apple-touch-icon.png"]
-        allow_dirs = ["scales", "handpan-101"]
+        allow_dirs = ["scales", "handpan-101", "brand"]
         with tempfile.TemporaryDirectory() as out:
             publish(out)
             built = set()

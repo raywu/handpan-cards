@@ -1,4 +1,4 @@
-# kills: the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name
+# kills: the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)
 # suite: node --test --test-name-pattern ^the.title.is.the.positioning.string tests/app.test.js
 # The link-preview title drifts back to the old page name while the tab says
 # the positioning title. A shared link would then preview under a different

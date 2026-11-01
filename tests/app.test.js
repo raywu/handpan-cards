@@ -3920,14 +3920,12 @@ function linkHref(html, rel, extra = "") {
 
 const POSITIONING_TITLE = "Handpan Chords: Custom Scale Chord and Progression Practice";
 
-test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name", async () => {
+test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)", async () => {
   const html = headHtml();
   const title = /<title>([^<]*)<\/title>/.exec(html);
   assert.ok(title, "no <title>");
-  const h1 = /<h1>([^<]*)<\/h1>/.exec(html);
-  assert.ok(h1, "no <h1>");
+  assert.ok(/<h1>/.test(html), "no <h1>");
   assert.strictEqual(title[1], POSITIONING_TITLE);
-  assert.strictEqual(h1[1], "Handpan Chords");
   assert.strictEqual(metaContent(html, "property", "og:title"), title[1]);
   assert.strictEqual(metaContent(html, "name", "twitter:title"), title[1]);
 });
@@ -3944,18 +3942,18 @@ test("the description says free and progressions early, equals og:description an
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
 });
 
-test("the favicon is an inline SVG data URI drawing the Amara Dm card", async () => {
+test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a round tile", async () => {
   const html = headHtml();
   const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
   assert.ok(href.startsWith("data:image/svg+xml,"), "the SVG icon is not a data: URI");
   const svg = decodeURIComponent(href.slice("data:image/svg+xml,".length));
   assert.match(svg, /^<svg[^>]*\sviewBox='0 0 64 64'/, "the SVG has no 64x64 viewBox");
-  const circles = svg.match(/<circle\b[^>]*>/g) || [];
-  assert.strictEqual(circles.length, 11, "the icon should draw 11 circles");
-  const fills = (hex) => circles.filter((c) => new RegExp(`fill='${hex}'`, "i").test(c)).length;
-  assert.strictEqual(fills("#0B7B75"), 1, "exactly one teal (root) field");
-  assert.strictEqual(fills("#DD8F00"), 2, "exactly two amber (tone) fields");
-  assert.ok(!/<(text|linearGradient|radialGradient|filter)\b/.test(svg), "no text, gradients or filters");
+  assert.match(svg, /<circle cx='32' cy='32' r='32' fill='#0f0e0b'\/>/, "no #0f0e0b round tile");
+  assert.ok((svg.match(/#E6C99B/g) || []).length >= 8, "the mark-small ink #E6C99B is missing");
+  assert.ok(svg.includes("id='fav-smm'") && svg.includes("url(#fav-smm)"), "the mask id is not prefixed fav-");
+  assert.ok(!/#smm\b|id='smm'/.test(svg), "an unprefixed mask id survives");
+  assert.ok(!/#0B7B75|#DD8F00/i.test(svg), "an Amara teal or amber is still in the icon");
+  assert.ok(!/<(text|title)\b|role=|aria-label=/.test(svg), "the icon carries text, a title or a role");
 });
 
 test("the touch icon and the preview image exist and are named once", async () => {
@@ -3971,6 +3969,60 @@ test("the touch icon and the preview image exist and are named once", async () =
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
   assert.strictEqual(metaContent(html, "property", "og:image:height"), "630");
+});
+
+describe("logo in the app: the header lockup", () => {
+  const header = () => {
+    const h = headHtml();
+    return h.slice(h.indexOf("<header>"), h.indexOf("</header>"));
+  };
+  const h1Html = () => /<h1>([\s\S]*?)<\/h1>/.exec(header())[1];
+
+  test("LG: the h1's accessible name is exactly Handpan Theory, once, from one hidden span", async () => {
+    const h1 = h1Html();
+    const spans = h1.match(/<span class="sr-only">[^<]*<\/span>/g) || [];
+    assert.deepStrictEqual(spans, ['<span class="sr-only">Handpan Theory</span>']);
+    const svg = /<svg\b[^>]*>/.exec(h1)[0];
+    assert.match(svg, /\baria-hidden="true"/);
+    assert.match(svg, /\bfocusable="false"/);
+    assert.ok(!/\brole=|\baria-label=/.test(svg), "the svg opening tag carries role or aria-label");
+    assert.ok(!/<title\b/.test(h1), "the svg carries a <title>");
+    const text = h1.replace(/<svg[\s\S]*?<\/svg>/, "").replace(/<[^>]*>/g, "").trim();
+    assert.strictEqual(text, "Handpan Theory");
+  });
+
+  test("LG: exactly one horizontal-full svg in the h1, no <img>, no visible Handpan Chords in the header", async () => {
+    const h1 = h1Html();
+    assert.strictEqual((h1.match(/<svg\b[^>]*viewBox="0 0 683\.93 196"/g) || []).length, 1);
+    assert.strictEqual((h1.match(/<svg\b/g) || []).length, 1);
+    assert.ok(!/<img\b/.test(header()), "an <img> is in the header");
+    const visible = header().replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<span class="sr-only">[^<]*<\/span>/g, "").replace(/<[^>]*>/g, " ");
+    assert.ok(!/Handpan Chords/.test(visible), "the header still says Handpan Chords");
+  });
+
+  test("LG: the lockup sits between the brand:lockup markers", async () => {
+    const h = headHtml();
+    const begin = h.indexOf("<!-- brand:lockup begin -->");
+    const end = h.indexOf("<!-- brand:lockup end -->");
+    assert.ok(begin > 0 && end > begin, "brand:lockup markers missing");
+    assert.strictEqual((h.slice(begin, end).match(/<svg\b/g) || []).length, 1);
+  });
+
+  test("LG: every id in index.html is unique and every svg url(#x) / href=#x resolves", async () => {
+    const h = headHtml();
+    const ids = [...h.matchAll(/\sid="([^"']+)"/g)].map((m) => m[1]);
+    const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
+    assert.deepStrictEqual([...new Set(dup)], [], "duplicate ids");
+    const lockup = h.slice(h.indexOf("<!-- brand:lockup begin -->"), h.indexOf("<!-- brand:lockup end -->"));
+    const refs = [...lockup.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)].map((m) => m[1] || m[2]);
+    assert.ok(refs.length > 0, "the lockup references nothing");
+    for (const r of refs) assert.ok(ids.includes(r), `dangling reference #${r}`);
+    for (const id of ["hpt-hfm", "hpt-hfo", "hpt-hfg", "hpt-hfs", "hpt-hfb",
+        "hpt-hfL0", "hpt-hfL1", "hpt-hfL2", "hpt-hfL3", "hpt-hfL4", "hpt-hfL5"]) {
+      assert.ok(ids.includes(id), `lockup id ${id} missing`);
+    }
+    assert.ok(!ids.some((id) => /^hf/.test(id)), "an unprefixed lockup id survives");
+  });
 });
 
 /* ================================================================ Lane S2
@@ -9617,11 +9669,9 @@ describe("discoverability: structured data", () => {
     assert.deepStrictEqual(ld["@graph"].map((n) => n["@type"]).sort(), ["WebApplication", "WebSite"]);
   });
 
-  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName", async () => {
+  test("SN: the WebSite node is named as the site name, at the canonical and og:url, with only the lowercase subdomain as alternateName", async () => {
     const html = INDEX_HTML();
     const site = node("WebSite");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(site.name, h1, `expected a WebSite node named ${SITE_NAME}`);
     assert.strictEqual(site.name, SITE_NAME, `expected a WebSite node named ${SITE_NAME}`);
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
@@ -9656,8 +9706,7 @@ describe("discoverability: structured data", () => {
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
     assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(app.name, h1, "name differs from the h1");
+    assert.strictEqual(app.name, SITE_NAME, "name differs from the site name");
     assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
     assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
   });

@@ -3918,10 +3918,15 @@ function run() {
     // 227.67, the print row's own floor still applies there); landscape
     // chrome 251.67 -> 158.67, and the card at 844x390 is 100.16 -> 167.5px
     // wide, +67.3%.
-    [390, 844, 343.19, 225.67],
-    [390, 745, 342.69, 225.67],
-    [375, 667, 306.81, 225.67],
-    [320, 568, 246.44, 227.67],
+    // Raised 2026-11-01 (logo in the app, owner Q2 2026-10-31): the header row
+    // grew from 44px to the 64px lockup (+20px; at 320 the lockup shrinks to
+    // 52.7px, +9px), so portrait chrome 225.67 -> 245.67 (320x568: 227.67 ->
+    // 236.69 measured, budget 238.67) and the card at 375x667 and 320x568 gave
+    // up 0.6% and 2.6%. Landscape does not move: the h1 stays hidden there.
+    [390, 844, 343.19, 245.67],
+    [390, 745, 342.69, 245.67],
+    [375, 667, 305.11, 245.67],
+    [320, 568, 239.91, 238.67],
     [844, 390, 167.50, 158.67],
     [926, 428, 195.02, 158.67],
   ];
@@ -3957,6 +3962,35 @@ function run() {
         }
         assert.deepStrictEqual(bad, [],
           "the practice screen's chrome has grown at the card's expense");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("lockup: the header lockup is 64px tall at 380 and inside .hrow clear of both buttons, and shrinks to fit at 320",
+    async () => {
+      await freshLoad();
+      try {
+        const bad = [];
+        for (const [vw, vh, wantH] of [[380, 740, 64], [320, 568, null]]) {
+          await b.setViewport(vw, vh, true);
+          const m = await b.eval(`
+            const r = (el) => { const x = el.getBoundingClientRect(); return {l: x.left, r: x.right, t: x.top, b: x.bottom, w: x.width, h: x.height}; };
+            const row = r(document.querySelector(".hrow"));
+            const svg = r(document.querySelector("h1 svg"));
+            return {row, svg, share: r(document.querySelector("#share-copy")),
+              settings: r(document.querySelector("#settings-trigger")),
+              scrollW: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth};
+          `);
+          const tag = `${vw}x${vh}`;
+          if (wantH !== null && Math.abs(m.svg.h - wantH) > 0.6) bad.push(`${tag}: the lockup is ${m.svg.h}px tall, want ${wantH}`);
+          if (wantH === null && !(m.svg.h < 64 && m.svg.h > 44)) bad.push(`${tag}: the lockup is ${m.svg.h}px tall, want it shrunk below 64 and above 44`);
+          if (m.svg.l < m.row.l - 0.5 || m.svg.r > m.row.r + 0.5 || m.svg.t < m.row.t - 0.5 || m.svg.b > m.row.b + 0.5) bad.push(`${tag}: the lockup leaves .hrow`);
+          if (m.svg.l < m.share.r - 0.5) bad.push(`${tag}: the lockup overlaps #share-copy`);
+          if (m.svg.r > m.settings.l + 0.5) bad.push(`${tag}: the lockup overlaps #settings-trigger`);
+          if (m.scrollW > m.cw) bad.push(`${tag}: the page scrolls sideways (${m.scrollW} > ${m.cw})`);
+        }
+        assert.deepStrictEqual(bad, []);
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -9229,8 +9263,8 @@ function run() {
     // must not shrink main or the card" - a regression that put the panel
     // back in flow would move them.
     const BASE_SCENE = {
-      "1280x800": { width: 367.984375, height: 508.1875, left: 456, right: 823.984375, top: 153.0625, bottom: 661.25 },
-      "1024x768": { width: 353.265625, height: 487.859375, left: 335.359375, right: 688.625, top: 147.234375, bottom: 635.09375 },
+      "1280x800": { width: 367.984375, height: 508.1875, left: 456, right: 823.984375, top: 163.0625, bottom: 671.25 },
+      "1024x768": { width: 353.265625, height: 487.859375, left: 335.359375, right: 688.625, top: 157.21875, bottom: 645.078125 },
     };
 
     async function sceneRect() {
@@ -14383,14 +14417,14 @@ function run() {
   });
 
   describe("discoverability", () => {
-    // .scene rect measured on origin/main (2b7dadc, before #app and #about
+    // .scene rect, origin/main (2b7dadc) re-measured with the header lockup (logo-in-app D10) (before #app and #about
     // existed) with the e2e launch (fallback fonts, scrollbars hidden) at
     // these viewports, desktop emulation (mobile: false). The wrapper and the
     // section below the first screen must not move the card (plan D20).
     const ORIGIN_SCENE = {
-      "380x780": { width: 334.390625, height: 461.78125, left: 22.796875, top: 166.265625 },
-      "320x568": { width: 247.890625, height: 342.328125, left: 36.046875, top: 120 },
-      "1024x700": { width: 321.984375, height: 444.65625, left: 351, top: 134.828125 },
+      "380x780": { width: 334.390625, height: 461.78125, left: 22.796875, top: 176.265625 },
+      "320x568": { width: 239.90625, height: 331.3125, left: 40.046875, top: 131.015625 },
+      "1024x700": { width: 314.515625, height: 434.34375, left: 354.734375, top: 149.984375 },
     };
     const VIEWPORTS = { "380x780": [380, 780], "320x568": [320, 568], "1024x700": [1024, 700] };
 
