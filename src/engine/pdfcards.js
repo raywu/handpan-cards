@@ -217,6 +217,27 @@ HPE.pdfcards = (function () {
     return { text: t.replace(/\s+$/, "") + "...", size: s };
   }
 
+  // The one name every drawn and measured spot uses: the typed name with
+  // accents stripped when that is all the print faces can draw, else the
+  // scale's auto label, else a fixed word. Never empty.
+  function drawable(text) {
+    try { HPE.pdf.stringWidth(text, "Label", 1); return true; } catch (e) { return false; }
+  }
+
+  function printName(deck) {
+    var name = String(deck.name === undefined || deck.name === null ? "" : deck.name);
+    var folded = name.normalize ? name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : name;
+    if (folded.replace(/\s+/g, "") !== "" && drawable(folded)) return folded;
+    var auto = String(deck.auto_name || "").replace(/\u2026/g, "...");
+    if (auto.replace(/\s+/g, "") !== "" && drawable(auto)) return auto;
+    return "SCALE";
+  }
+
+  function printCredit(deck) {
+    var credit = String(deck.credit === undefined || deck.credit === null ? "" : deck.credit);
+    return credit !== "" && drawable(credit) ? credit : printName(deck).toUpperCase();
+  }
+
   function cardHeader(c, x, y, w, h, deck, num, subtitle, main, sup, warnW) {
     warnW = warnW || 0;
     var numw = num ? tw(num, "Label", 4.4, 0.4) : 0.0;
@@ -469,12 +490,12 @@ HPE.pdfcards = (function () {
     var warnW = Math.max.apply(null, [0].concat(cardWarnings(deck).map(function (l) {
       return tw(l, "LabelSB", 4.0, 0.7);
     })));
-    cardHeader(c, x, y, CW, CH, deck.name, "#" + num, subtitle, main, sup, warnW);
+    cardHeader(c, x, y, CW, CH, printName(deck), "#" + num, subtitle, main, sup, warnW);
     var deg = (deck.degrees || {})[String(rootPc)];
     if (deg) {
       tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
     }
-    sideCredit(c, x, y, CW, CH, deck.credit);
+    sideCredit(c, x, y, CW, CH, printCredit(deck));
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
 
     var nb = fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
@@ -542,12 +563,13 @@ HPE.pdfcards = (function () {
 
   function titleCard(c, x, y, deck) {
     plainFrame(c, x, y, CW, CH);
-    var s = fit(deck.name, "Display", 16, CW - 24, 0.4);
-    tracked(c, x + 12, y + CH - 24, deck.name, "Display", s, s * 0.03, "l", INK);
+    var shown = printName(deck);
+    var s = fit(shown, "Display", 16, CW - 24, 0.4);
+    tracked(c, x + 12, y + CH - 24, shown, "Display", s, s * 0.03, "l", INK);
     tracked(c, x + 12, y + CH - 34, deck.sub, "Label", 4.6, 0.5, "l", SEP);
     tracked(c, x + CW - 12, y + CH - 34, "CHORD CARDS", "LabelSB", 4.6, 0.9,
             "r", SEP);
-    sideCredit(c, x, y, CW, CH, deck.credit);
+    sideCredit(c, x, y, CW, CH, printCredit(deck));
     var tops = fieldOrder(deck.spec).map(Number).filter(function (k) {
       return deck.spec[k][3] !== "bottom";
     });
@@ -561,13 +583,13 @@ HPE.pdfcards = (function () {
 
   function legendCard(c, x, y, deck) {
     plainFrame(c, x, y, CW, CH);
-    tracked(c, x + 9, y + CH - 13.5, deck.name, "Label", 4.6, 0.5, "l", INK);
+    tracked(c, x + 9, y + CH - 13.5, printName(deck), "Label", 4.6, 0.5, "l", INK);
     tracked(c, x + CW - 9, y + CH - 12.5, "LEGEND", "LabelSB", 4.2, 0.9, "r",
             INK);
     var s = fit("How to read", "Display", 20, CW * 0.62);
     tracked(c, x + CW - 9, y + CH - 34, "How to read", "Display", s, s * 0.02,
             "r", NAME);
-    sideCredit(c, x, y, CW, CH, deck.credit);
+    sideCredit(c, x, y, CW, CH, printCredit(deck));
 
     var demo = deck.legend_demo[0], demoRoot = deck.legend_demo[1];
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, deck.spec, [demo], [demoRoot]);
@@ -586,8 +608,8 @@ HPE.pdfcards = (function () {
 
   function blankCard(c, x, y, deck) {
     plainFrame(c, x, y, CW, CH, FAINT);
-    tracked(c, x + 9, y + CH - 13.5, deck.name, "Label", 4.6, 0.5, "l", FAINT);
-    sideCredit(c, x, y, CW, CH, deck.credit);
+    tracked(c, x + 9, y + CH - 13.5, printName(deck), "Label", 4.6, 0.5, "l", FAINT);
+    sideCredit(c, x, y, CW, CH, printCredit(deck));
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, deck.spec);
     c.setStrokeColor([0.88, 0.88, 0.88]); c.setLineWidth(0.5);
     c.line(x + 18, y + deck.y_note - 3, x + CW - 18, y + deck.y_note - 3);
@@ -666,12 +688,14 @@ HPE.pdfcards = (function () {
     labelRatio: labelRatio,
     labelSize: labelSize,
     numSize: numSize,
+    printName: printName,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
       tw: tw, fit: fit, labelSize: labelSize,
       numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout,
-      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip
+      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip,
+      titleCard: titleCard
     }
   };
 }());

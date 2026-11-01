@@ -4,7 +4,7 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -212,7 +212,7 @@
+@@ -214,7 +214,7 @@ HPE.pdfcards = (function () {
      while (t.length > 1 && tw(t.replace(/\s+$/, "") + "...", font, s, track) > maxw) {
        t = t.slice(0, -1);
      }
@@ -12,4 +12,4 @@ diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 +    return { text: t.replace(/\s+$/, ""), size: s };
    }
  
-   function cardHeader(c, x, y, w, h, deck, num, subtitle, main, sup, warnW) {
+   // The one name every drawn and measured spot uses: the typed name with

@@ -3129,6 +3129,69 @@ function run() {
       `only ${got.glyphs} characters of text - the fonts did not draw`);
   });
 
+  /* NAN (TRI-29): a non-ASCII name saves, survives a reload, shows in its chip
+     and prints. The print faces draw printable ASCII only, so an accented name
+     prints with its accents stripped and a name that is not drawable even then
+     prints the scale's auto label. Read off the blob, as above. */
+  test("NAN: a non-ASCII scale name saves, survives a reload, shows in its chip and prints under its stripped or auto-label name", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+    const { spawnSync } = require("node:child_process");
+    const os = require("node:os");
+    for (const name of ["Café 日本", "Café"]) {
+      await freshLoad();
+      await openSheet();
+      await typeScale(SIX_SCALES[1]);
+      await b.eval(`const el=document.getElementById("scale-name");el.value=${JSON.stringify(name)};el.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
+      await clickGenerate();
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the sheet to close after Generate with " + JSON.stringify(name) });
+      assert.ok((await chipReport()).on.includes(name), "the new chip is not labelled " + JSON.stringify(name));
+
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips after reload" });
+      const after = await chipReport();
+      assert.ok(after.chips.includes(name), "after a reload the chips are " + JSON.stringify(after.chips));
+
+      await openSettingsPanel();
+      await b.send("Page.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
+      const cap = await b.eval(`
+        return (async () => {
+          const real = URL.createObjectURL;
+          const seen = [];
+          URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
+          const btn = [...document.querySelectorAll("#settings-panel .prints button")]
+            .find(el => el.textContent.trim() === "DOWNLOAD PDF");
+          if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
+          try { btn.click(); } finally { URL.createObjectURL = real; }
+          if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
+          const u8 = new Uint8Array(await seen[0].arrayBuffer());
+          let s = "";
+          for (let i = 0; i < u8.length; i += 4096) s += String.fromCharCode.apply(null, u8.subarray(i, i + 4096));
+          return { n: u8.length, b64: btoa(s), shown: HPE.pdfcards.printName(printNameSource(deck())), file: pdfFileName(deck(), "shop", "letter") };
+        })();`);
+      assert.ok(!cap.err, cap.err);
+      assert.ok(cap.n > 10000, `the CTA produced ${cap.n} bytes for ${name}`);
+      assert.ok(/^[\x20-\x7e]+$/.test(cap.shown) && cap.shown.trim() !== "", "print name " + JSON.stringify(cap.shown));
+      assert.ok(/^[A-Za-z0-9][A-Za-z0-9_]*_CHORD_ONLY_Letter\.pdf$/.test(cap.file), "download name " + cap.file);
+      if (name === "Café") assert.strictEqual(cap.shown, "Cafe");
+      else assert.notStrictEqual(cap.shown, name, "an undrawable name must print the auto label");
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nan-pdf-"));
+      const pdf = path.join(dir, "deck.pdf");
+      fs.writeFileSync(pdf, Buffer.from(cap.b64, "base64"));
+      let r;
+      try {
+        r = spawnSync("python3", ["-c", "import sys, fitz\nd = fitz.open(sys.argv[1])\nprint(d[0].get_text('text'))", pdf], { encoding: "utf8", timeout: 120000 });
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+      assert.strictEqual(r.status, 0, `the pymupdf probe failed (install pymupdf):\n${(r.stdout || "") + (r.stderr || "")}`);
+      const squash = (t) => t.replace(/\s+/g, "").toUpperCase();
+      assert.ok(squash(r.stdout).includes(squash(cap.shown)),
+        `the sheet does not carry the print name ${JSON.stringify(cap.shown)} for ${JSON.stringify(name)}`);
+    }
+  });
+
   /* The generated-deck test above is the full pymupdf oracle (page count,
      page box, card-frame count, glyph count). This is the same claim - "a
      reader can open it" - run over a BUILT-IN deck, which as of the

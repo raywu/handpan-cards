@@ -1,0 +1,15 @@
+# kills: controls, bidi controls, line separators and lone surrogates are refused in a name (NAN)
+# suite: node --test --test-name-pattern ^controls..bidi.controls..line.separators.and.lone.surrogates.are.refused.in.a.name..NAN.$ tests/core.test.js
+# NAN: C0 controls stop being refused, so a tab or newline could reach the packed share payload.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -298,7 +298,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   // A name may hold any Unicode except C0/C1 controls and DEL (so tab and
+   // newline stay out of the packed share payload), U+2028/U+2029, the bidi
+   // embedding/override/isolate controls and lone surrogates.
+-  var NAME_REFUSED_RE = new RegExp("[\\u0000-\\u001F\\u007F-\\u009F\\u2028\\u2029\\u202A-\\u202E\\u2066-\\u2069]" +
++  var NAME_REFUSED_RE = new RegExp("[\\u007F-\\u009F\\u2028\\u2029\\u202A-\\u202E\\u2066-\\u2069]" +
+     "|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?:^|[^\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]");
+ 
+   function codePointLength(text) {
