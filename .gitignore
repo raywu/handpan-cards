@@ -4,3 +4,4 @@ tests/__pycache__/
 .quality-eval/
 .claude/persist-learnings.json
 _site/
+.context/linear-pending.jsonl
