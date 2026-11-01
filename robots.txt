@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://handpantheory.com/sitemap.xml
+Sitemap: https://handpan.raywu.org/sitemap.xml
