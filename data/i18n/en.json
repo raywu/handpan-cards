@@ -283,5 +283,10 @@
   "saved.resetFailure": "Could not reset the seeded scales. Review them and try again.",
   "saved.ackPending": "The save completed, but this view could not be refreshed. Reload to review your saved scales.",
   "saved.sessionAckPending": "The save is only in this tab, and this view could not be refreshed. Keep this tab open and keep your draft. Reloading or closing the tab loses temporary changes.",
-  "saved.sessionImportAckPending": "This shared scale is temporary, and its view could not be refreshed. Keep this tab open and keep the incoming link. Reloading or closing the tab loses temporary changes."
+  "saved.sessionImportAckPending": "This shared scale is temporary, and its view could not be refreshed. Keep this tab open and keep the incoming link. Reloading or closing the tab loses temporary changes.",
+  "move.notice": {
+    "one": "Your saved scale moved here.",
+    "other": "Your {n} saved scales moved here."
+  },
+  "move.failed": "Your saved scales are still at the old address. Open the old address again to move them."
 }

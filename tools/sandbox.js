@@ -608,6 +608,9 @@ const JS_TYPES = new Set([
 ]);
 
 function boot(opts = {}) {
+  opts = { ...opts, html: String(opts.html !== undefined ? opts.html : fs.readFileSync(APP, "utf8"))
+    .replace('const MOVE_FROM = "handpan.raywu.org";', () => "const MOVE_FROM = null;")
+    .replace('const MOVE_TARGET = "https://handpantheory.com";', () => "const MOVE_TARGET = null;") };
   const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
