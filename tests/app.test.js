@@ -3514,12 +3514,12 @@ test("print CTA: the header carries no print controls; the settings panel carrie
 });
 
 const PM_SHOP_SHA256 = {
-  "hijaz/letter": "00ebc376e2084be5426b8e58bad3f6b1bee5924e697c4fba2aafb1767d4fecce",
-  "hijaz/a4": "ef497714ae36de8888d2164cfb876850c6348e16b9aad54b55f77f75efc3c79d",
-  "pygmy/letter": "b1424caaf649f64fe6c7b22c75396a73bed970e0aa252a310c53cafc43a6163b",
-  "pygmy/a4": "3b0facbb585585722b7a7f46c647c6b332041b67632376225a7d57ed84a823b7",
-  "amara/letter": "fb154e188a1e83121286d02ecf01f0989cd620aeac30c90d9a020ea804243e1b",
-  "amara/a4": "67fe8dd28e5f4db99d105d8cefa9d5b584ee3338eeaba55291f065b852582c7e",
+  "hijaz/letter": "99daa8974a6d0ef4785e794314376d5f0daaf00e9648b68cb8370087a93c7acc",
+  "hijaz/a4": "fc8480128574008292c358d7d12f79ccace6c66e076b58902ebb51b90c18a704",
+  "pygmy/letter": "90427058108e036ff5259eef7e88078b275dae907796a6d866dcbc419417af29",
+  "pygmy/a4": "672b724d6fc3b3646c9524f9932036981fa99e5a79abe8058f071c3f71b77bb7",
+  "amara/letter": "4651c6ec91b526c5730817522a763470fc723b934e6f39e2f6b3c038548b3c69",
+  "amara/a4": "b6db7bc47c5591d70a55f5d17f2113658ab4b6d880abcc7ab28aeb86e0d1c516",
 };
 
 function pmPanel() {
