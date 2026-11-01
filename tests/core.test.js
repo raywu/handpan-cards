@@ -1669,8 +1669,9 @@ test("PR: (zone, midi) is unique across the five built-ins and the import gold c
   }
 });
 
-test("PR: with PROFILE_ENABLED off a profile is PROFILE_UNKNOWN", () => {
+test("PR: PROFILE_ENABLED is false by default and a profile is then PROFILE_UNKNOWN", () => {
   const off = profileCore(false);
+  assert.equal(off.PROFILE_ENABLED, false);
   const r = off.parseSeed(PROFILE_SEEDS.kurd, withMap(mapFor(PROFILE_SEEDS.kurd)));
   assert.equal(r.ok, false);
   assert.equal(r.code, "PROFILE_UNKNOWN");
