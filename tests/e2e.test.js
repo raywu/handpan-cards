@@ -2633,6 +2633,7 @@ function run() {
       await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-neotone");
       await b.waitFor(`document.getElementById("scale-neotone").checked`, { label: "the box to tick" });
+      await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-tab-layout");
       await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
       const m = await b.eval(`
@@ -2672,6 +2673,7 @@ function run() {
       await typeScale("[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5");
       await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-neotone");
+      await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-tab-layout");
       for (const lang of langs) {
         await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
@@ -5164,7 +5166,7 @@ function run() {
         await b.key("Tab", "Tab", 9);
         seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
       }
-      assert.deepStrictEqual(seen, ["panhit", "scale-anchor-one"]);
+      assert.deepStrictEqual(seen, ["panhit", "scale-mode-standard"]);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -5391,7 +5393,7 @@ function run() {
         return (el && (el.id || el.getAttribute("aria-label"))) || "";`);
       assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false,
         "the Edit page did not open on the Scale tab");
-      const cycle = 10;
+      const cycle = 11;
       const walk = async (start, shift) => {
         await b.eval(`document.getElementById(${JSON.stringify(start)}).focus(); return true;`);
         const seen = [];
@@ -5457,12 +5459,13 @@ function run() {
         ran.push(`${mode}/scale`);
 
         await openDrawer();
+        await b.eval(`document.getElementById("scale-anchor-between").scrollIntoView({ block: "center" }); return true;`);
         await b.click("#scale-anchor-between");
         assert.strictEqual(await b.eval(`return document.getElementById("scale-layout-reset").disabled;`), false,
           `${mode}: RESET LAYOUT is a stop only once a layout change enables it`);
         const panhit = await b.eval(`const el = document.querySelector('#scale-preview .panhit[tabindex="0"]'); return el ? (el.id || el.getAttribute("aria-label") || "") : null;`);
         assert.notStrictEqual(panhit, null, `${mode}: the plate is not a tab stop`);
-        const layoutCycle = ["scale-back", "scale-tab-layout", "scale-mode-standard", "scale-mode-neotone", panhit, "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+        const layoutCycle = ["scale-back", "scale-tab-layout", panhit, "scale-mode-standard", "scale-mode-neotone", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
           "scale-fine-toggle", "scale-layout-reset", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
         await both(`${mode} Layout tab`, layoutCycle);
         ran.push(`${mode}/layout`);
@@ -7433,6 +7436,7 @@ function run() {
       const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
       const before = await b.eval(`return window.__sgPaints;`);
       for (let i = 0; i < 10; i += 1) {
+        await b.eval(`document.getElementById("scale-fine-toggle").scrollIntoView({ block: "center" }); return true;`);
         await b.click("#scale-fine-toggle");
         await b.click("#scale-fine-toggle");
       }
@@ -8137,7 +8141,7 @@ function run() {
       for (const [w, h, vv] of [[852, 393, 193], [844, 390, 180]]) {
         await kb2bTinyOpen(w, h, vv);
         const g = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); const pad = parseFloat(getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).paddingLeft); return { left: r.left, right: r.right, pad, w: innerWidth };`);
-        assert.ok(Math.abs(g.left - (g.w - g.right)) <= 1.5, `${w}x${h}: column not centred ${JSON.stringify(g)}`);
+        assert.ok(Math.abs(g.left - (g.w - g.right)) <= 1.5, `${w}x${h}: column not centred`);
         assert.ok(g.right - g.left <= 520 && g.right - g.left >= 480, `${w}x${h}: column ${g.right - g.left}px wide, the shipped rule keeps it inside the 520px measure ${JSON.stringify(g)}`);
         await b.clearKeyboard();
       }
@@ -16071,6 +16075,7 @@ function run() {
       try{
         for(const selector of ["#scale-layout-reset","#scale-anchor-one","#scale-swatches button:nth-child(2)"])for(const dx of [40,80]){
           await spaOpen(380,780,{tab:"layout"});
+          await b.eval(`document.getElementById("scale-anchor-between").scrollIntoView({block:"center"});return true;`);
           await b.click("#scale-anchor-between");
           await b.eval(`const e=document.querySelector(${JSON.stringify(selector)});e.scrollIntoView({block:"center"});window.__spsControlClicks=0;e.addEventListener("click",()=>{window.__spsControlClicks++;},true);return true;`);
           await b.settle();await sleep(250);
@@ -16868,7 +16873,7 @@ function run() {
             `${name}: the status [${m.status.l}, ${m.status.w}] is not the tab strip's column [${m.tabs.l}, ${m.tabs.w}]`);
           assert.ok(m.status.t >= m.tabs.b - 0.5 && m.status.t - m.tabs.b <= 12, `${name}: the status top ${m.status.t} is not under the tab strip bottom ${m.tabs.b}`);
           assert.ok(m.zone.t >= m.status.b - 0.5, `${name}: the layout zone top ${m.zone.t} is above the status bottom ${m.status.b}`);
-          assert.deepStrictEqual(m.col2.slice(0, 2), ["scale-drawer-status", "scale-layout-zone"], `${name}: column 2 reads ${m.col2}`);
+          assert.deepStrictEqual(m.col2.slice(0, 3), ["scale-drawer-status", "scale-mode-row", "scale-layout-zone"], `${name}: column 2 reads ${m.col2}`);
           assert.ok(Math.abs(m.band.h - none.band.h) <= 0.5, `${name}: the band is ${m.band.h}px, ${none.band.h}px with an empty status`);
           assert.ok(Math.abs(m.pan.h - none.pan.h) <= 0.5, `${name}: the pan is ${m.pan.h}px, ${none.pan.h}px with an empty status`);
         }
@@ -17697,7 +17702,7 @@ function run() {
 
     test("PH: P3 at 390x797 a 24px finger-up drag collapses a Scale tab whose range is under the footer, 23px does not, a 24px finger-down drag restores", { timeout: 90000 }, async () => {
       try {
-        await lipOpen(390, 797, { spacer: 0 });
+        await lipOpen(390, 861, { spacer: 0 });
         const g = await gap();
         assert.ok(g.M < g.E, `this proves nothing unless the range ${g.M} is under the footer ${g.E}`);
         await pull(-23);
@@ -18000,7 +18005,7 @@ function run() {
     test("UX: a sheet whose content does not scroll never collapses", { timeout: 60000 }, async () => {
       let covered = 0;
       try {
-        for (const [w, h] of SIZES) {
+        for (const [w, h] of [...SIZES, [393, 960]]) {
           await lipOpen(w, h, { spacer: 0 });
           let s = await lipState();
           if (s.M > 1) continue;

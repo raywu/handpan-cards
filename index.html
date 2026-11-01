@@ -1654,6 +1654,12 @@ html.about-open{overflow:hidden}
     </div>
     </div>
     <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
+    <div id="scale-plate-band">
+      <div id="scale-preview" role="img"
+           aria-label="Preview of where the notes sit on the pan" hidden></div>
+      <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
+    </div>
+    <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
     <div class="editrow" id="scale-mode-row" hidden>
       <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>
       <div class="ctlrow" role="group" aria-labelledby="scale-mode-label">
@@ -1667,12 +1673,6 @@ html.about-open{overflow:hidden}
       <p class="sheethint" id="scale-neotone-unused" hidden></p>
       <p class="sheethint" id="scale-neotone-rearrange" hidden></p>
     </div>
-    <div id="scale-plate-band">
-      <div id="scale-preview" role="img"
-           aria-label="Preview of where the notes sit on the pan" hidden></div>
-      <p class="sheethint" id="scale-layout-hint">Type a scale to adjust its layout.</p>
-    </div>
-    <div id="scale-drawer-status" aria-live="polite" aria-atomic="true" hidden></div>
     <div id="scale-layout-zone">
       <div id="scale-drawer" role="group" aria-label="Layout">
         <p class="sheethint" id="scale-drawer-hint" hidden></p>
@@ -13686,6 +13686,8 @@ function paintNeotone() {
   modeNeotone.textContent = t("sheet.mode_neotone");
   neoCheckText.textContent = t("sheet.neotone_check");
   neoCheck.disabled = false;
+  modeStandard.disabled = false;
+  modeNeotone.disabled = false;
   neoCheck.checked = on;
   for (const [el, pressed] of [[modeStandard, !on], [modeNeotone, on]]) {
     el.classList.toggle("on", pressed);
@@ -15619,8 +15621,9 @@ sheet.addEventListener("keydown", e => {
   const onTab = sheetTab === "layout" ? tabLayout : tabScale;
   const shut = isLipShut();
   const stops = (sheetTab === "layout"
-    ? [backBtn, document.getElementById("scale-conflict-separate"), onTab, modeStandard, modeNeotone,
+    ? [backBtn, document.getElementById("scale-conflict-separate"), onTab,
        previewBox.querySelector('.panhit[tabindex="0"]'), previewBox.querySelector('.nhit[tabindex="0"]'),
+       modeStandard, modeNeotone,
        anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
        notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,
        ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]

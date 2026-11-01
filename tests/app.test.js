@@ -7474,7 +7474,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", async () =
         if (here === "scale-back") break;
         seen.push(here);
       }
-      const want = ["scale-tab-layout", "scale-mode-standard", "scale-mode-neotone", "plate", "scale-anchor-one",
+      const want = ["scale-tab-layout", "plate", "scale-mode-standard", "scale-mode-neotone", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
         "scale-layout-reset", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
