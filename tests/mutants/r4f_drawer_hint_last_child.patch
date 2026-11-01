@@ -9,14 +9,14 @@ diff --git a/index.html b/index.html
      <div id="scale-layout-zone">
        <div id="scale-drawer" role="group" aria-label="Layout">
 -        <p class="sheethint" id="scale-drawer-hint" hidden></p>
-         <div class="editrow" id="scale-mode-row" hidden>
-           <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>
-           <div class="ctlrow" role="group" aria-labelledby="scale-mode-label">
-@@ -1724,6 +1723,7 @@ html.about-open{overflow:hidden}
+         <div id="scale-standard">
+         <div class="editrow">
+           <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
+@@ -1714,6 +1713,7 @@ html.about-open{overflow:hidden}
          <div class="ctlrow">
            <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
          </div>
 +        <p class="sheethint" id="scale-drawer-hint" hidden></p>
          </div>
-         <div id="scale-paired" hidden>
-           <p class="sheethint" id="scale-paired-hint">Choose a note for each area. Set an area to Empty to free its note.</p>
+         <div class="editrow" id="scale-mode-row" hidden>
+           <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>

@@ -11,7 +11,7 @@ diff --git a/index.html b/index.html
 +      <p class="sheethint" id="scale-layout-state" hidden></p>
        <div id="scale-drawer" role="group" aria-label="Layout">
          <p class="sheethint" id="scale-drawer-hint" hidden></p>
-         <div class="editrow" id="scale-mode-row" hidden>
+         <div id="scale-standard">
 @@ -1788,7 +1789,6 @@ html.about-open{overflow:hidden}
      <div id="scale-guidance">
        <p id="scale-field-msg"></p>
