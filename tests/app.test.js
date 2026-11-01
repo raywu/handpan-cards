@@ -11179,7 +11179,7 @@ describe("about overlay", () => {
     assert.match(open[0], /\bhidden\b/, "the about section does not ship hidden");
     assert.ok(html.includes('</div>\n\n<section id="about"'), "#about no longer follows #app");
     const inner = aboutHtml();
-    assert.match(inner, /^\s*<div class="abouthead">\s*<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK<\/button>\s*<h2 id="about-title">About Handpan Chords<\/h2>\s*<\/div>/,
+    assert.match(inner, /^\s*<div class="abouthead">\s*<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK<\/button>\s*<h2 id="about-title">About Handpan Theory<\/h2>\s*<\/div>/,
       "the sticky header holds the exit control then the title");
     const text = textOf(inner);
     assert.ok(text.includes(VALUE_LINE));
