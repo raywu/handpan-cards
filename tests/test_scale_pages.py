@@ -915,7 +915,7 @@ class SeoDeltaTest(unittest.TestCase):
             p = Page(html_of(slug))
             with self.subTest(page=slug):
                 self.assertEqual(p.meta("og:image", "property"), SITE + "og.png")
-                self.assertEqual(p.meta("og:site_name", "property"), "Handpan Chords")
+                self.assertEqual(p.meta("og:site_name", "property"), "Handpan Theory")
                 self.assertEqual(p.meta("og:description", "property"), p.meta("description"))
                 title = [t for t in re.findall(r"<title>(.*?)</title>", html_of(slug))][0]
                 self.assertEqual(p.meta("og:title", "property"), title.replace("&amp;", "&"))
@@ -943,7 +943,7 @@ class SeoDeltaTest(unittest.TestCase):
                 self.assertEqual(graph["@type"], "WebPage")
                 self.assertEqual(graph["breadcrumb"]["@type"], "BreadcrumbList")
                 self.assertEqual(graph["mainEntity"]["@type"], "ItemList")
-                self.assertEqual(graph["publisher"], {"@type": "Organization", "name": "Handpan Chords"})
+                self.assertEqual(graph["publisher"], {"@type": "Organization", "name": "Handpan Theory"})
                 self.assertNotIn("description", graph)
                 visible = p.norm()
                 self.assertIn('<a href="/" aria-label="Handpan Theory home"', html_of(slug))
@@ -976,8 +976,8 @@ class SeoDeltaTest(unittest.TestCase):
             p = Page(html_of(slug))
             with self.subTest(page=slug):
                 self.assertNotIn("Home ›", p.norm())
-                self.assertNotIn("← Handpan Chords", p.norm())
-                self.assertIn("Handpan Chords is free in your browser", p.norm())
+                self.assertNotIn("← Handpan Theory", p.norm())
+                self.assertIn("Handpan Theory is free in your browser", p.norm())
 
     def test_links_to_handpan_101_card_count_and_descriptive_app_link(self):
         for slug in self.new_slugs():
@@ -1127,6 +1127,6 @@ class HeaderLockupTest(unittest.TestCase):
         for name in self.PAGES:
             with self.subTest(page=name):
                 src = read(name)
-                self.assertNotIn("&larr; Handpan Chords", src)
+                self.assertNotIn("&larr; Handpan Theory", src)
                 self.assertEqual(len(re.findall(r"<h1\b", src)), 1)
                 self.assertRegex(self.header(name), r"</a></p>\n(<p>.*</p>\n)?<h1>[^<]+</h1>\n")
