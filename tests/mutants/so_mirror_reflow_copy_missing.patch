@@ -1,15 +1,15 @@
-# kills: SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone
-# suite: node --test --test-name-pattern ^SO..MIRROR.BOTTOM.after.the.fold.re.flows.the.seat.numbers..moves.no.note.and.says.so..and.MIRROR.TOP.leaves.every.bottom.number.alone$ tests/app.test.js
-# MIRROR BOTTOM re-flows the numbers without saying so.
+# kills: SO: MIRROR BOTTOM after the fold reflects every note, keeps every position's number and says so, and MIRROR TOP leaves every bottom number alone
+# suite: node --test --test-name-pattern ^SO..MIRROR.BOTTOM.after.the.fold.reflects.every.note..keeps.every.position.s.number.and.says.so..and.MIRROR.TOP.leaves.every.bottom.number.alone$ tests/app.test.js
+# MIRROR BOTTOM over placed notes says nothing about the numbers.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13723,7 +13723,7 @@ mirrorBot.onclick = () => {
+@@ -14086,7 +14086,7 @@
    paintLayout(); resyncSheet(true);
    let text = t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off");
    const changed = layoutAngles ? renumbered(was, -1) : [];
--  if (changed.length) { text += t("sheet.mirror_reflow"); flashNotes(changed.map((c) => c.id)); repaintPlate(); }
-+  if (changed.length) { text += ""; flashNotes(changed.map((c) => c.id)); repaintPlate(); }
+-  if (layoutAngles && bottomMirror()) text += " " + t("sheet.mirror_keeps_numbers");
++  if (layoutAngles && bottomMirror()) text += "";
+   if (changed.length) { flashNotes(changed.map((c) => c.id)); repaintPlate(); }
    layoutStatus(text);
  };
- const pickAnchor = (to) => () => {

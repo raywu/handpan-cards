@@ -10,5 +10,5 @@ diff --git a/index.html b/index.html
  .prints #print-download{flex:3 1 auto; padding-left:6px; padding-right:6px}
 -.prints button, .prints select, #lang-select{text-align:center; text-align-last:center}
  .prints button:hover, .prints button:focus-visible,
- .prints select:hover, .prints select:focus-visible, #lang-select:hover, #lang-select:focus-visible{background:#2a251c}
- .prints button:active, .prints select:active, #lang-select:active{color:#f1ece1}
+ .prints select:hover, .prints select:focus-visible, #lang-select:hover, #lang-select:focus-visible{background:#2e281e}
+ .prints button:active, .prints select:active, #lang-select:active{color:#f6f4ed}

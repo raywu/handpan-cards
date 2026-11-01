@@ -197,9 +197,21 @@ HPE.pdfcards = (function () {
     c.roundRect(x, y, w, h, rad === undefined ? 7.0 : rad, 1, 1);
   }
 
+  var URL_MARK = { text: "handpantheory.com", size: 4.0, track: 0.3,
+                   grey: [0.604, 0.604, 0.604], creditY: 50.4 };
+
+  function urlMark(c, x, y, w, h) {
+    c.saveState();
+    c.translate(x + w - 6.0, y + 6.0);
+    c.rotate(90);
+    tracked(c, 0, 0, URL_MARK.text, "Label", URL_MARK.size, URL_MARK.track, "l",
+            URL_MARK.grey);
+    c.restoreState();
+  }
+
   function sideCredit(c, x, y, w, h, text) {
     c.saveState();
-    c.translate(x + w - 6.0, y + 12);
+    c.translate(x + w - 6.0, y + URL_MARK.creditY);
     c.rotate(90);
     tracked(c, 0, 0, text, "Label", 3.5, 0.55, "l", FAINT);
     c.restoreState();
@@ -333,19 +345,52 @@ HPE.pdfcards = (function () {
       .sort(function (a, b) { return Number(a) - Number(b); });
   }
 
+  // The paired-area profile's draw figures: a literal copy of
+  // tests/fixtures/paired_profile_v1.json (ENGINE-SPEC section 18), held equal
+  // to the fixture and to HPE.layout.PROFILE by a test. pdf_build.js loads no
+  // layout module, so the figures cannot be read from it. A geom that carries
+  // `place` is drawn from it; every other geom takes the acoustic path.
+  var PROFILE_DRAW = {
+    primary: { orbit: 0.58, r: 0.16 },
+    secondary: { orbit: 0.86, r: 0.11 },
+    ding: { r: 0.21, dy: 0 },
+    n_in: 0.052, n_out: 0.068, extent_margin: 0.06
+  };
+
+  // Print radius of a placed deck, or null for an acoustic geom: the reach is
+  // fixed by the profile (both slot kinds plus the ding edge), not by which
+  // slots are occupied.
+  function profileExtent(geom) {
+    if (!geom.place) return null;
+    var pd = PROFILE_DRAW;
+    var reach = Math.max.apply(null, [pd.primary, pd.secondary].map(function (k) {
+      return k.orbit + k.r + pd.n_out + k.r * rule().NUM_RATIO;
+    }));
+    var ding = geom.r_ding + Math.abs(geom.ding_dy || 0);
+    return Math.max(reach, ding) + pd.extent_margin;
+  }
+
+  function profileRadius(geom) {
+    var ext = profileExtent(geom);
+    return ext === null ? null : HPE.pdfdeck.bankers(74.0 / ext, 1);
+  }
+
   function drawPan(c, cx, cy, R, spec, active, roots, numbers) {
     active = active || [];
     roots = roots || [];
     numbers = numbers === undefined ? true : numbers;
     var g = spec._geom;
+    var placed = g.place;
+    var pd = PROFILE_DRAW;
+    var split = (pd.primary.orbit + pd.secondary.orbit) / 2;
     var nfs = numSize(R * g.r_note);
     c.setStrokeColor(BLACK); c.setLineWidth(1.15); c.setDash();
     c.circle(cx, cy, R, 1, 0);
-    if (g.inner_ring) {
+    if (g.inner_ring && !placed) {
       c.setLineWidth(0.6);
       c.circle(cx, cy, R * g.inner_ring, 1, 0);
     }
-    if (g.bottom) {
+    if (g.bottom && !placed) {
       c.setStrokeColor([0.90, 0.90, 0.90]); c.setLineWidth(0.7);
       c.setDash(2.2, 2.2);
       c.circle(cx, cy, R * g.bottom, 1, 0);
@@ -373,8 +418,16 @@ HPE.pdfcards = (function () {
         noteText(c, cx, cy - dy - rr0 * 0.30, nm, ov, "Label", fs0, INK);
         return;
       }
-      var orb = R * g[zone];
-      var rr = R * (zone === "bottom" ? g.r_bnote : g.r_note);
+      var orb, rr, slot;
+      if (placed) {
+        slot = placed[key];
+        ang = slot[0];
+        orb = R * slot[1];
+        rr = R * slot[2];
+      } else {
+        orb = R * g[zone];
+        rr = R * (zone === "bottom" ? g.r_bnote : g.r_note);
+      }
       var a = ang * Math.PI / 180;
       var px = cx + orb * Math.cos(a), py = cy + orb * Math.sin(a);
       drawRing(c, px, py, rr, state(i, zone === "bottom"));
@@ -383,7 +436,13 @@ HPE.pdfcards = (function () {
       noteText(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK);
       if (numbers) {
         var nr, col, fnt;
-        if (zone === "bottom") {
+        if (placed) {
+          nfs = numSize(rr);
+          nr = slot[1] > split ? orb + rr + R * pd.n_out
+                               : orb - rr - R * pd.n_in;
+          col = zone === "bottom" ? ORANGE : INK;
+          fnt = zone === "bottom" ? "LabelSB" : "Label";
+        } else if (zone === "bottom") {
           nr = orb + rr + R * g.n_out;
           col = ORANGE; fnt = "LabelSB";
         } else if (zone === "rim" && g.rim_num_out) {
@@ -475,6 +534,7 @@ HPE.pdfcards = (function () {
       tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
     }
     sideCredit(c, x, y, CW, CH, deck.credit);
+    urlMark(c, x, y, CW, CH);
     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
 
     var nb = fields.filter(function (f) { return spec[f][3] === "bottom"; }).length;
@@ -605,6 +665,8 @@ HPE.pdfcards = (function () {
 
     BLUE = deck.col_root || BLUE0;
     GREEN = deck.col_tone || GREEN0;
+    var placedR = profileRadius(deck.spec._geom);
+    if (placedR) deck = Object.assign({}, deck, { R: placedR });
 
     var doc = HPE.pdf.doc(page[0], page[1]);
     var S = slots(paper);
@@ -666,12 +728,17 @@ HPE.pdfcards = (function () {
     labelRatio: labelRatio,
     labelSize: labelSize,
     numSize: numSize,
+    profileRadius: profileRadius,
+    profileExtent: profileExtent,
+    PROFILE_DRAW: PROFILE_DRAW,
+    URL_MARK: URL_MARK,
     // exported for the port's own unit tests, not for the app
     _internal: {
       Canvas: Canvas, tracked: tracked,
       tw: tw, fit: fit, labelSize: labelSize,
       numSize: numSize, fitNote: fitNote, blurbLayout: blurbLayout,
-      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip
+      cardHeader: cardHeader, chordCard: chordCard, fitClip: fitClip,
+      titleCard: titleCard, legendCard: legendCard, blankCard: blankCard
     }
   };
 }());

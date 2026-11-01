@@ -1,4 +1,4 @@
-# kills: the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name
+# kills: the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)
 # suite: node --test --test-name-pattern ^the.title.is.the.positioning.string tests/app.test.js
 # The link-preview title drifts back to the old page name while the tab says
 # the positioning title. A shared link would then preview under a different
@@ -10,7 +10,7 @@ diff --git a/index.html b/index.html
  <link rel="canonical" href="https://handpan.raywu.org/">
  <meta property="og:type" content="website">
  <meta property="og:url" content="https://handpan.raywu.org/">
--<meta property="og:title" content="Handpan Chords: Custom Scale Chord and Progression Practice">
+-<meta property="og:title" content="Handpan Theory: Custom Scale Chord and Progression Practice">
 +<meta property="og:title" content="Handpan Chord Cards">
  <meta property="og:description" content="Chord flashcards and progressions for your handpan scale, free and without an account. Type any scale to generate its chords, or pick a built-in scale.">
  <meta property="og:image" content="https://handpan.raywu.org/og.png">

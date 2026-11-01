@@ -1,0 +1,11 @@
+# kills: test_qa_seed_page_is_dev_only_noindex_and_never_published
+# suite: python3 -m unittest -k test_qa_seed_page_is_dev_only_noindex_and_never_published tests.test_site_files
+# publish.sh drops the production-branch guard, so prod output would contain qa-seed.html.
+diff --git a/tools/publish.sh b/tools/publish.sh
+--- a/tools/publish.sh
++++ b/tools/publish.sh
+@@ -18,3 +18,3 @@
+-if [ -n "${CF_PAGES_BRANCH:-}" ] && [ "$CF_PAGES_BRANCH" != "main" ]; then
++if [ -n "${CF_PAGES_BRANCH:-}" ]; then
+   cp qa-seed.html "$out/qa-seed.html"
+ fi

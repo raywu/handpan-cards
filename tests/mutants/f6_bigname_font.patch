@@ -1,5 +1,5 @@
-# kills: the visual system's three fonts land on the elements CLAUDE.md names them for
-# suite: node --test --test-name-pattern ^the.visual.system.s.three.fonts.land.on.the.elements.CLAUDE.md.names.them.for$ tests/app.test.js
+# kills: the visual system's three fonts land on the elements docs/CARD-SPEC.md names them for
+# suite: node --test --test-name-pattern ^the.visual.system.s.three.fonts.land.on.the.elements.docs.CARD.SPEC.md.names.them.for$ tests/app.test.js
 # Swaps the chord name's Marcellus for Georgia. CLAUDE.md's "Design system"
 # names Marcellus for the chord name specifically - a silent font-stack edit here
 # would ship every card with the wrong display face and nothing would notice.

@@ -11,8 +11,8 @@ diff --git a/index.html b/index.html
 -  },
 -  {
 -  "@type": "WebSite",
--  "name": "Handpan Chords",
--  "alternateName": ["handpan.raywu.org"],
+-  "name": "Handpan Theory",
+-  "alternateName": ["Handpan Chords", "handpan.raywu.org"],
 -  "url": "https://handpan.raywu.org/"
    }
    ]

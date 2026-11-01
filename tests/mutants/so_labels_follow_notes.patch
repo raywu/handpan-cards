@@ -4,11 +4,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -665,7 +665,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-         var ids = zones[ZONES[z]];
-         for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[list[i]]][5];
+@@ -697,7 +697,7 @@
+         fields[ids[i]][5] = source[ids[map ? map[seat] : seat]][5];
        }
--      if (seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
      }
+-    if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
++
      return fields;
    }
+ 

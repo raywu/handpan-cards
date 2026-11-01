@@ -1,5 +1,5 @@
-# suite: node --test --test-name-pattern ^ET.2.rim.bottom.inner.angles.follow.CLAUDE.md.zig.zags$ tests/layout.test.js
-# kills: ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags
+# suite: node --test --test-name-pattern ^ET.2.rim.bottom.inner.angles.follow.docs.CARD.SPEC.md.zig.zags$ tests/layout.test.js
+# kills: ET-2 rim/bottom/inner angles follow docs/CARD-SPEC.md zig-zags
 # The rim steps left-first instead of odd-right, mirroring every generated rim.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js

@@ -17,6 +17,6 @@ diff --git a/index.html b/index.html
            <button class="mode" type="button" id="scale-layout-reset" disabled>RESET LAYOUT</button>
          </div>
 +        <p class="sheethint" id="scale-drawer-hint" hidden></p>
-       </div>
-     </div>
-     <!-- The card palette: the last group of the Layout tab, inside .sheetbody,
+         </div>
+         <div class="editrow" id="scale-mode-row" hidden>
+           <span class="sheetlabel" id="scale-mode-label">LAYOUT</span>

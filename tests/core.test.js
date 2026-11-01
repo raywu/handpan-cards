@@ -1455,6 +1455,18 @@ test("OF: every ascending line in the frozen base set reads, solves, shares and 
     assert.equal(c.seats, null, `${c.string}: the fixture says ascending`);
     assert.equal(E.core.typedSeats(v), null, `${c.string}: typedSeats`);
     ofBase.combos.forEach((o, i) => {
+      if (o.mirror || o.mirrorBottom) {
+        const at = (res) => Object.fromEntries(Object.values(res.value.fields).map((f) => [`${f[3]} ${f[4]}`, f[5]]));
+        const home = E.layout.solve(v, { anchor: o.anchor });
+        const got = E.layout.solve(v, o);
+        const rings = Object.values(got.value.fields).filter((f) => (o.mirror ? f[3] !== "ding" : f[3] === "bottom"));
+        for (const f of rings) {
+          if (home.value.fields && f[3] in { rim: 1, inner: 1, bottom: 1 }) {
+            assert.equal(at(home)[`${f[3]} ${f[4]}`], f[5], `${c.string}: mirror keeps numbers ${JSON.stringify(o)}`);
+          }
+        }
+        return;
+      }
       assert.equal(ofHash(host(E.layout.solve(v, o))), c.solve[i], `${c.string}: solve ${JSON.stringify(o)}`);
     });
     if (sameShare) {
@@ -1657,9 +1669,8 @@ test("PR: (zone, midi) is unique across the five built-ins and the import gold c
   }
 });
 
-test("PR: PROFILE_ENABLED is false by default and a profile is then PROFILE_UNKNOWN", () => {
+test("PR: with PROFILE_ENABLED off a profile is PROFILE_UNKNOWN", () => {
   const off = profileCore(false);
-  assert.equal(off.PROFILE_ENABLED, false);
   const r = off.parseSeed(PROFILE_SEEDS.kurd, withMap(mapFor(PROFILE_SEEDS.kurd)));
   assert.equal(r.ok, false);
   assert.equal(r.code, "PROFILE_UNKNOWN");

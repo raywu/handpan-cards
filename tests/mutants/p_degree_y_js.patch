@@ -4,7 +4,7 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -470,7 +470,7 @@
+@@ -531,7 +531,7 @@ HPE.pdfcards = (function () {
      cardHeader(c, x, y, CW, CH, deck.name, "#" + num, subtitle, main, sup, warnW);
      var deg = (deck.degrees || {})[String(rootPc)];
      if (deg) {
@@ -12,4 +12,4 @@ diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 +      tracked(c, x + 9, y + CH - 14.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
      }
      sideCredit(c, x, y, CW, CH, deck.credit);
-     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
+     urlMark(c, x, y, CW, CH);
