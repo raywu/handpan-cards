@@ -1,0 +1,15 @@
+# kills: test_credit_starts_at_credit_y_above_the_mark
+# suite: python3 -m unittest -k test_credit_starts_at_credit_y_above_the_mark tests.test_print
+# credit start reverted to 12 (py).
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -204,7 +204,7 @@ URL_TEXT = "handpantheory.com"
+ URL_SIZE = 4.0
+ URL_TRACK = 0.3
+ URL_GREY = Color(0.604, 0.604, 0.604)
+-CREDIT_Y = 50.4
++CREDIT_Y = 12
+ 
+ 
+ def url_mark(c, x, y, w, h):

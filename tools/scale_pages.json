@@ -2,15 +2,15 @@
  {
   "slug": "d-kurd-10",
   "also_try": [
-  {
-   "name": "C# Annaziska 9",
-   "href": "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"
-  },
-  {
-   "name": "C# Annaziska 13",
-   "href": "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"
-  }
- ],
+   {
+    "name": "C# Annaziska 9",
+    "href": "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"
+   },
+   {
+    "name": "C# Annaziska 13",
+    "href": "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"
+   }
+  ],
   "kind": "built-in",
   "name": "D Kurd 10",
   "root": "D",
@@ -27,7 +27,7 @@
    "tone": "#C0452C"
   },
   "accent_light": "#2563B0",
-  "accent_dark": "#7fb0ee",
+  "accent_dark": "#357CD4",
   "pick": [
    1,
    19,
@@ -43,15 +43,15 @@
  {
   "slug": "d-kurd-9",
   "also_try": [
-  {
-   "name": "C# Annaziska 9",
-   "href": "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"
-  },
-  {
-   "name": "C# Annaziska 13",
-   "href": "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"
-  }
- ],
+   {
+    "name": "C# Annaziska 9",
+    "href": "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"
+   },
+   {
+    "name": "C# Annaziska 13",
+    "href": "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"
+   }
+  ],
   "kind": "new",
   "name": "D Kurd 9",
   "root": "D",
@@ -68,7 +68,7 @@
    "tone": "#C0452C"
   },
   "accent_light": "#2563B0",
-  "accent_dark": "#3D81D6",
+  "accent_dark": "#357CD4",
   "pick": [
    1,
    19,
@@ -98,7 +98,7 @@
    "root": "#C9971E",
    "tone": "#6D40A3"
   },
-  "accent_light": "#926E16",
+  "accent_light": "#8A6715",
   "accent_dark": "#C9971E",
   "pick": [
    1,
@@ -129,7 +129,7 @@
    "root": "#E2761B",
    "tone": "#E0559A"
   },
-  "accent_light": "#B25D15",
+  "accent_light": "#A95814",
   "accent_dark": "#E2761B",
   "pick": [
    1,
@@ -161,7 +161,7 @@
    "tone": "#3B7A2A"
   },
   "accent_light": "#B3263A",
-  "accent_dark": "#DA5366",
+  "accent_dark": "#D8465B",
   "pick": [
    1,
    2,
@@ -192,7 +192,7 @@
    "tone": "#DD8F00"
   },
   "accent_light": "#0B7B75",
-  "accent_dark": "#0D918A",
+  "accent_dark": "#0D8C86",
   "pick": [
    1,
    2,
@@ -223,7 +223,7 @@
    "tone": "#B3263A"
   },
   "accent_light": "#3B7A2A",
-  "accent_dark": "#489433",
+  "accent_dark": "#448C30",
   "pick": [
    1,
    2,
@@ -254,7 +254,7 @@
    "tone": "#DD8F00"
   },
   "accent_light": "#0B7B75",
-  "accent_dark": "#0D918A",
+  "accent_dark": "#0D8C86",
   "pick": [
    1,
    29,
@@ -285,7 +285,7 @@
    "tone": "#C9971E"
   },
   "accent_light": "#6D40A3",
-  "accent_dark": "#9870C7",
+  "accent_dark": "#9269C4",
   "pick": [
    1,
    2,
@@ -316,7 +316,7 @@
    "tone": "#C9971E"
   },
   "accent_light": "#6D40A3",
-  "accent_dark": "#9870C7",
+  "accent_dark": "#9269C4",
   "pick": [
    1,
    21,
@@ -347,7 +347,7 @@
    "tone": "#2563B0"
   },
   "accent_light": "#C0452C",
-  "accent_dark": "#D45D44",
+  "accent_dark": "#D15238",
   "pick": [
    1,
    2,
@@ -378,7 +378,7 @@
    "tone": "#C0452C"
   },
   "accent_light": "#2563B0",
-  "accent_dark": "#3D81D6",
+  "accent_dark": "#357CD4",
   "pick": [
    1,
    23,
@@ -413,7 +413,7 @@
    "tone": "#B3263A"
   },
   "accent_light": "#3B7A2A",
-  "accent_dark": "#489433",
+  "accent_dark": "#448C30",
   "pick": [
    1,
    2,
@@ -443,7 +443,7 @@
    "root": "#E0559A",
    "tone": "#E2761B"
   },
-  "accent_light": "#D3277C",
+  "accent_light": "#CF267A",
   "accent_dark": "#E0559A",
   "pick": [
    1,
@@ -474,7 +474,7 @@
    "root": "#E0559A",
    "tone": "#E2761B"
   },
-  "accent_light": "#D3277C",
+  "accent_light": "#CF267A",
   "accent_dark": "#E0559A",
   "pick": [
    1,
@@ -505,7 +505,7 @@
    "root": "#DD8F00",
    "tone": "#0B7B75"
   },
-  "accent_light": "#9E6600",
+  "accent_light": "#996300",
   "accent_dark": "#DD8F00",
   "pick": [
    1,

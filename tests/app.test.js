@@ -808,7 +808,7 @@ test("GENERATE on a zero-chord pan refuses with a message, keeps the selection, 
 
 test("the share version guard rejects a newer payload with NEEDS_NEWER_APP", async () => {
   const app = boot();
-  const current = app.get("SHARE_VERSION");
+  const current = app.get("newestRecordVersion()");
   assert.strictEqual(app.get(`checkShareVersion(${current}).ok`), true);
   const res = plain(app.get(`checkShareVersion(${current + 1})`));
   assert.strictEqual(res.ok, false);
@@ -1363,7 +1363,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -3351,7 +3351,7 @@ test("the sheet's text inputs stay at 16px in every rule that sets their size, m
  * everywhere else (labels/UI, and the page's own body font). Parsed straight
  * out of the CSS text rather than restated as a DOM check, since the sandbox
  * has no layout engine to read computed styles from. */
-test("the visual system's three fonts land on the elements CLAUDE.md names them for", async () => {
+test("the visual system's three fonts land on the elements docs/CARD-SPEC.md names them for", async () => {
   const css = require("node:fs").readFileSync(
     require("node:path").join(__dirname, "..", "index.html"), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "");
@@ -3514,12 +3514,12 @@ test("print CTA: the header carries no print controls; the settings panel carrie
 });
 
 const PM_SHOP_SHA256 = {
-  "hijaz/letter": "00ebc376e2084be5426b8e58bad3f6b1bee5924e697c4fba2aafb1767d4fecce",
-  "hijaz/a4": "ef497714ae36de8888d2164cfb876850c6348e16b9aad54b55f77f75efc3c79d",
-  "pygmy/letter": "b1424caaf649f64fe6c7b22c75396a73bed970e0aa252a310c53cafc43a6163b",
-  "pygmy/a4": "3b0facbb585585722b7a7f46c647c6b332041b67632376225a7d57ed84a823b7",
-  "amara/letter": "fb154e188a1e83121286d02ecf01f0989cd620aeac30c90d9a020ea804243e1b",
-  "amara/a4": "67fe8dd28e5f4db99d105d8cefa9d5b584ee3338eeaba55291f065b852582c7e",
+  "hijaz/letter": "99daa8974a6d0ef4785e794314376d5f0daaf00e9648b68cb8370087a93c7acc",
+  "hijaz/a4": "fc8480128574008292c358d7d12f79ccace6c66e076b58902ebb51b90c18a704",
+  "pygmy/letter": "90427058108e036ff5259eef7e88078b275dae907796a6d866dcbc419417af29",
+  "pygmy/a4": "672b724d6fc3b3646c9524f9932036981fa99e5a79abe8058f071c3f71b77bb7",
+  "amara/letter": "4651c6ec91b526c5730817522a763470fc723b934e6f39e2f6b3c038548b3c69",
+  "amara/a4": "b6db7bc47c5591d70a55f5d17f2113658ab4b6d880abcc7ab28aeb86e0d1c516",
 };
 
 function pmPanel() {
@@ -3891,7 +3891,7 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
   assert.ok(tableToken, "the --table token itself is missing");
   assert.strictEqual(themeColor[1].toLowerCase(), tableToken[1].toLowerCase(),
     "theme-color does not equal the --table token");
-  assert.strictEqual(themeColor[1].toLowerCase(), "#1a1815");
+  assert.strictEqual(themeColor[1].toLowerCase(), "#0f0e0b");
   assert.match(html, /<meta\s+name="color-scheme"\s+content="dark">/,
     "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
 });
@@ -3918,16 +3918,14 @@ function linkHref(html, rel, extra = "") {
   return m[1];
 }
 
-const POSITIONING_TITLE = "Handpan Chords: Custom Scale Chord and Progression Practice";
+const POSITIONING_TITLE = "Handpan Theory: Custom Scale Chord and Progression Practice";
 
-test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name", async () => {
+test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)", async () => {
   const html = headHtml();
   const title = /<title>([^<]*)<\/title>/.exec(html);
   assert.ok(title, "no <title>");
-  const h1 = /<h1>([^<]*)<\/h1>/.exec(html);
-  assert.ok(h1, "no <h1>");
+  assert.ok(/<h1>/.test(html), "no <h1>");
   assert.strictEqual(title[1], POSITIONING_TITLE);
-  assert.strictEqual(h1[1], "Handpan Chords");
   assert.strictEqual(metaContent(html, "property", "og:title"), title[1]);
   assert.strictEqual(metaContent(html, "name", "twitter:title"), title[1]);
 });
@@ -3944,18 +3942,18 @@ test("the description says free and progressions early, equals og:description an
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
 });
 
-test("the favicon is an inline SVG data URI drawing the Amara Dm card", async () => {
+test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a round tile", async () => {
   const html = headHtml();
   const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
   assert.ok(href.startsWith("data:image/svg+xml,"), "the SVG icon is not a data: URI");
   const svg = decodeURIComponent(href.slice("data:image/svg+xml,".length));
   assert.match(svg, /^<svg[^>]*\sviewBox='0 0 64 64'/, "the SVG has no 64x64 viewBox");
-  const circles = svg.match(/<circle\b[^>]*>/g) || [];
-  assert.strictEqual(circles.length, 11, "the icon should draw 11 circles");
-  const fills = (hex) => circles.filter((c) => new RegExp(`fill='${hex}'`, "i").test(c)).length;
-  assert.strictEqual(fills("#0B7B75"), 1, "exactly one teal (root) field");
-  assert.strictEqual(fills("#DD8F00"), 2, "exactly two amber (tone) fields");
-  assert.ok(!/<(text|linearGradient|radialGradient|filter)\b/.test(svg), "no text, gradients or filters");
+  assert.match(svg, /<circle cx='32' cy='32' r='32' fill='#0f0e0b'\/>/, "no #0f0e0b round tile");
+  assert.ok((svg.match(/#E6C99B/g) || []).length >= 8, "the mark-small ink #E6C99B is missing");
+  assert.ok(svg.includes("id='fav-smm'") && svg.includes("url(#fav-smm)"), "the mask id is not prefixed fav-");
+  assert.ok(!/#smm\b|id='smm'/.test(svg), "an unprefixed mask id survives");
+  assert.ok(!/#0B7B75|#DD8F00/i.test(svg), "an Amara teal or amber is still in the icon");
+  assert.ok(!/<(text|title)\b|role=|aria-label=/.test(svg), "the icon carries text, a title or a role");
 });
 
 test("the touch icon and the preview image exist and are named once", async () => {
@@ -3971,6 +3969,60 @@ test("the touch icon and the preview image exist and are named once", async () =
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
   assert.strictEqual(metaContent(html, "property", "og:image:height"), "630");
+});
+
+describe("logo in the app: the header lockup", () => {
+  const header = () => {
+    const h = headHtml();
+    return h.slice(h.indexOf("<header>"), h.indexOf("</header>"));
+  };
+  const h1Html = () => /<h1>([\s\S]*?)<\/h1>/.exec(header())[1];
+
+  test("LG: the h1's accessible name is exactly Handpan Theory, once, from one hidden span", async () => {
+    const h1 = h1Html();
+    const spans = h1.match(/<span class="sr-only">[^<]*<\/span>/g) || [];
+    assert.deepStrictEqual(spans, ['<span class="sr-only">Handpan Theory</span>']);
+    const svg = /<svg\b[^>]*>/.exec(h1)[0];
+    assert.match(svg, /\baria-hidden="true"/);
+    assert.match(svg, /\bfocusable="false"/);
+    assert.ok(!/\brole=|\baria-label=/.test(svg), "the svg opening tag carries role or aria-label");
+    assert.ok(!/<title\b/.test(h1), "the svg carries a <title>");
+    const text = h1.replace(/<svg[\s\S]*?<\/svg>/, "").replace(/<[^>]*>/g, "").trim();
+    assert.strictEqual(text, "Handpan Theory");
+  });
+
+  test("LG: exactly one horizontal-full svg in the h1, no <img>, no visible Handpan Chords in the header", async () => {
+    const h1 = h1Html();
+    assert.strictEqual((h1.match(/<svg\b[^>]*viewBox="0 0 683\.93 196"/g) || []).length, 1);
+    assert.strictEqual((h1.match(/<svg\b/g) || []).length, 1);
+    assert.ok(!/<img\b/.test(header()), "an <img> is in the header");
+    const visible = header().replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<span class="sr-only">[^<]*<\/span>/g, "").replace(/<[^>]*>/g, " ");
+    assert.ok(!/Handpan Chords/.test(visible), "the header still says Handpan Chords");
+  });
+
+  test("LG: the lockup sits between the brand:lockup markers", async () => {
+    const h = headHtml();
+    const begin = h.indexOf("<!-- brand:lockup begin -->");
+    const end = h.indexOf("<!-- brand:lockup end -->");
+    assert.ok(begin > 0 && end > begin, "brand:lockup markers missing");
+    assert.strictEqual((h.slice(begin, end).match(/<svg\b/g) || []).length, 1);
+  });
+
+  test("LG: every id in index.html is unique and every svg url(#x) / href=#x resolves", async () => {
+    const h = headHtml();
+    const ids = [...h.matchAll(/\sid="([^"']+)"/g)].map((m) => m[1]);
+    const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
+    assert.deepStrictEqual([...new Set(dup)], [], "duplicate ids");
+    const lockup = h.slice(h.indexOf("<!-- brand:lockup begin -->"), h.indexOf("<!-- brand:lockup end -->"));
+    const refs = [...lockup.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)].map((m) => m[1] || m[2]);
+    assert.ok(refs.length > 0, "the lockup references nothing");
+    for (const r of refs) assert.ok(ids.includes(r), `dangling reference #${r}`);
+    for (const id of ["hpt-hfm", "hpt-hfo", "hpt-hfg", "hpt-hfs", "hpt-hfb",
+        "hpt-hfL0", "hpt-hfL1", "hpt-hfL2", "hpt-hfL3", "hpt-hfL4", "hpt-hfL5"]) {
+      assert.ok(ids.includes(id), `lockup id ${id} missing`);
+    }
+    assert.ok(!ids.some((id) => /^hf/.test(id)), "an unprefixed lockup id survives");
+  });
 });
 
 /* ================================================================ Lane S2
@@ -4099,7 +4151,7 @@ test("the re-roll control reads as a button in mode S and reverts outside it", a
   app.run('setMode("A")');
   assert.ok(!app.els.shuffle.classList.contains("reroll"), "leaving S must drop .reroll");
   const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
-  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #433b2c/,
+  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #3a352d/,
     ".reroll must borrow button.nav's border so it reads as a button");
   assert.match(html, /\.shuffle\.reroll:active\{background:#2e281e\}/,
     ".reroll must press like button.nav:active, not only recolour its text");
@@ -5999,6 +6051,42 @@ test("W1 line 12: MIRROR TOP sets the deck's mirror option and moves the preview
   assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
 });
 
+const MN_KURD = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const mnNumberLine = (deck, main) => {
+  const chord = deck.chords.find((c) => c.main === main && !c.sup);
+  return chord.fields.map((f) => deck.fields[f][5]).join("-");
+};
+
+test("MN: D Kurd 10 with MIRROR TOP reads Bb3 as 3 and the Dm number line 5-7-9, and unmirrored it reads 4-6-8", async () => {
+  const plain = (await w1Generate(MN_KURD)).deck;
+  const mirrored = (await w1Generate(MN_KURD, ["scale-mirror"])).deck;
+  assert.strictEqual(mnNumberLine(plain, "Dm"), "4-6-8");
+  assert.strictEqual(mnNumberLine(mirrored, "Dm"), "5-7-9");
+  const bb = Object.values(mirrored.fields).find((f) => f[0] === "Bb" && f[1] === 3);
+  assert.strictEqual(bb[5], "3");
+  assert.strictEqual(bb[4], 310);
+});
+
+test("MN: app and print agree on a mirrored deck: the pdfcards deck carries the diagram's slot 5 for every field", async () => {
+  const { deck } = await w1Generate(MN_KURD, ["scale-mirror"]);
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const built = E.pdfdeck.fromGenerated({ deck });
+  for (const id of Object.keys(deck.fields)) {
+    if (deck.fields[id][3] === "ding") continue;
+    assert.strictEqual(built.spec[String(id)][5], deck.fields[id][5], `field ${id}`);
+  }
+});
+
+test("MN: the title card omits the TONEFIELD NUMBERS line when the top is mirrored, and keeps it unmirrored or with only the bottom mirrored", async () => {
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const lines = async (seed, ids) => E.pdfdeck.fromGenerated({ deck: (await w1Generate(seed, ids)).deck }).legend_lines;
+  const has = (l) => l.some((x) => x.startsWith("TONEFIELD NUMBERS RUN 1 - "));
+  assert.strictEqual(has(await lines(W1_BOTTOM, [])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror-bottom"])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror"])), false);
+  assert.strictEqual(has(await lines(MN_KURD, ["scale-mirror"])), false);
+});
+
 test("W1 line 110: MIRROR TOP moves every off-axis rim and inner field and no bottom field; MIRROR BOTTOM moves bottom fields only", async () => {
   const base = fieldAngles((await w1Generate(W1_FULL)).deck);
   const top = fieldAngles((await w1Generate(W1_FULL, ["scale-mirror"])).deck);
@@ -7477,7 +7565,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", async () =
       const want = ["scale-tab-layout", "plate", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
-        "scale-layout-reset", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
+        "scale-layout-reset", "scale-mode-standard", "scale-mode-paired", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
       const ctx = `edit=${edit} open=${open}: ${seen}`;
       assert.deepStrictEqual(seen, want, ctx);
       assert.strictEqual(seen.filter((x) => x === "plate").length, 1, "the plate is more than one Tab stop");
@@ -8419,9 +8507,9 @@ function dr3Surface(text) {
 }
 
 const DR3_UNMOVED = {
-  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "1856c1443e4f94b5" },
-  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "0f301fb6f96fd339" },
-  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "ec89ff32a29a1e29" },
+  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "77d68a8b11aa417b" },
+  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "0a36f7923b3edc90" },
+  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "c145121fbca4d228" },
 };
 
 test("rule N: a deck with no moved seat is byte-identical in generateDeck output, card markup and PDF", async () => {
@@ -9454,7 +9542,7 @@ test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script car
   const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
     .replace(/<!--[\s\S]*?-->/g, "");
   assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
-    ["scale-name-row", undefined, undefined],
+    ["scale-name-row", undefined, "scale-mode-row", undefined],
     "an .editrow other than the name row, the layout zone's own and the palette's is in .sheetbody");
   assert.ok(/class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">/.test(body), "the last .editrow is not the palette's");
 
@@ -9571,7 +9659,7 @@ describe("discoverability: structured data", () => {
     assert.strictEqual(hits.length, 1, `expected exactly one ${type} node`);
     return hits[0];
   };
-  const SITE_NAME = "Handpan Chords";
+  const SITE_NAME = "Handpan Theory";
 
   test("SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node", async () => {
     const ld = ldBlock();
@@ -9581,21 +9669,37 @@ describe("discoverability: structured data", () => {
     assert.deepStrictEqual(ld["@graph"].map((n) => n["@type"]).sort(), ["WebApplication", "WebSite"]);
   });
 
-  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName", async () => {
+  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with Handpan Chords and the lowercase host as alternateName", async () => {
     const html = INDEX_HTML();
     const site = node("WebSite");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(site.name, h1, `expected a WebSite node named ${SITE_NAME}`);
     assert.strictEqual(site.name, SITE_NAME, `expected a WebSite node named ${SITE_NAME}`);
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["handpan.raywu.org"]);
-    for (const a of site.alternateName) {
-      assert.strictEqual(a, a.toLowerCase());
-      assert.strictEqual(a, new URL(canonical).host);
-    }
+    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpan.raywu.org"]);
+    const hostEntry = site.alternateName[1];
+    assert.strictEqual(hostEntry, hostEntry.toLowerCase());
+    assert.strictEqual(hostEntry, new URL(canonical).host);
     assert.deepStrictEqual(Object.keys(site).sort(), ["@type", "alternateName", "name", "url"]);
+  });
+
+  test("SN: WebApplication carries Handpan Chords as its only alternateName", async () => {
+    assert.deepStrictEqual(node("WebApplication").alternateName, ["Handpan Chords"]);
+  });
+
+  test("NS: no visible text says Handpan Chords", async () => {
+    const root = path.join(__dirname, "..");
+    const bad = /Handpan Chords|Handpan Chord Cards/;
+    const files = ["404.html", "scales/index.html", "handpan-101/index.html", "llms.txt", "README.md"];
+    for (const d of fs.readdirSync(path.join(root, "scales"), { withFileTypes: true })) {
+      if (d.isDirectory()) files.push(`scales/${d.name}/index.html`);
+    }
+    for (const f of files) {
+      const src = fs.readFileSync(path.join(root, f), "utf8").replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "");
+      assert.ok(!bad.test(src), `${f} still shows the old name`);
+    }
+    const idx = INDEX_HTML().replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "").replace(/<script>const I18N[\s\S]*?<\/script>/, "").replace(/<!--[\s\S]*?-->/g, "");
+    assert.ok(!bad.test(idx), "index.html still shows the old name");
   });
 
   test("SN: og:site_name equals the WebSite name and appears once", async () => {
@@ -9620,8 +9724,7 @@ describe("discoverability: structured data", () => {
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
     assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(app.name, h1, "name differs from the h1");
+    assert.strictEqual(app.name, SITE_NAME, "name differs from the site name");
     assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
     assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
   });
@@ -10882,14 +10985,16 @@ describe("share icon", () => {
     assert.match(r, /z-index:29/);
     assert.ok(!/margin-top/.test(r), "margin-top is still there");
     assert.match(r, /min-height:44px/);
+    assert.match(r, /border-radius:12px/);
     assert.match(r, /font-size:16px/);
     assert.match(rule(c, "header") || "", /position:relative/);
     assert.match(rule(c, "#share-copy:disabled") || "", /opacity:\.5/);
-    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
+    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#1a1814/);
   });
 
-  test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {
+  test("SI: the glyph is two rotated stadiums drawn at stroke-width 2 (CSS overrides the 2.4 attribute)", async () => {
     assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
+    assert.match(rule(css(), "#share-copy svg g") || "", /stroke-width:2\b(?!\.)/);
   });
 });
 
@@ -11074,7 +11179,7 @@ describe("about overlay", () => {
     assert.match(open[0], /\bhidden\b/, "the about section does not ship hidden");
     assert.ok(html.includes('</div>\n\n<section id="about"'), "#about no longer follows #app");
     const inner = aboutHtml();
-    assert.match(inner, /^\s*<div class="abouthead">\s*<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK<\/button>\s*<h2 id="about-title">About Handpan Chords<\/h2>\s*<\/div>/,
+    assert.match(inner, /^\s*<div class="abouthead">\s*<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK<\/button>\s*<h2 id="about-title">About Handpan Theory<\/h2>\s*<\/div>/,
       "the sticky header holds the exit control then the title");
     const text = textOf(inner);
     assert.ok(text.includes(VALUE_LINE));
@@ -14306,29 +14411,28 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", async () => {
-    const app0 = await open();
-    slide(app0, "C3", 320);
+    const app0 = await open("[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    slide(app0, "C3", 0);
+    const kept = JSON.stringify(ang(app0));
+    app0.run("solvePreviewLayout = () => null");
     app0.els["scale-mirror-bottom"].click();
     assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
     assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
     assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED")());
     assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
+    assert.strictEqual(JSON.stringify(ang(app0)), kept, "a refused toggle restores the angles as well as the mirror");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
-      const app = await open();
-      slide(app, "C3", 320);
+      const app = await open(btn === "scale-mirror-bottom" ? "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4" : FPD);
+      slide(app, "C3", btn === "scale-mirror-bottom" ? 0 : 320);
       const before = JSON.stringify(ang(app));
       const pressed = app.els[btn].getAttribute("aria-pressed");
       app.els[btn].click();
       const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
       assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
-      if (btn === "scale-mirror-bottom") {
-        assert.strictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: refused`);
-        assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
-      } else {
-        assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a top-shell toggle never moves a bottom note, so it is not refused`);
-        assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
-      }
-      assert.strictEqual(JSON.stringify(ang(app)), before);
+      assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a toggle that is not a real overlap is never refused`);
+      assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
+      if (btn === "scale-mirror-bottom") assert.strictEqual(JSON.stringify(ang(app)), JSON.stringify({ bottom: [180, null, null, null, null] }));
+      else assert.strictEqual(JSON.stringify(ang(app)), before);
       await generateClick(app);
       assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
     }
@@ -15325,8 +15429,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share","move.notice","move.failed"],addedPluralKeys=["move.notice"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), and move.notice / move.failed (domain move handoff)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],pairedKeys=["sheet.layout_mode","sheet.mode_standard","sheet.mode_paired","sheet.paired_hint","sheet.paired_count","sheet.paired_area_main","sheet.paired_area_small","sheet.paired_empty","sheet.paired_note_bottom","sheet.paired_note_in","sheet.reset_areas","sheet.areas_reset","sheet.paired_incomplete","sheet.paired_dropped","sheet.areas_label","reason.PROFILE_UNKNOWN","reason.PROFILE_MAP_INVALID","reason.PROFILE_NOTE_MISSING","reason.PROFILE_NOTE_TWICE","reason.PROFILE_FULL","reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...pairedKeys],addedPluralKeys=["move.notice"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers (MN), move.notice / move.failed (domain move handoff) and the twenty-one Paired areas keys (Neotone lane U and its nits)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -15696,7 +15800,7 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     assert.strictEqual(soLabel(app, 105), "U2");
   });
 
-  test("SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone", async () => {
+  test("SO: MIRROR BOTTOM after the fold reflects every note, keeps every position's number and says so, and MIRROR TOP leaves every bottom number alone", async () => {
     const app = await soOpen();
     app.run("layoutAngles = { bottom: [300, 60, 0, 180, 240, 120] }; resyncSheet(true)");
     const ang = [101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id));
@@ -15706,13 +15810,11 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     app.els["scale-mirror"].click();
     app.els["scale-mirror-bottom"].click();
     assert.strictEqual(d2Status(app),
-      "Bottom mirror on. The notes you placed stay put, and their seat numbers now run the other way round.");
-    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang);
-    const after = soLabels(app);
-    assert.deepStrictEqual(after, ["U2", "U6", "U4", "U3", "U1", "U5"]);
-    const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
-    assert.ok(changed.length > 0, "the mirror renumbered");
-    assert.deepStrictEqual(soFlash(app), changed.sort());
+      "Bottom mirror on. Every note swaps sides, the ones you placed too. Numbers stay with their places.");
+    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang.map((a) => (540 - a) % 360));
+    const pairs = (as, ls) => as.map((a, k) => `${a}=${ls[k]}`).sort();
+    assert.deepStrictEqual(pairs([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), soLabels(app)), pairs(ang, labels),
+      "every position keeps its number");
   });
 });
 
@@ -18732,6 +18834,372 @@ describe("NS: native share", () => {
       const v = i18n(code)["header.share"];
       assert.ok(typeof v === "string" && v.length > 0, code);
     }
+  });
+});
+
+/* ---- Neotone lane U: Standard | Paired areas on the Layout tab ----
+ * Profile scales save as v5 records and share as v7 links. A profile record
+ * never carries `replaces` (owner rule I1), so a profile SAVE on a seeded scale
+ * is a separate custom entry and never a slot owner. */
+describe("PAU: paired areas sheet, saves and links", () => {
+  const areaSelects = (app) => app.els["scale-areas"].children.map((row) => row.children[1]);
+  const pickArea = (app, i, value) => {
+    const select = areaSelects(app)[i];
+    select.value = value;
+    select.onchange();
+  };
+  const openPaired = (app, text = AMARA_STRING) => {
+    openSheet(app);
+    app.type(text);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-mode-paired"].click();
+  };
+  const profileOf = (app, text, extra = {}) => plain(app.get(`(() => {
+    const s = HPE.core.parseSeed(${JSON.stringify(text)});
+    const p = HPE.layout.proposeProfile(s.value.fields);
+    return { palette: 1, ...${JSON.stringify(extra)}, profile: { id: "paired", rev: 1, map: p.value } };
+  })()`));
+  const entries = (app) => savedEnvelope(app).entries;
+  const OWNER = "00000000-0000-4000-8000-000000000001";
+
+  test("PAU1: the Layout tab offers Standard and Paired areas; Paired areas lists 18 areas, every note assigned", async () => {
+    const app = boot();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.els["scale-mode-row"].hidden, false);
+    assert.strictEqual(app.els["scale-mode-standard"].textContent, "STANDARD");
+    assert.strictEqual(app.els["scale-mode-paired"].textContent, "PAIRED AREAS");
+    assert.strictEqual(app.els["scale-mode-standard"].getAttribute("aria-pressed"), "true");
+    assert.strictEqual(app.els["scale-paired"].hidden, true);
+    app.els["scale-mode-paired"].click();
+    assert.strictEqual(app.els["scale-paired"].hidden, false);
+    assert.strictEqual(app.els["scale-standard"].hidden, true);
+    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true");
+    const selects = areaSelects(app);
+    assert.strictEqual(selects.length, 18);
+    const notes = app.get("profileNoteList.length");
+    assert.strictEqual(selects.filter((s) => s.value !== "").length, notes);
+    assert.strictEqual(app.els["scale-paired-count"].textContent, `Assigned ${notes} of ${notes}`);
+    assert.strictEqual(selects[0].children[0].textContent, "Empty");
+    assert.strictEqual(app.els["scale-areas"].children[0].children[0].textContent, "Area 1 · main");
+    assert.strictEqual(app.els["scale-areas"].children[9].children[0].textContent, "Area 1 · small");
+  });
+
+  test("PAU2: Standard restores the draft and the sheet options carry no profile", async () => {
+    const app = boot();
+    openPaired(app);
+    assert.deepStrictEqual(Object.keys(plain(app.get("sheetOptions()"))).sort(), ["palette"],
+      "paired options hold no mirror, anchor, seats, angles or replaces");
+    app.els["scale-mode-standard"].click();
+    assert.strictEqual(app.els["scale-standard"].hidden, false);
+    assert.strictEqual(app.els["scale-paired"].hidden, true);
+    const o = plain(app.get("sheetOptions()"));
+    assert.ok("anchor" in o && "mirror" in o && "mirrorBottom" in o);
+    assert.strictEqual(app.get("commitOptions().profile"), undefined);
+  });
+
+  test("PAU3: an incomplete map blocks SAVE with the message and focuses the first empty area", async () => {
+    const app = boot();
+    openPaired(app);
+    const before = decks(app).length;
+    pickArea(app, 0, "");
+    assert.strictEqual(app.get("unassignedNotes().length"), 1);
+    await generateClick(app);
+    assert.strictEqual(decks(app).length, before, "nothing was saved");
+    assert.strictEqual(app.sheetOpen(), true);
+    assert.strictEqual(app.announcer().textContent, "Notes without an area: 1. Give each note an area.");
+    assert.strictEqual(app.get("document.activeElement === areasBox.children[0].children[1]"), true);
+  });
+
+  test("PAU4: a note already in another area is disabled in the other selects, and RESET AREAS restores the proposal", async () => {
+    const app = boot();
+    openPaired(app);
+    const proposal = plain(app.get("profileMap"));
+    const taken = proposal.find((k) => k !== null);
+    const at = proposal.indexOf(taken);
+    const other = areaSelects(app)[at === 0 ? 1 : 0].children.find((o) => o.value === taken);
+    assert.strictEqual(other.disabled, true);
+    pickArea(app, at, "");
+    assert.strictEqual(plain(app.get("profileMap"))[at], null);
+    app.els["scale-areas-reset"].click();
+    assert.deepStrictEqual(plain(app.get("profileMap")), proposal);
+    assert.strictEqual(app.get("document.activeElement === areasReset"), true);
+  });
+
+  test("PAU5: a paired SAVE writes a v5 record with the profile, no mirror, anchor or replaces", async () => {
+    const app = await durableBoot();
+    openPaired(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    const rows = entries(app);
+    assert.strictEqual(rows.length, 1);
+    const r = rows[0].record;
+    assert.strictEqual(r.v, 5);
+    assert.strictEqual(r.o.profile.id, "paired");
+    assert.strictEqual(r.o.profile.rev, 1);
+    assert.strictEqual(r.o.profile.map.length, 18);
+    for (const name of ["mirror", "mirrorBottom", "anchor", "seats", "angles", "replaces"]) {
+      assert.strictEqual(name in r.o, false, name + " is absent from a profile record");
+    }
+    assert.ok(app.currentDeck().geom.place, "the saved deck is placed by area");
+  });
+
+  test("PAU6: a paired SAVE on a seeded scale is a separate custom entry, never a slot owner (rule I1)", async () => {
+    const app = await durableBoot();
+    const builtIn = decks(app)[0];
+    app.select(builtIn.id);
+    app.clickChip(builtIn.name);
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-mode-paired"].click();
+    await generateClick(app);
+    await writeBarrier(app);
+    const env = savedEnvelope(app);
+    assert.strictEqual(env.entries.length, 1);
+    assert.strictEqual(env.entries[0].record.v, 5);
+    assert.strictEqual("replaces" in env.entries[0].record.o, false);
+    assert.deepStrictEqual(env.slots, {}, "no slot is owned");
+    assert.deepStrictEqual(env.hidden, [], "the seeded scale stays visible");
+    assert.ok(decks(app).some((d) => d.id === builtIn.id), "the seeded scale is still in the list");
+  });
+
+  test("PAU7: editing a profile scale and switching to Standard writes a v4 record without profile", async () => {
+    const app = await durableBoot();
+    openPaired(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    assert.strictEqual(entries(app)[0].record.v, 5);
+    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
+    app.click(app.els["scale-tab-layout"]);
+    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true", "an edit of a profile scale opens in Paired areas");
+    app.els["scale-mode-standard"].click();
+    await generateClick(app);
+    await writeBarrier(app);
+    const rows = entries(app);
+    assert.strictEqual(rows.length, 1, "the edit replaced the row in place");
+    assert.strictEqual(rows[0].record.v, 4);
+    assert.strictEqual("profile" in rows[0].record.o, false);
+  });
+
+  test("PAU8: editing a profile scale keeps v5 and the edited map", async () => {
+    const app = await durableBoot();
+    openPaired(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
+    app.click(app.els["scale-tab-layout"]);
+    const map = plain(app.get("profileMap"));
+    const at = map.findIndex((k) => k !== null);
+    const taken = map[at];
+    const to = map.findIndex((k, i) => k === null && i > at);
+    pickArea(app, at, "");
+    pickArea(app, to, taken);
+    await generateClick(app);
+    await writeBarrier(app);
+    const rows = entries(app);
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].record.v, 5);
+    assert.strictEqual(rows[0].record.o.profile.map[at], null);
+    assert.strictEqual(rows[0].record.o.profile.map[to], taken);
+  });
+
+  test("PAU9: a slot-owning replacement edited into Paired areas saves a separate entry and keeps the owner", async () => {
+    const record = { v: 4, s: AMARA_STRING, o: { name: "MY AMARA", palette: 2, replaces: "amara" } };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: { amara: OWNER }, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    assert.strictEqual(app.currentDeck().name, "MY AMARA");
+    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
+    app.click(app.els["scale-tab-layout"]);
+    app.els["scale-mode-paired"].click();
+    await generateClick(app);
+    await writeBarrier(app);
+    const after = savedEnvelope(app);
+    assert.strictEqual(after.entries.length, 2, "a separate entry was added");
+    const owner = after.entries.find((e) => e.instanceId === OWNER);
+    assert.deepStrictEqual(owner.record, record, "the slot owner is byte-identical");
+    assert.deepStrictEqual(after.slots, { amara: OWNER });
+    const added = after.entries.find((e) => e !== owner);
+    assert.strictEqual(added.record.v, 5);
+    assert.strictEqual("replaces" in added.record.o, false);
+  });
+
+  test("PAU10: readSavedRecord treats a v5 record with replaces as opaque, and a v5 without a profile or a v4 with one", async () => {
+    const app = boot();
+    const base = profileOf(app, AMARA_STRING);
+    const ok = (record) => app.get(`readSavedRecord(${JSON.stringify(record)}).ok`);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: base }), true);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: { ...base, replaces: "amara" } }), false);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: { palette: 1 } }), false, "v5 without a profile");
+    assert.strictEqual(ok({ v: 4, s: AMARA_STRING, o: base }), false, "v4 carrying a profile");
+  });
+
+  test("PAU11: savedCandidate refuses 5 without a profile and 4 with a profile, and a profile replace-builtin", async () => {
+    const app = boot();
+    const base = profileOf(app, AMARA_STRING);
+    const accepts = (v, withProfile, type = "import") => app.get(`(() => {
+      const o = ${JSON.stringify(withProfile ? base : { palette: 1 })};
+      const b = buildGenerated(${JSON.stringify(AMARA_STRING)}, o);
+      return savedCandidate({ type: ${JSON.stringify(type)}, candidate: { record: { ...scaleRecord(seedOf(b.value)), v: ${v} }, deck: b.value } }).ok;
+    })()`);
+    assert.strictEqual(accepts(5, true), true);
+    assert.strictEqual(accepts(4, false), true);
+    assert.strictEqual(accepts(5, false), false);
+    assert.strictEqual(accepts(4, true), false);
+    assert.strictEqual(accepts(5, true, "replace-builtin"), false);
+  });
+
+  test("PAU12: a v7 link decodes to a paired scale; a Standard scale still shares as a v6 link", async () => {
+    const app = boot();
+    const options = profileOf(app, AMARA_STRING);
+    const wire = (opts) => plain(app.get(`(() => { const s = HPE.core.parseSeed(${JSON.stringify(AMARA_STRING)}); return HPE.share.encode({ fields: s.value.fields, options: ${JSON.stringify(opts)} }); })()`));
+    const v7 = wire(options);
+    assert.strictEqual(v7.ok, true, v7.reason);
+    assert.strictEqual(v7.value.charAt(0), "7");
+    assert.strictEqual(wire({ palette: 1 }).value.charAt(0), "6", "an acoustic link is still a v6 link");
+    assert.strictEqual(app.get(`HPE.share.decode(${JSON.stringify(v7.value)}).value.options.profile.id`), "paired");
+  });
+
+  test("PAU13: the profile map joins a scale's saved meaning; an acoustic scale's meaning is unchanged", async () => {
+    const app = boot();
+    const meaning = (opts) => JSON.parse(app.get(`savedMeaning(buildGenerated(${JSON.stringify(AMARA_STRING)}, ${JSON.stringify(opts)}).value)`));
+    const acoustic = meaning({ palette: 1 });
+    const paired = meaning(profileOf(app, AMARA_STRING));
+    assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
+    assert.deepStrictEqual(paired.slice(0, acoustic.length).slice(2), acoustic.slice(2));
+    assert.strictEqual(paired[paired.length - 1].length, 18);
+  });
+
+  test("PAU14: a profile edit aimed at a slot owner is refused as profile-owns-slot and writes nothing", async () => {
+    const record = { v: 4, s: AMARA_STRING, o: { name: "MY AMARA", palette: 2, replaces: "amara" } };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: { amara: OWNER }, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    const before = JSON.stringify(savedEnvelope(app));
+    const res = plain(app.get(`(() => {
+      const o = ${JSON.stringify(profileOf(app, AMARA_STRING))};
+      const b = buildGenerated(${JSON.stringify(AMARA_STRING)}, o);
+      const candidate = { record: { ...scaleRecord(seedOf(b.value)), v: 5 }, deck: b.value };
+      const command = { type: "edit", collectionId: savedState.collectionId, instanceId: ${JSON.stringify(OWNER)}, expectedRevision: 1, candidate };
+      const staged = stageSavedEnvelope(savedState);
+      return applySavedCommand(staged, command, savedCandidate(command));
+    })()`));
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.detail, "profile-owns-slot");
+    assert.strictEqual(JSON.stringify(savedEnvelope(app)), before);
+  });
+
+  test("PAU15: growing a Paired scale past 18 notes drops to Standard and says so through the sheet guidance", async () => {
+    const app = boot();
+    openPaired(app);
+    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true");
+    app.type("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6");
+    assert.strictEqual(app.els["scale-mode-standard"].getAttribute("aria-pressed"), "true", "the mode fell back to Standard");
+    assert.strictEqual(app.els["scale-msg"].textContent, app.get(`t("sheet.paired_dropped")`));
+    assert.strictEqual(app.els["scale-msg"].classList.contains("warn"), true);
+    assert.ok(!/deck/i.test(app.els["scale-msg"].textContent), "visible text never says deck");
+  });
+
+  test("PAU16: #scale-areas has its own accessible name, not the LAYOUT label", async () => {
+    const app = boot();
+    openPaired(app);
+    const box = app.els["scale-areas"];
+    assert.strictEqual(box.getAttribute("aria-label"), app.get(`t("sheet.areas_label")`));
+    assert.strictEqual(box.getAttribute("aria-labelledby"), null);
+  });
+});
+
+describe("MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included", () => {
+  const SEED = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const bottoms = (app) => [101, 102, 103].map((id) => `${app.get(`lastSolved.fields[${id}][4]`)}=${app.get(`lastSolved.fields[${id}][5]`)}`);
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("MN3: MIRROR BOTTOM after sliding C3 to 300 reflects it to 240, leaves the unplaced notes to the solver, and the numbers stay with the positions", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(ang(app), { bottom: [240, null, null] });
+    assert.strictEqual(app.get("lastSolved.fields[101][4]"), 240);
+    const mirroredHome = app.get("JSON.stringify(HPE.layout.solve(lastSeed,{mirrorBottom:true,anchor:anchor,angles:null}).value.fields[102][4])");
+    assert.strictEqual(String(app.get("lastSolved.fields[102][4]")), mirroredHome);
+  });
+
+  test("MN3: MIRROR BOTTOM with no hand-placed notes leaves layoutAngles null", async () => {
+    const app = await dgOpen({}, SEED);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(app.get("bottomMirror()"), true);
+  });
+
+  test("MN3: toggling MIRROR BOTTOM twice returns the identical layoutAngles, drawing and share string", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    const start = ang(app);
+    const link = app.get("JSON.stringify(sheetOptions())");
+    const drawn = bottoms(app);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.deepStrictEqual(ang(app), start);
+    assert.strictEqual(app.get("JSON.stringify(sheetOptions())"), link);
+    assert.deepStrictEqual(bottoms(app), drawn);
+  });
+
+  test("MN3: the MIRROR BOTTOM notice says every note swaps sides, the placed ones too, not that they stay put", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    const text = app.els["scale-drawer-status"].textContent;
+    assert.ok(text.includes(JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"))["sheet.mirror_keeps_numbers"]), text);
+    assert.doesNotMatch(text, /stay put/);
+    assert.match(text, /placed too/);
+    assert.doesNotMatch(text, /too close/);
+  });
+
+  test("MN3: RESET LAYOUT after a toggle clears the angles", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+  });
+});
+
+describe("MN3: a 5-note bottom ring toggles", () => {
+  test("MN3: a 5-note bottom ring with a slid note reflects it on MIRROR BOTTOM instead of refusing (MN2 refused)", async () => {
+    const app = await dgOpen({}, "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    DG.moveTo(app, g, 315, 200);
+    DG.release(app, g, 315, 200);
+    const start = JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+    assert.deepStrictEqual(start, { bottom: [0, null, null, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(layoutAngles)")), { bottom: [180, null, null, null, null] });
+    assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/);
   });
 });
 

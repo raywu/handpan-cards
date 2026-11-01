@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1410,7 +1410,7 @@ html.about-open{overflow:hidden}
+@@ -1511,7 +1511,7 @@ html.about-open{overflow:hidden}
  <div class="announce" role="status" aria-live="polite"></div>
  </div>
  
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +<section id="about" aria-labelledby="about-title" role="dialog" aria-modal="true">
    <div class="abouthead">
      <button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK</button>
-     <h2 id="about-title">About Handpan Chords</h2>
+     <h2 id="about-title">About Handpan Theory</h2>

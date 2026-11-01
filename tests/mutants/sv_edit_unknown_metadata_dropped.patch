@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10530,7 +10530,7 @@ function savedCandidate(command) {
+@@ -10997,7 +10997,7 @@ function savedCandidate(command) {
  }
- const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles"];
+ const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles", "profile"];
  function savedEditedRecord(target, candidate) {
--  const out = { ...savedClone(target), v: SHARE_VERSION, s: candidate.record.s };
-+  const out = { v: SHARE_VERSION, s: candidate.record.s };
+-  const out = { ...savedClone(target), v: candidate.record.v, s: candidate.record.s };
++  const out = { v: candidate.record.v, s: candidate.record.s };
    const options = savedObject(target.o) ? { ...savedClone(target.o) } : {};
    for (const name of SAVED_PORTABLE_OPTIONS) delete options[name];
    for (const name of SAVED_PORTABLE_OPTIONS) if (savedOwn(candidate.record.o || {}, name)) options[name] = savedClone(candidate.record.o[name]);

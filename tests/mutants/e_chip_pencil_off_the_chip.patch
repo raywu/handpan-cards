@@ -9,7 +9,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -258,7 +258,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
+@@ -260,7 +260,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     Row 262 is why it appears nowhere else: any affordance on a NON-selected
     chip invites a fix that opens Edit from one, and deleteDeck still drops
     focus to <body> on that path. */
@@ -17,4 +17,4 @@ diff --git a/index.html b/index.html
 +.chip.editable::after{content:"\270E"; position:absolute; left:-9999px; font-size:12px; line-height:1;
    opacity:.85}
  .chip .dot{display:inline-block; width:9px; height:9px; border-radius:50%;
-   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%)}
+   margin-right:6px; vertical-align:-1px; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%);

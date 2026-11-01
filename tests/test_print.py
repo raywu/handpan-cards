@@ -585,6 +585,130 @@ class HeaderWorstCaseTest(PaletteSafeTest):
 
 
 # --------------------------------------------------------------------------
+# print URL mark (docs/plans/2026-10-31-print-url-mark.md)
+# --------------------------------------------------------------------------
+URL = "handpantheory.com"
+ASCENT, DESCENT = 1.011, 0.353
+
+
+def _url_glyphs(canvas):
+    rot = [t for t in canvas.texts if t["rotated"]]
+    tail = rot[-len(URL):] if len(rot) >= len(URL) else []
+    return tail if "".join(t["text"] for t in tail) == URL else []
+
+
+def _rotated_box(glyphs, size):
+    xs = [g["x"] for g in glyphs]
+    assert max(xs) - min(xs) < 1e-6
+    x = xs[0]
+    y0 = min(g["y"] for g in glyphs)
+    y1 = max(g["y"] + g["w"] for g in glyphs)
+    return (x - size * ASCENT, y0, x + size * DESCENT, y1)
+
+
+def _overlap_gap(a, b):
+    dx = max(a[0] - b[2], b[0] - a[2], 0.0)
+    dy = max(a[1] - b[3], b[1] - a[3], 0.0)
+    return math.hypot(dx, dy)
+
+
+def _non_url_boxes(canvas):
+    boxes = []
+    credit = [t for t in canvas.texts if t["rotated"] and t not in _url_glyphs(canvas)]
+    if credit:
+        boxes.append(_rotated_box(credit, credit[0]["size"]))
+    groups = {}
+    for t in canvas.texts:
+        if t["rotated"]:
+            continue
+        groups.setdefault((round(t["y"], 3), t["font"], round(t["size"], 4)), []).append(t)
+    for (y, _f, size), gl in groups.items():
+        boxes.append((min(g["x"] for g in gl), y - size * DESCENT,
+                      max(g["x"] + g["w"] for g in gl), y + size * ASCENT))
+    for c in canvas.circles:
+        boxes.append((c["x"] - c["r"], c["y"] - c["r"],
+                      c["x"] + c["r"], c["y"] + c["r"]))
+    return boxes
+
+
+class PrintUrlMarkTest(unittest.TestCase):
+    """The print-only handpantheory.com mark: one per chord card, up the right edge."""
+
+    def test_constants_are_the_plan_values(self):
+        self.assertEqual(hifi.URL_TEXT, URL)
+        self.assertEqual(hifi.URL_SIZE, 4.0)
+        self.assertEqual(hifi.URL_TRACK, 0.3)
+        self.assertEqual(rgb(hifi.URL_GREY), (0.604, 0.604, 0.604))
+        self.assertEqual(hifi.CREDIT_Y, 50.4)
+
+    def test_every_chord_card_has_one_mark_reading_bottom_to_top(self):
+        for deck, i, chord in every_card():
+            with self.subTest(deck=deck["name"], card=i):
+                cv = render_chord_card(deck, i, chord)
+                gl = _url_glyphs(cv)
+                self.assertEqual("".join(g["text"] for g in gl), URL)
+                ys = [g["y"] for g in gl]
+                self.assertEqual(ys, sorted(ys), "reads bottom to top")
+
+    def test_size_and_colour(self):
+        for deck, i, chord in every_card():
+            gl = _url_glyphs(render_chord_card(deck, i, chord))
+            for g in gl:
+                self.assertGreaterEqual(g["size"], 3.6)
+                self.assertEqual(g["size"], 4.0)
+                self.assertEqual(rgb(g["fill"]), (0.604, 0.604, 0.604))
+
+    def test_inside_the_frame_and_its_rounded_corner(self):
+        for deck, i, chord in every_card():
+            with self.subTest(deck=deck["name"], card=i):
+                x0, y0, x1, y1 = _rotated_box(
+                    _url_glyphs(render_chord_card(deck, i, chord)), 4.0)
+                self.assertGreaterEqual(x0, 2.8)
+                self.assertLessEqual(x1, hifi.CW - 2.8)
+                self.assertGreaterEqual(y0 - 0.0, 2.8)
+                self.assertLessEqual(y1, hifi.CH - 2.8)
+                cx, cy, r = hifi.CW - 2.8 - 4.2, 2.8 + 4.2, 4.2
+                corner = (x1, y0)
+                if corner[0] > cx and corner[1] < cy:
+                    self.assertLessEqual(math.hypot(corner[0] - cx, corner[1] - cy), r)
+
+    def test_lower_end_is_the_footer_baseline_on_every_card(self):
+        for deck, i, chord in every_card():
+            gl = _url_glyphs(render_chord_card(deck, i, chord))
+            self.assertAlmostEqual(gl[0]["y"], 6.0, places=6)
+
+    def test_warning_stays_left_of_the_mark_column(self):
+        for deck, i, chord in every_card():
+            cv = render_chord_card(deck, i, chord)
+            for t in cv.texts:
+                if not t["rotated"] and t["y"] < 12:
+                    self.assertLessEqual(t["x"] + t["w"], hifi.CW - 16 + 1e-6)
+
+    def test_clear_of_every_other_mark_by_one_point(self):
+        for deck, i, chord in every_card():
+            with self.subTest(deck=deck["name"], card=i):
+                cv = render_chord_card(deck, i, chord)
+                mark = _rotated_box(_url_glyphs(cv), 4.0)
+                for b in _non_url_boxes(cv):
+                    self.assertGreaterEqual(_overlap_gap(mark, b), 1.0, b)
+
+    def test_credit_starts_at_credit_y_above_the_mark(self):
+        for deck, i, chord in every_card():
+            cv = render_chord_card(deck, i, chord)
+            credit = [t for t in cv.texts if t["rotated"] and t not in _url_glyphs(cv)]
+            self.assertAlmostEqual(min(t["y"] for t in credit), hifi.CREDIT_Y, places=6)
+            mark = _rotated_box(_url_glyphs(cv), 4.0)
+            self.assertGreaterEqual(hifi.CREDIT_Y - mark[3], 3.9)
+
+    def test_title_legend_and_blank_cards_carry_no_mark(self):
+        for deck in ALL_DECKS:
+            for fn in (hifi.title_card, hifi.legend_card, hifi.blank_card):
+                cv = RecordingCanvas()
+                fn(cv, 0.0, 0.0, deck)
+                self.assertEqual(_url_glyphs(cv), [], fn.__name__)
+
+
+# --------------------------------------------------------------------------
 # sheet layout
 # --------------------------------------------------------------------------
 class SlotsTest(unittest.TestCase):

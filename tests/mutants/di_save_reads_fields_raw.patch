@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13490,7 +13490,7 @@ async function runGenerate(separate = false) {
+@@ -14388,7 +14388,7 @@ async function runGenerate(separate = false) {
    say("","");
    try {
      buildRefused=true;
--    const built=buildGenerated(String(scaleBox.value||""),sheetOptions());
-+    const built=buildGenerated(base?FIELD_KEYS.map(k=>fieldEls[k].value).join(" "):String(scaleBox.value||""),sheetOptions());
+-    const built=buildGenerated(String(scaleBox.value||""),commitOptions());
++    const built=buildGenerated(base?FIELD_KEYS.map(k=>fieldEls[k].value).join(" "):String(scaleBox.value||""),commitOptions());
      if(!built.ok){refusal=reasonText(built);showRefusal(refusal);return;}
      buildRefused=false;
      const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};
