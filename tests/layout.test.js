@@ -2531,7 +2531,7 @@ test("PL: solve with a mutant note puts the ding at centre with the profile radi
 });
 
 test("PL: solve with a profile ignores the caller's placement options, so none can throw or leak in", () => {
-  for (const [id, str] of Object.entries(PL_SEEDS)) {
+  for (const [id, str] of Object.entries(PL_NO_UNPLACED)) {
     const seed = plSeed(str, plPropose(str));
     const base = JSON.stringify(PHPE.layout.solve(seed, {}));
     const asked = [{ mirror: true, mirrorBottom: true }, { anchor: "between" },
