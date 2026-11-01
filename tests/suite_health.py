@@ -48,7 +48,7 @@ FLOORS = {
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 16,
-    "tests/test_icons.py": 4,
+    "tests/test_icons.py": 6,
     "tests/test_scale_pages.py": 84,
     "tests/test_site_files.py": 14,
     "tests/test_ci_scope.py": 5,
