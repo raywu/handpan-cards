@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9913,7 +9913,7 @@ function checkShareVersion(v) {
+@@ -10371,7 +10371,7 @@ function checkShareVersion(v) {
      return { ok: false, code: "BAD_NOTE",
               reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(v).slice(0, 12)) };
    }
--  return v > SHARE_VERSION ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
-+  return v > SHARE_VERSION + 1 ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
+-  return v > newestRecordVersion() ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
++  return v > newestRecordVersion() + 1 ? engineErr("NEEDS_NEWER_APP") : { ok: true, value: v };
  }
  
  // D14: what travels is the SEED, never the generated deck, so an old link

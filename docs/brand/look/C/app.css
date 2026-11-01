@@ -1,0 +1,105 @@
+/* Direction C - "Bolder than the board, colour-led".
+   The current scale's root colour leaves the card and enters the chrome:
+   a far wash at the top and bottom of the ground, the active chip, the
+   selected mode buttons, the panel headings, links, focus and the
+   progression underline. The ground AT the card is the darkest value on the
+   page (#0A0908), so the frame gets every bit of contrast a dark ground can
+   give it; the colour lives in the margins, never against the frame.
+   CSS only; the app sets --root/--tone on <html> per scale, so this follows. */
+:root{
+  --g0:#0A0908;            /* ground at the card: darker than the board's #0F0E0B */
+  --surf:#1A1814;          /* board surface */
+  --surf2:#12100D;         /* sheets, panel */
+  --hair:#3A352D;          /* board hairline */
+  --txt:#F6F4ED; --txt2:#A9A39A;
+  --teal:#44E0D8; --gold:#F5C78E;
+  --table:var(--g0); --table2:var(--g0);
+  /* root colour lifted to OKLCH L>=0.74: >=6.8:1 on every surface here for all 10 palettes */
+  --rootL:oklch(from var(--root) max(l, .74) c h);
+  --rootWash:color-mix(in oklab, var(--root) 42%, transparent);
+  --rootTint:color-mix(in oklab, var(--root) 24%, var(--surf));
+}
+html{background-color:var(--g0)}
+/* Two washes, both in fixed px so they stop well short of the card at any
+   viewport: 150px down from the top edge (header + chips only), 96px up from
+   the bottom edge (behind the arrows). The middle band, where the card sits,
+   is flat --g0. */
+body{
+  color:var(--txt);
+  background:
+    radial-gradient(75% 150px at 50% 0, var(--rootWash), transparent 100%),
+    radial-gradient(70% 96px at 50% 100%, color-mix(in oklab, var(--root) 24%, transparent), transparent 100%),
+    var(--g0);
+}
+
+/* ---- header: lockup + orbit rule ---------------------------------------- */
+/* portrait/desktop only: in landscape (max-height:520px) the app hides the h1
+   and flattens .hrow; the lockup must not undo that */
+@media (min-height:521px){
+  .hrow{position:relative; padding-bottom:var(--sp-2)}
+  .hrow::after{content:""; position:absolute; left:18%; right:18%; bottom:0; height:1.5px;
+    background:linear-gradient(90deg, transparent, var(--teal) 30%, var(--gold) 70%, transparent);
+    opacity:.75; pointer-events:none}
+  h1{height:64px; font-size:0; color:transparent; overflow:hidden;
+    background:url(/_look/logo/horizontal-full.svg) center/contain no-repeat}
+}
+
+/* ---- buttons -------------------------------------------------------------- */
+.mode, button.nav, .shuffle.reroll, .prints button, .prints select, #lang-select,
+#share-url{background:var(--surf); border-color:var(--hair); color:var(--txt)}
+#share-copy, #settings-trigger, button.nav{border-radius:12px}
+.mode:hover, button.nav:hover, .prints button:hover{border-color:var(--rootL)}
+button.nav{color:var(--rootL); font-size:20px}
+button.nav:active, .prints select:hover{background:var(--rootTint)}
+.mode.on, #settings-trigger[aria-expanded="true"]{background:var(--rootTint); color:#fff;
+  border-color:var(--rootL); box-shadow:inset 0 0 0 .5px var(--rootL)}
+:focus-visible{outline-color:var(--rootL)}
+
+/* ---- chips ---------------------------------------------------------------- */
+.chip{background:var(--surf); border:1.5px solid var(--hair); color:var(--txt2)}
+/* every dot gets a light keyline, so a dark root (purple, blue, crimson)
+   still reads as a mark on the dark chip */
+.chip .dot{box-shadow:0 0 0 1.5px rgba(246,244,237,.82); width:10px; height:10px}
+.chip.on{border-image:none; border:1.5px solid oklch(from var(--dga) max(l, .74) c h);
+  background:color-mix(in oklab, var(--dga) 24%, var(--surf)); color:#fff;
+  box-shadow:0 0 0 3px color-mix(in oklab, var(--dga) 26%, transparent)}
+
+/* ---- footer / progression ------------------------------------------------- */
+.count{color:var(--txt2)}
+.count.seq{color:var(--txt2)}
+.seq-rail b{color:var(--txt); text-decoration-color:var(--rootL); text-decoration-thickness:2px}
+.seq-style{color:var(--txt2)}
+.seq-style b{color:var(--rootL)}
+.shuffle{color:var(--txt2)}
+.shuffle.on{color:var(--rootL)}
+
+/* ---- settings panel / sheets --------------------------------------------- */
+#settings-panel{background:
+  radial-gradient(110% 180px at 50% 0, var(--rootWash), transparent 100%), var(--surf2)}
+.panel-heading{color:var(--rootL)}
+.panel-note, .panel-note a{color:var(--txt2)}
+.panel-note a{text-decoration-color:var(--rootL)}
+@media (min-width:1024px) and (min-height:700px){
+  #settings-panel{background:var(--surf2);
+    border-left:1px solid color-mix(in oklab, var(--rootL) 45%, var(--hair))}
+}
+#scale-sheet, .sheetsurf, #scale-sheet.lipped #scale-guidance{background:var(--surf2)}
+.sheetlabel{color:var(--rootL)}
+
+/* ---- About ---------------------------------------------------------------- */
+#about{background:var(--g0); color:var(--txt)}
+/* the sticky head is box-limited (520px), so a wash there shows hard sides on
+   desktop; the head stays flat and carries the root as a 2px rule instead */
+.abouthead{background:var(--g0); border-bottom:2px solid transparent;
+  border-image:linear-gradient(90deg, var(--rootL), color-mix(in oklab, var(--rootL) 0%, transparent)) 1}
+#about h2{color:var(--txt)}
+#about h3{color:var(--rootL)}
+#about h4{color:var(--txt2)}
+#about a{color:var(--txt); text-decoration-color:var(--rootL); text-decoration-thickness:2px}
+
+/* landscape phones: the card starts ~60px from the top, so the wash shrinks
+   to the chip row only and the bottom wash goes */
+@media (max-height:520px){
+  body{background:
+    radial-gradient(75% 46px at 50% 0, var(--rootWash), transparent 100%), var(--g0)}
+}

@@ -4,11 +4,11 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -459,6 +459,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -771,6 +771,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    function solve(seedOrFields, options) {
      var source = fieldsOf(seedOrFields);
      var zones = collect(source);
 +    if (zones.rim.length > 11) return err("TOO_MANY_RIM");
  
      var seedOptions = (seedOrFields && seedOrFields.options) || {};
-     var mirrors = resolveMirrors(options, seedOptions);
+     if (seedOptions.profile !== undefined && seedOptions.profile !== null) {

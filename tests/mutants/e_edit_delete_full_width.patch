@@ -11,6 +11,6 @@ diff --git a/index.html b/index.html
  #scale-del-note:empty{display:none}
 -#scale-delete{width:auto; min-height:44px; padding:12px 14px; background:none; border:none;
 +#scale-delete{width:100%; min-height:44px; padding:12px 14px; background:none; border:none;
-   color:#a79d8b; font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em;
+   color:#a9a39a; font:600 9.5px/1.5 "Nunito Sans"; letter-spacing:.13em;
    text-transform:uppercase; cursor:pointer}
  .announce{width:100%; max-width:520px; margin-top:var(--sp-2); text-align:center;

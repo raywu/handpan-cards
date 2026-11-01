@@ -1,4 +1,4 @@
-# kills: the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name
+# kills: the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)
 # suite: node --test --test-name-pattern ^the.title.is.the.positioning.string tests/app.test.js
 # The tab title goes back to the bare app name, dropping the positioning
 # words a searcher types.
@@ -7,7 +7,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -18,7 +18,7 @@
       autofill) before the app's own CSS has painted anything. -->
- <meta name="theme-color" content="#1a1815">
+ <meta name="theme-color" content="#0f0e0b">
  <meta name="color-scheme" content="dark">
 -<title>Handpan Chords: Custom Scale Chord and Progression Practice</title>
 +<title>Handpan Chords</title>

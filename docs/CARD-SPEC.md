@@ -63,8 +63,26 @@ exactly where its diagram has it.
 - One direction: odd rim notes right, even left. `anchor: one` (default) puts
   note 1 at bottom centre; `anchor: between` (Pygmy) puts bottom centre between
   notes 1 and 2, note 1 on the right. "left-first"/"right-first" are retired words.
-- MIRROR reflects rim and inner rings and is the only thing that puts odd notes
-  on the left; `mirrorBottom` reflects the bottom ring and defaults to `mirror`.
+- MIRROR reflects the NOTES of the rim and inner rings; `mirrorBottom` does the
+  same for the bottom ring and defaults to `mirror`. Index numbers never move:
+  each position keeps its unmirrored number and the note mirrored into it takes
+  that number on the diagram, the number line and the drawer (owner 2026-10-30;
+  rule N extended). The sheet's MIRROR BOTTOM toggle reflects EVERY note, the
+  hand-placed ones included: an explicit angle `a` in `options.angles.bottom`
+  becomes `180 - a mod 360` (`HPE.layout.reflectAngles`; null entries stay null
+  because `solve` already reflects them), so a note at 285 goes to 255 and the
+  note that was at its mirror partner goes the other way (owner 2026-10-31,
+  superseding MN2's hold-the-orphans rule S). Numbers stay with positions: after
+  the reflection they are re-ranked around the ring by the cyclic rule N against
+  the unmirrored home. Pygmy C3 slid 300 -> 285 reads U1; with MIRROR BOTTOM on
+  C3 is at 255 and reads U2, and Db3 (home 240, now at 300) reads U1. Multiples
+  of 5 reflect to multiples of 5 and the top shell is symmetric, so the toggle is
+  never refused for an accepted layout (any ring size, the 5- and 7-note rings
+  included); toggling twice returns the identical layout. Stored angles are
+  drawn angles in their own frame, so saved scales and share links draw exactly
+  as before (tests "MN3: reflectAngles reflects explicit entries ...", "MN3 release
+  safety: records and v6 links ...", "MN3: across bottom rings of 2..8 notes ...").
+  RESET LAYOUT clears every angle.
 - Inner notes (after the inner bar): one at top centre, two at 128 and 52, more
   fan across the top half; they push the ding toward the player by at least
   0.1425R, raised step by step while an inner index number would touch the ding

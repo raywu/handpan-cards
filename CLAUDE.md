@@ -1,4 +1,3 @@
-
 # CLAUDE.md - Handpan Chord Cards
 
 Product guardrails and hard requirements only. Feature specs live in
@@ -40,13 +39,22 @@ A chord-card system for handpans, two outputs from one data source:
   `python3 tools/sync_decks.py` (`tools/validate.py` check 1/1b). Same conflict rule.
   Any writer of that line substitutes through a lambda AND re-parses the JSON back out
   of the written file (degrees contain U+00B0; a naive `re.sub` silently fails).
+- **The brand lockup region and the favicon URI are GENERATED.** Everything between
+  `<!-- brand:lockup begin -->` and `<!-- brand:lockup end -->`, and the SVG favicon data URI, come from
+  `brand/*.svg` via `python3 tools/make_icons.py`, which also renders `apple-touch-icon.png` and `og.png`
+  (`--check` reports drift; `tools/validate.py` fails on it). Edit the SVG in `brand/`, re-run the tool.
+  Same conflict rule as engine regions.
 - **The `const I18N` block is GENERATED** from `data/i18n/*.json` by
   `python3 tools/sync_i18n.py` (`tools/validate.py` check 6). Every UI feature ends with
-  an i18n step: keys in all eight tables, sync, audit, fit check (owner 2026-10-23).
+  an i18n step: keys in every `data/i18n/*.json` table, sync, audit, fit check (owner
+  2026-10-23).
 - **No deck data, verified layout or diagram geometry change without explicit owner
   instruction.** Some layouts look "wrong" against generic references; they are not.
 - MIRROR moves notes, never index numbers (owner 2026-10-30); see `docs/CARD-SPEC.md`.
-- **Design rules live in design docs.** Card, layout and diagram rules (verified layouts, generated-layout rules, card conventions, design system) belong in `docs/CARD-SPEC.md`; engine behaviour in `docs/ENGINE-SPEC.md`. A change to one edits that doc, not this file; this file keeps only one-line guardrails that point there.
+- **Design rules live in design docs.** Card, layout and diagram rules (verified
+  layouts, generated-layout rules, card conventions, design system) belong in
+  `docs/CARD-SPEC.md`; engine behaviour in `docs/ENGINE-SPEC.md`. A change to one edits
+  that doc, not this file; this file keeps only one-line guardrails that point there.
 - **Preserve the visual system** (fonts, palettes, card anatomy; `docs/CARD-SPEC.md`).
 - **Visible text says "scale", never "deck".** Identifiers, ids, `#deck=` routes,
   storage keys, analytics events and code comments keep "deck".
@@ -75,8 +83,8 @@ A chord-card system for handpans, two outputs from one data source:
 
 - CI runs on PRs into `main` and pushes to `main` only, never on a PR into `dev`.
 - Doc-only PRs (every path under `docs/plans/` or `docs/prompts/`) skip every job and
-  conclude success. `README.md`, `CLAUDE.md`, `docs/ENGINE-SPEC.md` and
-  `docs/CARD-SPEC.md` are read by tests and always run CI.
+  conclude success. Any other path, other docs included, runs full CI
+  (`tools/ci_scope.py` `code_changed`).
 - The merge gate reads only the `validate` run conclusion at the verified head SHA
   (`gh run list --commit <sha> --workflow validate.yml`). Vendor checks never gate.
 - Dev first: a lane opens PR M to `main` and PR D from the same head to `dev`. D merges
