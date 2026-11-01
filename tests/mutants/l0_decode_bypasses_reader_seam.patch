@@ -3,7 +3,7 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -369,7 +369,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -643,7 +643,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
      // 5. The same validator the text box uses. It rejects, never repairs, so
      //    its code and reason are propagated unchanged.
@@ -11,4 +11,4 @@ diff --git a/src/engine/share.js b/src/engine/share.js
 +    return HPE.core.parseSeed(lines[0], options);
    }
  
-   HPE.share = {
+   function recordVersion(seed) {

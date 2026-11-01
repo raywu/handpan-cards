@@ -225,3 +225,68 @@ test("LC: every frozen deck id resolves to itself or through the id map, and the
     assert.equal(shownId(app), resolveId(id), `built-in ${id} resolves`);
   }
 });
+
+/* ---------------- section 18: acoustic links stay byte-identical ----------- */
+
+const SHIPPED_HTML = fs.readFileSync(path.join(FIXTURES, "shipped_client_ee5438d0.html.txt"), "utf8");
+function loadShippedEngine() {
+  const sb = { console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone, btoa, atob };
+  vm.createContext(sb);
+  for (const m of ["core", "voicing", "layout", "naming", "select", "share"]) {
+    const begin = SHIPPED_HTML.indexOf(`<!-- engine:${m} begin`);
+    const end = SHIPPED_HTML.indexOf(`<!-- engine:${m} end -->`);
+    assert.ok(begin >= 0 && end > begin, `shipped client has engine:${m}`);
+    const body = SHIPPED_HTML.slice(SHIPPED_HTML.indexOf("<script>", begin) + 8, SHIPPED_HTML.lastIndexOf("</script>", end));
+    vm.runInContext(body, sb, { filename: `shipped-${m}.js` });
+  }
+  return sb.HPE;
+}
+const SHIPPED = loadShippedEngine();
+const PAIRED_PAN = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+
+test("LC18: every v6 corpus link re-encodes to the identical bytes under the current engine", () => {
+  let n = 0;
+  for (const e of ENTRIES.filter((x) => x.wire === 6)) {
+    const first = HPE.share.decode(e.link);
+    assert.equal(first.ok, true, e.id);
+    const enc = HPE.share.encode(plain(first.value));
+    assert.equal(enc.ok, true, e.id);
+    assert.equal(enc.value, e.link, `${e.id}: v6 bytes`);
+    n += 1;
+  }
+  assert.ok(n > 0);
+});
+
+test("LC18: every corpus entry and every built-in encodes to the same bytes as the shipped client", () => {
+  const seeds = ENTRIES.map((e) => [e.id, plain(HPE.share.decode(e.link).value)]);
+  const decks = JSON.parse(fs.readFileSync(path.join(REPO, "data", "decks.json"), "utf8"));
+  for (const deck of decks.decks || decks) {
+    if (!deck.fields) continue;
+    const seed = HPE.core.parseSeed(HPE.core.formatSeed(deck.fields));
+    if (seed.ok) seeds.push([deck.id, plain(seed.value)]);
+  }
+  assert.ok(seeds.length > 20);
+  for (const [id, seed] of seeds) {
+    const now = HPE.share.encode(plain(seed));
+    const then = SHIPPED.share.encode(plain(seed));
+    assert.equal(now.ok, then.ok, id);
+    assert.equal(now.value, then.value, `${id}: bytes`);
+    if (now.ok) assert.ok(now.value.startsWith("6/"), id);
+  }
+});
+
+test("LC18: the shipped client's decoder refuses a v7 link as NEEDS_NEWER_APP", () => {
+  const seed = HPE.core.parseSeed(PAIRED_PAN).value;
+  HPE.core.PROFILE_ENABLED = true;
+  try {
+    const map = HPE.layout.proposeProfile(seed.fields).value;
+    const profiled = HPE.core.parseSeed(PAIRED_PAN, { profile: { id: "paired", rev: 1, map } }).value;
+    const link = HPE.share.encode(profiled).value;
+    assert.ok(link.startsWith("7/"));
+    const old = SHIPPED.share.decode(link);
+    assert.equal(old.ok, false);
+    assert.equal(old.code, "NEEDS_NEWER_APP");
+  } finally {
+    HPE.core.PROFILE_ENABLED = false;
+  }
+});
