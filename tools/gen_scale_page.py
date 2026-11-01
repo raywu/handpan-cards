@@ -189,6 +189,8 @@ def link_item(row):
 
 
 LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" alt="" width="223" height="64"></a>'
+SCALE_LOCKUP_IMG = '<picture><source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg"><img src="/brand/horizontal-full.svg" alt="" width="223" height="64"></picture>'
+SCALE_LOCKUP = LOCKUP.replace('<img src="/brand/horizontal-full.svg" alt="" width="223" height="64">', SCALE_LOCKUP_IMG)
 
 
 def head(title, description, og_description, url, theme, brand=True):
@@ -464,9 +466,9 @@ def render(row, data, rows_by_slug, copy, alt=None):
                                                                                  separators=(",", ":")))
     out.append("</head>\n<body>\n<main>\n")
     if frozen:
-        out.append('<header><p>%s</p>\n' % LOCKUP)
+        out.append('<header><p>%s</p>\n' % SCALE_LOCKUP)
     else:
-        out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; %s chords</p>\n' % (LOCKUP, esc(name)))
+        out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; %s chords</p>\n' % (SCALE_LOCKUP, esc(name)))
     out.append("<h1>%s handpan chords</h1>\n" % esc(name))
     if frozen:
         guide = '<a href="/handpan-101/">Handpan 101</a>'

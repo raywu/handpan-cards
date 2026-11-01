@@ -1113,6 +1113,13 @@ class HeaderLockupTest(unittest.TestCase):
                 first = re.search(r"<a\b[^>]*>.*?</a>", head, re.S).group(0)
                 self.assertRegex(first, r'^<a href="/" aria-label="Handpan Theory home"[ >]')
                 self.assertEqual(re.findall(r"<img\b[^>]*>", first), ['<img src="/brand/horizontal-full.svg" alt="" width="223" height="64">'])
+                sources = re.findall(r"<source\b[^>]*>", first)
+                if re.fullmatch(r"scales/[^/]+/index\.html", name):
+                    self.assertEqual(sources, ['<source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg">'])
+                    self.assertRegex(first, r"<picture>.*</picture>")
+                else:
+                    self.assertEqual(sources, [])
+                    self.assertNotIn("<picture", first)
                 self.assertNotIn("&larr;", head)
                 self.assertNotIn("Home", head)
 
