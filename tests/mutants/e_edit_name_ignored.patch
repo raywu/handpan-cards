@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12777,7 +12777,6 @@ function sheetOptions() {
+@@ -13472,7 +13472,6 @@ function sheetOptions() {
      const d = editedDeck();
      // A seeded deck has no options, but the name the box was prefilled with IS its name.
      const kept = !!(d && ((d.options && d.options.name) || seeded()));
 -    if (n && (nameDirty || kept)) o.name = n;  // validated by core.parseSeed, never here
      // A seeded deck's SAVE mints its replacement; a replacement's own SAVE keeps the seat.
-     if (seeded()) o.replaces = editingId;
-     else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
+     if (!paired) {
+       if (seeded()) o.replaces = editingId;

@@ -878,3 +878,170 @@ test("R4-E build with no options, colours, degrees, grad or warnings falls back 
   assert.ok(own.includes("0.1 0.2 0.3 rg") && own.includes("0.4 0.5 0.6 rg"));
   assert.ok(!own.includes("0.043 0.482 0.459 rg"), "a deck's own colours replace the defaults");
 });
+
+/* ---- Neotone lane P: a paired-area deck is drawn from geom.place -------- */
+
+const PA = (() => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const read = (f) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", f), "utf8"));
+  return {
+    frozen: read("paired_profile_v1.json"),
+    pygmy: read("profile_case_pygmy_v1.json"),
+    kurd: read("profile_case_kurd9_v1.json"),
+  };
+})();
+
+function tracingPage() {
+  const ops = [];
+  let dash = false, fill = null;
+  return {
+    ops,
+    text: (x, y, s, face, size) => ops.push({ op: "text", x, y, s, face, size, fill }),
+    line: () => {},
+    circle: (x, y, r, m) => ops.push({ op: "circle", x, y, r, m, dash }),
+    roundRect: () => {}, rect: () => {},
+    setFill: (r, g, b) => { fill = [r, g, b]; },
+    setStroke: () => {}, setLineWidth: () => {},
+    setDash: (a) => { dash = a > 0; },
+    save: () => {}, restore: () => {}, translate: () => {}, rotate: () => {},
+  };
+}
+
+function paCard(payload, chordIndex) {
+  const deck = HPE.pdfdeck.fromGenerated(payload);
+  deck.R = P.profileRadius(payload.deck.geom);
+  const page = tracingPage();
+  P._internal.chordCard(new P._internal.Canvas(page), 0, 0, deck, 1, deck.chords[chordIndex]);
+  return { page, deck, R: deck.R, cx: P.GEOM.CW / 2, cy: deck.cy };
+}
+
+const at = (cx, cy, R, [a, o]) => [
+  cx + o * R * Math.cos((a * Math.PI) / 180), cy + o * R * Math.sin((a * Math.PI) / 180)];
+
+test("PA: the draw figures are a literal copy of the frozen profile fixture and of HPE.layout.PROFILE", () => {
+  const f = PA.frozen;
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(P.PROFILE_DRAW)), {
+    primary: f.primary, secondary: f.secondary, ding: f.ding,
+    n_in: f.n_in, n_out: f.n_out, extent_margin: f.extent_margin,
+  });
+  const E = loadEngine(["core", "layout"]);
+  for (const k of ["primary", "secondary", "ding", "n_in", "n_out", "extent_margin"]) {
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(E.layout.PROFILE[k])), JSON.parse(JSON.stringify(P.PROFILE_DRAW[k])), k);
+  }
+});
+
+test("PA: the print radius is round(74 / extent, 1) with the profile's fixed reach; acoustic geoms are not profiles", () => {
+  assert.equal(P.profileRadius(PA.pygmy.deck.geom), 63.3);
+  assert.equal(P.profileRadius(PA.kurd.deck.geom), 63.3);
+  assert.ok(Math.abs(P.profileExtent(PA.kurd.deck.geom) - 1.1684) < 1e-9);
+  assert.equal(P.profileRadius({ r_ding: 0.2, ding_dy: 0 }), null);
+});
+
+test("PA: build draws a profile deck on R 63.3, whatever R the adapter derived from the stale geom.ext", () => {
+  const rims = [];
+  const realDoc = HPE.pdf.doc;
+  HPE.pdf.doc = function (w, h) {
+    const doc = realDoc.call(this, w, h);
+    const realPage = doc.page;
+    doc.page = function () {
+      const p = realPage.call(this);
+      const rc = p.circle;
+      p.circle = function (x, y, r, m) { rims.push(r); return rc.call(this, x, y, r, m); };
+      return p;
+    };
+    return doc;
+  };
+  const deck = HPE.pdfdeck.fromGenerated(PA.kurd);
+  try {
+    P.build(deck, { variant: "shop" });
+  } finally {
+    HPE.pdf.doc = realDoc;
+  }
+  assert.notEqual(deck.R, 63.3, "the adapter's R comes from the stale ext");
+  assert.ok(rims.includes(63.3), "the pan rim is drawn on R = 63.3");
+  assert.ok(!rims.includes(deck.R));
+});
+
+test("PA: every field sits on its geom.place figure; an empty slot draws nothing and no guide ring is drawn", () => {
+  const { page, R, cx, cy } = paCard(PA.kurd, 0);
+  const g = PA.kurd.deck.geom;
+  const circles = page.ops.filter((o) => o.op === "circle" && o.r <= R * 0.25);
+  const want = Object.values(g.place).map(([a, o, r]) => [...at(cx, cy, R, [a, o]), r * R]);
+  want.push([cx, cy, g.r_ding * R]);
+  for (const [x, y, r] of want) {
+    assert.ok(circles.some((c) => Math.abs(c.x - x) < 1e-6 && Math.abs(c.y - y) < 1e-6 &&
+      Math.abs(c.r - r) < 1e-6), `no field circle at ${x}, ${y}`);
+  }
+  const fields = new Set(circles.map((c) => `${c.x.toFixed(3)},${c.y.toFixed(3)}`));
+  assert.equal(fields.size, 10, "nine rim notes and the ding; p4 and p8 stay empty");
+  const centred = page.ops.filter((o) => o.op === "circle" && Math.abs(o.x - cx) < 1e-9 &&
+    Math.abs(o.y - cy) < 1e-9 && o.r > g.r_ding * R + 1e-6);
+  assert.deepStrictEqual(centred.map((c) => c.r), [R], "only the rim: no inner ring, no bottom ring");
+});
+
+test("PA: a source-bottom note keeps its dashed ring and orange number in a primary slot; a top note in a secondary slot is ordinary", () => {
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  E.core.PROFILE_ENABLED = true;
+  const map = PA.pygmy.map.slice();
+  const b = map.indexOf("b48"), t = map.indexOf("r55");
+  [map[b], map[t]] = [map[t], map[b]];
+  const parsed = E.core.parseSeed(PA.pygmy.seed, { profile: { id: "paired", rev: 1, map } });
+  assert.ok(parsed.ok, JSON.stringify(parsed));
+  const solved = E.layout.solve(parsed.value);
+  assert.ok(solved.ok, JSON.stringify(solved));
+  const payload = JSON.parse(JSON.stringify(PA.pygmy));
+  payload.deck.geom = solved.value.geom;
+  payload.deck.fields = solved.value.fields;
+
+  const ids = Object.keys(payload.deck.fields);
+  const bottomId = ids.find((k) => payload.deck.fields[k][2] === 48 && payload.deck.fields[k][3] === "bottom");
+  const topId = ids.find((k) => payload.deck.fields[k][2] === 55 && payload.deck.fields[k][3] === "rim");
+  assert.equal(payload.deck.geom.place[bottomId][1], 0.58, "C3 now sits in a primary slot");
+  assert.equal(payload.deck.geom.place[topId][1], 0.86, "G3 now sits in a secondary slot");
+
+  const idx = payload.deck.chords.findIndex((c) => !c.fields.some((f) => payload.deck.fields[f][2] % 12 === 0 || payload.deck.fields[f][2] % 12 === 7));
+  assert.ok(idx >= 0);
+  const { page, R, cx, cy } = paCard(payload, idx);
+  const ringAt = (id) => {
+    const [x, y] = at(cx, cy, R, payload.deck.geom.place[id]);
+    return page.ops.find((q) => q.op === "circle" && Math.abs(q.x - x) < 1e-6 && Math.abs(q.y - y) < 1e-6);
+  };
+  assert.equal(ringAt(bottomId).dash, true, "an unlit bottom note is dashed in a primary slot");
+  assert.equal(ringAt(topId).dash, false, "an unlit top note in a secondary slot is a solid field");
+  const numberOf = (id) => page.ops.find((q) => q.op === "text" && q.s === payload.deck.fields[id][5] &&
+    (q.face === "Label" || q.face === "LabelSB"));
+  const orange = [0.8863, 0.4392, 0.0196];
+  assert.deepStrictEqual(numberOf(bottomId).fill.map((v) => +v.toFixed(4)), orange);
+  assert.equal(numberOf(bottomId).face, "LabelSB");
+  assert.equal(numberOf(topId).face, "Label");
+});
+
+test("PA: the 3.6 pt floor holds for every diagram glyph of both profile decks", () => {
+  for (const payload of [PA.pygmy, PA.kurd]) {
+    payload.deck.chords.forEach((_, i) => {
+      const { page, R, cx, cy } = paCard(payload, i);
+      const glyphs = page.ops.filter((o) => o.op === "text" && Math.hypot(o.x - cx, o.y - cy) <= R * 1.25 &&
+        (o.face === "Label" || o.face === "LabelSB"));
+      assert.ok(glyphs.length > 10);
+      for (const gl of glyphs) assert.ok(gl.size >= 3.6 - 1e-9, `${gl.s} drawn at ${gl.size}`);
+    });
+  }
+});
+
+test("PA: the app pan() draws a profile deck at geom.place, on the print extent, with no guide ring", () => {
+  const { boot } = require("./helpers/sandbox.js");
+  const app = boot();
+  const d = PA.pygmy.deck;
+  const svg = app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(d.chords[0])})`);
+  const circles = [...svg.matchAll(/<circle cx="(-?[\d.e-]+)" cy="(-?[\d.e-]+)" r="([\d.e-]+)"/g)]
+    .map((m) => ({ x: Number(m[1]), y: Number(m[2]), r: Number(m[3]) }));
+  for (const [a, o, r] of Object.values(d.geom.place)) {
+    const x = 100 * o * Math.cos((a * Math.PI) / 180), y = -100 * o * Math.sin((a * Math.PI) / 180);
+    assert.ok(circles.some((c) => Math.abs(c.x - x) < 1e-6 && Math.abs(c.y - y) < 1e-6 &&
+      Math.abs(c.r - 100 * r) < 1e-6), `app has no field at ${a} degrees, orbit ${o}`);
+  }
+  const ext = Number(svg.match(/viewBox="(-?[\d.]+) /)[1]);
+  assert.ok(Math.abs(-ext - 100 * P.profileExtent(d.geom)) < 1e-6, "the viewBox is the print extent");
+  assert.equal((svg.match(/<circle r="/g) || []).length, 1, "only the rim is a centred ring");
+});

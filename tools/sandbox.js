@@ -45,6 +45,9 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-angle-prev", "scale-angle-next",
   // Lane DR3: the disclosure over the finer controls.
   "scale-fine-toggle", "scale-fine",
+  // Lane U: the Standard / Paired areas toggle and the paired-area rows.
+  "scale-mode-row", "scale-mode-label", "scale-mode-standard", "scale-mode-paired", "scale-mode-full",
+  "scale-standard", "scale-paired", "scale-paired-hint", "scale-paired-count", "scale-areas", "scale-areas-reset",
   // The pan-layout preview, additive like every row above it.
   "scale-preview",
   // Stage 2: the page header. The sheet became a full-screen page, so it has a

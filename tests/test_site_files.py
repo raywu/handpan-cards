@@ -16,6 +16,13 @@ def read(name):
         return f.read()
 
 
+def publish(out, branch=None):
+    env = {k: v for k, v in os.environ.items() if k != "CF_PAGES_BRANCH"}
+    if branch is not None:
+        env["CF_PAGES_BRANCH"] = branch
+    subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT, env=env, check=True)
+
+
 def sitemap_tree():
     return ET.parse(os.path.join(ROOT, "sitemap.xml")).getroot()
 
@@ -169,7 +176,7 @@ class SiteFilesTest(unittest.TestCase):
                        "_headers", "og.png", "apple-touch-icon.png"]
         allow_dirs = ["scales", "handpan-101"]
         with tempfile.TemporaryDirectory() as out:
-            subprocess.run(["sh", os.path.join(ROOT, "tools", "publish.sh"), out], cwd=ROOT, check=True)
+            publish(out)
             built = set()
             for base, _, names in os.walk(out):
                 for n in names:
@@ -198,6 +205,47 @@ class SiteFilesTest(unittest.TestCase):
         self.assertEqual(listed, locs)
         self.assertIn(SITE + "handpan-101/", listed)
         self.assertIn(SITE + "scales/", listed)
+
+    def test_qa_seed_page_is_dev_only_noindex_and_never_published(self):
+        page = read("qa-seed.html")
+        self.assertRegex(page, r'<meta name="robots" content="noindex">')
+        self.assertNotRegex(page, r"(?i)rel=[\"']canonical")
+        self.assertNotRegex(page, r'href="[^"]*\.html"')
+        self.assertIn('href="/"', page)
+        with tempfile.TemporaryDirectory() as out:
+            publish(out)
+            self.assertFalse(os.path.exists(os.path.join(out, "qa-seed.html")))
+        with tempfile.TemporaryDirectory() as out:
+            publish(out, "main")
+            self.assertFalse(os.path.exists(os.path.join(out, "qa-seed.html")))
+        self.assertNotIn("qa-seed", read("sitemap.xml") + read("llms.txt") + read("robots.txt"))
+        self.assertNotIn("qa-seed", read("index.html"))
+
+    def test_qa_seed_is_published_only_for_a_non_production_branch(self):
+        for branch in ("dev", "claude/some-lane"):
+            with tempfile.TemporaryDirectory() as out:
+                publish(out, branch)
+                with open(os.path.join(out, "qa-seed.html"), "rb") as a, open(os.path.join(ROOT, "qa-seed.html"), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), branch)
+
+    def test_qa_seed_host_guard_allows_only_the_dev_project_and_its_previews(self):
+        m = re.search(r"const allowedHost = (.+?);\n", read("qa-seed.html"))
+        self.assertIsNotNone(m)
+        script = "const f=%s;process.stdout.write(JSON.stringify(process.argv.slice(1).map(f)))" % m.group(1)
+        hosts = ["handpan-cards-dev.pages.dev", "abc123.handpan-cards-dev.pages.dev",
+                 "claude-qa-harness.handpan-cards-dev.pages.dev",
+                 "handpan.raywu.org", "www.handpantheory.com", "handpantheory.com",
+                 "handpan-cards.pages.dev", "abc123.handpan-cards.pages.dev",
+                 "evilhandpan-cards-dev.pages.dev", "handpan-cards-dev.pages.dev.evil.com", "localhost"]
+        out = subprocess.run(["node", "-e", script] + hosts, capture_output=True, check=True, text=True).stdout
+        import json
+        self.assertEqual(dict(zip(hosts, json.loads(out))), {
+            "handpan-cards-dev.pages.dev": True, "abc123.handpan-cards-dev.pages.dev": True,
+            "claude-qa-harness.handpan-cards-dev.pages.dev": True,
+            "handpan.raywu.org": False, "www.handpantheory.com": False, "handpantheory.com": False,
+            "handpan-cards.pages.dev": False, "abc123.handpan-cards.pages.dev": False,
+            "evilhandpan-cards-dev.pages.dev": False, "handpan-cards-dev.pages.dev.evil.com": False,
+            "localhost": False})
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,15 @@
+# kills: FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words
+# suite: node --test --test-name-pattern ^FPD..a.mirror.or.anchor.toggle.that.would.put.a.moved.bottom.note.inside.another.s.floor.is.refused..changes.nothing.and.says.why.in.plain.words$ tests/app.test.js
+# A refused MIRROR BOTTOM keeps the reflected angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14356,7 +14356,7 @@ mirrorBot.onclick = () => {
+   const before = layoutAngles;
+   if (layoutAngles) layoutAngles = HPE.layout.reflectAngles(layoutAngles);
+   bottomHeld = !bottomHeld;
+-  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutAngles = before; layoutStatus(TOGGLE_REFUSED(), true); return; }
++  if (!toggleFits()) { bottomHeld = !bottomHeld; layoutStatus(TOGGLE_REFUSED(), true); return; }
+   paintLayout(); resyncSheet(true);
+   let text = t(bottomMirror() ? "sheet.mirror_bottom_on" : "sheet.mirror_bottom_off");
+   const changed = layoutAngles ? renumbered(was, -1) : [];

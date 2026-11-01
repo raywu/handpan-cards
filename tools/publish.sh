@@ -15,3 +15,6 @@ done
 for d in scales handpan-101; do
   cp -R "$d" "$out/$d"
 done
+if [ -n "${CF_PAGES_BRANCH:-}" ] && [ "$CF_PAGES_BRANCH" != "main" ]; then
+  cp qa-seed.html "$out/qa-seed.html"
+fi
