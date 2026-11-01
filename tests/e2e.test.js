@@ -3918,10 +3918,15 @@ function run() {
     // 227.67, the print row's own floor still applies there); landscape
     // chrome 251.67 -> 158.67, and the card at 844x390 is 100.16 -> 167.5px
     // wide, +67.3%.
-    [390, 844, 343.19, 225.67],
-    [390, 745, 342.69, 225.67],
-    [375, 667, 306.81, 225.67],
-    [320, 568, 246.44, 227.67],
+    // Raised 2026-11-01 (logo in the app, owner Q2 2026-10-31): the header row
+    // grew from 44px to the 64px lockup (+20px; at 320 the lockup shrinks to
+    // 52.7px, +9px), so portrait chrome 225.67 -> 245.67 (320x568: 227.67 ->
+    // 236.69 measured, budget 238.67) and the card at 375x667 and 320x568 gave
+    // up 0.6% and 2.6%. Landscape does not move: the h1 stays hidden there.
+    [390, 844, 343.19, 245.67],
+    [390, 745, 342.69, 245.67],
+    [375, 667, 305.11, 245.67],
+    [320, 568, 239.91, 238.67],
     [844, 390, 167.50, 158.67],
     [926, 428, 195.02, 158.67],
   ];
@@ -3957,6 +3962,35 @@ function run() {
         }
         assert.deepStrictEqual(bad, [],
           "the practice screen's chrome has grown at the card's expense");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("lockup: the header lockup is 64px tall at 380 and inside .hrow clear of both buttons, and shrinks to fit at 320",
+    async () => {
+      await freshLoad();
+      try {
+        const bad = [];
+        for (const [vw, vh, wantH] of [[380, 740, 64], [320, 568, null]]) {
+          await b.setViewport(vw, vh, true);
+          const m = await b.eval(`
+            const r = (el) => { const x = el.getBoundingClientRect(); return {l: x.left, r: x.right, t: x.top, b: x.bottom, w: x.width, h: x.height}; };
+            const row = r(document.querySelector(".hrow"));
+            const svg = r(document.querySelector("h1 svg"));
+            return {row, svg, share: r(document.querySelector("#share-copy")),
+              settings: r(document.querySelector("#settings-trigger")),
+              scrollW: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth};
+          `);
+          const tag = `${vw}x${vh}`;
+          if (wantH !== null && Math.abs(m.svg.h - wantH) > 0.6) bad.push(`${tag}: the lockup is ${m.svg.h}px tall, want ${wantH}`);
+          if (wantH === null && !(m.svg.h < 64 && m.svg.h > 44)) bad.push(`${tag}: the lockup is ${m.svg.h}px tall, want it shrunk below 64 and above 44`);
+          if (m.svg.l < m.row.l - 0.5 || m.svg.r > m.row.r + 0.5 || m.svg.t < m.row.t - 0.5 || m.svg.b > m.row.b + 0.5) bad.push(`${tag}: the lockup leaves .hrow`);
+          if (m.svg.l < m.share.r - 0.5) bad.push(`${tag}: the lockup overlaps #share-copy`);
+          if (m.svg.r > m.settings.l + 0.5) bad.push(`${tag}: the lockup overlaps #settings-trigger`);
+          if (m.scrollW > m.cw) bad.push(`${tag}: the page scrolls sideways (${m.scrollW} > ${m.cw})`);
+        }
+        assert.deepStrictEqual(bad, []);
       } finally {
         await b.setViewport(900, 900, false);
       }
