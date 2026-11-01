@@ -8,8 +8,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9973,3 +9973,3 @@ function openShare(text) {
+@@ -10429,7 +10429,7 @@ function openShare(text) {
+ 
+ 
  function scaleRecord(seed) {
--  return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: seed.options };
-+  return { v: SHARE_VERSION, s: HPE.core.formatSeed(seed.fields), o: {} };
+-  return { v: HPE.share.recordVersion(seed), s: HPE.core.formatSeed(seed.fields), o: seed.options };
++  return { v: HPE.share.recordVersion(seed), s: HPE.core.formatSeed(seed.fields), o: {} };
  }
+ // The reader for a stored record's scale string, chosen by the record's own
+ // version: 4 and up read the canonical grammar (parseSeed), anything older the

@@ -120,7 +120,8 @@ def render_print(deck):
             # exactly those - a positional filter would also drop the ding on
             # decks whose ding_dy is 0 (Hijaz, Amara).
             g = deck["spec"]["_geom"]
-            chrome = 1 + bool(g.get("inner_ring")) + bool(g.get("bottom"))
+            chrome = 1 if g.get("place") else \
+                1 + bool(g.get("inner_ring")) + bool(g.get("bottom"))
 
             groups = {}
             for c in rec.circles[chrome:]:
@@ -353,13 +354,17 @@ class BorderAgreementTest(unittest.TestCase):
 
 
 class RenderAgreement(unittest.TestCase):
+    decks = DECK_BY_ID
+    dump_args = []
+
     @classmethod
     def setUpClass(cls):
         dump = subprocess.run(
-            ["node", os.path.join(paths.ROOT, "tests", "helpers", "dump_app_render.js")],
+            ["node", os.path.join(paths.ROOT, "tests", "helpers", "dump_app_render.js")]
+            + cls.dump_args,
             capture_output=True, text=True, check=True, cwd=paths.ROOT)
         cls.app = json.loads(dump.stdout)
-        cls.print_ = {k: render_print(v) for k, v in DECK_BY_ID.items()}
+        cls.print_ = {k: render_print(v) for k, v in cls.decks.items()}
 
     def each_card(self):
         for card in self.app:
@@ -484,7 +489,7 @@ class RenderAgreement(unittest.TestCase):
         for app_c, print_c in self.each_card():
             if app_c["deck"] not in PRE_RULE_IDS:
                 continue
-            deck = DECK_BY_ID[app_c["deck"]]
+            deck = self.decks[app_c["deck"]]
             geom = deck["spec"]["_geom"]
             spec = deck["spec"]
             zone_of = {v[0] + str(v[1]): v[3]
@@ -552,7 +557,7 @@ class RenderAgreement(unittest.TestCase):
             % (app_badge_css, orange_hex))
         for app_c, print_c in self.each_card():
             where = "%s %s" % (app_c["deck"], app_c["name"])
-            deck = DECK_BY_ID[app_c["deck"]]
+            deck = self.decks[app_c["deck"]]
             bottom_labels = {v[5] for k, v in deck["spec"].items()
                              if k != "_geom" and v[3] == "bottom"}
             for lab in bottom_labels:
@@ -571,6 +576,162 @@ class RenderAgreement(unittest.TestCase):
                     print_c["badgeFill"], orange_hex,
                     "%s: print badge fill %s != hifi.ORANGE"
                     % (where, print_c["badgeFill"]))
+
+
+PROFILE_FIXTURES = {
+    "profile_pygmy": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_pygmy_v1.json"),
+    "profile_kurd9": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_kurd9_v1.json"),
+}
+PROFILE_FILE = os.path.join(paths.ROOT, "tests", "fixtures", "paired_profile_v1.json")
+
+
+def _profile_payload(name):
+    with open(PROFILE_FIXTURES[name], encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+class ProfileRenderAgreement(RenderAgreement):
+    """Neotone lane P: a paired-area deck (geom.place) drawn by the app SVG
+    and by hifi must agree on everything the inherited checks compare, on the
+    two generated profile decks. The inherited tests run unchanged."""
+
+    decks = {}
+    dump_args = list(PROFILE_FIXTURES.values())
+
+    @classmethod
+    def setUpClass(cls):
+        cls.decks = {k: decks.from_generated(_profile_payload(k)) for k in PROFILE_FIXTURES}
+        super().setUpClass()
+
+    def test_every_card_is_compared(self):
+        self.assertEqual(len(self.app), sum(len(d["chords"]) for d in self.decks.values()))
+        self.assertEqual(sum(len(v) for v in self.print_.values()), len(self.app))
+        self.assertEqual({c["deck"] for c in self.app}, set(PROFILE_FIXTURES))
+
+    def test_the_name_is_always_larger_than_the_number_beside_it(self):
+        """Per field, not card-wide: a primary field's number (r 0.16) is
+        legitimately larger than a secondary field's name (r 0.11)."""
+        for app_c, print_c in self.each_card():
+            spec = self.decks[app_c["deck"]]["spec"]
+            by_label = {v[5]: v[0] + str(v[1]) for k, v in spec.items()
+                        if k != "_geom" and v[3] != "ding"}
+            for side, card in (("app", app_c), ("print", print_c)):
+                for label, num in card["numberSizes"].items():
+                    self.assertGreater(
+                        card["labelSizes"][by_label[label]], num,
+                        "%s %s (%s) field %s" % (app_c["deck"], app_c["name"], side, label))
+
+    def _expected_centres(self, name):
+        payload = _profile_payload(name)
+        deck = payload["deck"]
+        out = {}
+        for fid, (angle, orbit, r) in deck["geom"]["place"].items():
+            a = math.radians(angle)
+            out[fid] = (round(orbit * 100 * math.cos(a), 3),
+                        round(-orbit * 100 * math.sin(a), 3),
+                        round(r * 100, 3))
+        g = deck["geom"]
+        out["0"] = (0.0, round(g["ding_dy"] * 100, 3), round(g["r_ding"] * 100, 3))
+        return out
+
+    def test_both_renderers_draw_the_fields_where_geom_place_says(self):
+        for app_c, print_c in self.each_card():
+            want = sorted(self._expected_centres(app_c["deck"]).values())
+            for side, card in (("app", app_c), ("print", print_c)):
+                got = sorted((f["x"], f["y"], f["r"]) for f in card["fields"])
+                self.assertEqual(len(got), len(want), "%s %s" % (side, app_c["name"]))
+                for g, w in zip(got, want):
+                    for a, b in zip(g, w):
+                        self.assertAlmostEqual(a, b, delta=TOL,
+                                               msg="%s %s %s vs %s" % (side, app_c["name"], g, w))
+
+    def test_an_empty_slot_draws_nothing_and_no_guide_rings_are_drawn(self):
+        card = next(c for c in self.app if c["deck"] == "profile_kurd9")
+        self.assertEqual(len(card["fields"]), 10)
+
+    def test_source_bottom_notes_keep_the_dashed_ring_wherever_they_sit(self):
+        payload = _profile_payload("profile_pygmy")
+        fields = payload["deck"]["fields"]
+        centres = self._expected_centres("profile_pygmy")
+        bottoms = {centres[k][:2] for k, v in fields.items() if v[3] == "bottom"}
+        self.assertEqual(len(bottoms), 6)
+        saw = False
+        for app_c, print_c in self.each_card():
+            if app_c["deck"] != "profile_pygmy":
+                continue
+            for side, card in (("app", app_c), ("print", print_c)):
+                dashed = {(f["x"], f["y"]) for f in card["fields"] if f["state"] == "off-bottom"}
+                lit = {(f["x"], f["y"]) for f in card["fields"] if f["state"] in ("root", "tone")}
+                self.assertEqual(dashed, bottoms - lit, "%s %s" % (side, app_c["name"]))
+                saw = saw or bool(dashed)
+        self.assertTrue(saw)
+
+    def test_top_notes_in_a_secondary_slot_draw_as_ordinary_top_fields(self):
+        payload = _profile_payload("profile_kurd9")
+        place = payload["deck"]["geom"]["place"]
+        secondary = {k for k, v in place.items() if v[1] > 0.7}
+        self.assertEqual(len(secondary), 2)
+        for app_c, print_c in self.each_card():
+            if app_c["deck"] != "profile_kurd9":
+                continue
+            for side, card in (("app", app_c), ("print", print_c)):
+                self.assertNotIn("off-bottom", [f["state"] for f in card["fields"]])
+                self.assertEqual(card["badgeText"], "")
+
+    def test_the_print_floor_holds_for_every_glyph(self):
+        for name in PROFILE_FIXTURES:
+            deck = self.decks[name]
+            R = deck["R"]
+            for card in self.print_[name]:
+                for field, size in card["labelSizes"].items():
+                    pt = size / 100 * R
+                    self.assertGreaterEqual(pt, 3.6, "%s %s name" % (name, field))
+                    self.assertGreaterEqual(pt * 0.66, 3.6 - 1e-6,
+                                            "%s %s octave digit" % (name, field))
+                for lab, size in card["numberSizes"].items():
+                    self.assertGreaterEqual(size / 100 * R, 3.6, "%s number %s" % (name, lab))
+
+    def test_the_print_radius_is_the_frozen_extent_rule(self):
+        with open(PROFILE_FILE, encoding="utf-8") as fh:
+            p = json.load(fh)
+        reach = max(max(p[k]["orbit"] + p[k]["r"] + p["n_out"] + p[k]["r"] * 0.64
+                        for k in ("primary", "secondary")), p["ding"]["r"])
+        want = round(74.0 / (reach + p["extent_margin"]), 1)
+        for name, deck in self.decks.items():
+            self.assertEqual(deck["R"], want, name)
+        self.assertEqual(hifi.profile_radius(_profile_payload("profile_kurd9")["deck"]["geom"]), want)
+
+    def test_hifi_profile_figures_equal_the_frozen_fixture(self):
+        with open(PROFILE_FILE, encoding="utf-8") as fh:
+            p = json.load(fh)
+        self.assertEqual(hifi.PROFILE_DRAW, {
+            "primary": p["primary"], "secondary": p["secondary"], "ding": p["ding"],
+            "n_in": p["n_in"], "n_out": p["n_out"], "extent_margin": p["extent_margin"]})
+
+    def test_numbers_sit_inward_of_a_primary_and_outward_of_a_secondary(self):
+        payload = _profile_payload("profile_kurd9")
+        deck = payload["deck"]
+        by_label = {v[5]: k for k, v in deck["fields"].items()}
+        place = deck["geom"]["place"]
+        g = hifi_geom = deck["geom"]
+        R = self.decks["profile_kurd9"]["R"]
+        for name, fid in by_label.items():
+            if fid == "0":
+                continue
+            angle, orbit, r = place[fid]
+            n_in, n_out = hifi.PROFILE_DRAW["n_in"], hifi.PROFILE_DRAW["n_out"]
+            nr = orbit + r + n_out if orbit > 0.7 else orbit - r - n_in
+            a = math.radians(angle)
+            rec = RecordingCanvas()
+            hifi.chord_card(rec, 0.0, 0.0, self.decks["profile_kurd9"], 1,
+                            self.decks["profile_kurd9"]["chords"][0])
+            cx, cy = hifi.CW / 2, self.decks["profile_kurd9"]["cy"]
+            nfs = r * 0.64 * R
+            hit = [t for t in rec.texts if t["text"] == name and t["anchor"] == "c"
+                   and t["font"] == "Label"]
+            self.assertTrue(hit, name)
+            self.assertAlmostEqual(hit[0]["x"], cx + nr * R * math.cos(a), delta=0.01)
+            self.assertAlmostEqual(hit[0]["y"], cy + nr * R * math.sin(a) - nfs * 0.36, delta=0.01)
 
 
 class PrintStylesheetTest(unittest.TestCase):

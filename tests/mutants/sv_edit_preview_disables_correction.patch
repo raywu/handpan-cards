@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12863,7 +12863,7 @@ function paintPan(seed, state) {
-   if (!solved) return false;
+@@ -13734,7 +13734,7 @@ function paintPan(seed, state) {
    lastSeed = seed;
    lastSolved = solved;
--  const interactive = drawerOpen && state === "current";
-+  const interactive = drawerOpen && state === "current" && !editingId;
+   const paired = pairedOn() && !!profileMap;
+-  const interactive = drawerOpen && state === "current" && !paired;
++  const interactive = drawerOpen && state === "current" && !paired && !editingId;
    if (!interactive) cancelGesture();
    const p = HPE.select.PALETTES[palette] || HPE.select.PALETTES[0];
-   previewBox.innerHTML = pan(
+   let drawn = solved.fields;

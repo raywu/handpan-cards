@@ -12,5 +12,5 @@ diff --git a/index.html b/index.html
  :root{
 -  color-scheme:dark;
    --ink:#242424; --paper:#ffffff;
-   --table:#1a1815; --table2:#26221c;
+   --table:#0f0e0b; --table2:#0f0e0b;
    --root:#0B7B75; --tone:#DD8F00; --ga:#0B7B75; --gb:#DD8F00;

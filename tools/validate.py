@@ -26,6 +26,7 @@ sys.modules.setdefault("hifi", types.ModuleType("hifi"))  # skip font registrati
 import decks as D  # noqa: E402
 import inline_engine  # noqa: E402
 import inline_fonts  # noqa: E402
+import make_icons  # noqa: E402
 import sync_decks  # noqa: E402  (tools/ is on sys.path, above)
 import sync_i18n  # noqa: E402
 
@@ -162,6 +163,15 @@ def main():
         assert sync_i18n.main(["sync_i18n.py", "--check"]) == 0, \
             "index.html i18n region is stale - run `python3 tools/sync_i18n.py`"
     run_check(6, "index.html i18n region == data/i18n", check_6, failures)
+
+    # 7. the brand:lockup region and the favicon URI == brand/*.svg, and the
+    # touch icon and og.png are current renders of theirs. index.html carries
+    # generated copies of the logo; a hand edit or a merge resolved inside one
+    # would ship an app that disagrees with brand/.
+    def check_7():
+        assert make_icons.main(["make_icons.py", "--check"]) == 0, \
+            "the brand lockup, favicon or a PNG is stale - run `python3 tools/make_icons.py`"
+    run_check(7, "brand:lockup region, favicon URI and icon PNGs == brand/", check_7, failures)
 
     return failures
 

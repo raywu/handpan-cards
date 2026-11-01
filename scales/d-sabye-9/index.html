@@ -11,27 +11,27 @@
 <meta property="og:title" content="D Sabye 9 handpan chords">
 <meta property="og:description" content="D Sabye 9 handpan chords: the I, IV and V chord cards (D, G, A) with the notes to play, then practice the full set in the free chord flashcard app.">
 <meta property="og:image" content="https://handpan.raywu.org/og.png">
-<meta property="og:site_name" content="Handpan Chords">
+<meta property="og:site_name" content="Handpan Theory">
 <meta name="theme-color" content="#2563B0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">
 <style>
-:root{color-scheme:light dark;--bg:#fbfaf8;--fg:#1f2328;--muted:#5d646c;--r:#2563B0}
-@media (prefers-color-scheme:dark){:root{--bg:#15181b;--fg:#e8eaec;--muted:#9aa2aa;--r:#3D81D6}}
+:root{color-scheme:light dark;--bg:#f6f4ed;--fg:#0f0e0b;--muted:#5e5850;--s:#ece8de;--h:#cfc8ba;--t:#0e7f79;--r:#2563B0}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--s:#1a1814;--h:#3a352d;--t:#44e0d8;--r:#357CD4}}
 body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;line-height:1.55;margin:0;padding:20px 16px 48px}
 main{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
 h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}
 h2{font-family:Marcellus,serif;font-weight:400;font-size:26px;margin:0;color:var(--r)}
 p{margin:0;max-width:66ch}
 .muted{color:var(--muted);font-size:14px}
-section.scale{border-top:3px solid var(--r);padding-top:16px;display:flex;flex-direction:column;gap:12px}
+section.scale{border-top:2px solid var(--r);padding-top:16px;display:flex;flex-direction:column;gap:12px}
 section.plain h2,section.history h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 .slot{width:min(322px,100%);display:flex;flex-direction:column;align-items:center}
 .ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.open{align-self:flex-start;background:var(--r);color:#fff;text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:8px;padding:12px 16px}
-@media (prefers-color-scheme:dark){.open{color:#15181b}}
-.open.ghost{background:transparent;color:var(--r);border:2px solid var(--r);padding:10px 14px}
+.open{align-self:flex-start;background:var(--fg);color:var(--bg);border:1px solid var(--fg);text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:12px;padding:11px 15px}
+.open.ghost{background:var(--s);color:var(--fg);border-color:var(--h)}
+@media (prefers-color-scheme:light){.prog{isolation:isolate;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--s:#1a1814;--h:#3a352d;--t:#44e0d8;--r:#357CD4}.prog::before{content:"";position:absolute;top:-12px;bottom:-14px;left:50%;width:min(calc(100% + 24px),372px);transform:translateX(-50%);z-index:-1;border-radius:12px;background:var(--bg)}}
 ol{margin:0;padding-left:20px;max-width:66ch}
 dl.who{margin:8px 0 0;display:grid;grid-template-columns:max-content 1fr;gap:2px 10px}
 dl.who dt{font-weight:700}
@@ -39,9 +39,11 @@ dl.who dd{margin:0}
 a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
 a.open{text-decoration:none}
 a:hover{text-decoration-thickness:2.5px}
-a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}
+a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
+a.brand img{display:block;height:64px;width:auto;max-width:100%}
+a:focus-visible{outline:2px solid var(--t);outline-offset:2px;border-radius:2px}
 ul.rel{list-style:none;margin:0;padding:0}
-ul.rel li{border-bottom:1px solid var(--muted)}
+ul.rel li{border-bottom:1px solid var(--h)}
 ul.rel a{display:flex;align-items:center;min-height:44px}
 section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4px}
 .prog{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;margin-bottom:28px}
@@ -59,17 +61,18 @@ section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4p
 .prog .step{font-weight:700;font-size:14px;letter-spacing:.06em;color:var(--muted);padding:2px 6px;border-radius:4px}
 .prog .nav{display:flex;justify-content:space-between;width:100%}
 .prog .nav label,.prog .nav span{width:56px;height:44px;box-sizing:border-box}
-.prog .nav label{cursor:pointer;font-size:0;line-height:42px;text-align:center;color:#eae6df;background:#211d16;border:1px solid #433b2c;border-radius:10px}
+.prog .nav label{cursor:pointer;font-size:0;line-height:42px;text-align:center;color:var(--fg);background:var(--s);border:1px solid var(--h);border-radius:12px}
 .nav label::before{font-size:18px;content:"\2192"}
 .nav label:first-child::before{content:"\2190"}
 #p1:checked~.cards .slot:nth-child(1),#p2:checked~.cards .slot:nth-child(2),#p3:checked~.cards .slot:nth-child(3){display:flex}
-#p1:focus-visible~.cards .slot:nth-child(1),#p2:focus-visible~.cards .slot:nth-child(2),#p3:focus-visible~.cards .slot:nth-child(3){outline:2px solid var(--r);outline-offset:2px}
+#p1:focus-visible~.cards .slot:nth-child(1),#p2:focus-visible~.cards .slot:nth-child(2),#p3:focus-visible~.cards .slot:nth-child(3){outline:2px solid var(--t);outline-offset:2px}
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"D Sabye 9 handpan chords","url":"https://handpan.raywu.org/scales/d-sabye-9/","dateModified":"2026-10-28","publisher":{"@type":"Organization","name":"Handpan Chords"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://handpan.raywu.org/"},{"@type":"ListItem","position":2,"name":"D Sabye 9 chords","item":"https://handpan.raywu.org/scales/d-sabye-9/"}]},"mainEntity":{"@type":"ItemList","itemListElement":[{"@type":"ListItem","position":1,"name":"D"},{"@type":"ListItem","position":2,"name":"G"},{"@type":"ListItem","position":3,"name":"A"}]}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"D Sabye 9 handpan chords","url":"https://handpan.raywu.org/scales/d-sabye-9/","dateModified":"2026-10-28","publisher":{"@type":"Organization","name":"Handpan Theory"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://handpan.raywu.org/"},{"@type":"ListItem","position":2,"name":"D Sabye 9 chords","item":"https://handpan.raywu.org/scales/d-sabye-9/"}]},"mainEntity":{"@type":"ItemList","itemListElement":[{"@type":"ListItem","position":1,"name":"D"},{"@type":"ListItem","position":2,"name":"G"},{"@type":"ListItem","position":3,"name":"A"}]}}</script>
 </head>
 <body>
 <main>
-<header><p><a href="/">Home</a> &rsaquo; D Sabye 9 chords</p>
+<header><p><a href="/" aria-label="Handpan Theory home" class="brand"><picture><source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg 1x, /brand/horizontal-mono-light@2x.png 2x, /brand/horizontal-mono-light@3x.png 3x"><img src="/brand/horizontal-full.svg" srcset="/brand/horizontal-full@2x.png 2x, /brand/horizontal-full@3x.png 3x" alt="" width="223" height="64"></picture></a></p>
+<p><a href="/scales/">Scale chord charts</a> &rsaquo; D Sabye 9 chords</p>
 <h1>D Sabye 9 handpan chords</h1>
 <p style="margin-top:8px">Sabye is a bright major scale. Start with the <b>i</b>, <b>iv</b> and <b>v</b>: play each card's lit notes, then move to the next. The app has 49 chord cards for this scale. New to handpan? Read <a href="/handpan-101/">Handpan 101: how to play a handpan</a> first.</p>
 </header>
@@ -189,7 +192,7 @@ section.related h2,section.group h2{color:var(--fg);font-size:20px;margin:0 0 4p
 <p><a href="/scales/">All 16 handpan scale chord charts</a></p>
 </section>
 <p class="muted">Last updated <time datetime="2026-10-28">2026-10-28</time></p>
-<p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>
+<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>
 <script>/* HPE.swipe - the pure core of the card swipe: thresholds, decisions, momentum.
  * Plain script, inlined verbatim; `var` so it lands on a node:vm global. */
 var HPE = (typeof HPE !== "undefined") ? HPE : {};
