@@ -188,6 +188,9 @@ def link_item(row):
     return '<li><a href="/scales/%s/">%s handpan chords</a></li>' % (row["slug"], esc(row["name"]))
 
 
+LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" alt="" height="64"></a>'
+
+
 def head(title, description, og_description, url, theme, brand=True):
     out = ['<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
            '<meta name="viewport" content="width=device-width, initial-scale=1">\n']
@@ -217,7 +220,7 @@ def hub_page(rows=None):
     out = head(title, description, description, url, BG_BROWN)
     out.append("<style>\n" + INDEX_CSS_HEAD + "</style>\n")
     out.append("</head>\n<body>\n<main>\n")
-    out.append('<header><p><a href="/">Home</a> &rsaquo; Scale chord charts</p>\n<h1>%s</h1>\n' % title)
+    out.append('<header><p>%s</p>\n<h1>%s</h1>\n' % (LOCKUP, title))
     out.append('<p style="margin-top:8px">%s</p>\n</header>\n' % HUB_INTRO)
     for name, blurb in GROUPS:
         out.append('<section class="group">\n<h2>%s</h2><p class="muted">%s</p>\n<ul class="rel">\n' % (esc(name), esc(blurb)))
@@ -265,6 +268,8 @@ dl.who dd{margin:0}
 a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
 a.open{text-decoration:none}
 a:hover{text-decoration-thickness:2.5px}
+a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
+a.brand img{display:block;height:64px;width:auto;max-width:100%}
 a:focus-visible{outline:2px solid var(--t);outline-offset:2px;border-radius:2px}
 ul.rel{list-style:none;margin:0;padding:0}
 ul.rel li{border-bottom:1px solid var(--h)}
@@ -318,6 +323,8 @@ p{margin:0;max-width:66ch}
 .muted{color:var(--muted);font-size:14px}
 a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}
 a:hover{text-decoration-thickness:2.5px}
+a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
+a.brand img{display:block;height:64px;width:auto;max-width:100%}
 a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}
 ul.rel{list-style:none;margin:0;padding:0}
 ul.rel li{border-bottom:1px solid #3a352d}
@@ -457,9 +464,9 @@ def render(row, data, rows_by_slug, copy, alt=None):
                                                                                  separators=(",", ":")))
     out.append("</head>\n<body>\n<main>\n")
     if frozen:
-        out.append('<header><p><a href="/">&larr; Handpan Chords</a></p>\n')
+        out.append('<header><p>%s</p>\n' % LOCKUP)
     else:
-        out.append('<header><p><a href="/">Home</a> &rsaquo; %s chords</p>\n' % esc(name))
+        out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; %s chords</p>\n' % (LOCKUP, esc(name)))
     out.append("<h1>%s handpan chords</h1>\n" % esc(name))
     if frozen:
         guide = '<a href="/handpan-101/">Handpan 101</a>'

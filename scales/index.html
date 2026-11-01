@@ -26,6 +26,8 @@ p{margin:0;max-width:66ch}
 .muted{color:var(--muted);font-size:14px}
 a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}
 a:hover{text-decoration-thickness:2.5px}
+a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
+a.brand img{display:block;height:64px;width:auto;max-width:100%}
 a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}
 ul.rel{list-style:none;margin:0;padding:0}
 ul.rel li{border-bottom:1px solid #3a352d}
@@ -35,7 +37,7 @@ section.group h2{margin:0 0 4px}
 </head>
 <body>
 <main>
-<header><p><a href="/">Home</a> &rsaquo; Scale chord charts</p>
+<header><p><a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" alt="" height="64"></a></p>
 <h1>Handpan scale chord charts</h1>
 <p style="margin-top:8px">Every chord each handpan scale can play, with the notes to strike. Pick your scale.</p>
 </header>
