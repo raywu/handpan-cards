@@ -295,6 +295,7 @@ test("LC18: the shipped client's decoder refuses a v7 link as NEEDS_NEWER_APP", 
 const DEV_V7 = {
   pygmy: "7/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/pair-r55.r56.r60.r63.r65.r67.r68.r72.r75.i77.i79.b48.b49.b51.b58.b61.b80.-/811c17",
   kurd10: "7/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+10/pair-r57.r58.r60.r62.r64.r65.r67.r69.r72.-.-.-.-.-.-.-.-.-/e4abb5",
+  offSeat: "7/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/pair-r57.r60.-.r64.r65.r67.r69.r72.r62.-.-.-.-.-.-.-.-.-/647ab0",
   tenRim: "7/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5_D5/*D+AEOLIAN+11/pair-r57.r58.r60.r62.r64.r65.r67.r69.r72.r74.-.-.-.-.-.-.-.-/7d5ab4"
 };
 
@@ -322,6 +323,13 @@ test("LC19: dev-build v7 links decode and migrateProfile gives the A5 result", (
     const tp = plain(ten.value.options.profile);
     assert.deepEqual(tp.map.slice(0, 9), kp.map.slice(0, 9));
     assert.deepEqual(tp.unplaced, ["r74"]);
+
+    const off = HPE.share.decode(DEV_V7.offSeat);
+    assert.equal(off.ok, true, `${off.code}`);
+    const op = plain(off.value.options.profile);
+    assert.equal(op.rev, 2);
+    assert.deepEqual(op.map, ["r57", "r60", "r62", "r64", "r65", "r67", "r69", "r72", ...Array(10).fill(null)]);
+    assert.equal(op.unplaced, undefined);
   } finally {
     HPE.core.PROFILE_ENABLED = false;
   }

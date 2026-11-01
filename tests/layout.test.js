@@ -2412,6 +2412,22 @@ test("PL: solve on a scale with no mutant note is the Standard solve of its note
   assert.deepEqual(plain(s.geom.place[byKey[map[1]]]).slice(0, 1), [standard.fields[byKey[map[0]]][4]]);
 });
 
+test("PL: a no-mutant map with a main entry past the rim count never yields a null angle", () => {
+  const str = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const fields = PHPE.core.parseSeed(str).value.fields;
+  const off = [57, 60, null, 64, 65, 67, 69, 72, 62].map((m) => (m === null ? null : "r" + m)).concat(Array(9).fill(null));
+  const seed = plSeed(str, off);
+  const r = PHPE.layout.solve(seed);
+  assert.equal(r.ok, true, r.reason);
+  for (const [fid, entry] of Object.entries(plain(r.value.geom.place))) {
+    assert.equal(typeof entry[0], "number", fid);
+  }
+  assert.equal(Object.keys(r.value.geom.place).length, plNonDing(fields).length);
+  const raw = { fields, options: { profile: { id: "paired", rev: 2, map: off } } };
+  const g = PHPE.layout.solve(raw);
+  if (g.ok) for (const entry of Object.values(plain(g.value.geom.place))) assert.equal(typeof entry[0], "number");
+});
+
 test("PL: Kurd 9 at its proposal map equals tools/gen_deck.js geom: angles, rim, field and ding radii, number positions", () => {
   const out = JSON.parse(require("node:child_process").execFileSync(
     process.execPath, [path.join(__dirname, "..", "tools", "gen_deck.js"), KURD9], { encoding: "utf8" }));
@@ -2453,7 +2469,8 @@ test("PL: the main circles, the ding and the lenses are inside the pan and the m
   }
   const depth = 2 * PAIRED.main.r * PAIRED.mutant.depth;
   const lensC = PAIRED.main.orbit - (2 * PAIRED.main.r - depth);
-  assert.ok(lensC - PAIRED.mutant.r > PAIRED.decor.r - PAIRED.mutant.r, "the lens reaches inside the decor ring");
+  assert.ok(lensC - PAIRED.mutant.r < PAIRED.decor.r, "the lens reaches inside the decor ring");
+  assert.ok(lensC - PAIRED.mutant.r > PAIRED.ding.r, "the lens stays clear of the ding");
   assert.ok(PAIRED.decor.r > PAIRED.ding.r);
 });
 

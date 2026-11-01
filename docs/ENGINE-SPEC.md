@@ -1174,13 +1174,14 @@ and 9 mutant notes. Values are fractions of the pan radius R.
   its notes (18.4), names at the field centre.
 - Numbers: the main number sits at `number_out` (1.0758) from the pan centre, outside
   the rim; the orange `M<n>` number of a mutant note sits on the same radial
-  line at `main.orbit - main.r - n_in` (n_in 0.085, 0.47). Size is the label rule
-  number size, 0.64 x `main.r`. The main number sits outside the rim only when the
-  scale has at least one mutant note; with none, main numbers sit at the Standard
+  line at `main.orbit - main.r - n_in` (n_in 0.085, 0.47). Size is the K8 number
+  size below (0.64 x 0.62 x `main.r` for the main number, 0.64 x 0.5 x `main.r` for
+  `M<n>`), not the bare label-rule 0.64 x `main.r`. The main number sits outside
+  the rim only when the scale has at least one mutant note; with none, main numbers sit at the Standard
   spot (orbit - r - n_in = 0.47).
 - Strokes (renderers): outline 0.012, main band 0.046, lens band 0.024.
 - Print extent: the furthest of `number_out` + the unscaled number size (0.64 x
-  `main.r`) / 2 and the ding edge, plus `extent_margin` (0.06); extent = 1.0758 +
+  `main.r`, without the K8 factor) / 2 and the ding edge, plus `extent_margin` (0.06); extent = 1.0758 +
   0.64 x 0.19 / 2 + 0.06 = 1.1966, R = round(74 / extent, 1) = 61.8 in
   `HPE.pdfcards`, `tools/hifi.py` and `tools/decks.py` identically.
 - On Neotone cards glyphs are sized per K8: main name 0.80325 x 0.62 x `main.r`,
@@ -1210,6 +1211,14 @@ through `HPE.core.migrateProfile` (identity on a ring-strict complete map,
 otherwise the pitch-order proposal); `map` has length 18;
 every non-null entry matches the key pattern and names a non-ding field of the
 seed; the entries are injective; and every non-ding field appears exactly once.
+`readProfile` returns `{id, rev:2, map}` and, when the proposal left notes without a
+tonefield (a rev 1 map migrated by `migrateProfile`), also `unplaced`: their
+occurrence keys in pitch order. A consumer (U2) holds SAVE and GENERATE while
+`unplaced` is non-empty, and when `HPE.layout.solve` refuses a profile it strips
+the profile and renders Standard. A map on a scale with no mutant note whose main
+entry sits at or past the rim count has no Standard rim seat: it is treated as not
+ring-strict and migrates to the pitch-order proposal, whether it is rev 1 or rev 2,
+so a saved record or share link stays readable; `solve` never emits a null angle.
 The map is ring-strict: the main ring is `map[0..8]` (slots `p1..p9`) and holds
 only `r` keys; the mutant ring is `map[9..17]` (slots `s1..s9`) and holds only
 `b` keys; an `i` key, or a key in the other ring, is `PROFILE_MAP_INVALID`. On a scale with
@@ -1281,7 +1290,11 @@ placed after `parent-` and `palette-` and inside the checksum meaning.
 `BAD_NOTE`; a version 6 link carrying `pair-` is `BAD_NOTE`. Option gates that
 key on the version character are written as explicit sets, so a version 6
 `palette-10` still parses under version 7. A client that only knows version 6
-answers a version 7 link with `NEEDS_NEWER_APP`. The grammar and token order do
+answers a version 7 link with `NEEDS_NEWER_APP`. `HPE.share.decode` reads a `pair-` map as rev 2 first; on
+`PROFILE_NOTE_MISSING` or `PROFILE_FULL` it retries the same map as rev 1, so a
+ring-correct but incomplete (or overfull) v7 link opens as the pitch-order proposal
+(with `unplaced`) instead of being refused. This is a deliberate leniency that
+keeps older links readable (owner acknowledgement pending). The grammar and token order do
 not change in rev 2; links v1 to v6 decode as standard layouts.
 
 ### 18.6 Record version 5 and rule I1

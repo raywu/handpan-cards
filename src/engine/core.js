@@ -848,7 +848,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return { map: map, unplaced: unplaced };
   }
 
+  // With no mutant entry the main half orders the Standard rim seats, so a main
+  // entry at or past the rim count has no seat.
+  function pastSeats(map, fields) {
+    if (map.slice(PROFILE_TONEFIELDS).some(function (entry) { return entry !== null; })) return false;
+    var rim = 0;
+    var id;
+    for (id in fields) if (has(fields, id) && fields[id][3] === "rim") rim += 1;
+    return map.slice(rim, PROFILE_TONEFIELDS).some(function (entry) { return entry !== null; });
+  }
+
   function ringStrict(map, fields) {
+    if (pastSeats(map, fields)) return false;
     var wanted = {};
     profileNotes(fields).forEach(function (note) { wanted[note.key] = true; });
     var seen = 0;
@@ -936,6 +947,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (map[i] !== null && map[i].charAt(0) !== (i < PROFILE_TONEFIELDS ? "r" : "b")) {
         return scaleErr("PROFILE_MAP_INVALID");
       }
+    }
+    if (pastSeats(map, fields)) {
+      var moved = proposeProfileMap(fields);
+      var proposed = { id: "paired", rev: 2, map: moved.map };
+      if (moved.unplaced.length > 0) proposed.unplaced = moved.unplaced;
+      return ok(proposed);
     }
     var key;
     for (key in byKey) {

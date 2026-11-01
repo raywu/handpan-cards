@@ -765,6 +765,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var fid = byKey[profile.map[k]];
       var slot = k % PROFILE.tonefields;
       if (k < PROFILE.tonefields) {
+        if (!mutants && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
         labels[fid] = String(k + 1);
         place[fid] = mutants
           ? [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
@@ -788,6 +789,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (!profile.ok) return profile;
       var plain = solve({ fields: source, options: {} }, options);
       var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields);
+      if (placed.ok === false) return placed;
       if (placed.mutants) {
         plain.value.geom.r_ding = PROFILE.ding.r;
         plain.value.geom.ding_dy = PROFILE.ding.dy;

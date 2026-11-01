@@ -1846,6 +1846,29 @@ test("PR: migrateProfile sends a missing note, a tenth rim note and a cross-ring
   assert.deepEqual(missing.unplaced, []);
 });
 
+test("PR: migrateProfile returns a swapped ring-strict rev 1 map as it is", () => {
+  const fields = pc.parseSeed(PROFILE_SEEDS.kurd).value.fields;
+  const swapped = mapFor(PROFILE_SEEDS.kurd);
+  [swapped[0], swapped[1]] = [swapped[1], swapped[0]];
+  assert.deepEqual(host(pc.migrateProfile(swapped, fields)), { map: swapped, unplaced: [] });
+  const read = pc.parseSeed(PROFILE_SEEDS.kurd, withMap(swapped, undefined, 1));
+  assert.deepEqual(host(read.value.options.profile), { id: "paired", rev: 2, map: swapped });
+});
+
+test("PR: a no-mutant map with a main entry past the rim count migrates to the proposal, rev 1 or rev 2", () => {
+  const str = PROFILE_SEEDS.amara;
+  const fields = pc.parseSeed(str).value.fields;
+  const rim = keysIn(fields, "rim");
+  const off = rim.slice(0, 2).concat([null], rim.slice(3), [rim[2]], Array(9).fill(null));
+  const proposal = ringStrictMap(rim, []);
+  assert.deepEqual(host(pc.migrateProfile(off, fields)), { map: proposal, unplaced: [] });
+  for (const rev of [1, 2]) {
+    const read = pc.parseSeed(str, withMap(off, undefined, rev));
+    assert.equal(read.ok, true, read.reason);
+    assert.deepEqual(host(read.value.options.profile), { id: "paired", rev: 2, map: proposal }, "rev " + rev);
+  }
+});
+
 test("PR: the PROFILE_ rows and NEOTONE_INPUT are in REASONS and verbatim in ENGINE-SPEC section 18", () => {
   const section = SPEC.slice(SPEC.indexOf("\n## 18. "));
   const codes = ["PROFILE_UNKNOWN", "PROFILE_MAP_INVALID", "PROFILE_NOTE_MISSING",
