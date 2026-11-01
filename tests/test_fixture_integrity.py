@@ -171,7 +171,7 @@ class TestMakerStrings(unittest.TestCase):
 
 # ---- Neotone (paired-area profile), lane T ---------------------------------
 # paired_profile_v1.json below is SUPERSEDED by paired_profile_v2.json (Option B,
-# lane T2). It stays, pinned, because a change is a new rev; no engine code reads it.
+# lane T2), which is SUPERSEDED by paired_profile_v3.json (course correction, lane E2). It stays, pinned, because a change is a new rev; no engine code reads it.
 # docs/plans/2026-10-30-neotone-build.md, "Frozen profile fixture". The fixture
 # is written once by hand and is never derived from the implementation; the
 # sha256 below is the reviewer-visible pin. A change is a new rev, before merge
@@ -465,6 +465,75 @@ class TestPairedProfileV2Fixture(unittest.TestCase):
         self.assertGreater(2 * p["main"]["r"] - g["depth"], 2 * (MAIN_BAND + OUTLINE))
 
 
+EXPECTED_PROFILE_V3_SHA256 = "f53fcffcd4009294ff8e8635dd944131146c89f8d41945a87f0024453a18ee1f"
+PROFILE_V3_FIXTURE = os.path.join(FIXTURES, "paired_profile_v3.json")
+
+PV3 = {
+    "id": "paired", "rev": 3, "tonefields": 9,
+    "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
+    "main": {"orbit": 0.745, "r": 0.19},
+    "mutant": {"depth": 0.3333, "r": 0.19},
+    "ding": {"r": 0.2, "dy": 0},
+    "decor": {"r": 0.355},
+    "n_in": 0.085, "number_out": 1.0758, "extent_margin": 0.06,
+    "slots": ["p%d" % i for i in range(1, 10)] + ["s%d" % i for i in range(1, 10)],
+}
+
+
+def load_profile_v3():
+    with open(PROFILE_V3_FIXTURE, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+class TestPairedProfileV3Fixture(unittest.TestCase):
+    def test_exact_frozen_content(self):
+        self.assertEqual(load_profile_v3(), PV3)
+
+    def test_sha256_is_pinned(self):
+        with open(PROFILE_V3_FIXTURE, "rb") as fh:
+            self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_PROFILE_V3_SHA256,
+                             "the v3 profile is frozen. Change = rev 4 with a rev-3 reader.")
+
+    def test_v2_is_kept_pinned_and_superseded(self):
+        self.assertEqual(load_v2()["rev"], 2)
+        with open(PROFILE_V2_FIXTURE, "rb") as fh:
+            self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_PROFILE_V2_SHA256)
+        with open(__file__, encoding="utf-8") as fh:
+            self.assertIn("SUPERSEDED by paired_profile_v3.json", fh.read())
+
+    def test_mutant_depth_is_a_third_of_the_main_diameter(self):
+        self.assertLess(abs(load_profile_v3()["mutant"]["depth"] - 1 / 3), 1e-4)
+
+    def test_main_circles_disjoint_inside_pan_clear_of_ding(self):
+        p = load_profile_v3()
+        o, r = p["main"]["orbit"], p["main"]["r"]
+        pts = [pol(o, a) for a in p["angles"]]
+        self.assertLess(o + r, 1.0)
+        self.assertGreater(o - r, p["ding"]["r"])
+        for i, a in enumerate(pts):
+            for b in pts[i + 1:]:
+                self.assertGreater(math.hypot(a[0] - b[0], a[1] - b[1]), 2 * r)
+
+    def test_decor_ring_sits_between_ding_and_main_circles(self):
+        p = load_profile_v3()
+        self.assertEqual(p["decor"]["r"], 0.355)
+        self.assertGreater(p["decor"]["r"], p["ding"]["r"])
+        self.assertLess(p["decor"]["r"], p["main"]["orbit"] - p["main"]["r"])
+
+    def test_lens_geometry_figures(self):
+        p = load_profile_v3()
+        g = lens_geometry(p)
+        self.assertAlmostEqual(g["centre"], 0.4917, places=4)
+        self.assertAlmostEqual(g["centre"] + p["mutant"]["r"] - (p["main"]["orbit"] - p["main"]["r"]),
+                               g["depth"])
+
+    def test_print_extent_is_61_8(self):
+        p = load_profile_v3()
+        extent = p["number_out"] + NUM_RATIO * p["main"]["r"] / 2 + p["extent_margin"]
+        self.assertAlmostEqual(extent, 1.1966, places=4)
+        self.assertEqual(v2_print_radius(p), 61.8)
+
+
 class TestShippedClientFixture(unittest.TestCase):
     def test_is_verbatim_ee5438d0_index_html_and_pinned(self):
         with open(SHIPPED_CLIENT, "rb") as fh:
@@ -513,7 +582,8 @@ class TestEngineSpecProfileSection(unittest.TestCase):
 
     def test_refusal_rows_carry_code_kind_and_sentence(self):
         for code in ("PROFILE_UNKNOWN", "PROFILE_MAP_INVALID", "PROFILE_NOTE_MISSING",
-                     "PROFILE_NOTE_TWICE", "PROFILE_FULL", "PROFILE_CONFLICT"):
+                     "PROFILE_NOTE_TWICE", "PROFILE_FULL", "PROFILE_CONFLICT",
+                     "NEOTONE_INPUT"):
             with self.subTest(code=code):
                 self.assertRegex(
                     self.section,
@@ -525,7 +595,9 @@ class TestEngineSpecProfileSection(unittest.TestCase):
                        "PROFILE_RECORD_VERSION = 5", "I1", "proposeProfile",
                        "geom.place", "`id,rev,map`", "NEEDS_NEWER_APP",
                        "BAD_NOTE", "tests/fixtures/paired_profile_v1.json",
-                       "tests/fixtures/paired_profile_v2.json", "tonefield",
+                       "tests/fixtures/paired_profile_v2.json",
+                       "tests/fixtures/paired_profile_v3.json", "migrateProfile",
+                       "NEOTONE_INPUT", "decor", "tonefield",
                        "mutant tonefield", "lens", "ring-strict", "unplaced",
                        "pitch order", "rev 2", "M<n>",
                        "tests/fixtures/shipped_client_ee5438d0.html.txt"):

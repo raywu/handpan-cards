@@ -111,10 +111,12 @@ function rawSpecReasons() {
   return table;
 }
 
-// Section 18.3 owns the PROFILE_ rows; section 2 stays the closed pre-profile enum.
+// Section 18.3 owns the PROFILE_ rows and NEOTONE_INPUT; section 2 stays the closed pre-profile enum.
 function withoutProfileRows(reasons) {
   const out = {};
-  for (const [code, row] of Object.entries(reasons)) if (!code.startsWith("PROFILE_")) out[code] = row;
+  for (const [code, row] of Object.entries(reasons)) {
+    if (!code.startsWith("PROFILE_") && code !== "NEOTONE_INPUT") out[code] = row;
+  }
   return out;
 }
 
@@ -1610,7 +1612,7 @@ test("OF: formatTyped writes a ring low to high when its stored seats are not a 
     "(D3) C4 A3 D4 E4 F4 G4 A4 C5 | D5 E5");
 });
 
-/* ---------------- section 18: the paired-area profile option --------------- */
+/* ---------------- section 18: the Neotone profile option ------------------- */
 
 const PROFILE_SEEDS = {
   hijaz: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
@@ -1634,11 +1636,14 @@ function profileCore(enabled) {
   return c;
 }
 const pc = profileCore(true);
-const withMap = (map, extra) => Object.assign({ profile: { id: "paired", rev: 1, map } }, extra);
+const withMap = (map, extra, rev = 2) => Object.assign({ profile: { id: "paired", rev, map } }, extra);
+const keysIn = (fields, zone) => nonDing(fields).filter(id => fields[id][3] === zone)
+  .map(id => fields[id]).sort((a, b) => a[2] - b[2]).map(keyOf);
+const ringStrictMap = (rim, bottom) =>
+  rim.concat(Array(9 - rim.length).fill(null), bottom, Array(9 - bottom.length).fill(null));
 const mapFor = (str) => {
   const fields = pc.parseSeed(str).value.fields;
-  const keys = nonDing(fields).map(id => keyOf(fields[id]));
-  return keys.concat(Array(18 - keys.length).fill(null));
+  return ringStrictMap(keysIn(fields, "rim"), keysIn(fields, "bottom"));
 };
 
 test("PR: (zone, midi) is unique across the five built-ins and the import gold corpus", () => {
@@ -1660,20 +1665,21 @@ test("PR: PROFILE_ENABLED is false by default and a profile is then PROFILE_UNKN
   assert.equal(r.code, "PROFILE_UNKNOWN");
 });
 
-test("PR: parseSeed accepts a full map for every built-in and keeps a copy", () => {
+test("PR: parseSeed accepts a ring-strict full map and keeps a copy", () => {
   for (const [id, str] of Object.entries(PROFILE_SEEDS)) {
+    if (id === "pygmy") continue;
     const map = mapFor(str);
     const r = pc.parseSeed(str, withMap(map));
     assert.equal(r.ok, true, `${id}: ${r.code} ${r.reason}`);
-    assert.deepEqual(host(r.value.options.profile), { id: "paired", rev: 1, map });
+    assert.deepEqual(host(r.value.options.profile), { id: "paired", rev: 2, map });
     assert.notEqual(r.value.options.profile.map, map, "the map is copied, not aliased");
   }
 });
 
-test("PR: parseSeed accepts a map that leaves areas empty anywhere", () => {
+test("PR: parseSeed accepts a map that leaves tonefields empty anywhere", () => {
   const keys = mapFor(PROFILE_SEEDS.kurd).filter(Boolean);
   const map = Array(18).fill(null);
-  keys.forEach((k, i) => { map[17 - i] = k; });
+  keys.forEach((k, i) => { map[8 - i] = k; });
   assert.equal(map.filter(Boolean).length, 9);
   assert.equal(pc.parseSeed(PROFILE_SEEDS.kurd, withMap(map)).ok, true);
 });
@@ -1681,16 +1687,17 @@ test("PR: parseSeed accepts a map that leaves areas empty anywhere", () => {
 test("PR: each profile refusal code fires on a minimal case with its sentence", () => {
   const kurd = PROFILE_SEEDS.kurd;
   const good = mapFor(kurd);
-  const prof = (map) => ({ profile: { id: "paired", rev: 1, map } });
+  const prof = (map, rev = 2) => ({ profile: { id: "paired", rev, map } });
   const swap = (i, v) => good.map((k, n) => n === i ? v : k);
   const cases = [
-    ["PROFILE_UNKNOWN", { profile: { id: "other", rev: 1, map: good } }],
-    ["PROFILE_UNKNOWN", { profile: { id: "paired", rev: 2, map: good } }],
+    ["PROFILE_UNKNOWN", { profile: { id: "other", rev: 2, map: good } }],
+    ["PROFILE_UNKNOWN", { profile: { id: "paired", rev: 3, map: good } }],
+    ["PROFILE_UNKNOWN", { profile: { id: "paired", rev: 0, map: good } }],
     ["PROFILE_MAP_INVALID", prof(good.slice(0, 17))],
     ["PROFILE_MAP_INVALID", prof(good.concat([null]))],
     ["PROFILE_MAP_INVALID", prof("x".repeat(18))],
-    ["PROFILE_MAP_INVALID", { profile: { id: "paired", rev: 1 } }],
-    ["PROFILE_MAP_INVALID", { profile: { id: "paired", rev: 1, map: good, extra: 1 } }],
+    ["PROFILE_MAP_INVALID", { profile: { id: "paired", rev: 2 } }],
+    ["PROFILE_MAP_INVALID", { profile: { id: "paired", rev: 2, map: good, extra: 1 } }],
     ["PROFILE_MAP_INVALID", { profile: [] }],
     ["PROFILE_MAP_INVALID", { profile: "paired" }],
     ["PROFILE_MAP_INVALID", prof(swap(0, "x57"))],
@@ -1699,6 +1706,7 @@ test("PR: each profile refusal code fires on a minimal case with its sentence", 
     ["PROFILE_MAP_INVALID", prof(swap(0, "__proto__"))],
     ["PROFILE_MAP_INVALID", prof(swap(0, "r1"))],
     ["PROFILE_MAP_INVALID", prof(swap(0, "b57"))],
+    ["PROFILE_MAP_INVALID", prof(good.slice(1, 9).concat([null, good[0]], Array(8).fill(null)))],
     ["PROFILE_NOTE_TWICE", prof(swap(1, good[0]))],
     ["PROFILE_NOTE_MISSING", prof(swap(0, null))],
     ["PROFILE_CONFLICT", withMap(good, { mirror: true })],
@@ -1715,7 +1723,47 @@ test("PR: each profile refusal code fires on a minimal case with its sentence", 
   }
 });
 
-test("PR: more than 18 non-ding notes is PROFILE_FULL", () => {
+test("PR: rev 2 is ring-strict: an inner key or a key in the other ring is PROFILE_MAP_INVALID", () => {
+  const scale = "(D3) A3 Bb3 C4 D4 E4 F4 G4 [A4]";
+  const fields = pc.parseSeed(scale).value.fields;
+  const rim = keysIn(fields, "rim");
+  const bottom = keysIn(fields, "bottom");
+  const crossed = ringStrictMap(rim.slice(0, 7), bottom).slice();
+  crossed[9] = rim[7];
+  crossed[7] = bottom[0];
+  crossed[8] = null;
+  const r = pc.parseSeed(scale, withMap(crossed));
+  assert.equal(r.code, "PROFILE_MAP_INVALID");
+  const withInner = pc.parseSeed("(D3) A3 Bb3 C4 D4 E4 F4 G4 | A4");
+  const innerKey = keyOf(withInner.value.fields[nonDing(withInner.value.fields).pop()]);
+  assert.equal(innerKey.charAt(0), "i");
+  assert.equal(pc.parseSeed("(D3) A3 Bb3 C4 D4 E4 F4 G4 | A4",
+    withMap(ringStrictMap(keysIn(withInner.value.fields, "rim"), []))).code, "PROFILE_FULL");
+});
+
+test("PR: PROFILE_FULL is a note without a tonefield: a tenth rim note, a tenth bottom note or any inner note", () => {
+  const rim10 = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5";
+  const f10 = pc.parseSeed(rim10).value.fields;
+  const r10 = keysIn(f10, "rim");
+  assert.equal(r10.length, 10);
+  const full = pc.parseSeed(rim10, withMap(ringStrictMap(r10.slice(0, 9), [])));
+  assert.equal(full.code, "PROFILE_FULL");
+  assert.equal(full.reason, core.REASONS.PROFILE_FULL.reason);
+  const bottom10 = "[C2] [D2] [E2] [F2] [G2] [A2] [B2] [C3] [D3] [E3] (D4) A4 C5";
+  const bot = pc.parseSeed(bottom10);
+  assert.equal(bot.ok, true, bot.reason);
+  const bottomKeys = keysIn(bot.value.fields, "bottom");
+  assert.equal(bottomKeys.length, 10);
+  assert.equal(pc.parseSeed(bottom10,
+    withMap(ringStrictMap(keysIn(bot.value.fields, "rim"), bottomKeys.slice(0, 9)))).code, "PROFILE_FULL");
+  const pygmy = pc.parseSeed(PROFILE_SEEDS.pygmy);
+  assert.equal(pygmy.ok, true);
+  assert.equal(pc.parseSeed(PROFILE_SEEDS.pygmy,
+    withMap(ringStrictMap(keysIn(pygmy.value.fields, "rim"), keysIn(pygmy.value.fields, "bottom")))).code,
+  "PROFILE_FULL");
+});
+
+test("PR: more than 18 non-ding notes is PROFILE_FULL for rev 1 and rev 2", () => {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   const notes = [];
   for (let m = 52; m < 52 + 20; m += 1) notes.push(names[m % 12] + (Math.floor(m / 12) - 1));
@@ -1723,16 +1771,18 @@ test("PR: more than 18 non-ding notes is PROFILE_FULL", () => {
   const base = pc.parseSeed(str);
   assert.equal(base.ok, true, base.reason);
   const map = nonDing(base.value.fields).map(id => keyOf(base.value.fields[id])).slice(0, 18);
-  const r = pc.parseSeed(str, withMap(map));
-  assert.equal(r.code, "PROFILE_FULL");
-  assert.equal(r.reason, core.REASONS.PROFILE_FULL.reason);
+  for (const rev of [1, 2]) {
+    const r = pc.parseSeed(str, withMap(map, undefined, rev));
+    assert.equal(r.code, "PROFILE_FULL");
+    assert.equal(r.reason, core.REASONS.PROFILE_FULL.reason);
+  }
 });
 
 test("PR: an inherited or prototype-polluting profile cannot satisfy the option", () => {
   const good = mapFor(PROFILE_SEEDS.kurd);
-  const inherited = Object.create({ id: "paired", rev: 1, map: good });
+  const inherited = Object.create({ id: "paired", rev: 2, map: good });
   assert.equal(pc.parseSeed(PROFILE_SEEDS.kurd, { profile: inherited }).code, "PROFILE_MAP_INVALID");
-  const polluted = JSON.parse('{"id":"paired","rev":1,"map":[],"__proto__":{"x":1}}');
+  const polluted = JSON.parse('{"id":"paired","rev":2,"map":[],"__proto__":{"x":1}}');
   polluted.map = good;
   assert.equal(pc.parseSeed(PROFILE_SEEDS.kurd, { profile: polluted }).code, "PROFILE_MAP_INVALID");
   const hole = good.slice();
@@ -1751,13 +1801,60 @@ test("PR: a stray profile on an acoustic parse never appears, and other unknown 
   assert.equal(none.value.options.profile, undefined);
 });
 
-test("PR: the six PROFILE_ rows are in REASONS and verbatim in ENGINE-SPEC section 18", () => {
+test("PR: migrateProfile is the identity on a ring-strict complete rev 1 map", () => {
+  for (const id of ["hijaz", "kurd", "amara", "amara10"]) {
+    const str = PROFILE_SEEDS[id];
+    const fields = pc.parseSeed(str).value.fields;
+    const map = mapFor(str);
+    assert.deepEqual(host(pc.migrateProfile(map, fields)), { map, unplaced: [] }, id);
+    const read = pc.parseSeed(str, withMap(map, undefined, 1));
+    assert.deepEqual(host(read.value.options.profile), { id: "paired", rev: 2, map }, id);
+  }
+});
+
+test("PR: migrateProfile re-proposes in pitch order any other rev 1 map", () => {
+  const fields = pc.parseSeed(PROFILE_SEEDS.pygmy).value.fields;
+  const byName = {};
+  for (const id of nonDing(fields)) byName[fields[id][0] + fields[id][1]] = keyOf(fields[id]);
+  const devMap = [
+    byName.G3, byName.Ab3, byName.C4, byName.Eb4, byName.F4, byName.G4, byName.Ab4, byName.C5, byName.Eb5,
+    byName.F5, byName.G5, byName.C3, byName.Db3, byName.Eb3, byName.Bb3, byName.Db4, byName.Ab5, null
+  ];
+  const migrated = host(pc.migrateProfile(devMap, fields));
+  assert.deepEqual(migrated.map, [
+    byName.G3, byName.Ab3, byName.C4, byName.Eb4, byName.F4, byName.G4, byName.Ab4, byName.C5, byName.Eb5,
+    byName.C3, byName.Db3, byName.Eb3, byName.Bb3, byName.Db4, byName.Ab5, null, null, null
+  ]);
+  assert.deepEqual(migrated.unplaced, [byName.F5, byName.G5]);
+  const read = pc.parseSeed(PROFILE_SEEDS.pygmy, withMap(devMap, undefined, 1));
+  assert.equal(read.ok, true, read.reason);
+  assert.deepEqual(host(read.value.options.profile),
+    { id: "paired", rev: 2, map: migrated.map, unplaced: migrated.unplaced });
+});
+
+test("PR: migrateProfile sends a missing note, a tenth rim note and a cross-ring key to the proposal", () => {
+  const scale = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5";
+  const fields = pc.parseSeed(scale).value.fields;
+  const rim = keysIn(fields, "rim");
+  const crossed = host(pc.migrateProfile(rim.concat(Array(8).fill(null)), fields));
+  assert.deepEqual(crossed.map, ringStrictMap(rim.slice(0, 9), []));
+  assert.deepEqual(crossed.unplaced, [rim[9]]);
+  const kurd = pc.parseSeed(PROFILE_SEEDS.kurd).value.fields;
+  const kr = keysIn(kurd, "rim");
+  const missing = host(pc.migrateProfile(ringStrictMap(kr.slice(0, 8), []), kurd));
+  assert.deepEqual(missing.map, ringStrictMap(kr, []));
+  assert.deepEqual(missing.unplaced, []);
+});
+
+test("PR: the PROFILE_ rows and NEOTONE_INPUT are in REASONS and verbatim in ENGINE-SPEC section 18", () => {
   const section = SPEC.slice(SPEC.indexOf("\n## 18. "));
   const codes = ["PROFILE_UNKNOWN", "PROFILE_MAP_INVALID", "PROFILE_NOTE_MISSING",
-    "PROFILE_NOTE_TWICE", "PROFILE_FULL", "PROFILE_CONFLICT"];
+    "PROFILE_NOTE_TWICE", "PROFILE_FULL", "PROFILE_CONFLICT", "NEOTONE_INPUT"];
   for (const code of codes) {
     assert.equal(core.REASONS[code].kind, "error", code);
     assert.ok(section.includes("| `" + code + "` | error | `" + core.REASONS[code].reason + "` |"), code);
+    assert.ok(!/\barea/i.test(core.REASONS[code].reason), code + " must not say area");
   }
-  assert.deepEqual(Object.keys(core.REASONS).filter(c => c.startsWith("PROFILE_")).sort(), codes.slice().sort());
+  assert.deepEqual(Object.keys(core.REASONS).filter(c => c.startsWith("PROFILE_")).sort(),
+    codes.filter(c => c.startsWith("PROFILE_")).sort());
 });

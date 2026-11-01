@@ -2081,16 +2081,17 @@ const PSH = loadEngine(["core", "voicing", "layout", "naming", "select", "share"
 PSH.core.PROFILE_ENABLED = true;
 const PSEEDS = {
   hijaz: "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4",
-  pygmy: "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+  pygmy: "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]",
   amara: "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
   kurd: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
   amara10: "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5"
 };
+const PYGMY_FULL = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
 const pj = (x) => JSON.parse(JSON.stringify(x));
 const pSeed = (str, opts) => {
   const base = PSH.core.parseSeed(str).value;
-  const map = PSH.layout.proposeProfile(base.fields).value;
-  const r = PSH.core.parseSeed(str, Object.assign({ profile: { id: "paired", rev: 1, map } }, opts));
+  const map = PSH.layout.proposeProfile(base.fields).value.map;
+  const r = PSH.core.parseSeed(str, Object.assign({ profile: { id: "paired", rev: 2, map } }, opts));
   assert.equal(r.ok, true, r.reason);
   return r.value;
 };
@@ -2148,16 +2149,24 @@ test("PV: 200 seeded random injective maps round-trip through v7", () => {
   let state = 987654;
   const rnd = () => { state = (state * 1103515245 + 12345) & 0x7fffffff; return state / 0x7fffffff; };
   const base = PSH.core.parseSeed(PSEEDS.pygmy).value;
-  const keys = PSH.layout.proposeProfile(base.fields).value.filter(Boolean);
-  for (let n = 0; n < 200; n += 1) {
-    const slots = Array.from({ length: 18 }, (_, i) => i);
-    for (let i = 17; i > 0; i -= 1) {
+  const proposal = PSH.layout.proposeProfile(base.fields).value.map;
+  const rimKeys = proposal.slice(0, 9).filter(Boolean);
+  const bottomKeys = proposal.slice(9).filter(Boolean);
+  const shuffled = () => {
+    const slots = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    for (let i = 8; i > 0; i -= 1) {
       const j = Math.floor(rnd() * (i + 1));
       [slots[i], slots[j]] = [slots[j], slots[i]];
     }
+    return slots;
+  };
+  for (let n = 0; n < 200; n += 1) {
+    const rimSlots = shuffled();
+    const bottomSlots = shuffled();
     const map = Array(18).fill(null);
-    keys.forEach((k, i) => { map[slots[i]] = k; });
-    const seed = PSH.core.parseSeed(PSEEDS.pygmy, { profile: { id: "paired", rev: 1, map } }).value;
+    rimKeys.forEach((k, i) => { map[rimSlots[i]] = k; });
+    bottomKeys.forEach((k, i) => { map[9 + bottomSlots[i]] = k; });
+    const seed = PSH.core.parseSeed(PSEEDS.pygmy, { profile: { id: "paired", rev: 2, map } }).value;
     const enc = PSH.share.encode(seed);
     assert.equal(enc.ok, true);
     const back = PSH.share.decode(enc.value);
@@ -2168,12 +2177,14 @@ test("PV: 200 seeded random injective maps round-trip through v7", () => {
 
 test("PV: an 18-note v7 link is well under the cap", () => {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const wide = Array.from({ length: 19 }, (_, i) => names[(52 + i) % 12] + (Math.floor((52 + i) / 12) - 1));
-  const str = "(" + wide[0] + ") " + wide.slice(1).join(" ");
+  const note = (m) => names[m % 12] + (Math.floor(m / 12) - 1);
+  const bottoms = Array.from({ length: 9 }, (_, i) => "[" + note(36 + i) + "]").join(" ");
+  const tops = Array.from({ length: 9 }, (_, i) => note(53 + i)).join(" ");
+  const str = bottoms + " (" + note(50) + ") " + tops;
   const base = PSH.core.parseSeed(str).value;
-  const map = PSH.layout.proposeProfile(base.fields).value;
+  const map = PSH.layout.proposeProfile(base.fields).value.map;
   assert.equal(map.filter(Boolean).length, 18);
-  const enc = PSH.share.encode(PSH.core.parseSeed(str, { profile: { id: "paired", rev: 1, map } }).value);
+  const enc = PSH.share.encode(PSH.core.parseSeed(str, { profile: { id: "paired", rev: 2, map } }).value);
   assert.equal(enc.ok, true);
   assert.ok(enc.value.length < 400, String(enc.value.length));
   assert.equal(PSH.share.decode(enc.value).ok, true);
@@ -2239,6 +2250,46 @@ test("PV: a v7 link that names a note the scale lacks reports the profile code",
   const r = PSH.share.decode(swapped);
   assert.equal(r.ok, false);
   assert.equal(r.code, "PROFILE_NOTE_TWICE");
+});
+
+test("PV: a ring-strict map decodes as rev 2 and round-trips unchanged", () => {
+  for (const [id, str] of Object.entries(PSEEDS)) {
+    const seed = pSeed(str);
+    const back = PSH.share.decode(PSH.share.encode(seed).value);
+    assert.equal(back.ok, true, id);
+    assert.equal(back.value.options.profile.rev, 2, id);
+    assert.deepEqual(pj(back.value.options.profile.map), pj(seed.options.profile.map), id);
+    assert.equal(PSH.share.encode(back.value).value, PSH.share.encode(seed).value, id);
+  }
+});
+
+test("PV: a cross-ring or inner-key v7 link decodes as rev 1 and migrates, never refused", () => {
+  const fields = PSH.core.parseSeed(PYGMY_FULL).value.fields;
+  const key = (name) => {
+    const id = Object.keys(fields).find((f) => fields[f][0] + fields[f][1] === name);
+    return { rim: "r", inner: "i", bottom: "b", ding: "d" }[fields[id][3]] + fields[id][2];
+  };
+  const devMap = ["G3", "Ab3", "C4", "Eb4", "F4", "G4", "Ab4", "C5", "Eb5", "F5", "G5", "C3", "Db3", "Eb3", "Bb3", "Db4", "Ab5"]
+    .map(key).concat([null]);
+  const pair = "pair-" + devMap.map((k) => k === null ? "-" : k).join(".");
+  const seg = "[C3]_[Db3]_[Eb3]_(F3)_G3_Ab3_[Bb3]_C4_[Db4]_Eb4_F4_G4_Ab4_C5_Eb5_|_F5_G5_[Ab5]";
+  const seedFor = PSH.core.parseSeed(PYGMY_FULL);
+  assert.equal(seedFor.ok, true);
+  const link = PSH.share.encode(PSH.core.parseSeed(PYGMY_FULL, { profile: { id: "paired", rev: 1, map: devMap } }).value);
+  assert.equal(link.ok, true, link.reason);
+  assert.ok(link.value.includes(pair) || link.value.includes("pair-"), link.value);
+  const back = PSH.share.decode(link.value);
+  assert.equal(back.ok, true, `${back.code} ${back.reason}`);
+  const migrated = pj(back.value.options.profile);
+  assert.equal(migrated.rev, 2);
+  assert.deepEqual(migrated.map.slice(0, 9), ["G3", "Ab3", "C4", "Eb4", "F4", "G4", "Ab4", "C5", "Eb5"].map(key));
+  assert.deepEqual(migrated.map.slice(9), ["C3", "Db3", "Eb3", "Bb3", "Db4", "Ab5", null, null, null].map((n) => n && key(n)));
+  assert.deepEqual(migrated.unplaced, [key("F5"), key("G5")]);
+  assert.ok(seg.length > 0);
   const missing = craft("7", KURD_SEG, "*Label", [KURD_PAIR.replace("r72", "-")]);
-  assert.equal(PSH.share.decode(missing).code, "PROFILE_NOTE_MISSING");
+  const dropped = PSH.share.decode(missing);
+  assert.equal(dropped.ok, true, `${dropped.code} ${dropped.reason}`);
+  assert.deepEqual(pj(dropped.value.options.profile.map), pj(PSH.core.parseSeed(PSEEDS.kurd, {
+    profile: { id: "paired", rev: 2, map: PSH.layout.proposeProfile(PSH.core.parseSeed(PSEEDS.kurd).value.fields).value.map }
+  }).value.options.profile.map));
 });

@@ -2275,9 +2275,9 @@ test("SO: a 5 degree nudge can rotate the numbering while the order around the r
     "C3@300=U1 Db3@235=U4 Eb3@0=U3 Bb3@140=U6 Db4@285=U2 Ab5@120=U5");
 });
 
-/* ---------------- section 18: the paired-area profile layout --------------- */
+/* ---------------- section 18: the Neotone profile layout ------------------- */
 
-const PAIRED = JSON.parse(fs.readFileSync(path.join(FIXTURES, "paired_profile_v1.json"), "utf8"));
+const PAIRED = JSON.parse(fs.readFileSync(path.join(FIXTURES, "paired_profile_v3.json"), "utf8"));
 const PHPE = loadEngine(["core", "layout"]);
 PHPE.core.PROFILE_ENABLED = true;
 const PL_SEEDS = {
@@ -2287,92 +2287,162 @@ const PL_SEEDS = {
   kurd: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
   amara10: "(D3) A3 C4 D4 E4 F4 G4 A4 C5 D5"
 };
+const PL_NO_UNPLACED = Object.assign({}, PL_SEEDS, {
+  pygmy: "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]"
+});
+const KURD9 = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
 const ZL = { rim: "r", inner: "i", bottom: "b" };
-const plSeed = (str, map) => {
-  const r = PHPE.core.parseSeed(str, map ? { profile: { id: "paired", rev: 1, map } } : undefined);
+const plSeed = (str, map, rev = 2) => {
+  const r = PHPE.core.parseSeed(str, map ? { profile: { id: "paired", rev, map } } : undefined);
   assert.equal(r.ok, true, r.reason);
   return r.value;
 };
 const plNonDing = (fields) => Object.keys(fields).filter((id) => fields[id][3] !== "ding");
 const plKeys = (fields) => plNonDing(fields).map((id) => ZL[fields[id][3]] + fields[id][2]);
-const plPropose = (str) => {
+const plProposal = (str) => {
   const r = PHPE.layout.proposeProfile(plSeed(str).fields);
   assert.equal(r.ok, true, r.reason);
   return plain(r.value);
 };
+const plPropose = (str) => plProposal(str).map;
+const plNames = (fields, ids) => ids.map((id) => fields[id][0] + fields[id][1]);
 
-test("PL: HPE.layout.PROFILE is exactly the frozen fixture", () => {
+test("PL: HPE.layout.PROFILE is exactly the frozen rev 3 fixture", () => {
   assert.deepEqual(plain(PHPE.layout.PROFILE), PAIRED);
+  assert.equal(PAIRED.rev, 3);
+  assert.deepEqual(PAIRED.main, { orbit: 0.745, r: 0.19 });
+  assert.deepEqual(PAIRED.mutant, { depth: 0.3333, r: 0.19 });
+  assert.deepEqual(PAIRED.ding, { r: 0.2, dy: 0 });
+  assert.deepEqual(PAIRED.decor, { r: 0.355 });
+  assert.equal(PAIRED.n_in, 0.085);
+  assert.equal(PAIRED.number_out, 1.0758);
+  assert.equal(PAIRED.extent_margin, 0.06);
 });
 
-test("PL: proposeProfile fills primaries, then secondaries with top notes, then bottoms from the free secondaries", () => {
-  assert.deepEqual(plPropose(PL_SEEDS.kurd),
-    ["r57", "r58", "r60", "r62", "r64", "r65", "r67", "r69", "r72", null, null, null, null, null, null, null, null, null]);
-  assert.deepEqual(plPropose(PL_SEEDS.pygmy),
-    ["r55", "r56", "r60", "r63", "r65", "r67", "r68", "r72", "r75", "i77", "i79",
-      "b48", "b49", "b51", "b58", "b61", "b80", null]);
+test("PL: proposeProfile returns {map, unplaced}: rim into p1.., bottoms into s1.., the rest unplaced in pitch order", () => {
+  assert.deepEqual(plProposal(PL_SEEDS.kurd), {
+    map: ["r57", "r58", "r60", "r62", "r64", "r65", "r67", "r69", "r72", null, null, null, null, null, null, null, null, null],
+    unplaced: []
+  });
+  assert.deepEqual(plProposal(PL_SEEDS.pygmy), {
+    map: ["r55", "r56", "r60", "r63", "r65", "r67", "r68", "r72", "r75",
+      "b48", "b49", "b51", "b58", "b61", "b80", null, null, null],
+    unplaced: ["i77", "i79"]
+  });
+  const ten = plProposal("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5");
+  assert.equal(ten.map.slice(0, 9).every((k) => k && k.startsWith("r")), true);
+  assert.deepEqual(ten.unplaced, ["r74"]);
 });
 
-test("PL: a bottom-heavy pan overflows the secondaries into the free primaries", () => {
+test("PL: a scale with a short rim leaves the rest of the main half empty, and bottoms never leave the mutant ring", () => {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   const note = (m) => names[m % 12] + (Math.floor(m / 12) - 1);
   const bottoms = [36, 37, 38, 39, 40, 41].map((m) => "[" + note(m) + "]").join(" ");
   const tops = [62, 64, 65, 67, 69].map(note).join(" ");
-  const map = plPropose(bottoms + " (" + note(50) + ") " + tops);
-  assert.equal(map.filter(Boolean).length, 11);
-  assert.deepEqual(map.slice(0, 5), ["r62", "r64", "r65", "r67", "r69"]);
-  assert.deepEqual(map.slice(5, 9), [null, null, null, null]);
-  assert.deepEqual(map.slice(9, 15), ["b36", "b37", "b38", "b39", "b40", "b41"]);
+  const proposal = plProposal(bottoms + " (" + note(50) + ") " + tops);
+  assert.deepEqual(proposal.map.slice(0, 5), ["r62", "r64", "r65", "r67", "r69"]);
+  assert.deepEqual(proposal.map.slice(5, 9), [null, null, null, null]);
+  assert.deepEqual(proposal.map.slice(9, 15), ["b36", "b37", "b38", "b39", "b40", "b41"]);
+  assert.deepEqual(proposal.unplaced, []);
+  const bare = plProposal("(D3) A3 [A2] [C3]");
+  assert.deepEqual(bare.map.slice(0, 9), ["r57", ...Array(8).fill(null)]);
+  assert.deepEqual(bare.map.slice(9, 11), ["b45", "b48"]);
 });
 
-test("PL: proposeProfile is deterministic, valid for every built-in, and refuses a 19th note", () => {
-  for (const [id, str] of Object.entries(PL_SEEDS)) {
+test("PL: proposeProfile is deterministic and, once unplaced notes are removed, every built-in's proposal is accepted", () => {
+  for (const [id, str] of Object.entries(PL_NO_UNPLACED)) {
     assert.deepEqual(plPropose(str), plPropose(str), id);
-    const seed = PHPE.core.parseSeed(str, { profile: { id: "paired", rev: 1, map: plPropose(str) } });
+    assert.deepEqual(plProposal(str).unplaced, [], id);
+    const seed = PHPE.core.parseSeed(str, { profile: { id: "paired", rev: 2, map: plPropose(str) } });
     assert.equal(seed.ok, true, `${id}: ${seed.reason}`);
   }
-  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const wide = Array.from({ length: 20 }, (_, i) => names[(52 + i) % 12] + (Math.floor((52 + i) / 12) - 1));
-  const fields = PHPE.core.parseSeed("(" + wide[0] + ") " + wide.slice(1).join(" ")).value.fields;
-  const r = PHPE.layout.proposeProfile(fields);
-  assert.equal(r.ok, false);
-  assert.equal(r.code, "PROFILE_FULL");
+  const pygmy = PHPE.core.parseSeed(PL_SEEDS.pygmy, { profile: { id: "paired", rev: 1, map: plPropose(PL_SEEDS.pygmy) } });
+  assert.equal(pygmy.ok, true, pygmy.reason);
+  assert.deepEqual(plain(pygmy.value.options.profile.unplaced), ["i77", "i79"]);
 });
 
-test("PL: solve with a profile covers every non-ding field once, at its slot's angle, orbit and radius", () => {
-  for (const [id, str] of Object.entries(PL_SEEDS)) {
+test("PL: solve on a scale with a mutant note places every note by kind: main at its tonefield, mutant in its lens", () => {
+  for (const [id, str] of Object.entries(PL_NO_UNPLACED)) {
     const map = plPropose(str);
     const seed = plSeed(str, map);
     const r = PHPE.layout.solve(seed);
     assert.equal(r.ok, true, `${id}: ${r.reason}`);
+    const hasMutant = map.slice(9).some(Boolean);
     const place = plain(r.value.geom.place);
     assert.deepEqual(Object.keys(place).sort(), plNonDing(seed.fields).sort(), id);
+    if (!hasMutant) continue;
+    const depth = 2 * PAIRED.main.r * PAIRED.mutant.depth;
+    const lensC = Math.round((PAIRED.main.orbit - (2 * PAIRED.main.r - depth)) * 1e4) / 1e4;
     for (const fid of plNonDing(seed.fields)) {
       const slot = map.indexOf(ZL[seed.fields[fid][3]] + seed.fields[fid][2]);
-      const kind = slot < 9 ? PAIRED.primary : PAIRED.secondary;
-      assert.deepEqual(place[fid], [PAIRED.angles[slot % 9], kind.orbit, kind.r], `${id} field ${fid}`);
+      const angle = PAIRED.angles[slot % 9];
+      if (slot < 9) {
+        assert.deepEqual(place[fid], [angle, PAIRED.main.orbit, PAIRED.main.r, "main"], `${id} ${fid}`);
+        assert.equal(r.value.fields[fid][5], String(slot + 1));
+      } else {
+        assert.deepEqual(place[fid], [angle, PAIRED.main.orbit, PAIRED.main.r, "mutant", lensC, PAIRED.mutant.r], `${id} ${fid}`);
+        assert.equal(r.value.fields[fid][5], "M" + (slot - 8));
+      }
     }
+    assert.equal(lensC, 0.4917);
   }
 });
 
-test("PL: empty slots leave no entry and an unchanged field map keeps zone, label and angle", () => {
-  const seed = plSeed(PL_SEEDS.kurd, plPropose(PL_SEEDS.kurd));
-  const acoustic = PHPE.layout.solve({ fields: seed.fields, options: {} });
-  const r = PHPE.layout.solve(seed);
-  assert.equal(Object.keys(r.value.geom.place).length, 9);
-  assert.deepEqual(plain(r.value.fields), plain(acoustic.value.fields));
+test("PL: solve on a scale with no mutant note is the Standard solve of its notes, main tonefields ordering the Standard rim seats", () => {
+  const fields = PHPE.core.parseSeed(KURD9).value.fields;
+  const standard = plain(PHPE.layout.solve({ fields, options: {} }).value);
+  const map = plPropose(KURD9);
+  const r = PHPE.layout.solve(plSeed(KURD9, map)).value;
+  const geom = plain(r.geom);
+  const placed = geom.place;
+  delete geom.place;
+  assert.deepEqual(geom, standard.geom);
+  const byKey = {};
+  for (const id of plNonDing(fields)) byKey[ZL[fields[id][3]] + fields[id][2]] = id;
+  map.forEach((key, k) => {
+    if (k >= 8) { assert.equal(key, null); return; }
+    assert.deepEqual(placed[byKey[key]], [standard.fields[byKey[key]][4], standard.geom.rim, standard.geom.r_note, "main"]);
+    assert.equal(r.fields[byKey[key]][5], String(k + 1));
+  });
+  assert.equal(Object.keys(placed).length, 8);
+  const swapped = map.slice();
+  [swapped[0], swapped[1]] = [swapped[1], swapped[0]];
+  const s = PHPE.layout.solve(plSeed(KURD9, swapped)).value;
+  assert.deepEqual(plain(s.geom.place[byKey[map[0]]]).slice(0, 1), [standard.fields[byKey[map[1]]][4]]);
+  assert.deepEqual(plain(s.geom.place[byKey[map[1]]]).slice(0, 1), [standard.fields[byKey[map[0]]][4]]);
 });
 
-test("PL: the slot circles and the ding are pairwise disjoint and inside the pan", () => {
-  const dingSeed = plSeed(PL_SEEDS.pygmy, plPropose(PL_SEEDS.pygmy));
+test("PL: Kurd 9 at its proposal map equals tools/gen_deck.js geom: angles, rim, field and ding radii, number positions", () => {
+  const out = JSON.parse(require("node:child_process").execFileSync(
+    process.execPath, [path.join(__dirname, "..", "tools", "gen_deck.js"), KURD9], { encoding: "utf8" }));
+  const deck = out.deck;
+  const seed = plSeed(KURD9, plPropose(KURD9));
+  const solved = PHPE.layout.solve(seed).value;
+  const place = plain(solved.geom.place);
+  const idOf = {};
+  for (const id of plNonDing(seed.fields)) idOf[seed.fields[id][0] + seed.fields[id][1]] = id;
+  const deckOf = {};
+  for (const [id, f] of Object.entries(deck.fields)) deckOf[f[0] + f[1]] = id;
+  assert.equal(Object.keys(place).length, 8);
+  for (const name of Object.keys(idOf)) {
+    assert.equal(place[idOf[name]][0], deck.fields[deckOf[name]][4], name + " angle");
+    assert.equal(place[idOf[name]][1], deck.geom.rim, name + " orbit");
+    assert.equal(place[idOf[name]][2], deck.geom.r_note, name + " radius");
+  }
+  for (const key of ["rim", "r_note", "r_ding", "ding_dy", "f_ding", "f_note", "f_num", "n_in", "n_out", "rim_num_out", "ext", "inner_ring"]) {
+    assert.equal(solved.geom[key], deck.geom[key], key);
+  }
+});
+
+test("PL: the main circles, the ding and the lenses are inside the pan and the main circles are pairwise disjoint", () => {
+  const dingSeed = plSeed(PL_NO_UNPLACED.pygmy, plPropose(PL_NO_UNPLACED.pygmy));
   const solved = PHPE.layout.solve(dingSeed).value.geom;
   assert.equal(solved.r_ding, PAIRED.ding.r);
   assert.equal(solved.ding_dy, PAIRED.ding.dy);
   const circles = [{ x: 0, y: -solved.ding_dy, r: solved.r_ding }];
-  PAIRED.slots.forEach((slot, k) => {
-    const kind = k < 9 ? PAIRED.primary : PAIRED.secondary;
-    const a = PAIRED.angles[k % 9] * DEG;
-    circles.push({ x: kind.orbit * Math.cos(a), y: kind.orbit * Math.sin(a), r: kind.r });
+  PAIRED.angles.forEach((angle) => {
+    const a = angle * DEG;
+    circles.push({ x: PAIRED.main.orbit * Math.cos(a), y: PAIRED.main.orbit * Math.sin(a), r: PAIRED.main.r });
   });
   circles.forEach((c) => assert.ok(Math.hypot(c.x, c.y) + c.r < 1));
   for (let i = 0; i < circles.length; i += 1) {
@@ -2381,27 +2451,39 @@ test("PL: the slot circles and the ding are pairwise disjoint and inside the pan
       assert.ok(gap > 0.0, `circles ${i} and ${j} overlap`);
     }
   }
+  const depth = 2 * PAIRED.main.r * PAIRED.mutant.depth;
+  const lensC = PAIRED.main.orbit - (2 * PAIRED.main.r - depth);
+  assert.ok(lensC - PAIRED.mutant.r > PAIRED.decor.r - PAIRED.mutant.r, "the lens reaches inside the decor ring");
+  assert.ok(PAIRED.decor.r > PAIRED.ding.r);
 });
 
-test("PL: 200 seeded random injective maps solve with the same geometry per slot", () => {
+test("PL: 200 seeded ring-strict maps solve with the same geometry per tonefield", () => {
   let state = 12345;
   const rnd = () => { state = (state * 1103515245 + 12345) & 0x7fffffff; return state / 0x7fffffff; };
-  const str = PL_SEEDS.pygmy;
-  const keys = plKeys(plSeed(str).fields);
-  for (let n = 0; n < 200; n += 1) {
-    const slots = Array.from({ length: 18 }, (_, i) => i);
-    for (let i = 17; i > 0; i -= 1) {
+  const shuffle = (list) => {
+    const out = list.slice();
+    for (let i = out.length - 1; i > 0; i -= 1) {
       const j = Math.floor(rnd() * (i + 1));
-      [slots[i], slots[j]] = [slots[j], slots[i]];
+      [out[i], out[j]] = [out[j], out[i]];
     }
+    return out;
+  };
+  const str = PL_NO_UNPLACED.pygmy;
+  const fields = plSeed(str).fields;
+  const rimKeys = plNonDing(fields).filter((id) => fields[id][3] === "rim").map((id) => "r" + fields[id][2]);
+  const bottomKeys = plNonDing(fields).filter((id) => fields[id][3] === "bottom").map((id) => "b" + fields[id][2]);
+  for (let n = 0; n < 200; n += 1) {
+    const rimSlots = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    const bottomSlots = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]);
     const map = Array(18).fill(null);
-    keys.forEach((k, i) => { map[slots[i]] = k; });
+    rimKeys.forEach((k, i) => { map[rimSlots[i]] = k; });
+    bottomKeys.forEach((k, i) => { map[9 + bottomSlots[i]] = k; });
     const seed = plSeed(str, map);
     const r = PHPE.layout.solve(seed);
     assert.equal(r.ok, true);
-    assert.equal(Object.keys(r.value.geom.place).length, keys.length);
+    assert.equal(Object.keys(r.value.geom.place).length, rimKeys.length + bottomKeys.length);
     const seen = new Set(Object.values(plain(r.value.geom.place)).map((p) => p.join()));
-    assert.equal(seen.size, keys.length, "no two notes share a slot");
+    assert.equal(seen.size, rimKeys.length + bottomKeys.length, "no two notes share a tonefield and kind");
   }
 });
 
@@ -2419,9 +2501,11 @@ test("PL: solve of an acoustic seed has no place key, and a profile with the fla
   assert.equal(refused.code, "PROFILE_UNKNOWN");
 });
 
-test("PL: solve with a profile puts the ding at centre with the profile radius, for every built-in", () => {
-  for (const [id, str] of Object.entries(PL_SEEDS)) {
-    const geom = PHPE.layout.solve(plSeed(str, plPropose(str))).value.geom;
+test("PL: solve with a mutant note puts the ding at centre with the profile radius", () => {
+  for (const [id, str] of Object.entries(PL_NO_UNPLACED)) {
+    const map = plPropose(str);
+    if (!map.slice(9).some(Boolean)) continue;
+    const geom = PHPE.layout.solve(plSeed(str, map)).value.geom;
     assert.equal(geom.r_ding, PAIRED.ding.r, id);
     assert.equal(geom.ding_dy, PAIRED.ding.dy, id);
     assert.equal(geom.f_ding, Math.round(0.6 * PAIRED.ding.r * 1e4) / 1e4, id);

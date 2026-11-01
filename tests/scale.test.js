@@ -63,12 +63,13 @@ const SENTENCES = {
   NOTE_REPEATED: {
     repeated: "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4."
   },
-  PROFILE_UNKNOWN: { "": "This paired-area layout is not one this app knows." },
-  PROFILE_MAP_INVALID: { "": "The paired-area layout is malformed: it must list 18 areas, each empty or one of your notes." },
-  PROFILE_NOTE_MISSING: { "": "The paired-area layout leaves out one of your notes. Every note needs an area." },
-  PROFILE_NOTE_TWICE: { "": "The paired-area layout places the same note in two areas." },
-  PROFILE_FULL: { "": "Paired areas hold at most 18 notes besides the ding. Remove some notes." },
-  PROFILE_CONFLICT: { "": "Paired areas set their own placement, so mirror, anchor, seats and angles cannot be combined with them." }
+  PROFILE_UNKNOWN: { "": "This Neotone layout is not one this app knows." },
+  PROFILE_MAP_INVALID: { "": "The Neotone layout is malformed: it must list 9 main and 9 mutant tonefields, each empty or one of your notes, top notes in the main ones and bottom notes in the mutant ones." },
+  PROFILE_NOTE_MISSING: { "": "The Neotone layout leaves out one of your notes. Every note needs a tonefield." },
+  PROFILE_NOTE_TWICE: { "": "The Neotone layout places the same note in two tonefields." },
+  PROFILE_FULL: { "": "Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes." },
+  PROFILE_CONFLICT: { "": "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it." },
+  NEOTONE_INPUT: { "": "Neotone has 9 main tonefields. Remove the extra top note to save." }
 };
 
 function flatReasons() {
@@ -130,9 +131,9 @@ test("every refused row carries its code and its sentence", () => {
 test("every profile refusal carries its code and its sentence", () => {
   const kurd = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
   const good = ["r57", "r58", "r60", "r62", "r64", "r65", "r67", "r69", "r72"].concat(Array(9).fill(null));
-  const prof = (map, extra) => Object.assign({ profile: { id: "paired", rev: 1, map } }, extra);
+  const prof = (map, extra) => Object.assign({ profile: { id: "paired", rev: 2, map } }, extra);
   const rows = [
-    ["PROFILE_UNKNOWN", { profile: { id: "x", rev: 1, map: good } }],
+    ["PROFILE_UNKNOWN", { profile: { id: "x", rev: 2, map: good } }],
     ["PROFILE_MAP_INVALID", prof(good.slice(1))],
     ["PROFILE_NOTE_MISSING", prof(good.map((k, i) => i === 8 ? null : k))],
     ["PROFILE_NOTE_TWICE", prof(good.map((k, i) => i === 8 ? "r57" : k))],

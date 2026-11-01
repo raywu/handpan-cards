@@ -3803,27 +3803,31 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     },
     PROFILE_UNKNOWN: {
       kind: "error",
-      reason: "This paired-area layout is not one this app knows."
+      reason: "This Neotone layout is not one this app knows."
     },
     PROFILE_MAP_INVALID: {
       kind: "error",
-      reason: "The paired-area layout is malformed: it must list 18 areas, each empty or one of your notes."
+      reason: "The Neotone layout is malformed: it must list 9 main and 9 mutant tonefields, each empty or one of your notes, top notes in the main ones and bottom notes in the mutant ones."
     },
     PROFILE_NOTE_MISSING: {
       kind: "error",
-      reason: "The paired-area layout leaves out one of your notes. Every note needs an area."
+      reason: "The Neotone layout leaves out one of your notes. Every note needs a tonefield."
     },
     PROFILE_NOTE_TWICE: {
       kind: "error",
-      reason: "The paired-area layout places the same note in two areas."
+      reason: "The Neotone layout places the same note in two tonefields."
     },
     PROFILE_FULL: {
       kind: "error",
-      reason: "Paired areas hold at most 18 notes besides the ding. Remove some notes."
+      reason: "Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes."
     },
     PROFILE_CONFLICT: {
       kind: "error",
-      reason: "Paired areas set their own placement, so mirror, anchor, seats and angles cannot be combined with them."
+      reason: "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it."
+    },
+    NEOTONE_INPUT: {
+      kind: "error",
+      reason: "Neotone has 9 main tonefields. Remove the extra top note to save."
     }
   };
 
@@ -4533,14 +4537,88 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
   }
 
-  /* ---- the paired-area profile option (ENGINE-SPEC 18) ------------------ */
+  /* ---- the Neotone profile option (ENGINE-SPEC 18) ---------------------- */
 
-  var PROFILE_AREAS = 18;
+  var PROFILE_TONEFIELDS = 9;
+  var PROFILE_SLOTS = 18;
   var PROFILE_KEY_RE = /^[rib]\d{1,3}$/;
   var ZONE_KEY = { rim: "r", inner: "i", bottom: "b" };
 
   function has(obj, key) {
     return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  // The non-ding fields as {key, midi, zone}, in pitch order.
+  function profileNotes(fields) {
+    var notes = [];
+    var id;
+    for (id in fields) {
+      if (!has(fields, id) || fields[id][3] === "ding") continue;
+      notes.push({ key: ZONE_KEY[fields[id][3]] + fields[id][2], midi: fields[id][2], zone: fields[id][3] });
+    }
+    notes.sort(function (a, b) { return a.midi - b.midi; });
+    return notes;
+  }
+
+  // Rim notes in pitch order fill p1..p9, bottom notes in pitch order fill
+  // s1..s9; a note without a tonefield (a tenth rim or bottom note, any inner
+  // note) is unplaced, in pitch order.
+  function proposeProfileMap(fields) {
+    var map = [];
+    var unplaced = [];
+    var i;
+    for (i = 0; i < PROFILE_SLOTS; i += 1) map.push(null);
+    var rim = 0;
+    var bottom = 0;
+    profileNotes(fields).forEach(function (note) {
+      if (note.zone === "rim" && rim < PROFILE_TONEFIELDS) { map[rim] = note.key; rim += 1; }
+      else if (note.zone === "bottom" && bottom < PROFILE_TONEFIELDS) {
+        map[PROFILE_TONEFIELDS + bottom] = note.key;
+        bottom += 1;
+      } else unplaced.push(note.key);
+    });
+    return { map: map, unplaced: unplaced };
+  }
+
+  function ringStrict(map, fields) {
+    var wanted = {};
+    profileNotes(fields).forEach(function (note) { wanted[note.key] = true; });
+    var seen = 0;
+    for (var i = 0; i < PROFILE_SLOTS; i += 1) {
+      var entry = map[i];
+      if (entry === null) continue;
+      if (entry.charAt(0) !== (i < PROFILE_TONEFIELDS ? "r" : "b")) return false;
+      if (!has(wanted, entry)) return false;
+      seen += 1;
+    }
+    return seen === Object.keys(wanted).length;
+  }
+
+  // A rev-1 map (18 entries, no duplicates, keys naming real notes) becomes a
+  // rev-2 reading: identity when it is ring-strict and maps every note,
+  // otherwise the pitch-order proposal.
+  function migrateProfile(raw, fields) {
+    var map = Array.isArray(raw) ? raw : raw.map;
+    if (ringStrict(map, fields)) return { map: map.slice(), unplaced: [] };
+    return proposeProfileMap(fields);
+  }
+
+  function profileMapShape(map, byKey) {
+    if (!Array.isArray(map) || map.length !== PROFILE_SLOTS) return scaleErr("PROFILE_MAP_INVALID");
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < PROFILE_SLOTS; i += 1) {
+      if (!has(map, String(i))) return scaleErr("PROFILE_MAP_INVALID");
+      var entry = map[i];
+      if (entry === null) { out.push(null); continue; }
+      if (typeof entry !== "string" || !PROFILE_KEY_RE.test(entry) || !has(byKey, entry)) {
+        return scaleErr("PROFILE_MAP_INVALID");
+      }
+      if (has(seen, entry)) return scaleErr("PROFILE_NOTE_TWICE");
+      seen[entry] = true;
+      out.push(entry);
+    }
+    return ok({ out: out, seen: seen });
   }
 
   // The one validator of options.profile. `raw` is the caller's option, `options`
@@ -4559,38 +4637,43 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (keys.length !== 3 || keys[0] !== "id" || keys[1] !== "map" || keys[2] !== "rev") {
       return scaleErr("PROFILE_MAP_INVALID");
     }
-    if (raw.id !== "paired" || raw.rev !== 1) return scaleErr("PROFILE_UNKNOWN");
+    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2)) return scaleErr("PROFILE_UNKNOWN");
 
     var byKey = {};
-    var total = 0;
+    var counts = { rim: 0, inner: 0, bottom: 0 };
     var id;
     for (id in fields) {
       if (!has(fields, id) || fields[id][3] === "ding") continue;
       byKey[ZONE_KEY[fields[id][3]] + fields[id][2]] = true;
-      total += 1;
+      counts[fields[id][3]] += 1;
     }
-    if (total > PROFILE_AREAS) return scaleErr("PROFILE_FULL");
+    var total = counts.rim + counts.inner + counts.bottom;
+    if (raw.rev === 1 ? total > PROFILE_SLOTS
+      : (counts.rim > PROFILE_TONEFIELDS || counts.bottom > PROFILE_TONEFIELDS || counts.inner > 0)) {
+      return scaleErr("PROFILE_FULL");
+    }
 
-    var map = raw.map;
-    if (!Array.isArray(map) || map.length !== PROFILE_AREAS) return scaleErr("PROFILE_MAP_INVALID");
-    var seen = {};
-    var out = [];
-    for (var i = 0; i < PROFILE_AREAS; i += 1) {
-      if (!has(map, String(i))) return scaleErr("PROFILE_MAP_INVALID");
-      var entry = map[i];
-      if (entry === null) { out.push(null); continue; }
-      if (typeof entry !== "string" || !PROFILE_KEY_RE.test(entry) || !has(byKey, entry)) {
+    var shape = profileMapShape(raw.map, byKey);
+    if (!shape.ok) return shape;
+    var map = shape.value.out;
+
+    if (raw.rev === 1) {
+      var migrated = migrateProfile(map, fields);
+      var value = { id: "paired", rev: 2, map: migrated.map };
+      if (migrated.unplaced.length > 0) value.unplaced = migrated.unplaced;
+      return ok(value);
+    }
+
+    for (var i = 0; i < PROFILE_SLOTS; i += 1) {
+      if (map[i] !== null && map[i].charAt(0) !== (i < PROFILE_TONEFIELDS ? "r" : "b")) {
         return scaleErr("PROFILE_MAP_INVALID");
       }
-      if (has(seen, entry)) return scaleErr("PROFILE_NOTE_TWICE");
-      seen[entry] = true;
-      out.push(entry);
     }
     var key;
     for (key in byKey) {
-      if (has(byKey, key) && !has(seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
+      if (has(byKey, key) && !has(shape.value.seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
     }
-    return ok({ id: "paired", rev: 1, map: out });
+    return ok({ id: "paired", rev: 2, map: map });
   }
 
   function parseSeed(input, options) {
@@ -4914,6 +4997,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     LABEL_RULE: LABEL_RULE,
     PROFILE_ENABLED: false,
     readProfile: readProfile,
+    migrateProfile: migrateProfile,
+    proposeProfileMap: proposeProfileMap,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     inferBottoms: inferBottoms,
@@ -6920,19 +7005,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < n; i += 1) fields[ids[P[(i + bestR) % n].i]][5] = H[i].label;
   }
 
-  /* ---- the paired-area profile (ENGINE-SPEC 18) -------------------------- *
+  /* ---- the Neotone profile (ENGINE-SPEC 18) ------------------------------ *
    * The frozen generic profile, a literal copy of
-   * tests/fixtures/paired_profile_v1.json (a test holds them equal). Area k sits
-   * at angles[k-1]; slot pk is the primary there, sk the secondary outward of
-   * it. Fractions of R.
+   * tests/fixtures/paired_profile_v3.json (a test holds them equal). Tonefield
+   * k sits at angles[k-1]; slot pk is the main tonefield there, sk the mutant
+   * tonefield (a lens) toward the centre of it. Fractions of R.
    */
   var PROFILE = {
-    id: "paired", rev: 1, areas: 9,
+    id: "paired", rev: 3, tonefields: 9,
     angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
-    primary: { orbit: 0.58, r: 0.16 },
-    secondary: { orbit: 0.86, r: 0.11 },
-    ding: { r: 0.21, dy: 0 },
-    n_in: 0.052, n_out: 0.068, extent_margin: 0.06,
+    main: { orbit: 0.745, r: 0.19 },
+    mutant: { depth: 0.3333, r: 0.19 },
+    ding: { r: 0.2, dy: 0 },
+    decor: { r: 0.355 },
+    n_in: 0.085, number_out: 1.0758, extent_margin: 0.06,
     slots: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9",
             "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9"]
   };
@@ -6943,30 +7029,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ZONE_LETTER[rec[3]] + rec[2];
   }
 
-  // Top notes (rim, then inner, in field-number order) fill p1..p9 then s1..s9;
-  // bottom notes fill the remaining secondaries from s1, then the remaining
-  // primaries. Returns the 18-entry map, or PROFILE_FULL past 18 notes.
+  // {map, unplaced}: rim notes in pitch order into p1.., bottom notes in pitch
+  // order into s1..; a note without a tonefield is unplaced, in pitch order.
   function proposeProfile(seedOrFields) {
-    var fields = fieldsOf(seedOrFields);
-    var ids = collect(fields);
-    var tops = ids.rim.concat(ids.inner);
-    var bottoms = ids.bottom;
-    if (tops.length + bottoms.length > PROFILE.slots.length) {
-      return HPE.core.err("PROFILE_FULL", {});
-    }
-    var map = [];
-    var i;
-    for (i = 0; i < PROFILE.slots.length; i += 1) map.push(null);
-    for (i = 0; i < tops.length; i += 1) map[i] = occurrenceKey(fields[tops[i]]);
-    var free = [];
-    for (i = PROFILE.areas; i < PROFILE.slots.length; i += 1) if (map[i] === null) free.push(i);
-    for (i = 0; i < PROFILE.areas; i += 1) if (map[i] === null) free.push(i);
-    for (i = 0; i < bottoms.length; i += 1) map[free[i]] = occurrenceKey(fields[bottoms[i]]);
-    return { ok: true, value: map };
+    return { ok: true, value: HPE.core.proposeProfileMap(fieldsOf(seedOrFields)) };
   }
 
-  // geom.place: {fieldId: [angle, orbitFrac, rFrac]} for every mapped non-ding field.
-  function placeProfile(fields, profile) {
+  // The lens centre: the main orbit less the main diameter plus the overlap.
+  function lensCentre() {
+    var depth = 2 * PROFILE.main.r * PROFILE.mutant.depth;
+    return round(PROFILE.main.orbit - (2 * PROFILE.main.r - depth), 4);
+  }
+
+  // geom.place: {fieldId: [angle, orbitFrac, rFrac, kind, ...]} for every mapped
+  // non-ding field. A mutant field also carries its lens centre and radius.
+  function placeProfile(fields, profile, geom, plain) {
     var byKey = {};
     var id;
     for (id in fields) {
@@ -6974,13 +7051,31 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         byKey[occurrenceKey(fields[id])] = id;
       }
     }
+    var mutants = profile.map.slice(PROFILE.tonefields).some(function (entry) { return entry !== null; });
+    var seatAngles = [];
+    if (!mutants) {
+      Object.keys(plain).filter(function (fid) { return plain[fid][3] === "rim"; })
+        .sort(function (a, b) { return plain[a][2] - plain[b][2]; })
+        .forEach(function (fid) { seatAngles.push(plain[fid][4]); });
+    }
     var place = {};
+    var labels = {};
     for (var k = 0; k < profile.map.length; k += 1) {
       if (profile.map[k] === null) continue;
-      var kind = k < PROFILE.areas ? PROFILE.primary : PROFILE.secondary;
-      place[byKey[profile.map[k]]] = [PROFILE.angles[k % PROFILE.areas], kind.orbit, kind.r];
+      var fid = byKey[profile.map[k]];
+      var slot = k % PROFILE.tonefields;
+      if (k < PROFILE.tonefields) {
+        labels[fid] = String(k + 1);
+        place[fid] = mutants
+          ? [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
+          : [seatAngles[k], geom.rim, geom.r_note, "main"];
+      } else {
+        labels[fid] = "M" + (slot + 1);
+        place[fid] = [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "mutant",
+                      lensCentre(), PROFILE.mutant.r];
+      }
     }
-    return place;
+    return { place: place, labels: labels, mutants: mutants };
   }
 
   function solve(seedOrFields, options) {
@@ -6992,10 +7087,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
       if (!profile.ok) return profile;
       var plain = solve({ fields: source, options: {} }, options);
-      plain.value.geom.r_ding = PROFILE.ding.r;
-      plain.value.geom.ding_dy = PROFILE.ding.dy;
-      plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
-      plain.value.geom.place = placeProfile(source, profile.value);
+      var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields);
+      if (placed.mutants) {
+        plain.value.geom.r_ding = PROFILE.ding.r;
+        plain.value.geom.ding_dy = PROFILE.ding.dy;
+        plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
+      }
+      plain.value.geom.place = placed.place;
+      Object.keys(placed.labels).forEach(function (fid) {
+        plain.value.fields[fid][5] = placed.labels[fid];
+      });
       return plain;
     }
     var mirrors = resolveMirrors(options, seedOptions);
@@ -8108,7 +8209,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // What a stored record carries. Records keep the v4 shape (formatSeed plus
   // options), so the wire version moves alone.
   var RECORD_VERSION = 4;
-  // Paired-area profiles (ENGINE-SPEC 18) travel at wire v7 and are stored as
+  // Neotone profiles (ENGINE-SPEC 18) travel at wire v7 and are stored as
   // record v5; an acoustic seed never leaves v6 / record 4.
   var PROFILE_VERSION = 7;
   var PROFILE_RECORD_VERSION = 5;
@@ -8522,9 +8623,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (!profiled) return badNote(text);
         at = OPTION_ORDER.pair;
         pairs += 1;
+        var pairMap = m[1].split(".").map(function (t) { return t === "-" ? null : t; });
         options.profile = {
-          id: "paired", rev: 1,
-          map: m[1].split(".").map(function (t) { return t === "-" ? null : t; })
+          id: "paired",
+          rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
+          map: pairMap
         };
       } else if (profiled) {
         return badNote(text);
@@ -8559,7 +8662,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rank = at;
     }
     if (profiled && pairs !== 1) return badNote(text);
-    return HPE.core.parseSeed(scaleString(scale), options);
+    var read = HPE.core.parseSeed(scaleString(scale), options);
+    if (!read.ok && profiled && options.profile.rev === 2 &&
+        (read.code === "PROFILE_NOTE_MISSING" || read.code === "PROFILE_FULL")) {
+      options.profile.rev = 1;
+      read = HPE.core.parseSeed(scaleString(scale), options);
+    }
+    return read;
   }
 
   /* ---- decode ----------------------------------------------------------- */

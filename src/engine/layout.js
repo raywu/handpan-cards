@@ -705,19 +705,20 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < n; i += 1) fields[ids[P[(i + bestR) % n].i]][5] = H[i].label;
   }
 
-  /* ---- the paired-area profile (ENGINE-SPEC 18) -------------------------- *
+  /* ---- the Neotone profile (ENGINE-SPEC 18) ------------------------------ *
    * The frozen generic profile, a literal copy of
-   * tests/fixtures/paired_profile_v1.json (a test holds them equal). Area k sits
-   * at angles[k-1]; slot pk is the primary there, sk the secondary outward of
-   * it. Fractions of R.
+   * tests/fixtures/paired_profile_v3.json (a test holds them equal). Tonefield
+   * k sits at angles[k-1]; slot pk is the main tonefield there, sk the mutant
+   * tonefield (a lens) toward the centre of it. Fractions of R.
    */
   var PROFILE = {
-    id: "paired", rev: 1, areas: 9,
+    id: "paired", rev: 3, tonefields: 9,
     angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
-    primary: { orbit: 0.58, r: 0.16 },
-    secondary: { orbit: 0.86, r: 0.11 },
-    ding: { r: 0.21, dy: 0 },
-    n_in: 0.052, n_out: 0.068, extent_margin: 0.06,
+    main: { orbit: 0.745, r: 0.19 },
+    mutant: { depth: 0.3333, r: 0.19 },
+    ding: { r: 0.2, dy: 0 },
+    decor: { r: 0.355 },
+    n_in: 0.085, number_out: 1.0758, extent_margin: 0.06,
     slots: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9",
             "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9"]
   };
@@ -728,30 +729,21 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return ZONE_LETTER[rec[3]] + rec[2];
   }
 
-  // Top notes (rim, then inner, in field-number order) fill p1..p9 then s1..s9;
-  // bottom notes fill the remaining secondaries from s1, then the remaining
-  // primaries. Returns the 18-entry map, or PROFILE_FULL past 18 notes.
+  // {map, unplaced}: rim notes in pitch order into p1.., bottom notes in pitch
+  // order into s1..; a note without a tonefield is unplaced, in pitch order.
   function proposeProfile(seedOrFields) {
-    var fields = fieldsOf(seedOrFields);
-    var ids = collect(fields);
-    var tops = ids.rim.concat(ids.inner);
-    var bottoms = ids.bottom;
-    if (tops.length + bottoms.length > PROFILE.slots.length) {
-      return HPE.core.err("PROFILE_FULL", {});
-    }
-    var map = [];
-    var i;
-    for (i = 0; i < PROFILE.slots.length; i += 1) map.push(null);
-    for (i = 0; i < tops.length; i += 1) map[i] = occurrenceKey(fields[tops[i]]);
-    var free = [];
-    for (i = PROFILE.areas; i < PROFILE.slots.length; i += 1) if (map[i] === null) free.push(i);
-    for (i = 0; i < PROFILE.areas; i += 1) if (map[i] === null) free.push(i);
-    for (i = 0; i < bottoms.length; i += 1) map[free[i]] = occurrenceKey(fields[bottoms[i]]);
-    return { ok: true, value: map };
+    return { ok: true, value: HPE.core.proposeProfileMap(fieldsOf(seedOrFields)) };
   }
 
-  // geom.place: {fieldId: [angle, orbitFrac, rFrac]} for every mapped non-ding field.
-  function placeProfile(fields, profile) {
+  // The lens centre: the main orbit less the main diameter plus the overlap.
+  function lensCentre() {
+    var depth = 2 * PROFILE.main.r * PROFILE.mutant.depth;
+    return round(PROFILE.main.orbit - (2 * PROFILE.main.r - depth), 4);
+  }
+
+  // geom.place: {fieldId: [angle, orbitFrac, rFrac, kind, ...]} for every mapped
+  // non-ding field. A mutant field also carries its lens centre and radius.
+  function placeProfile(fields, profile, geom, plain) {
     var byKey = {};
     var id;
     for (id in fields) {
@@ -759,13 +751,31 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         byKey[occurrenceKey(fields[id])] = id;
       }
     }
+    var mutants = profile.map.slice(PROFILE.tonefields).some(function (entry) { return entry !== null; });
+    var seatAngles = [];
+    if (!mutants) {
+      Object.keys(plain).filter(function (fid) { return plain[fid][3] === "rim"; })
+        .sort(function (a, b) { return plain[a][2] - plain[b][2]; })
+        .forEach(function (fid) { seatAngles.push(plain[fid][4]); });
+    }
     var place = {};
+    var labels = {};
     for (var k = 0; k < profile.map.length; k += 1) {
       if (profile.map[k] === null) continue;
-      var kind = k < PROFILE.areas ? PROFILE.primary : PROFILE.secondary;
-      place[byKey[profile.map[k]]] = [PROFILE.angles[k % PROFILE.areas], kind.orbit, kind.r];
+      var fid = byKey[profile.map[k]];
+      var slot = k % PROFILE.tonefields;
+      if (k < PROFILE.tonefields) {
+        labels[fid] = String(k + 1);
+        place[fid] = mutants
+          ? [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
+          : [seatAngles[k], geom.rim, geom.r_note, "main"];
+      } else {
+        labels[fid] = "M" + (slot + 1);
+        place[fid] = [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "mutant",
+                      lensCentre(), PROFILE.mutant.r];
+      }
     }
-    return place;
+    return { place: place, labels: labels, mutants: mutants };
   }
 
   function solve(seedOrFields, options) {
@@ -777,10 +787,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
       if (!profile.ok) return profile;
       var plain = solve({ fields: source, options: {} }, options);
-      plain.value.geom.r_ding = PROFILE.ding.r;
-      plain.value.geom.ding_dy = PROFILE.ding.dy;
-      plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
-      plain.value.geom.place = placeProfile(source, profile.value);
+      var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields);
+      if (placed.mutants) {
+        plain.value.geom.r_ding = PROFILE.ding.r;
+        plain.value.geom.ding_dy = PROFILE.ding.dy;
+        plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
+      }
+      plain.value.geom.place = placed.place;
+      Object.keys(placed.labels).forEach(function (fid) {
+        plain.value.fields[fid][5] = placed.labels[fid];
+      });
       return plain;
     }
     var mirrors = resolveMirrors(options, seedOptions);
