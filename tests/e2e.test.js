@@ -2632,6 +2632,7 @@ function run() {
       await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
       await b.click("#scale-tab-layout");
       await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-mode-paired");
       await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "the Paired areas panel" });
       const m = await b.eval(`
@@ -2656,8 +2657,10 @@ function run() {
       assert.ok(m.bodyScrollX <= 0, "the sheet body scrolls sideways: " + m.bodyScrollX);
       assert.strictEqual(m.standardHidden, true);
 
+      await b.eval(`document.getElementById("scale-mode-standard").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-mode-standard");
       await b.waitFor(`!document.getElementById("scale-standard").hidden`, { label: "Standard back" });
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-mode-paired");
       await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "Paired again" });
       await b.click("#scale-generate");
@@ -2678,6 +2681,7 @@ function run() {
       await openSheet();
       await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
       await b.click("#scale-tab-layout");
+      await b.eval(`document.getElementById("scale-mode-paired").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-mode-paired");
       await b.waitFor(`!document.getElementById("scale-paired").hidden`, { label: "the Paired areas panel" });
       for (const lang of langs) {
