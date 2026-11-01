@@ -9354,7 +9354,7 @@ test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script car
   const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
     .replace(/<!--[\s\S]*?-->/g, "");
   assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
-    ["scale-name-row", "scale-mode-row", undefined, undefined],
+    ["scale-name-row", undefined, "scale-mode-row", undefined],
     "an .editrow other than the name row, the layout zone's own and the palette's is in .sheetbody");
   assert.ok(/class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">/.test(body), "the last .editrow is not the palette's");
 
