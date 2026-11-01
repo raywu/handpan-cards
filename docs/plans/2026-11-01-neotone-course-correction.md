@@ -312,7 +312,17 @@ Status: **Ready** (2026-11-01). Round 5 design READY; round 5 eng findings folde
 
 ## State record (C1 fills)
 
-`PROFILE_ENABLED` on main: absent. On dev: true (A1). PR heads at C1: (filled). PR heads at L: (filled; C4 compares against these).
+`PROFILE_ENABLED` on main: absent (`git grep -c PROFILE_ENABLED origin/main -- src index.html` prints nothing, exit 1; origin/main c6ef6b58). On dev: true (A1). PR heads at C1 (2026-11-01, `gh pr view`, all OPEN, base main, MERGEABLE, equal to "Branch facts"):
+
+| PR | State | headRefOid |
+|---|---|---|
+| #744 | OPEN | 701c06fcfa1b3f0ea015afcee635ae3d61369bc3 |
+| #749 | OPEN | e769ae479f34af55006e9ceb6323f19aedadd23e |
+| #751 | OPEN | 7bd47fa435cf2974a9ba4fa911adb1a6e2d3bf42 |
+| #754 | OPEN | 98281e3558db00b733251bef873dcb8762e5be6b |
+| #793 | OPEN | e38682450cc880e8060073e6dd9ea6c8e1b66f1a |
+
+PR heads at L: (filled; C4 compares against these).
 
 ## Verification
 
