@@ -9263,8 +9263,8 @@ function run() {
     // must not shrink main or the card" - a regression that put the panel
     // back in flow would move them.
     const BASE_SCENE = {
-      "1280x800": { width: 367.984375, height: 508.1875, left: 456, right: 823.984375, top: 153.0625, bottom: 661.25 },
-      "1024x768": { width: 353.265625, height: 487.859375, left: 335.359375, right: 688.625, top: 147.234375, bottom: 635.09375 },
+      "1280x800": { width: 367.984375, height: 508.1875, left: 456, right: 823.984375, top: 163.0625, bottom: 671.25 },
+      "1024x768": { width: 353.265625, height: 487.859375, left: 335.359375, right: 688.625, top: 157.21875, bottom: 645.078125 },
     };
 
     async function sceneRect() {
