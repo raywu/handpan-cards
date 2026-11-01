@@ -4,7 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1334,3 +1334,2 @@
- #about a{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1.5px; text-underline-offset:3px}
+@@ -1362,7 +1362,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #about ol, #about ul{margin:0; padding-left:20px}
+ #about li{margin:0 0 4px}
+ #about a{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1.5px; text-underline-offset:3px}
 -#about a:hover{text-decoration-thickness:2.5px}
  #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
+ html.about-open{overflow:hidden}
+ 

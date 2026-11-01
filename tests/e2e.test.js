@@ -47,9 +47,20 @@ if (!BROWSER) {
 
 function run() {
   let server = null;
+  let moveMode = null;
   let spawnError = null;
   let b = null;
   /** index.html with a de table whose every value is the English value in brackets (the app.test.js pseudo table). */
+  function moveHtml() {
+    const inject = "<script>(function(){var p=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(){" +
+      "var fail=false;try{fail=localStorage.getItem('moveFail')==='1'&&String(arguments[0]).indexOf('importedIds')>=0;}catch(e){}" +
+      "if(fail)throw new Error('injected write failure');return p.apply(this,arguments);};})();</script>";
+    return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
+      .replace("const MOVE_FROM = null;", () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
+      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
+      .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${moveMode.cap || 20000};`)
+      .replace("<head>", () => "<head>" + inject);
+  }
   function pseudoDeHtml() {
     const en = JSON.parse(fs.readFileSync(path.join(REPO, "data", "i18n", "en.json"), "utf8"));
     const wrap = (v) => (typeof v === "string" ? "\u27e6" + v + "\u27e7"
@@ -74,6 +85,11 @@ function run() {
       // NB: the URL const above shadows the global URL class here, so the path
       // is split by hand rather than parsed.
       const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "");
+      if (moveMode && (rel === "" || rel === "index.html")) {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(moveHtml());
+        return;
+      }
       if (rel === "__pseudo_de.html") {
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
         res.end(pseudoDeHtml());
@@ -4731,6 +4747,39 @@ function run() {
     }
   });
 
+  test("MSJ: tapping a layout toggle leaves the tapped button where it was in both scrollers", async () => {
+    try {
+      for (const edit of [false, true]) for (const [w, h] of [[380, 667], [380, 780]]) {
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await generate(DR1_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else await addWithDrawer(w, h);
+        for (const id of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between", "scale-anchor-one", "scale-mirror-bottom", "scale-mirror"]) {
+          await b.eval(`const s = ${body}; s.scrollTop = s.scrollHeight - s.clientHeight - 0;
+            const u = document.querySelector("#scale-sheet .sheetsurf"); u.scrollTop = u.scrollHeight; return true;`);
+          await b.eval(`const s = ${body}, el = document.getElementById(${JSON.stringify(id)});
+            const hit = () => { const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && el.contains(t); };
+            while (!hit() && s.scrollTop > 0) s.scrollTop = Math.max(0, s.scrollTop - 10);
+            return hit();`);
+          await b.settle();
+          const at = () => b.eval(`return { top: document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top,
+            body: ${body}.scrollTop, surf: document.querySelector("#scale-sheet .sheetsurf").scrollTop };`);
+          const before = await at();
+          await b.click("#" + id);
+          await b.settle();
+          const after = await at();
+          assert.ok(Math.abs(after.top - before.top) <= 1,
+            `${id} moved ${before.top} -> ${after.top} (${edit ? "Edit" : "Add"} ${w} x ${h}): ${JSON.stringify({ before, after })}`);
+        }
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("UX: Adjust layout is two columns at 844x390 with the pan >=270px with no message, one column at 500x390", async () => {
     try {
       await addWithDrawer(844, 390);
@@ -5064,7 +5113,7 @@ function run() {
     }
   });
 
-  test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
+  test("DR1 line 38: each drawer control shows the global 2px teal #44e0d8 focus ring from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
       await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
@@ -5072,7 +5121,7 @@ function run() {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
           return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
-        assert.deepStrictEqual(o, { w: "2px", c: "rgb(227, 178, 92)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
+        assert.deepStrictEqual(o, { w: "2px", c: "rgb(68, 224, 216)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5291,7 +5340,7 @@ function run() {
       assert.ok(st.name.length > 0, "the Name field is empty");
       assert.strictEqual(st.primary, "SAVE CHANGES");
       assert.strictEqual(st.del, "DELETE THIS SCALE");
-      assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
+      assert.strictEqual(st.delColor, "rgb(169, 163, 154)", "the delete link is not #a9a39a");
       assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
       assert.ok(st.body.sw <= st.body.cw + 1,
@@ -5618,8 +5667,8 @@ function run() {
       assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
         "the armed delete button keeps its amber under the thumb - the press that "
         + "destroys the deck is the one control on the page that does not answer");
-      assert.strictEqual(held.color, "rgb(234, 230, 223)",
-        "the armed delete button presses to something other than #eae6df, which is "
+      assert.strictEqual(held.color, "rgb(246, 244, 237)",
+        "the armed delete button presses to something other than #f6f4ed, which is "
         + "the pressed colour every other control on this page uses");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the held press was released" });
@@ -7136,7 +7185,7 @@ function run() {
       assert.strictEqual(m.msgParent, "scale-guidance");
       assert.strictEqual(m.noteParent, "scale-guidance");
       assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
-      assert.strictEqual(m.noteColor, "rgb(196, 188, 171)", "N-A9: the notice is not the sheet's neutral #c4bcab inside the slot");
+      assert.strictEqual(m.noteColor, "rgb(169, 163, 154)", "N-A9: the notice is not the sheet's neutral #a9a39a inside the slot");
       assert.strictEqual(m.warnColor, "rgb(227, 178, 92)", "N-A9: #scale-msg.warn is not amber #e3b25c");
       assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
       assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
@@ -8661,7 +8710,7 @@ function run() {
       }
     });
 
-    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px cream underline on the selected one, 44px tall`, async () => {
+    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px teal underline on the selected one, 44px tall`, async () => {
       try {
         await freshLoad();
         await b.setViewport(vw, vh, true);
@@ -8678,10 +8727,10 @@ function run() {
         assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
         assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
         assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
-        const cream = "rgb(241, 236, 225)";
-        const underlined = (t) => (t.bw === "2px" && t.bc === cream) || (t.afH === "2px" && t.afBg === cream);
-        assert.ok(underlined(sel), `the selected tab has no 2px cream underline: ${JSON.stringify(sel)}`);
-        assert.ok(!underlined(other), "the unselected tab is underlined in cream");
+        const teal = "rgb(68, 224, 216)";
+        const underlined = (t) => (t.bw === "2px" && t.bc === teal) || (t.afH === "2px" && t.afBg === teal);
+        assert.ok(underlined(sel), `the selected tab has no 2px teal underline: ${JSON.stringify(sel)}`);
+        assert.ok(!underlined(other), "the unselected tab is underlined in teal");
         assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
         assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
       } finally {
@@ -9019,8 +9068,8 @@ function run() {
       [1280, 800, "desktop"],
     ];
 
-    const TABLE = [26, 24, 21];   // #1a1815
-    const TABLE2 = [38, 34, 28];  // #26221c
+    const TABLE = [15, 14, 11];   // #0f0e0b
+    const TABLE2 = [15, 14, 11];  // #0f0e0b
     const FRAME = 4;              // outer pixel frame width to sample
 
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
@@ -9137,7 +9186,7 @@ function run() {
       await freshLoad();
       const bg = await b.eval(
         `return getComputedStyle(document.documentElement).backgroundColor;`);
-      assert.strictEqual(bg, "rgb(26, 24, 21)");
+      assert.strictEqual(bg, "rgb(15, 14, 11)");
     });
 
     test("under print media, html computes to a white background", async () => {
@@ -10798,7 +10847,7 @@ function run() {
           }
           const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
             const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
-          assert.deepStrictEqual(ring, ["2px", "rgb(227, 178, 92)", "solid"], `${w}x${h}: global focus ring`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(68, 224, 216)", "solid"], `${w}x${h}: global focus ring`);
         }
       } finally { await b.setViewport(900, 900, false); }
     });
@@ -11303,8 +11352,8 @@ function run() {
         assert.ok(m.fontSize >= 18, `${deckId}: #count font-size is ${m.fontSize}px, needs >= 18px`);
         assert.strictEqual(m.textAlign, "center", `${deckId}: #count text-align is "${m.textAlign}"`);
         assert.ok(m.color, `${deckId}: the rail's current chord <b> was not found`);
-        const ratio = contrastRatio(m.color, [0x1a, 0x18, 0x15]);
-        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #1a1815, needs ${AA_NORMAL}`);
+        const ratio = contrastRatio(m.color, [0x0f, 0x0e, 0x0b]);
+        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #0f0e0b, needs ${AA_NORMAL}`);
         assert.ok(m.decorationLine.includes("underline"), `${deckId}: rail current chord lost its underline`);
         assert.deepStrictEqual(m.decorationColor, hexToRgb(m.root),
           `${deckId}: underline colour must be the deck's root colour`);
@@ -19081,6 +19130,57 @@ function run() {
       for(const r of rows.rows)assert.ok(r.ms<500,"chip "+r.i+" selected in "+r.ms.toFixed(1)+" ms, bound 500");
     });
 
+    test("SV-PG2: 200 legacy scales migrate at boot within 5 s, the strip scrolls end to end, and taps around an Edit open and close stay under 500 ms",{timeout:180000},async()=>{
+      await freshLoad();await b.setViewport(380,780,false);
+      const BASES=["(D3) A3 C4 D4 E4 F4 G4 A4","(D3) A3 Bb3 C4 D4 E4 F4 G4 A4","(C#3) G#3 B3 C#4 D4 F4 F#4 G#4","(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4"];
+      const TOPS=["C5","D5","Eb5","E5","F5","G5","A5","Bb5","C6","D6"];
+      const pad3=n=>String(n).padStart(3,"0");
+      const records=Array.from({length:200},(_,i)=>({v:4,s:BASES[i%4]+" "+TOPS[Math.floor(i/4)%10],o:{name:"QA "+pad3(i+1),palette:i%6}}));
+      await b.send("Storage.clearDataForOrigin",{origin:new globalThis.URL(URL).origin,storageTypes:"indexeddb"});
+      await b.eval(`localStorage.removeItem('hpfc.saved-scales.v1');localStorage.removeItem('hpfc.scales');
+        localStorage.setItem('hpfc.scales.v3',${JSON.stringify(JSON.stringify(records))});return true;`);
+      const t0=Date.now();
+      await navigate();
+      await b.waitFor(`document.querySelectorAll('#decks .chip').length===205`,{timeout:5000,label:"205 chips after migrating 200 legacy scales"});
+      const bootMs=Date.now()-t0;
+      console.log("SV_PG2_BOOT "+bootMs);
+      assert.ok(bootMs<5000,"205 chips after "+bootMs+" ms, bound 5000");
+      const names=await b.eval(`return [...document.querySelectorAll('#decks .chip')].map(c=>c.getAttribute('aria-label')||c.textContent);`);
+      assert.ok(/QA 200/.test(names[0]),"the first chip is QA 200 (newest first by displayOrdinal in allDecks): "+names[0]);
+      const stored=await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(stored.entries.map(e=>e.record.o.name).sort(),records.map(r=>r.o.name),"IndexedDB holds QA 001 to QA 200");
+      const ends=await b.eval(`const nav=document.getElementById('decks'),out={};
+        const hit=()=>{const cs=[...nav.querySelectorAll('.chip')].filter(c=>c.getClientRects().length),nr=nav.getBoundingClientRect();
+          return cs.filter(c=>{const r=c.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+            if(x<nr.left||x>nr.right)return false;const h=document.elementFromPoint(x,y);return !!h&&(h===c||c.contains(h));});};
+        out.scrollable=nav.scrollWidth>nav.clientWidth;
+        nav.scrollLeft=nav.scrollWidth;const endHits=hit();out.maxLeft=nav.scrollLeft;out.endLast=endHits.length>0&&endHits[endHits.length-1]===[...nav.querySelectorAll('.chip')].filter(c=>c.getClientRects().length).pop();
+        nav.scrollLeft=0;const startHits=hit();out.startFirst=startHits.length>0&&startHits[0]===nav.querySelector('.chip');
+        return out;`);
+      assert.ok(ends.scrollable&&ends.maxLeft>0,"the strip scrolls: "+JSON.stringify(ends));
+      assert.ok(ends.endLast,"the last chip is hit-testable at its centre at scrollLeft max");
+      assert.ok(ends.startFirst,"the first chip is hit-testable at its centre at scrollLeft 0");
+      const tap=n=>b.eval(`const name='QA ${pad3(n)}',chip=[...document.querySelectorAll('#decks .chip')].find(c=>(c.getAttribute('aria-label')||c.textContent).includes(name));
+        return (async()=>{
+          if(!chip)return {error:'missing chip '+name};
+          const ok=()=>deck().name===name&&[...document.querySelectorAll('#decks .chip.on')].some(c=>(c.getAttribute('aria-label')||c.textContent).includes(name));
+          const t0=performance.now();chip.click();
+          while(!ok()){if(performance.now()-t0>5000)return {error:'tap never selected '+name+': deck '+deck().name+', on '+[...document.querySelectorAll('#decks .chip.on')].map(c=>c.getAttribute('aria-label')).join('|')};await new Promise(r=>setTimeout(r,0));}
+          await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+          return {name,ms:performance.now()-t0};
+        })();`);
+      const timed=[];
+      const check=async n=>{const r=await tap(n);assert.ok(!r.error,r.error);timed.push(r);assert.ok(r.ms<500,r.name+" selected in "+r.ms.toFixed(1)+" ms, bound 500");};
+      for(const n of [200,1,100,150,50,199])await check(n);
+      await check(100);
+      await b.eval(`const chip=[...document.querySelectorAll('#decks .chip')].find(c=>(c.getAttribute('aria-label')||c.textContent).includes('QA 100'));chip.click();return true;`);
+      await b.waitFor(`document.getElementById('scale-sheet').hidden===false`,{label:"Edit sheet opens on the selected chip"});
+      await b.eval(`document.getElementById('scale-back').click();return true;`);
+      await b.waitFor(`document.getElementById('scale-sheet').hidden===true`,{label:"Edit sheet closes on BACK"});
+      for(const n of [120,10])await check(n);
+      console.log("SV_PG2_TAPS "+JSON.stringify(timed.map(r=>[r.name,Math.round(r.ms)])));
+    });
+
     test("SV11 E1: preference acknowledgments and unchanged rereads preserve a pressed chip through release",{timeout:90000},async()=>{
       const previous={kind:"builtin",id:"amara"},target={kind:"builtin",id:"hijaz"};
       const selector=id=>`#decks .chip[data-selection-kind="builtin"][data-selection-id="${id}"]`;
@@ -19479,7 +19579,7 @@ function run() {
         await b.send("Page.navigate", { url: pageUrl(slug) });
         await b.waitFor(`document.readyState === "complete" && document.querySelector(".prog .slot")`, { label: "stepper" });
         assert.deepStrictEqual(await visibleStep(), { n: 1, step: "Chord 1 of 3" });
-        assert.strictEqual(await b.eval(`return !![...document.querySelectorAll(".prog .nav label")].find((l) => l.textContent === "PREV" && l.offsetParent);`), false, "no PREV on step 1");
+        assert.strictEqual(await b.eval(`return !![...document.querySelectorAll(".prog .nav label")].find((l) => l.textContent === "PREV" && l.offsetParent);`), true, "PREV is drawn on step 1");
         const before = await cardRect();
         assert.strictEqual(await flipped(), false);
         assert.ok(rotationAmount(await faceTransform(".inner")) < 0.01, `unflipped .inner must be at identity, got ${await faceTransform(".inner")}`);
@@ -19491,11 +19591,11 @@ function run() {
         assert.ok(rotationAmount(await faceTransform(".front")) > 0.5, `.front must carry its rotateY(180deg), got ${await faceTransform(".front")}`);
         assert.deepStrictEqual(await cardRect(), before, "flip shifts nothing");
         const nav = await b.eval(`
-          const l = [...document.querySelectorAll(".prog .slot:nth-child(1) .nav label")][0];
+          const l = document.querySelector(".prog .slot:nth-child(1) .nav label:last-child");
           const r = l.getBoundingClientRect(); return { w: r.width, h: r.height, t: l.textContent };`);
         assert.strictEqual(nav.t, "NEXT");
         assert.ok(nav.w >= 44 && nav.h >= 44, "NEXT is a 44px target");
-        await tap(".prog .slot:nth-child(1) .nav label");
+        await tap(".prog .slot:nth-child(1) .nav label:last-child");
         assert.deepStrictEqual(await visibleStep(), { n: 1, step: "Chord 2 of 3" });
         assert.deepStrictEqual(await cardRect(), before, "stepping shifts nothing");
       });
@@ -19723,6 +19823,32 @@ function run() {
           }
         });
       }
+    }
+
+    for (const slug of ["d-kurd-9", "e-amara-20"]) {
+      test(`FT: ${slug} at 380x780: PREV and NEXT are drawn and step with wrap at the first, a middle and the last card, flipped or not`, async () => {
+        await b.setViewport(380, 780, true);
+        await loadPage(slug);
+        const n = await b.eval(`return document.querySelectorAll(".prog > input").length;`);
+        for (const [pos, flip] of [[1, false], [1, true], [2, false], [2, true], [n, false], [n, true]]) {
+          for (const [which, want] of [["first", pos === 1 ? n : pos - 1], ["last", pos === n ? 1 : pos + 1]]) {
+            await b.eval(`
+              document.querySelector("#p${pos}").checked = true;
+              const slot = document.querySelector(".prog .slot:nth-child(${pos})");
+              slot.querySelector(".cardhost").shadowRoot.querySelector(".flip").checked = ${flip};
+              return true;`);
+            const r = await b.eval(`
+              const l = document.querySelector(".prog .slot:nth-child(${pos}) .nav label:${which}-child");
+              if (!l) return null;
+              l.scrollIntoView({ block: "center" }); const a = l.getBoundingClientRect();
+              return { x: a.left + a.width / 2, y: a.top + a.height / 2, w: a.width, h: a.height, v: getComputedStyle(l).visibility };`);
+            assert.ok(r && r.w >= 56 && r.h >= 44 && r.v === "visible", `${which} arrow at card ${pos} (flipped ${flip}) is drawn`);
+            await tapXY("mouse", r.x, r.y);
+            await new Promise((res) => setTimeout(res, 200));
+            assert.strictEqual(await stepNow(), want, `${which} arrow at card ${pos} (flipped ${flip}) lands on ${want}`);
+          }
+        }
+      });
     }
 
     for (const [w, h] of [[844, 390], [380, 780], [1280, 800]]) {
@@ -20165,6 +20291,87 @@ function run() {
       assert.strictEqual(await stepIndex(), 1, "a vertical gesture steps nothing");
     });
 
+    const wheelEv = (dx, dy, o = {}) => b.eval(`
+      const h = document.querySelector(".prog .slot:nth-child(1) .cardhost");
+      const e = new WheelEvent("wheel", { deltaX: ${dx}, deltaY: ${dy}, deltaMode: ${o.mode || 0}, ctrlKey: ${!!o.ctrl}, bubbles: true, cancelable: true });
+      h.dispatchEvent(e);
+      return { prevented: e.defaultPrevented, tf: h.style.transform };`);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    test("scale page wheel: a gesture opening with a zero-delta event still steps once", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await wheelEv(0, 0);
+      for (let i = 0; i < 4; i++) await wheelEv(30, 0);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    test("scale page wheel: a momentum tail after a step never fires a second step", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      for (let i = 0; i < 4; i++) await wheelEv(30, 0);
+      for (let i = 0; i < 25; i++) { await wheelEv(6, 0); await pause(25); }
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    const stroke = async (dxs, ms = 16) => { for (const dx of dxs) { await wheelEv(dx, 0); await pause(ms); } };
+
+    test("scale page wheel: SW2 A two swipes back to back, each with a tail, advance two cards", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([30, 30, 30, 20, 10, 5, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+      await stroke([30, 30, 30, 20, 10, 5, 3, 2, 1, 1]);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 3);
+    });
+
+    test("scale page wheel: SW2 B one swipe with a long monotone tail with flat repeats steps once", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([30, 30, 30, 25, 25, 20, 20, 15, 15, 10, 10, 6, 6, 3, 3, 2, 2, 1, 1, 1, 0, 0], 30);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    test("scale page wheel: SW2 C a small bump above a third of the peak does not start a gesture", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([11, 11, 11, 11, 11, 11, 11, 11, 10, 8, 6, 5, 4, 5, 4, 4, 3, 2, 1], 30);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
+    test("scale page wheel: SW2 D a second stroke begun during the flight counts once the card lands", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await stroke([30, 30, 30, 5, 2, 1]);
+      await stroke(Array(20).fill(30), 20);
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 3);
+    });
+
+    test("scale page wheel: the card follows deltaX below the threshold and springs back", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      const r = await wheelEv(30, 0);
+      assert.strictEqual(r.prevented, true);
+      assert.match(r.tf, /translate3d\(-30px/);
+      await pause(400);
+      assert.strictEqual((await wheelEv(0, 0)).tf, "");
+      assert.strictEqual(await stepIndex(), 1);
+    });
+
+    test("scale page wheel: ctrlKey (pinch) never steps", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      let r;
+      for (let i = 0; i < 6; i++) r = await wheelEv(30, 0, { ctrl: true });
+      await pause(500);
+      assert.strictEqual(r.prevented, false);
+      assert.strictEqual(await stepIndex(), 1);
+    });
+
+    test("scale page wheel: deltaMode 1 lines are scaled to pixels like the app", async () => {
+      await mouseSetup("d-kurd-9", 1280, 800);
+      await wheelEv(6, 0, { mode: 1 });
+      await pause(600);
+      assert.strictEqual(await stepIndex(), 2);
+    });
+
     test("FT: a sustained wheel stream that runs on through the fly-out steps exactly once, decaying or steady", async () => {
       for (const shape of ["decay", "steady"]) {
         await mouseSetup("d-kurd-9", 1280, 800);
@@ -20207,11 +20414,262 @@ function run() {
         assert.strictEqual(await stepIndex(), 1, "a swipe does nothing");
         await tapTouch();
         assert.strictEqual(await flipped(), true, "a tap flips");
-        await tap(".prog .slot:nth-child(1) .nav label");
+        await tap(".prog .slot:nth-child(1) .nav label:last-child");
         assert.strictEqual(await stepIndex(), 2, "NEXT steps");
       } finally {
         await b.send("Emulation.setTouchEmulationEnabled", { enabled: false });
       }
+    });
+  });
+
+
+  describe("MV: the saved-scale handoff to the new host", () => {
+    const SV = JSON.parse(fs.readFileSync(path.join(REPO, "tests/fixtures/saved_variants_v1.json"), "utf8"));
+    const clone = (v) => JSON.parse(JSON.stringify(v));
+    const uid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const OLDSEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const SEED2 = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+    const KURDSEED = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+    const rec = (name, s = OLDSEED, o = {}) => ({ v: 4, s, o: { name, ...o } });
+    const port = () => server.address().port;
+    const OLD = () => `http://127.0.0.1:${port()}`;
+    const NEW = () => `http://localhost:${port()}`;
+    const on = (cap) => { moveMode = { from: "127.0.0.1", target: NEW(), cap }; };
+    const envelopeOf = (records, extra = {}, collectionId = SV.ids.collectionA, base = 1) => ({
+      schema: 1, collectionId, revision: 1, slotStateRevision: 0,
+      entries: records.map((record, i) => ({ instanceId: uid(base + i), revision: 1, displayOrdinal: i + 1, record: clone(record) })),
+      usedInstanceIds: records.map((_, i) => uid(base + i)), nextDisplayOrdinal: records.length + 1,
+      preferredSelection: records.length ? { kind: "saved", id: uid(base) } : { kind: "builtin", id: "kurd" },
+      slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] }, ...clone(extra) });
+    const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
+    const clearOrigin = (origin) => b.send("Storage.clearDataForOrigin", { origin, storageTypes: "indexeddb,local_storage" });
+    async function go(url, referrer) {
+      const blank = onceEvent("Page.loadEventFired", 20000);
+      await b.send("Page.navigate", { url: "about:blank" });
+      await blank;
+      const loaded = onceEvent("Page.loadEventFired", 20000);
+      await b.send("Page.navigate", { url, ...(referrer ? { referrer } : {}) });
+      await loaded;
+      await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the page to boot" });
+    }
+    async function peek(origin) {
+      const keep = moveMode; moveMode = null;
+      try { await go(origin + "/index.html"); return await nativeSavedEnvelope(b); } finally { moveMode = keep; }
+    }
+    async function seed(origin, records, extra = {}, collectionId = SV.ids.collectionA, base = 1) {
+      const keep = moveMode; moveMode = null;
+      try {
+        await clearOrigin(origin);
+        await go(origin + "/index.html");
+        await b.eval(`return ${nativeSavedExpression({ write: true, raw: JSON.stringify(envelopeOf(records, extra, collectionId, base)) })};`);
+      } finally { moveMode = keep; }
+    }
+    async function seedLegacy(origin, records) {
+      const keep = moveMode; moveMode = null;
+      try {
+        await clearOrigin(origin);
+        await go(origin + "/index.html");
+        await b.send("Storage.clearDataForOrigin", { origin, storageTypes: "indexeddb" });
+        await b.eval(`localStorage.setItem('hpfc.scales.v3', ${JSON.stringify(JSON.stringify(records))}); return true;`);
+      } finally { moveMode = keep; }
+    }
+    const names = (e) => e.entries.map((row) => row.record.o && row.record.o.name);
+    const noticeShown = `!!document.getElementById('move-notice') && !document.getElementById('move-notice').hidden`;
+    const noticeText = () => b.eval(`const n=document.getElementById('move-notice');return n&&!n.hidden?n.textContent:null;`);
+    const where = () => b.eval(`return {origin:location.origin,hash:location.hash,search:location.search};`);
+    const atNew = () => `location.origin===${JSON.stringify(NEW())}`;
+    const remove = (name) => b.eval(`const e=savedState,row=e.entries.find(r=>r.record.o.name===${JSON.stringify(name)});
+      return commitSaved({type:'delete',collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision});`);
+    afterEach(async () => { moveMode = null; });
+
+    test("move: a crafted #move= link with no MOVE_FROM referrer writes nothing and opens the then hash", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("CRAFTED")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`);
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).entries, []);
+    });
+
+    test("move: revisit after edit/delete re-imports nothing - edit then delete a scale on the new host, revisit old /, no duplicate and no resurrection", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("ONE"), rec("TWO", SEED2)]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      const first = await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(names(first).sort(), ["ONE", "TWO"]);
+      assert.ok(Array.isArray(first.importedIds) && first.importedIds.length === 2);
+      await remove("TWO");
+      await b.eval(`const e=savedState,row=e.entries.find(r=>r.record.o.name==='ONE'),
+        built=buildGenerated(row.record.s,{...row.record.o,name:'ONE EDITED'});
+        return commitSaved({type:'edit',collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision,
+          candidate:{record:scaleRecord(seedOf(built.value)),deck:built.value}});`);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the second jump" });
+      await sleep(500);
+      const after = await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(names(after), ["ONE EDITED"]);
+      assert.deepStrictEqual(after.importedIds, first.importedIds);
+    });
+
+    test("move: seeded merge - a moved replacement of a seed the new host already replaced imports as an ordinary custom scale with its name kept", async () => {
+      on();
+      await seed(NEW(), [rec("NEW KURD", KURDSEED, { replaces: "kurd" })], { slots: { kurd: uid(9) } }, SV.ids.collectionB, 9);
+      await seed(OLD(), [rec("OLD KURD", KURDSEED, { replaces: "kurd" })], { slots: { kurd: uid(1) } });
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      const e = await nativeSavedEnvelope(b);
+      assert.strictEqual(e.slots.kurd, uid(9));
+      const moved = e.entries.find((row) => row.record.o.name === "OLD KURD");
+      assert.ok(moved, "the moved record is imported");
+      assert.strictEqual(moved.record.o.replaces, undefined);
+    });
+
+    test("move: seeded merge - moved hidden ids join the new list only for seeds the new host has no record for", async () => {
+      on();
+      await seed(NEW(), [rec("NEW HIJAZ", "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4", { replaces: "hijaz" })], { slots: { hijaz: uid(9) } }, SV.ids.collectionB, 9);
+      await seed(OLD(), [], { hidden: ["hijaz", "pygmy"] });
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
+      await sleep(800);
+      const e = await peek(NEW());
+      assert.ok(e.hidden.includes("pygmy"), "a seed without a record is hidden");
+      assert.ok(!e.hidden.includes("hijaz"), "a replaced seed stays visible");
+    });
+
+    test("move: two old tabs forwarding at once import each record once", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A"), rec("B", SEED2), rec("C", "(D3) A3 C4 D4 E4 F4 G4 A4")]);
+      const { targetId } = await b.send("Target.createTarget", { url: OLD() + "/index.html" }, false);
+      try {
+        await go(OLD() + "/index.html");
+        await sleep(2500);
+        assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B", "C"]);
+      } finally { await b.send("Target.closeTarget", { targetId }, false).catch(() => {}); }
+    });
+
+    test("move: #move= is stripped to the then hash before render, and Back or reload does not re-import", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("ONE")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`, OLD() + "/");
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["ONE"]);
+      await remove("ONE");
+      await go(`${NEW()}/index.html#deck=f-low-pygmy-18`, OLD() + "/");
+      assert.ok(!(await where()).hash.includes("move="));
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), [], "reload re-imports nothing");
+    });
+
+    test("move: an empty old store jumps with no notice and the #s= link opens on the new host", async () => {
+      on();
+      await seed(OLD(), []);
+      const keep = moveMode; moveMode = null;
+      const code = await b.eval(`const s=HPE.core.parseSeed(${JSON.stringify(OLDSEED)});return HPE.share.encode({fields:s.value.fields,options:{}}).value;`);
+      moveMode = keep;
+      await go(`${OLD()}/index.html#s=${code}`);
+      await b.waitFor(atNew(), { label: "the jump" });
+      assert.ok(/^#(s=|deck=)/.test((await where()).hash), "the link is carried");
+      assert.strictEqual(await noticeText(), null);
+    });
+
+    test("move: a payload over MOVE_CAP still forwards, carrying only the prefix that fits, and old storage is untouched", async () => {
+      on(50); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
+      await sleep(800);
+      assert.strictEqual(await noticeText(), null);
+      assert.deepStrictEqual(names(await peek(NEW())), []);
+      assert.deepStrictEqual(names(await peek(OLD())).sort(), ["A", "B"]);
+    });
+
+    test("move: a store held only in legacy storage keys forwards every record", async () => {
+      on(); await clearOrigin(NEW());
+      await seedLegacy(OLD(), [rec("L1"), rec("L2", SEED2), rec("L3", "(D3) A3 C4 D4 E4 F4 G4 A4")]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
+      await sleep(800);
+      assert.deepStrictEqual(names(await peek(NEW())).sort(), ["L1", "L2", "L3"]);
+    });
+
+    test("move: a NEEDS_NEWER_APP record in the payload is skipped and the rest import", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`, OLD() + "/");
+      await b.waitFor(noticeShown, { label: "the notice" });
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD"]);
+    });
+
+    test("move: the notice shows the singular and plural counts only after the write commits", async () => {
+      on(); await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("ONE")]])}&then=`, OLD() + "/");
+      await b.waitFor(noticeShown, { label: "the notice" });
+      assert.strictEqual(await noticeText(), "Your saved scale moved here.");
+      assert.strictEqual((await nativeSavedEnvelope(b)).entries.length, 1, "committed before the notice");
+      await clearOrigin(NEW());
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("ONE")], [uid(2), rec("TWO", SEED2)]])}&then=`, OLD() + "/");
+      await b.waitFor(noticeShown, { label: "the notice" });
+      assert.strictEqual(await noticeText(), "Your 2 saved scales moved here.");
+    });
+
+    test("move: failed write retries - the still-at-the-old-address message shows, importedIds in the IDB saved collection is unchanged, and the next visit imports every record once", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      await go(NEW() + "/index.html");
+      await b.eval(`localStorage.setItem('moveFail','1');return true;`);
+      await go(OLD() + "/index.html");
+      await b.waitFor(noticeShown, { label: "the failure message" });
+      assert.match(await noticeText(), /still at the old address/);
+      const failed = await nativeSavedEnvelope(b);
+      assert.deepStrictEqual(failed.entries, []);
+      assert.ok(!failed.importedIds || failed.importedIds.length === 0);
+      await b.eval(`localStorage.removeItem('moveFail');return true;`);
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), ["A", "B"]);
+    });
+
+    test("move: a redirected old path lands in one hop on the new host with its fragment, and the new host has no redirect", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A")]);
+      const before = (await b.send("Page.getNavigationHistory")).entries.length;
+      await go(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
+      await b.waitFor(atNew(), { label: "the jump" });
+      const w = await where();
+      assert.strictEqual(w.search, "?x=1");
+      assert.ok(w.hash.startsWith("#deck=") || w.hash === "");
+      const after = (await b.send("Page.getNavigationHistory")).entries.length;
+      assert.ok(after - before <= 1, "one history entry for the whole hop");
+      await go(NEW() + "/index.html");
+      assert.strictEqual((await where()).origin, NEW(), "the new host does not redirect");
+    });
+
+    test("move: an empty or malformed referrer imports nothing and the then hash opens", async () => {
+      on(); await clearOrigin(NEW());
+      const link = `${NEW()}/index.html#move=${payloadOf([[uid(1), rec("X")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`;
+      await go(link);
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).entries, []);
+      await go(link, "http://evil.example/");
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
+      assert.deepStrictEqual((await nativeSavedEnvelope(b)).entries, []);
+    });
+
+    test("move: neither host sends a Referrer-Policy stricter than strict-origin-when-cross-origin", () => {
+      const html = fs.readFileSync(path.join(REPO, "index.html"), "utf8");
+      assert.ok(!/<meta[^>]+name=["']referrer["']/i.test(html), "no referrer meta");
+      const headers = fs.readFileSync(path.join(REPO, "_headers"), "utf8");
+      for (const m of headers.matchAll(/Referrer-Policy:\s*(\S+)/gi))
+        assert.ok(["strict-origin-when-cross-origin", "no-referrer-when-downgrade", "origin-when-cross-origin", "unsafe-url"].includes(m[1].toLowerCase()), m[1]);
+    });
+
+    test("move: re-flip after a rollback imports only records saved on the old host meanwhile, no duplicates", async () => {
+      on(); await clearOrigin(NEW());
+      await seed(OLD(), [rec("A")]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the second jump" });
+      await sleep(800);
+      assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B"]);
     });
   });
 

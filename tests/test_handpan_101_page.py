@@ -9,7 +9,7 @@ from tests.test_scale_pages import Page, read, ratio, ROOT, SITE, SHARED_ROOT, S
 PATH = "handpan-101/index.html"
 URL = SITE + "handpan-101/"
 TITLE = "Handpan 101: A Beginner's Guide to Parts, Scales and First Practice"
-ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.youtube.com",
+ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpantheory.com", "www.youtube.com",
                  "en.wikipedia.org", "www.sarazhandpans.com", "schema.org", "handpaner.com",
                  "www.dingandtones.com", "svenkirchhofer.de", "handpanhelpers.klangzeug.de"}
 NAME_DENYLIST = ["Amy", "Naylor", "Levinson", "Rohner", "Schärer", "Scharer", "Felix", "Sabina"]
@@ -51,7 +51,8 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertNotIn("prefers-color-scheme", html)
         self.assertNotIn("#433b2c", html)
         self.assertNotIn("#fbfaf8", html)
-        self.assertEqual(page().meta("theme-color"), "#1a1815")
+        self.assertNotIn("#1a1815", html)
+        self.assertEqual(page().meta("theme-color"), "#0f0e0b")
 
     def test_the_shared_h1_h2_body_and_link_rules(self):
         html = read(PATH)
@@ -66,12 +67,12 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertTrue(rules)
         colours = [c for r in rules for c in re.findall(r"(?:^|;)\s*color:([^;]+)", r)]
         self.assertEqual(colours[-1].strip(), "var(--r)")
-        self.assertIn("--r:#e3b25c", style)
+        self.assertIn("--r:#f6f4ed", style)
 
-    def test_the_open_button_text_is_dark_on_gold(self):
+    def test_the_open_button_text_is_the_ground_on_text_primary(self):
         html = read(PATH)
-        self.assertRegex(html, r"\.open\{[^}]*color:#1a1815")
-        self.assertRegex(html, r"a\.open\{color:#1a1815;")
+        self.assertRegex(html, r"\.open\{[^}]*color:#0f0e0b")
+        self.assertRegex(html, r"a\.open\{color:#0f0e0b;")
         self.assertNotIn("color:#fff", html)
 
     def test_chord_progressions_video_ends_videos_to_start_with(self):
@@ -83,9 +84,9 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertNotIn("-BD13QhFJ-M", re.search(r"<h2>Resources</h2>(.*?)</section>", html, re.S).group(1))
 
     def test_every_primary_and_text_colour_passes_contrast_on_the_brown(self):
-        for colour in ("#e3b25c", "#eae6df", "#c4bcab"):
+        for colour in ("#f5c78e", "#f6f4ed", "#a9a39a"):
             with self.subTest(colour=colour):
-                self.assertGreaterEqual(ratio(colour, "#1a1815"), 4.5)
+                self.assertGreaterEqual(ratio(colour, "#0f0e0b"), 4.5)
 
     def test_structure_h1_then_h2_one_main_lang_en(self):
         html = read(PATH)

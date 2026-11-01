@@ -17,4 +17,4 @@ diff --git a/index.html b/index.html
 -html{background-color:var(--table)}
  html,body{height:100%}
  body{
-   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#eae6df;
+   margin:0; font-family:"Nunito Sans", system-ui, sans-serif; color:#f6f4ed;

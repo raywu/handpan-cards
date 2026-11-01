@@ -256,6 +256,7 @@
   "sheet.seat_is_now": "{name} ora occupa il posto {label}",
   "sheet.list_and": "{rest} e {last}",
   "sheet.mirror_reflow": " Le note posizionate non si spostano, ma i loro posti ora sono numerati nel senso opposto.",
+  "sheet.mirror_keeps_numbers": "Tutte le note cambiano lato, anche quelle che hai posizionato. I numeri restano al loro posto.",
   "sheet.seat_stays": " Il posto {label} mantiene il suo numero.",
   "sheet.cannot_trade": "Non spostate. {a} e {b} non possono scambiarsi i posti sui passi di {step}°.",
   "sheet.pick_bottom_one": "{name} selezionata. Trascinala lungo l'anello per spostarla.",
@@ -302,5 +303,10 @@
   "saved.resetFailure": "Impossibile ripristinare le scale predefinite. Controllale e riprova.",
   "saved.ackPending": "Il salvataggio è completato, ma non è stato possibile aggiornare questa vista. Ricarica la pagina per controllare le scale salvate.",
   "saved.sessionAckPending": "Il salvataggio è solo in questa scheda e non è stato possibile aggiornare la vista. Tieni aperta la scheda e conserva la bozza. Ricaricando o chiudendo la scheda perdi le modifiche temporanee.",
-  "saved.sessionImportAckPending": "Questa scala condivisa è temporanea e non è stato possibile aggiornarne la vista. Tieni aperta la scheda e conserva il link ricevuto. Ricaricando o chiudendo la scheda perdi le modifiche temporanee."
+  "saved.sessionImportAckPending": "Questa scala condivisa è temporanea e non è stato possibile aggiornarne la vista. Tieni aperta la scheda e conserva il link ricevuto. Ricaricando o chiudendo la scheda perdi le modifiche temporanee.",
+  "move.notice": {
+    "one": "La tua scala salvata si è spostata qui.",
+    "other": "Le tue {n} scale salvate si sono spostate qui."
+  },
+  "move.failed": "Le tue scale salvate sono ancora al vecchio indirizzo. Riapri il vecchio indirizzo per spostarle."
 }

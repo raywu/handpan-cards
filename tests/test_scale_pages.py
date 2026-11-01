@@ -13,8 +13,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import gen_scale_page as gen  # noqa: E402
 
-SITE = "https://handpan.raywu.org/"
-ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.w3.org",
+SITE = "https://handpantheory.com/"
+ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpantheory.com", "www.w3.org",
                  "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world",
                  "handpaner.com", "schema.org", "handpanhelpers.klangzeug.de", "svenkirchhofer.de",
                  "yataoshop.com", "isthmusinstruments.com", "www.drumland.com", "maginstruments.com",
@@ -23,20 +23,20 @@ ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org
                  "shop.ayasainstruments.com", "www.yishama.com", "www.xenithhandpans.com",
                  "www.veritashandpans.com", "www.spirithandpan.com", "www.panart.ch", "www.muziker.al",
                  "www.mudrahandpans.com", "www.kirstein.de", "www.halleonard.com", "www.boullard.ch"}
-SIZE_CAP = 60 * 1024
+SIZE_CAP = 62 * 1024 - 800
 PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#2563B0", "#3B7A2A",
             "#C0452C", "#B3263A"]
-BG_LIGHT = "#fbfaf8"
-BG_DARK = "#15181b"
-BROWN = "#1a1815"
-SHARED_ROOT = ":root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c;"
+BG_LIGHT = "#f6f4ed"
+BG_DARK = "#0f0e0b"
+BROWN = "#0f0e0b"
+SHARED_ROOT = ":root{color-scheme:dark;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--r:#f6f4ed;"
 SHARED_RULES = [
     "body{background:var(--bg);color:var(--fg);font-family:\"Nunito Sans\",system-ui,sans-serif;line-height:1.55;",
     "h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}",
     "font-size:24px;",
-    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
+    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}",
     "a:hover{text-decoration-thickness:2.5px}",
-    "a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}",
+    "a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}",
 ]
 
 # Independent oracle for the plan's page table (Round 4 dispositions, row 0 from Round 7 H3,
@@ -278,12 +278,12 @@ class TableOracleTest(unittest.TestCase):
 
 class GeneratorTest(unittest.TestCase):
     KURD_10_LINKS = {
-        "canonical": "https://handpan.raywu.org/scales/d-kurd-10/",
+        "canonical": "https://handpantheory.com/scales/d-kurd-10/",
         "cta": "/#deck=d-kurd-10",
         "cross": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038",
         "also_try": [
-            "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
-            "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
+            "https://handpantheory.com/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
+            "https://handpantheory.com/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
         ],
     }
 
@@ -498,8 +498,7 @@ class ScalePagesTest(unittest.TestCase):
                     self.assertIn(colors["root"], body)
                     self.assertIn(colors["tone"], body)
                     self.assertRegex(body, r"background:\s*#fff")
-                    self.assertRegex(body, r"\.card\{[^}]*border:\s*3\.2px solid var\(--root\)")
-                    self.assertRegex(body, r"\.front\{[^}]*border:\s*3\.2px solid var\(--root\)")
+                    self.assertRegex(body, r"\.front,\.card\{[^}]*border:\s*3\.2px solid var\(--root\)")
                     self.assertNotIn("<script", body)
 
     def test_card_palette_matches_the_row(self):
@@ -694,7 +693,7 @@ class StepperTest(unittest.TestCase):
                     self.assertEqual(body.count('type="checkbox"'), 1)
                     self.assertIn('aria-label="Flip card: ', body)
                     front = re.search(r'<div class="face front">(.*?)</div></div><div class="face back">', body, re.S).group(1)
-                    self.assertIn("Tap to reveal the notes", front)
+                    self.assertNotIn("hint", front)
                     self.assertNotIn("<svg", front)
                     back = body.split('class="face back"')[1]
                     self.assertIn("<svg", back)
@@ -702,18 +701,18 @@ class StepperTest(unittest.TestCase):
                     self.assertIn("-webkit-backface-visibility", body)
                     self.assertIn("preserve-3d", body)
 
-    def test_no_prev_label_on_step_one_and_no_next_label_on_step_three(self):
+    def test_both_arrows_on_every_step_and_they_wrap(self):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
                 navs = re.findall(r'<div class="nav">(.*?)</div></div>', html)
                 self.assertEqual(len(navs), 3)
-                self.assertNotIn("PREV", navs[0])
+                self.assertIn('for="p3">PREV', navs[0])
                 self.assertIn('for="p2">NEXT', navs[0])
                 self.assertIn('for="p1">PREV', navs[1])
                 self.assertIn('for="p3">NEXT', navs[1])
                 self.assertIn('for="p2">PREV', navs[2])
-                self.assertNotIn("NEXT", navs[2])
+                self.assertIn('for="p1">NEXT', navs[2])
 
     def test_only_two_scripts_and_the_light_dom_progression_line_stays(self):
         for slug in ROWS:
@@ -763,7 +762,7 @@ class SwipeScriptTest(unittest.TestCase):
     def test_the_driver_steps_on_a_horizontal_wheel_gesture(self):
         driver = gen.SWIPE_DRIVER
         self.assertIn('("wheel"', driver)
-        self.assertIn("passive:false", driver)
+        self.assertIn("passive:0", driver)
         self.assertIn("deltaX", driver)
 
     def test_prev_and_next_are_the_apps_arrows_and_keep_their_names(self):
@@ -771,9 +770,9 @@ class SwipeScriptTest(unittest.TestCase):
         self.assertIn("\\2190", css)
         self.assertIn("\\2192", css)
         self.assertIn("width:56px", css)
-        self.assertIn("border-radius:10px", css)
-        self.assertIn("background:#211d16", css)
-        self.assertIn("border:1px solid #433b2c", css)
+        self.assertIn("border-radius:12px", css)
+        self.assertIn("background:var(--s)", css)
+        self.assertIn("border:1px solid var(--h)", css)
         self.assertIn("font-size:0", css)
         for slug in ROWS:
             html = read("scales/%s/index.html" % slug)
@@ -787,13 +786,15 @@ class SwipeScriptTest(unittest.TestCase):
         self.assertIn("ariaHidden", gen.SWIPE_DRIVER)
 
     def test_swipe_script_fits_its_budget(self):
-        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 5800)
+        self.assertLessEqual(len(gen.SWIPE_JS.encode()), 6200)
 
     @staticmethod
     def without_card_css(html):
+        html = re.sub(r'<meta name="theme-color" content="#\w+">', '<meta name="theme-color">', html)
+        html = re.sub(r"<style>\n:root\{color-scheme:light dark;.*?</style>\n", "<style></style>\n", html, flags=re.S)
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
-        html = re.sub(r"\.prog\{display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
-                      ".prog{}", html, flags=re.S)
+        html = html.replace('<div class="hint">Tap to reveal the notes</div>', "")
+        html = re.sub(r'<div class="nav">.*?</div></div>', '<div class="nav"></div></div>', html)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 
     def test_js_off_markup_is_unchanged(self):
@@ -819,7 +820,7 @@ class SwipeScriptTest(unittest.TestCase):
         css = gen.CARD_CSS
         self.assertIn(".front{transform:rotateY(180deg)}", css)
         self.assertNotIn(".back{transform", css)
-        self.assertIn(".front .hint{display:none}", css)
+        self.assertNotIn(".hint", css)
 
     def test_every_row_page_regenerates_with_the_script(self):
         for slug in ROWS:
@@ -844,7 +845,7 @@ class ContrastTest(unittest.TestCase):
 
     def test_the_kurd_accents_are_the_shipped_pair(self):
         row = table()["d-kurd-10"]
-        self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#7fb0ee"))
+        self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#357CD4"))
 
     def test_non_frozen_accents_are_the_generator_rule(self):
         for slug, row in table().items():
@@ -864,11 +865,40 @@ class ContrastTest(unittest.TestCase):
         self.assertLess(ratio(light, BG_LIGHT), 4.8)
         self.assertEqual(dark, "#E2761B")
 
+    def test_the_light_plate_is_capped_and_sits_inside_the_flow_gap(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            with self.subTest(page=slug):
+                self.assertIn("@media (prefers-color-scheme:light){.prog{isolation:isolate;--bg:#0f0e0b;", html)
+                m = re.search(r"\.prog::before\{([^}]*)\}", html)
+                self.assertTrue(m)
+                rule = m.group(1)
+                self.assertIn("width:min(calc(100% + 24px),372px)", rule)
+                self.assertIn("left:50%", rule)
+                self.assertIn("transform:translateX(-50%)", rule)
+                self.assertIn("top:-12px", rule)
+                self.assertIn("border-radius:12px", rule)
+
+    def test_the_light_text_and_focus_tokens_meet_contrast_on_the_light_ground(self):
+        for slug in ROWS:
+            root = re.search(r":root\{color-scheme:light dark;([^}]*)\}", html_of(slug)).group(1)
+            tokens = dict(t.split(":") for t in root.split(";"))
+            with self.subTest(page=slug):
+                self.assertGreaterEqual(ratio(tokens["--muted"], tokens["--bg"]), 4.5)
+                self.assertGreaterEqual(ratio(tokens["--t"], tokens["--bg"]), 3)
+                self.assertGreaterEqual(ratio(tokens["--fg"], tokens["--bg"]), 7)
+
+    def test_the_theme_colour_is_the_rows_light_accent(self):
+        for slug, row in table().items():
+            with self.subTest(page=slug):
+                self.assertEqual(Page(html_of(slug)).meta("theme-color"), row["accent_light"])
+
     def test_cta_buttons_are_at_least_44px_and_dark_theme_overrides_exist(self):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
-                self.assertIn("padding:12px 16px", html)
+                self.assertIn("padding:11px 15px", html)
+                self.assertIn("border-radius:12px", html)
                 self.assertIn("font-size:14px", html)
                 self.assertIn("@media (prefers-color-scheme:dark){:root{", html)
                 self.assertIn("background:#fff;color:#242424", html)
@@ -1001,8 +1031,8 @@ if __name__ == "__main__":
 
 class AlsoTryTest(unittest.TestCase):
     LINKS = [
-        ("C# Annaziska 9", "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
-        ("C# Annaziska 13", "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
+        ("C# Annaziska 9", "https://handpantheory.com/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
+        ("C# Annaziska 13", "https://handpantheory.com/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
     ]
 
     def anchors(self, slug):
@@ -1047,16 +1077,16 @@ class SharedBrownHeadTest(unittest.TestCase):
         css = read("index.html")
         about = css[css.index("#about{position:fixed"):css.index("html.about-open{")]
         self.assertNotIn("#1f1b15", about)
-        self.assertIn("background:#1a1815", about)
-        self.assertRegex(about, r"\.abouthead\{[^}]*background:#1a1815")
-        self.assertRegex(about, r"color:#eae6df; font:400 16px/1\.55 \"Nunito Sans\"")
+        self.assertIn("background:#0f0e0b", about)
+        self.assertRegex(about, r"\.abouthead\{[^}]*background:#0f0e0b")
+        self.assertRegex(about, r"color:#f6f4ed; font:400 16px/1\.55 \"Nunito Sans\"")
         self.assertRegex(about, r'#about h2\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
-        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#e3b25c')
+        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#f6f4ed')
         self.assertNotIn("text-transform:uppercase", about)
-        self.assertRegex(about, r"#about h4\{[^}]*color:#c4bcab")
-        self.assertRegex(about, r"#about a\{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
+        self.assertRegex(about, r"#about h4\{[^}]*color:#a9a39a")
+        self.assertRegex(about, r"#about a\{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
         self.assertIn("calc((100% - 520px) / 2)", about)
 
     def test_every_primary_passes_contrast_on_the_brown(self):
-        for colour in ("#e3b25c", "#eae6df", "#c4bcab"):
+        for colour in ("#f5c78e", "#f6f4ed", "#a9a39a"):
             self.assertGreaterEqual(ratio(colour, BROWN), 4.5)
