@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14349,7 +14349,7 @@ sheet.addEventListener("keydown", e => {
-   const shut = isLipShut();
-   const stops = (sheetTab === "layout"
-     ? [backBtn, document.getElementById("scale-conflict-separate"), onTab, previewBox.querySelector('.panhit[tabindex="0"]'),
+@@ -15624,7 +15624,7 @@ sheet.addEventListener("keydown", e => {
+     ? [backBtn, document.getElementById("scale-conflict-separate"), onTab,
+        previewBox.querySelector('.panhit[tabindex="0"]'), previewBox.querySelector('.nhit[tabindex="0"]'),
+        modeStandard, modeNeotone,
 -       anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
 +       anchorOne, anchorBetween, mirrorTop, mirrorBot,
         notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,

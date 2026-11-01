@@ -68,6 +68,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     SMALL_LABELS: {
       kind: "warning",
       reason: "Crowded pan: the smallest labels print at <N> pt, under the 3.6 pt this app treats as readable. Nothing is left out."
+    },
+    PROFILE_UNKNOWN: {
+      kind: "error",
+      reason: "This Neotone layout is not one this app knows."
+    },
+    PROFILE_MAP_INVALID: {
+      kind: "error",
+      reason: "The Neotone layout is malformed: it must list 9 main and 9 mutant tonefields, each empty or one of your notes, top notes in the main ones and bottom notes in the mutant ones."
+    },
+    PROFILE_NOTE_MISSING: {
+      kind: "error",
+      reason: "The Neotone layout leaves out one of your notes. Every note needs a tonefield."
+    },
+    PROFILE_NOTE_TWICE: {
+      kind: "error",
+      reason: "The Neotone layout places the same note in two tonefields."
+    },
+    PROFILE_FULL: {
+      kind: "error",
+      reason: "Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes."
+    },
+    PROFILE_CONFLICT: {
+      kind: "error",
+      reason: "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it."
+    },
+    NEOTONE_INPUT: {
+      kind: "error",
+      reason: "Neotone has 9 main tonefields. Remove the extra top note to save."
     }
   };
 
@@ -777,6 +805,162 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
   }
 
+  /* ---- the Neotone profile option (ENGINE-SPEC 18) ---------------------- */
+
+  var PROFILE_TONEFIELDS = 9;
+  var PROFILE_SLOTS = 18;
+  var PROFILE_KEY_RE = /^[rib]\d{1,3}$/;
+  var ZONE_KEY = { rim: "r", inner: "i", bottom: "b" };
+
+  function has(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  // The non-ding fields as {key, midi, zone}, in pitch order.
+  function profileNotes(fields) {
+    var notes = [];
+    var id;
+    for (id in fields) {
+      if (!has(fields, id) || fields[id][3] === "ding") continue;
+      notes.push({ key: ZONE_KEY[fields[id][3]] + fields[id][2], midi: fields[id][2], zone: fields[id][3] });
+    }
+    notes.sort(function (a, b) { return a.midi - b.midi; });
+    return notes;
+  }
+
+  // Rim notes in pitch order fill p1..p9, bottom notes in pitch order fill
+  // s1..s9; a note without a tonefield (a tenth rim or bottom note, any inner
+  // note) is unplaced, in pitch order.
+  function proposeProfileMap(fields) {
+    var map = [];
+    var unplaced = [];
+    var i;
+    for (i = 0; i < PROFILE_SLOTS; i += 1) map.push(null);
+    var rim = 0;
+    var bottom = 0;
+    profileNotes(fields).forEach(function (note) {
+      if (note.zone === "rim" && rim < PROFILE_TONEFIELDS) { map[rim] = note.key; rim += 1; }
+      else if (note.zone === "bottom" && bottom < PROFILE_TONEFIELDS) {
+        map[PROFILE_TONEFIELDS + bottom] = note.key;
+        bottom += 1;
+      } else unplaced.push(note.key);
+    });
+    return { map: map, unplaced: unplaced };
+  }
+
+  // With no mutant entry the main half orders the Standard rim seats, so a main
+  // entry at or past the rim count has no seat.
+  function pastSeats(map, fields) {
+    if (map.slice(PROFILE_TONEFIELDS).some(function (entry) { return entry !== null; })) return false;
+    var rim = 0;
+    var id;
+    for (id in fields) if (has(fields, id) && fields[id][3] === "rim") rim += 1;
+    return map.slice(rim, PROFILE_TONEFIELDS).some(function (entry) { return entry !== null; });
+  }
+
+  function ringStrict(map, fields) {
+    if (pastSeats(map, fields)) return false;
+    var wanted = {};
+    profileNotes(fields).forEach(function (note) { wanted[note.key] = true; });
+    var seen = 0;
+    for (var i = 0; i < PROFILE_SLOTS; i += 1) {
+      var entry = map[i];
+      if (entry === null) continue;
+      if (entry.charAt(0) !== (i < PROFILE_TONEFIELDS ? "r" : "b")) return false;
+      if (!has(wanted, entry)) return false;
+      seen += 1;
+    }
+    return seen === Object.keys(wanted).length;
+  }
+
+  // A rev-1 map (18 entries, no duplicates, keys naming real notes) becomes a
+  // rev-2 reading: identity when it is ring-strict and maps every note,
+  // otherwise the pitch-order proposal.
+  function migrateProfile(raw, fields) {
+    var map = Array.isArray(raw) ? raw : raw.map;
+    if (ringStrict(map, fields)) return { map: map.slice(), unplaced: [] };
+    return proposeProfileMap(fields);
+  }
+
+  function profileMapShape(map, byKey) {
+    if (!Array.isArray(map) || map.length !== PROFILE_SLOTS) return scaleErr("PROFILE_MAP_INVALID");
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < PROFILE_SLOTS; i += 1) {
+      if (!has(map, String(i))) return scaleErr("PROFILE_MAP_INVALID");
+      var entry = map[i];
+      if (entry === null) { out.push(null); continue; }
+      if (typeof entry !== "string" || !PROFILE_KEY_RE.test(entry) || !has(byKey, entry)) {
+        return scaleErr("PROFILE_MAP_INVALID");
+      }
+      if (has(seen, entry)) return scaleErr("PROFILE_NOTE_TWICE");
+      seen[entry] = true;
+      out.push(entry);
+    }
+    return ok({ out: out, seen: seen });
+  }
+
+  // The one validator of options.profile. `raw` is the caller's option, `options`
+  // the whole raw option bag (for PROFILE_CONFLICT), `fields` the parsed seed.
+  function readProfile(raw, options, fields) {
+    if (raw === undefined || raw === null) return ok(undefined);
+    if (!HPE.core.PROFILE_ENABLED) return scaleErr("PROFILE_UNKNOWN");
+    var placement = ["mirrorBottom", "anchor", "seats", "angles"];
+    if (options.mirror === true) return scaleErr("PROFILE_CONFLICT");
+    for (var c = 0; c < placement.length; c += 1) {
+      var given = options[placement[c]];
+      if (given !== undefined && given !== null) return scaleErr("PROFILE_CONFLICT");
+    }
+    if (typeof raw !== "object" || Array.isArray(raw)) return scaleErr("PROFILE_MAP_INVALID");
+    var keys = Object.keys(raw).sort();
+    if (keys.length !== 3 || keys[0] !== "id" || keys[1] !== "map" || keys[2] !== "rev") {
+      return scaleErr("PROFILE_MAP_INVALID");
+    }
+    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2)) return scaleErr("PROFILE_UNKNOWN");
+
+    var byKey = {};
+    var counts = { rim: 0, inner: 0, bottom: 0 };
+    var id;
+    for (id in fields) {
+      if (!has(fields, id) || fields[id][3] === "ding") continue;
+      byKey[ZONE_KEY[fields[id][3]] + fields[id][2]] = true;
+      counts[fields[id][3]] += 1;
+    }
+    var total = counts.rim + counts.inner + counts.bottom;
+    if (raw.rev === 1 ? total > PROFILE_SLOTS
+      : (counts.rim > PROFILE_TONEFIELDS || counts.bottom > PROFILE_TONEFIELDS || counts.inner > 0)) {
+      return scaleErr("PROFILE_FULL");
+    }
+
+    var shape = profileMapShape(raw.map, byKey);
+    if (!shape.ok) return shape;
+    var map = shape.value.out;
+
+    if (raw.rev === 1) {
+      var migrated = migrateProfile(map, fields);
+      var value = { id: "paired", rev: 2, map: migrated.map };
+      if (migrated.unplaced.length > 0) value.unplaced = migrated.unplaced;
+      return ok(value);
+    }
+
+    for (var i = 0; i < PROFILE_SLOTS; i += 1) {
+      if (map[i] !== null && map[i].charAt(0) !== (i < PROFILE_TONEFIELDS ? "r" : "b")) {
+        return scaleErr("PROFILE_MAP_INVALID");
+      }
+    }
+    if (pastSeats(map, fields)) {
+      var moved = proposeProfileMap(fields);
+      var proposed = { id: "paired", rev: 2, map: moved.map };
+      if (moved.unplaced.length > 0) proposed.unplaced = moved.unplaced;
+      return ok(proposed);
+    }
+    var key;
+    for (key in byKey) {
+      if (has(byKey, key) && !has(shape.value.seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
+    }
+    return ok({ id: "paired", rev: 2, map: map });
+  }
+
   function parseSeed(input, options) {
     if (typeof input !== "string") return badNote(String(input));
     var opts = readOptions(options);
@@ -822,6 +1006,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       fields[String(first + n)] = [spell(entry.note.letter, entry.note.accidental),
                                    entry.note.octave, entry.note.midi, "bottom", null, "U" + (n + 1)];
     });
+    var profile = readProfile(options ? options.profile : undefined, options || {}, fields);
+    if (!profile.ok) return profile;
+    if (profile.value) opts.value.profile = profile.value;
     // The field ids in typed order (tops, then bottoms), for the importer's
     // source-to-field mapping. Not enumerable: it is a reading aid, not part of
     // the seed, so equality, spreading and serialising of a seed ignore it.
@@ -1093,6 +1280,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   HPE.core = {
     LABEL_RULE: LABEL_RULE,
+    PROFILE_ENABLED: true,
+    readProfile: readProfile,
+    migrateProfile: migrateProfile,
+    proposeProfileMap: proposeProfileMap,
     parseSeed: parseSeed,
     parseLegacySeed: parseLegacySeed,
     inferBottoms: inferBottoms,

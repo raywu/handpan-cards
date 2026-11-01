@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1534,6 +1534,7 @@ html.about-open{overflow:hidden}
+@@ -1653,6 +1653,7 @@ html.about-open{overflow:hidden}
        <p class="sheethint" id="scale-line-note"></p>
      </div>
      </div>
@@ -13,7 +13,7 @@ diff --git a/index.html b/index.html
      <div id="scale-panel-layout" role="tabpanel" aria-labelledby="scale-tab-layout" hidden>
      <div id="scale-plate-band">
        <div id="scale-preview" role="img"
-@@ -1627,7 +1628,6 @@ html.about-open{overflow:hidden}
+@@ -1761,7 +1762,6 @@ html.about-open{overflow:hidden}
        </div>
      </div>
      </div>

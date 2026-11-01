@@ -84,6 +84,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // What a stored record carries. Records keep the v4 shape (formatSeed plus
   // options), so the wire version moves alone.
   var RECORD_VERSION = 4;
+  // Neotone profiles (ENGINE-SPEC 18) travel at wire v7 and are stored as
+  // record v5; an acoustic seed never leaves v6 / record 4.
+  var PROFILE_VERSION = 7;
+  var PROFILE_RECORD_VERSION = 5;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -330,14 +334,23 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (label === null) return badNote(seed);
     var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
     var scale = scaleSegment(seed.fields);
-    var segs = [String(VERSION), scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
-    var meaning = [String(VERSION), scale, typed ? String(opts.name) : FIELD_SEP];
+    var profiled = opts.profile !== undefined && opts.profile !== null;
+    var wire = String(profiled ? PROFILE_VERSION : VERSION);
+    var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
+    var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
       segs.push(text);
       meaning.push(text);
     }
     if (opts.palette) option("palette-" + (opts.palette + 1));
     if (opts.parent !== undefined && opts.parent !== null) option("parent-" + parentSlug(opts.parent));
+    if (profiled) {
+      option("pair-" + opts.profile.map.map(function (k) { return k === null ? "-" : k; }).join("."));
+      segs.push(checkHex(meaning.join(SEP)));
+      var wired = segs.join("/");
+      if (wired.length > CAPS.payload) return badNote(wired);
+      return ok(wired);
+    }
     var mirrors = HPE.layout.resolveMirrors({}, opts);
     if (mirrors.top && mirrors.bottom) option("mirror");
     else if (mirrors.top) option("mirror-top");
@@ -361,6 +374,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var PALETTE_RE = /^palette-([2-6])$/;
   var PALETTE_RE_V6 = /^palette-(10|[2-9])$/;
   var PARENT_RE = /^parent-(.+)$/;
+  var PAIR_RE = /^pair-((?:[rib]\d{1,3}|-)(?:\.(?:[rib]\d{1,3}|-)){17})$/;
   var ANGLES_RE = /^at-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
 
   // By hand over the UTF-8 bytes: unreserved characters stay, a space is "+",
@@ -431,7 +445,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
   }
 
-  var OPTION_ORDER = { palette: 0, parent: 1, mirror: 2, between: 3, seats: 4, at: 5 };
+  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -462,6 +476,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (segs[segs.length - 1] !== checkHex(meaning.join(SEP))) return badNote(text);
 
     var options = { palette: 0, parent: null, mirror: false, name: name };
+    var profiled = text.charAt(0) === "7";
+    var pairs = 0;
     var rank = -1;
     for (var k = 0; k < texts.length; k += 1) {
       var o = texts[k];
@@ -478,6 +494,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         }
         if (found < 0) return badNote(text);
         options.parent = found;
+      } else if ((m = PAIR_RE.exec(o))) {
+        if (!profiled) return badNote(text);
+        at = OPTION_ORDER.pair;
+        pairs += 1;
+        var pairMap = m[1].split(".").map(function (t) { return t === "-" ? null : t; });
+        options.profile = {
+          id: "paired",
+          rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
+          map: pairMap
+        };
+      } else if (profiled) {
+        return badNote(text);
       } else if (o === "mirror") {
         at = OPTION_ORDER.mirror;
         options.mirror = true;
@@ -508,7 +536,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (at <= rank) return badNote(text);
       rank = at;
     }
-    return HPE.core.parseSeed(scaleString(scale), options);
+    if (profiled && pairs !== 1) return badNote(text);
+    var read = HPE.core.parseSeed(scaleString(scale), options);
+    if (!read.ok && profiled && options.profile.rev === 2 &&
+        (read.code === "PROFILE_NOTE_MISSING" || read.code === "PROFILE_FULL")) {
+      options.profile.rev = 1;
+      read = HPE.core.parseSeed(scaleString(scale), options);
+    }
+    return read;
   }
 
   /* ---- decode ----------------------------------------------------------- */
@@ -571,7 +606,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // encode WRITES): it leaves both gates reading exactly as they did in v1
     // while making every version this build knows decodable, so a v1 link
     // still opens in a v2 app and only a genuinely NEWER one is refused.
-    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], NEWEST));
+    var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
+    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
     //    before the version byte and before any parsing at all.
@@ -618,11 +654,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return scaleLineReader(version)(lines[0], options);
   }
 
+  function recordVersion(seed) {
+    var opts = (seed && seed.options) || {};
+    return opts.profile !== undefined && opts.profile !== null ? PROFILE_RECORD_VERSION : RECORD_VERSION;
+  }
+
   HPE.share = {
     encode: encode,
     decode: decode,
+    recordVersion: recordVersion,
     VERSION: VERSION,
+    PROFILE_VERSION: PROFILE_VERSION,
     RECORD_VERSION: RECORD_VERSION,
+    PROFILE_RECORD_VERSION: PROFILE_RECORD_VERSION,
     CAPS: CAPS
   };
 })(HPE);

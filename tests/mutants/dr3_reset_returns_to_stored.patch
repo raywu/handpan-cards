@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12728,7 +12728,7 @@ function putDownPick() {
- }
+@@ -13462,7 +13462,7 @@ function putDownPick() {
  function resetLayout() {
    cancelGesture();
+   if (neotoneOn()) { resetNeotone(); return; }
 -  layoutSeats = null;
 +  layoutSeats = storedSeats ? JSON.parse(JSON.stringify(storedSeats)) : null;
    layoutAngles = null;

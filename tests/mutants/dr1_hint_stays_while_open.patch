@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11783,7 +11783,7 @@ function paintLayout() {
+@@ -12361,7 +12361,7 @@ function paintLayout() {
      pickMoved = false;
    }
    layoutHint.textContent = HINT_EMPTY();
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  layoutHint.hidden = false;
    drawerStatus.hidden = !drawerOpen || !boxOk;
    if (sheetOpen) paintNotes();
-   drawerHint.textContent = DRAWER_HINT() + (ringCount && ringCount.bottom >= 1 ? DRAWER_HINT_SLIDE() : "");
+   drawerHint.textContent = neotoneOn() ? t("sheet.drawer_hint_neotone")

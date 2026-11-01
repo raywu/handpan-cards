@@ -163,6 +163,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -302,6 +308,114 @@
    }
   },
   "scale-fine": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-mode-row": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-label": {
+   "text": "LAYOUT",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-standard": {
+   "text": "STANDARD",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "true"
+   }
+  },
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "false"
+   }
+  },
+  "scale-standard": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-pair": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-extra": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-wrap": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-text": {
+   "text": "Neotone",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-msg": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -759,6 +873,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -898,6 +1018,114 @@
    }
   },
   "scale-fine": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-mode-row": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-label": {
+   "text": "LAYOUT",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-standard": {
+   "text": "STANDARD",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "true"
+   }
+  },
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "false"
+   }
+  },
+  "scale-standard": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-pair": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-extra": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-wrap": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-text": {
+   "text": "Neotone",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-msg": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -1359,6 +1587,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -1498,6 +1732,114 @@
    }
   },
   "scale-fine": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-mode-row": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-label": {
+   "text": "LAYOUT",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-standard": {
+   "text": "STANDARD",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "true"
+   }
+  },
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "false"
+   }
+  },
+  "scale-standard": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-pair": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-extra": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-wrap": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-text": {
+   "text": "Neotone",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-msg": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -1973,6 +2315,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -2114,6 +2462,114 @@
    }
   },
   "scale-fine": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-mode-row": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-label": {
+   "text": "LAYOUT",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-standard": {
+   "text": "STANDARD",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "true"
+   }
+  },
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "false"
+   }
+  },
+  "scale-standard": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-pair": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-extra": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-wrap": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-text": {
+   "text": "Neotone",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-msg": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -2587,6 +3043,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -2728,6 +3190,114 @@
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-mode-row": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-label": {
+   "text": "LAYOUT",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-standard": {
+   "text": "STANDARD",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "true"
+   }
+  },
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "false"
+   }
+  },
+  "scale-standard": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-pair": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-extra": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-wrap": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-text": {
+   "text": "Neotone",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -3201,6 +3771,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -3346,6 +3922,114 @@
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "scale-mode-row": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-label": {
+   "text": "LAYOUT",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-standard": {
+   "text": "STANDARD",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "true"
+   }
+  },
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "false"
+   }
+  },
+  "scale-standard": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-pair": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-extra": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-wrap": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-text": {
+   "text": "Neotone",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-msg": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
   },
   "scale-preview": {
    "text": "",
@@ -3813,6 +4497,12 @@
    "hidden": false,
    "attrs": {}
   },
+  "scale-name-label": {
+   "text": "SCALE NAME",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
   "scale-delete-row": {
    "text": "",
    "html": "",
@@ -3952,6 +4642,114 @@
    }
   },
   "scale-fine": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-mode-row": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-label": {
+   "text": "LAYOUT",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-mode-standard": {
+   "text": "STANDARD",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "true"
+   }
+  },
+  "scale-mode-neotone": {
+   "text": "NEOTONE",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-pressed": "false"
+   }
+  },
+  "scale-standard": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-pair": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-extra": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-unused": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-rearrange": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-builtin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone-name-hint": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "scale-neotone": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-wrap": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-text": {
+   "text": "Neotone",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "scale-neotone-msg": {
    "text": "",
    "html": "",
    "hidden": true,

@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1544,6 +1544,13 @@ html.about-open{overflow:hidden}
-     <div id="scale-layout-zone">
+@@ -1673,6 +1673,13 @@ html.about-open{overflow:hidden}
        <div id="scale-drawer" role="group" aria-label="Layout">
          <p class="sheethint" id="scale-drawer-hint" hidden></p>
+         <div id="scale-standard">
 +        <div class="ctlrow">
 +          <div class="mirror">
 +            <button class="mode" type="button" id="scale-mirror" aria-pressed="false" disabled>MIRROR TOP</button>
@@ -18,7 +18,7 @@ diff --git a/index.html b/index.html
          <div class="editrow">
            <span class="sheetlabel" id="scale-anchor-label">HANDPAN ORIENTATION</span>
            <div class="ctlrow" role="group" aria-labelledby="scale-anchor-label">
-@@ -1554,13 +1561,6 @@ html.about-open{overflow:hidden}
+@@ -1683,13 +1690,6 @@ html.about-open{overflow:hidden}
            </div>
          </div>
          <p class="sheethint">Which note sits nearest you: note 1 alone, or notes 1 and 2 side by side.</p>

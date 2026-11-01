@@ -31,7 +31,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
   "scale-mirror-bottom", "scale-box-wrap", "scale-swatches", "scale-generate", "deck-add", "deck-restore",
   // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
-  "scale-name-row", "scale-name",
+  "scale-name-row", "scale-name", "scale-name-label",
   "scale-delete-row", "scale-delete", "scale-del-note",
   // Phase 5 LAYOUT section, additive like the two before it.
   "scale-layout-reset",
@@ -45,6 +45,10 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-angle-prev", "scale-angle-next",
   // Lane DR3: the disclosure over the finer controls.
   "scale-fine-toggle", "scale-fine",
+  // Neotone: the Layout switch, its hints, and the Scale-form checkbox.
+  "scale-mode-row", "scale-mode-label", "scale-mode-standard", "scale-mode-neotone", "scale-standard",
+  "scale-neotone-pair", "scale-neotone-extra", "scale-neotone-unused", "scale-neotone-rearrange",
+  "scale-neotone-builtin", "scale-neotone-name-hint", "scale-neotone", "scale-neotone-wrap", "scale-neotone-text", "scale-neotone-msg",
   // The pan-layout preview, additive like every row above it.
   "scale-preview",
   // Stage 2: the page header. The sheet became a full-screen page, so it has a

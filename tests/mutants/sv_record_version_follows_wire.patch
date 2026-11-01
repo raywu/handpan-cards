@@ -4,12 +4,12 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -83,7 +83,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -83,7 +83,7 @@
    var VERSION = 6;
    // What a stored record carries. Records keep the v4 shape (formatSeed plus
    // options), so the wire version moves alone.
 -  var RECORD_VERSION = 4;
 +  var RECORD_VERSION = VERSION;
-   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
-   var OLDEST = 1;         // no version 0 ever shipped
- 
+   // Neotone profiles (ENGINE-SPEC 18) travel at wire v7 and are stored as
+   // record v5; an acoustic seed never leaves v6 / record 4.
+   var PROFILE_VERSION = 7;
