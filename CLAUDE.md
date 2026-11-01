@@ -103,7 +103,7 @@ code; the consent defaults are queued before `config`, and `config` before any e
 - Linear workspace `bamboo-grove`, team `TRI`, is the index of open work; the repo
   stays the archive (plans, CI evidence, this file). Conventions:
   `docs/plans/2026-10-28-linear-convention-note.md`.
-- Delivery state is exactly one `delivery/*` label (planned, building, on-dev,
+- Delivery state is exactly one label from the `delivery` group (planned, building, on-dev,
   dev-qa-passed, main-held, released) plus `paused` when the owner pauses work;
   `owner-decision` marks items waiting on the owner and `chain/chain-n` the owner's
   ranked order.
