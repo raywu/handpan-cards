@@ -318,17 +318,45 @@ def draw_ring(c, x, y, r, state):
     c.circle(x, y, r * 0.74, stroke=1, fill=0)
 
 
+# The paired-area profile's draw figures (tests/fixtures/paired_profile_v1.json,
+# ENGINE-SPEC section 18), held equal to the fixture by a test. A deck whose geom
+# carries `place` is drawn from it; every other deck takes the acoustic path.
+PROFILE_DRAW = {
+    "primary": {"orbit": 0.58, "r": 0.16},
+    "secondary": {"orbit": 0.86, "r": 0.11},
+    "ding": {"r": 0.21, "dy": 0},
+    "n_in": 0.052, "n_out": 0.068, "extent_margin": 0.06,
+}
+
+
+def profile_radius(geom, band_half=74.0):
+    """Print radius of a deck drawn from geom["place"], or None for an acoustic
+    geom. The reach is fixed by the profile, not by which slots are occupied:
+    the larger of both slot kinds (orbit + r + n_out + the number's own size)
+    and the ding edge, plus the margin."""
+    if not geom.get("place"):
+        return None
+    pd = PROFILE_DRAW
+    reach = max(k["orbit"] + k["r"] + pd["n_out"] + k["r"] * NUM_RATIO
+                for k in (pd["primary"], pd["secondary"]))
+    ding = geom["r_ding"] + abs(geom.get("ding_dy", 0.0))
+    return round(band_half / (max(reach, ding) + pd["extent_margin"]), 1)
+
+
 def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
              numbers=True):
     """spec: dict field -> (name, octave, midi, zone, angle, label)"""
     g = spec["_geom"]
+    placed = g.get("place")
+    pd = PROFILE_DRAW
+    split = (pd["primary"]["orbit"] + pd["secondary"]["orbit"]) / 2.0
     nfs = num_size(R * g["r_note"])
     c.setStrokeColor(black); c.setLineWidth(1.15); c.setDash()
     c.circle(cx, cy, R, stroke=1, fill=0)
-    if g.get("inner_ring"):
+    if g.get("inner_ring") and not placed:
         c.setLineWidth(0.6)
         c.circle(cx, cy, R * g["inner_ring"], stroke=1, fill=0)
-    if g.get("bottom"):
+    if g.get("bottom") and not placed:
         c.setStrokeColor(Color(0.90, 0.90, 0.90)); c.setLineWidth(0.7)
         c.setDash(2.2, 2.2)
         c.circle(cx, cy, R * g["bottom"], stroke=1, fill=0)
@@ -353,8 +381,12 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
                            rr * LABEL_WIDTH_RATIO)
             note_text(c, cx, cy - dy - rr * 0.30, nm, ov, "Label", fs0, INK)
             continue
-        orb = R * g[zone]
-        rr = R * (g["r_bnote"] if zone == "bottom" else g["r_note"])
+        if placed:
+            ang, orbit, rfrac = placed[str(i)]
+            orb, rr = R * orbit, R * rfrac
+        else:
+            orb = R * g[zone]
+            rr = R * (g["r_bnote"] if zone == "bottom" else g["r_note"])
         a = math.radians(ang)
         px, py = cx + orb * math.cos(a), cy + orb * math.sin(a)
         draw_ring(c, px, py, rr, state(i, zone == "bottom"))
@@ -362,7 +394,13 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
                       rr * LABEL_WIDTH_RATIO)
         note_text(c, px, py - rr * 0.30, nm, ov, "Label", fs, INK)
         if numbers:
-            if zone == "bottom":
+            if placed:
+                nfs = num_size(rr)
+                nr = orb + rr + R * pd["n_out"] if orbit > split \
+                    else orb - rr - R * pd["n_in"]
+                col, fnt = (ORANGE, "LabelSB") if zone == "bottom" \
+                    else (INK, "Label")
+            elif zone == "bottom":
                 nr = orb + rr + R * g["n_out"]
                 col, fnt = ORANGE, "LabelSB"
             elif zone == "rim" and g.get("rim_num_out"):

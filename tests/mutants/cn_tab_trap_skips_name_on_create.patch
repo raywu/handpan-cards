@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14353,7 +14353,7 @@ sheet.addEventListener("keydown", e => {
-        notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,
+@@ -15302,7 +15302,7 @@ sheet.addEventListener("keydown", e => {
+        modeStandard, modePaired, ...Array.from(areasBox.children).map((row) => row.children[1]), areasReset,
         ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
      : [backBtn, document.getElementById("scale-conflict-separate"), onTab,
 -       nameBox,
