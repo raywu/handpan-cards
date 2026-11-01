@@ -375,7 +375,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-areas-reset": {
    "text": "RESET AREAS",
@@ -1045,7 +1047,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-areas-reset": {
    "text": "RESET AREAS",
@@ -1719,7 +1723,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-areas-reset": {
    "text": "RESET AREAS",
@@ -2409,7 +2415,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-areas-reset": {
    "text": "RESET AREAS",
@@ -3091,7 +3099,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-areas-reset": {
    "text": "RESET AREAS",
@@ -3783,7 +3793,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-areas-reset": {
    "text": "RESET AREAS",
@@ -4469,7 +4481,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-areas-reset": {
    "text": "RESET AREAS",

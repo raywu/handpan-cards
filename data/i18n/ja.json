@@ -107,6 +107,8 @@
   "sheet.reset_areas": "エリアをリセット",
   "sheet.areas_reset": "エリアをリセットしました。",
   "sheet.paired_incomplete": "エリアのない音が{n}個あります。すべての音にエリアを割り当ててください。",
+  "sheet.paired_dropped": "ペアエリアは最大18音までなので、レイアウトを標準に戻しました。",
+  "sheet.areas_label": "エリアとその音",
   "sheet.palette": "カードの配色",
   "sheet.palette_n": "配色{n}",
   "sheet.next": "次へ",

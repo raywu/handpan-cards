@@ -107,6 +107,8 @@
   "sheet.reset_areas": "RÉINITIALISER LES ZONES",
   "sheet.areas_reset": "Zones réinitialisées.",
   "sheet.paired_incomplete": "Notes sans zone : {n}. Donnez une zone à chaque note.",
+  "sheet.paired_dropped": "Les zones appariées accueillent au plus 18 notes, la disposition revient donc à Standard.",
+  "sheet.areas_label": "Zones et leurs notes",
   "sheet.palette": "PALETTE DES CARTES",
   "sheet.palette_n": "Palette {n}",
   "sheet.next": "SUIVANT",

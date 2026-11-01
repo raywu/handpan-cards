@@ -107,6 +107,8 @@
   "sheet.reset_areas": "RESTABLECER ÁREAS",
   "sheet.areas_reset": "Áreas restablecidas.",
   "sheet.paired_incomplete": "Notas sin área: {n}. Da un área a cada nota.",
+  "sheet.paired_dropped": "Las áreas emparejadas admiten como máximo 18 notas, así que la disposición vuelve a Estándar.",
+  "sheet.areas_label": "Áreas y sus notas",
   "sheet.palette": "COLORES DE LA TARJETA",
   "sheet.palette_n": "Paleta {n}",
   "sheet.next": "SIGUIENTE",

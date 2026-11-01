@@ -15362,8 +15362,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],pairedKeys=["sheet.layout_mode","sheet.mode_standard","sheet.mode_paired","sheet.paired_hint","sheet.paired_count","sheet.paired_area_main","sheet.paired_area_small","sheet.paired_empty","sheet.paired_note_bottom","sheet.paired_note_in","sheet.reset_areas","sheet.areas_reset","sheet.paired_incomplete","reason.PROFILE_UNKNOWN","reason.PROFILE_MAP_INVALID","reason.PROFILE_NOTE_MISSING","reason.PROFILE_NOTE_TWICE","reason.PROFILE_FULL","reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...pairedKeys],addedPluralKeys=["move.notice"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers (MN), move.notice / move.failed (domain move handoff) and the nineteen Paired areas keys (Neotone lane U)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],pairedKeys=["sheet.layout_mode","sheet.mode_standard","sheet.mode_paired","sheet.paired_hint","sheet.paired_count","sheet.paired_area_main","sheet.paired_area_small","sheet.paired_empty","sheet.paired_note_bottom","sheet.paired_note_in","sheet.reset_areas","sheet.areas_reset","sheet.paired_incomplete","sheet.paired_dropped","sheet.areas_label","reason.PROFILE_UNKNOWN","reason.PROFILE_MAP_INVALID","reason.PROFILE_NOTE_MISSING","reason.PROFILE_NOTE_TWICE","reason.PROFILE_FULL","reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...pairedKeys],addedPluralKeys=["move.notice"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers (MN), move.notice / move.failed (domain move handoff) and the twenty-one Paired areas keys (Neotone lane U and its nits)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -19007,6 +19007,50 @@ describe("PAU: paired areas sheet, saves and links", () => {
     assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
     assert.deepStrictEqual(paired.slice(0, acoustic.length).slice(2), acoustic.slice(2));
     assert.strictEqual(paired[paired.length - 1].length, 18);
+  });
+
+  test("PAU14: a profile edit aimed at a slot owner is refused as profile-owns-slot and writes nothing", async () => {
+    const record = { v: 4, s: AMARA_STRING, o: { name: "MY AMARA", palette: 2, replaces: "amara" } };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: { amara: OWNER }, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    const before = JSON.stringify(savedEnvelope(app));
+    const res = plain(app.get(`(() => {
+      const o = ${JSON.stringify(profileOf(app, AMARA_STRING))};
+      const b = buildGenerated(${JSON.stringify(AMARA_STRING)}, o);
+      const candidate = { record: { ...scaleRecord(seedOf(b.value)), v: 5 }, deck: b.value };
+      const command = { type: "edit", collectionId: savedState.collectionId, instanceId: ${JSON.stringify(OWNER)}, expectedRevision: 1, candidate };
+      const staged = stageSavedEnvelope(savedState);
+      return applySavedCommand(staged, command, savedCandidate(command));
+    })()`));
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.detail, "profile-owns-slot");
+    assert.strictEqual(JSON.stringify(savedEnvelope(app)), before);
+  });
+
+  test("PAU15: growing a Paired scale past 18 notes drops to Standard and says so through the sheet guidance", async () => {
+    const app = boot();
+    openPaired(app);
+    assert.strictEqual(app.els["scale-mode-paired"].getAttribute("aria-pressed"), "true");
+    app.type("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6");
+    assert.strictEqual(app.els["scale-mode-standard"].getAttribute("aria-pressed"), "true", "the mode fell back to Standard");
+    assert.strictEqual(app.els["scale-msg"].textContent, app.get(`t("sheet.paired_dropped")`));
+    assert.strictEqual(app.els["scale-msg"].classList.contains("warn"), true);
+    assert.ok(!/deck/i.test(app.els["scale-msg"].textContent), "visible text never says deck");
+  });
+
+  test("PAU16: #scale-areas has its own accessible name, not the LAYOUT label", async () => {
+    const app = boot();
+    openPaired(app);
+    const box = app.els["scale-areas"];
+    assert.strictEqual(box.getAttribute("aria-label"), app.get(`t("sheet.areas_label")`));
+    assert.strictEqual(box.getAttribute("aria-labelledby"), null);
   });
 });
 

@@ -107,6 +107,8 @@
   "sheet.reset_areas": "RIPRISTINA AREE",
   "sheet.areas_reset": "Aree ripristinate.",
   "sheet.paired_incomplete": "Note senza area: {n}. Dai un’area a ogni nota.",
+  "sheet.paired_dropped": "Le aree accoppiate contengono al massimo 18 note, quindi la disposizione torna a Standard.",
+  "sheet.areas_label": "Aree e relative note",
   "sheet.palette": "COLORI DELLA CARTA",
   "sheet.palette_n": "Colori {n}",
   "sheet.next": "AVANTI",

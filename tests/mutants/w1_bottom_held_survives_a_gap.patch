@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13886,7 +13886,7 @@ function syncParseState({ paint }) {
+@@ -13955,7 +13955,7 @@ function syncParseState({ paint }) {
    if (res.ok) {
      boxOk = true;
      const bottom = Object.values(res.value.fields).some((f) => f[3] === "bottom");
 -    if (bottom !== hadBottom) { bottomHeld = false; hadBottom = bottom; }
 +    if (bottom !== hadBottom) { hadBottom = bottom; }
      noteCounts(res.value.fields, res.value);
-     syncProfile(res.value.fields);
+     const droppedToStandard = syncProfile(res.value.fields);
      paintLayout();
