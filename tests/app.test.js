@@ -18845,6 +18845,36 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(entries(app).length, before, "nothing was saved");
   });
 
+  test("NEO4b: the built-in Pygmy demo draws inner F5 and G5 as mutant notes M7 and M8; the map, M1 and SAVE do not change (owner 2026-11-02)", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    const place = plain(app.get("lastSolved.geom.place"));
+    const fields = plain(app.get("lastSolved.fields"));
+    const idOf = (midi) => Object.keys(fields).find((id) => fields[id][2] === midi);
+    for (const [midi, label] of [[77, "M7"], [79, "M8"]]) {
+      const id = idOf(midi);
+      assert.ok(place[id], "note " + midi + " is drawn");
+      assert.strictEqual(place[id][3], "mutant", "mutant kind");
+      assert.strictEqual(fields[id][5], label);
+    }
+    assert.strictEqual(map(app).filter((k) => k !== null).length, 15, "the stored map holds the 9 + 6 notes only");
+    assert.ok(!map(app).includes("i77") && !map(app).includes("i79"));
+    assert.strictEqual(app.els["scale-generate"].disabled, true, "SAVE is held");
+    assert.ok(app.els["scale-neotone-msg"].textContent.includes("Inner notes F5 and G5"));
+    const deck = decks(app).find((d) => d.id === "pygmy");
+    assert.strictEqual(deck.fields["10"][3], "inner", "deck data is untouched");
+  });
+
+  test("NEO4c: a user scale with inner notes gets M1 and no demo placement", async () => {
+    const app = boot();
+    openNeo(app, TOP_PYGMY);
+    const place = plain(app.get("lastSolved.geom.place"));
+    assert.strictEqual(Object.keys(place).length, 15, "F5 and G5 are left out of the picture");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+  });
+
   test("NEO5: M2 and M2b: top notes past the ninth, and bottoms past the ninth", async () => {
     const app = boot();
     openNeo(app, TOP_PYGMY);

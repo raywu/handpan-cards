@@ -12592,7 +12592,7 @@ let pickSlid = false;
 // Adding a bottom note to a pan that had none starts the switch OFF, not at
 // MIRROR TOP's value (owner decision 7).
 let anchor = "one";
-// Paired areas (ENGINE-SPEC 18): the second layout mode. The acoustic draft
+// Neotone (ENGINE-SPEC 18): the second layout mode. The acoustic draft
 // above is left untouched while it is on, so STANDARD restores it.
 let neotone = false;
 let profileMap = null;
@@ -13973,7 +13973,27 @@ function profileNotesOf(fields) {
     .map((id) => ({ id, key: profileKeyOf(fields[id]), name: fields[id][0] + fields[id][1], zone: fields[id][3], midi: fields[id][2] }));
 }
 const unplacedNotes = () => profileNoteList.filter((n) => !profileMap || profileMap.indexOf(n.key) === -1);
-const noteNameOf = (key) => { const n = profileNoteList.find((x) => x.key === key); return n ? n.name : ""; };
+const noteNameOf = (key) => { const n = profileNoteList.find((x) => x.midi === Number(key.slice(1))); return n ? n.name : ""; };
+/** Owner 2026-11-02: the built-in Pygmy's Neotone demo shows its inner F5 and G5
+ *  as the next mutant notes. Preview only: the stored map, M1 and the SAVE hold
+ *  are unchanged, and the deck data is not touched. */
+const NEO_DEMO_DECK = "pygmy";
+const NEO_DEMO_MIDI = [77, 79];
+function neoDemoNotes() {
+  if (!neoConversion() || editedDeck().id !== NEO_DEMO_DECK || !profileMap) return [];
+  const loose = unplacedNotes();
+  const demo = loose.filter((n) => n.zone === "inner" && NEO_DEMO_MIDI.indexOf(n.midi) !== -1);
+  const free = profileMap.slice(NEO_MAIN).filter((k) => k === null).length;
+  return demo.length === loose.length && demo.length <= free ? demo : [];
+}
+/** The map the pan draws: the stored one plus the demo notes in the first empty mutant tonefields. */
+function shownMap() {
+  const demo = neoDemoNotes();
+  if (!demo.length) return profileMap;
+  const next = profileMap.slice();
+  for (const n of demo) next[next.indexOf(null, NEO_MAIN)] = "b" + n.midi;
+  return next;
+}
 const listOf = (items) => items.length < 2 ? items.join("")
   : t("sheet.neotone_and", { a: items.slice(0, -1).join(", "), b: items[items.length - 1] });
 const noteNames = (notes) => listOf(notes.slice().sort((a, b) => a.midi - b.midi).map((n) => n.name));
@@ -14032,9 +14052,10 @@ function neoExtraText() {
 /** M4: the mutant tonefields nothing pairs with. Neutral, never a warning. */
 function neoUnusedText() {
   if (!neotoneOn() || !boxOk || !profileMap) return "";
-  if (!profileMap.slice(NEO_MAIN).some((k) => k !== null)) return "";
+  const shown = shownMap();
+  if (!shown.slice(NEO_MAIN).some((k) => k !== null)) return "";
   const free = [];
-  for (let i = 0; i < NEO_MAIN; i += 1) if (profileMap[NEO_MAIN + i] === null) free.push(i + 1);
+  for (let i = 0; i < NEO_MAIN; i += 1) if (shown[NEO_MAIN + i] === null) free.push(i + 1);
   if (!free.length) return "";
   const dense = free.every((v, i) => i === 0 || v === free[i - 1] + 1);
   const range = free.length === 1 ? String(free[0])
@@ -14137,10 +14158,11 @@ function neotoneOverlay(solved, hits) {
   const place = solved.geom.place;
   const byKey = {};
   for (const id of Object.keys(solved.fields)) byKey[profileKeyOf(solved.fields[id])] = id;
-  const mutants = profileMap.slice(NEO_MAIN).some((k) => k !== null);
+  const shown = shownMap();
+  const mutants = shown.slice(NEO_MAIN).some((k) => k !== null);
   const slots = [];
   for (let slot = 0; slot < NEO_SLOTS; slot += 1) {
-    const key = profileMap[slot];
+    const key = shown[slot];
     const placed = key !== null && byKey[key] ? place[byKey[key]] : null;
     if (key !== null && !placed) continue;
     if (key === null && !mutants) continue;
@@ -14289,9 +14311,12 @@ function solvePreviewLayout(seed) {
  *  dropped for the Standard render (ENGINE-SPEC 18.2). */
 function solveNeotonePreview(seed) {
   const fields = { ...seed.fields };
-  const loose = profileNotesOf(seed.fields).filter((n) => profileMap.indexOf(n.key) === -1);
+  const demo = neoDemoNotes();
+  const map = shownMap();
+  for (const n of demo) fields[n.id] = [fields[n.id][0], fields[n.id][1], fields[n.id][2], "bottom", null, fields[n.id][5]];
+  const loose = profileNotesOf(fields).filter((n) => map.indexOf(n.key) === -1);
   for (const n of loose) delete fields[n.id];
-  const res = HPE.layout.solve({ fields, options: { profile: { id: "paired", rev: 2, map: profileMap.slice() } } }, {});
+  const res = HPE.layout.solve({ fields, options: { profile: { id: "paired", rev: 2, map: map.slice() } } }, {});
   if (!res.ok || !res.value.geom.place) return null;
   return { ...res.value, unplaced: loose.map((n) => n.id) };
 }

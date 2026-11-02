@@ -1072,7 +1072,7 @@ test("PA: K3 strokes: black outlines 0.012R, bands 0.046R and 0.024R, a decor ri
   assert.ok(!page.ops.some((o) => o.op === "circle" && near(o.width, 0.55)), "no inner hairline");
 });
 
-test("PA: K8 glyph sizes: names, numbers, M<n>, and every octave digit are at or over 3.6 pt on every card", () => {
+test("PA: K8 glyph sizes: main names, numbers and M<n> are at or over 3.6 pt on every card; lens glyphs are exempt and shrink to fit (owner 2026-11-02)", () => {
   const r = HPE.core.LABEL_RULE, R = 61.8, rr = 0.19 * R;
   const want = {
     main: r.LABEL_RATIO_NOTE * 0.62 * rr,
