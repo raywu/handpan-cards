@@ -2,7 +2,7 @@
 // the D11 tie-break (section 6), and the D9 root octave (section 7).
 //
 // Spec-first: every expectation below is read off docs/ENGINE-SPEC.md,
-// docs/SCALE_ENGINE_PLAN.md Premises 2/3/5 or CLAUDE.md rule 3, and held
+// docs/SCALE_ENGINE_PLAN.md Premises 2/3/5 or docs/CARD-SPEC.md rule 3, and held
 // against the frozen corpus in tests/fixtures/. Nothing is restated from
 // src/engine/voicing.js.
 
@@ -162,7 +162,7 @@ test("with the root field given, choose reproduces 60/61 - only Fm9 diverges", (
   // ("giving the engine the root FIELD, the spelling order of pitch classes
   // and the chord symbol"): the strict reading - unforced tones take the
   // NEAREST instance above the root - reproduces 60/61. The one divergence is
-  // Pygmy Fm9, which CLAUDE.md rule 3 names as a permitted free choice.
+  // Pygmy Fm9, which docs/CARD-SPEC.md rule 3 names as a permitted free choice.
   //
   // This gate is stricter than the (root pitch class, interval set) one above:
   // the D9 root-octave exceptions and the HIGH / LOW VOICING alternates must
@@ -260,7 +260,7 @@ test("D9 root octave: lowest top-shell instance, else lowest overall", () => {
 
 test("D2 forced chords cluster chord tones to the highest instance below the root", () => {
   const amara = GOLDEN.decks.find((d) => d.id === "amara");
-  // CLAUDE.md rule 3 / plan Premise 2: Amara Fmaj7 is forced (its 7th, E, has
+  // docs/CARD-SPEC.md rule 3 / plan Premise 2: Amara Fmaj7 is forced (its 7th, E, has
   // no instance above F4 and E4 is on the top shell) and ships spelling order
   // F A C E, all below the root. This is the shipped Amara 9 card.
   const fmaj7 = amara.chords.find((c) => c.main === "Fmaj" && c.sup === "7");

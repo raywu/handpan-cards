@@ -1,6 +1,6 @@
-"""Deck data locked against the spec in CLAUDE.md.
+"""Deck data locked against the spec in docs/CARD-SPEC.md.
 
-Everything asserted here is transcribed by hand from CLAUDE.md - the
+Everything asserted here is transcribed by hand from docs/CARD-SPEC.md - the
 "Instrument layouts (verified)" tables, the voicing rules, the scale
 degrees - and checked against the DECKS JSON embedded in index.html.
 
@@ -29,7 +29,7 @@ except ImportError:  # pragma: no cover - discovery rooted inside tests/
     import paths
 
 
-# Standard chromatic pitch classes. Spelling is per-instrument (CLAUDE.md
+# Standard chromatic pitch classes. Spelling is per-instrument (docs/CARD-SPEC.md
 # notes that Hijaz F4 is functionally E#), so only the pitch class is fixed.
 NAME_PC = {
     "C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "F": 5,
@@ -37,7 +37,7 @@ NAME_PC = {
     "B": 11,
 }
 
-# CLAUDE.md > "Instrument layouts (verified - do not 'correct')".
+# docs/CARD-SPEC.md > "Instrument layouts (verified - do not 'correct')".
 # (label, note name, octave, MIDI, zone, angle) - angles are math-convention
 # degrees, 0 = right, 90 = up, y-up. MIDI from scientific pitch notation
 # (C4 = 60), which is what the octave numbers in the spec mean.
@@ -116,7 +116,7 @@ LAYOUTS = {
     ],
 }
 
-# CLAUDE.md > "Decks:" - chord counts per deck, 177 cards in total.
+# docs/CARD-SPEC.md > "Decks:" - chord counts per deck, 177 cards in total.
 # 2026-09-16 (D7/D10/D11, engine adoption): all three decks now ship the
 # scale engine's generated output. Hijaz 18 -> 19, Pygmy 27 -> 52 (31 distinct
 # chord names, D10 amended), Amara 16 -> 25 (D11, fully re-ranked).
@@ -221,7 +221,7 @@ PYGMY_BADGE = [
 #   G takes its nearest instance above the root, G4; Bb3 and Db4 are the two
 #   bottom-shell fields.
 #
-# Both were legal under CLAUDE.md rule 3 all along and simply absent.
+# Both were legal under docs/CARD-SPEC.md rule 3 all along and simply absent.
 # 2026-09-16: the engine's naming.js appends an enharmonic equivalence note
 # to Cm7's subtitle ("( = Eb6 )") that the hand-authored data did not carry;
 # the field lists and roots are unchanged.
@@ -232,7 +232,7 @@ SEVENTH_REGISTERS = [
     ("Eb", "7", "Eb DOMINANT 7", [4, 6, 104, 105], 4),
 ]
 
-# F natural minor, complete (CLAUDE.md, Pygmy).
+# F natural minor, complete (docs/CARD-SPEC.md, Pygmy).
 F_NATURAL_MINOR = {"F", "G", "Ab", "Bb", "C", "Db", "Eb"}
 
 
@@ -249,7 +249,7 @@ def pc(deck, fid):
 
 
 class LayoutTest(unittest.TestCase):
-    """The instrument layouts, against the verified tables in CLAUDE.md."""
+    """The instrument layouts, against the verified tables in docs/CARD-SPEC.md."""
 
     def test_layouts_match_spec(self):
         seen = set()
@@ -287,7 +287,7 @@ class LayoutTest(unittest.TestCase):
 
 
 class VoicingTest(unittest.TestCase):
-    """CLAUDE.md > "Voicing rules"."""
+    """docs/CARD-SPEC.md > "Voicing rules"."""
 
     def test_ding_never_in_voicing(self):
         for deck in decks():
@@ -355,7 +355,7 @@ class VoicingTest(unittest.TestCase):
 
 
     def test_forced_tones_cluster_below_root(self):
-        """CLAUDE.md rule 3, the cluster clause made precise (2026-09).
+        """docs/CARD-SPEC.md rule 3, the cluster clause made precise (2026-09).
 
         When ANY non-root tone is only available below the root, every CHORD
         TONE sits at its highest instance below the root (one with no lower
@@ -495,7 +495,7 @@ class DegreeTest(unittest.TestCase):
 
 
 class PygmyBottomShellTest(unittest.TestCase):
-    """CLAUDE.md > F3 Low Pygmy 18: the bottom shell and its badge."""
+    """docs/CARD-SPEC.md > F3 Low Pygmy 18: the bottom shell and its badge."""
 
     def setUp(self):
         self.deck = next(d for d in decks() if d["id"] == "pygmy")
@@ -700,7 +700,7 @@ class CanonicalSourceTest(unittest.TestCase):
         a write that serialises DIFFERENTLY from `want` but to the same
         data - e.g. a stray `sort_keys=True` on the write line. That is
         exactly the kind of mistake the re-parse step exists to catch
-        (CLAUDE.md, "Known pitfalls": "only reading the bytes back proves
+        (CLAUDE.md, "Hard constraints": "only reading the bytes back proves
         the write landed"), and a semantic check reads the bytes back but
         doesn't actually check them.
 

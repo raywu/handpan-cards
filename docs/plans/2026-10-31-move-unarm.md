@@ -1,0 +1,1 @@
+- U1 done 2026-11-01: reverts e05a7633 (arm) and 93d8a2c9 (host strings) applied clean. Acceptance: hits are exactly sandbox.js, dh_boot_ignores_html.patch and test_site_files.py; the negative grep is empty; canonical is handpan.raywu.org; validate.py passes; refresh_mutants --check clean; 119 site tests and 92 move tests pass. Pre-change head recorded: 1070f8b5.

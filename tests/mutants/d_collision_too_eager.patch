@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10572,6 +10572,7 @@ function applySavedCommand(staged, command, candidate) {
+@@ -11102,6 +11102,7 @@ function applySavedCommand(staged, command, candidate) {
      if (!match) attachCandidate(row);
      targetId = row.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "edit") {
 +    if (staged.identities.has(candidate.deck.id)) return savedFailure("conflict","wrong-options-refusal");
      const row = existing();
      if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
-     const record = savedEditedRecord(row.record, candidate);
+     if (candidate.deck.options.profile && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");

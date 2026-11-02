@@ -284,25 +284,27 @@ SWIPE_CONSTANTS = {
 }
 
 SWIPE_DRIVER = """(function(){
-var W=HPE.swipe,abs=Math.abs,P=document.querySelector(".prog"),C=P.querySelector(".cards"),R=[].slice.call(P.querySelectorAll("input[name=step]")),S=[].slice.call(C.children),n=R.length,d,o,t,z,w,m=matchMedia("(prefers-reduced-motion:reduce)");
+var W=HPE.swipe,U=W.xf,abs=Math.abs,P=document.querySelector(".prog"),C=P.querySelector(".cards"),R=[...P.querySelectorAll("input[name=step]")],S=[...C.children],n=R.length,d,o,t,z,w,m=matchMedia("(prefers-reduced-motion:reduce)");
 if(n<2)return;
 var H=S.map(s=>s.querySelector(".cardhost")),F=H.map(h=>h.shadowRoot.querySelector(".flip")),Q=()=>R.findIndex(r=>r.checked),L=(e,f,a)=>C.addEventListener(e,f,a),
-A=(e,a,b,ms,ez,fill)=>e.animate([{transform:a},{transform:b}],{duration:ms,easing:ez,fill:fill}),
+A=(e,a,b,ms,ez,fill)=>e.animate([{transform:a},{transform:b}],{duration:ms,easing:ez,fill}),
+T=e=>e.style.transform="",
+B=(k,x)=>{T(H[k]);m.matches||A(H[k],U(-x),"none",W.BACK_MS,W.EASE)},
 V=f=>{var c=f.nextElementSibling.children;c[0].ariaHidden=!f.checked;c[1].ariaHidden=f.checked},
 N=R.map(r=>r.getAttribute("aria-label").replace(/^.*?: /,"")),
 G=(k,u)=>(k+u+n)%n,
-J=k=>{var g=document.activeElement;R[k].checked=true;F.forEach(f=>{f.checked=false;V(f)});if(P.contains(g))(g.type=="radio"?R[k]:F[k]).focus({preventScroll:true})},
-Y=(k,u,x)=>{var j=G(k,u),f=A(H[k],W.xf(x),W.xf(-u*innerWidth),W.OUT_MS,W.OUT_EASE,"forwards");z=1;f.onfinish=()=>{J(j);f.cancel();z=0;A(H[j],"translate3d("+u*W.IN_PX+"px,0,0)","none",W.IN_MS,W.EASE)}};
+J=k=>{var g=document.activeElement;R[k].checked=1;F.forEach(f=>{f.checked=false;V(f)});if(P.contains(g))(g.type=="radio"?R[k]:F[k]).focus({preventScroll:1})},
+Y=(k,u,x)=>{var j=G(k,u),f=A(H[k],U(x),U(-u*innerWidth),W.OUT_MS,W.OUT_EASE,"forwards");z=1;f.onfinish=()=>{J(j);f.cancel();z=0;A(H[j],"translate3d("+u*W.IN_PX+"px,0,0)","none",W.IN_MS,W.EASE)}};
 P.classList.add("sw");
 F.forEach(f=>{V(f);f.addEventListener("change",()=>V(f))});
 S.forEach((s,i)=>{var c=s.querySelector(".step");c.textContent=i+1+" / "+n;c.ariaLabel="Chord "+(i+1)+" of "+n;c.role="status";s.querySelector(".nav").insertAdjacentHTML("beforebegin",'<div class="rail" aria-hidden="true">'+N.map((x,j)=>j==i?"<b>"+x+"</b>":x).join(" → ")+"</div>")});
-L("pointerdown",e=>{o=0;clearTimeout(t);d=0;if(!z&&e.isPrimary&&!e.button&&e.clientX>20&&e.clientX<innerWidth-20)d={x:e.clientX,y:e.clientY,h:[[e.timeStamp,e.clientX]],e:H[Q()]}});
-L("pointermove",e=>{if(!d)return;d.h.push([e.timeStamp,e.clientX]);var x=e.clientX-d.x;if(!d.m&&abs(x)>W.SLOP_PX&&abs(x)>=abs(e.clientY-d.y)){d.m=1;if(e.pointerType=="mouse")C.setPointerCapture(e.pointerId)}if(d.m)d.e.style.transform=W.xf(x)});
-L("pointercancel",()=>{if(d)d.e.style.transform="";d=0});
-L("pointerup",e=>{if(!d)return;var x=e.clientX-d.x,y=e.clientY-d.y,h=d.h,a=h.pop(),b=a,el=d.e,k=Q();d=0;for(var j of h)if(a[0]-j[0]<=W.FLING_WINDOW_MS){b=j;break}var r=W.releaseDecision({dx:x,dy:y,vx:(a[1]-b[1])/(a[0]-b[0])||0,moved:abs(x)>W.SLOP_PX||abs(y)>W.SLOP_PX,reducedMotion:m.matches});if(r.eatClick){o=1;t=setTimeout(()=>{o=0},350)}el.style.transform="";if(r.kind=="fly")Y(k,r.dir,x);else if(r.kind=="spring")A(el,W.xf(x),"none",W.BACK_MS,W.EASE);else if(r.dir)J(G(k,r.dir))});
-L("wheel",e=>{var q=e.timeStamp,k=Q(),u;if(!w||q-w.t>160)w={s:0,x:abs(e.deltaX)>abs(e.deltaY),f:z};w.t=q;if(!w.x)return;e.preventDefault();if(w.f)return;w.s+=e.deltaX;if(abs(w.s)>80){u=w.s>0?1:-1;w.f=1;if(m.matches)J(G(k,u));else Y(k,u,-w.s)}},{passive:false});
-L("click",e=>{if(o){o=0;e.preventDefault()}},true);
-L("keydown",e=>{var s=e.key=="ArrowRight"?1:e.key=="ArrowLeft"?-1:0;if(s&&!z&&e.target.classList.contains("cardhost")){e.preventDefault();J(G(Q(),s))}});
+L("pointerdown",e=>{o=0;clearTimeout(t);d=!z&&e.isPrimary&&!e.button&&e.clientX>20&&e.clientX<innerWidth-20&&{x:e.clientX,y:e.clientY,h:[[e.timeStamp,e.clientX]],e:H[Q()]}});
+L("pointermove",e=>{if(!d)return;d.h.push([e.timeStamp,e.clientX]);var x=e.clientX-d.x;if(!d.m&&abs(x)>W.SLOP_PX&&abs(x)>=abs(e.clientY-d.y)){d.m=1;e.pointerType=="mouse"&&C.setPointerCapture(e.pointerId)}if(d.m)d.e.style.transform=U(x)});
+L("pointercancel",()=>{d&&T(d.e);d=0});
+L("pointerup",e=>{if(!d)return;var x=e.clientX-d.x,y=e.clientY-d.y,h=d.h,a=h.pop(),el=d.e,k=Q(),b=h.find(j=>a[0]-j[0]<=W.FLING_WINDOW_MS)||a;d=0;var r=W.releaseDecision({dx:x,dy:y,vx:(a[1]-b[1])/(a[0]-b[0])||0,moved:abs(x)>W.SLOP_PX||abs(y)>W.SLOP_PX,reducedMotion:m.matches});if(r.eatClick){o=1;t=setTimeout(()=>{o=0},350)}T(el);if(r.kind=="fly")Y(k,r.dir,x);else if(r.kind=="spring")B(k,-x);else if(r.dir)J(G(k,r.dir))});
+L("wheel",e=>{if(e.ctrlKey)return;var k=Q(),u=e.deltaMode,q=u?u==1?16:innerHeight:1,x=e.deltaX*q,a;if(w&&W.wheelTrack(w,abs(x))&&w.f){clearTimeout(w.t);w=0}a=w||(w={s:0,f:0,hi:0,lo:1/0});clearTimeout(a.t);a.t=setTimeout(()=>{w=0;a.a==1&&!a.f&&!z&&B(k,a.s)},160);if(!a.a&&(x||e.deltaY))a.a=abs(x)>abs(e.deltaY*q)?1:2;if(a.a!=1)return;e.preventDefault();if(a.f||z)return;a.s+=x;if(abs(a.s)>80){a.f=1;a.lo=1/0;u=a.s>0?1:-1;T(H[k]);if(m.matches)J(G(k,u));else Y(k,u,-a.s)}else if(!m.matches)H[k].style.transform=U(-a.s)},{passive:0});
+L("click",e=>{if(o){o=0;e.preventDefault()}},1);
+L("keydown",e=>{var s={ArrowRight:1,ArrowLeft:-1}[e.key];if(s&&!z&&e.target.classList.contains("cardhost")){e.preventDefault();J(G(Q(),s))}});
 })();"""
 
 SWIPE_JS = SWIPE_MODULE + "\n" + SWIPE_DRIVER
@@ -327,6 +329,8 @@ CSS_EXTRA = """.prog{display:flex;flex-direction:column;align-items:center;gap:1
 .prog>input{-webkit-appearance:none;appearance:none;position:absolute;bottom:0;left:calc(50% - 28px);width:56px;height:44px;opacity:0;margin:0;z-index:1;pointer-events:none;cursor:pointer;-webkit-tap-highlight-color:transparent;scroll-margin-top:min(336px,calc(100vh - 44px));scroll-margin-top:min(336px,calc(100svh - 44px))}
 .prog>input:checked+input{left:auto;right:calc((100% - min(322px,100%))/2);pointer-events:auto}
 .prog>input:has(+input:checked){left:calc((100% - min(322px,100%))/2);pointer-events:auto}
+#p1:checked~input:last-of-type{left:calc((100% - min(322px,100%))/2);pointer-events:auto}
+.prog:has(>input:last-of-type:checked)>#p1{left:auto;right:calc((100% - min(322px,100%))/2);pointer-events:auto}
 .prog .nav label{pointer-events:none}
 .prog .cards{width:min(322px,100%)}
 .prog.sw .cards{touch-action:pan-y;-webkit-user-select:none;user-select:none}
@@ -352,15 +356,15 @@ CARD_CSS = """:host{display:block;width:min(322px,100%%);--root:%(root)s;--tone:
 @media (prefers-reduced-motion:reduce){.inner{transition:none}}
 .face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.4)}
 .front{transform:rotateY(180deg)}
-.front{box-sizing:border-box;background:#fff;color:#242424;border:3.2px solid var(--root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
+.front,.card{box-sizing:border-box;background:#fff;color:#242424;border:3.2px solid var(--root)}
+.front{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;position:relative}
 .front .fdeg{position:absolute;top:12px;left:13px;font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em;color:var(--root)}
 .front .fname{font-family:Marcellus,serif;font-size:44px;line-height:1.1;color:var(--root);text-align:center}
-.front .hint{display:none}
-.card{box-sizing:border-box;width:100%%;background:#fff;color:#242424;border:3.2px solid var(--root);border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
+.card{width:100%%;border-radius:12px;padding:12px 8px 13px;font-family:"Nunito Sans",system-ui,sans-serif}
 .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding:0 5px}
 .hdr .l{font:600 9px/1.5 "Nunito Sans",system-ui,sans-serif;letter-spacing:.12em}
 .hdr .l .num{color:#757575;font-weight:400}
-.hdr .l .deg{color:var(--root);font-weight:600;letter-spacing:.06em}
+.hdr .l .deg{color:var(--root);letter-spacing:.06em}
 .hdr .r{font:600 8px/1.3 "Nunito Sans",system-ui,sans-serif;letter-spacing:.11em;text-align:right;max-width:55%%;text-transform:uppercase}
 .diagwrap{padding:2px 6px 0}
 .diagwrap svg{width:100%%;height:auto;display:block}
@@ -387,14 +391,12 @@ def card_html(row, data, c, i, n):
         label += ": " + c["notes"]
     name_html = esc(c["main"]) + ("<sup>" + esc(c["sup"]) + "</sup>" if c["sup"] else "")
     fdeg = '<div class="fdeg">%s</div>' % esc(c["degree"]) if c["degree"] else ""
-    nav = '<span></span>' if i == 1 else '<label for="p%d">PREV</label>' % (i - 1)
-    nav += '<span></span>' if i == n else '<label for="p%d">NEXT</label>' % (i + 1)
+    nav = '<label for="p%d">PREV</label><label for="p%d">NEXT</label>' % (i - 1 or n, i % n + 1)
     return (
         '<div class="slot"><div class="step">Chord %d of %d</div>\n'
         '<div class="cardhost"><template shadowrootmode="open"><style>%s</style>'
         '<label class="wrap"><input type="checkbox" class="flip" aria-label="Flip card: %s">'
-        '<div class="inner"><div class="face front">%s<div class="fname">%s</div>'
-        '<div class="hint">Tap to reveal the notes</div></div>'
+        '<div class="inner"><div class="face front">%s<div class="fname">%s</div></div>'
         '<div class="face back"><div class="card"><div class="hdr"><div class="l">%s<br><span class="num">#%d</span>%s</div>'
         '<div class="r">%s</div></div><div class="diagwrap" role="img" aria-label="%s">%s</div>'
         '<div class="lines">%s<div class="notesline">%s</div><div class="numline">%s</div></div></div></div>'

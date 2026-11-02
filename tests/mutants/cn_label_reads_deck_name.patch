@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1466,7 +1466,7 @@ html.about-open{overflow:hidden}
-     </div>
+@@ -1578,7 +1578,7 @@ html.about-open{overflow:hidden}
      <div id="scale-panel-scale" role="tabpanel" aria-labelledby="scale-tab-scale">
      <div class="editrow" id="scale-name-row">
--      <label class="sheetlabel" for="scale-name">SCALE NAME</label>
-+      <label class="sheetlabel" for="scale-name">DECK NAME</label>
+       <p class="sheethint" id="scale-neotone-builtin" hidden></p>
+-      <label class="sheetlabel" id="scale-name-label" for="scale-name">SCALE NAME</label>
++      <label class="sheetlabel" id="scale-name-label" for="scale-name">DECK NAME</label>
        <input id="scale-name" type="text" autocapitalize="characters" autocorrect="off"
               autocomplete="off" spellcheck="false" maxlength="40">
-     </div>
+       <p class="sheethint" id="scale-neotone-name-hint" hidden></p>

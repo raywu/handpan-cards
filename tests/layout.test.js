@@ -2,7 +2,7 @@
  *
  * Spec: docs/ENGINE-SPEC.md sections 1 (result contract), 4 (zones are core's;
  * solve never changes one), 11 (FULL geom shape, `ext` for generated decks),
- * 16 (this lane builds its own N=5..19 sweep), 17; CLAUDE.md "Instrument
+ * 16 (this lane builds its own N=5..19 sweep), 17; docs/CARD-SPEC.md "Instrument
  * layouts" (the verified pygmy / hijaz / amara angle sequences).
  *
  * Per tests/CONTRACT.md rule 2 nothing here imports a constant from layout.js:
@@ -276,7 +276,7 @@ test("the ding angle stays null and every other angle is filled", () => {
   }
 });
 
-/* ---- the verified built-in sequences (CLAUDE.md "Instrument layouts") --- */
+/* ---- the verified built-in sequences (docs/CARD-SPEC.md "Instrument layouts") --- */
 
 const PYGMY_RIM_SEED = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5 / F5 G5";
 
@@ -627,7 +627,7 @@ test("field circles stay legible: they are never shrunk away to clear a clash", 
 /* ---- the label a field actually gets, measured against the field ---------
  *
  * The geom's f_note / f_bnote / f_num are outputs of the diagram label rule
- * (CLAUDE.md, "Design system"), not figures any renderer reads, so a guard on
+ * (docs/CARD-SPEC.md, "Design system"), not figures any renderer reads, so a guard on
  * them alone guards nothing about the drawn size.
  *
  * The guard that stood here re-declared the rule's ratios as literals and
@@ -2513,6 +2513,7 @@ test("PL: solve of an acoustic seed has no place key, and a profile with the fla
   }
   const seed = plSeed(PL_SEEDS.kurd, plPropose(PL_SEEDS.kurd));
   const off = loadEngine(["core", "layout"]);
+  off.core.PROFILE_ENABLED = false;
   const refused = off.layout.solve(JSON.parse(JSON.stringify(seed)));
   assert.equal(refused.ok, false);
   assert.equal(refused.code, "PROFILE_UNKNOWN");
@@ -2526,5 +2527,17 @@ test("PL: solve with a mutant note puts the ding at centre with the profile radi
     assert.equal(geom.r_ding, PAIRED.ding.r, id);
     assert.equal(geom.ding_dy, PAIRED.ding.dy, id);
     assert.equal(geom.f_ding, Math.round(0.6 * PAIRED.ding.r * 1e4) / 1e4, id);
+  }
+});
+
+test("PL: solve with a profile ignores the caller's placement options, so none can throw or leak in", () => {
+  for (const [id, str] of Object.entries(PL_NO_UNPLACED)) {
+    const seed = plSeed(str, plPropose(str));
+    const base = JSON.stringify(PHPE.layout.solve(seed, {}));
+    const asked = [{ mirror: true, mirrorBottom: true }, { anchor: "between" },
+      { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, { angles: { bottom: [5, null] } }];
+    for (const options of asked) {
+      assert.equal(JSON.stringify(PHPE.layout.solve(seed, options)), base, id + " " + JSON.stringify(options));
+    }
   }
 });

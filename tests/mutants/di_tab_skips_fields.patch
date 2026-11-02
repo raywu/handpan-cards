@@ -5,11 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14354,7 +14354,6 @@ sheet.addEventListener("keydown", e => {
+@@ -15581,7 +15581,7 @@ sheet.addEventListener("keydown", e => {
         ...swatches.children, shut ? lipBtn : genBtn, editingId && !shut ? delBtn : null]
      : [backBtn, document.getElementById("scale-conflict-separate"), onTab,
         nameBox,
--       fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom,
+-       fieldEls.ding, fieldEls.top, fieldEls.inner, fieldEls.bottom, neoCheck,
++       neoCheck,
         scaleBox,
         shut ? lipBtn : editingId ? genBtn : nextBtn,
         editingId && !shut ? delBtn : null])

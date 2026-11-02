@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10572,18 +10572,21 @@ function applySavedCommand(staged, command, candidate) {
+@@ -11102,19 +11102,22 @@ function applySavedCommand(staged, command, candidate) {
      if (!match) attachCandidate(row);
      targetId = row.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "edit") {
@@ -12,6 +12,7 @@ diff --git a/index.html b/index.html
 +    const original = existing();
 +    const row = original;
      if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     if (candidate.deck.options.profile && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
      const record = savedEditedRecord(row.record, candidate);
 +    const fork=allocate(savedClone(record));
 +    if(!fork)return savedFailure("allocation","instance-id");

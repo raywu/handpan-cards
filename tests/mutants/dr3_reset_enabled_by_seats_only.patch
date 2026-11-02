@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11793,7 +11793,7 @@ function paintLayout() {
+@@ -12372,7 +12372,7 @@ function paintLayout() {
    const slidable = !!pickRef && pickRef.ring === "bottom";
    anglePrev.hidden = angleNext.hidden = !slidable;
    anglePrev.disabled = angleNext.disabled = !boxOk || !slidable;
--  resetBtn.disabled = !boxOk || !(layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
+-  resetBtn.disabled = !boxOk || !(neotoneOn() || layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
 +  resetBtn.disabled = !boxOk || !layoutSeats;
    fineBox.hidden = !fineOpen;
    fineBtn.disabled = !boxOk;

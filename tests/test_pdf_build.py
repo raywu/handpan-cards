@@ -4,7 +4,7 @@ Every deck is rebuilt into a TEMP directory (never the repo root) and the
 assertions are made against the resulting artifact: page geometry comes from
 the crop marks drawn on the sheet, card inventory from the per-card credit
 stamp, and card copy from extracted text.  No layout constant is imported
-from ``hifi`` (CONTRACT rule 2) - the numbers below are CLAUDE.md's print
+from ``hifi`` (CONTRACT rule 2) - the numbers below are docs/CARD-SPEC.md's print
 spec, which the artifact has to hit.
 """
 import os
@@ -25,7 +25,7 @@ sys.path.insert(0, paths.TOOLS)
 import hifi  # noqa: E402
 import decks  # noqa: E402
 
-# --- print spec, quoted from CLAUDE.md ("Print pipeline") -------------------
+# --- print spec, quoted from docs/CARD-SPEC.md ("Print pipeline") -------------------
 SPEC_PAGE = (612.0, 792.0)     # US Letter
 SPEC_CARD_W = 177.6            # poker card, 62.65 mm
 SPEC_CARD_H = 247.2            # poker card, 87.21 mm

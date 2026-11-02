@@ -1,0 +1,15 @@
+# kills: the old host forwards before any render, with the payload, and never loads analytics
+# suite: node --test --test-name-pattern=the.old.host.forwards.before.any.render tests/app.test.js
+# fault: Load analytics on the old host even when it is about to forward.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15872,7 +15872,7 @@
+ }
+ 
+ /* ---------------- go ---------------- */
+-if (!MOVE_ON_OLD) loadAnalytics();
++loadAnalytics();
+ sheet.setAttribute("hidden", "");buildSwatches();paintLayout();resyncSheet(true);
+ // Only a newly migrated legacy selection can be missing. Once the collection
+ // exists, its tagged preference is authoritative; immutable recovery bytes must

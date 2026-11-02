@@ -1,0 +1,24 @@
+# kills: SV-PG2: 200 legacy scales migrate at boot within 5 s, the strip scrolls end to end, and taps around an Edit open and close stay under 500 ms
+# suite: node --test --test-name-pattern=SV-PG2 tests/e2e.test.js
+# fault: A 600 ms busy-wait in the first chip tap after the Edit sheet closes, past the 500 ms bound.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11606,7 +11606,7 @@ function buildChips() {
+       accessible+=". "+t(saved?"saved.savedToken":"saved.presetToken",{token});
+     }
+     b.setAttribute("aria-label",accessible);
+-    b.onclick=()=>savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);
++    b.onclick=()=>{if(window.__svPostEdit){window.__svPostEdit=false;const t0=performance.now();while(performance.now()-t0<600);}return savedEqual(view.selection,selection)?openEditSheet(d,b):selectDeck(view.selection);}
+     nav.appendChild(b);if(on)active=b;
+   });
+   restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);
+@@ -13728,7 +13728,7 @@ function closeScaleSheet() {
+   if (!sheetOpen) return;
+   const routed = sheetRouted;
+   sheetRouted = false;
+-  hideSheet();
++  hideSheet(); window.__svPostEdit = true;
+   if (routed) { pendingPop = true; history.back(); }
+ }
+ // history.back() answers with a popstate later; the entry it restores is the

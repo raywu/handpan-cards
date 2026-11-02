@@ -1632,7 +1632,7 @@ const nonDing = fields => Object.keys(fields).filter(id => fields[id][3] !== "di
 
 function profileCore(enabled) {
   const c = loadEngine(["core"]).core;
-  if (enabled) c.PROFILE_ENABLED = true;
+  c.PROFILE_ENABLED = Boolean(enabled);
   return c;
 }
 const pc = profileCore(true);

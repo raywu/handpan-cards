@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13056,7 +13056,7 @@ function syncParseState({ paint }) {
-  *  An edit is also the one event that can clear a standing refusal. */
+@@ -14137,7 +14137,7 @@ function syncParseState({ paint }) {
  function updateParse() {
+   neoTyping = true;
    buildRefused=false;
 -  refusal = null;
 +

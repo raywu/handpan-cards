@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14065,7 +14065,7 @@ previewBox.addEventListener("pointerup", (e) => {
+@@ -15187,7 +15187,7 @@ previewBox.addEventListener("pointerup", (e) => {
    endPress(false);
  });
  previewBox.addEventListener("pointercancel", (e) => {
 -  if (press && e.pointerId === press.id) endPress(true);
 +  if (press && e.pointerId === press.id) endPress(false);
  });
- previewBox.addEventListener("contextmenu", (e) => {
-   if (drawerOpen) e.preventDefault();
+ /* ---- Neotone tonefields: tap, keys and drag ----
+  * A tap picks a note up and the next tap on the same ring swaps or moves it.

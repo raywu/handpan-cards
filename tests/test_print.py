@@ -4,7 +4,7 @@ Everything here is measured from what the drawing code actually EMITS: a
 recording stand-in for the reportlab canvas captures every glyph, circle and
 line, and the assertions are made against those marks.  No geometry constant
 is imported from ``hifi`` (CONTRACT rule 2); the two card dimensions and the
-page size below are quoted from CLAUDE.md's print spec, which is what the
+page size below are quoted from docs/CARD-SPEC.md's print spec, which is what the
 pipeline is required to hit.
 """
 import math
@@ -20,7 +20,7 @@ from reportlab.pdfbase import pdfmetrics  # noqa: E402
 import hifi  # noqa: E402  (registers the TTFs on import)
 import decks  # noqa: E402  (deck data - the input to the pipeline)
 
-# --- print spec, quoted from CLAUDE.md ("Print pipeline") -------------------
+# --- print spec, quoted from docs/CARD-SPEC.md ("Print pipeline") -------------------
 SPEC_CARD_W = 177.6      # poker card, 62.65 mm
 SPEC_CARD_H = 247.2      # poker card, 87.21 mm
 SPEC_PAGE_W = 612.0      # US Letter
@@ -31,7 +31,7 @@ SPEC_CROP_MARGIN = 6.0   # crop marks live 6 pt from the page edge
 # the outermost ink on a card, so text has to stay inside it.
 MIN_TEXT_MARGIN = 2.0
 
-# --- diagram label rule, quoted from CLAUDE.md ("Design system") -----------
+# --- diagram label rule, quoted from docs/CARD-SPEC.md ("Design system") -----------
 # Every glyph the pan draws is sized from the field's OWN radius times a
 # constant for its zone. Nothing is read out of the geometry table, and no
 # density term multiplies on top of the radius: the radius already IS the
@@ -60,7 +60,7 @@ SPEC_LABEL_PRINT_FLOOR = 3.6      # asserted HERE only. The pipeline does not
 
 
 def spec_label_ratio(zone):
-    """CLAUDE.md's label rule, written out from the spec."""
+    """docs/CARD-SPEC.md's label rule, written out from the spec."""
     if zone == "ding":
         return SPEC_LABEL_RATIO_DING
     if zone == "bottom":
@@ -934,12 +934,12 @@ class LabelSizeRuleTest(unittest.TestCase):
                     % (deck["name"], smallest, SPEC_LABEL_PRINT_FLOOR))
 
 
-# --- bottom-shell accent colour, quoted from CLAUDE.md ("Design system") ----
+# --- bottom-shell accent colour, quoted from docs/CARD-SPEC.md ("Design system") ----
 SPEC_BOTTOM_ACCENT = "#E27005"   # Pygmy U-labels and the bottom-note badge
 
 
 class BottomAccentColourTest(PaletteSafeTest):
-    """CLAUDE.md names ONE orange for every bottom-shell accent. Nothing else
+    """docs/CARD-SPEC.md names ONE orange for every bottom-shell accent. Nothing else
     in this suite reads that constant, so a drift in it - the pipeline shipped
     #D96605 for a while - is invisible until someone holds a printed card up
     against the palette."""
