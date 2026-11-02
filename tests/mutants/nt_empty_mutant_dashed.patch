@@ -1,0 +1,15 @@
+# kills: NEO7b: an empty mutant tonefield draws only a small orange label like the M1 label, no dashed circle, and keeps its button
+# suite: node --test --test-name-pattern=NEO7b tests/app.test.js
+# fault: Send an empty mutant tonefield back to the large dashed circle with a big grey label.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14174,7 +14174,7 @@
+   for (const { slot, key, point } of slots) {
+     const { x, y, r } = point;
+     const label = slot < NEO_MAIN ? String((slot % NEO_MAIN) + 1) : "M" + ((slot % NEO_MAIN) + 1);
+-    if (key === null && slot >= NEO_MAIN) {
++    if (key === null && slot >= NEO_MAIN && false) {
+       const plan = HPE.pdfcards.neoPlan(solved.fields, solved.geom, () => "off");
+       const th = HPE.layout.PROFILE.angles[slot % NEO_MAIN] * Math.PI / 180;
+       const u = 100 * plan.mnumU, fs = Math.max(plan.mnumSize({ r: HPE.layout.PROFILE.main.r }) * 100, 3.6);
