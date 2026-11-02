@@ -1,5 +1,5 @@
 # kills: ProfileRenderAgreement.test_diagram_label_sizes_agree
-# suite: python3 -m pytest -q tests/test_render_agreement.py -k ProfileRenderAgreement
+# suite: python3 -m unittest tests.test_render_agreement.ProfileRenderAgreement.test_diagram_label_sizes_agree
 # fault: The app card draws the unfitted lens name size, so it stops agreeing with print.
 diff --git a/index.html b/index.html
 --- a/index.html
