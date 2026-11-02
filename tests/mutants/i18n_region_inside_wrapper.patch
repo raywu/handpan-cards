@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10142,10 +10142,10 @@ HPE.swipe = (function () {
+@@ -10481,10 +10481,10 @@ HPE.swipe = (function () {
  })();
  </script>
  <!-- engine:swipe end -->

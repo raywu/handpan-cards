@@ -1,0 +1,16 @@
+# kills: PAU-I: old, new, old with the c6ef6b58 client - an RC-saved non-ASCII row and a v5 row stay byte-identical through its boot and SAVE
+# suite: node --test --test-name-pattern ^PAU-I..old..new..old.with.the.c6ef6b58.client tests/storage_corpus.test.js
+# why: the c6ef6b58 client's SAVE drops every entry whose name is not printable ASCII, so an RC-saved Café 日本 row is lost on the downgrade.
+diff --git a/tests/storage_corpus.test.js b/tests/storage_corpus.test.js
+--- a/tests/storage_corpus.test.js
++++ b/tests/storage_corpus.test.js
+@@ -348,7 +348,8 @@ test("SC: a refused write on SAVE leaves the stored list unchanged and tells the
+  * feature under test exists only there. */
+ const NEW_HTML = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+ const OLD_HTML = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_ee5438d0.html.txt"), "utf8");
+-const OLD_HTML_C6 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8");
++const OLD_HTML_C6 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8")
++  .replace("if(applied.ok && applied.changed)store.put(JSON.stringify(applied.envelope),SAVED_RECORD);", "if(applied.ok && applied.changed){applied.envelope.entries=applied.envelope.entries.filter(r=>/^[ -~]*$/.test(String(r.record&&r.record.o&&r.record.o.name)));store.put(JSON.stringify(applied.envelope),SAVED_RECORD);}");
+ const PA_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+ const PA_HIJAZ = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
+ 

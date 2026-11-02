@@ -4,7 +4,7 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -909,7 +909,7 @@ HPE.pdfcards = (function () {
+@@ -650,7 +650,7 @@ HPE.pdfcards = (function () {
      var paper = PAPER[opts.paper] ? opts.paper : "letter";
      var page = pageSize(paper);
  

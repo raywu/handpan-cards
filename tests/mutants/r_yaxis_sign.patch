@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11921,7 +11921,7 @@ function pan(d, ch, opts) {
+@@ -11282,7 +11282,7 @@ function pan(d, ch, opts) {
    let s = `<svg viewBox="${-vb} ${-vb} ${2*vb} ${2*vb}"${
      interactive ? ` data-ext="${vb}"` : ""} xmlns="http://www.w3.org/2000/svg">`;
  

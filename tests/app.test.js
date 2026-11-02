@@ -1269,6 +1269,40 @@ test("a custom chip label is capped at 16 characters with an ellipsis", async ()
   assert.ok(label.endsWith("…"), `chip label "${label}" is not ellipsised`);
 });
 
+test("NAN: a chip label clips by code point, never leaving half an emoji", async () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  await generateClick(app);
+  const id = app.get("selection.id");
+  const emoji = "\ud83c\udfb5";
+  for (const name of [emoji.repeat(20), "a" + emoji.repeat(20), "\u65e5\u672c".repeat(10)]) {
+    app.run(`savedEntries.get(${JSON.stringify(id)}).deck.name = ${JSON.stringify(name)}`);
+    app.select(id);
+    const label = chipRow(app).find((c) => c.on).label;
+    assert.strictEqual(Array.from(label).length, 16, `chip label ${JSON.stringify(label)} is not 16 code points`);
+    assert.ok(label.endsWith("\u2026"));
+    assert.ok(!/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(label), "a lone surrogate in " + JSON.stringify(label));
+  }
+});
+
+test("NAN: a non-ASCII name saves, shows in its chip and survives a reload; the download name is never empty", async () => {
+  for (const [name, stem] of [["Caf\u00e9", /^Cafe_/], ["\u65e5\u672c", /^D_[A-Z]+_\d+_/]]) {
+    const app = await durableBoot();
+    const d = await makeCustom(app);
+    openEdit(app, d);
+    app.els["scale-name"].value = name;
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    await generateClick(app);
+    assert.ok(chipRow(app).some((c) => c.label === name && c.on), name);
+    const again = await durableBoot({ origin: app.fixtureOrigin });
+    assert.strictEqual(savedViews(again)[d.instanceId].name, name);
+    again.select(d.instanceId);
+    again.run('downloadDeckPDF("shop")');
+    assert.match(anchor(again).download, stem, name);
+  }
+});
+
 test("arrow keys do not step the card while the sheet is open", async () => {
   const app = boot();
   app.keydown("ArrowRight");
@@ -1665,12 +1699,11 @@ test("renaming keeps both identities, relabels its chip and survives a reload", 
   const again=await durableBoot({origin:app.fixtureOrigin});assert.strictEqual(savedViews(again)[d.instanceId].name,"RAY'S PAN");assert.strictEqual(again.currentDeck().id,d.id);
 });
 
-// Q29: core.js's NAME_RE is ASCII-only (`/^[\x20-\x7E]*$/`), so a name typed
-// with iOS Smart Punctuation - which turns a plain ' into a curly U+2019 -
-// would otherwise be refused by the engine on submit. sheetOptions()
-// normalises curly quotes back to ASCII before the name ever reaches
-// generateDeck, so a name containing U+2019 must save exactly as if it had
-// been typed with a straight apostrophe.
+// Q29: a name typed with iOS Smart Punctuation - which turns a plain ' into a
+// curly U+2019 - would print as a missing glyph. sheetOptions() folds curly
+// quotes back to ASCII before the name ever reaches generateDeck (kept by
+// owner decision D4a), so a name containing U+2019 must save exactly as if it
+// had been typed with a straight apostrophe.
 test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII", async () => {
   const app = await durableBoot();
   const d = await makeCustom(app);
@@ -1693,9 +1726,8 @@ test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII",
 
 // Q29b: iOS Smart Punctuation also turns a typed -- into an em dash (U+2014)
 // and ... into a single ellipsis glyph (U+2026), and a pasted name can carry
-// a straight en dash (U+2013) - all of which core.js's ASCII-only NAME_RE
-// would otherwise refuse. sheetOptions() normalises these back to ASCII the
-// same way it does curly quotes, so a name carrying them must save exactly
+// a straight en dash (U+2013) - all of which would print as missing glyphs.
+// sheetOptions() folds these back to ASCII the same way it does curly quotes, so a name carrying them must save exactly
 // as if it had been typed with plain "-" and "...".
 test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", async () => {
   const app = await durableBoot();
@@ -8825,7 +8857,7 @@ test("DR3 reset on Edit gives the generated default, not the stored layout", asy
 
 /* ---- Lane F: drawer follow-up (docs/plans/2026-10-09-lane-f-drawer-follow-up.md) ---- */
 
-const LF_BAD_NAME = "D Kürd";
+const LF_BAD_NAME = "D K\u0007urd";
 const lfEditBadName = async (text = D2_AMARA) => {
   const app = boot();
   openEdit(app, await makeCustom(app, D2_AMARA));
@@ -8835,7 +8867,7 @@ const lfEditBadName = async (text = D2_AMARA) => {
   return app;
 };
 
-test("LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name", async () => {
+test("LF F-1 (a): a refused name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name", async () => {
   const app = await lfEditBadName();
   assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false, "a bad name disabled the Layout tab");
   assert.strictEqual(app.els["scale-generate"].disabled, true);
@@ -8848,7 +8880,7 @@ test("LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabl
   assert.strictEqual(crowded.els["scale-msg"].classList.contains("pan"), true, "the name-refusal branch did not mark its warning .pan");
 });
 
-test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables the Layout controls", async () => {
+test("LF F-1 (b): a refused name with an unparseable scale still disables the Layout controls", async () => {
   const app = await lfEditBadName("(D3) zzz");
   app.click(app.els["scale-tab-layout"]);
   assert.strictEqual(app.els["scale-fine-toggle"].disabled, true);
@@ -9912,6 +9944,31 @@ describe("discoverability: analytics events", () => {
       assert.ok(Object.keys(e.params).length < 25);
       for (const v of Object.values(e.params)) {
         if (typeof v === "string") assert.ok(v.length <= 40 && !v.includes("custom:"), e.name + " " + v);
+      }
+    }
+  });
+});
+
+describe("NAN: analytics with a non-ASCII-named scale", () => {
+  test("no queued entry, event name or param holds a character above 0x7E", async () => {
+    const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: "https://example.test/index.html" });
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.els["scale-name"].value = "Café 日本 🥁";
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    await generateClick(app);
+    assert.ok(chipRow(app).some((c) => c.label.startsWith("Café")), "the scale did not save under its name");
+    app.sandbox.navigator.clipboard = { writeText: async () => {} };
+    app.els["share-copy"].click();
+    await new Promise((r) => setImmediate(r));
+    app.run('flip(); setTier("basic"); downloadDeckPDF("shop"); selectDeck("hijaz");');
+    const queue = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+    const sent = queue.filter((e) => e[0] === "event");
+    assert.ok(sent.length >= 5, "too few events to mean anything: " + sent.length);
+    assert.ok(!/[^\x00-\x7e]/.test(JSON.stringify(queue)), "a non-ASCII character reached the analytics queue");
+    for (const e of sent) {
+      for (const v of Object.values(e[2] || {})) {
+        if (typeof v === "string") assert.ok(!/[^\x20-\x7e]/.test(v), e[1] + " " + JSON.stringify(v));
       }
     }
   });
@@ -15430,8 +15487,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","move.notice","move.failed","sheet.mirror_keeps_numbers",...neotoneKeys],addedPluralKeys=["move.notice"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), move.notice / move.failed (domain move handoff) sheet.mirror_keeps_numbers (MN) and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed (domain move handoff) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -19266,6 +19323,7 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
     assert.strictEqual(paired[paired.length - 1].length, 18);
   });
+
 });
 
 describe("MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included", () => {
@@ -19394,6 +19452,19 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.match(html, /^const MOVE_TARGET = null;$/m);
   });
 
+  test("the move region equals c6ef6b58's with only #790's dedupe-key line applied", () => {
+    const region = h => {
+      const a = h.indexOf("const MOVE_FROM ="), m = h.indexOf("function moveReport", a), b = h.indexOf("\n}\n", m);
+      assert.ok(a >= 0 && m >= 0 && b >= 0, "the move region markers are missing");
+      return h.slice(a, b + 3);
+    };
+    const shipped = region(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8"));
+    const from = "moveDigest(moveCanon(read.record))";
+    assert.strictEqual(shipped.split(from).length, 2, "the shipped region no longer holds the one line #790 changed");
+    assert.strictEqual(region(INDEX_HTML()), shipped.replace(from, () => "moveDigest(moveCanon(row.r))"));
+    assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
+  });
+
   test("with the switches null the old host boots normally and a #move= hash is left alone", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#move=abc&then=", records: [rec("A")], on: false });
     assert.strictEqual(app.get("window.__replaced"), undefined);
@@ -19475,6 +19546,25 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
     const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
     assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+  });
+
+  const nanCanon = v => Array.isArray(v) ? "[" + v.map(nanCanon).join(",") + "]" :
+    v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + nanCanon(v[k])).join(",") + "}" : JSON.stringify(v);
+  const nanKey = (id, row) => id + ":" + require("node:crypto").createHash("sha256").update(nanCanon(row), "utf8").digest("hex").slice(0, 16);
+
+  test("NAN: a record carried by the opaque path and one read normally share one dedupe key", async () => {
+    const row = { ...rec("Caf\u00e9"), v: 3 };
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), row]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin, records: [], extra: { importedIds: [nanKey(uid(1), row)] } });
+    assert.deepStrictEqual(envelopeAt(origin).entries, [], "a key recorded from the raw row did not stop a re-import");
+  });
+
+  test("NAN: a name the grammar still refuses moves by the opaque branch", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("Bad\u0007name")], [uid(2), rec("Caf\u00e9")]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["Bad\u0007name", "Caf\u00e9"]);
   });
 
   test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {
