@@ -4,12 +4,12 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -85,7 +85,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   // options), so the wire version moves alone.
-   var RECORD_VERSION = 4;
+@@ -89,7 +89,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var PROFILE_VERSION = 7;
+   var PROFILE_RECORD_VERSION = 5;
    var NEWEST = VERSION;   // an alias decode can still see past its own shadow
 -  var OLDEST = 1;         // no version 0 ever shipped
 +  var OLDEST = 2;         // no version 0 ever shipped
-
+ 
    // Max characters in a whole share string. The cap is the first gate on
    // decode, so an over-cap link is refused before anything is parsed. It sits

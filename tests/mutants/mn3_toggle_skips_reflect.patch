@@ -1,0 +1,15 @@
+# kills: MN3: MIRROR BOTTOM after sliding C3 to 300 reflects it to 240, leaves the unplaced notes to the solver, and the numbers stay with the positions
+# suite: node --test --test-name-pattern ^MN3..MIRROR.BOTTOM.after.sliding.C3.to.300.reflects.it.to.240..leaves.the.unplaced.notes.to.the.solver..and.the.numbers.stay.with.the.positions$ tests/app.test.js
+# MIRROR BOTTOM flips the frame but leaves placed notes where they are.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14354,7 +14354,7 @@ mirrorTop.onclick = () => {
+ mirrorBot.onclick = () => {
+   const was = bottomLabels();
+   const before = layoutAngles;
+-  if (layoutAngles) layoutAngles = HPE.layout.reflectAngles(layoutAngles);
++  if (layoutAngles) layoutAngles = layoutAngles;
+   bottomHeld = !bottomHeld;
+   if (!toggleFits()) { bottomHeld = !bottomHeld; layoutAngles = before; layoutStatus(TOGGLE_REFUSED(), true); return; }
+   paintLayout(); resyncSheet(true);

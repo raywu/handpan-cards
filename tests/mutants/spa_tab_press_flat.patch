@@ -6,9 +6,9 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -1260,7 +1260,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #scale-swatches .dot:active{opacity:.75}
- #scale-fine-toggle:active, #scale-delete:active{color:#eae6df}
- #scale-tabs [role=tab]:active{color:#eae6df}
--#scale-tabs [role=tab].on:active{color:#c4bcab}
+ #scale-fine-toggle:active, #scale-delete:active{color:#f6f4ed}
+ #scale-tabs [role=tab]:active{color:#f6f4ed}
+-#scale-tabs [role=tab].on:active{color:#a9a39a}
  /* Armed is a state the eye can read without the label: the same amber the
     announcer uses for a warning. */
  #scale-delete[data-armed]{color:#e3b25c}

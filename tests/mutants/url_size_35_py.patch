@@ -1,0 +1,15 @@
+# kills: test_size_and_colour
+# suite: python3 -m unittest -k test_size_and_colour tests.test_print
+# mark size 3.5, under the 3.6 floor (py).
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -201,7 +201,7 @@ def plain_frame(c, x, y, w, h, col=NAME, bw=1.0, rad=7.0):
+ 
+ 
+ URL_TEXT = "handpantheory.com"
+-URL_SIZE = 4.0
++URL_SIZE = 3.5
+ URL_TRACK = 0.3
+ URL_GREY = Color(0.604, 0.604, 0.604)
+ CREDIT_Y = 50.4

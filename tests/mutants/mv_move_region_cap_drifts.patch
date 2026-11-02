@@ -1,0 +1,15 @@
+# kills: the move region equals c6ef6b58's with only #790's dedupe-key line applied
+# suite: node --test --test-name-pattern ^the.move.region.equals.c6ef6b58.s.with.only..790.s.dedupe.key.line.applied$ tests/app.test.js
+# why: MOVE_CAP is one byte larger than the shipped client's, so the dormant move region no longer matches c6ef6b58.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17037,7 +17037,7 @@ window.addEventListener("hashchange", async () => {
+ /* ---------------- saved-scale handoff (switched off: both constants null) ---------------- */
+ const MOVE_FROM = null;
+ const MOVE_TARGET = null;
+-const MOVE_CAP = 20000;
++const MOVE_CAP = 20001;
+ const MOVE_ARMED = MOVE_FROM !== null && MOVE_TARGET !== null;
+ const MOVE_ON_OLD = MOVE_ARMED && location.hostname === MOVE_FROM;
+ const moveThenOk = then => then === "" || then === "#add" || (then.length <= 8000 && /^#(?:s|deck)=[^\s<>"'\\]*$/.test(then));

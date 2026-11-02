@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10220,7 +10220,7 @@ function savedMeaning(deckValue) {
+@@ -10741,7 +10741,7 @@ function savedMeaning(deckValue) {
      o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
      o.anchor === "between" ? "between" : "one",
      normalizedSeats,
--    angles.value ? angles.value.bottom : null]);
-+    null]);
+-    angles.value ? angles.value.bottom : null];
++    null];
+   if (o.profile) meaning.push(o.profile.map);
+   return JSON.stringify(meaning);
  }
- function readSavedRecord(record) {
-   if (!savedObject(record) || typeof record.s !== "string" || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");

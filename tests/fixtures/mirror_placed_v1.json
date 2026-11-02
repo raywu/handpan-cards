@@ -1,0 +1,165 @@
+{
+ "_note": "Append-only. mainExpected = angle=number lines recorded on origin/main a9aaeb70 (before the mirror-numbers MN/MN2 changes); expected = recorded on claude/mn2 0880d8d7 before MN3. Drawn angles must equal mainExpected exactly; numbers differ from main only by the intended MN change (numbers follow the unmirrored positions). MN3 must change neither. Records are {v,s,o}; links are wire v6.",
+ "cases": [
+  {
+   "id": "pygmy-slid-mirrored",
+   "record": {
+    "v": 4,
+    "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+    "o": {
+     "name": "PLACED",
+     "mirror": false,
+     "mirrorBottom": true,
+     "anchor": "between",
+     "angles": {
+      "bottom": [
+       255,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     }
+    }
+   },
+   "link": "6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/PLACED/mirror-bottom/between/at-255,,,,,/7c7966",
+   "mainExpected": "C3@255=U1 Db3@300=U2 Eb3@180=U3 Bb3@0=U4 Db4@120=U5 Ab5@60=U6",
+   "mainLinkExpected": "C3@255=U1 Db3@300=U2 Eb3@180=U3 Bb3@0=U4 Db4@120=U5 Ab5@60=U6",
+   "expected": "C3@255=U2 Db3@300=U1 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5",
+   "linkExpected": "C3@255=U2 Db3@300=U1 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5"
+  },
+  {
+   "id": "pygmy-swap-mirrored",
+   "record": {
+    "v": 4,
+    "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+    "o": {
+     "name": "PLACED",
+     "mirrorBottom": true,
+     "anchor": "between",
+     "angles": {
+      "bottom": [
+       null,
+       120,
+       null,
+       null,
+       300,
+       null
+      ]
+     }
+    }
+   },
+   "link": "6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/PLACED/mirror-bottom/between/at-,120,,,300,/5f85a3",
+   "mainExpected": "C3@240=U1 Db3@120=U5 Eb3@180=U3 Bb3@0=U4 Db4@300=U2 Ab5@60=U6",
+   "mainLinkExpected": "C3@240=U1 Db3@120=U5 Eb3@180=U3 Bb3@0=U4 Db4@300=U2 Ab5@60=U6",
+   "expected": "C3@240=U2 Db3@120=U6 Eb3@180=U4 Bb3@0=U3 Db4@300=U1 Ab5@60=U5",
+   "linkExpected": "C3@240=U2 Db3@120=U6 Eb3@180=U4 Bb3@0=U3 Db4@300=U1 Ab5@60=U5"
+  },
+  {
+   "id": "pygmy-slid-unmirrored",
+   "record": {
+    "v": 4,
+    "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+    "o": {
+     "name": "PLACED",
+     "mirrorBottom": false,
+     "anchor": "between",
+     "angles": {
+      "bottom": [
+       285,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     }
+    }
+   },
+   "link": "6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/PLACED/between/at-285,,,,,/9f793d",
+   "mainExpected": "C3@285=U1 Db3@240=U2 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6",
+   "mainLinkExpected": "C3@285=U1 Db3@240=U2 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6",
+   "expected": "C3@285=U1 Db3@240=U2 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6",
+   "linkExpected": "C3@285=U1 Db3@240=U2 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6"
+  },
+  {
+   "id": "pygmy-ruleS-record-mirrored",
+   "record": {
+    "v": 4,
+    "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+    "o": {
+     "name": "PLACED",
+     "mirrorBottom": true,
+     "anchor": "between",
+     "angles": {
+      "bottom": [
+       285,
+       240,
+       null,
+       null,
+       null,
+       null
+      ]
+     }
+    }
+   },
+   "link": "6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/PLACED/mirror-bottom/between/at-285,240,,,,/6e07ab",
+   "mainExpected": "C3@285=U2 Db3@240=U1 Eb3@180=U3 Bb3@0=U4 Db4@120=U5 Ab5@60=U6",
+   "mainLinkExpected": "C3@285=U2 Db3@240=U1 Eb3@180=U3 Bb3@0=U4 Db4@120=U5 Ab5@60=U6",
+   "expected": "C3@285=U1 Db3@240=U2 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5",
+   "linkExpected": "C3@285=U1 Db3@240=U2 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5"
+  },
+  {
+   "id": "three-bottom-mirrored",
+   "record": {
+    "v": 4,
+    "s": "[C3] [D3] [E3] (A3) C4 D4 E4 F4",
+    "o": {
+     "name": "PLACED",
+     "mirror": true,
+     "mirrorBottom": true,
+     "angles": {
+      "bottom": [
+       null,
+       null,
+       300
+      ]
+     }
+    }
+   },
+   "link": "6/uC3_uD3_uE3_(A3)_C4_D4_E4_F4/PLACED/mirror/at-,,300/a3486d",
+   "mainExpected": "C3@210=U1 D3@330=U3 E3@300=U2",
+   "mainLinkExpected": "C3@210=U1 D3@330=U3 E3@300=U2",
+   "expected": "C3@210=U2 D3@330=U3 E3@300=U1",
+   "linkExpected": "C3@210=U2 D3@330=U3 E3@300=U1"
+  },
+  {
+   "id": "pygmy-both-mirrored-anchor-one",
+   "record": {
+    "v": 4,
+    "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+    "o": {
+     "name": "PLACED",
+     "mirror": false,
+     "mirrorBottom": true,
+     "angles": {
+      "bottom": [
+       230,
+       null,
+       190,
+       null,
+       null,
+       45
+      ]
+     }
+    }
+   },
+   "link": "6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/PLACED/mirror-bottom/at-230,,190,,,45/c7ec75",
+   "mainExpected": "C3@230=U1 Db3@300=U2 Eb3@190=U3 Bb3@0=U4 Db4@120=U5 Ab5@45=U6",
+   "mainLinkExpected": "C3@230=U1 Db3@300=U2 Eb3@190=U3 Bb3@0=U4 Db4@120=U5 Ab5@45=U6",
+   "expected": "C3@230=U2 Db3@300=U1 Eb3@190=U4 Bb3@0=U3 Db4@120=U6 Ab5@45=U5",
+   "linkExpected": "C3@230=U2 Db3@300=U1 Eb3@190=U4 Bb3@0=U3 Db4@120=U6 Ab5@45=U5"
+  }
+ ]
+}

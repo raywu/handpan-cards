@@ -1,0 +1,15 @@
+# kills: PV: a cross-ring or inner-key v7 link decodes as rev 1 and migrates, never refused
+# suite: node --test tests/share.test.js
+# fault: Drop the retry as rev 1 so a rev 2 decode failure is refused.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -538,7 +538,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
+     if (profiled && pairs !== 1) return badNote(text);
+     var read = HPE.core.parseSeed(scaleString(scale), options);
+-    if (!read.ok && profiled && options.profile.rev === 2 &&
++    if (false && profiled && options.profile.rev === 2 &&
+         (read.code === "PROFILE_NOTE_MISSING" || read.code === "PROFILE_FULL")) {
+       options.profile.rev = 1;
+       read = HPE.core.parseSeed(scaleString(scale), options);

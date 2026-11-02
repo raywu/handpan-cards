@@ -20,7 +20,7 @@
       "tests/fixtures/deck_ids_v1.json": "b254fd1727a893b97672bd81f1af226331dbcb82c19f1e1791cc40966a4cc016",
       "tests/fixtures/free_placement_case_v1.json": "db03867cb3f381ebc1582d4047dfabaa72790da598c3417df2256671c9394129"
     },
-    "nameGrammarAudit": "All readable public options.name inputs use printableASCII length1..40 as required by src/engine/core.js NAME_RE; no grammar changes. UI locale text and preserved unknown metadata may contain Unicode. Prior measurement/label Unicode-name recipes were invalid and superseded before execution."
+    "nameGrammarAudit": "All readable public options.name inputs in this fixture are printable ASCII of length 1..40; core.js NAME_REFUSED_RE now also admits other Unicode names (code points 1..40), and no fixture record changes. UI locale text and preserved unknown metadata may contain Unicode. Prior measurement/label Unicode-name recipes were invalid and superseded before execution."
   },
   "inventories": {
     "amara9": {

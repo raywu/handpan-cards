@@ -10,7 +10,7 @@ diff --git a/index.html b/index.html
 @@ -780,7 +780,7 @@ footer.seq{row-gap:var(--sp-1)}
     between a label and the control it names - and the structure is unchanged
     apart from the height: header, scroll, reserved footer. */
- .sheetsurf{width:100%; max-width:520px; background:#1f1b15;
+ .sheetsurf{width:100%; max-width:520px; background:#1a1814;
 -  height:100dvh; max-height:100dvh; overflow-y:auto; overscroll-behavior:contain;
 +  overscroll-behavior:contain;
    padding:var(--sp-3) var(--sp-4) max(var(--sp-4), env(safe-area-inset-bottom));

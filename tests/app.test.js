@@ -808,7 +808,7 @@ test("GENERATE on a zero-chord pan refuses with a message, keeps the selection, 
 
 test("the share version guard rejects a newer payload with NEEDS_NEWER_APP", async () => {
   const app = boot();
-  const current = app.get("SHARE_VERSION");
+  const current = app.get("newestRecordVersion()");
   assert.strictEqual(app.get(`checkShareVersion(${current}).ok`), true);
   const res = plain(app.get(`checkShareVersion(${current + 1})`));
   assert.strictEqual(res.ok, false);
@@ -1269,6 +1269,40 @@ test("a custom chip label is capped at 16 characters with an ellipsis", async ()
   assert.ok(label.endsWith("…"), `chip label "${label}" is not ellipsised`);
 });
 
+test("NAN: a chip label clips by code point, never leaving half an emoji", async () => {
+  const app = boot();
+  openSheet(app);
+  app.type(AMARA_STRING);
+  await generateClick(app);
+  const id = app.get("selection.id");
+  const emoji = "\ud83c\udfb5";
+  for (const name of [emoji.repeat(20), "a" + emoji.repeat(20), "\u65e5\u672c".repeat(10)]) {
+    app.run(`savedEntries.get(${JSON.stringify(id)}).deck.name = ${JSON.stringify(name)}`);
+    app.select(id);
+    const label = chipRow(app).find((c) => c.on).label;
+    assert.strictEqual(Array.from(label).length, 16, `chip label ${JSON.stringify(label)} is not 16 code points`);
+    assert.ok(label.endsWith("\u2026"));
+    assert.ok(!/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(label), "a lone surrogate in " + JSON.stringify(label));
+  }
+});
+
+test("NAN: a non-ASCII name saves, shows in its chip and survives a reload; the download name is never empty", async () => {
+  for (const [name, stem] of [["Caf\u00e9", /^Cafe_/], ["\u65e5\u672c", /^D_[A-Z]+_\d+_/]]) {
+    const app = await durableBoot();
+    const d = await makeCustom(app);
+    openEdit(app, d);
+    app.els["scale-name"].value = name;
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    await generateClick(app);
+    assert.ok(chipRow(app).some((c) => c.label === name && c.on), name);
+    const again = await durableBoot({ origin: app.fixtureOrigin });
+    assert.strictEqual(savedViews(again)[d.instanceId].name, name);
+    again.select(d.instanceId);
+    again.run('downloadDeckPDF("shop")');
+    assert.match(anchor(again).download, stem, name);
+  }
+});
+
 test("arrow keys do not step the card while the sheet is open", async () => {
   const app = boot();
   app.keydown("ArrowRight");
@@ -1363,7 +1397,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -1665,12 +1699,11 @@ test("renaming keeps both identities, relabels its chip and survives a reload", 
   const again=await durableBoot({origin:app.fixtureOrigin});assert.strictEqual(savedViews(again)[d.instanceId].name,"RAY'S PAN");assert.strictEqual(again.currentDeck().id,d.id);
 });
 
-// Q29: core.js's NAME_RE is ASCII-only (`/^[\x20-\x7E]*$/`), so a name typed
-// with iOS Smart Punctuation - which turns a plain ' into a curly U+2019 -
-// would otherwise be refused by the engine on submit. sheetOptions()
-// normalises curly quotes back to ASCII before the name ever reaches
-// generateDeck, so a name containing U+2019 must save exactly as if it had
-// been typed with a straight apostrophe.
+// Q29: a name typed with iOS Smart Punctuation - which turns a plain ' into a
+// curly U+2019 - would print as a missing glyph. sheetOptions() folds curly
+// quotes back to ASCII before the name ever reaches generateDeck (kept by
+// owner decision D4a), so a name containing U+2019 must save exactly as if it
+// had been typed with a straight apostrophe.
 test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII", async () => {
   const app = await durableBoot();
   const d = await makeCustom(app);
@@ -1693,9 +1726,8 @@ test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII",
 
 // Q29b: iOS Smart Punctuation also turns a typed -- into an em dash (U+2014)
 // and ... into a single ellipsis glyph (U+2026), and a pasted name can carry
-// a straight en dash (U+2013) - all of which core.js's ASCII-only NAME_RE
-// would otherwise refuse. sheetOptions() normalises these back to ASCII the
-// same way it does curly quotes, so a name carrying them must save exactly
+// a straight en dash (U+2013) - all of which would print as missing glyphs.
+// sheetOptions() folds these back to ASCII the same way it does curly quotes, so a name carrying them must save exactly
 // as if it had been typed with plain "-" and "...".
 test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", async () => {
   const app = await durableBoot();
@@ -3351,7 +3383,7 @@ test("the sheet's text inputs stay at 16px in every rule that sets their size, m
  * everywhere else (labels/UI, and the page's own body font). Parsed straight
  * out of the CSS text rather than restated as a DOM check, since the sandbox
  * has no layout engine to read computed styles from. */
-test("the visual system's three fonts land on the elements CLAUDE.md names them for", async () => {
+test("the visual system's three fonts land on the elements docs/CARD-SPEC.md names them for", async () => {
   const css = require("node:fs").readFileSync(
     require("node:path").join(__dirname, "..", "index.html"), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "");
@@ -3514,12 +3546,12 @@ test("print CTA: the header carries no print controls; the settings panel carrie
 });
 
 const PM_SHOP_SHA256 = {
-  "hijaz/letter": "00ebc376e2084be5426b8e58bad3f6b1bee5924e697c4fba2aafb1767d4fecce",
-  "hijaz/a4": "ef497714ae36de8888d2164cfb876850c6348e16b9aad54b55f77f75efc3c79d",
-  "pygmy/letter": "b1424caaf649f64fe6c7b22c75396a73bed970e0aa252a310c53cafc43a6163b",
-  "pygmy/a4": "3b0facbb585585722b7a7f46c647c6b332041b67632376225a7d57ed84a823b7",
-  "amara/letter": "fb154e188a1e83121286d02ecf01f0989cd620aeac30c90d9a020ea804243e1b",
-  "amara/a4": "67fe8dd28e5f4db99d105d8cefa9d5b584ee3338eeaba55291f065b852582c7e",
+  "hijaz/letter": "99daa8974a6d0ef4785e794314376d5f0daaf00e9648b68cb8370087a93c7acc",
+  "hijaz/a4": "fc8480128574008292c358d7d12f79ccace6c66e076b58902ebb51b90c18a704",
+  "pygmy/letter": "90427058108e036ff5259eef7e88078b275dae907796a6d866dcbc419417af29",
+  "pygmy/a4": "672b724d6fc3b3646c9524f9932036981fa99e5a79abe8058f071c3f71b77bb7",
+  "amara/letter": "4651c6ec91b526c5730817522a763470fc723b934e6f39e2f6b3c038548b3c69",
+  "amara/a4": "b6db7bc47c5591d70a55f5d17f2113658ab4b6d880abcc7ab28aeb86e0d1c516",
 };
 
 function pmPanel() {
@@ -3891,7 +3923,7 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
   assert.ok(tableToken, "the --table token itself is missing");
   assert.strictEqual(themeColor[1].toLowerCase(), tableToken[1].toLowerCase(),
     "theme-color does not equal the --table token");
-  assert.strictEqual(themeColor[1].toLowerCase(), "#1a1815");
+  assert.strictEqual(themeColor[1].toLowerCase(), "#0f0e0b");
   assert.match(html, /<meta\s+name="color-scheme"\s+content="dark">/,
     "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
 });
@@ -3918,16 +3950,14 @@ function linkHref(html, rel, extra = "") {
   return m[1];
 }
 
-const POSITIONING_TITLE = "Handpan Chords: Custom Scale Chord and Progression Practice";
+const POSITIONING_TITLE = "Handpan Theory: Custom Scale Chord and Progression Practice";
 
-test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name", async () => {
+test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)", async () => {
   const html = headHtml();
   const title = /<title>([^<]*)<\/title>/.exec(html);
   assert.ok(title, "no <title>");
-  const h1 = /<h1>([^<]*)<\/h1>/.exec(html);
-  assert.ok(h1, "no <h1>");
+  assert.ok(/<h1>/.test(html), "no <h1>");
   assert.strictEqual(title[1], POSITIONING_TITLE);
-  assert.strictEqual(h1[1], "Handpan Chords");
   assert.strictEqual(metaContent(html, "property", "og:title"), title[1]);
   assert.strictEqual(metaContent(html, "name", "twitter:title"), title[1]);
 });
@@ -3944,18 +3974,18 @@ test("the description says free and progressions early, equals og:description an
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
 });
 
-test("the favicon is an inline SVG data URI drawing the Amara Dm card", async () => {
+test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a round tile", async () => {
   const html = headHtml();
   const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
   assert.ok(href.startsWith("data:image/svg+xml,"), "the SVG icon is not a data: URI");
   const svg = decodeURIComponent(href.slice("data:image/svg+xml,".length));
   assert.match(svg, /^<svg[^>]*\sviewBox='0 0 64 64'/, "the SVG has no 64x64 viewBox");
-  const circles = svg.match(/<circle\b[^>]*>/g) || [];
-  assert.strictEqual(circles.length, 11, "the icon should draw 11 circles");
-  const fills = (hex) => circles.filter((c) => new RegExp(`fill='${hex}'`, "i").test(c)).length;
-  assert.strictEqual(fills("#0B7B75"), 1, "exactly one teal (root) field");
-  assert.strictEqual(fills("#DD8F00"), 2, "exactly two amber (tone) fields");
-  assert.ok(!/<(text|linearGradient|radialGradient|filter)\b/.test(svg), "no text, gradients or filters");
+  assert.match(svg, /<circle cx='32' cy='32' r='32' fill='#0f0e0b'\/>/, "no #0f0e0b round tile");
+  assert.ok((svg.match(/#E6C99B/g) || []).length >= 8, "the mark-small ink #E6C99B is missing");
+  assert.ok(svg.includes("id='fav-smm'") && svg.includes("url(#fav-smm)"), "the mask id is not prefixed fav-");
+  assert.ok(!/#smm\b|id='smm'/.test(svg), "an unprefixed mask id survives");
+  assert.ok(!/#0B7B75|#DD8F00/i.test(svg), "an Amara teal or amber is still in the icon");
+  assert.ok(!/<(text|title)\b|role=|aria-label=/.test(svg), "the icon carries text, a title or a role");
 });
 
 test("the touch icon and the preview image exist and are named once", async () => {
@@ -3971,6 +4001,60 @@ test("the touch icon and the preview image exist and are named once", async () =
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
   assert.strictEqual(metaContent(html, "property", "og:image:height"), "630");
+});
+
+describe("logo in the app: the header lockup", () => {
+  const header = () => {
+    const h = headHtml();
+    return h.slice(h.indexOf("<header>"), h.indexOf("</header>"));
+  };
+  const h1Html = () => /<h1>([\s\S]*?)<\/h1>/.exec(header())[1];
+
+  test("LG: the h1's accessible name is exactly Handpan Theory, once, from one hidden span", async () => {
+    const h1 = h1Html();
+    const spans = h1.match(/<span class="sr-only">[^<]*<\/span>/g) || [];
+    assert.deepStrictEqual(spans, ['<span class="sr-only">Handpan Theory</span>']);
+    const svg = /<svg\b[^>]*>/.exec(h1)[0];
+    assert.match(svg, /\baria-hidden="true"/);
+    assert.match(svg, /\bfocusable="false"/);
+    assert.ok(!/\brole=|\baria-label=/.test(svg), "the svg opening tag carries role or aria-label");
+    assert.ok(!/<title\b/.test(h1), "the svg carries a <title>");
+    const text = h1.replace(/<svg[\s\S]*?<\/svg>/, "").replace(/<[^>]*>/g, "").trim();
+    assert.strictEqual(text, "Handpan Theory");
+  });
+
+  test("LG: exactly one horizontal-full svg in the h1, no <img>, no visible Handpan Chords in the header", async () => {
+    const h1 = h1Html();
+    assert.strictEqual((h1.match(/<svg\b[^>]*viewBox="0 0 683\.93 196"/g) || []).length, 1);
+    assert.strictEqual((h1.match(/<svg\b/g) || []).length, 1);
+    assert.ok(!/<img\b/.test(header()), "an <img> is in the header");
+    const visible = header().replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<span class="sr-only">[^<]*<\/span>/g, "").replace(/<[^>]*>/g, " ");
+    assert.ok(!/Handpan Chords/.test(visible), "the header still says Handpan Chords");
+  });
+
+  test("LG: the lockup sits between the brand:lockup markers", async () => {
+    const h = headHtml();
+    const begin = h.indexOf("<!-- brand:lockup begin -->");
+    const end = h.indexOf("<!-- brand:lockup end -->");
+    assert.ok(begin > 0 && end > begin, "brand:lockup markers missing");
+    assert.strictEqual((h.slice(begin, end).match(/<svg\b/g) || []).length, 1);
+  });
+
+  test("LG: every id in index.html is unique and every svg url(#x) / href=#x resolves", async () => {
+    const h = headHtml();
+    const ids = [...h.matchAll(/\sid="([^"']+)"/g)].map((m) => m[1]);
+    const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
+    assert.deepStrictEqual([...new Set(dup)], [], "duplicate ids");
+    const lockup = h.slice(h.indexOf("<!-- brand:lockup begin -->"), h.indexOf("<!-- brand:lockup end -->"));
+    const refs = [...lockup.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)].map((m) => m[1] || m[2]);
+    assert.ok(refs.length > 0, "the lockup references nothing");
+    for (const r of refs) assert.ok(ids.includes(r), `dangling reference #${r}`);
+    for (const id of ["hpt-hfm", "hpt-hfo", "hpt-hfg", "hpt-hfs", "hpt-hfb",
+        "hpt-hfL0", "hpt-hfL1", "hpt-hfL2", "hpt-hfL3", "hpt-hfL4", "hpt-hfL5"]) {
+      assert.ok(ids.includes(id), `lockup id ${id} missing`);
+    }
+    assert.ok(!ids.some((id) => /^hf/.test(id)), "an unprefixed lockup id survives");
+  });
 });
 
 /* ================================================================ Lane S2
@@ -4099,7 +4183,7 @@ test("the re-roll control reads as a button in mode S and reverts outside it", a
   app.run('setMode("A")');
   assert.ok(!app.els.shuffle.classList.contains("reroll"), "leaving S must drop .reroll");
   const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
-  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #433b2c/,
+  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #3a352d/,
     ".reroll must borrow button.nav's border so it reads as a button");
   assert.match(html, /\.shuffle\.reroll:active\{background:#2e281e\}/,
     ".reroll must press like button.nav:active, not only recolour its text");
@@ -5999,6 +6083,42 @@ test("W1 line 12: MIRROR TOP sets the deck's mirror option and moves the preview
   assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
 });
 
+const MN_KURD = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const mnNumberLine = (deck, main) => {
+  const chord = deck.chords.find((c) => c.main === main && !c.sup);
+  return chord.fields.map((f) => deck.fields[f][5]).join("-");
+};
+
+test("MN: D Kurd 10 with MIRROR TOP reads Bb3 as 3 and the Dm number line 5-7-9, and unmirrored it reads 4-6-8", async () => {
+  const plain = (await w1Generate(MN_KURD)).deck;
+  const mirrored = (await w1Generate(MN_KURD, ["scale-mirror"])).deck;
+  assert.strictEqual(mnNumberLine(plain, "Dm"), "4-6-8");
+  assert.strictEqual(mnNumberLine(mirrored, "Dm"), "5-7-9");
+  const bb = Object.values(mirrored.fields).find((f) => f[0] === "Bb" && f[1] === 3);
+  assert.strictEqual(bb[5], "3");
+  assert.strictEqual(bb[4], 310);
+});
+
+test("MN: app and print agree on a mirrored deck: the pdfcards deck carries the diagram's slot 5 for every field", async () => {
+  const { deck } = await w1Generate(MN_KURD, ["scale-mirror"]);
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const built = E.pdfdeck.fromGenerated({ deck });
+  for (const id of Object.keys(deck.fields)) {
+    if (deck.fields[id][3] === "ding") continue;
+    assert.strictEqual(built.spec[String(id)][5], deck.fields[id][5], `field ${id}`);
+  }
+});
+
+test("MN: the title card omits the TONEFIELD NUMBERS line when the top is mirrored, and keeps it unmirrored or with only the bottom mirrored", async () => {
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const lines = async (seed, ids) => E.pdfdeck.fromGenerated({ deck: (await w1Generate(seed, ids)).deck }).legend_lines;
+  const has = (l) => l.some((x) => x.startsWith("TONEFIELD NUMBERS RUN 1 - "));
+  assert.strictEqual(has(await lines(W1_BOTTOM, [])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror-bottom"])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror"])), false);
+  assert.strictEqual(has(await lines(MN_KURD, ["scale-mirror"])), false);
+});
+
 test("W1 line 110: MIRROR TOP moves every off-axis rim and inner field and no bottom field; MIRROR BOTTOM moves bottom fields only", async () => {
   const base = fieldAngles((await w1Generate(W1_FULL)).deck);
   const top = fieldAngles((await w1Generate(W1_FULL, ["scale-mirror"])).deck);
@@ -6832,8 +6952,9 @@ test("DR1 line 81: the status line is the panel's next element after the band, h
   assert.strictEqual(app.els["scale-preview"]._markupParent, app.els["scale-plate-band"]);
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
   assert.ok(html.indexOf('id="scale-preview"') < html.indexOf('id="scale-drawer-status"'));
-  assert.match(html, /<p class="sheethint" id="scale-layout-hint">[^<]*<\/p>\s*<\/div>\s*<div id="scale-drawer-status"[^>]*><\/div>\s*<div id="scale-layout-zone">/,
-    "the band closes, the status follows it as its next sibling, and the layout zone follows the status");
+  assert.match(html, /<p class="sheethint" id="scale-layout-hint">[^<]*<\/p>\s*<\/div>\s*<div id="scale-drawer-status"[^>]*><\/div>\s*<div class="editrow" id="scale-mode-row"/,
+    "the band closes, the status follows it as its next sibling, and the mode row follows the status");
+  assert.ok(html.indexOf('id="scale-mode-row"') < html.indexOf('id="scale-layout-zone"'), "the layout zone follows the mode row");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-live"), "polite");
   assert.strictEqual(dr1Markup("scale-drawer-status").attr("aria-atomic"), "true");
   dr1Open(app);
@@ -7276,9 +7397,9 @@ for (const edit of [false, true]) {
     assert.deepStrictEqual(d2Rover(app), ["E4"]);
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     app.press(d2Hit(app, "E4"), "Tab");
-    assert.strictEqual(app.activeId(), "scale-anchor-one");
+    assert.strictEqual(app.activeId(), "scale-mode-standard");
     assert.deepStrictEqual(d2Rover(app), ["C4"], "tab entry is not the picked note");
-    app.press(app.els["scale-anchor-one"], "Tab", { shiftKey: true });
+    app.press(app.els["scale-mode-standard"], "Tab", { shiftKey: true });
     assert.strictEqual(d2Focus(app), "C4");
     assert.deepStrictEqual(d2Pressed(app), ["C4"]);
     assert.strictEqual(d2Seats(app), null);
@@ -7474,7 +7595,7 @@ test("DR3 Tab order on Add and Edit, finer controls closed and open", async () =
         if (here === "scale-back") break;
         seen.push(here);
       }
-      const want = ["scale-tab-layout", "plate", "scale-anchor-one",
+      const want = ["scale-tab-layout", "plate", "scale-mode-standard", "scale-mode-neotone", "scale-anchor-one",
         "scale-anchor-between", "scale-mirror", "scale-mirror-bottom", "scale-fine-toggle",
         ...(open ? ["scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next"] : []),
         "scale-layout-reset", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `Palette ${n}`), "scale-generate", ...(edit ? ["scale-delete"] : [])];
@@ -8419,9 +8540,9 @@ function dr3Surface(text) {
 }
 
 const DR3_UNMOVED = {
-  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "1856c1443e4f94b5" },
-  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "0f301fb6f96fd339" },
-  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "ec89ff32a29a1e29" },
+  "D3 example": { record: "98fc2a3daf186423", faces: "f40c14454a44c68e", pdf: "77d68a8b11aa417b" },
+  "D Kurd 10": { record: "a88c6144c4c59f10", faces: "2ffb8e4a89d70314", pdf: "0a36f7923b3edc90" },
+  "F3 Low Pygmy": { record: "d1ecde6dbdfa6f27", faces: "7d89a6a05bc946d8", pdf: "c145121fbca4d228" },
 };
 
 test("rule N: a deck with no moved seat is byte-identical in generateDeck output, card markup and PDF", async () => {
@@ -8736,7 +8857,7 @@ test("DR3 reset on Edit gives the generated default, not the stored layout", asy
 
 /* ---- Lane F: drawer follow-up (docs/plans/2026-10-09-lane-f-drawer-follow-up.md) ---- */
 
-const LF_BAD_NAME = "D Kürd";
+const LF_BAD_NAME = "D K\u0007urd";
 const lfEditBadName = async (text = D2_AMARA) => {
   const app = boot();
   openEdit(app, await makeCustom(app, D2_AMARA));
@@ -8746,7 +8867,7 @@ const lfEditBadName = async (text = D2_AMARA) => {
   return app;
 };
 
-test("LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name", async () => {
+test("LF F-1 (a): a refused name with a valid scale keeps the Layout tab enabled, GENERATE disabled, the refusal naming the name", async () => {
   const app = await lfEditBadName();
   assert.strictEqual(Boolean(app.els["scale-tab-layout"].disabled), false, "a bad name disabled the Layout tab");
   assert.strictEqual(app.els["scale-generate"].disabled, true);
@@ -8759,7 +8880,7 @@ test("LF F-1 (a): a non-ASCII name with a valid scale keeps the Layout tab enabl
   assert.strictEqual(crowded.els["scale-msg"].classList.contains("pan"), true, "the name-refusal branch did not mark its warning .pan");
 });
 
-test("LF F-1 (b): a non-ASCII name with an unparseable scale still disables the Layout controls", async () => {
+test("LF F-1 (b): a refused name with an unparseable scale still disables the Layout controls", async () => {
   const app = await lfEditBadName("(D3) zzz");
   app.click(app.els["scale-tab-layout"]);
   assert.strictEqual(app.els["scale-fine-toggle"].disabled, true);
@@ -9454,7 +9575,7 @@ test("RD: no DEGREES row - the served markup, ELEMENT_IDS and the app script car
   const body = html.slice(html.indexOf('<div class="sheetbody"'), html.indexOf('id="scale-guidance"'))
     .replace(/<!--[\s\S]*?-->/g, "");
   assert.deepStrictEqual([...body.matchAll(/class="editrow"(?: id="([^"]+)")?/g)].map((m) => m[1]),
-    ["scale-name-row", undefined, undefined],
+    ["scale-name-row", "scale-mode-row", undefined, undefined],
     "an .editrow other than the name row, the layout zone's own and the palette's is in .sheetbody");
   assert.ok(/class="editrow">\s*<span class="sheetlabel" id="scale-palette-label">/.test(body), "the last .editrow is not the palette's");
 
@@ -9571,7 +9692,7 @@ describe("discoverability: structured data", () => {
     assert.strictEqual(hits.length, 1, `expected exactly one ${type} node`);
     return hits[0];
   };
-  const SITE_NAME = "Handpan Chords";
+  const SITE_NAME = "Handpan Theory";
 
   test("SN: the JSON-LD block is one @graph holding exactly one WebApplication and one WebSite node", async () => {
     const ld = ldBlock();
@@ -9581,21 +9702,37 @@ describe("discoverability: structured data", () => {
     assert.deepStrictEqual(ld["@graph"].map((n) => n["@type"]).sort(), ["WebApplication", "WebSite"]);
   });
 
-  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName", async () => {
+  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with Handpan Chords and the lowercase host as alternateName", async () => {
     const html = INDEX_HTML();
     const site = node("WebSite");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(site.name, h1, `expected a WebSite node named ${SITE_NAME}`);
     assert.strictEqual(site.name, SITE_NAME, `expected a WebSite node named ${SITE_NAME}`);
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["handpan.raywu.org"]);
-    for (const a of site.alternateName) {
-      assert.strictEqual(a, a.toLowerCase());
-      assert.strictEqual(a, new URL(canonical).host);
-    }
+    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpan.raywu.org"]);
+    const hostEntry = site.alternateName[1];
+    assert.strictEqual(hostEntry, hostEntry.toLowerCase());
+    assert.strictEqual(hostEntry, new URL(canonical).host);
     assert.deepStrictEqual(Object.keys(site).sort(), ["@type", "alternateName", "name", "url"]);
+  });
+
+  test("SN: WebApplication carries Handpan Chords as its only alternateName", async () => {
+    assert.deepStrictEqual(node("WebApplication").alternateName, ["Handpan Chords"]);
+  });
+
+  test("NS: no visible text says Handpan Chords", async () => {
+    const root = path.join(__dirname, "..");
+    const bad = /Handpan Chords|Handpan Chord Cards/;
+    const files = ["404.html", "scales/index.html", "handpan-101/index.html", "llms.txt", "README.md"];
+    for (const d of fs.readdirSync(path.join(root, "scales"), { withFileTypes: true })) {
+      if (d.isDirectory()) files.push(`scales/${d.name}/index.html`);
+    }
+    for (const f of files) {
+      const src = fs.readFileSync(path.join(root, f), "utf8").replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "");
+      assert.ok(!bad.test(src), `${f} still shows the old name`);
+    }
+    const idx = INDEX_HTML().replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "").replace(/<script>const I18N[\s\S]*?<\/script>/, "").replace(/<!--[\s\S]*?-->/g, "");
+    assert.ok(!bad.test(idx), "index.html still shows the old name");
   });
 
   test("SN: og:site_name equals the WebSite name and appears once", async () => {
@@ -9620,8 +9757,7 @@ describe("discoverability: structured data", () => {
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
     assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(app.name, h1, "name differs from the h1");
+    assert.strictEqual(app.name, SITE_NAME, "name differs from the site name");
     assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
     assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
   });
@@ -9808,6 +9944,31 @@ describe("discoverability: analytics events", () => {
       assert.ok(Object.keys(e.params).length < 25);
       for (const v of Object.values(e.params)) {
         if (typeof v === "string") assert.ok(v.length <= 40 && !v.includes("custom:"), e.name + " " + v);
+      }
+    }
+  });
+});
+
+describe("NAN: analytics with a non-ASCII-named scale", () => {
+  test("no queued entry, event name or param holds a character above 0x7E", async () => {
+    const app = boot({ html: withGaId("G-TEST123456"), webdriver: false, href: "https://example.test/index.html" });
+    openSheet(app);
+    app.type(AMARA_STRING);
+    app.els["scale-name"].value = "Café 日本 🥁";
+    app.els["scale-name"].dispatchEvent({ type: "input" });
+    await generateClick(app);
+    assert.ok(chipRow(app).some((c) => c.label.startsWith("Café")), "the scale did not save under its name");
+    app.sandbox.navigator.clipboard = { writeText: async () => {} };
+    app.els["share-copy"].click();
+    await new Promise((r) => setImmediate(r));
+    app.run('flip(); setTier("basic"); downloadDeckPDF("shop"); selectDeck("hijaz");');
+    const queue = JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))));
+    const sent = queue.filter((e) => e[0] === "event");
+    assert.ok(sent.length >= 5, "too few events to mean anything: " + sent.length);
+    assert.ok(!/[^\x00-\x7e]/.test(JSON.stringify(queue)), "a non-ASCII character reached the analytics queue");
+    for (const e of sent) {
+      for (const v of Object.values(e[2] || {})) {
+        if (typeof v === "string") assert.ok(!/[^\x20-\x7e]/.test(v), e[1] + " " + JSON.stringify(v));
       }
     }
   });
@@ -10882,14 +11043,16 @@ describe("share icon", () => {
     assert.match(r, /z-index:29/);
     assert.ok(!/margin-top/.test(r), "margin-top is still there");
     assert.match(r, /min-height:44px/);
+    assert.match(r, /border-radius:12px/);
     assert.match(r, /font-size:16px/);
     assert.match(rule(c, "header") || "", /position:relative/);
     assert.match(rule(c, "#share-copy:disabled") || "", /opacity:\.5/);
-    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
+    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#1a1814/);
   });
 
-  test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {
+  test("SI: the glyph is two rotated stadiums drawn at stroke-width 2 (CSS overrides the 2.4 attribute)", async () => {
     assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
+    assert.match(rule(css(), "#share-copy svg g") || "", /stroke-width:2\b(?!\.)/);
   });
 });
 
@@ -11074,7 +11237,7 @@ describe("about overlay", () => {
     assert.match(open[0], /\bhidden\b/, "the about section does not ship hidden");
     assert.ok(html.includes('</div>\n\n<section id="about"'), "#about no longer follows #app");
     const inner = aboutHtml();
-    assert.match(inner, /^\s*<div class="abouthead">\s*<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK<\/button>\s*<h2 id="about-title">About Handpan Chords<\/h2>\s*<\/div>/,
+    assert.match(inner, /^\s*<div class="abouthead">\s*<button type="button" class="mode" id="about-close" aria-label="Back to the practice screen">&larr; BACK<\/button>\s*<h2 id="about-title">About Handpan Theory<\/h2>\s*<\/div>/,
       "the sticky header holds the exit control then the title");
     const text = textOf(inner);
     assert.ok(text.includes(VALUE_LINE));
@@ -11332,13 +11495,13 @@ describe("DI: dual input", () => {
   const fillAmara = (app) => { fieldType(app, "ding", AMARA_FIELDS.ding); fieldType(app, "top", AMARA_FIELDS.top); };
   const src = () => fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 
-  test("DI: the sheet serves DING, TOP RIM NOTES, TOP INNER (CYCLOPS/MUTANT) NOTE and BOTTOM NOTES in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", async () => {
+  test("DI: the sheet serves DING, Top Notes, TOP INNER (CYCLOPS) NOTE and Bottom Notes in that order before #scale-box, each a text input with autocapitalize off, enterkeyhint next and BOTTOM done", async () => {
     const h = src();
     const at = (id) => h.indexOf(`id="${id}"`);
     const order = ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map(at);
     assert.ok(order.every((n) => n > 0), "an id is missing from the markup");
     assert.deepStrictEqual(order.slice().sort((a, b) => a - b), order, "the fields are not in order before #scale-box");
-    const labels = { ding: "DING", top: "TOP RIM NOTES", inner: "TOP INNER (CYCLOPS/MUTANT) NOTE (OPTIONAL)", bottom: "BOTTOM NOTES (OPTIONAL)" };
+    const labels = { ding: "DING", top: "Top Notes", inner: "TOP INNER (CYCLOPS) NOTE (OPTIONAL)", bottom: "Bottom Notes / Neotone Mutant Notes (optional)" };
     for (const k of FIELDS) {
       const tag = h.match(new RegExp(`<input[^>]*id="scale-${k}"[^>]*>`))[0];
       assert.match(tag, /type="text"/, k);
@@ -11559,8 +11722,8 @@ describe("DI: dual input", () => {
 
   test("IB: no sheet label or hint says low to high except the octave sentence", async () => {
     const h = src();
-    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\/MUTANT\) NOTE \(OPTIONAL\)</);
-    assert.match(h, /id="scale-bottom-label"[^>]*>BOTTOM NOTES \(OPTIONAL\)</);
+    assert.match(h, /id="scale-inner-label"[^>]*>TOP INNER \(CYCLOPS\) NOTE \(OPTIONAL\)</);
+    assert.match(h, /id="scale-bottom-label"[^>]*>Bottom Notes \/ Neotone Mutant Notes \(optional\)</);
     const sentence = "Octaves are optional: without one, we assume the notes run low to high.";
     const labels = [...h.matchAll(/<(?:label|span|p\b)[^>]*class="sheetlabel"[^>]*>([^<]*)</g)].map((m) => m[1]);
     assert.ok(labels.length >= 10, `only ${labels.length} sheet labels found`);
@@ -11655,7 +11818,7 @@ describe("DI: dual input", () => {
     assert.strictEqual(el(app, "scale-msg").hidden, true);
     fieldType(app, "ding", "D3");
     fieldSettle(app, "ding");
-    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    assert.match(el(app, "scale-field-msg").textContent, /^Top Notes: /);
     fieldType(app, "top", "A3 C4 D4");
     fieldSettle(app, "top");
     assert.strictEqual(el(app, "scale-field-msg").textContent, "");
@@ -11718,7 +11881,7 @@ describe("DI: dual input", () => {
     assert.strictEqual(el(app, "scale-field-msg").textContent, "");
     assert.strictEqual(cls(app, "scale-top", "bad"), false);
     fieldSettle(app, "top");
-    assert.match(el(app, "scale-field-msg").textContent, /^TOP RIM NOTES: /);
+    assert.match(el(app, "scale-field-msg").textContent, /^Top Notes: /);
     assert.strictEqual(cls(app, "scale-top", "bad"), true);
     assert.strictEqual(el(app, "scale-top").getAttribute("aria-invalid"), "true");
   });
@@ -11776,10 +11939,10 @@ describe("DI: dual input", () => {
     };
     const add = openAdd();
     el(add, "scale-back").focus();
-    assert.deepStrictEqual(walk(add, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    assert.deepStrictEqual(walk(add, 8), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box"]);
     const edit = openBuiltin("amara");
     el(edit, "scale-back").focus();
-    assert.deepStrictEqual(walk(edit, 7), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]);
+    assert.deepStrictEqual(walk(edit, 8), ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box"]);
   });
 
   test("DI: a typed line keeps its spelling until a field edit rewrites it canonically", async () => {
@@ -11853,7 +12016,7 @@ describe("DI: dual input", () => {
     assert.strictEqual(cls(app, "scale-box", "stale"), true);
     assert.strictEqual(el(app, "scale-refusal").textContent, "");
     assert.strictEqual(el(app, "scale-line-note").textContent, "Not updated: the notes above have a problem.");
-    assert.match(el(app, "scale-field-msg").textContent, /TOP RIM NOTES/);
+    assert.match(el(app, "scale-field-msg").textContent, /Top Notes/);
     assert.strictEqual(el(app, "scale-generate").disabled, true);
     assert.deepStrictEqual(fieldTexts(app), fields);
   });
@@ -12182,12 +12345,12 @@ describe("TB: the sheet's tabs", () => {
   });
 
   test("TB: the sheet Tab order on each tab and flow is the section 3.3 list filtered by isStop", async () => {
-    const scaleAdd = ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"];
+    const scaleAdd = ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box"];
     let app = boot();
     openSheet(app);
     let seen = tbStops(app, "scale-back", 16);
-    assert.deepStrictEqual(seen.slice(0, 8), scaleAdd);
-    assert.ok(seen.slice(8).includes("scale-next"), seen.join());
+    assert.deepStrictEqual(seen.slice(0, 9), scaleAdd);
+    assert.ok(seen.slice(9).includes("scale-next"), seen.join());
     assert.ok(!seen.includes("scale-generate"));
     assert.ok(!seen.includes("scale-layout-reset"));
     app = boot();
@@ -12395,11 +12558,11 @@ describe("O1: the duplicate-bottom warning on the field line", () => {
     assert.strictEqual(both.els["scale-field-msg"].textContent, WARN_DING);
     type(both, "top", "A3 X4");
     settle(both, "top");
-    assert.ok(both.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), both.els["scale-field-msg"].textContent);
+    assert.ok(both.els["scale-field-msg"].textContent.startsWith("Top Notes: "), both.els["scale-field-msg"].textContent);
     assert.ok(!both.els["scale-field-msg"].classList.contains("warn"));
     type(app, "top", "A3 X4");
     settle(app, "top");
-    assert.ok(app.els["scale-field-msg"].textContent.startsWith("TOP RIM NOTES: "), app.els["scale-field-msg"].textContent);
+    assert.ok(app.els["scale-field-msg"].textContent.startsWith("Top Notes: "), app.els["scale-field-msg"].textContent);
     assert.ok(!app.els["scale-field-msg"].classList.contains("warn"));
   });
   test("O1: with inner f guessed under D3 / A3 C4, bottoms c d still show the duplicate warning on the field line over the inner Octaves-guessed line", async () => {
@@ -13863,12 +14026,12 @@ describe("CN: SCALE NAME on the Add sheet", () => {
     const app = boot();
     openSheet(app);
     const seen = [app.activeId()];
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 9; i += 1) {
       app.els["scale-sheet"].dispatchEvent({ type: "keydown", key: "Tab", shiftKey: false, preventDefault() {} });
       seen.push(app.activeId());
     }
-    assert.deepStrictEqual(seen.slice(0, 9), ["scale-back", "scale-tab-scale", "scale-name", "scale-ding",
-      "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"]);
+    assert.deepStrictEqual(seen.slice(0, 10), ["scale-back", "scale-tab-scale", "scale-name", "scale-ding",
+      "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-next"]);
   });
 
   test("CN8: Add with a different typed name preserves the original and exact repeats reuse the named instance", async () => {
@@ -14306,29 +14469,28 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", async () => {
-    const app0 = await open();
-    slide(app0, "C3", 320);
+    const app0 = await open("[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    slide(app0, "C3", 0);
+    const kept = JSON.stringify(ang(app0));
+    app0.run("solvePreviewLayout = () => null");
     app0.els["scale-mirror-bottom"].click();
     assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
     assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
     assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED")());
     assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
+    assert.strictEqual(JSON.stringify(ang(app0)), kept, "a refused toggle restores the angles as well as the mirror");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
-      const app = await open();
-      slide(app, "C3", 320);
+      const app = await open(btn === "scale-mirror-bottom" ? "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4" : FPD);
+      slide(app, "C3", btn === "scale-mirror-bottom" ? 0 : 320);
       const before = JSON.stringify(ang(app));
       const pressed = app.els[btn].getAttribute("aria-pressed");
       app.els[btn].click();
       const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
       assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
-      if (btn === "scale-mirror-bottom") {
-        assert.strictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: refused`);
-        assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
-      } else {
-        assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a top-shell toggle never moves a bottom note, so it is not refused`);
-        assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
-      }
-      assert.strictEqual(JSON.stringify(ang(app)), before);
+      assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a toggle that is not a real overlap is never refused`);
+      assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
+      if (btn === "scale-mirror-bottom") assert.strictEqual(JSON.stringify(ang(app)), JSON.stringify({ bottom: [180, null, null, null, null] }));
+      else assert.strictEqual(JSON.stringify(ang(app)), before);
       await generateClick(app);
       assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
     }
@@ -15325,14 +15487,14 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],addedKeys=["panel.explore","header.share","move.notice","move.failed"],addedPluralKeys=["move.notice"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), and move.notice / move.failed (domain move handoff)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed (domain move handoff) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
       .update(JSON.stringify(baseKeys.sort())).digest("hex"),contract.sortedKeySha256,"all frozen baseline key identities remain unchanged");
     assert.deepStrictEqual(Object.keys(en).filter((k) => isPlural(en[k])).sort(),
-      [...contract.pluralKeys,...addedPluralKeys].sort(), "frozen plural keys plus the handoff notice");
+      [...contract.pluralKeys, ...addedPluralKeys, ...neotoneKeys.filter((k) => isPlural(en[k]))].sort(), "frozen plural keys plus the handoff notice and the Neotone plurals");
     assert.deepStrictEqual(Object.keys(contract.pluralFormsByLocale).sort(), [...locales].sort());
     // This is the single independently reviewed baseline exception. Adding an
     // exception to make a changed table pass requires a new semantic decision.
@@ -15344,7 +15506,7 @@ describe("I18N", () => {
       const table = JSON.parse(fs.readFileSync(path.join(dir, locale + ".json"), "utf8"));
       assert.deepStrictEqual(Object.keys(table).sort(), Object.keys(en).sort(), locale + ": key parity with en");
       for (const k of Object.keys(en)) {
-        const plural = contract.pluralKeys.includes(k) || addedPluralKeys.includes(k);
+        const plural = contract.pluralKeys.includes(k) || addedPluralKeys.includes(k) || (neotoneKeys.includes(k) && isPlural(en[k]));
         const label = locale + " " + k;
         assert.strictEqual(isPlural(table[k]), plural, label + ": scalar/plural type");
         if (plural) {
@@ -15696,7 +15858,7 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     assert.strictEqual(soLabel(app, 105), "U2");
   });
 
-  test("SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone", async () => {
+  test("SO: MIRROR BOTTOM after the fold reflects every note, keeps every position's number and says so, and MIRROR TOP leaves every bottom number alone", async () => {
     const app = await soOpen();
     app.run("layoutAngles = { bottom: [300, 60, 0, 180, 240, 120] }; resyncSheet(true)");
     const ang = [101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id));
@@ -15706,13 +15868,11 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     app.els["scale-mirror"].click();
     app.els["scale-mirror-bottom"].click();
     assert.strictEqual(d2Status(app),
-      "Bottom mirror on. The notes you placed stay put, and their seat numbers now run the other way round.");
-    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang);
-    const after = soLabels(app);
-    assert.deepStrictEqual(after, ["U2", "U6", "U4", "U3", "U1", "U5"]);
-    const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
-    assert.ok(changed.length > 0, "the mirror renumbered");
-    assert.deepStrictEqual(soFlash(app), changed.sort());
+      "Bottom mirror on. Every note swaps sides, the ones you placed too. Numbers stay with their places.");
+    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang.map((a) => (540 - a) % 360));
+    const pairs = (as, ls) => as.map((a, k) => `${a}=${ls[k]}`).sort();
+    assert.deepStrictEqual(pairs([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), soLabels(app)), pairs(ang, labels),
+      "every position keeps its number");
   });
 });
 
@@ -18735,6 +18895,519 @@ describe("NS: native share", () => {
   });
 });
 
+/* ---- Neotone lane U: Standard | Paired areas on the Layout tab ----
+ * Profile scales save as v5 records and share as v7 links. A profile record
+ * never carries `replaces` (owner rule I1), so a profile SAVE on a seeded scale
+ * is a separate custom entry and never a slot owner. */
+describe("NEO: Neotone sheet, saves and links", () => {
+  const EN = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"));
+  const BOTTOM_AMARA = "[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5";
+  const TOP_PYGMY = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]";
+  const OWNER = "00000000-0000-4000-8000-000000000001";
+  const entries = (app) => savedEnvelope(app).entries;
+  const goLayout = (app) => app.click(app.els["scale-tab-layout"]);
+  const openNeo = (app, text = AMARA_STRING) => {
+    openSheet(app);
+    app.type(text);
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+  };
+  const map = (app) => plain(app.get("profileMap"));
+  const nhits = (app) => [...String(app.els["scale-preview"].innerHTML || "").matchAll(/<circle class="nhit"[^>]*\/>/g)].map((m) => m[0]);
+  const profileOf = (app, text, extra = {}) => plain(app.get(`(() => {
+    const s = HPE.core.parseSeed(${JSON.stringify(text)});
+    const p = HPE.layout.proposeProfile(s.value.fields);
+    return { palette: 1, ...${JSON.stringify(extra)}, profile: { id: "paired", rev: 2, map: p.value.map } };
+  })()`));
+  const openBuiltin = (app, id) => {
+    const d = decks(app).find((x) => x.id === id);
+    app.select(d.id);
+    app.clickChip(d.name);
+    return d;
+  };
+
+  test("NEO1: the labels, the switch and the checkbox carry the approved en values, and no Option A control is served", async () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const app = boot();
+    openSheet(app);
+    const served = (id) => (html.match(new RegExp(`id="${id}"[^>]*>([^<]*)<`)) || [])[1];
+    assert.strictEqual(served("scale-top-label"), "Top Notes");
+    assert.strictEqual(served("scale-inner-label"), "TOP INNER (CYCLOPS) NOTE (OPTIONAL)");
+    assert.strictEqual(served("scale-bottom-label"), "Bottom Notes / Neotone Mutant Notes (optional)");
+    assert.strictEqual(served("scale-neotone-text"), "Neotone");
+    assert.strictEqual(app.els["scale-neotone"].checked, false);
+    goLayout(app);
+    assert.strictEqual(app.els["scale-mode-label"].textContent, "LAYOUT");
+    assert.strictEqual(app.els["scale-mode-standard"].textContent, "STANDARD");
+    assert.strictEqual(app.els["scale-mode-neotone"].textContent, "NEOTONE");
+    for (const gone of ["scale-mode-paired", "scale-paired", "scale-areas", "scale-areas-reset", "scale-paired-hint", "scale-paired-count"]) {
+      assert.strictEqual(html.includes(`id="${gone}"`), false, gone + " is still served");
+    }
+    const shown = [...html.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(!shown.some((k) => /paired|areas/.test(k)), "an Option A key is still bound");
+    for (const gone of ["sheet.paired_hint", "sheet.mode_paired", "sheet.reset_areas", "sheet.areas_reset", "sheet.areas_label", "sheet.paired_dropped", "sheet.paired_incomplete"]) {
+      assert.strictEqual(gone in EN, false, gone);
+    }
+  });
+
+  test("NEO2: A10 sheet.inner is exact in all eight tables and none says mutant", async () => {
+    const want = {
+      en: "TOP INNER (CYCLOPS) NOTE (OPTIONAL)", de: "OBERER INNENTON (CYCLOPS, OPTIONAL)", es: "NOTA INTERIOR (CYCLOPS) (OPCIONAL)",
+      fr: "NOTE INTÉRIEURE DU DESSUS (CYCLOPS) (FACULTATIVE)", it: "NOTA INTERNA (CYCLOPS) (OPZIONALE)", ja: "内側のノート（サイクロプス・任意）",
+      "zh-Hans": "正面内圈音（Cyclops，可选）", "zh-Hant": "上殼內圈音（Cyclops，選填）",
+    };
+    for (const [loc, value] of Object.entries(want)) {
+      const t = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", loc + ".json"), "utf8"));
+      assert.strictEqual(t["sheet.inner"], value, loc);
+      assert.ok(!/mutant/i.test(t["sheet.inner"]), loc);
+      for (const k of ["sheet.neotone_check", "sheet.mode_neotone", "sheet.top", "sheet.bottom_opt"]) assert.ok(t[k], loc + " " + k);
+      if (loc !== "en") for (const k of ["sheet.top", "sheet.bottom_opt", "sheet.neotone_rearrange", "reason.NEOTONE_INPUT"]) {
+        assert.notStrictEqual(JSON.stringify(t[k]), JSON.stringify(EN[k]), loc + " " + k + " is still English");
+      }
+    }
+  });
+
+  test("NEO3: the checkbox and the Layout switch are two-way and ticking is never refused", async () => {
+    const app = boot();
+    openSheet(app);
+    app.type(AMARA_STRING);
+    assert.strictEqual(app.els["scale-neotone"].disabled, false);
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    assert.strictEqual(app.get("neotoneOn()"), true);
+    goLayout(app);
+    assert.strictEqual(app.els["scale-mode-neotone"].getAttribute("aria-pressed"), "true");
+    assert.strictEqual(app.els["scale-mode-standard"].getAttribute("aria-pressed"), "false");
+    assert.strictEqual(app.els["scale-standard"].hidden, true);
+    app.els["scale-mode-standard"].click();
+    assert.strictEqual(app.els["scale-neotone"].checked, false, "the switch off unticks the box");
+    assert.strictEqual(app.els["scale-standard"].hidden, false);
+    assert.strictEqual(app.els["scale-box"].value, AMARA_LINE_OF(app), "notes kept");
+    app.els["scale-mode-neotone"].click();
+    assert.strictEqual(app.els["scale-neotone"].checked, true, "the switch on ticks the box");
+  });
+  const AMARA_LINE_OF = (app) => app.els["scale-box"].value;
+
+  test("NEO4: M1, a Pygmy built-in with inner notes F5 and G5, shows the exact message and holds SAVE", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    const m1 = "Neotone has 9 main tonefields. Inner notes F5 and G5 have no tonefield: remove them to save.";
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent, m1);
+    assert.strictEqual(app.els["scale-neotone-msg"].hidden, false);
+    assert.strictEqual(app.els["scale-generate"].disabled, true, "SAVE is held");
+    goLayout(app);
+    assert.strictEqual(app.els["scale-neotone-extra"].textContent, m1);
+    const before = entries(app).length;
+    await generateClick(app);
+    assert.strictEqual(entries(app).length, before, "nothing was saved");
+  });
+
+  test("NEO4b: the built-in Pygmy demo draws inner F5 and G5 as mutant notes M7 and M8; the map, M1 and SAVE do not change (owner 2026-11-02)", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    const place = plain(app.get("lastSolved.geom.place"));
+    const fields = plain(app.get("lastSolved.fields"));
+    const idOf = (midi) => Object.keys(fields).find((id) => fields[id][2] === midi);
+    for (const [midi, label] of [[77, "M7"], [79, "M8"]]) {
+      const id = idOf(midi);
+      assert.ok(place[id], "note " + midi + " is drawn");
+      assert.strictEqual(place[id][3], "mutant", "mutant kind");
+      assert.strictEqual(fields[id][5], label);
+    }
+    assert.strictEqual(map(app).filter((k) => k !== null).length, 15, "the stored map holds the 9 + 6 notes only");
+    assert.ok(!map(app).includes("i77") && !map(app).includes("i79"));
+    assert.strictEqual(app.els["scale-generate"].disabled, true, "SAVE is held");
+    assert.ok(app.els["scale-neotone-msg"].textContent.includes("Inner notes F5 and G5"));
+    const deck = decks(app).find((d) => d.id === "pygmy");
+    assert.strictEqual(deck.fields["10"][3], "inner", "deck data is untouched");
+  });
+
+  test("NEO4c: a user scale with inner notes gets M1 and no demo placement", async () => {
+    const app = boot();
+    openNeo(app, TOP_PYGMY);
+    const place = plain(app.get("lastSolved.geom.place"));
+    assert.strictEqual(Object.keys(place).length, 15, "F5 and G5 are left out of the picture");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+  });
+
+  test("NEO5: M2 and M2b: top notes past the ninth, and bottoms past the ninth", async () => {
+    const app = boot();
+    openNeo(app, TOP_PYGMY);
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent,
+      "Neotone has 9 main tonefields. Remove 2 top notes (F5 and G5 have no tonefield).");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    const many = "[A2] [B2] [C3] [D3] [E3] [F3] [G3] [A3] [B3] [C4] (D4) A4 C5 D5";
+    const b = boot();
+    openNeo(b, many);
+    assert.strictEqual(b.els["scale-neotone-msg"].textContent,
+      "Neotone has 9 mutant tonefields. C4 has no mutant tonefield. Remove it to save.");
+    assert.strictEqual(b.els["scale-generate"].disabled, true);
+  });
+
+  test("NEO6: M3, M4 and M5 are neutral hints with the exact en values", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    assert.strictEqual(app.els["scale-neotone-pair"].textContent, "Mutant notes pair with tonefields: note N goes in tonefield N.");
+    assert.strictEqual(app.els["scale-neotone-unused"].textContent, "Tonefields 3 to 9 have no mutant note. That's fine.");
+    assert.strictEqual(app.els["scale-neotone-rearrange"].textContent,
+      "Tap a note, then another in the same ring, to swap them, or hold a note and drag it.");
+    assert.strictEqual(app.els["scale-generate"].disabled, false, "the neutral hint does not hold SAVE");
+    assert.ok(!app.els["scale-neotone-unused"].classList.contains("warn"));
+  });
+
+  test("NEO7: the plate draws 18 tonefield buttons with their names, and an empty one reads empty", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    const hits = nhits(app);
+    assert.strictEqual(hits.length, 18);
+    assert.ok(hits.every((h) => /role="button"/.test(h)));
+    const label = (h) => (h.match(/aria-label="([^"]*)"/) || [])[1];
+    assert.ok(hits.some((h) => /^Tonefield 1 main, /.test(label(h))));
+    assert.ok(hits.some((h) => /^Tonefield 1 mutant, /.test(label(h))));
+    assert.ok(hits.some((h) => /^Tonefield 9 mutant, empty$/.test(label(h))));
+    assert.strictEqual(hits.filter((h) => /tabindex="0"/.test(h)).length, 1, "one roving stop");
+  });
+
+  test("NEO7b: an empty mutant tonefield draws only a small orange label like the M1 label, no dashed circle, and keeps its button", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    const html = String(app.els["scale-preview"].innerHTML || "");
+    const texts = [...html.matchAll(/<text\b[^>]*>[\s\S]*?<\/text>/g)].map((m) => m[0]);
+    const attr = (t, a) => (t.match(new RegExp(`${a}="([^"]*)"`)) || [])[1];
+    const label = (n) => texts.find((t) => new RegExp(`>${n}</text>`).test(t) && /fill="#E27005"/.test(t));
+    const filled = label("M1"), empty = label("M9");
+    assert.ok(filled, "M1 label is drawn");
+    assert.ok(empty, "M9 label is orange");
+    assert.strictEqual(attr(empty, "font-size"), attr(filled, "font-size"), "same size as M1");
+    assert.strictEqual(attr(empty, "font-weight"), attr(filled, "font-weight"), "same weight as M1");
+    assert.ok(!texts.some((t) => />M9<\/text>/.test(t) && /#8a8a8a/.test(t)), "no grey M9");
+    const dashedMutants = [...html.matchAll(/<circle[^>]*stroke-dasharray[^>]*\/>/g)].length;
+    const emptyMain = 9 - (app.get("profileMap") || []).slice(0, 9).filter((k) => k !== null).length;
+    assert.strictEqual(dashedMutants, emptyMain, "dashed circles remain only on empty main tonefields");
+    assert.ok(nhits(app).some((h) => /^Tonefield 9 mutant, empty$/.test((h.match(/aria-label="([^"]*)"/) || [])[1])), "the empty mutant keeps its button");
+  });
+
+  test("NEO8: a swap inside a ring, a move to an empty tonefield, and a refused cross-ring drop", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    const m0 = map(app);
+    app.run("neoTap(0)");
+    assert.match(app.els["scale-drawer-status"].textContent, /^.* picked up\. Tap another tonefield in the same ring\.$/);
+    app.run("neoTap(1)");
+    const m1 = map(app);
+    assert.strictEqual(m1[0], m0[1]);
+    assert.strictEqual(m1[1], m0[0]);
+    assert.match(app.els["scale-drawer-status"].textContent, /^Swapped .+ and .+\.$/);
+    app.run("neoTap(NEO_MAIN)");
+    const before = map(app);
+    app.run("neoTap(0)");
+    assert.strictEqual(app.els["scale-drawer-status"].textContent, "A note moves only within its own ring.");
+    assert.deepStrictEqual(map(app), before, "a cross-ring drop moves nothing");
+    app.run("neoTap(NEO_MAIN + 8)");
+    const moved = map(app);
+    assert.strictEqual(moved[NEO_SLOT_LAST(app)], before[NEO_SLOT_LAST(app) - 8]);
+    assert.strictEqual(moved[NEO_SLOT_LAST(app) - 8], null);
+  });
+  const NEO_SLOT_LAST = (app) => app.get("NEO_MAIN") + 8;
+
+  test("NEO9: Add-sheet name: a built-in converts to a prefilled name, a typed name is kept, duplicates are allowed", async () => {
+    const app = await durableBoot();
+    const d = openBuiltin(app, "amara");
+    const before = app.els["scale-name"].value;
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone Mutant`);
+    assert.strictEqual(app.els["scale-name-label"].textContent, "Name");
+    assert.strictEqual(app.els["scale-neotone-name-hint"].textContent, "Suggested name; you can change it.");
+    assert.match(app.els["scale-neotone-builtin"].textContent, /is a built-in\. Saving creates a new scale; the built-in stays as it is\.$/);
+    app.els["scale-neotone"].checked = false;
+    app.els["scale-neotone"].onchange();
+    assert.strictEqual(app.els["scale-name"].value, before, "untick restores an untouched name");
+    assert.strictEqual(app.els["scale-name-label"].textContent, "SCALE NAME");
+    assert.ok(d);
+  });
+
+  test("NEO10: a Neotone SAVE on a seeded scale writes a v5 rev 2 record as a separate entry with no replaces", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "amara");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    await generateClick(app);
+    await writeBarrier(app);
+    const env = savedEnvelope(app);
+    assert.strictEqual(env.entries.length, 1);
+    const r = env.entries[0].record;
+    assert.strictEqual(r.v, 5);
+    assert.strictEqual(r.o.profile.id, "paired");
+    assert.strictEqual(r.o.profile.rev, 2);
+    assert.strictEqual(r.o.profile.map.length, 18);
+    for (const name of ["mirror", "mirrorBottom", "anchor", "seats", "angles", "replaces"]) assert.strictEqual(name in r.o, false, name);
+    assert.deepStrictEqual(env.slots, {});
+    assert.deepStrictEqual(env.hidden, []);
+    assert.ok(app.currentDeck().geom.place, "the saved scale is placed by tonefield");
+    assert.ok(decks(app).some((d) => d.id === "amara"), "the built-in is still listed");
+  });
+
+  test("NEO11: a typed Neotone scale saves a v5 rev 2 record and its link is v7", async () => {
+    const app = await durableBoot();
+    openNeo(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    const r = entries(app)[0].record;
+    assert.strictEqual(r.v, 5);
+    assert.strictEqual(r.o.profile.rev, 2);
+    const link = plain(app.get(`shareLink(savedEntries.get(selection.id).deck)`));
+    assert.strictEqual(link.ok, true);
+    assert.match(link.value, /#s=7\//);
+  });
+
+  test("NEO12: editing a Neotone scale opens in Neotone, a rearrangement keeps v5, and Standard rewrites in place as v4 with the same handle", async () => {
+    const app = await durableBoot();
+    openNeo(app, BOTTOM_AMARA);
+    await generateClick(app);
+    await writeBarrier(app);
+    const handle = entries(app)[0].instanceId;
+    openEdit(app, { ...app.currentDeck(), instanceId: handle });
+    assert.strictEqual(app.get("neotoneOn()"), true, "an edit of a profile scale opens in Neotone");
+    assert.strictEqual(app.els["scale-neotone"].checked, true);
+    app.run("neoTap(0)");
+    app.run("neoTap(1)");
+    const moved = map(app);
+    await generateClick(app);
+    await writeBarrier(app);
+    let rows = entries(app);
+    assert.strictEqual(rows.length, 1);
+    assert.strictEqual(rows[0].record.v, 5);
+    assert.deepStrictEqual(rows[0].record.o.profile.map, moved);
+    openEdit(app, { ...app.currentDeck(), instanceId: handle });
+    app.els["scale-neotone"].checked = false;
+    app.els["scale-neotone"].onchange();
+    await generateClick(app);
+    await writeBarrier(app);
+    rows = entries(app);
+    assert.strictEqual(rows.length, 1, "rewritten in place");
+    assert.strictEqual(rows[0].instanceId, handle, "same local handle");
+    assert.strictEqual(rows[0].record.v, 4);
+    assert.strictEqual("profile" in rows[0].record.o, false);
+  });
+
+  test("NEO13: a slot-owning replacement edited into Neotone saves a separate entry and keeps the owner byte-identical", async () => {
+    const record = { v: 4, s: AMARA_STRING, o: { name: "MY AMARA", palette: 2, replaces: "amara" } };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: { amara: OWNER }, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    openEdit(app, { ...app.currentDeck(), instanceId: app.get("selection.id") });
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    await generateClick(app);
+    await writeBarrier(app);
+    const after = savedEnvelope(app);
+    assert.strictEqual(after.entries.length, 2);
+    const owner = after.entries.find((e) => e.instanceId === OWNER);
+    assert.deepStrictEqual(owner.record, record);
+    assert.deepStrictEqual(after.slots, { amara: OWNER });
+    const added = after.entries.find((e) => e !== owner);
+    assert.strictEqual(added.record.v, 5);
+    assert.strictEqual("replaces" in added.record.o, false);
+  });
+
+  test("NEO14: a stored rev 1 record keeps its bytes until saved, opens in Neotone, and a SAVE writes rev 2", async () => {
+    const probe = boot();
+    const rev1 = profileOf(probe, AMARA_STRING);
+    rev1.profile.rev = 1;
+    const record = { v: 5, s: AMARA_STRING, o: rev1 };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    assert.ok(app.currentDeck().geom.place, "a readable rev 1 profile renders Neotone");
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record, "boot rewrote nothing");
+    openEdit(app, { ...app.currentDeck(), instanceId: OWNER });
+    assert.strictEqual(app.get("neotoneOn()"), true);
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record, "opening Edit rewrote nothing");
+    await generateClick(app);
+    await writeBarrier(app);
+    assert.strictEqual(savedEnvelope(app).entries[0].record.o.profile.rev, 2);
+  });
+
+  test("NEO15: a rev 1 record whose profile has unplaced notes renders Standard, opens Neotone with the cause and holds SAVE", async () => {
+    const probe = boot();
+    const fields = plain(probe.get(`HPE.core.parseSeed(${JSON.stringify(TOP_PYGMY)}).value.fields`));
+    assert.ok(fields);
+    const map1 = plain(probe.get(`(() => { const f = HPE.core.parseSeed(${JSON.stringify(TOP_PYGMY)}).value.fields;
+      const notes = Object.values(f).filter((n) => n[3] === "rim" || n[3] === "bottom");
+      const keys = notes.map((n) => (n[3] === "rim" ? "r" : "b") + n[2]);
+      const out = new Array(18).fill(null);
+      keys.slice(0, 18).forEach((k, i) => { out[i] = k; });
+      return out; })()`));
+    const record = { v: 5, s: TOP_PYGMY, o: { palette: 1, profile: { id: "paired", rev: 1, map: map1 } } };
+    const env = {
+      schema: 1, collectionId: "00000000-0000-4000-8000-00000000000a", revision: 1, slotStateRevision: 1,
+      entries: [{ instanceId: OWNER, revision: 1, displayOrdinal: 1, record }],
+      usedInstanceIds: [OWNER], nextDisplayOrdinal: 2,
+      preferredSelection: { kind: "saved", id: OWNER },
+      slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] },
+    };
+    const app = await durableBoot({ idbRaw: JSON.stringify(env) });
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record, "bytes untouched");
+    openEdit(app, { ...app.currentDeck(), instanceId: OWNER });
+    assert.strictEqual(app.get("neotoneOn()"), true);
+    assert.strictEqual(app.els["scale-generate"].disabled, true, "SAVE is held while a note has no tonefield");
+    assert.ok(app.els["scale-neotone-msg"].textContent.startsWith("Neotone has 9 main tonefields."), app.els["scale-neotone-msg"].textContent);
+    assert.deepStrictEqual(savedEnvelope(app).entries[0].record, record);
+  });
+
+  test("NEO16: a typed 10th top note or an inner note while ticked shows its inline error on the line", async () => {
+    const app = boot();
+    openNeo(app, AMARA_STRING);
+    app.type(AMARA_STRING + " D5 E5");
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.ok(app.els["scale-neotone-msg"].textContent.includes("Remove"), app.els["scale-neotone-msg"].textContent);
+    const shown = app.els["scale-refusal"].textContent;
+    assert.strictEqual(shown, EN["reason.NEOTONE_INPUT"]);
+  });
+
+  test("NEO17: the sheet footer order is Cancel (BACK) then SAVE, and no Option A string is shown", async () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const foot = html.slice(html.indexOf('id="scale-foot"'));
+    assert.ok(foot.indexOf('id="scale-delete"') === -1 || foot.indexOf('id="scale-generate"') !== -1);
+    for (const gone of ["Paired areas", "PAIRED AREAS", "area", "zigzag"]) {
+      const body = html.slice(0, html.indexOf("const I18N")).replace(/<!--[\s\S]*?-->/g, "").replace(/<style[\s\S]*?<\/style>/g, "").replace(/<script[\s\S]*?<\/script>/g, "");
+      const visible = body.replace(/<[^>]*>/g, " ");
+      assert.ok(!new RegExp(gone === "area" ? "\\barea\\b" : gone).test(visible), gone + " is visible in the served text");
+    }
+  });
+
+  test("NEO18: readSavedRecord and savedCandidate accept rev 2 profile records and refuse the malformed pairings", async () => {
+    const app = boot();
+    const base = profileOf(app, AMARA_STRING);
+    const ok = (record) => app.get(`readSavedRecord(${JSON.stringify(record)}).ok`);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: base }), true);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: { ...base, replaces: "amara" } }), false);
+    assert.strictEqual(ok({ v: 5, s: AMARA_STRING, o: { palette: 1 } }), false, "v5 without a profile");
+    assert.strictEqual(ok({ v: 4, s: AMARA_STRING, o: base }), false, "v4 carrying a profile");
+  });
+
+  test("NEO19: a v7 link decodes to a Neotone scale, a Standard scale still shares as a v6 link, and the map joins the saved meaning", async () => {
+    const app = boot();
+    const options = profileOf(app, AMARA_STRING);
+    const wire = (opts) => plain(app.get(`(() => { const s = HPE.core.parseSeed(${JSON.stringify(AMARA_STRING)}); return HPE.share.encode({ fields: s.value.fields, options: ${JSON.stringify(opts)} }); })()`));
+    const v7 = wire(options);
+    assert.strictEqual(v7.ok, true, v7.reason);
+    assert.strictEqual(v7.value.charAt(0), "7");
+    assert.strictEqual(wire({ palette: 1 }).value.charAt(0), "6");
+    assert.strictEqual(app.get(`HPE.share.decode(${JSON.stringify(v7.value)}).value.options.profile.id`), "paired");
+    const meaning = (opts) => JSON.parse(app.get(`savedMeaning(buildGenerated(${JSON.stringify(AMARA_STRING)}, ${JSON.stringify(opts)}).value)`));
+    const acoustic = meaning({ palette: 1 });
+    const paired = meaning(options);
+    assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
+    assert.strictEqual(paired[paired.length - 1].length, 18);
+  });
+
+});
+
+describe("MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included", () => {
+  const SEED = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const bottoms = (app) => [101, 102, 103].map((id) => `${app.get(`lastSolved.fields[${id}][4]`)}=${app.get(`lastSolved.fields[${id}][5]`)}`);
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("MN3: MIRROR BOTTOM after sliding C3 to 300 reflects it to 240, leaves the unplaced notes to the solver, and the numbers stay with the positions", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(ang(app), { bottom: [240, null, null] });
+    assert.strictEqual(app.get("lastSolved.fields[101][4]"), 240);
+    const mirroredHome = app.get("JSON.stringify(HPE.layout.solve(lastSeed,{mirrorBottom:true,anchor:anchor,angles:null}).value.fields[102][4])");
+    assert.strictEqual(String(app.get("lastSolved.fields[102][4]")), mirroredHome);
+  });
+
+  test("MN3: MIRROR BOTTOM with no hand-placed notes leaves layoutAngles null", async () => {
+    const app = await dgOpen({}, SEED);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(app.get("bottomMirror()"), true);
+  });
+
+  test("MN3: toggling MIRROR BOTTOM twice returns the identical layoutAngles, drawing and share string", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    const start = ang(app);
+    const link = app.get("JSON.stringify(sheetOptions())");
+    const drawn = bottoms(app);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.deepStrictEqual(ang(app), start);
+    assert.strictEqual(app.get("JSON.stringify(sheetOptions())"), link);
+    assert.deepStrictEqual(bottoms(app), drawn);
+  });
+
+  test("MN3: the MIRROR BOTTOM notice says every note swaps sides, the placed ones too, not that they stay put", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    const text = app.els["scale-drawer-status"].textContent;
+    assert.ok(text.includes(JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"))["sheet.mirror_keeps_numbers"]), text);
+    assert.doesNotMatch(text, /stay put/);
+    assert.match(text, /placed too/);
+    assert.doesNotMatch(text, /too close/);
+  });
+
+  test("MN3: RESET LAYOUT after a toggle clears the angles", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+  });
+});
+
+describe("MN3: a 5-note bottom ring toggles", () => {
+  test("MN3: a 5-note bottom ring with a slid note reflects it on MIRROR BOTTOM instead of refusing (MN2 refused)", async () => {
+    const app = await dgOpen({}, "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    DG.moveTo(app, g, 315, 200);
+    DG.release(app, g, 315, 200);
+    const start = JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+    assert.deepStrictEqual(start, { bottom: [0, null, null, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(layoutAngles)")), { bottom: [180, null, null, null, null] });
+    assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/);
+  });
+});
+
 describe("MV: the saved-scale handoff (switched off in the committed bytes)", () => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const webcrypto = require("node:crypto").webcrypto;
@@ -18777,6 +19450,19 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const html = INDEX_HTML();
     assert.match(html, /^const MOVE_FROM = null;$/m);
     assert.match(html, /^const MOVE_TARGET = null;$/m);
+  });
+
+  test("the move region equals c6ef6b58's with only #790's dedupe-key line applied", () => {
+    const region = h => {
+      const a = h.indexOf("const MOVE_FROM ="), m = h.indexOf("function moveReport", a), b = h.indexOf("\n}\n", m);
+      assert.ok(a >= 0 && m >= 0 && b >= 0, "the move region markers are missing");
+      return h.slice(a, b + 3);
+    };
+    const shipped = region(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8"));
+    const from = "moveDigest(moveCanon(read.record))";
+    assert.strictEqual(shipped.split(from).length, 2, "the shipped region no longer holds the one line #790 changed");
+    assert.strictEqual(region(INDEX_HTML()), shipped.replace(from, () => "moveDigest(moveCanon(row.r))"));
+    assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
   });
 
   test("with the switches null the old host boots normally and a #move= hash is left alone", async () => {
@@ -18860,6 +19546,25 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
     const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
     assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+  });
+
+  const nanCanon = v => Array.isArray(v) ? "[" + v.map(nanCanon).join(",") + "]" :
+    v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + nanCanon(v[k])).join(",") + "}" : JSON.stringify(v);
+  const nanKey = (id, row) => id + ":" + require("node:crypto").createHash("sha256").update(nanCanon(row), "utf8").digest("hex").slice(0, 16);
+
+  test("NAN: a record carried by the opaque path and one read normally share one dedupe key", async () => {
+    const row = { ...rec("Caf\u00e9"), v: 3 };
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), row]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin, records: [], extra: { importedIds: [nanKey(uid(1), row)] } });
+    assert.deepStrictEqual(envelopeAt(origin).entries, [], "a key recorded from the raw row did not stop a re-import");
+  });
+
+  test("NAN: a name the grammar still refuses moves by the opaque branch", async () => {
+    const origin = createOrigin({});
+    const hash = `#move=${payloadOf([[uid(1), rec("Bad\u0007name")], [uid(2), rec("Caf\u00e9")]])}&then=`;
+    await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
+    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["Bad\u0007name", "Caf\u00e9"]);
   });
 
   test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {

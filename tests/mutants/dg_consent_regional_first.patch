@@ -14,4 +14,4 @@ diff --git a/index.html b/index.html
 +gtag("consent", "default", {ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "granted"});
  gtag("js", new Date());
  </script>
- <!-- The favicon is the D Amara deck's Dm card in the app's root/tone colours
+ <!-- Three icon sources, one each, all from brand/ (the only copy of the logo):

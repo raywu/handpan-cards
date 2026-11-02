@@ -1,0 +1,15 @@
+# kills: URL mark: a generated deck with a long accented name has one mark per chord card and an ASCII footer clipped with three periods
+# suite: node --test --test-name-pattern ^URL.mark..a.generated.deck.with.a.long.accented.name.has.one.mark.per.chord.card.and.an.ASCII.footer.clipped.with.three.periods$ tests/pdfcards.test.js
+# why: the G6 long accented name test must die under the same mutant as the existing print tests (RC 2026-11-02 lane T).
+# drop the URL mark call from the chord card (js).
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -800,7 +800,6 @@ HPE.pdfcards = (function () {
+       tracked(c, x + 9, y + CH - 13.5, deg, "LabelSB", 6.0, 0.4, "l", BLUE);
+     }
+     sideCredit(c, x, y, CW, CH, printCredit(deck));
+-    urlMark(c, x, y, CW, CH);
+     drawPan(c, x + CW / 2, y + deck.cy, deck.R, spec, activeAll, rootsAll);
+ 
+     var nb = spec._geom && spec._geom.place ? 0 :

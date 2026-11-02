@@ -1,0 +1,15 @@
+# kills: NAN: a chip label clips by code point, never leaving half an emoji
+# suite: node --test --test-name-pattern ^NAN..a.chip.label.clips.by.code.point..never.leaving.half.an.emoji$ tests/app.test.js
+# NAN: the chip label clips by UTF-16 unit and can end in half an emoji.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11659,7 +11659,7 @@ function setOrder() {
+ // leaves that replacement out; a seed with no replacement is dropped when hidden.
+ const allDecks = () => allDeckViews().map(view => view.deck);
+ const CHIP_CAP = 16;
+-const clipPoints = (text, room) => { const points = Array.from(text); return points.length > room ? points.slice(0, Math.max(0, room - 1)).join("") + "…" : text; };
++const clipPoints = (text, room) => { return text.length > room ? text.slice(0, Math.max(0, room - 1)) + "…" : text; };
+ const chipLabel = n => clipPoints(n, CHIP_CAP);
+ function savedChipLabels(views) {
+   const marked = new Set();

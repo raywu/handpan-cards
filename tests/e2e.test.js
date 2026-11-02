@@ -2624,6 +2624,79 @@ function run() {
       { label: "the sheet to close after Generate" });
   }
 
+  test("NEO: at 380px the Layout switch, the Neotone checkbox and the 18 tonefield buttons are reachable with no horizontal scroll, and a Neotone SAVE closes the sheet", async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    try {
+      await openSheet();
+      await typeScale("[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-neotone");
+      await b.waitFor(`document.getElementById("scale-neotone").checked`, { label: "the box to tick" });
+      await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-tab-layout");
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+      const m = await b.eval(`
+        const rect = (e) => e.getBoundingClientRect();
+        const targets = [document.getElementById("scale-mode-standard"), document.getElementById("scale-mode-neotone")];
+        return {
+          hits: document.querySelectorAll("#scale-preview .nhit").length,
+          short: targets.filter((e) => rect(e).height < 44 || rect(e).width < 44).map((e) => e.id),
+          outside: targets.filter((e) => rect(e).left < 0 || rect(e).right > window.innerWidth).map((e) => e.id),
+          scrollX: document.documentElement.scrollWidth - window.innerWidth,
+          bodyScrollX: document.querySelector("#scale-sheet .sheetbody").scrollWidth - document.querySelector("#scale-sheet .sheetbody").clientWidth,
+          standardHidden: document.getElementById("scale-standard").hidden,
+        };
+      `);
+      assert.strictEqual(m.hits, 18);
+      assert.deepStrictEqual(m.short, [], "a switch segment is under 44px");
+      assert.deepStrictEqual(m.outside, [], "a control leaves the 380px viewport");
+      assert.ok(m.scrollX <= 0, "the page scrolls sideways: " + m.scrollX);
+      assert.ok(m.bodyScrollX <= 0, "the sheet body scrolls sideways: " + m.bodyScrollX);
+      assert.strictEqual(m.standardHidden, true);
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after a Neotone SAVE" });
+      const placed = await b.eval(`return !!savedEntries.get(selection.id).deck.geom.place;`);
+      assert.strictEqual(placed, true, "the saved scale is placed by tonefield");
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("NEO: in every locale at 380px the switch, checkbox, name field and hints fit inside the sheet", async () => {
+    await freshLoad();
+    await b.setViewport(380, 800, true);
+    try {
+      const langs = await b.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+      assert.ok(langs.length >= 8);
+      await openSheet();
+      await typeScale("[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5");
+      await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-neotone");
+      await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
+      await b.click("#scale-tab-layout");
+      for (const lang of langs) {
+        await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+        const m = await b.eval(`
+          const body = document.querySelector("#scale-sheet .sheetbody");
+          const box = body.getBoundingClientRect();
+          const ids = ["scale-mode-label", "scale-mode-standard", "scale-mode-neotone", "scale-neotone-pair", "scale-neotone-unused", "scale-neotone-rearrange", "scale-neotone-msg"];
+          const els = ids.map((id) => document.getElementById(id)).filter((e) => e && !e.hidden);
+          return {
+            outside: els.filter((e) => { const r = e.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; }).map((e) => e.id),
+            clipped: els.filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow !== "visible").map((e) => e.id),
+            scrollX: body.scrollWidth - body.clientWidth,
+          };
+        `);
+        assert.deepStrictEqual(m.outside, [], lang + ": a Neotone control leaves the sheet");
+        assert.deepStrictEqual(m.clipped, [], lang + ": a Neotone control clips its text");
+        assert.ok(m.scrollX <= 0, lang + ": the sheet scrolls sideways");
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("the page is a modal dialog with the spec'd anatomy", async () => {
     await freshLoad();
     const before = await b.eval(`
@@ -3127,6 +3200,69 @@ function run() {
       `${frames} card frames drawn; every slot on every page carries one, so ${want.pages * 9}`);
     assert.ok(got.glyphs > 500,
       `only ${got.glyphs} characters of text - the fonts did not draw`);
+  });
+
+  /* NAN (TRI-29): a non-ASCII name saves, survives a reload, shows in its chip
+     and prints. The print faces draw printable ASCII only, so an accented name
+     prints with its accents stripped and a name that is not drawable even then
+     prints the scale's auto label. Read off the blob, as above. */
+  test("NAN: a non-ASCII scale name saves, survives a reload, shows in its chip and prints under its stripped or auto-label name", async () => {
+    if (process.env.E2E_HARNESS_CHILD) return;
+    const { spawnSync } = require("node:child_process");
+    const os = require("node:os");
+    for (const name of ["Café 日本", "Café"]) {
+      await freshLoad();
+      await openSheet();
+      await typeScale(SIX_SCALES[1]);
+      await b.eval(`const el=document.getElementById("scale-name");el.value=${JSON.stringify(name)};el.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
+      await clickGenerate();
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the sheet to close after Generate with " + JSON.stringify(name) });
+      assert.ok((await chipReport()).on.includes(name), "the new chip is not labelled " + JSON.stringify(name));
+
+      await navigate();
+      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips after reload" });
+      const after = await chipReport();
+      assert.ok(after.chips.includes(name), "after a reload the chips are " + JSON.stringify(after.chips));
+
+      await openSettingsPanel();
+      await b.send("Page.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
+      const cap = await b.eval(`
+        return (async () => {
+          const real = URL.createObjectURL;
+          const seen = [];
+          URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
+          const btn = [...document.querySelectorAll("#settings-panel .prints button")]
+            .find(el => el.textContent.trim() === "DOWNLOAD PDF");
+          if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
+          try { btn.click(); } finally { URL.createObjectURL = real; }
+          if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
+          const u8 = new Uint8Array(await seen[0].arrayBuffer());
+          let s = "";
+          for (let i = 0; i < u8.length; i += 4096) s += String.fromCharCode.apply(null, u8.subarray(i, i + 4096));
+          return { n: u8.length, b64: btoa(s), shown: HPE.pdfcards.printName(printNameSource(deck())), file: pdfFileName(deck(), "shop", "letter") };
+        })();`);
+      assert.ok(!cap.err, cap.err);
+      assert.ok(cap.n > 10000, `the CTA produced ${cap.n} bytes for ${name}`);
+      assert.ok(/^[\x20-\x7e]+$/.test(cap.shown) && cap.shown.trim() !== "", "print name " + JSON.stringify(cap.shown));
+      assert.ok(/^[A-Za-z0-9][A-Za-z0-9_]*_CHORD_ONLY_Letter\.pdf$/.test(cap.file), "download name " + cap.file);
+      if (name === "Café") assert.strictEqual(cap.shown, "Cafe");
+      else assert.notStrictEqual(cap.shown, name, "an undrawable name must print the auto label");
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nan-pdf-"));
+      const pdf = path.join(dir, "deck.pdf");
+      fs.writeFileSync(pdf, Buffer.from(cap.b64, "base64"));
+      let r;
+      try {
+        r = spawnSync("python3", ["-c", "import sys, fitz\nd = fitz.open(sys.argv[1])\nprint(d[0].get_text('text'))", pdf], { encoding: "utf8", timeout: 120000 });
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+      assert.strictEqual(r.status, 0, `the pymupdf probe failed (install pymupdf):\n${(r.stdout || "") + (r.stderr || "")}`);
+      const squash = (t) => t.replace(/\s+/g, "").toUpperCase();
+      assert.ok(squash(r.stdout).includes(squash(cap.shown)),
+        `the sheet does not carry the print name ${JSON.stringify(cap.shown)} for ${JSON.stringify(name)}`);
+    }
   });
 
   /* The generated-deck test above is the full pymupdf oracle (page count,
@@ -3836,10 +3972,15 @@ function run() {
     // 227.67, the print row's own floor still applies there); landscape
     // chrome 251.67 -> 158.67, and the card at 844x390 is 100.16 -> 167.5px
     // wide, +67.3%.
-    [390, 844, 343.19, 225.67],
-    [390, 745, 342.69, 225.67],
-    [375, 667, 306.81, 225.67],
-    [320, 568, 246.44, 227.67],
+    // Raised 2026-11-01 (logo in the app, owner Q2 2026-10-31): the header row
+    // grew from 44px to the 64px lockup (+20px; at 320 the lockup shrinks to
+    // 52.7px, +9px), so portrait chrome 225.67 -> 245.67 (320x568: 227.67 ->
+    // 236.69 measured, budget 238.67) and the card at 375x667 and 320x568 gave
+    // up 0.6% and 2.6%. Landscape does not move: the h1 stays hidden there.
+    [390, 844, 343.19, 245.67],
+    [390, 745, 342.69, 245.67],
+    [375, 667, 305.11, 245.67],
+    [320, 568, 239.91, 238.67],
     [844, 390, 167.50, 158.67],
     [926, 428, 195.02, 158.67],
   ];
@@ -3875,6 +4016,35 @@ function run() {
         }
         assert.deepStrictEqual(bad, [],
           "the practice screen's chrome has grown at the card's expense");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("lockup: the header lockup is 64px tall at 380 and inside .hrow clear of both buttons, and shrinks to fit at 320",
+    async () => {
+      await freshLoad();
+      try {
+        const bad = [];
+        for (const [vw, vh, wantH] of [[380, 740, 64], [320, 568, null]]) {
+          await b.setViewport(vw, vh, true);
+          const m = await b.eval(`
+            const r = (el) => { const x = el.getBoundingClientRect(); return {l: x.left, r: x.right, t: x.top, b: x.bottom, w: x.width, h: x.height}; };
+            const row = r(document.querySelector(".hrow"));
+            const svg = r(document.querySelector("h1 svg"));
+            return {row, svg, share: r(document.querySelector("#share-copy")),
+              settings: r(document.querySelector("#settings-trigger")),
+              scrollW: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth};
+          `);
+          const tag = `${vw}x${vh}`;
+          if (wantH !== null && Math.abs(m.svg.h - wantH) > 0.6) bad.push(`${tag}: the lockup is ${m.svg.h}px tall, want ${wantH}`);
+          if (wantH === null && !(m.svg.h < 64 && m.svg.h > 44)) bad.push(`${tag}: the lockup is ${m.svg.h}px tall, want it shrunk below 64 and above 44`);
+          if (m.svg.l < m.row.l - 0.5 || m.svg.r > m.row.r + 0.5 || m.svg.t < m.row.t - 0.5 || m.svg.b > m.row.b + 0.5) bad.push(`${tag}: the lockup leaves .hrow`);
+          if (m.svg.l < m.share.r - 0.5) bad.push(`${tag}: the lockup overlaps #share-copy`);
+          if (m.svg.r > m.settings.l + 0.5) bad.push(`${tag}: the lockup overlaps #settings-trigger`);
+          if (m.scrollW > m.cw) bad.push(`${tag}: the page scrolls sideways (${m.scrollW} > ${m.cw})`);
+        }
+        assert.deepStrictEqual(bad, []);
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -4669,6 +4839,39 @@ function run() {
     }
   });
 
+  test("MSJ: tapping a layout toggle leaves the tapped button where it was in both scrollers", async () => {
+    try {
+      for (const edit of [false, true]) for (const [w, h] of [[380, 667], [380, 780]]) {
+        if (edit) {
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await generate(DR1_SCALE);
+          await openEdit();
+          await openDrawer();
+        } else await addWithDrawer(w, h);
+        for (const id of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between", "scale-anchor-one", "scale-mirror-bottom", "scale-mirror"]) {
+          await b.eval(`const s = ${body}; s.scrollTop = s.scrollHeight - s.clientHeight - 0;
+            const u = document.querySelector("#scale-sheet .sheetsurf"); u.scrollTop = u.scrollHeight; return true;`);
+          await b.eval(`const s = ${body}, el = document.getElementById(${JSON.stringify(id)});
+            const hit = () => { const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && el.contains(t); };
+            while (!hit() && s.scrollTop > 0) s.scrollTop = Math.max(0, s.scrollTop - 10);
+            return hit();`);
+          await b.settle();
+          const at = () => b.eval(`return { top: document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top,
+            body: ${body}.scrollTop, surf: document.querySelector("#scale-sheet .sheetsurf").scrollTop };`);
+          const before = await at();
+          await b.click("#" + id);
+          await b.settle();
+          const after = await at();
+          assert.ok(Math.abs(after.top - before.top) <= 1,
+            `${id} moved ${before.top} -> ${after.top} (${edit ? "Edit" : "Add"} ${w} x ${h}): ${JSON.stringify({ before, after })}`);
+        }
+      }
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("UX: Adjust layout is two columns at 844x390 with the pan >=270px with no message, one column at 500x390", async () => {
     try {
       await addWithDrawer(844, 390);
@@ -4810,7 +5013,7 @@ function run() {
         const m = await b.eval(`
           const el = document.getElementById("scale-field-msg"), r = el.getBoundingClientRect(), vv = window.visualViewport;
           return { text: el.textContent, top: r.top, bottom: r.bottom, h: r.height, vvBottom: vv.offsetTop + vv.height };`);
-        assert.match(m.text, /^TOP RIM NOTES: /, `${w}x${h}: the slot holds "${m.text}"`);
+        assert.match(m.text, /^Top Notes: /, `${w}x${h}: the slot holds "${m.text}"`);
         assert.ok(m.h > 0 && m.top >= -0.5 && m.bottom <= m.vvBottom + 0.5, `${w}x${h}: the TOP error is outside the view: ${JSON.stringify(m)}`);
         await b.clearKeyboard();
       }
@@ -5002,7 +5205,7 @@ function run() {
     }
   });
 
-  test("DR1 line 38: each drawer control shows the global 2px #e3b25c focus ring from the keyboard", async () => {
+  test("DR1 line 38: each drawer control shows the global 2px teal #44e0d8 focus ring from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
       await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
@@ -5010,7 +5213,7 @@ function run() {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
           return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
-        assert.deepStrictEqual(o, { w: "2px", c: "rgb(227, 178, 92)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
+        assert.deepStrictEqual(o, { w: "2px", c: "rgb(68, 224, 216)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
       }
     } finally {
       await b.key("Escape", "Escape", 27);
@@ -5093,7 +5296,7 @@ function run() {
         await b.key("Tab", "Tab", 9);
         seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
       }
-      assert.deepStrictEqual(seen, ["panhit", "scale-anchor-one"]);
+      assert.deepStrictEqual(seen, ["panhit", "scale-mode-standard"]);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -5229,7 +5432,7 @@ function run() {
       assert.ok(st.name.length > 0, "the Name field is empty");
       assert.strictEqual(st.primary, "SAVE CHANGES");
       assert.strictEqual(st.del, "DELETE THIS SCALE");
-      assert.strictEqual(st.delColor, "rgb(167, 157, 139)", "the delete link is not #a79d8b");
+      assert.strictEqual(st.delColor, "rgb(169, 163, 154)", "the delete link is not #a9a39a");
       assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
       assert.ok(st.body.sw <= st.body.cw + 1,
@@ -5320,7 +5523,7 @@ function run() {
         return (el && (el.id || el.getAttribute("aria-label"))) || "";`);
       assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false,
         "the Edit page did not open on the Scale tab");
-      const cycle = 10;
+      const cycle = 11;
       const walk = async (start, shift) => {
         await b.eval(`document.getElementById(${JSON.stringify(start)}).focus(); return true;`);
         const seen = [];
@@ -5332,10 +5535,10 @@ function run() {
       };
       const forward = await walk("scale-back", false);
       assert.deepStrictEqual(forward,
-        ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-generate", "scale-delete", "scale-back"]);
+        ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-generate", "scale-delete", "scale-back"]);
       const backward = await walk("scale-delete", true);
       assert.deepStrictEqual(backward,
-        ["scale-generate", "scale-box", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-tab-scale", "scale-back", "scale-delete"]);
+        ["scale-generate", "scale-box", "scale-neotone", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-tab-scale", "scale-back", "scale-delete"]);
       assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
         "the Edit sheet still holds a select");
     } finally {
@@ -5379,19 +5582,20 @@ function run() {
 
         assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false, `${mode}: opens on the Scale tab`);
         const scaleCycle = edit
-          ? ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-generate", "scale-delete"]
-          : ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box", "scale-next"];
+          ? ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-generate", "scale-delete"]
+          : ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-next"];
         await both(`${mode} Scale tab`, scaleCycle);
         assert.ok(!scaleCycle.some((id) => swatches.includes(id)), "the Scale cycle names a swatch");
         ran.push(`${mode}/scale`);
 
         await openDrawer();
+        await b.eval(`document.getElementById("scale-anchor-between").scrollIntoView({ block: "center" }); return true;`);
         await b.click("#scale-anchor-between");
         assert.strictEqual(await b.eval(`return document.getElementById("scale-layout-reset").disabled;`), false,
           `${mode}: RESET LAYOUT is a stop only once a layout change enables it`);
         const panhit = await b.eval(`const el = document.querySelector('#scale-preview .panhit[tabindex="0"]'); return el ? (el.id || el.getAttribute("aria-label") || "") : null;`);
         assert.notStrictEqual(panhit, null, `${mode}: the plate is not a tab stop`);
-        const layoutCycle = ["scale-back", "scale-tab-layout", panhit, "scale-anchor-one", "scale-anchor-between", "scale-mirror",
+        const layoutCycle = ["scale-back", "scale-tab-layout", panhit, "scale-mode-standard", "scale-mode-neotone", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
           "scale-fine-toggle", "scale-layout-reset", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
         await both(`${mode} Layout tab`, layoutCycle);
         ran.push(`${mode}/layout`);
@@ -5556,8 +5760,8 @@ function run() {
       assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
         "the armed delete button keeps its amber under the thumb - the press that "
         + "destroys the deck is the one control on the page that does not answer");
-      assert.strictEqual(held.color, "rgb(234, 230, 223)",
-        "the armed delete button presses to something other than #eae6df, which is "
+      assert.strictEqual(held.color, "rgb(246, 244, 237)",
+        "the armed delete button presses to something other than #f6f4ed, which is "
         + "the pressed colour every other control on this page uses");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the held press was released" });
@@ -7074,7 +7278,7 @@ function run() {
       assert.strictEqual(m.msgParent, "scale-guidance");
       assert.strictEqual(m.noteParent, "scale-guidance");
       assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
-      assert.strictEqual(m.noteColor, "rgb(196, 188, 171)", "N-A9: the notice is not the sheet's neutral #c4bcab inside the slot");
+      assert.strictEqual(m.noteColor, "rgb(169, 163, 154)", "N-A9: the notice is not the sheet's neutral #a9a39a inside the slot");
       assert.strictEqual(m.warnColor, "rgb(227, 178, 92)", "N-A9: #scale-msg.warn is not amber #e3b25c");
       assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
       assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
@@ -7362,6 +7566,7 @@ function run() {
       const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
       const before = await b.eval(`return window.__sgPaints;`);
       for (let i = 0; i < 10; i += 1) {
+        await b.eval(`document.getElementById("scale-fine-toggle").scrollIntoView({ block: "center" }); return true;`);
         await b.click("#scale-fine-toggle");
         await b.click("#scale-fine-toggle");
       }
@@ -8066,7 +8271,7 @@ function run() {
       for (const [w, h, vv] of [[852, 393, 193], [844, 390, 180]]) {
         await kb2bTinyOpen(w, h, vv);
         const g = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); const pad = parseFloat(getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).paddingLeft); return { left: r.left, right: r.right, pad, w: innerWidth };`);
-        assert.ok(Math.abs(g.left - (g.w - g.right)) <= 1.5, `${w}x${h}: column not centred ${JSON.stringify(g)}`);
+        assert.ok(Math.abs(g.left - (g.w - g.right)) <= 1.5, `${w}x${h}: column not centred`);
         assert.ok(g.right - g.left <= 520 && g.right - g.left >= 480, `${w}x${h}: column ${g.right - g.left}px wide, the shipped rule keeps it inside the 520px measure ${JSON.stringify(g)}`);
         await b.clearKeyboard();
       }
@@ -8599,7 +8804,7 @@ function run() {
       }
     });
 
-    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px cream underline on the selected one, 44px tall`, async () => {
+    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px teal underline on the selected one, 44px tall`, async () => {
       try {
         await freshLoad();
         await b.setViewport(vw, vh, true);
@@ -8616,10 +8821,10 @@ function run() {
         assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
         assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
         assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
-        const cream = "rgb(241, 236, 225)";
-        const underlined = (t) => (t.bw === "2px" && t.bc === cream) || (t.afH === "2px" && t.afBg === cream);
-        assert.ok(underlined(sel), `the selected tab has no 2px cream underline: ${JSON.stringify(sel)}`);
-        assert.ok(!underlined(other), "the unselected tab is underlined in cream");
+        const teal = "rgb(68, 224, 216)";
+        const underlined = (t) => (t.bw === "2px" && t.bc === teal) || (t.afH === "2px" && t.afBg === teal);
+        assert.ok(underlined(sel), `the selected tab has no 2px teal underline: ${JSON.stringify(sel)}`);
+        assert.ok(!underlined(other), "the unselected tab is underlined in teal");
         assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
         assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
       } finally {
@@ -8957,8 +9162,8 @@ function run() {
       [1280, 800, "desktop"],
     ];
 
-    const TABLE = [26, 24, 21];   // #1a1815
-    const TABLE2 = [38, 34, 28];  // #26221c
+    const TABLE = [15, 14, 11];   // #0f0e0b
+    const TABLE2 = [15, 14, 11];  // #0f0e0b
     const FRAME = 4;              // outer pixel frame width to sample
 
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
@@ -9075,7 +9280,7 @@ function run() {
       await freshLoad();
       const bg = await b.eval(
         `return getComputedStyle(document.documentElement).backgroundColor;`);
-      assert.strictEqual(bg, "rgb(26, 24, 21)");
+      assert.strictEqual(bg, "rgb(15, 14, 11)");
     });
 
     test("under print media, html computes to a white background", async () => {
@@ -9114,8 +9319,8 @@ function run() {
     // must not shrink main or the card" - a regression that put the panel
     // back in flow would move them.
     const BASE_SCENE = {
-      "1280x800": { width: 367.984375, height: 508.1875, left: 456, right: 823.984375, top: 153.0625, bottom: 661.25 },
-      "1024x768": { width: 353.265625, height: 487.859375, left: 335.359375, right: 688.625, top: 147.234375, bottom: 635.09375 },
+      "1280x800": { width: 367.984375, height: 508.1875, left: 456, right: 823.984375, top: 163.0625, bottom: 671.25 },
+      "1024x768": { width: 353.265625, height: 487.859375, left: 335.359375, right: 688.625, top: 157.21875, bottom: 645.078125 },
     };
 
     async function sceneRect() {
@@ -10736,7 +10941,7 @@ function run() {
           }
           const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
             const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
-          assert.deepStrictEqual(ring, ["2px", "rgb(227, 178, 92)", "solid"], `${w}x${h}: global focus ring`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(68, 224, 216)", "solid"], `${w}x${h}: global focus ring`);
         }
       } finally { await b.setViewport(900, 900, false); }
     });
@@ -11241,8 +11446,8 @@ function run() {
         assert.ok(m.fontSize >= 18, `${deckId}: #count font-size is ${m.fontSize}px, needs >= 18px`);
         assert.strictEqual(m.textAlign, "center", `${deckId}: #count text-align is "${m.textAlign}"`);
         assert.ok(m.color, `${deckId}: the rail's current chord <b> was not found`);
-        const ratio = contrastRatio(m.color, [0x1a, 0x18, 0x15]);
-        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #1a1815, needs ${AA_NORMAL}`);
+        const ratio = contrastRatio(m.color, [0x0f, 0x0e, 0x0b]);
+        assert.ok(ratio >= AA_NORMAL, `${deckId}: rail current-chord colour is ${ratio.toFixed(2)}:1 on #0f0e0b, needs ${AA_NORMAL}`);
         assert.ok(m.decorationLine.includes("underline"), `${deckId}: rail current chord lost its underline`);
         assert.deepStrictEqual(m.decorationColor, hexToRgb(m.root),
           `${deckId}: underline colour must be the deck's root colour`);
@@ -14268,14 +14473,14 @@ function run() {
   });
 
   describe("discoverability", () => {
-    // .scene rect measured on origin/main (2b7dadc, before #app and #about
+    // .scene rect, origin/main (2b7dadc) re-measured with the header lockup (logo-in-app D10) (before #app and #about
     // existed) with the e2e launch (fallback fonts, scrollbars hidden) at
     // these viewports, desktop emulation (mobile: false). The wrapper and the
     // section below the first screen must not move the card (plan D20).
     const ORIGIN_SCENE = {
-      "380x780": { width: 334.390625, height: 461.78125, left: 22.796875, top: 166.265625 },
-      "320x568": { width: 247.890625, height: 342.328125, left: 36.046875, top: 120 },
-      "1024x700": { width: 321.984375, height: 444.65625, left: 351, top: 134.828125 },
+      "380x780": { width: 334.390625, height: 461.78125, left: 22.796875, top: 176.265625 },
+      "320x568": { width: 239.90625, height: 331.3125, left: 40.046875, top: 131.015625 },
+      "1024x700": { width: 314.515625, height: 434.34375, left: 354.734375, top: 149.984375 },
     };
     const VIEWPORTS = { "380x780": [380, 780], "320x568": [320, 568], "1024x700": [1024, 700] };
 
@@ -16000,6 +16205,7 @@ function run() {
       try{
         for(const selector of ["#scale-layout-reset","#scale-anchor-one","#scale-swatches button:nth-child(2)"])for(const dx of [40,80]){
           await spaOpen(380,780,{tab:"layout"});
+          await b.eval(`document.getElementById("scale-anchor-between").scrollIntoView({block:"center"});return true;`);
           await b.click("#scale-anchor-between");
           await b.eval(`const e=document.querySelector(${JSON.stringify(selector)});e.scrollIntoView({block:"center"});window.__spsControlClicks=0;e.addEventListener("click",()=>{window.__spsControlClicks++;},true);return true;`);
           await b.settle();await sleep(250);
@@ -16797,7 +17003,7 @@ function run() {
             `${name}: the status [${m.status.l}, ${m.status.w}] is not the tab strip's column [${m.tabs.l}, ${m.tabs.w}]`);
           assert.ok(m.status.t >= m.tabs.b - 0.5 && m.status.t - m.tabs.b <= 12, `${name}: the status top ${m.status.t} is not under the tab strip bottom ${m.tabs.b}`);
           assert.ok(m.zone.t >= m.status.b - 0.5, `${name}: the layout zone top ${m.zone.t} is above the status bottom ${m.status.b}`);
-          assert.deepStrictEqual(m.col2.slice(0, 2), ["scale-drawer-status", "scale-layout-zone"], `${name}: column 2 reads ${m.col2}`);
+          assert.deepStrictEqual(m.col2.slice(0, 3), ["scale-drawer-status", "scale-mode-row", "scale-layout-zone"], `${name}: column 2 reads ${m.col2}`);
           assert.ok(Math.abs(m.band.h - none.band.h) <= 0.5, `${name}: the band is ${m.band.h}px, ${none.band.h}px with an empty status`);
           assert.ok(Math.abs(m.pan.h - none.pan.h) <= 0.5, `${name}: the pan is ${m.pan.h}px, ${none.pan.h}px with an empty status`);
         }
@@ -17626,7 +17832,7 @@ function run() {
 
     test("PH: P3 at 390x797 a 24px finger-up drag collapses a Scale tab whose range is under the footer, 23px does not, a 24px finger-down drag restores", { timeout: 90000 }, async () => {
       try {
-        await lipOpen(390, 797, { spacer: 0 });
+        await lipOpen(390, 861, { spacer: 0 });
         const g = await gap();
         assert.ok(g.M < g.E, `this proves nothing unless the range ${g.M} is under the footer ${g.E}`);
         await pull(-23);
@@ -17929,7 +18135,7 @@ function run() {
     test("UX: a sheet whose content does not scroll never collapses", { timeout: 60000 }, async () => {
       let covered = 0;
       try {
-        for (const [w, h] of SIZES) {
+        for (const [w, h] of [...SIZES, [393, 960]]) {
           await lipOpen(w, h, { spacer: 0 });
           let s = await lipState();
           if (s.M > 1) continue;

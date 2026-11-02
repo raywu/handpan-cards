@@ -5,12 +5,19 @@
 const { boot } = require("./sandbox.js");
 
 const app = boot();
-const DECKS = app.get("DECKS");
+// With file arguments each is a generated-deck payload ({deck}) drawn instead of
+// the built-ins, keyed by its basename without `profile_case_`/`_v2.json`.
+const extra = process.argv.slice(2).map((f) => {
+  const deck = JSON.parse(require("node:fs").readFileSync(f, "utf8")).deck;
+  deck.id = require("node:path").basename(f).replace(/^profile_case_/, "profile_").replace(/_v2\.json$/, "");
+  return deck;
+});
+const DECKS = extra.length ? extra : app.get("DECKS");
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const out = [];
 
 for (const d of DECKS) {
-  const deckRef = `DECKS.find(x=>x.id===${JSON.stringify(d.id)})`;
+  const deckRef = extra.length ? JSON.stringify(d) : `DECKS.find(x=>x.id===${JSON.stringify(d.id)})`;
   for (let i = 0; i < d.chords.length; i++) {
     const ch = d.chords[i];
     const svg = app.get(`pan(${deckRef}, ${deckRef}.chords[${i}])`);
@@ -31,8 +38,39 @@ for (const d of DECKS) {
       if (!byCentre.has(key)) byCentre.set(key, []);
       byCentre.get(key).push(c);
     }
-    const fields = [];
-    for (const [key, group] of byCentre) {
+    let fields = [];
+    if (d.geom && d.geom.place) {
+      // Neotone: a field is a black 1.2-wide outline circle (a main tonefield
+      // or the ding); its band is a ring circle, or a crescent path where the
+      // card has a lens. Mirrors neo_fields in tests/test_render_agreement.py.
+      const byXY = new Map();
+      for (const c of circles) {
+        if (/stroke="#000"/.test(c.attrs) && Math.abs(+c.attrs.match(/stroke-width="([\d.eE+-]+)"/)[1] - 1.2) < 0.01) {
+          const k = `${r3(c.x)},${r3(c.y)}`;
+          if (!byXY.has(k)) byXY.set(k, { x: r3(c.x), y: r3(c.y), r: r3(c.r), state: "off" });
+        }
+      }
+      const stateOf = (col) => (col === d.colors.root ? "root" : col === d.colors.tone ? "tone" : null);
+      for (const c of circles) {
+        const f = byXY.get(`${r3(c.x)},${r3(c.y)}`);
+        const col = (c.attrs.match(/stroke="([^"]+)"/) || [])[1];
+        if (f && stateOf(col)) {
+          f.state = stateOf(col);
+          f.bandWidth = r3(+c.attrs.match(/stroke-width="([\d.eE+-]+)"/)[1]);
+        }
+      }
+      const mains = [...byXY.values()].filter((f) => f.r < 25);
+      for (const m of svg.matchAll(/<path d="M([-\d.eE+]+) ([-\d.eE+]+)[^"]*"[^>]*?stroke="([^"]+)" stroke-width="([\d.eE+-]+)"/g)) {
+        const w = +m[4], st = stateOf(m[3]);
+        if (st && Math.abs(w - 4.6) < 0.01 && mains.length) {
+          const f = mains.reduce((a, b) => (Math.hypot(a.x - +m[1], a.y - +m[2]) <= Math.hypot(b.x - +m[1], b.y - +m[2]) ? a : b));
+          f.state = st;
+          f.bandWidth = r3(w);
+        }
+      }
+      fields = [...byXY.values()];
+    }
+    for (const [key, group] of d.geom && d.geom.place ? [] : byCentre) {
       const [x, y] = key.split(",").map(Number);
       const all = group.map((g) => g.attrs).join(" ");
       let state = "off";

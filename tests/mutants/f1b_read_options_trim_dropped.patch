@@ -6,12 +6,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -291,7 +291,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -337,7 +337,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      if (options.name !== undefined && options.name !== "") {
        var name = options.name;
        if (typeof name !== "string") return badNote(name);
 -      name = name.replace(/^\s+/, "").replace(/\s+$/, "");
 +      name = name;
-       if (!NAME_RE.test(name) || name.length < 1 || name.length > 40) {
+       var nameLength = codePointLength(name);
+       if (NAME_REFUSED_RE.test(name) || nameLength < 1 || nameLength > 40) {
          return badNote(name);
-       }

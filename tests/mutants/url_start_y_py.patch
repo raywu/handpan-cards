@@ -1,0 +1,15 @@
+# kills: test_lower_end_is_the_footer_baseline_on_every_card
+# suite: python3 -m unittest -k test_lower_end_is_the_footer_baseline_on_every_card tests.test_print
+# mark start moves off the footer baseline (py).
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -209,7 +209,7 @@ CREDIT_Y = 50.4
+ 
+ def url_mark(c, x, y, w, h):
+     c.saveState()
+-    c.translate(x + w - 6.0, y + 6.0)
++    c.translate(x + w - 6.0, y + 9.0)
+     c.rotate(90)
+     tracked(c, 0, 0, URL_TEXT, "Label", URL_SIZE, URL_TRACK, "l", URL_GREY)
+     c.restoreState()

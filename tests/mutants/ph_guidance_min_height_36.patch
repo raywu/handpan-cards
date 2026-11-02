@@ -15,5 +15,5 @@ diff --git a/index.html b/index.html
 -  min-height:0; height:0; margin:0; overflow:hidden}
 +#scale-sheet #scale-guidance:not(:has(> :not([hidden]):not(:empty))){}
  #scale-guidance #scale-msg{min-height:0}
- #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#c4bcab}
+ #scale-guidance #scale-layout-state{font:400 12px/1.5 "Nunito Sans"; color:#a9a39a}
  /* One message wins (plan N-6 alternative, owner 2026-10-14; X3): while the notice holds text a PAN

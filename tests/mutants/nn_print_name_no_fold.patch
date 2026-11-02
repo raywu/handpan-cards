@@ -1,0 +1,15 @@
+# kills: NAN: printName strips accents, else the auto label, else SCALE; never empty, always inside the charset
+# suite: node --test --test-name-pattern ^NAN..printName.strips.accents..else.the.auto.label..else.SCALE..never.empty..always.inside.the.charset$ tests/pdfcards.test.js
+# NAN: accents are no longer stripped, so Cafe prints as the auto label instead.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -226,7 +226,7 @@ HPE.pdfcards = (function () {
+ 
+   function printName(deck) {
+     var name = String(deck.name === undefined || deck.name === null ? "" : deck.name);
+-    var folded = name.normalize ? name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : name;
++    var folded = true ? name : name.normalize ? name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : name;
+     if (folded.replace(/\s+/g, "") !== "" && drawable(folded)) return folded;
+     var auto = String(deck.auto_name || "").replace(/\u2026/g, "...");
+     if (auto.replace(/\s+/g, "") !== "" && drawable(auto)) return auto;

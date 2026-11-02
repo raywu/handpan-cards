@@ -154,8 +154,8 @@ test("has_bottom reflects whether any field is in the bottom zone", () => {
 
 test("every voicing field and every root field survives, for all 177 cards", () => {
   // T15's coverage floor: this must not re-derive a chord's voicing from the
-  // pan (which would silently re-rank Pygmy's Fm9 - see CLAUDE.md's D-6
-  // note) - it must carry the chord list through byte for byte.
+  // pan (which would silently re-rank Pygmy's Fm9 - see docs/CARD-SPEC.md's
+  // Pygmy chord-list note) - it must carry the chord list through byte for byte.
   let total = 0;
   for (const id of ALL_IDS) {
     const deck = deckById(id);

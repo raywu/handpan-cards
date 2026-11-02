@@ -1,0 +1,15 @@
+# kills: PR: PROFILE_FULL is a note without a tonefield: a tenth rim note, a tenth bottom note or any inner note
+# suite: node --test tests/core.test.js
+# fault: Let a rev 2 profile carry inner notes.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -928,7 +928,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
+     var total = counts.rim + counts.inner + counts.bottom;
+     if (raw.rev === 1 ? total > PROFILE_SLOTS
+-      : (counts.rim > PROFILE_TONEFIELDS || counts.bottom > PROFILE_TONEFIELDS || counts.inner > 0)) {
++      : (counts.rim > PROFILE_TONEFIELDS || counts.bottom > PROFILE_TONEFIELDS || counts.inner > 99)) {
+       return scaleErr("PROFILE_FULL");
+     }
+ 

@@ -4,8 +4,8 @@
 diff --git a/tools/hifi.py b/tools/hifi.py
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
-@@ -360,7 +360,7 @@ def chord_card(c, x, y, deck, num, chord):
-     nb = len([f for f in fields if spec[f][3] == "bottom"])
+@@ -733,7 +733,7 @@ def chord_card(c, x, y, deck, num, chord):
+         len([f for f in fields if spec[f][3] == "bottom"])
      if nb:
          tracked(c, x + CW / 2, y + deck["y_note"] + 13, 
 -                "%d BOTTOM NOTE%s" % (nb, "S" if nb > 1 else ""),

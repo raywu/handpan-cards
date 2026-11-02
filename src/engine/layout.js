@@ -323,6 +323,34 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     };
   }
 
+  /* M(i): the index of the unmirrored angle a reflected note lands on, so a
+   * mirrored position reads the number it shows unmirrored (owner 2026-10-30).
+   * Identity when the ring is not mirrored. */
+  function mirrorPartner(list, mirror) {
+    var out = [];
+    var i;
+    var j;
+    for (i = 0; i < list.length; i += 1) {
+      var found = i;
+      if (mirror) {
+        for (j = 0; j < list.length; j += 1) {
+          var d = Math.abs(norm(180 - list[i]) - norm(list[j]));
+          if (Math.min(d, 360 - d) < 1e-6) { found = j; break; }
+        }
+      }
+      out.push(found);
+    }
+    return out;
+  }
+
+  function partnersOf(counts, top, bottom, anchor) {
+    return {
+      rim: mirrorPartner(rimAngles(counts.rim, anchor), top),
+      inner: mirrorPartner(innerAngles(counts.inner), top),
+      bottom: mirrorPartner(bottomAngles(counts.bottom), bottom)
+    };
+  }
+
   /* The one place the two reflections are resolved (plan 20.5, AM-5). TOP is
    * the call's `mirror` if the key is present, else the seed's. BOTTOM is the
    * call's `mirrorBottom` if present, else the seed's `mirrorBottom` if
@@ -618,6 +646,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       return badNote(seats.value.bottom);
     }
     var home = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
+    var plainHome = placeZones(counts, false, false, anchor);
     var geom = geometry(counts, home);
     var effective = [];
     var i;
@@ -635,7 +664,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (Object.prototype.hasOwnProperty.call(seats.value, key)) out[key] = seats.value[key];
     }
     out.angles = effective;
-    out.home = home.bottoms;
+    out.home = plainHome.bottoms;
     return { ok: true, value: out };
   }
 
@@ -643,7 +672,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * Rule N: a seat's number is the default label of the note that sits there by
    * default, so the note in seat s carries seat s's label (slot 5). Labels are
    * read from `source`, never from the fields being written. */
-  function merge(source, zones, placed, seats) {
+  function merge(source, zones, placed, seats, partners) {
     if (seats && seats.angles) {
       placed = { rims: placed.rims, inners: placed.inners, bottoms: seats.angles };
     }
@@ -658,15 +687,17 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < zones.rim.length; i += 1) fields[zones.rim[i]][4] = placed.rims[i];
     for (i = 0; i < zones.inner.length; i += 1) fields[zones.inner[i]][4] = placed.inners[i];
     for (i = 0; i < zones.bottom.length; i += 1) fields[zones.bottom[i]][4] = placed.bottoms[i];
-    if (seats) {
-      for (var z = 0; z < ZONES.length; z += 1) {
-        var list = seats[ZONES[z]];
-        if (!list) continue;
-        var ids = zones[ZONES[z]];
-        for (i = 0; i < list.length; i += 1) fields[ids[i]][5] = source[ids[list[i]]][5];
+    for (var z = 0; z < ZONES.length; z += 1) {
+      var list = seats && seats[ZONES[z]];
+      var map = partners && partners[ZONES[z]];
+      if (!list && !map) continue;
+      var ids = zones[ZONES[z]];
+      for (i = 0; i < ids.length; i += 1) {
+        var seat = list ? list[i] : i;
+        fields[ids[i]][5] = source[ids[map ? map[seat] : seat]][5];
       }
-      if (seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
     }
+    if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
     return fields;
   }
 
@@ -705,11 +736,102 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (i = 0; i < n; i += 1) fields[ids[P[(i + bestR) % n].i]][5] = H[i].label;
   }
 
+  /* ---- the Neotone profile (ENGINE-SPEC 18) ------------------------------ *
+   * The frozen generic profile, a literal copy of
+   * tests/fixtures/paired_profile_v3.json (a test holds them equal). Tonefield
+   * k sits at angles[k-1]; slot pk is the main tonefield there, sk the mutant
+   * tonefield (a lens) toward the centre of it. Fractions of R.
+   */
+  var PROFILE = {
+    id: "paired", rev: 3, tonefields: 9,
+    angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
+    main: { orbit: 0.745, r: 0.19 },
+    mutant: { depth: 0.3333, r: 0.19 },
+    ding: { r: 0.2, dy: 0 },
+    decor: { r: 0.355 },
+    n_in: 0.085, number_out: 1.0758, extent_margin: 0.06,
+    slots: ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9",
+            "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9"]
+  };
+
+  var ZONE_LETTER = { rim: "r", inner: "i", bottom: "b" };
+
+  function occurrenceKey(rec) {
+    return ZONE_LETTER[rec[3]] + rec[2];
+  }
+
+  // {map, unplaced}: rim notes in pitch order into p1.., bottom notes in pitch
+  // order into s1..; a note without a tonefield is unplaced, in pitch order.
+  function proposeProfile(seedOrFields) {
+    return { ok: true, value: HPE.core.proposeProfileMap(fieldsOf(seedOrFields)) };
+  }
+
+  // The lens centre: the main orbit less the main diameter plus the overlap.
+  function lensCentre() {
+    var depth = 2 * PROFILE.main.r * PROFILE.mutant.depth;
+    return round(PROFILE.main.orbit - (2 * PROFILE.main.r - depth), 4);
+  }
+
+  // geom.place: {fieldId: [angle, orbitFrac, rFrac, kind, ...]} for every mapped
+  // non-ding field. A mutant field also carries its lens centre and radius.
+  function placeProfile(fields, profile, geom, plain) {
+    var byKey = {};
+    var id;
+    for (id in fields) {
+      if (Object.prototype.hasOwnProperty.call(fields, id) && fields[id][3] !== "ding") {
+        byKey[occurrenceKey(fields[id])] = id;
+      }
+    }
+    var mutants = profile.map.slice(PROFILE.tonefields).some(function (entry) { return entry !== null; });
+    var seatAngles = [];
+    if (!mutants) {
+      Object.keys(plain).filter(function (fid) { return plain[fid][3] === "rim"; })
+        .sort(function (a, b) { return plain[a][2] - plain[b][2]; })
+        .forEach(function (fid) { seatAngles.push(plain[fid][4]); });
+    }
+    var place = {};
+    var labels = {};
+    for (var k = 0; k < profile.map.length; k += 1) {
+      if (profile.map[k] === null) continue;
+      var fid = byKey[profile.map[k]];
+      var slot = k % PROFILE.tonefields;
+      if (k < PROFILE.tonefields) {
+        if (!mutants && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
+        labels[fid] = String(k + 1);
+        place[fid] = mutants
+          ? [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
+          : [seatAngles[k], geom.rim, geom.r_note, "main"];
+      } else {
+        labels[fid] = "M" + (slot + 1);
+        place[fid] = [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "mutant",
+                      lensCentre(), PROFILE.mutant.r];
+      }
+    }
+    return { place: place, labels: labels, mutants: mutants };
+  }
+
   function solve(seedOrFields, options) {
     var source = fieldsOf(seedOrFields);
     var zones = collect(source);
 
     var seedOptions = (seedOrFields && seedOrFields.options) || {};
+    if (seedOptions.profile !== undefined && seedOptions.profile !== null) {
+      var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
+      if (!profile.ok) return profile;
+      var plain = solve({ fields: source, options: {} }, {});
+      var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields);
+      if (placed.ok === false) return placed;
+      if (placed.mutants) {
+        plain.value.geom.r_ding = PROFILE.ding.r;
+        plain.value.geom.ding_dy = PROFILE.ding.dy;
+        plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
+      }
+      plain.value.geom.place = placed.place;
+      Object.keys(placed.labels).forEach(function (fid) {
+        plain.value.fields[fid][5] = placed.labels[fid];
+      });
+      return plain;
+    }
     var mirrors = resolveMirrors(options, seedOptions);
     var anchor = resolveAnchor(options, seedOptions);
 
@@ -724,11 +846,27 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var geom = geometry(counts, placed);
     if (wanted.value) placed = reseat(placed, wanted.value);
 
-    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value) } };
+    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value,
+      partnersOf(counts, mirrors.top, mirrors.bottom, anchor)) } };
+  }
+
+  /* MN3 (owner 2026-10-31): MIRROR BOTTOM reflects every bottom note across
+   * the vertical axis, hand-placed ones included. An explicit entry `a` of
+   * `options.angles` becomes `norm(180 - a)`; a null entry stays null, because
+   * `solve` already reflects it. The toggle writes this list; `solve` itself
+   * is unchanged, so a stored `angles` keeps meaning "the drawn angle".
+   * Returns null when there is no list. A multiple of 5 stays one. */
+  function reflectAngles(angles) {
+    var list = angles && typeof angles === "object" ? angles.bottom : null;
+    if (!isArray(list)) return null;
+    return { bottom: list.map(function (a) { return a === null ? null : norm(180 - a); }) };
   }
 
   HPE.layout = {
     solve: solve,
+    reflectAngles: reflectAngles,
+    proposeProfile: proposeProfile,
+    PROFILE: PROFILE,
     slotOrder: slotOrder,
     seatsFromOrder: seatsFromOrder,
     readSeats: readSeats,

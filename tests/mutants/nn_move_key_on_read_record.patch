@@ -1,0 +1,15 @@
+# kills: NAN: a record carried by the opaque path and one read normally share one dedupe key
+# suite: node --test --test-name-pattern ^NAN..a.record.carried.by.the.opaque.path.and.one.read.normally.share.one.dedupe.key$ tests/app.test.js
+# NAN: the dedupe key of a normally-read record hashes the rewritten record, so a key recorded from the raw row no longer matches.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15669,7 +15669,7 @@ async function moveImport(code) {
+   for (const row of data.r.slice(0, 500)) {
+     if (!savedObject(row) || typeof row.i !== "string" || row.i.length > 64) continue;
+     const read = readSavedRecord(row.r);
+-    if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), read });
++    if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(read.record)), read });
+     else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
+       const { name, ...bare } = row.r.o;
+       if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });

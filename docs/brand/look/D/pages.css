@@ -1,0 +1,27 @@
+/* Direction D, pages: the page keeps a readable text ground (brand background,
+   light or dark by the viewer's scheme); the cards get the measured stage -
+   a warm-black plate (#080706) behind the whole progression - in BOTH schemes,
+   because no light ground can hold the amber/gold frames (best light case 2.36). */
+:root{--d-stage:#080706; --d-hair:#3A352D}
+:root{--bg:#0F0E0B; --fg:#F6F4ED; --muted:#A9A39A; --rule:#3A352D}
+@media (prefers-color-scheme:light){
+  :root:has(.cardhost){--bg:#F6F4ED; --fg:#0F0E0B; --muted:#5E5850; --rule:#CFC8BA}
+}
+body{background:var(--bg); color:var(--fg)}
+/* lockup above the page header: full colour on dark, mono-light on light */
+body > header::before, main > header::before{content:""; display:block; height:64px; width:min(224px,70vw);
+  margin:0 0 12px; background:url(/_look/logo/horizontal-full.svg) left center/contain no-repeat}
+@media (prefers-color-scheme:light){
+  :root:has(.cardhost) main > header::before, :root:has(.cardhost) body > header::before{
+    background-image:url(/_look/logo/horizontal-mono-light.svg)}
+}
+/* the stage: everything around the card inside .prog sits on warm black */
+.prog{background:var(--d-stage); border-radius:16px; padding:20px 12px 16px; margin-bottom:28px;
+  color:#F6F4ED; width:100%; max-width:520px; align-self:flex-start; box-sizing:border-box}
+.prog .rail{color:#A9A39A}
+.prog .rail b{color:#F6F4ED}
+.prog .step{color:#A9A39A}
+.prog .nav label{background:#1A1814; border-color:#3A352D; color:#F6F4ED}
+/* buttons & links stay in the scale's root accent (already 4.5:1 per generator) */
+.open{border-radius:8px}
+section.scale{border-top-width:2px}
