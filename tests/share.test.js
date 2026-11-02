@@ -2204,7 +2204,6 @@ test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v8 always is", () 
   const link = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
   const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
   off.core.PROFILE_ENABLED = false;
-  assert.equal(off.core.PROFILE_ENABLED, false);
   const r = off.share.decode(link);
   assert.equal(r.ok, false);
   assert.equal(r.code, "NEEDS_NEWER_APP");
@@ -2294,4 +2293,40 @@ test("PV: a cross-ring or inner-key v7 link decodes as rev 1 and migrates, never
   assert.deepEqual(pj(dropped.value.options.profile.map), pj(PSH.core.parseSeed(PSEEDS.kurd, {
     profile: { id: "paired", rev: 2, map: PSH.layout.proposeProfile(PSH.core.parseSeed(PSEEDS.kurd).value.fields).value.map }
   }).value.options.profile.map));
+});
+/* NAN: names beyond ASCII ------------------------------------------------ */
+
+const NAN_NAMES = ["Caf\u00e9 Kurd", "\u65e5\u672c\u306e\u30d1\u30f3", "D Kurd \ud83c\udfb5"];
+
+function nanLink(version, name) {
+  const scale = KURD_SCALE.replace(/ /g, "_");
+  const text = [version, scale, name].join("\n");
+  return [version, scale, encodeURIComponent(name).replace(/%20/g, "+"), fnv24(text)].join("/");
+}
+
+test("NAN: a non-ASCII name round-trips through the current encoder and checksum", () => {
+  for (const name of NAN_NAMES) {
+    const seed = parsed(KURD_SCALE, { name });
+    assert.equal(decoded(encoded(seed)).options.name, name);
+  }
+});
+
+test("NAN: a packed v4 link and a v5 and v6 readable link carrying such a name decode", () => {
+  for (const name of NAN_NAMES) {
+    const seed = parsed(KURD_SCALE, { name });
+    assert.equal(decoded(v4Link(seed)).options.name, name, "v4 " + name);
+    for (const version of ["5", "6"]) {
+      const r = share.decode(nanLink(version, name));
+      assert.equal(r.ok, true, version + " " + name + ": " + r.reason);
+      assert.equal(r.value.options.name, name);
+    }
+  }
+});
+
+test("NAN: a readable link whose name holds a tab, newline, U+2028 or a bidi override is BAD_NOTE", () => {
+  for (const bad of ["A\tB", "A\nB", "A\u2028B", "A\u202eB"]) {
+    const r = share.decode(nanLink("6", bad));
+    assert.equal(r.ok, false, JSON.stringify(bad));
+    assert.equal(r.code, "BAD_NOTE");
+  }
 });

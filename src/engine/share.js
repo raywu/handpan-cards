@@ -43,7 +43,7 @@
  *                 whole string - CHECK included - fails this.
  *
  * PAYLOAD TEXT: three "\n"-separated lines. "\n" cannot occur inside any of
- * them (scale strings are note tokens; a name is printable ASCII 0x20-0x7E per
+ * them (scale strings are note tokens; a name is UTF-8 text per
  * spec 13), so the split is unambiguous.
  *
  *     line 0   the canonical scale string: core.formatSeed(seed) from v4,

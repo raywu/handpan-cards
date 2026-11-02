@@ -4,8 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10143,8 +10143,8 @@ HPE.swipe = (function () {
- </script>
+@@ -10483,7 +10483,7 @@ HPE.swipe = (function () {
  <!-- engine:swipe end -->
  <!-- engine end -->
  <!-- i18n begin - synced from data/i18n/*.json by tools/sync_i18n.py -->

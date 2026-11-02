@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15745,12 +15745,12 @@ sheet.addEventListener("keydown", e => {
+@@ -16199,12 +16199,12 @@ sheet.addEventListener("keydown", e => {
         modeStandard, modeNeotone,
         anchorOne, anchorBetween, mirrorTop, mirrorBot, fineBtn,
         notePrev, noteNext, seatPrev, seatNext, anglePrev, angleNext, resetBtn,

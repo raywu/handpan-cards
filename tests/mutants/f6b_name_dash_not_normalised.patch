@@ -3,12 +3,12 @@
 # Drops the em/en-dash normalisation from sheetOptions(), leaving the
 # ellipsis replace in place. A name typed on iOS with -- (which Smart
 # Punctuation turns into an em dash, U+2014) or pasted with an en dash
-# (U+2013) is then refused by core.js's ASCII-only NAME_RE instead of saving.
+# (U+2013) is then stored un-normalised instead of folded to a plain hyphen.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12762,7 +12762,7 @@ function sheetOptions() {
-   // normalised back to ASCII before it ever reaches the engine.
+@@ -13163,7 +13163,7 @@ function sheetOptions() {
+   // ASCII so the name stays printable on paper (owner 2026-10-31, D4a).
    const n = String(nameBox.value || "")
      .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
 -    .replace(/[–—]/g, "-").replace(/…/g, "...")

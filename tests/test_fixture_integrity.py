@@ -180,6 +180,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURES = os.path.join(ROOT, "tests", "fixtures")
 PROFILE_FIXTURE = os.path.join(FIXTURES, "paired_profile_v1.json")
 SHIPPED_CLIENT = os.path.join(FIXTURES, "shipped_client_ee5438d0.html.txt")
+SHIPPED_CLIENT_C6 = os.path.join(FIXTURES, "shipped_client_c6ef6b58.html.txt")
 SPEC_PATH = os.path.join(ROOT, "docs", "ENGINE-SPEC.md")
 PLAN_PATH = os.path.join(ROOT, "docs", "plans", "2026-10-30-neotone-option-b.md")
 PROFILE_V2_FIXTURE = os.path.join(FIXTURES, "paired_profile_v2.json")
@@ -187,6 +188,7 @@ FONTS = os.path.join(ROOT, "tools", "fonts")
 
 EXPECTED_PROFILE_SHA256 = "ebcffe2fa4283191cd0f83a821aa814fa62fb9b29f102050a6856560f97c57fc"
 EXPECTED_SHIPPED_CLIENT_SHA256 = "112bae85da8601f969b6ed1af2259f1e7ae5a6ba9c1d6a2fbd70abbe7796514c"
+EXPECTED_SHIPPED_CLIENT_C6_SHA256 = "d5d4be0ee5a53cbd4c187f9cf37502b47e0c2240b9182a7fde31a83d9fcb6f97"
 
 # The label rule (docs/CARD-SPEC.md "Diagram label rule"), restated as numbers because
 # this fixture must not import the implementation it constrains.
@@ -561,6 +563,38 @@ class TestShippedClientFixture(unittest.TestCase):
             "if(!db)throw new Error('no saved-scales IDB opened');"
             "console.log('BOOT_OK');process.exit(0);})().catch(e=>{console.error(e);process.exit(1)});")
         r = subprocess.run(["node", "-e", script, SHIPPED_CLIENT], cwd=ROOT,
+                           capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+        self.assertIn("BOOT_OK", r.stdout)
+
+
+class TestShippedClientC6Fixture(unittest.TestCase):
+    def test_is_verbatim_c6ef6b58_index_html_and_pinned(self):
+        with open(SHIPPED_CLIENT_C6, "rb") as fh:
+            data = fh.read()
+        self.assertEqual(hashlib.sha256(data).hexdigest(), EXPECTED_SHIPPED_CLIENT_C6_SHA256,
+                         "the pinned shipped client changed. It is a verbatim copy of "
+                         "git show c6ef6b58:index.html and is never edited.")
+
+    def test_name_hides_it_from_html_scanners(self):
+        self.assertTrue(SHIPPED_CLIENT_C6.endswith(".html.txt"))
+        self.assertFalse(os.path.exists(SHIPPED_CLIENT_C6[:-len(".txt")]))
+
+    def test_boots_with_idb_locks_and_broadcast_channel(self):
+        """The recorded old-client harness (plan, "Recorded harness command")."""
+        script = (
+            "const {boot,createOrigin}=require('./tools/sandbox.js');"
+            "const fs=require('fs');"
+            "const html=fs.readFileSync(process.argv[1],'utf8');"
+            "(async()=>{"
+            "const app=boot({html,origin:createOrigin({storage:{}}),indexedDB:true,"
+            "broadcastChannel:true,locks:true,isSecureContext:true,"
+            "crypto:require('node:crypto').webcrypto,abortController:true});"
+            "await app.waitFor(\"typeof booted !== 'undefined' && booted === true\",{timeout:4000});"
+            "const db=app.idb.inspect('hpfc.saved-scales.v1');"
+            "if(!db)throw new Error('no saved-scales IDB opened');"
+            "console.log('BOOT_OK');process.exit(0);})().catch(e=>{console.error(e);process.exit(1)});")
+        r = subprocess.run(["node", "-e", script, SHIPPED_CLIENT_C6], cwd=ROOT,
                            capture_output=True, text=True, timeout=60)
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         self.assertIn("BOOT_OK", r.stdout)

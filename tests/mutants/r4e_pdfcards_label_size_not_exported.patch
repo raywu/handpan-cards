@@ -4,11 +4,11 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -972,7 +972,6 @@ HPE.pdfcards = (function () {
+@@ -713,7 +713,6 @@ HPE.pdfcards = (function () {
      PAPER: PAPER,
      CARD_WARNINGS: CARD_WARNINGS,
      labelRatio: labelRatio,
 -    labelSize: labelSize,
      numSize: numSize,
-     URL_MARK: URL_MARK,
      profileRadius: profileRadius,
+     profileExtent: profileExtent,

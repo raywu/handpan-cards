@@ -1,0 +1,15 @@
+# kills: SC: a store with a hidden seed and a replacement of another seed keeps both after boot, SAVE and a second boot
+# suite: node --test --test-name-pattern ^SC..a.store.with.a.hidden.seed.and.a.replacement.of.another.seed.keeps.both.after.boot..SAVE.and.a.second.boot$ tests/storage_corpus.test.js
+# why: makeSavedMigration forgets the hidden ids, so a hidden seed comes back after the upgrade.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11312,7 +11312,7 @@ function makeSavedMigration(staged) {
+   used.add(collectionId);
+   const e = { schema: 1, collectionId, revision: 1, slotStateRevision: 0, entries: [], usedInstanceIds: [], nextDisplayOrdinal: 1,
+     preferredSelection: { kind: "builtin", id: DEFAULT_DECK }, slots: {},
+-    hidden: [...new Set((staged.preferences.hidden || []).filter(isBuiltIn))],
++    hidden: [],
+     migration: { sourceKey: staged.sourceKey, raw: savedClone(staged.raw), instanceIds: [] } };
+   const supplied = new Map(), oldVisible = new Map();
+   for (const row of staged.rows) {
