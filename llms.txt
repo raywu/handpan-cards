@@ -1,8 +1,8 @@
-# Handpan Chords
+# Handpan Theory
 
 > Free chord flashcards and printable poker-size chord cards for handpans, with a page for each scale.
 
-- [Handpan Chords app](https://handpan.raywu.org/): the flashcard app
+- [Handpan Theory app](https://handpan.raywu.org/): the flashcard app
 - [Handpan 101](https://handpan.raywu.org/handpan-101/): a beginner guide
 - [Scales](https://handpan.raywu.org/scales/): every scale
 

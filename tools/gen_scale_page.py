@@ -204,7 +204,7 @@ def head(title, description, og_description, url, theme, brand=True):
     out.append('<meta property="og:description" content="%s">\n' % html.escape(og_description))
     if brand:
         out.append('<meta property="og:image" content="%sog.png">\n' % SITE)
-        out.append('<meta property="og:site_name" content="Handpan Chords">\n')
+        out.append('<meta property="og:site_name" content="Handpan Theory">\n')
     out.append('<meta name="theme-color" content="%s">\n' % theme)
     out.append('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
                '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
@@ -228,7 +228,7 @@ def hub_page(rows=None):
         out.append('<section class="group">\n<h2>%s</h2><p class="muted">%s</p>\n<ul class="rel">\n' % (esc(name), esc(blurb)))
         out.append("\n".join(link_item(r) for r in rows if r["group"] == name))
         out.append("\n</ul>\n</section>\n")
-    out.append('<p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>\n'
+    out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
                "</main>\n</body>\n</html>\n")
     return "".join(out)
 
@@ -459,7 +459,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
         items = [{"@type": "ListItem", "position": i + 1, "name": n} for i, n in enumerate(names)]
         graph = {"@context": "https://schema.org", "@type": "WebPage", "name": "%s handpan chords" % name,
                  "url": url, "dateModified": UPDATED,
-                 "publisher": {"@type": "Organization", "name": "Handpan Chords"},
+                 "publisher": {"@type": "Organization", "name": "Handpan Theory"},
                  "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": crumbs},
                  "mainEntity": {"@type": "ItemList", "itemListElement": items}}
         out.append('<script type="application/ld+json">%s</script>\n' % json.dumps(graph, ensure_ascii=False,
@@ -526,7 +526,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
                % ("\n".join(link_item(rows_by_slug[s]) for s in siblings(row, all_rows)), len(all_rows)))
     if not frozen:
         out.append('<p class="muted">Last updated <time datetime="%s">%s</time></p>\n' % (UPDATED, UPDATED))
-    out.append('<p class="muted">Handpan Chords is free in your browser. Your scales stay on your device.</p>\n'
+    out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
                "<script>" + SWIPE_JS + "</script>\n</main>\n</body>\n</html>\n")
     return "".join(out)
 

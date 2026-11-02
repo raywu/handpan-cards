@@ -1,4 +1,4 @@
-# CLAUDE.md - Handpan Chord Cards
+# CLAUDE.md - Handpan Theory
 
 Product guardrails and hard requirements only. Feature specs live in
 `docs/CARD-SPEC.md` (decks, layouts, card conventions, design system, print, app
@@ -58,6 +58,8 @@ A chord-card system for handpans, two outputs from one data source:
 - **Preserve the visual system** (fonts, palettes, card anatomy; `docs/CARD-SPEC.md`).
 - **Visible text says "scale", never "deck".** Identifiers, ids, `#deck=` routes,
   storage keys, analytics events and code comments keep "deck".
+- **Product name is "Handpan Theory"** (owner 2026-10-31), untranslated, full name only
+  (never "HPT"). "Handpan Chords" appears only as JSON-LD `alternateName`.
 - **Card copy is English-only** (`tools/validate.py` check 3).
 - **No file-plus-line-number refs** in this file or code comments
   (`tests/test_readme_currency.py`); use symbol anchors.
