@@ -1,5 +1,5 @@
-# kills: NAN: printName strips accents, else the auto label, else SCALE; never empty, always inside the charset; URL mark: a generated deck with a long accented name has one mark per chord card and an ASCII footer clipped with three periods
-# suite: node --test --test-name-pattern ^NAN..printName.strips.accents..else.the.auto.label..else.SCALE..never.empty..always.inside.the.charset$ --test-name-pattern ^URL.mark..a.generated.deck.with.a.long.accented.name.has.one.mark.per.chord.card.and.an.ASCII.footer.clipped.with.three.periods$ tests/pdfcards.test.js
+# kills: NAN: printName strips accents, else the auto label, else SCALE; never empty, always inside the charset
+# suite: node --test --test-name-pattern ^NAN..printName.strips.accents..else.the.auto.label..else.SCALE..never.empty..always.inside.the.charset$ tests/pdfcards.test.js
 # NAN: accents are no longer stripped, so Cafe prints as the auto label instead.
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js

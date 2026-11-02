@@ -1,0 +1,16 @@
+# kills: URL mark: a generated deck with a long accented name has one mark per chord card and an ASCII footer clipped with three periods
+# suite: node --test --test-name-pattern ^URL.mark..a.generated.deck.with.a.long.accented.name.has.one.mark.per.chord.card.and.an.ASCII.footer.clipped.with.three.periods$ tests/pdfcards.test.js
+# why: the G6 long accented name test must die under the same mutant as the existing print tests (RC 2026-11-02 lane T).
+# NAN: accents are no longer stripped, so Cafe prints as the auto label instead.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -226,7 +226,7 @@ HPE.pdfcards = (function () {
+ 
+   function printName(deck) {
+     var name = String(deck.name === undefined || deck.name === null ? "" : deck.name);
+-    var folded = name.normalize ? name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : name;
++    var folded = true ? name : name.normalize ? name.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : name;
+     if (folded.replace(/\s+/g, "") !== "" && drawable(folded)) return folded;
+     var auto = String(deck.auto_name || "").replace(/\u2026/g, "...");
+     if (auto.replace(/\s+/g, "") !== "" && drawable(auto)) return auto;
