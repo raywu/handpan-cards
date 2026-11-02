@@ -1,0 +1,15 @@
+# kills: PR: rev 2 is ring-strict: an inner key or a key in the other ring is PROFILE_MAP_INVALID
+# suite: node --test tests/core.test.js
+# fault: Skip the ring check so a rev 2 map may seat a top key in a bottom tonefield.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -944,7 +944,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
+ 
+     for (var i = 0; i < PROFILE_SLOTS; i += 1) {
+-      if (map[i] !== null && map[i].charAt(0) !== (i < PROFILE_TONEFIELDS ? "r" : "b")) {
++      if (false) {
+         return scaleErr("PROFILE_MAP_INVALID");
+       }
+     }

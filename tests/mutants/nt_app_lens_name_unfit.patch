@@ -1,0 +1,15 @@
+# kills: ProfileRenderAgreement.test_diagram_label_sizes_agree
+# suite: python3 -m pytest -q tests/test_render_agreement.py -k ProfileRenderAgreement
+# fault: The app card draws the unfitted lens name size, so it stops agreeing with print.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11783,7 +11783,7 @@ function neoSvg(d, sets, C, R) {
+     }
+     if (t.lens) {
+       const [x, y] = pos(plan.lensNameU, t.theta);
+-      s += name(x, y, t.lens.name, t.lens.oct, HPE.pdfcards.neoLensSize(plan, t.lens.name, t.lens.oct, HPE.pdfcards.profileRadius(g)), "#242424");
++      s += name(x, y, t.lens.name, t.lens.oct, plan.lensSize, "#242424");
+       const [nx, ny] = pos(plan.mnumU, t.theta), fs = Math.max(plan.mnumSize(t) * R, 3.6);
+       lines.push(`<text x="${nx}" y="${r4(ny + fs*0.34)}" text-anchor="middle" fill="#E27005"
+       font-family="Nunito Sans, sans-serif" font-weight="600" font-size="${fs}">${t.lens.label}</text>`);
