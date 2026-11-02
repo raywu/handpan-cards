@@ -19452,6 +19452,19 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.match(html, /^const MOVE_TARGET = null;$/m);
   });
 
+  test("the move region equals c6ef6b58's with only #790's dedupe-key line applied", () => {
+    const region = h => {
+      const a = h.indexOf("const MOVE_FROM ="), m = h.indexOf("function moveReport", a), b = h.indexOf("\n}\n", m);
+      assert.ok(a >= 0 && m >= 0 && b >= 0, "the move region markers are missing");
+      return h.slice(a, b + 3);
+    };
+    const shipped = region(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8"));
+    const from = "moveDigest(moveCanon(read.record))";
+    assert.strictEqual(shipped.split(from).length, 2, "the shipped region no longer holds the one line #790 changed");
+    assert.strictEqual(region(INDEX_HTML()), shipped.replace(from, () => "moveDigest(moveCanon(row.r))"));
+    assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
+  });
+
   test("with the switches null the old host boots normally and a #move= hash is left alone", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#move=abc&then=", records: [rec("A")], on: false });
     assert.strictEqual(app.get("window.__replaced"), undefined);

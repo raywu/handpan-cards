@@ -1362,3 +1362,15 @@ test("NAN: the side credit, which carries the upper-cased name, is printable too
   const empty = Object.assign({}, base, { name: "\u65e5\u672c", credit: "\u65e5\u672c" });
   assert.ok(P.build(empty, { variant: "shop" }).length > 1000);
 });
+
+test("URL mark: a generated deck with a long accented name has one mark per chord card and an ASCII footer clipped with three periods", () => {
+  const base = fixture("(C3) G3 D4 G4 D5");
+  const deck = Object.assign({}, base, { name: "Caf\u00e9 \u00c9t\u00e9 Pr\u00e8s du Lac \u00e0 Gen\u00e8ve Tr\u00e8s Long", auto_name: "D AEOLIAN 5" });
+  deck.chords.forEach((chord) => {
+    assert.equal(urlMarkOf(deck, chord).glyphs.map((g) => g.s).join(""), "handpantheory.com");
+    const foot = runAt(cardRuns(deck, chord), 6.5, "Label").filter((r) => r.size !== 4.4);
+    assert.equal(foot.length, 1);
+    assert.ok(/^[\x20-\x7e]+$/.test(foot[0].s), foot[0].s);
+    assert.ok(foot[0].s.startsWith("Cafe Ete") && foot[0].s.endsWith("..."), foot[0].s);
+  });
+});

@@ -348,6 +348,7 @@ test("SC: a refused write on SAVE leaves the stored list unchanged and tells the
  * feature under test exists only there. */
 const NEW_HTML = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const OLD_HTML = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_ee5438d0.html.txt"), "utf8");
+const OLD_HTML_C6 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8");
 const PA_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
 const PA_HIJAZ = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
 
@@ -447,6 +448,7 @@ test("PAU-I: a corpus record's saved meaning is identical in the shipped client 
   for (const [name, blob] of Object.entries(BLOBS)) {
     for (const record of blob.records) {
       if (!record || typeof record.v !== "number" || record.v > 4) continue;
+      if (/[^\x20-\x7e]/.test(String(record.o && record.o.name))) continue; // #790: the shipped client refuses such a name; this branch reads it
       const expr = `(() => { const r = readSavedRecord(${JSON.stringify(record)}); return r.ok ? JSON.stringify(r.meaning) : null; })()`;
       assert.strictEqual(head.get(expr), shipped.get(expr), `${name}: savedMeaning changed for an acoustic record`);
       compared += 1;
@@ -520,4 +522,69 @@ test("PAU-I: a stored preferredSelection naming the v5 row falls back to a visib
   assert.strictEqual(shown.kind, "builtin", "the old client falls back to a visible scale");
   assert.strictEqual(JSON.stringify(envelopeOf(old)), before, "the fallback did not rewrite the library");
   assert.notStrictEqual(old.get("savedMode"), "protected");
+});
+
+test("PAU-I: old, new, old with the c6ef6b58 client - an RC-saved non-ASCII row and a v5 row stay byte-identical through its boot and SAVE", async () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = createOrigin({ storage: {} });
+  const old1 = await sharedBoot(origin, OLD_HTML_C6);
+  await saveAcoustic(old1, PA_AMARA, "ACOUSTIC ONE");
+  const fresh = await sharedBoot(origin, NEW_HTML);
+  await saveAcoustic(fresh, PA_HIJAZ, "Café 日本");
+  await savePaired(fresh, PA_HIJAZ.replace("B4", "C#5"), "PAIRED ONE");
+  const afterNew = envelopeOf(fresh);
+  assert.strictEqual(afterNew.entries.length, 3);
+  assert.ok(afterNew.entries.some((e) => e.record.o.name === "Café 日本"));
+  const snapshot = JSON.stringify(afterNew);
+  const old2 = await sharedBoot(origin, OLD_HTML_C6);
+  assert.notStrictEqual(old2.get("savedMode"), "protected");
+  assert.strictEqual(JSON.stringify(envelopeOf(old2)), snapshot, "booting c6ef6b58 wrote nothing");
+  await saveAcoustic(old2, PA_AMARA.replace("C5", "D5"), "ACOUSTIC TWO");
+  const after = envelopeOf(old2);
+  for (const n of ["Café 日本", "PAIRED ONE"]) {
+    assert.deepStrictEqual(after.entries.find((e) => e.record.o.name === n), afterNew.entries.find((e) => e.record.o.name === n), n);
+  }
+});
+
+const hiddenOf = (app) => envelopeOf(app).hidden;
+const rowsOf = (app) => envelopeOf(app).entries.map((e) => [e.instanceId, e.record]);
+
+test("SC: a store with a hidden seed and a replacement of another seed keeps both after boot, SAVE and a second boot", async () => {
+  if (!MOVED) return;
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const b = BLOBS.hidden_and_replaced_seeds;
+  const origin = createOrigin({ storage: storageOf(b) });
+  const first = await sharedBoot(origin, HTML);
+  const booted = rowsOf(first);
+  assert.deepStrictEqual(plain(booted.map(([, r]) => r)), b.records, "boot changed a replacement record");
+  assert.deepStrictEqual(plain(hiddenOf(first)), b.settings.hidden, "boot changed the hidden ids");
+  const shown = chips(first);
+  for (const n of ["My Kurd", "My Hijaz"]) assert.ok(shown.some((c) => c.includes(n)), `${n} does not show`);
+  assert.ok(!shown.some((c) => c.includes("PYGMY")), "a hidden seed with no replacement shows");
+  await saveAcoustic(first, NEW_SCALE, "Newcomer");
+  assert.deepStrictEqual(plain(rowsOf(first).filter(([, r]) => r.o.name !== "Newcomer")), plain(booted), "SAVE changed a replacement");
+  assert.deepStrictEqual(plain(hiddenOf(first)), b.settings.hidden, "SAVE changed the hidden ids");
+  const second = await sharedBoot(origin, HTML);
+  assert.deepStrictEqual(plain(rowsOf(second)), plain(rowsOf(first)), "the second boot changed the rows");
+  assert.deepStrictEqual(plain(hiddenOf(second)), b.settings.hidden, "the second boot changed the hidden ids");
+  assert.deepStrictEqual(chips(second), chips(first), "the chips differ after the second boot");
+});
+
+test("SC: a prod-written non-ASCII-named record boots readable in its chip and its stored bytes are unchanged until SAVE", async () => {
+  if (!MOVED) return;
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const b = BLOBS.prod_non_ascii_name;
+  const raw = JSON.stringify(b.records);
+  const origin = createOrigin({ storage: storageOf(b) });
+  const first = await sharedBoot(origin, HTML);
+  assert.ok(chips(first).some((c) => c.includes("Café 日本")), "the name does not show in its chip");
+  const booted = envelopeOf(first);
+  assert.deepStrictEqual(plain(booted.entries.map((e) => e.record)), b.records, "boot changed the record");
+  assert.strictEqual(first.store[b.key], raw, "boot wrote the old key");
+  const second = await sharedBoot(origin, HTML);
+  assert.strictEqual(JSON.stringify(envelopeOf(second)), JSON.stringify(booted), "a second boot rewrote the library");
+  await saveAcoustic(second, NEW_SCALE, "Newcomer");
+  const row = (env) => env.entries.find((e) => e.record.o.name === "Café 日本");
+  assert.deepStrictEqual(row(envelopeOf(second)), row(booted), "SAVE of another scale changed the row");
+  assert.strictEqual(second.store[b.key], raw, "SAVE wrote the old key");
 });
