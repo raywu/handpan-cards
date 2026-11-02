@@ -35,6 +35,8 @@ dd{margin:0 0 6px}
 a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}
 a.open{color:#0f0e0b;text-decoration:none}
 a:hover{text-decoration-thickness:2.5px}
+a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
+a.brand img{display:block;height:64px;width:auto;max-width:100%}
 a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}
 .ctas{display:flex;flex-wrap:wrap;gap:20px 24px;align-items:center;margin:28px 0 12px}
 .ctas .open{padding:13px 21px}
@@ -47,7 +49,7 @@ a.res{display:inline-block;min-height:44px;min-width:44px;box-sizing:border-box;
 <body>
 <main>
 <header>
-<p><a href="/">&larr; Handpan Chords</a></p>
+<p><a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-full.svg" alt="" width="223" height="64"></a></p>
 <h1>Handpan 101</h1>
 <p style="margin-top:8px">A short first guide for someone new to the handpan: what it is, how it is laid out, and how to start playing.</p>
 </header>

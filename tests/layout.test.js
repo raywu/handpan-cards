@@ -1182,7 +1182,7 @@ test("a seatsFromOrder result solves to what the flat order did", () => {
   ids.forEach((id, i) => assert.equal(moved[id][4], base[ids[order[i]]][4], `#${id}`));
 });
 
-test("ET-2 rim/bottom/inner angles follow CLAUDE.md zig-zags", () => {
+test("ET-2 rim/bottom/inner angles follow docs/CARD-SPEC.md zig-zags", () => {
   const core = HPE.core;
   const angles = (seed, zone, options) => {
     const solved = HPE.layout.solve(core.parseLegacySeed(seed).value, options);

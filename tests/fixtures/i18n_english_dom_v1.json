@@ -407,7 +407,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-neotone-text": {
    "text": "Neotone",
@@ -1117,7 +1119,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-neotone-text": {
    "text": "Neotone",
@@ -1831,7 +1835,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-neotone-text": {
    "text": "Neotone",
@@ -2561,7 +2567,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-neotone-text": {
    "text": "Neotone",
@@ -3283,7 +3291,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-neotone-text": {
    "text": "Neotone",
@@ -4015,7 +4025,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-neotone-text": {
    "text": "Neotone",
@@ -4741,7 +4753,9 @@
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-label": "Areas and their notes"
+   }
   },
   "scale-neotone-text": {
    "text": "Neotone",
