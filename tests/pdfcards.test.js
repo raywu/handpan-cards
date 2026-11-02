@@ -1089,7 +1089,8 @@ test("PA: K8 glyph sizes: names, numbers, M<n>, and every octave digit are at or
       const texts = page.ops.filter((o) => o.op === "text" && Math.hypot(o.x - cx, o.y - cy) <= R * 1.15 &&
         (o.face === "Label" || o.face === "LabelSB"));
       assert.ok(texts.length > 10, name);
-      for (const t of texts) assert.ok(t.size >= 3.6 - 1e-9, `${name}: ${t.s} at ${t.size}`);
+      const onLens = (t) => Math.abs(Math.hypot(t.x - cx, t.y - cy) - 0.618 * R) < 0.05 * R;
+      for (const t of texts) assert.ok(t.size >= 3.6 - 1e-9 || (onLens(t) && /^([A-G][b#]?|\d)$/.test(t.s)), `${name}: ${t.s} at ${t.size}`);
       const sizes = new Set(texts.filter((t) => /^[A-G][b#]?$/.test(t.s)).map((t) => +t.size.toFixed(3)));
       for (const s of sizes) {
         assert.ok([want.main, want.ding, want.lens].some((w) => near(s, w, 2e-3)) ||
@@ -1100,11 +1101,30 @@ test("PA: K8 glyph sizes: names, numbers, M<n>, and every octave digit are at or
     });
   }
   const { page, cx, cy } = paCard(PA.pygmy, 0);
-  const octaves = page.ops.filter((o) => o.op === "text" && /^\d$/.test(o.s) && o.size < 5.5 && o.size > 3.5 &&
+  const octaves = page.ops.filter((o) => o.op === "text" && /^\d$/.test(o.s) && o.size < 5.5 && o.size > 0.5 &&
     o.face === "Label" && Math.hypot(o.x - cx, o.y - cy) <= R);
-  assert.ok(octaves.some((o) => near(o.size, 0.66 * want.lens, 2e-3)), "a lens octave digit at 0.66 of the lens name");
-  assert.ok(octaves.every((o) => o.size >= 3.6 - 1e-9));
+  const lensOct = octaves.filter((o) => Math.abs(Math.hypot(o.x - cx, o.y - cy) - 0.618 * R) < 0.05 * R);
+  assert.ok(lensOct.length >= 1 && lensOct.every((o) => o.size <= 0.66 * want.lens + 2e-3), "lens octave digits are at most 0.66 of the lens name");
+  assert.ok(octaves.every((o) => o.size >= 3.6 - 1e-9 || Math.abs(Math.hypot(o.x - cx, o.y - cy) - 0.618 * R) < 0.05 * R));
   assert.ok(0.66 * want.ding - 3.6 >= 0.0015, "the ding octave clears the floor");
+});
+
+test("PA: a lens name shrinks to its cap and never overflows it, even under the 3.6 pt floor (owner 2026-11-01)", () => {
+  const R = 61.8, cap = HPE.core.LABEL_RULE.LABEL_WIDTH_RATIO * (2 * 0.19 / 3) / 2 * R;
+  const { page, cx, cy } = paCard(PA.pygmy, 0);
+  const names = page.ops.filter((o) => o.op === "text" && /^[A-G][b#]?$/.test(o.s) && o.face === "Label" &&
+    Math.hypot(o.x - cx, o.y - cy) <= R && Math.hypot(o.x - cx, o.y - cy) > 0.45 * R && o.size < 5.5);
+  assert.ok(names.length >= 6);
+  const wide = names.filter((o) => {
+    const oct = page.ops.find((q) => q.op === "text" && /^\d$/.test(q.s) && Math.abs(q.x - (o.x + HPE.pdf.stringWidth(o.s, o.face, o.size))) < 1e-6);
+    return oct && Math.abs(oct.size - 0.66 * o.size) < 1e-6 && o.size < 3.6 / 0.66 - 0.2;
+  });
+  assert.ok(wide.length >= 1, "a lens name below the octave-floor size exists on the Pygmy card");
+  for (const o of wide) {
+    const oct = page.ops.find((q) => q.op === "text" && /^\d$/.test(q.s) && Math.abs(q.x - (o.x + HPE.pdf.stringWidth(o.s, o.face, o.size))) < 1e-6);
+    const w = HPE.pdf.stringWidth(o.s, o.face, o.size) + HPE.pdf.stringWidth(oct.s, oct.face, oct.size);
+    assert.ok(w <= cap + 0.11, `${o.s}${oct.s} is ${w} wide against a cap of ${cap}`);
+  }
 });
 
 test("PA: numbers: main outside the rim at 1.0758 on a mutant card, M<n> on the same line at 0.47 in orange", () => {

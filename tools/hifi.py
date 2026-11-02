@@ -427,6 +427,9 @@ def _place_ops(c, ops, ox, oy, R, theta, stroke, fill):
     c.drawPath(p, stroke=stroke, fill=fill)
 
 
+LENS_FIT_FLOOR = 0.1
+
+
 def _neo_fit(name, octv, size, cap, floor):
     while size - 0.1 >= floor and note_w(name, octv, "Label", size) > cap:
         size -= 0.1
@@ -476,8 +479,8 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
         a = math.radians(th)
         return cx + R * u * math.cos(a), cy + R * u * math.sin(a)
 
-    def name(x, y, nm, ov, size, cap):
-        fs = _neo_fit(nm, ov, size * R, cap * R, floor)
+    def name(x, y, nm, ov, size, cap, fit_floor=None):
+        fs = _neo_fit(nm, ov, size * R, cap * R, floor if fit_floor is None else fit_floor)
         note_text(c, x, y - fs * 0.34, nm, ov, "Label", fs, INK)
 
     c.setStrokeColor(DECOR_GREY)
@@ -539,7 +542,7 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
             x, y = pos(fig["lens_c"] + fig["rl"] - fig["depth"] / 2, th)
             ln = spec[lid]
             name(x, y, ln[0], ln[1], LABEL_RATIO_BNOTE * gl["lens"] * fig["rl"],
-                 LABEL_WIDTH_RATIO * fig["depth"] / 2)
+                 LABEL_WIDTH_RATIO * fig["depth"] / 2, LENS_FIT_FLOOR)
     if not numbers:
         return
     for th, orbit, r, mid, lid in tones:

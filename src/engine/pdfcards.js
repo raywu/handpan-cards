@@ -521,9 +521,15 @@ HPE.pdfcards = (function () {
     });
   }
 
+  var LENS_FIT_FLOOR = 0.1;
+
   function neoFit(name, oct, size, cap, floor) {
     while (size - 0.1 >= floor && noteW(name, oct, "Label", size) > cap) size -= 0.1;
     return size;
+  }
+
+  function neoLensSize(plan, nm, oct, Rp) {
+    return neoFit(nm, oct, plan.lensSize * Rp, plan.lensCap * Rp, LENS_FIT_FLOOR) / Rp;
   }
 
   function neoDrawPan(c, cx, cy, R, spec, active, roots, numbers) {
@@ -594,7 +600,7 @@ HPE.pdfcards = (function () {
       if (t.lens) {
         var l = pos(plan.lensNameU, t.theta);
         name(l[0], l[1], t.lens.name, t.lens.oct, plan.lensSize,
-             plan.lensCap, plan.nameFloor);
+             plan.lensCap, LENS_FIT_FLOOR);
       }
     });
     if (!numbers) return;
@@ -959,6 +965,7 @@ HPE.pdfcards = (function () {
     profileExtent: profileExtent,
     PROFILE_DRAW: PROFILE_DRAW,
     neoPlan: neoPlan,
+    neoLensSize: neoLensSize,
     lensOps: lensOps,
     crescentOps: crescentOps,
     // exported for the port's own unit tests, not for the app

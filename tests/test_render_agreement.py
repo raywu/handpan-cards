@@ -671,10 +671,13 @@ class ProfileRenderAgreement(RenderAgreement):
         legitimately larger than a secondary field's name (r 0.11)."""
         for app_c, print_c in self.each_card():
             spec = self.decks[app_c["deck"]]["spec"]
+            place = self.decks[app_c["deck"]]["spec"]["_geom"]["place"]
             by_label = {v[5]: v[0] + str(v[1]) for k, v in spec.items()
-                        if k != "_geom" and v[3] != "ding"}
+                        if k != "_geom" and v[3] != "ding" and place[str(k)][3] != "mutant"}
             for side, card in (("app", app_c), ("print", print_c)):
                 for label, num in card["numberSizes"].items():
+                    if label not in by_label:
+                        continue
                     self.assertGreater(
                         card["labelSizes"][by_label[label]], num,
                         "%s %s (%s) field %s" % (app_c["deck"], app_c["name"], side, label))
@@ -746,8 +749,13 @@ class ProfileRenderAgreement(RenderAgreement):
         for name in PROFILE_FIXTURES:
             deck = self.decks[name]
             R = deck["R"]
+            place = deck["spec"]["_geom"]["place"]
+            lens = {v[0] + str(v[1]) for k, v in deck["spec"].items()
+                    if k != "_geom" and str(k) in place and place[str(k)][3] == "mutant"}
             for card in self.print_[name]:
                 for field, size in card["labelSizes"].items():
+                    if field in lens:
+                        continue
                     pt = size / 100 * R
                     self.assertGreaterEqual(pt, 3.6, "%s %s name" % (name, field))
                     self.assertGreaterEqual(pt * 0.66, 3.6 - 1e-6,

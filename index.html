@@ -3606,9 +3606,15 @@ HPE.pdfcards = (function () {
     });
   }
 
+  var LENS_FIT_FLOOR = 0.1;
+
   function neoFit(name, oct, size, cap, floor) {
     while (size - 0.1 >= floor && noteW(name, oct, "Label", size) > cap) size -= 0.1;
     return size;
+  }
+
+  function neoLensSize(plan, nm, oct, Rp) {
+    return neoFit(nm, oct, plan.lensSize * Rp, plan.lensCap * Rp, LENS_FIT_FLOOR) / Rp;
   }
 
   function neoDrawPan(c, cx, cy, R, spec, active, roots, numbers) {
@@ -3679,7 +3685,7 @@ HPE.pdfcards = (function () {
       if (t.lens) {
         var l = pos(plan.lensNameU, t.theta);
         name(l[0], l[1], t.lens.name, t.lens.oct, plan.lensSize,
-             plan.lensCap, plan.nameFloor);
+             plan.lensCap, LENS_FIT_FLOOR);
       }
     });
     if (!numbers) return;
@@ -4044,6 +4050,7 @@ HPE.pdfcards = (function () {
     profileExtent: profileExtent,
     PROFILE_DRAW: PROFILE_DRAW,
     neoPlan: neoPlan,
+    neoLensSize: neoLensSize,
     lensOps: lensOps,
     crescentOps: crescentOps,
     // exported for the port's own unit tests, not for the app
@@ -11776,7 +11783,7 @@ function neoSvg(d, sets, C, R) {
     }
     if (t.lens) {
       const [x, y] = pos(plan.lensNameU, t.theta);
-      s += name(x, y, t.lens.name, t.lens.oct, plan.lensSize, "#242424");
+      s += name(x, y, t.lens.name, t.lens.oct, HPE.pdfcards.neoLensSize(plan, t.lens.name, t.lens.oct, HPE.pdfcards.profileRadius(g)), "#242424");
       const [nx, ny] = pos(plan.mnumU, t.theta), fs = Math.max(plan.mnumSize(t) * R, 3.6);
       lines.push(`<text x="${nx}" y="${r4(ny + fs*0.34)}" text-anchor="middle" fill="#E27005"
       font-family="Nunito Sans, sans-serif" font-weight="600" font-size="${fs}">${t.lens.label}</text>`);
