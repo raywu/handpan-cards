@@ -2633,6 +2633,9 @@ function run() {
       await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-neotone");
       await b.waitFor(`document.getElementById("scale-neotone").checked`, { label: "the box to tick" });
+      // A field focus pins the sheet's scrollers for PIN_MS (iOS focus-scroll guard), so a
+      // programmatic scroll inside that window is put back; wait it out, bounded.
+      await b.waitFor(`scrollPin === null || Date.now() > scrollPin.until`, { label: "the focus scroll pin to lapse" });
       await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-tab-layout");
       await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
@@ -2673,8 +2676,13 @@ function run() {
       await typeScale("[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5");
       await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-neotone");
+      await b.waitFor(`document.getElementById("scale-neotone").checked`, { label: "the box to tick" });
+      // A field focus pins the sheet's scrollers for PIN_MS (iOS focus-scroll guard), so a
+      // programmatic scroll inside that window is put back; wait it out, bounded.
+      await b.waitFor(`scrollPin === null || Date.now() > scrollPin.until`, { label: "the focus scroll pin to lapse" });
       await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
       await b.click("#scale-tab-layout");
+      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
       for (const lang of langs) {
         await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
         const m = await b.eval(`
