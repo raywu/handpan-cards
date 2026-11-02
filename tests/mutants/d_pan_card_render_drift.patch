@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10891,7 +10891,7 @@ function pan(d, ch, opts) {
+@@ -11286,7 +11286,7 @@ function pan(d, ch, opts) {
  
-   if (hasBottom)
+   if (hasBottom && !placed)
      s += `<circle r="${R*g.bottom}" fill="none" stroke="#e2e2e2" stroke-width="1.4" stroke-dasharray="4 4"/>`;
 -  s += `<circle r="${R}" fill="none" stroke="#000" stroke-width="2"/>`;
 +  s += `<circle r="${R}" fill="none" stroke="#000" stroke-width="1.6"/>`;
-   if (g.inner_ring)
+   if (g.inner_ring && !placed)
      s += `<circle r="${R*g.inner_ring}" fill="none" stroke="#000" stroke-width="1"/>`;
  

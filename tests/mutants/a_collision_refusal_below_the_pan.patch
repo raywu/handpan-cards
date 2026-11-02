@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13491,7 +13491,7 @@ async function runGenerate(separate = false) {
+@@ -14595,7 +14595,7 @@ async function runGenerate(separate = false) {
    try {
      buildRefused=true;
-     const built=buildGenerated(String(scaleBox.value||""),sheetOptions());
+     const built=buildGenerated(String(scaleBox.value||""),commitOptions());
 -    if(!built.ok){refusal=reasonText(built);showRefusal(refusal);return;}
 +    if(!built.ok){refusal=reasonText(built);say(refusal,"err");return;}
      buildRefused=false;
      const candidate={record:scaleRecord(seedOf(built.value)),deck:built.value};
-     const command=separate ? {type:"save-as-separate"} : !base ? {type:"import",selectedInstanceId:selection.kind==="saved"?selection.id:null} :
+     const ownsSlot=!!base && base.selection.kind==="saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;

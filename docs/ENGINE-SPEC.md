@@ -1139,103 +1139,182 @@ sheets); the rule is that phases APPEND, never renumber or rename.
   octatonic diminished and augmented hexatonic fixture seeds, which do contain
   fifths.
 
-## 18. Paired-area profile (planned: engine lane E, renderers P, app U)
+## 18. Neotone profile (map rev 2, fixture rev 3: engine lane E2, renderers P2, app U2)
 
-Plan: `docs/plans/2026-10-30-neotone-build.md` (Refs TRI-17). Everything here is
-the contract lane E builds to; nothing in it is shipped until lane U flips
-`PROFILE_ENABLED`. The word in visible copy is "Paired areas"; no vendor or
-model is named. Roles do not change: voicing, tiers, badges, number lines and
+Plan: `docs/plans/2026-10-30-neotone-option-b.md` (Refs TRI-17), which revises
+`docs/plans/2026-10-30-neotone-build.md`. Everything here is the contract lane E2
+builds to; nothing in it is shipped until lane U2 flips `PROFILE_ENABLED`. The
+visible word is "Neotone"; the profile id stays the internal string `"paired"`
+and is never shown. Roles do not change: voicing, tiers, badges and
 highlighting read the SOURCE zone (`rim`, `inner`, `bottom`) exactly as today,
 and the ding is unmapped, drawn at centre, and never in a voicing.
 
-### 18.1 The frozen profile
+Words: a **tonefield** is a main field of the pan (nine at most, numbered 1 to 9).
+A **mutant tonefield** is a lens drawn inside its main tonefield on the ding
+side; mutant tonefield N belongs to main tonefield N. Top (rim) notes fill the
+main tonefields; bottom notes become mutant notes and fill the mutant
+tonefields. Inner notes (after `|`) never get a tonefield.
 
-`tests/fixtures/paired_profile_v1.json` is the one profile (`id` `paired`, `rev`
-1), written once by hand and pinned by sha256 in
-`tests/test_fixture_integrity.py`. Area k sits at `angles[k-1]`; slot `pk` is the
-primary on that angle, `sk` the secondary outward of it (orbits and radii are
-fractions of R). `slots` lists `p1..p9` then `s1..s9`: capacity is 18 non-ding
-notes. Empty slots draw nothing on a card (app and print); only the sheet
-preview shows a faint dashed outline with the area number. The print extent is
-the furthest of slot orbit + r + `n_out` + number height (number size = slot r x
-0.64) and the ding edge, plus `extent_margin`; R = round(74 / extent, 1) in
-`HPE.pdfcards`, `tools/hifi.py` and `tools/decks.py` identically. At that R every
-glyph of every slot is at least 3.6 pt and a name exceeds its number
-(`tests/test_fixture_integrity.py`).
+### 18.1 The frozen profile (fixture rev 3)
+
+`tests/fixtures/paired_profile_v3.json` is the one profile (`id` `paired`, `rev`
+3), written once by hand and pinned by sha256 in
+`tests/test_fixture_integrity.py`. `tests/fixtures/paired_profile_v1.json` (rev 1,
+outer secondary ring) and `tests/fixtures/paired_profile_v2.json` (rev 2, larger
+tonefields) are SUPERSEDED: they stay, pinned, and no engine code reads them. Tonefield k sits at `angles[k-1]`; slot `pk` is main tonefield k and slot `sk`
+is mutant tonefield k. `slots` lists `p1..p9` then `s1..s9`: capacity is 9 main
+and 9 mutant notes. Values are fractions of the pan radius R.
+
+- Main tonefield: circle of radius `main.r` (0.19) at orbit `main.orbit` (0.745) on
+  its angle. Ding: radius `ding.r` (0.2), centred.
+- Decor ring: a circle of radius `decor.r` (0.355) at the pan centre, drawn on every
+  Neotone card and the Layout preview; not a tonefield, never lit, never labelled.
+- Lens: a circle of radius `mutant.r` (0.19) on the same radial line. With
+  `depth = 2 x main.r x mutant.depth` (mutant.depth 1/3 is the fraction of the main
+  diameter, so depth is 0.1267), its centre sits at `lensC = main.orbit - (2 x main.r
+  - depth)` from the pan centre (0.4917). Only the overlap with the main circle is
+  drawn, so the lens spans `depth` radially from the main circle's ding-side edge.
+  The formula is parametric in `mutant.depth`.
+- Mutant tonefield name: centred in the lens, at `lensC + mutant.r - depth/2`
+  (0.6183). Main name: at orbit + depth/2 (0.8083) on every tonefield of a card that has a
+  mutant note (empty lenses included). A card with none draws the Standard geometry of
+  its notes (18.4), names at the field centre.
+- Numbers: the main number sits at `number_out` (1.0758) from the pan centre, outside
+  the rim; the orange `M<n>` number of a mutant note sits on the same radial
+  line at `main.orbit - main.r - n_in` (n_in 0.085, 0.47). Size is the K8 number
+  size below (0.64 x 0.62 x `main.r` for the main number, 0.64 x 0.5 x `main.r` for
+  `M<n>`), not the bare label-rule 0.64 x `main.r`. The main number sits outside
+  the rim only when the scale has at least one mutant note; with none, main numbers sit at the Standard
+  spot (orbit - r - n_in = 0.47).
+- Strokes (renderers): outline 0.012, main band 0.046, lens band 0.024.
+- Print extent: the furthest of `number_out` + the unscaled number size (0.64 x
+  `main.r`, without the K8 factor) / 2 and the ding edge, plus `extent_margin` (0.06); extent = 1.0758 +
+  0.64 x 0.19 / 2 + 0.06 = 1.1966, R = round(74 / extent, 1) = 61.8 in
+  `HPE.pdfcards`, `tools/hifi.py` and `tools/decks.py` identically.
+- On Neotone cards glyphs are sized per K8: main name 0.80325 x 0.62 x `main.r`,
+  main number 0.64 x 0.62 x `main.r`, ding name 0.70875 x 0.623 x `ding.r`, lens
+  name 0.8232 x 0.565 x `main.r`, `M<n>` 0.64 x 0.5 x `main.r`; octave digit 0.66 x
+  its name. The 3.6 pt print floor is unchanged and applies to every glyph of every
+  tonefield and lens. The label-rule size is computed from `main.r`
+  (`mutant.r` for the lens); the inscribed radius only caps the fitted width at
+  1.47 x that radius (the radius of the largest circle inscribed in the drawn lens or
+  crescent), and the name is stepped down in 0.1 pt until it fits. Gate G1 results are in the plan's "Frozen v2 fixture".
+
+On a card with a mutant note, empty main tonefields and empty mutant tonefields
+draw neutral on cards, print and preview; the sheet preview adds the tonefield
+number. A card with no mutant note has no empty tonefield.
 
 ### 18.2 Seed option and occurrence key
 
-`options.profile = {id:"paired", rev:1, map:[18 entries]}`; entry k is the
+`options.profile = {id:"paired", rev:2, map:[18 entries]}` (the map rev; the
+fixture rev of 18.1 counts separately, see 18.7); entry k is the
 occurrence placed in `slots[k]`, or `null`. The occurrence key is the zone letter
-plus the MIDI number: `r57`, `i77`, `b48`, matching `/^[rib]\d{1,3}$/`. It is
+plus the MIDI number: `r57`, `b48`, matching `/^[rib]\d{1,3}$/`. It is
 unique because `NOTE_REPEATED` forbids a repeated pitch within the top zones and
 within the bottom zone (an exact top/bottom pair is legal, and the letters tell
 them apart). The option is valid iff: its own keys are exactly `id,rev,map`;
-`id` is `"paired"` and `rev` is `1`; `map` has length 18; every non-null entry
-matches the key pattern and names a non-ding field of the seed; the entries are
-injective; and every non-ding field appears exactly once. With a profile,
-`mirror`, `mirrorBottom`, `anchor`, `seats` and `angles` must be absent. The
-sheet keeps the acoustic draft separately and drops it from the committed
-record. Validation lives only in `HPE.core.parseSeed`; `profile` joins its
-option whitelist (other unknown options still drop). Until
+`id` is `"paired"` and `rev` is `2`, or `rev` is `1` and the map is first passed
+through `HPE.core.migrateProfile` (identity on a ring-strict complete map,
+otherwise the pitch-order proposal); `map` has length 18;
+every non-null entry matches the key pattern and names a non-ding field of the
+seed; the entries are injective; and every non-ding field appears exactly once.
+`readProfile` returns `{id, rev:2, map}` and, when the proposal left notes without a
+tonefield (a rev 1 map migrated by `migrateProfile`), also `unplaced`: their
+occurrence keys in pitch order. A consumer (U2) holds SAVE and GENERATE while
+`unplaced` is non-empty, and when `HPE.layout.solve` refuses a profile it strips
+the profile and renders Standard. A map on a scale with no mutant note whose main
+entry sits at or past the rim count has no Standard rim seat: it is treated as not
+ring-strict and migrates to the pitch-order proposal, whether it is rev 1 or rev 2,
+so a saved record or share link stays readable; `solve` never emits a null angle.
+The map is ring-strict: the main ring is `map[0..8]` (slots `p1..p9`) and holds
+only `r` keys; the mutant ring is `map[9..17]` (slots `s1..s9`) and holds only
+`b` keys; an `i` key, or a key in the other ring, is `PROFILE_MAP_INVALID`. On a scale with
+no bottom note, main entries past the rim count are null and the main half orders
+the Standard rim seats. With a
+profile, `mirror`, `mirrorBottom`, `anchor`, `seats` and `angles` must be
+absent. The sheet keeps the standard draft separately and drops it from the
+committed record. Validation lives only in `HPE.core.parseSeed`; `profile` joins
+its option whitelist (other unknown options still drop). Until
 `HPE.core.PROFILE_ENABLED` is true, `parseSeed` refuses `profile` with
 `PROFILE_UNKNOWN` and `HPE.share.decode` of a version 7 link returns
 `NEEDS_NEWER_APP`.
 
 ### 18.3 Refusals
 
-Added to `HPE.core.REASONS` by lane E, verbatim, and to the
-`tests/scale.test.js` "every refused row carries its code and its sentence"
-table. They are kept out of the section 2 table until E lands, because
-`tests/core.test.js` holds that table equal to `REASONS`.
+Added to `HPE.core.REASONS` verbatim, and to the `tests/scale.test.js` "every
+refused row carries its code and its sentence" table. They are kept out of the
+section 2 table, because `tests/core.test.js` holds that table equal to `REASONS`
+without the `PROFILE_` rows and `NEOTONE_INPUT`. The sentences use the owner's
+words (tonefield, mutant tonefield, no "area"). `PROFILE_FULL` means a note
+without a tonefield: more than 9 rim notes, more than 9 bottom notes, or any inner
+note. `NEOTONE_INPUT` is the typed-input refusal of the Scale-form Neotone
+checkbox (a tenth top note while ticked; the app words the inner-note case from
+the same code); the sentence is the engine's and the app's `reason.NEOTONE_INPUT`
+values follow it.
 
 | code | kind | reason |
 |---|---|---|
-| `PROFILE_UNKNOWN` | error | `This paired-area layout is not one this app knows.` |
-| `PROFILE_MAP_INVALID` | error | `The paired-area layout is malformed: it must list 18 areas, each empty or one of your notes.` |
-| `PROFILE_NOTE_MISSING` | error | `The paired-area layout leaves out one of your notes. Every note needs an area.` |
-| `PROFILE_NOTE_TWICE` | error | `The paired-area layout places the same note in two areas.` |
-| `PROFILE_FULL` | error | `Paired areas hold at most 18 notes besides the ding. Remove some notes.` |
-| `PROFILE_CONFLICT` | error | `Paired areas set their own placement, so mirror, anchor, seats and angles cannot be combined with them.` |
+| `PROFILE_UNKNOWN` | error | `This Neotone layout is not one this app knows.` |
+| `PROFILE_MAP_INVALID` | error | `The Neotone layout is malformed: it must list 9 main and 9 mutant tonefields, each empty or one of your notes, top notes in the main ones and bottom notes in the mutant ones.` |
+| `PROFILE_NOTE_MISSING` | error | `The Neotone layout leaves out one of your notes. Every note needs a tonefield.` |
+| `PROFILE_NOTE_TWICE` | error | `The Neotone layout places the same note in two tonefields.` |
+| `PROFILE_FULL` | error | `Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes.` |
+| `PROFILE_CONFLICT` | error | `Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it.` |
+| `NEOTONE_INPUT` | error | `Neotone has 9 main tonefields. Remove the extra top note to save.` |
 
 ### 18.4 Proposal and layout
 
-`HPE.layout.proposeProfile(fields)`: top notes (rim then inner, in field-number
-order) fill `p1..p9`, then `s1..s9`; bottom notes fill the remaining secondaries
-from `s1`, then the remaining primaries. Deterministic, pinned by a fixture.
+`HPE.layout.proposeProfile(fields)` returns `{map, unplaced}` in pitch order: rim
+notes in MIDI order fill `p1..`, bottom notes in MIDI order fill `s1..`, so
+tonefield N gets note N. The rings never mix. Rim notes past nine, bottom notes
+past nine and every inner note go to `unplaced` (occurrence keys, in pitch order); the
+caller holds SAVE and GENERATE while `unplaced` is non-empty. A scale with no
+rim notes beyond the ding gives an empty main half; one with no bottom notes
+gives an empty mutant half. Deterministic, pinned by a fixture. Pygmy: nine rim
+notes placed, six mutant notes in `s1..s6`, `unplaced` = F5, G5.
 `HPE.layout.solve` with a valid profile returns the ordinary geom plus
-`geom.place = {fieldId: [angle, orbitFrac, rFrac]}` for every non-ding field,
-with the ding at centre at `ding.r`. Fields keep their zone, label and angle
-semantics; `ext` and the `f_*` keys are unchanged for acoustic decks, and
-renderers branch only on `geom.place`.
+`geom.place = {fieldId: [angle, orbit, r, kind, lensOrbit?, lensR?]}` for every
+non-ding field of a scale with a mutant note; for a scale with none, `place`
+carries the Standard solve's angle, `rim` and `r_note` per field with `kind`
+`"main"` (`kind` is `"main"` or `"mutant"`; for a mutant field the lens
+circle's centre distance and radius follow), with the ding at centre at
+`ding.r`. Field labels are `N` for main tonefield N and `M<n>` for mutant
+tonefield n (number line `3-4-6-M4`). `ext` and the `f_*` keys are unchanged for
+standard decks, and renderers branch only on `geom.place`.
 
 ### 18.5 Wire version 7
 
-`HPE.share.VERSION` stays 6; `PROFILE_VERSION = 7` and `NEWEST = 7`.
+`HPE.share.VERSION` stays 6; `PROFILE_VERSION = 7`. `NEWEST` stays `VERSION`;
+decode reads up to `PROFILE_VERSION` only while `HPE.core.PROFILE_ENABLED` is on.
 `HPE.share.encode` picks 7 if and only if the seed has a profile, otherwise it
 writes the exact current version 6 bytes. Version 7 is the version 6 segment
 grammar with profile options forbidden from mixing with `mirror`, `between`,
 `seats-` and `at-`, plus one option segment `pair-` followed by 18 tokens joined
-by `.`, `-` standing for an empty area (for example `pair-r57.r62.r64.-.`),
+by `.`, `-` standing for an empty tonefield (for example `pair-r57.r62.r64.-.`),
 placed after `parent-` and `palette-` and inside the checksum meaning.
 `decodeSeed` accepts 6 as today and 7; a version 7 link without exactly one
 `pair-` segment, or carrying `mirror*`, `between`, `seats-` or `at-`, is
 `BAD_NOTE`; a version 6 link carrying `pair-` is `BAD_NOTE`. Option gates that
 key on the version character are written as explicit sets, so a version 6
 `palette-10` still parses under version 7. A client that only knows version 6
-answers a version 7 link with `NEEDS_NEWER_APP`.
+answers a version 7 link with `NEEDS_NEWER_APP`. `HPE.share.decode` reads a `pair-` map as rev 2 first; on
+`PROFILE_NOTE_MISSING` or `PROFILE_FULL` it retries the same map as rev 1, so a
+ring-correct but incomplete (or overfull) v7 link opens as the pitch-order proposal
+(with `unplaced`) instead of being refused. This is a deliberate leniency that
+keeps older links readable (owner acknowledgement pending). The grammar and token order do
+not change in rev 2; links v1 to v6 decode as standard layouts.
 
 ### 18.6 Record version 5 and rule I1
 
 `RECORD_VERSION` stays 4. `PROFILE_RECORD_VERSION = 5` is used for a record
 whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4 or 5:
-the app never chooses it. `savedCandidate` accepts 4 for an acoustic record and
+the app never chooses it. `savedCandidate` accepts 4 for a standard record and
 5 for a profile record, and refuses 5 without a profile or 4 with one;
-`savedMeaning` appends the canonical profile map (null for acoustic, so the
-meaning of every existing acoustic record is unchanged).
+`savedMeaning` appends the canonical profile map (null for a standard record, so
+the meaning of every existing record is unchanged).
 
 Rule I1: a profile record never carries `replaces` and never owns a seeded
-slot. SAVE on a seeded scale with the profile active saves a new custom entry,
+slot. SAVE on a seeded scale with Neotone active saves a new custom entry,
 Edit of a slot owner into a profile saves separately, and `replace-builtin` with
 a profile candidate is refused; a version 5 record with `replaces` is read as
 opaque. Reason: a shipped client treats a record it cannot read as an opaque row
@@ -1244,8 +1323,15 @@ whole library, when an opaque row owns a slot.
 
 ### 18.7 Fixtures that pin the contract
 
-`tests/fixtures/paired_profile_v1.json` (the profile) and
-`tests/fixtures/shipped_client_ee5438d0.html.txt` (a verbatim
+`tests/fixtures/paired_profile_v3.json` (fixture rev 3; v1 and v2 are superseded
+and kept) and `tests/fixtures/shipped_client_ee5438d0.html.txt` (a verbatim
 `git show ee5438d0:index.html`, the shipped client for the mixed-version
-isolation suite). Both are sha256-pinned in `tests/test_fixture_integrity.py`; a
+isolation suite). All are sha256-pinned in `tests/test_fixture_integrity.py`; a
 change is a new revision, never an in-place edit.
+
+Two revisions are counted separately. The map rev (`options.profile.rev`) is the
+map format: rev 2, and served DEV produced rev 1 maps (flag on since #752), so rev
+2 keeps the rev 1 migration of 18.2. The fixture rev
+(`paired_profile_vN.json` `"rev"`) is the geometry: `paired_profile_v3.json`, rev 3
+(owner OD1, 2026-11-01). A geometry revision never changes the map format, so a rev
+2 map draws on fixture rev 3 unchanged; v1 and v2 are superseded and kept.

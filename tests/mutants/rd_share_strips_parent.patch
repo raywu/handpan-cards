@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10217,7 +10217,7 @@ function savedMeaning(deckValue) {
+@@ -10738,7 +10738,7 @@ function savedMeaning(deckValue) {
      return !list || list.every((seat, i) => seat === i) ? null : list;
    });
-   return JSON.stringify([HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
+   const meaning = [HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
 -    o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
 +    [false, null], o.palette, mirrors.top, mirrors.bottom,
      o.anchor === "between" ? "between" : "one",
      normalizedSeats,
-     angles.value ? angles.value.bottom : null]);
+     angles.value ? angles.value.bottom : null];

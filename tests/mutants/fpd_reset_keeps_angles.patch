@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12729,7 +12729,6 @@ function putDownPick() {
- function resetLayout() {
+@@ -13463,7 +13463,6 @@ function resetLayout() {
    cancelGesture();
+   if (neotoneOn()) { resetNeotone(); return; }
    layoutSeats = null;
 -  layoutAngles = null;
    foldedBottom = false;

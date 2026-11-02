@@ -1,0 +1,414 @@
+{
+ "_provenance": "Evaluated from the Chord Card (claude.ai artifact TgFMSuaPN4ZZbkp6y71cte, the K1 source of truth), function card() with its std branch: orbit .745R, r_note .19R, r_ding .2R, inner_ring .355R, depth = 2r/3, lensC = orbit - (2r - depth), main name at orbit + depth/2 on a mutant card, lens name at lensC + r - depth/2, main numbers at R + 5 (R = 66) on a mutant card and at orbit - r - .085R otherwise, M<n> at orbit - r - .085R. Every figure is in units of R, y up. Do not edit by hand; _generated_by is the evaluator.",
+ "_angle_note": "The Card draws Pygmy on its real instrument angles (290, 250, ...); HPE.layout fixture rev 3 puts every mutant card on 270, 230, ... a uniform 20 degree rotation. P2 never changes geometry, so the K1 diff is taken on orbit, radius, lens offset, ding and decor, and the rotation is a recorded finding (angle_offset).",
+ "pygmy": {
+  "angle_offset": 20,
+  "r": 0.19,
+  "lens_r": 0.19,
+  "ding_r": 0.2,
+  "decor_r": 0.355,
+  "depth": 0.1267,
+  "lens_orbit": 0.4917,
+  "tonefields": [
+   {
+    "angle": 290,
+    "main": [
+     0.2548,
+     -0.7001
+    ],
+    "lens": [
+     0.1682,
+     -0.462
+    ],
+    "name": [
+     0.2765,
+     -0.7596
+    ],
+    "lens_name": [
+     0.2115,
+     -0.581
+    ],
+    "number": [
+     0.3679,
+     -1.0109
+    ],
+    "m_number": [
+     0.1607,
+     -0.4417
+    ]
+   },
+   {
+    "angle": 250,
+    "main": [
+     -0.2548,
+     -0.7001
+    ],
+    "lens": [
+     -0.1682,
+     -0.462
+    ],
+    "name": [
+     -0.2765,
+     -0.7596
+    ],
+    "lens_name": [
+     -0.2115,
+     -0.581
+    ],
+    "number": [
+     -0.3679,
+     -1.0109
+    ],
+    "m_number": [
+     -0.1607,
+     -0.4417
+    ]
+   },
+   {
+    "angle": 330,
+    "main": [
+     0.6452,
+     -0.3725
+    ],
+    "lens": [
+     0.4258,
+     -0.2458
+    ],
+    "name": [
+     0.7,
+     -0.4042
+    ],
+    "lens_name": [
+     0.5355,
+     -0.3092
+    ],
+    "number": [
+     0.9316,
+     -0.5379
+    ],
+    "m_number": [
+     0.407,
+     -0.235
+    ]
+   },
+   {
+    "angle": 210,
+    "main": [
+     -0.6452,
+     -0.3725
+    ],
+    "lens": [
+     -0.4258,
+     -0.2458
+    ],
+    "name": [
+     -0.7,
+     -0.4042
+    ],
+    "lens_name": [
+     -0.5355,
+     -0.3092
+    ],
+    "number": [
+     -0.9316,
+     -0.5379
+    ],
+    "m_number": [
+     -0.407,
+     -0.235
+    ]
+   },
+   {
+    "angle": 10,
+    "main": [
+     0.7337,
+     0.1294
+    ],
+    "lens": [
+     0.4842,
+     0.0854
+    ],
+    "name": [
+     0.7961,
+     0.1404
+    ],
+    "lens_name": [
+     0.6089,
+     0.1074
+    ],
+    "number": [
+     1.0594,
+     0.1868
+    ],
+    "m_number": [
+     0.4629,
+     0.0816
+    ]
+   },
+   {
+    "angle": 170,
+    "main": [
+     -0.7337,
+     0.1294
+    ],
+    "lens": [
+     -0.4842,
+     0.0854
+    ],
+    "name": [
+     -0.7961,
+     0.1404
+    ],
+    "lens_name": [
+     -0.6089,
+     0.1074
+    ],
+    "number": [
+     -1.0594,
+     0.1868
+    ],
+    "m_number": [
+     -0.4629,
+     0.0816
+    ]
+   },
+   {
+    "angle": 50,
+    "main": [
+     0.4789,
+     0.5707
+    ],
+    "lens": [
+     0.316,
+     0.3766
+    ],
+    "name": [
+     0.5196,
+     0.6192
+    ],
+    "lens_name": [
+     0.3975,
+     0.4737
+    ],
+    "number": [
+     0.6915,
+     0.8241
+    ],
+    "m_number": [
+     0.3021,
+     0.36
+    ]
+   },
+   {
+    "angle": 130,
+    "main": [
+     -0.4789,
+     0.5707
+    ],
+    "lens": [
+     -0.316,
+     0.3766
+    ],
+    "name": [
+     -0.5196,
+     0.6192
+    ],
+    "lens_name": [
+     -0.3975,
+     0.4737
+    ],
+    "number": [
+     -0.6915,
+     0.8241
+    ],
+    "m_number": [
+     -0.3021,
+     0.36
+    ]
+   },
+   {
+    "angle": 90,
+    "main": [
+     0,
+     0.745
+    ],
+    "lens": [
+     0,
+     0.4917
+    ],
+    "name": [
+     0,
+     0.8083
+    ],
+    "lens_name": [
+     0,
+     0.6183
+    ],
+    "number": [
+     0,
+     1.0758
+    ],
+    "m_number": [
+     0,
+     0.47
+    ]
+   }
+  ]
+ },
+ "kurd9": {
+  "angle_offset": 0,
+  "r": 0.19,
+  "lens_r": null,
+  "ding_r": 0.2,
+  "decor_r": 0.355,
+  "depth": 0.1267,
+  "lens_orbit": 0.4917,
+  "tonefields": [
+   {
+    "angle": 270,
+    "main": [
+     0,
+     -0.745
+    ],
+    "lens": null,
+    "name": [
+     0,
+     -0.745
+    ],
+    "lens_name": null,
+    "number": [
+     0,
+     -0.47
+    ],
+    "m_number": null
+   },
+   {
+    "angle": 225,
+    "main": [
+     -0.5268,
+     -0.5268
+    ],
+    "lens": null,
+    "name": [
+     -0.5268,
+     -0.5268
+    ],
+    "lens_name": null,
+    "number": [
+     -0.3323,
+     -0.3323
+    ],
+    "m_number": null
+   },
+   {
+    "angle": 315,
+    "main": [
+     0.5268,
+     -0.5268
+    ],
+    "lens": null,
+    "name": [
+     0.5268,
+     -0.5268
+    ],
+    "lens_name": null,
+    "number": [
+     0.3323,
+     -0.3323
+    ],
+    "m_number": null
+   },
+   {
+    "angle": 180,
+    "main": [
+     -0.745,
+     0
+    ],
+    "lens": null,
+    "name": [
+     -0.745,
+     0
+    ],
+    "lens_name": null,
+    "number": [
+     -0.47,
+     0
+    ],
+    "m_number": null
+   },
+   {
+    "angle": 0,
+    "main": [
+     0.745,
+     0
+    ],
+    "lens": null,
+    "name": [
+     0.745,
+     0
+    ],
+    "lens_name": null,
+    "number": [
+     0.47,
+     0
+    ],
+    "m_number": null
+   },
+   {
+    "angle": 135,
+    "main": [
+     -0.5268,
+     0.5268
+    ],
+    "lens": null,
+    "name": [
+     -0.5268,
+     0.5268
+    ],
+    "lens_name": null,
+    "number": [
+     -0.3323,
+     0.3323
+    ],
+    "m_number": null
+   },
+   {
+    "angle": 45,
+    "main": [
+     0.5268,
+     0.5268
+    ],
+    "lens": null,
+    "name": [
+     0.5268,
+     0.5268
+    ],
+    "lens_name": null,
+    "number": [
+     0.3323,
+     0.3323
+    ],
+    "m_number": null
+   },
+   {
+    "angle": 90,
+    "main": [
+     0,
+     0.745
+    ],
+    "lens": null,
+    "name": [
+     0,
+     0.745
+    ],
+    "lens_name": null,
+    "number": [
+     0,
+     0.47
+    ],
+    "m_number": null
+   }
+  ]
+ },
+ "_generated_by": "// Evaluates the Chord Card's own placement formulas (artifact\n// TgFMSuaPN4ZZbkp6y71cte, function card(), std branch) at R = 66 and writes\n// every figure in units of R, y up.\nconst R = 66, std = { rim: 0.745, r_note: 0.19, r_ding: 0.2, n_in: 0.085, inner_ring: 0.355 };\nconst PYG = [290, 250, 330, 210, 10, 170, 50, 130, 90];\nconst KURD = [270, 225, 315, 180, 0, 135, 45, 90];\nconst pt = (a, d) => [d * Math.cos((a * Math.PI) / 180) / R, d * Math.sin((a * Math.PI) / 180) / R];\nconst q = (v) => Math.round(v * 10000) / 10000;\nfunction card(angles, hasMut) {\n  const r = std.r_note * R, orbit = std.rim * R, dr = std.r_ding * R;\n  const depth = (2 * r) / 3, lensC = orbit - (2 * r - depth);\n  const tones = angles.map((a) => ({\n    angle: a,\n    main: pt(a, orbit).map(q),\n    lens: hasMut ? pt(a, lensC).map(q) : null,\n    name: pt(a, hasMut ? orbit + depth / 2 : orbit).map(q),\n    lens_name: hasMut ? pt(a, lensC + r - depth / 2).map(q) : null,\n    number: pt(a, hasMut ? R + 5 : orbit - r - std.n_in * R).map(q),\n    m_number: hasMut ? pt(a, orbit - r - std.n_in * R).map(q) : null,\n  }));\n  return { r: q(r / R), lens_r: hasMut ? q(r / R) : null, ding_r: q(dr / R), decor_r: std.inner_ring, depth: q(depth / R), lens_orbit: q(lensC / R), tonefields: tones };\n}\nconst out = {\n  _provenance: \"Evaluated from the Chord Card (claude.ai artifact TgFMSuaPN4ZZbkp6y71cte, the K1 source of truth), function card() with its std branch: orbit .745R, r_note .19R, r_ding .2R, inner_ring .355R, depth = 2r/3, lensC = orbit - (2r - depth), main name at orbit + depth/2 on a mutant card, lens name at lensC + r - depth/2, main numbers at R + 5 (R = 66) on a mutant card and at orbit - r - .085R otherwise, M<n> at orbit - r - .085R. Every figure is in units of R, y up. Regenerate with the evaluator in the P2 lane notes (gen_ref.js); do not edit by hand.\",\n  _angle_note: \"The Card draws Pygmy on its real instrument angles (290, 250, ...); HPE.layout fixture rev 3 puts every mutant card on 270, 230, ... a uniform 20 degree rotation. P2 never changes geometry, so the K1 diff is taken on orbit, radius, lens offset, ding and decor, and the rotation is a recorded finding (angle_offset).\",\n  pygmy: Object.assign({ angle_offset: 20 }, card(PYG, true)),\n  kurd9: Object.assign({ angle_offset: 0 }, card(KURD, false)),\n};\nrequire(\"fs\").writeFileSync(\"tests/fixtures/neotone_card_reference.json\", JSON.stringify(out, null, 1) + \"\\n\");\n"
+}

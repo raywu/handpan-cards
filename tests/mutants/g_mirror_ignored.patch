@@ -4,10 +4,10 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -461,7 +461,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var zones = collect(source);
- 
-     var seedOptions = (seedOrFields && seedOrFields.options) || {};
+@@ -799,7 +799,7 @@
+       });
+       return plain;
+     }
 -    var mirrors = resolveMirrors(options, seedOptions);
 +    var mirrors = { top: false, bottom: false };
      var anchor = resolveAnchor(options, seedOptions);

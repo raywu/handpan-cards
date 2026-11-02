@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1499,7 +1499,7 @@ html.about-open{overflow:hidden}
+@@ -1612,7 +1612,7 @@ html.about-open{overflow:hidden}
                 autocomplete="off" spellcheck="false" enterkeyhint="next" aria-describedby="scale-field-msg scale-fields-note">
        </div>
        <div class="fieldrow">
--        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES (OPTIONAL)</label>
+-        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">Bottom Notes / Neotone Mutant Notes (optional)</label>
 +        <label class="sheetlabel" id="scale-bottom-label" for="scale-bottom">BOTTOM NOTES, LOW TO HIGH (OPTIONAL)</label>
          <input id="scale-bottom" type="text" placeholder="C3 Eb3" autocapitalize="off" autocorrect="off"
                 autocomplete="off" spellcheck="false" enterkeyhint="done" aria-describedby="scale-field-msg scale-fields-note">
-       </div>
+         <label id="scale-neotone-wrap" for="scale-neotone"><input id="scale-neotone" type="checkbox" disabled><span id="scale-neotone-text">Neotone</span></label>

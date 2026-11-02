@@ -5,12 +5,12 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -349,7 +349,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     // encode WRITES): it leaves both gates reading exactly as they did in v1
+@@ -599,7 +599,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      // while making every version this build knows decodable, so a v1 link
      // still opens in a v2 app and only a genuinely NEWER one is refused.
--    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], NEWEST));
-+    var VERSION = NEWEST;
+     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
+-    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
++    var VERSION = newest;
  
      // 1. The cap is the FIRST gate: an over-cap link is refused on length,
      //    before the version byte and before any parsing at all.

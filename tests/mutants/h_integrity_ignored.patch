@@ -4,11 +4,11 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -454,7 +454,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -473,7 +473,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        texts.push(decoded);
        meaning.push(decoded);
      }
 -    if (segs[segs.length - 1] !== checkHex(meaning.join(SEP))) return badNote(text);
  
      var options = { palette: 0, parent: null, mirror: false, name: name };
-     var rank = -1;
+     var profiled = text.charAt(0) === "7";

@@ -3,9 +3,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11205,7 +11205,7 @@ function linesHTML(d, ch) {
+@@ -12042,7 +12042,7 @@ function linesHTML(d, ch) {
    });
-   const nb = ch.fields.filter(f => d.fields[f][3] === "bottom").length;
+   const nb = d.geom && d.geom.place ? 0 : ch.fields.filter(f => d.fields[f][3] === "bottom").length;
    return `<div class="lines">
 -    ${nb ? `<div class="badge"${ISLAND()}>${nb} BOTTOM NOTE${nb > 1 ? "S" : ""}</div>` : ""}
 +    ${nb ? `<div class="badge"${ISLAND()}>${nb} BOTTOM NOTES</div>` : ""}

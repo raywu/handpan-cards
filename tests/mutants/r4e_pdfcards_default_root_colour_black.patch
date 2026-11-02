@@ -4,12 +4,12 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -587,7 +587,7 @@
+@@ -650,7 +650,7 @@ HPE.pdfcards = (function () {
      var paper = PAPER[opts.paper] ? opts.paper : "letter";
      var page = pageSize(paper);
  
 -    BLUE = deck.col_root || BLUE0;
 +    BLUE = deck.col_root || [0, 0, 0];
      GREEN = deck.col_tone || GREEN0;
- 
-     var doc = HPE.pdf.doc(page[0], page[1]);
+     var placedR = profileRadius(deck.spec._geom);
+     if (placedR) deck = Object.assign({}, deck, { R: placedR });

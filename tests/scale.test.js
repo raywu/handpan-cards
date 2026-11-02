@@ -62,7 +62,14 @@ const SENTENCES = {
   },
   NOTE_REPEATED: {
     repeated: "<B> and <A> are the same note, and a note may appear only once per shell. A bottom copy takes square brackets and its octave, e.g. (D3) A3 [C4] C4."
-  }
+  },
+  PROFILE_UNKNOWN: { "": "This Neotone layout is not one this app knows." },
+  PROFILE_MAP_INVALID: { "": "The Neotone layout is malformed: it must list 9 main and 9 mutant tonefields, each empty or one of your notes, top notes in the main ones and bottom notes in the mutant ones." },
+  PROFILE_NOTE_MISSING: { "": "The Neotone layout leaves out one of your notes. Every note needs a tonefield." },
+  PROFILE_NOTE_TWICE: { "": "The Neotone layout places the same note in two tonefields." },
+  PROFILE_FULL: { "": "Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes." },
+  PROFILE_CONFLICT: { "": "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it." },
+  NEOTONE_INPUT: { "": "Neotone has 9 main tonefields. Remove the extra top note to save." }
 };
 
 function flatReasons() {
@@ -118,6 +125,37 @@ test("every refused row carries its code and its sentence", () => {
       if (alt === "") continue;
       assert.equal(flatReasons()[code][alt], SENTENCES[code][alt], `${code}.${alt}`);
     }
+  }
+});
+
+test("every profile refusal carries its code and its sentence", () => {
+  const kurd = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+  const good = ["r57", "r58", "r60", "r62", "r64", "r65", "r67", "r69", "r72"].concat(Array(9).fill(null));
+  const prof = (map, extra) => Object.assign({ profile: { id: "paired", rev: 2, map } }, extra);
+  const rows = [
+    ["PROFILE_UNKNOWN", { profile: { id: "x", rev: 2, map: good } }],
+    ["PROFILE_MAP_INVALID", prof(good.slice(1))],
+    ["PROFILE_NOTE_MISSING", prof(good.map((k, i) => i === 8 ? null : k))],
+    ["PROFILE_NOTE_TWICE", prof(good.map((k, i) => i === 8 ? "r57" : k))],
+    ["PROFILE_CONFLICT", prof(good, { mirror: true })]
+  ];
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const wide = Array.from({ length: 20 }, (_, i) => names[(52 + i) % 12] + (Math.floor((52 + i) / 12) - 1));
+  const wideStr = "(" + wide[0] + ") " + wide.slice(1).join(" ");
+  const wideFields = core.parseSeed(wideStr).value.fields;
+  const wideMap = Object.keys(wideFields).filter(id => wideFields[id][3] !== "ding").slice(0, 18)
+    .map(id => "r" + wideFields[id][2]);
+  core.PROFILE_ENABLED = true;
+  try {
+    for (const [code, options] of rows.concat([["PROFILE_FULL", prof(wideMap)]])) {
+      const str = code === "PROFILE_FULL" ? wideStr : kurd;
+      const r = core.parseSeed(str, options);
+      assert.equal(r.ok, false, code);
+      assert.equal(r.code, code);
+      assert.match(r.reason, sentenceMatcher(SENTENCES[code][""]), code);
+    }
+  } finally {
+    core.PROFILE_ENABLED = false;
   }
 });
 
