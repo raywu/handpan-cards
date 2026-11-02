@@ -2,20 +2,21 @@
 
 Workspace: `bamboo-grove` (owner Q8 answer, AFK rec: trial workspace, reversible). Team: `TRI`.
 The Linear MCP has no team-creation and no workflow-status tools, so team `HPC` was not created
-and no custom statuses exist. Delivery state is carried by a single-select label group instead
-(owner Q4 recommended statuses; this is the MCP fallback). If the owner later creates `HPC` and
-custom statuses in the Linear UI, move each `delivery/*` label to the status of the same name.
+and no custom statuses exist. Delivery state is carried by the single-select label group `delivery`
+instead (owner Q4 recommended statuses; this is the MCP fallback). Label names carry no prefix. If
+the owner later creates `HPC` and custom statuses in the Linear UI, move each `delivery` child to the
+status of the same name.
 
 ## Delivery state: exactly one per issue
 
 | Delivery state | Linear status | Label |
 |---|---|---|
-| planned | Todo | `delivery/planned` |
-| building | In Progress (In Review while a reviewer runs) | `delivery/building` |
-| on DEV | In Progress | `delivery/on-dev` |
-| DEV-QA passed | In Progress | `delivery/dev-qa-passed` |
-| held for main | In Progress | `delivery/main-held` |
-| released | Done | `delivery/released` |
+| planned | Todo | `planned` |
+| building | In Progress | `building` |
+| on DEV | In Progress | `on-dev` |
+| DEV-QA passed | In Progress | `dev-qa-passed` |
+| held for main | In Progress | `main-held` |
+| released | Done | `released` |
 | paused | (unchanged) | `paused` (outside the group, adds to a delivery label) |
 
 The `delivery` group is single-select, so Linear enforces one delivery label per issue.
@@ -30,7 +31,9 @@ Backlog, Canceled and Duplicate keep their stock meanings.
 
 ## Rules
 
-- One project per workstream (one-sentence description + plan doc link); one issue per lane.
+- One issue per workstream (description line 1 `Plan: <path>`, line 2 `Key: <repo>#<slug>`); lanes are
+  `lifecycle start` comments, not issues. Existing projects stay; no new project is created.
+- Lifecycle events are written as they happen: `linear-checkin` skill, section "Lifecycle".
 - PRs say `Refs TRI-n`, never `Fixes`: a DEV merge must not move an issue to Done. The integrator moves labels and statuses by hand.
 - Only the integrator writes to Linear; lanes read (prefer the read-only MCP endpoint) and report in their return schema.
 - List MCP tools at session start; do not hard-code tool names.

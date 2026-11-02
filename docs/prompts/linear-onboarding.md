@@ -29,6 +29,7 @@ checks first and acts only if its check fails, so a rerun skips finished steps.
 | O2 | owner | consent "use Linear for <repo>?" and a 3-letter team key | answer recorded |
 | O3 | owner, Linear UI | create team `<KEY>` (no MCP tool can). Free plan: 2 teams and 250 issues shared across the workspace; at either limit the owner chooses between upgrading and a workspace per repo | `list_teams query=<KEY>` returns it; workspace issue total under 250 |
 | O4 | agent | `save_issue_label` for the labels above (copy descriptions from team TRI in workspace bamboo-grove) | `list_issue_labels team=<KEY> includeGroups=true`; create only missing names under the right parent |
+| O4b | agent | add `.context/linear-pending.jsonl` to `.gitignore` in the same `claude/linear-bind` PR | `git check-ignore .context/linear-pending.jsonl` prints the path |
 | O5 | agent | write `.linear.json` at the repo root on a `claude/linear-bind` branch, open a PR; owner merges | file on the default branch |
 | O6 | integrator | one issue per OPEN workstream (memory, plans, open PRs) | `list_issues team=<KEY> query="Key: <repo>#<slug>"` returns 0 before each create |
 | O7 | agent | one dry check-in (no writes) showing the reconcile table: issue / Linear state / gh state / correction | read only |
@@ -44,8 +45,9 @@ checks first and acts only if its check fails, so a rerun skips finished steps.
   corrections (integrator only), then interview the owner on open items.
 - Correction comment format:
   `check-in <YYYY-MM-DD>: delivery <old>→<new>; status <old>→<new>; evidence: PR #<n> <state>, validate <conclusion> @ <sha7>, merged dev=<y/n> main=<y/n>`
-- Never delete, archive, or edit an owner-written description. Propose new issues; create one only
-  for a workstream with an open PR and no issue.
+- Lifecycle events are written as they happen (linear-checkin "Lifecycle"); check-in is the backstop.
+- Never delete, archive, or edit an owner-written description. Create an issue at the "added" event
+  or for a workstream with an open PR and no issue, after the `Key:` search returns 0.
 - Reference implementation: raywu/handpan-cards (`.linear.json`,
   `docs/plans/2026-10-28-linear-convention-note.md`).
 
