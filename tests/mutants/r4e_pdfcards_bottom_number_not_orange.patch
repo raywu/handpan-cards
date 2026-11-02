@@ -4,7 +4,7 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -372,7 +372,7 @@
+@@ -671,7 +671,7 @@ HPE.pdfcards = (function () {
          var nr, col, fnt;
          if (zone === "bottom") {
            nr = orb + rr + R * g.n_out;
