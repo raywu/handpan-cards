@@ -59,9 +59,21 @@ FREE = "free_placement"
 FREE_FIXTURE = os.path.join(paths.ROOT, "tests", "fixtures",
                             "free_placement_case_v1.json")
 
+# A FIFTH kind (Neotone lane P): paired-area decks, solve outputs carrying
+# geom.place. Pygmy with its proposal, and a 9-note Kurd with two empty slots.
+PROFILE_CASES = {
+    "profile_pygmy": os.path.join(paths.ROOT, "tests", "fixtures",
+                                  "profile_case_pygmy_v2.json"),
+    "profile_kurd9": os.path.join(paths.ROOT, "tests", "fixtures",
+                                  "profile_case_kurd9_v2.json"),
+    "profile_hijaz": os.path.join(paths.ROOT, "tests", "fixtures",
+                                  "profile_case_hijaz_v2.json"),
+}
+
 # Every case the glyph/vector sweeps below iterate: generated seeds first
-# (unchanged), then the three built-ins, then the free-placement fixture.
-CASES = SEEDS + BUILTINS + [FREE]
+# (unchanged), then the three built-ins, then the free-placement fixture, then
+# the paired-area decks.
+CASES = SEEDS + BUILTINS + [FREE] + list(PROFILE_CASES)
 
 VARIANTS = ("full", "shop")
 
@@ -210,7 +222,13 @@ class PrintParityTest(unittest.TestCase):
             hifi.build(py_path, deck, chords_only=(variant == "shop"))
             _js_pdf_builtin(case, js_path, variant=variant)
         else:
-            payload = _free_payload() if case == FREE else _generate(case)
+            if case == FREE:
+                payload = _free_payload()
+            elif case in PROFILE_CASES:
+                with open(PROFILE_CASES[case], encoding="utf8") as fh:
+                    payload = json.load(fh)
+            else:
+                payload = _generate(case)
             deck = decks.from_generated(payload)
             hifi.build(py_path, deck, chords_only=(variant == "shop"))
             _js_pdf(payload, js_path, variant=variant)
@@ -315,6 +333,18 @@ class PrintParityTest(unittest.TestCase):
             hifi.build(there, decks.from_generated(moved), chords_only=True)
             self.assertNotEqual(_glyphs(home), _glyphs(there),
                                 "three moved bottom notes changed no glyph")
+
+    def test_PA_the_profile_cases_are_swept_and_carry_geom_place(self):
+        # Neotone lane P: a sweep that silently dropped the paired-area decks
+        # would still pass every other check here.
+        self.assertEqual(set(PROFILE_CASES),
+                         {"profile_pygmy", "profile_kurd9", "profile_hijaz"})
+        self.assertTrue(set(PROFILE_CASES).issubset(set(CASES)))
+        for case, path in PROFILE_CASES.items():
+            with open(path, encoding="utf8") as fh:
+                payload = json.load(fh)
+            self.assertIn("place", payload["deck"]["geom"], case)
+            self.assertEqual(decks.from_generated(payload)["R"], 61.8, case)
 
     def test_the_sweep_covers_every_builtin_and_both_variants(self):
         # Review C1's coverage floor: a parameterization that silently

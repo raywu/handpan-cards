@@ -1,0 +1,15 @@
+# kills: PA: a lens name shrinks to its cap and never overflows it, even under the 3.6 pt floor (owner 2026-11-01)
+# suite: node --test --test-name-pattern=lens.name.shrinks.to.its.cap tests/pdfcards.test.js
+# fault: Put the 3.6 pt octave floor back on lens names so a wide name overflows its lens.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -521,7 +521,7 @@ HPE.pdfcards = (function () {
+     });
+   }
+ 
+-  var LENS_FIT_FLOOR = 0.1;
++  var LENS_FIT_FLOOR = 3.6 / 0.66;
+ 
+   function neoFit(name, oct, size, cap, floor) {
+     while (size - 0.1 >= floor && noteW(name, oct, "Label", size) > cap) size -= 0.1;
