@@ -240,6 +240,9 @@ class BuildTest(BuiltDecksTest):
                 stamped = tight.count(squeeze(deck["credit"]))
                 if chords_only:
                     self.assertEqual(
+                        tight.count("handpantheory.com"), len(deck["chords"]),
+                        "%s: the URL mark is once per chord card" % key)
+                    self.assertEqual(
                         stamped, len(deck["chords"]),
                         "%s: %d cards on the sheets, %d chords in the deck"
                         % (key, stamped, len(deck["chords"])))
@@ -250,6 +253,9 @@ class BuildTest(BuiltDecksTest):
                                      "%s: title card leaked into the print "
                                      "shop file" % key)
                 else:
+                    self.assertEqual(
+                        tight.count("handpantheory.com"), len(deck["chords"]),
+                        "%s: the mark is on chord cards only" % key)
                     self.assertEqual(stamped, 9 * pages,
                                      "%s: full deck must fill every slot" % key)
                     self.assertGreaterEqual(stamped, len(deck["chords"]) + 2)

@@ -1,0 +1,15 @@
+# kills: URL mark: every chord card of all five decks has one mark, bottom to top, 4.0 pt, URL grey, lower end at the footer baseline, inside the rounded frame, clear of the credit and the warning column
+# suite: node --test --test-reporter=tap --test-name-pattern ^URL.mark..every.chord.card tests/pdfcards.test.js
+# mark start moves off the footer baseline (js).
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -202,7 +202,7 @@ HPE.pdfcards = (function () {
+ 
+   function urlMark(c, x, y, w, h) {
+     c.saveState();
+-    c.translate(x + w - 6.0, y + 6.0);
++    c.translate(x + w - 6.0, y + 9.0);
+     c.rotate(90);
+     tracked(c, 0, 0, URL_MARK.text, "Label", URL_MARK.size, URL_MARK.track, "l",
+             URL_MARK.grey);
