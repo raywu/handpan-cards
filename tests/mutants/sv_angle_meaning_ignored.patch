@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10678,7 +10678,7 @@ function savedMeaning(deckValue) {
+@@ -10741,7 +10741,7 @@ function savedMeaning(deckValue) {
      o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
      o.anchor === "between" ? "between" : "one",
      normalizedSeats,

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11000,7 +11000,7 @@ function savedEditedRecord(target, candidate) {
+@@ -11063,7 +11063,7 @@ function savedEditedRecord(target, candidate) {
    const out = { ...savedClone(target), v: candidate.record.v, s: candidate.record.s };
    const options = savedObject(target.o) ? { ...savedClone(target.o) } : {};
    for (const name of SAVED_PORTABLE_OPTIONS) delete options[name];

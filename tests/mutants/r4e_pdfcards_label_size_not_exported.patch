@@ -4,11 +4,11 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -713,7 +713,6 @@ HPE.pdfcards = (function () {
+@@ -677,7 +677,6 @@ HPE.pdfcards = (function () {
      PAPER: PAPER,
      CARD_WARNINGS: CARD_WARNINGS,
      labelRatio: labelRatio,
 -    labelSize: labelSize,
      numSize: numSize,
-     profileRadius: profileRadius,
-     profileExtent: profileExtent,
+     URL_MARK: URL_MARK,
+     // exported for the port's own unit tests, not for the app

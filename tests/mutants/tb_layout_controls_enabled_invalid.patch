@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11795,7 +11795,7 @@ function paintLayout() {
+@@ -12374,7 +12374,7 @@ function paintLayout() {
    anglePrev.disabled = angleNext.disabled = !boxOk || !slidable;
-   resetBtn.disabled = !boxOk || !(layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
+   resetBtn.disabled = !boxOk || !(neotoneOn() || layoutSeats || layoutAngles || mirror || bottomMirror() || anchor !== "one");
    fineBox.hidden = !fineOpen;
 -  fineBtn.disabled = !boxOk;
 +  fineBtn.disabled = false;

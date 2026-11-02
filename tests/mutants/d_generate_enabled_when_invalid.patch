@@ -6,8 +6,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13045,7 +13045,7 @@ function syncParseState({ paint }) {
-     typedNow = null;
+@@ -14172,7 +14172,7 @@ function syncParseState({ paint }) {
+     neoTyping = false;
      paintLayout();
      scaleBox.classList.add("bad");
 -    genBtn.disabled = true;

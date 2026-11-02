@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11039,19 +11039,22 @@ function applySavedCommand(staged, command, candidate) {
+@@ -11102,19 +11102,22 @@ function applySavedCommand(staged, command, candidate) {
      if (!match) attachCandidate(row);
      targetId = row.instanceId; desired = { kind: "saved", id: targetId };
    } else if (command.type === "edit") {

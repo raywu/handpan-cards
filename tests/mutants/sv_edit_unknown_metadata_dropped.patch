@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10997,7 +10997,7 @@ function savedCandidate(command) {
+@@ -11060,7 +11060,7 @@ function savedCandidate(command) {
  }
  const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles", "profile"];
  function savedEditedRecord(target, candidate) {

@@ -4,7 +4,7 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -702,7 +702,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -702,7 +702,7 @@
          bestR = r;
        }
      }
@@ -12,4 +12,4 @@ diff --git a/src/engine/layout.js b/src/engine/layout.js
 +    for (i = 0; i < n; i += 1) fields[ids[P[i].i]][5] = H[i].label;
    }
  
-   /* ---- the paired-area profile (ENGINE-SPEC 18) -------------------------- *
+   /* ---- the Neotone profile (ENGINE-SPEC 18) ------------------------------ *

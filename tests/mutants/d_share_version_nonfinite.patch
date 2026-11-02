@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10367,10 +10367,6 @@ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].rea
+@@ -10430,10 +10430,6 @@ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].rea
  // A version that is not a finite number is untrusted junk, not a newer app: the
  // section 2 enum is closed and BAD_NOTE is its rejection for malformed input.
  function checkShareVersion(v) {

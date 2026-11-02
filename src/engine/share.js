@@ -84,7 +84,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // What a stored record carries. Records keep the v4 shape (formatSeed plus
   // options), so the wire version moves alone.
   var RECORD_VERSION = 4;
-  // Paired-area profiles (ENGINE-SPEC 18) travel at wire v7 and are stored as
+  // Neotone profiles (ENGINE-SPEC 18) travel at wire v7 and are stored as
   // record v5; an acoustic seed never leaves v6 / record 4.
   var PROFILE_VERSION = 7;
   var PROFILE_RECORD_VERSION = 5;
@@ -498,9 +498,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (!profiled) return badNote(text);
         at = OPTION_ORDER.pair;
         pairs += 1;
+        var pairMap = m[1].split(".").map(function (t) { return t === "-" ? null : t; });
         options.profile = {
-          id: "paired", rev: 1,
-          map: m[1].split(".").map(function (t) { return t === "-" ? null : t; })
+          id: "paired",
+          rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
+          map: pairMap
         };
       } else if (profiled) {
         return badNote(text);
@@ -535,7 +537,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rank = at;
     }
     if (profiled && pairs !== 1) return badNote(text);
-    return HPE.core.parseSeed(scaleString(scale), options);
+    var read = HPE.core.parseSeed(scaleString(scale), options);
+    if (!read.ok && profiled && options.profile.rev === 2 &&
+        (read.code === "PROFILE_NOTE_MISSING" || read.code === "PROFILE_FULL")) {
+      options.profile.rev = 1;
+      read = HPE.core.parseSeed(scaleString(scale), options);
+    }
+    return read;
   }
 
   /* ---- decode ----------------------------------------------------------- */

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10371,7 +10371,7 @@ function checkShareVersion(v) {
+@@ -10434,7 +10434,7 @@ function checkShareVersion(v) {
      return { ok: false, code: "BAD_NOTE",
               reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(v).slice(0, 12)) };
    }

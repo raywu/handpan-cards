@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10674,7 +10674,7 @@ function savedMeaning(deckValue) {
+@@ -10737,7 +10737,7 @@ function savedMeaning(deckValue) {
      const list = seatValue[ring];
      return !list || list.every((seat, i) => seat === i) ? null : list;
    });

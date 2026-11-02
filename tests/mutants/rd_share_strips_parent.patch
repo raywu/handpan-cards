@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10675,7 +10675,7 @@ function savedMeaning(deckValue) {
+@@ -10738,7 +10738,7 @@ function savedMeaning(deckValue) {
      return !list || list.every((seat, i) => seat === i) ? null : list;
    });
    const meaning = [HPE.core.identitySeed(deckValue.fields), o.name ? [true, o.name] : [false, ""],
