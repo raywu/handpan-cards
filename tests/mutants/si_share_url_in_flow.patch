@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -310,7 +310,7 @@ a.mode{text-decoration:none}
+@@ -311,7 +311,7 @@ a.mode{text-decoration:none}
  /* AD8: a wrapped label centres too (an <a> is start-aligned by default). */
  #settings-panel .mode{text-align:center}
  #share-url{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; font:inherit; font-size:16px;
 -  position:absolute; left:0; right:0; top:44px; z-index:29;
 +  position:static; left:0; right:0; top:44px; z-index:29;
-   background:#211d16; border:1px solid #433b2c; border-radius:8px; color:#eae6df}
+   background:#1a1814; border:1px solid #3a352d; border-radius:12px; color:#f6f4ed}
  #share-url[hidden]{display:none}
- #settings-trigger[aria-expanded="true"]{background:#f1ece1; color:#272219; border-color:#f1ece1}
+ #settings-trigger[aria-expanded="true"]{background:#221f1a; color:#f6f4ed; border-color:#a9a39a}

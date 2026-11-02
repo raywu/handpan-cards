@@ -1,0 +1,24 @@
+/* Direction A - Conservative ("today, rebranded").
+   Ground, chips, buttons, sheets, link gold: unchanged. Only the title becomes
+   the Handpan Theory horizontal lockup (mark + wordmark + CHORDS & PROGRESSIONS).
+   The h1 text stays in the DOM (SEO, a11y); only its glyphs are hidden. */
+.hrow h1{
+  height:72px;   /* README min 64px; 72 fills the 1fr column at 380 (~252px wide) */
+  background:url(/_look/logo/horizontal-full.svg) center/contain no-repeat;
+  font-size:0; color:transparent;  /* text kept for SEO and screen readers */
+}
+@media (min-width:640px){ .hrow h1{height:80px} }
+/* Short phones (vh < 740): the 72px lockup costs 28px of chrome, which takes
+   the card under tests/e2e.test.js CHROME_BUDGET minCardW at 375x667 and
+   320x568. There the lockup shrinks to the 44px row the buttons already set,
+   so chrome is byte-identical to today. This is below the README's 64px
+   lockup minimum - an owner call (alternative: wordmark-only lockup). */
+@media (max-height:739px){ .hrow h1{height:44px} }
+/* the landscape (max-height:520px) rule already visually hides the h1: untouched */
+
+/* About: same lockup in the sticky head beside BACK; the h2 text keeps its
+   place under it (copy is the rebrand plan's i18n step, not this direction). */
+.abouthead{flex-wrap:wrap; row-gap:var(--sp-2)}
+.abouthead::after{content:""; order:1; flex:1 1 160px; height:56px; max-width:260px;
+  background:url(/_look/logo/horizontal-full.svg) left center/contain no-repeat}
+#about .abouthead h2{order:2; flex:1 0 100%; font-size:clamp(24px,6vw,34px)}

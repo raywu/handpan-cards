@@ -1,4 +1,4 @@
-# kills: SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName
+# kills: SN: the WebSite node is named as the site name, at the canonical and og:url, with only the lowercase subdomain as alternateName
 # suite: node --test --test-name-pattern ^SN:.the.WebSite.node tests/app.test.js
 # The alternateName is the parent domain, the fallback the markup exists to avoid.
 diff --git a/index.html b/index.html

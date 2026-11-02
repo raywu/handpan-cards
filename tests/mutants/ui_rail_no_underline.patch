@@ -10,9 +10,9 @@ diff --git a/index.html b/index.html
     root colour against the table background. Marcellus has no bold cut, so a
     browser-faked bold does not carry the distinction; colour plus the
     underline do that work instead. */
--.seq-rail b{font-weight:400; color:#f1ece1; text-decoration:underline;
+-.seq-rail b{font-weight:400; color:#f6f4ed; text-decoration:underline;
 -  text-decoration-color:var(--root); text-underline-offset:3px}
-+.seq-rail b{font-weight:400; color:#f1ece1}
++.seq-rail b{font-weight:400; color:#f6f4ed}
  /* D-12 (owner decision 2026-10-02, "Scroll, one line" - supersedes the
     earlier wrap-to-a-second-line design): .seq-rail never wraps, regardless of
     sequence length or viewport. A long ADVANCED sequence instead overflows

@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12754,7 +12754,7 @@ function layoutOptions() {
- 
+@@ -13449,7 +13449,7 @@ function layoutOptions() {
  /** The seed options the sheet currently describes. */
  function sheetOptions() {
--  const o = { palette, mirror, mirrorBottom: bottomMirror(), anchor };
-+  const o = { palette, mirror, anchor };
+   const paired = pairedOn();
+-  const o = paired ? { palette } : { palette, mirror, mirrorBottom: bottomMirror(), anchor };
++  const o = paired ? { palette } : { palette, mirror, anchor };
    // iOS Smart Punctuation turns a typed ' or " into a curly U+2018/2019/
    // U+201C/U+201D, a typed -- into an em dash U+2014, and a typed ... into
    // a single ellipsis glyph U+2026 (a pasted en dash U+2013 can also show

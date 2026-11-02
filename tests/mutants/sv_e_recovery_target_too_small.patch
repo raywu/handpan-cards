@@ -6,10 +6,10 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -1333,7 +1333,7 @@ html.about-open{overflow:hidden}
     deck now downloads a client-built PDF instead. ---------------------------- */
- #saved-status{font-size:14px;line-height:1.5;margin:8px 0;color:#c4bcab;max-width:70ch}
+ #saved-status{font-size:14px;line-height:1.5;margin:8px 0;color:#a9a39a;max-width:70ch}
  #scale-conflict{font-size:15px;line-height:1.5;margin:12px 0}
 -#scale-conflict-separate,#saved-temporary-use{min-height:44px;white-space:normal;padding:10px 14px}
 +#scale-conflict-separate,#saved-temporary-use{min-height:10px;white-space:normal;padding:0}
  
  #scale-swipe-cue{position:fixed;top:var(--cue-y,50%);width:40px;height:40px;border-radius:50%;box-sizing:border-box;
-   display:flex;align-items:center;justify-content:center;background:#2c2619;border:1.5px solid #f1ece1;color:#f1ece1;
+   display:flex;align-items:center;justify-content:center;background:#2e281e;border:1.5px solid #f6f4ed;color:#f6f4ed;

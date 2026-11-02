@@ -3891,7 +3891,7 @@ test("the head carries theme-color and color-scheme meta tags matching --table",
   assert.ok(tableToken, "the --table token itself is missing");
   assert.strictEqual(themeColor[1].toLowerCase(), tableToken[1].toLowerCase(),
     "theme-color does not equal the --table token");
-  assert.strictEqual(themeColor[1].toLowerCase(), "#1a1815");
+  assert.strictEqual(themeColor[1].toLowerCase(), "#0f0e0b");
   assert.match(html, /<meta\s+name="color-scheme"\s+content="dark">/,
     "no <meta name=\"color-scheme\" content=\"dark\"> in the head");
 });
@@ -3920,14 +3920,12 @@ function linkHref(html, rel, extra = "") {
 
 const POSITIONING_TITLE = "Handpan Chords: Custom Scale Chord and Progression Practice";
 
-test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name", async () => {
+test("the title is the positioning string; og:title and twitter:title equal it; the h1 is the app name (temporary mismatch: see the lockup tests)", async () => {
   const html = headHtml();
   const title = /<title>([^<]*)<\/title>/.exec(html);
   assert.ok(title, "no <title>");
-  const h1 = /<h1>([^<]*)<\/h1>/.exec(html);
-  assert.ok(h1, "no <h1>");
+  assert.ok(/<h1>/.test(html), "no <h1>");
   assert.strictEqual(title[1], POSITIONING_TITLE);
-  assert.strictEqual(h1[1], "Handpan Chords");
   assert.strictEqual(metaContent(html, "property", "og:title"), title[1]);
   assert.strictEqual(metaContent(html, "name", "twitter:title"), title[1]);
 });
@@ -3944,18 +3942,18 @@ test("the description says free and progressions early, equals og:description an
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
 });
 
-test("the favicon is an inline SVG data URI drawing the Amara Dm card", async () => {
+test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a round tile", async () => {
   const html = headHtml();
   const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
   assert.ok(href.startsWith("data:image/svg+xml,"), "the SVG icon is not a data: URI");
   const svg = decodeURIComponent(href.slice("data:image/svg+xml,".length));
   assert.match(svg, /^<svg[^>]*\sviewBox='0 0 64 64'/, "the SVG has no 64x64 viewBox");
-  const circles = svg.match(/<circle\b[^>]*>/g) || [];
-  assert.strictEqual(circles.length, 11, "the icon should draw 11 circles");
-  const fills = (hex) => circles.filter((c) => new RegExp(`fill='${hex}'`, "i").test(c)).length;
-  assert.strictEqual(fills("#0B7B75"), 1, "exactly one teal (root) field");
-  assert.strictEqual(fills("#DD8F00"), 2, "exactly two amber (tone) fields");
-  assert.ok(!/<(text|linearGradient|radialGradient|filter)\b/.test(svg), "no text, gradients or filters");
+  assert.match(svg, /<circle cx='32' cy='32' r='32' fill='#0f0e0b'\/>/, "no #0f0e0b round tile");
+  assert.ok((svg.match(/#E6C99B/g) || []).length >= 8, "the mark-small ink #E6C99B is missing");
+  assert.ok(svg.includes("id='fav-smm'") && svg.includes("url(#fav-smm)"), "the mask id is not prefixed fav-");
+  assert.ok(!/#smm\b|id='smm'/.test(svg), "an unprefixed mask id survives");
+  assert.ok(!/#0B7B75|#DD8F00/i.test(svg), "an Amara teal or amber is still in the icon");
+  assert.ok(!/<(text|title)\b|role=|aria-label=/.test(svg), "the icon carries text, a title or a role");
 });
 
 test("the touch icon and the preview image exist and are named once", async () => {
@@ -3971,6 +3969,60 @@ test("the touch icon and the preview image exist and are named once", async () =
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
   assert.strictEqual(metaContent(html, "property", "og:image:height"), "630");
+});
+
+describe("logo in the app: the header lockup", () => {
+  const header = () => {
+    const h = headHtml();
+    return h.slice(h.indexOf("<header>"), h.indexOf("</header>"));
+  };
+  const h1Html = () => /<h1>([\s\S]*?)<\/h1>/.exec(header())[1];
+
+  test("LG: the h1's accessible name is exactly Handpan Theory, once, from one hidden span", async () => {
+    const h1 = h1Html();
+    const spans = h1.match(/<span class="sr-only">[^<]*<\/span>/g) || [];
+    assert.deepStrictEqual(spans, ['<span class="sr-only">Handpan Theory</span>']);
+    const svg = /<svg\b[^>]*>/.exec(h1)[0];
+    assert.match(svg, /\baria-hidden="true"/);
+    assert.match(svg, /\bfocusable="false"/);
+    assert.ok(!/\brole=|\baria-label=/.test(svg), "the svg opening tag carries role or aria-label");
+    assert.ok(!/<title\b/.test(h1), "the svg carries a <title>");
+    const text = h1.replace(/<svg[\s\S]*?<\/svg>/, "").replace(/<[^>]*>/g, "").trim();
+    assert.strictEqual(text, "Handpan Theory");
+  });
+
+  test("LG: exactly one horizontal-full svg in the h1, no <img>, no visible Handpan Chords in the header", async () => {
+    const h1 = h1Html();
+    assert.strictEqual((h1.match(/<svg\b[^>]*viewBox="0 0 683\.93 196"/g) || []).length, 1);
+    assert.strictEqual((h1.match(/<svg\b/g) || []).length, 1);
+    assert.ok(!/<img\b/.test(header()), "an <img> is in the header");
+    const visible = header().replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<span class="sr-only">[^<]*<\/span>/g, "").replace(/<[^>]*>/g, " ");
+    assert.ok(!/Handpan Chords/.test(visible), "the header still says Handpan Chords");
+  });
+
+  test("LG: the lockup sits between the brand:lockup markers", async () => {
+    const h = headHtml();
+    const begin = h.indexOf("<!-- brand:lockup begin -->");
+    const end = h.indexOf("<!-- brand:lockup end -->");
+    assert.ok(begin > 0 && end > begin, "brand:lockup markers missing");
+    assert.strictEqual((h.slice(begin, end).match(/<svg\b/g) || []).length, 1);
+  });
+
+  test("LG: every id in index.html is unique and every svg url(#x) / href=#x resolves", async () => {
+    const h = headHtml();
+    const ids = [...h.matchAll(/\sid="([^"']+)"/g)].map((m) => m[1]);
+    const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
+    assert.deepStrictEqual([...new Set(dup)], [], "duplicate ids");
+    const lockup = h.slice(h.indexOf("<!-- brand:lockup begin -->"), h.indexOf("<!-- brand:lockup end -->"));
+    const refs = [...lockup.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)].map((m) => m[1] || m[2]);
+    assert.ok(refs.length > 0, "the lockup references nothing");
+    for (const r of refs) assert.ok(ids.includes(r), `dangling reference #${r}`);
+    for (const id of ["hpt-hfm", "hpt-hfo", "hpt-hfg", "hpt-hfs", "hpt-hfb",
+        "hpt-hfL0", "hpt-hfL1", "hpt-hfL2", "hpt-hfL3", "hpt-hfL4", "hpt-hfL5"]) {
+      assert.ok(ids.includes(id), `lockup id ${id} missing`);
+    }
+    assert.ok(!ids.some((id) => /^hf/.test(id)), "an unprefixed lockup id survives");
+  });
 });
 
 /* ================================================================ Lane S2
@@ -4099,7 +4151,7 @@ test("the re-roll control reads as a button in mode S and reverts outside it", a
   app.run('setMode("A")');
   assert.ok(!app.els.shuffle.classList.contains("reroll"), "leaving S must drop .reroll");
   const html = require("node:fs").readFileSync(require("./helpers/sandbox.js").APP, "utf8");
-  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #433b2c/,
+  assert.match(html, /\.shuffle\.reroll\{[^}]*border:1px solid #3a352d/,
     ".reroll must borrow button.nav's border so it reads as a button");
   assert.match(html, /\.shuffle\.reroll:active\{background:#2e281e\}/,
     ".reroll must press like button.nav:active, not only recolour its text");
@@ -5997,6 +6049,42 @@ test("W1 line 12: MIRROR TOP sets the deck's mirror option and moves the preview
   app.els["scale-mirror"].click();
   assert.strictEqual(pressed(app, "scale-mirror"), true);
   assert.notStrictEqual(app.els["scale-preview"].innerHTML, before);
+});
+
+const MN_KURD = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5";
+const mnNumberLine = (deck, main) => {
+  const chord = deck.chords.find((c) => c.main === main && !c.sup);
+  return chord.fields.map((f) => deck.fields[f][5]).join("-");
+};
+
+test("MN: D Kurd 10 with MIRROR TOP reads Bb3 as 3 and the Dm number line 5-7-9, and unmirrored it reads 4-6-8", async () => {
+  const plain = (await w1Generate(MN_KURD)).deck;
+  const mirrored = (await w1Generate(MN_KURD, ["scale-mirror"])).deck;
+  assert.strictEqual(mnNumberLine(plain, "Dm"), "4-6-8");
+  assert.strictEqual(mnNumberLine(mirrored, "Dm"), "5-7-9");
+  const bb = Object.values(mirrored.fields).find((f) => f[0] === "Bb" && f[1] === 3);
+  assert.strictEqual(bb[5], "3");
+  assert.strictEqual(bb[4], 310);
+});
+
+test("MN: app and print agree on a mirrored deck: the pdfcards deck carries the diagram's slot 5 for every field", async () => {
+  const { deck } = await w1Generate(MN_KURD, ["scale-mirror"]);
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const built = E.pdfdeck.fromGenerated({ deck });
+  for (const id of Object.keys(deck.fields)) {
+    if (deck.fields[id][3] === "ding") continue;
+    assert.strictEqual(built.spec[String(id)][5], deck.fields[id][5], `field ${id}`);
+  }
+});
+
+test("MN: the title card omits the TONEFIELD NUMBERS line when the top is mirrored, and keeps it unmirrored or with only the bottom mirrored", async () => {
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const lines = async (seed, ids) => E.pdfdeck.fromGenerated({ deck: (await w1Generate(seed, ids)).deck }).legend_lines;
+  const has = (l) => l.some((x) => x.startsWith("TONEFIELD NUMBERS RUN 1 - "));
+  assert.strictEqual(has(await lines(W1_BOTTOM, [])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror-bottom"])), true);
+  assert.strictEqual(has(await lines(W1_BOTTOM, ["scale-mirror"])), false);
+  assert.strictEqual(has(await lines(MN_KURD, ["scale-mirror"])), false);
 });
 
 test("W1 line 110: MIRROR TOP moves every off-axis rim and inner field and no bottom field; MIRROR BOTTOM moves bottom fields only", async () => {
@@ -9582,11 +9670,9 @@ describe("discoverability: structured data", () => {
     assert.deepStrictEqual(ld["@graph"].map((n) => n["@type"]).sort(), ["WebApplication", "WebSite"]);
   });
 
-  test("SN: the WebSite node is named as the h1, at the canonical and og:url, with only the lowercase subdomain as alternateName", async () => {
+  test("SN: the WebSite node is named as the site name, at the canonical and og:url, with only the lowercase subdomain as alternateName", async () => {
     const html = INDEX_HTML();
     const site = node("WebSite");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(site.name, h1, `expected a WebSite node named ${SITE_NAME}`);
     assert.strictEqual(site.name, SITE_NAME, `expected a WebSite node named ${SITE_NAME}`);
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
@@ -9621,8 +9707,7 @@ describe("discoverability: structured data", () => {
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
     assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
-    const h1 = /<h1>([^<]*)<\/h1>/.exec(html)[1];
-    assert.strictEqual(app.name, h1, "name differs from the h1");
+    assert.strictEqual(app.name, SITE_NAME, "name differs from the site name");
     assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
     assert.ok(/\bfree\b/i.test(textOf(aboutHtml())), "isAccessibleForFree is marked up but the about section does not say free");
   });
@@ -10883,14 +10968,16 @@ describe("share icon", () => {
     assert.match(r, /z-index:29/);
     assert.ok(!/margin-top/.test(r), "margin-top is still there");
     assert.match(r, /min-height:44px/);
+    assert.match(r, /border-radius:12px/);
     assert.match(r, /font-size:16px/);
     assert.match(rule(c, "header") || "", /position:relative/);
     assert.match(rule(c, "#share-copy:disabled") || "", /opacity:\.5/);
-    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#211d16/);
+    assert.match(rule(c, "#share-copy:disabled:active") || "", /background:#1a1814/);
   });
 
-  test("SI: the glyph is two rotated stadiums at stroke-width 2.4 (the fine-pointer glyph)", async () => {
+  test("SI: the glyph is two rotated stadiums drawn at stroke-width 2 (CSS overrides the 2.4 attribute)", async () => {
     assert.match(html(), /<g transform="rotate\(-45 12 12\)"[^>]*stroke-width="2\.4"/);
+    assert.match(rule(css(), "#share-copy svg g") || "", /stroke-width:2\b(?!\.)/);
   });
 });
 
@@ -14307,29 +14394,28 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
   });
 
   test("FPD: a mirror or anchor toggle that would put a moved bottom note inside another's floor is refused, changes nothing and says why in plain words", async () => {
-    const app0 = await open();
-    slide(app0, "C3", 320);
+    const app0 = await open("[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    slide(app0, "C3", 0);
+    const kept = JSON.stringify(ang(app0));
+    app0.run("solvePreviewLayout = () => null");
     app0.els["scale-mirror-bottom"].click();
     assert.strictEqual(app0.els["scale-mirror-bottom"].getAttribute("aria-pressed"), "false");
     assert.match(app0.els["scale-drawer-status"].textContent, /too close/);
     assert.strictEqual(app0.els["scale-drawer-status"].textContent, app0.get("TOGGLE_REFUSED")());
     assert.strictEqual(app0.els["scale-drawer-status"].classList.contains("warn"), true, "the refusal is styled as a warning");
+    assert.strictEqual(JSON.stringify(ang(app0)), kept, "a refused toggle restores the angles as well as the mirror");
     for (const btn of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between"]) {
-      const app = await open();
-      slide(app, "C3", 320);
+      const app = await open(btn === "scale-mirror-bottom" ? "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4" : FPD);
+      slide(app, "C3", btn === "scale-mirror-bottom" ? 0 : 320);
       const before = JSON.stringify(ang(app));
       const pressed = app.els[btn].getAttribute("aria-pressed");
       app.els[btn].click();
       const stuck = app.get("HPE.layout.solve(lastSeed, {mirror: mirror, mirrorBottom: bottomMirror(), anchor: anchor, seats: null, angles: layoutAngles}).ok");
       assert.strictEqual(stuck, true, `${btn}: the sheet is still buildable`);
-      if (btn === "scale-mirror-bottom") {
-        assert.strictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: refused`);
-        assert.match(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: plain refusal`);
-      } else {
-        assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a top-shell toggle never moves a bottom note, so it is not refused`);
-        assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
-      }
-      assert.strictEqual(JSON.stringify(ang(app)), before);
+      assert.notStrictEqual(app.els[btn].getAttribute("aria-pressed"), pressed, `${btn}: a toggle that is not a real overlap is never refused`);
+      assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/, `${btn}: no refusal`);
+      if (btn === "scale-mirror-bottom") assert.strictEqual(JSON.stringify(ang(app)), JSON.stringify({ bottom: [180, null, null, null, null] }));
+      else assert.strictEqual(JSON.stringify(ang(app)), before);
       await generateClick(app);
       assert.doesNotMatch(app.els["scale-refusal"].textContent, /is not a note/, `${btn}: no BAD_NOTE template`);
     }
@@ -15697,7 +15783,7 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     assert.strictEqual(soLabel(app, 105), "U2");
   });
 
-  test("SO: MIRROR BOTTOM after the fold re-flows the seat numbers, moves no note and says so, and MIRROR TOP leaves every bottom number alone", async () => {
+  test("SO: MIRROR BOTTOM after the fold reflects every note, keeps every position's number and says so, and MIRROR TOP leaves every bottom number alone", async () => {
     const app = await soOpen();
     app.run("layoutAngles = { bottom: [300, 60, 0, 180, 240, 120] }; resyncSheet(true)");
     const ang = [101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id));
@@ -15707,13 +15793,11 @@ describe("SO: bottom seat numbers stay on their seats", () => {
     app.els["scale-mirror"].click();
     app.els["scale-mirror-bottom"].click();
     assert.strictEqual(d2Status(app),
-      "Bottom mirror on. The notes you placed stay put, and their seat numbers now run the other way round.");
-    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang);
-    const after = soLabels(app);
-    assert.deepStrictEqual(after, ["U2", "U6", "U4", "U3", "U1", "U5"]);
-    const changed = [101, 102, 103, 104, 105, 106].filter((id, k) => after[k] !== labels[k]).map(String);
-    assert.ok(changed.length > 0, "the mirror renumbered");
-    assert.deepStrictEqual(soFlash(app), changed.sort());
+      "Bottom mirror on. Every note swaps sides, the ones you placed too. Numbers stay with their places.");
+    assert.deepStrictEqual([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), ang.map((a) => (540 - a) % 360));
+    const pairs = (as, ls) => as.map((a, k) => `${a}=${ls[k]}`).sort();
+    assert.deepStrictEqual(pairs([101, 102, 103, 104, 105, 106].map((id) => soAngle(app, id)), soLabels(app)), pairs(ang, labels),
+      "every position keeps its number");
   });
 });
 
@@ -19163,6 +19247,88 @@ describe("NEO: Neotone sheet, saves and links", () => {
     const paired = meaning(options);
     assert.strictEqual(paired.length, acoustic.length + 1, "only the map is appended");
     assert.strictEqual(paired[paired.length - 1].length, 18);
+  });
+});
+
+describe("MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included", () => {
+  const SEED = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const bottoms = (app) => [101, 102, 103].map((id) => `${app.get(`lastSolved.fields[${id}][4]`)}=${app.get(`lastSolved.fields[${id}][5]`)}`);
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("MN3: MIRROR BOTTOM after sliding C3 to 300 reflects it to 240, leaves the unplaced notes to the solver, and the numbers stay with the positions", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(ang(app), { bottom: [240, null, null] });
+    assert.strictEqual(app.get("lastSolved.fields[101][4]"), 240);
+    const mirroredHome = app.get("JSON.stringify(HPE.layout.solve(lastSeed,{mirrorBottom:true,anchor:anchor,angles:null}).value.fields[102][4])");
+    assert.strictEqual(String(app.get("lastSolved.fields[102][4]")), mirroredHome);
+  });
+
+  test("MN3: MIRROR BOTTOM with no hand-placed notes leaves layoutAngles null", async () => {
+    const app = await dgOpen({}, SEED);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(app.get("bottomMirror()"), true);
+  });
+
+  test("MN3: toggling MIRROR BOTTOM twice returns the identical layoutAngles, drawing and share string", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    const start = ang(app);
+    const link = app.get("JSON.stringify(sheetOptions())");
+    const drawn = bottoms(app);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.deepStrictEqual(ang(app), start);
+    assert.strictEqual(app.get("JSON.stringify(sheetOptions())"), link);
+    assert.deepStrictEqual(bottoms(app), drawn);
+  });
+
+  test("MN3: the MIRROR BOTTOM notice says every note swaps sides, the placed ones too, not that they stay put", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    const text = app.els["scale-drawer-status"].textContent;
+    assert.ok(text.includes(JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"))["sheet.mirror_keeps_numbers"]), text);
+    assert.doesNotMatch(text, /stay put/);
+    assert.match(text, /placed too/);
+    assert.doesNotMatch(text, /too close/);
+  });
+
+  test("MN3: RESET LAYOUT after a toggle clears the angles", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+  });
+});
+
+describe("MN3: a 5-note bottom ring toggles", () => {
+  test("MN3: a 5-note bottom ring with a slid note reflects it on MIRROR BOTTOM instead of refusing (MN2 refused)", async () => {
+    const app = await dgOpen({}, "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    DG.moveTo(app, g, 315, 200);
+    DG.release(app, g, 315, 200);
+    const start = JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+    assert.deepStrictEqual(start, { bottom: [0, null, null, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(layoutAngles)")), { bottom: [180, null, null, null, null] });
+    assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/);
   });
 });
 

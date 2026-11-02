@@ -19,7 +19,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -298,7 +298,7 @@ h1{font-family:Marcellus, serif; font-weight:400; font-size:clamp(20px,5.5vw,27p
     min-height is ever removed. */
- .mode{border:1px solid #433b2c; border-radius:8px; background:#211d16; color:#c4bcab;
+ .mode{border:1px solid #3a352d; border-radius:8px; background:#1a1814; color:#a9a39a;
    font:600 10.5px/1 "Nunito Sans"; letter-spacing:.08em; padding:7px 11px 6px; cursor:pointer;
 -  min-height:44px; display:inline-flex; align-items:center; justify-content:center}
 +  display:inline-flex; align-items:center; justify-content:center}
@@ -32,6 +32,6 @@ diff --git a/index.html b/index.html
     visual change, accepted as the price of the target. */
 -.shuffle{grid-row:2; justify-self:center; margin-top:0; min-height:44px; display:inline-flex; align-items:center;
 +.shuffle{grid-row:2; justify-self:center; margin-top:7px; display:inline-flex; align-items:center;
-   justify-content:center; background:none; border:none; color:#a79d8b; cursor:pointer;
+   justify-content:center; background:none; border:none; color:#a9a39a; cursor:pointer;
    font:600 9.5px/1 "Nunito Sans"; letter-spacing:.13em; text-transform:uppercase}
- .shuffle.on{color:#f1ece1}
+ .shuffle.on{color:#f6f4ed}

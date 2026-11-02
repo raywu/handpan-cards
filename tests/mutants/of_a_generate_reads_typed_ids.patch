@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12782,7 +12782,7 @@ function sheetOptions() {
-     if (seeded()) o.replaces = editingId;
-     else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
+@@ -13479,7 +13479,7 @@ function sheetOptions() {
+       else if (d && d.options && d.options.replaces) o.replaces = d.options.replaces;
+     }
    }
--  if (layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
-+  if (layoutSeats && !typedNow) o.seats = JSON.parse(JSON.stringify(layoutSeats));
-   if (layoutAngles) o.angles = JSON.parse(JSON.stringify(layoutAngles));
+-  if (!paired && layoutSeats) o.seats = JSON.parse(JSON.stringify(layoutSeats));
++  if (!paired && layoutSeats && !typedNow) o.seats = JSON.parse(JSON.stringify(layoutSeats));
+   if (!paired && layoutAngles) o.angles = JSON.parse(JSON.stringify(layoutAngles));
    return o;
  }

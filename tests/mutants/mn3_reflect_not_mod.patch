@@ -1,0 +1,15 @@
+# kills: MN3: reflectAngles reflects explicit entries across the vertical axis, keeps null, and is its own inverse
+# suite: node --test --test-name-pattern ^MN3..reflectAngles.reflects.explicit.entries.across.the.vertical.axis..keeps.null..and.is.its.own.inverse$ tests/layout.test.js
+# Reflection leaves negative angles for placed notes past the axis.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -841,7 +841,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   function reflectAngles(angles) {
+     var list = angles && typeof angles === "object" ? angles.bottom : null;
+     if (!isArray(list)) return null;
+-    return { bottom: list.map(function (a) { return a === null ? null : norm(180 - a); }) };
++    return { bottom: list.map(function (a) { return a === null ? null : 180 - a; }) };
+   }
+ 
+   HPE.layout = {

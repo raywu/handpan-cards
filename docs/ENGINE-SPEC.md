@@ -498,9 +498,9 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   centre; `between` puts the bottom centre between notes 1 and 2 with note 1 on
   the right (the Pygmy pattern). The retired odd-rim anchor and the "left-first"
   and "right-first" names, which described the anchor and not a direction, are
-  gone. `mirror` reflects the rim and inner rings about the vertical axis and is
-  the only thing that puts odd notes on the left; `mirrorBottom` reflects the
-  bottom ring and, when absent, follows `mirror`.
+  gone. `mirror` reflects the notes of the rim and inner rings about the vertical
+  axis; `mirrorBottom` reflects the notes of the bottom ring and, when absent,
+  follows `mirror`. A mirror moves no index number (owner 2026-10-30).
 - DECIDED(owner 2026-10, Rule N) A seat's index number belongs to the position,
   not to the note: moving a note (`options.seats`) changes the name drawn there
   and nothing else, on the plate and on the generated cards alike. The same
@@ -908,10 +908,23 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   indices and never renumbers.
 - DECIDED(owner 2026-10, replacing the right-first / left-first polarity bullet)
   The layout options are `mirror`, `mirrorBottom`, `anchor`, `seats` and `angles`.
-  `mirror` (boolean, default false) reflects the rim and the inner ring about
-  the vertical axis; false puts odd-numbered notes on the right, even on the
-  left, on every deck. `mirrorBottom` (boolean) reflects the bottom ring and,
-  when absent, follows `mirror`; with no bottom notes it is false.
+  `mirror` (boolean, default false) reflects the notes of the rim and the inner
+  ring about the vertical axis; the numbers stay at their unmirrored positions,
+  so the odd numbers stay on the right and each note takes the number of the
+  position it lands on (owner 2026-10-30). `mirrorBottom` (boolean) does the
+  same for the bottom ring and, when absent, follows `mirror`; with no bottom
+  notes it is false. `solve` itself is unchanged under `angles`: it reflects every null-entry
+  note and draws every explicit entry at the angle it names. The sheet's toggle
+  reflects the explicit entries too through `HPE.layout.reflectAngles(angles)`
+  (pure; each explicit `a` becomes `norm(180 - a)`, null stays null, it is its own
+  inverse; owner 2026-10-31), so every note swaps sides and numbers stay with
+  positions (rule N cyclic match against the unmirrored home). MN2's rule S
+  (`holdForMirror`, hold the orphans) is SUPERSEDED and removed. Records and links
+  need no conversion: `angles` always meant the drawn angle in its own frame, so
+  RECORD_VERSION and the wire VERSION do not change. Tests: "MN3: reflectAngles
+  reflects explicit entries across the vertical axis, keeps null, and is its own
+  inverse", "MN3: Pygmy C3 slid 300 -> 285 ...", "MN3 release safety ..." and the
+  2..8-ring sweep.
   `layout.resolveMirrors` is the one place the two are resolved.
 - DECIDED(owner 2026-10) `anchor` is `"one"` (default: note 1 at bottom centre)
   or `"between"` (bottom centre between notes 1 and 2, note 1 on the right).

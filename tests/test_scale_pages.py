@@ -26,17 +26,17 @@ ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org
 SIZE_CAP = 62 * 1024 - 800
 PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#2563B0", "#3B7A2A",
             "#C0452C", "#B3263A"]
-BG_LIGHT = "#fbfaf8"
-BG_DARK = "#15181b"
-BROWN = "#1a1815"
-SHARED_ROOT = ":root{color-scheme:dark;--bg:#1a1815;--fg:#eae6df;--muted:#c4bcab;--r:#e3b25c;"
+BG_LIGHT = "#f6f4ed"
+BG_DARK = "#0f0e0b"
+BROWN = "#0f0e0b"
+SHARED_ROOT = ":root{color-scheme:dark;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--r:#f6f4ed;"
 SHARED_RULES = [
     "body{background:var(--bg);color:var(--fg);font-family:\"Nunito Sans\",system-ui,sans-serif;line-height:1.55;",
     "h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}",
     "font-size:24px;",
-    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
+    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}",
     "a:hover{text-decoration-thickness:2.5px}",
-    "a:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:2px}",
+    "a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}",
 ]
 
 # Independent oracle for the plan's page table (Round 4 dispositions, row 0 from Round 7 H3,
@@ -770,9 +770,9 @@ class SwipeScriptTest(unittest.TestCase):
         self.assertIn("\\2190", css)
         self.assertIn("\\2192", css)
         self.assertIn("width:56px", css)
-        self.assertIn("border-radius:10px", css)
-        self.assertIn("background:#211d16", css)
-        self.assertIn("border:1px solid #433b2c", css)
+        self.assertIn("border-radius:12px", css)
+        self.assertIn("background:var(--s)", css)
+        self.assertIn("border:1px solid var(--h)", css)
         self.assertIn("font-size:0", css)
         for slug in ROWS:
             html = read("scales/%s/index.html" % slug)
@@ -790,11 +790,11 @@ class SwipeScriptTest(unittest.TestCase):
 
     @staticmethod
     def without_card_css(html):
+        html = re.sub(r'<meta name="theme-color" content="#\w+">', '<meta name="theme-color">', html)
+        html = re.sub(r"<style>\n:root\{color-scheme:light dark;.*?</style>\n", "<style></style>\n", html, flags=re.S)
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
         html = html.replace('<div class="hint">Tap to reveal the notes</div>', "")
         html = re.sub(r'<div class="nav">.*?</div></div>', '<div class="nav"></div></div>', html)
-        html = re.sub(r"\.prog\{(?:--g:[^;]*;)?display:flex.*?\.slot:nth-child\(3\)\{outline:2px solid var\(--r\);outline-offset:2px\}",
-                      ".prog{}", html, flags=re.S)
         return re.sub(r"scroll-margin-top:min\(\d+px,", "scroll-margin-top:min(Npx,", html)
 
     def test_js_off_markup_is_unchanged(self):
@@ -845,7 +845,7 @@ class ContrastTest(unittest.TestCase):
 
     def test_the_kurd_accents_are_the_shipped_pair(self):
         row = table()["d-kurd-10"]
-        self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#7fb0ee"))
+        self.assertEqual((row["accent_light"], row["accent_dark"]), ("#2563B0", "#357CD4"))
 
     def test_non_frozen_accents_are_the_generator_rule(self):
         for slug, row in table().items():
@@ -865,11 +865,40 @@ class ContrastTest(unittest.TestCase):
         self.assertLess(ratio(light, BG_LIGHT), 4.8)
         self.assertEqual(dark, "#E2761B")
 
+    def test_the_light_plate_is_capped_and_sits_inside_the_flow_gap(self):
+        for slug in ROWS:
+            html = html_of(slug)
+            with self.subTest(page=slug):
+                self.assertIn("@media (prefers-color-scheme:light){.prog{isolation:isolate;--bg:#0f0e0b;", html)
+                m = re.search(r"\.prog::before\{([^}]*)\}", html)
+                self.assertTrue(m)
+                rule = m.group(1)
+                self.assertIn("width:min(calc(100% + 24px),372px)", rule)
+                self.assertIn("left:50%", rule)
+                self.assertIn("transform:translateX(-50%)", rule)
+                self.assertIn("top:-12px", rule)
+                self.assertIn("border-radius:12px", rule)
+
+    def test_the_light_text_and_focus_tokens_meet_contrast_on_the_light_ground(self):
+        for slug in ROWS:
+            root = re.search(r":root\{color-scheme:light dark;([^}]*)\}", html_of(slug)).group(1)
+            tokens = dict(t.split(":") for t in root.split(";"))
+            with self.subTest(page=slug):
+                self.assertGreaterEqual(ratio(tokens["--muted"], tokens["--bg"]), 4.5)
+                self.assertGreaterEqual(ratio(tokens["--t"], tokens["--bg"]), 3)
+                self.assertGreaterEqual(ratio(tokens["--fg"], tokens["--bg"]), 7)
+
+    def test_the_theme_colour_is_the_rows_light_accent(self):
+        for slug, row in table().items():
+            with self.subTest(page=slug):
+                self.assertEqual(Page(html_of(slug)).meta("theme-color"), row["accent_light"])
+
     def test_cta_buttons_are_at_least_44px_and_dark_theme_overrides_exist(self):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
-                self.assertIn("padding:12px 16px", html)
+                self.assertIn("padding:11px 15px", html)
+                self.assertIn("border-radius:12px", html)
                 self.assertIn("font-size:14px", html)
                 self.assertIn("@media (prefers-color-scheme:dark){:root{", html)
                 self.assertIn("background:#fff;color:#242424", html)
@@ -1048,16 +1077,16 @@ class SharedBrownHeadTest(unittest.TestCase):
         css = read("index.html")
         about = css[css.index("#about{position:fixed"):css.index("html.about-open{")]
         self.assertNotIn("#1f1b15", about)
-        self.assertIn("background:#1a1815", about)
-        self.assertRegex(about, r"\.abouthead\{[^}]*background:#1a1815")
-        self.assertRegex(about, r"color:#eae6df; font:400 16px/1\.55 \"Nunito Sans\"")
+        self.assertIn("background:#0f0e0b", about)
+        self.assertRegex(about, r"\.abouthead\{[^}]*background:#0f0e0b")
+        self.assertRegex(about, r"color:#f6f4ed; font:400 16px/1\.55 \"Nunito Sans\"")
         self.assertRegex(about, r'#about h2\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
-        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#e3b25c')
+        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#f6f4ed')
         self.assertNotIn("text-transform:uppercase", about)
-        self.assertRegex(about, r"#about h4\{[^}]*color:#c4bcab")
-        self.assertRegex(about, r"#about a\{color:#e3b25c; font-weight:600; text-decoration:underline; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
+        self.assertRegex(about, r"#about h4\{[^}]*color:#a9a39a")
+        self.assertRegex(about, r"#about a\{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
         self.assertIn("calc((100% - 520px) / 2)", about)
 
     def test_every_primary_passes_contrast_on_the_brown(self):
-        for colour in ("#e3b25c", "#eae6df", "#c4bcab"):
+        for colour in ("#f5c78e", "#f6f4ed", "#a9a39a"):
             self.assertGreaterEqual(ratio(colour, BROWN), 4.5)

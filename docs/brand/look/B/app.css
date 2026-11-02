@@ -1,0 +1,110 @@
+/* Direction B - Brand board, faithful.
+   Near-black ground, surface controls with 1px hairlines, radius-md icon
+   buttons, pill chips, the horizontal-full lockup in the header row, teal
+   focus ring, no chrome shadows. Nothing here selects .card or its children. */
+:root{
+  --bt-bg:#0F0E0B; --bt-surface:#1A1814; --bt-surface-2:#221F1A;
+  --bt-text:#F6F4ED; --bt-text-2:#A9A39A; --bt-hair:#3A352D;
+  --bt-teal:#44E0D8; --bt-gold:#F5C78E; --bt-warn:#e3b25c;
+  --table:#0F0E0B; --table2:#0F0E0B;
+}
+html{background-color:var(--bt-bg)}
+body{color:var(--bt-text);
+  /* "very subtle": 1 step of lift behind the header, gone by the card */
+  background:radial-gradient(120% 70% at 50% 0%, #15130F 0%, var(--bt-bg) 55%)}
+
+/* ---- header: link | lockup | menu (phone mock) ---- */
+.hrow{grid-template-columns:44px 1fr 44px; min-height:64px}
+h1{height:64px; margin:0; color:transparent; font-size:0; line-height:0;
+  overflow:hidden; white-space:nowrap;
+  background:url(/_look/logo/horizontal-full.svg) center/contain no-repeat}
+/* icon buttons: radius-md squares on surface, hairline, text-primary line icon */
+#share-copy, #settings-trigger{border-radius:12px; background:var(--bt-surface);
+  border:1px solid var(--bt-hair); color:var(--bt-text)}
+#share-copy svg g{stroke-width:2}
+#share-copy:disabled:active{background:var(--bt-surface)}
+#settings-trigger[aria-expanded="true"]{background:var(--bt-surface-2); color:var(--bt-text);
+  border-color:var(--bt-text-2)}
+#share-url{background:var(--bt-bg); border-color:var(--bt-hair); color:var(--bt-text); border-radius:12px}
+
+/* ---- scale chips: pills on surface, hairline; active = root-colour 1.5px border, no glow ---- */
+.chip{background:var(--bt-surface); border:1px solid var(--bt-hair); color:var(--bt-text-2);
+  font:600 12px/1 "Nunito Sans"; letter-spacing:.12em; padding:7px 15px 6px}
+.chip.on{color:var(--bt-text); border-image:none; border:1.5px solid var(--dga);
+  box-shadow:none; background:var(--bt-surface)}
+.chip:active{background:var(--bt-surface-2)}
+
+/* ---- generic buttons (.mode) ---- */
+.mode{background:var(--bt-surface); border:1px solid var(--bt-hair); color:var(--bt-text);
+  border-radius:8px}
+.mode:active{background:var(--bt-surface-2)}
+.mode.on{background:var(--bt-text); color:var(--bt-bg); border-color:var(--bt-text)}
+.mode.on:active{background:#DDD9CF; border-color:#DDD9CF}
+
+/* ---- footer: arrows and reroll are radius-md squares ---- */
+button.nav, .shuffle.reroll{border-radius:12px; background:var(--bt-surface);
+  border:1px solid var(--bt-hair); color:var(--bt-text)}
+button.nav:active, .shuffle.reroll:active{background:var(--bt-surface-2)}
+.count{color:var(--bt-text-2)}
+.count.seq{color:var(--bt-text-2)}
+.seq-rail b{color:var(--bt-text)}
+.shuffle{color:var(--bt-text-2)}
+.shuffle.on, .shuffle:active{color:var(--bt-text)}
+.seq-style{color:var(--bt-text-2)}
+.seq-style b{color:var(--bt-text)}
+.announce{color:var(--bt-text-2)}
+
+/* ---- focus: teal signal ---- */
+:focus-visible{outline:2px solid var(--bt-teal); outline-offset:2px}
+
+/* ---- settings panel (takeover / desktop sidebar) on surface ---- */
+#settings-scrim{background:rgba(0,0,0,.6)}
+#settings-panel{background:var(--bt-surface)}
+@media (min-width:1024px) and (min-height:700px){
+  #settings-panel{background:var(--bt-bg); border-left:1px solid var(--bt-hair)}
+}
+.panel-heading{color:var(--bt-text)}
+.panel-note{color:var(--bt-text-2)}
+.panel-note a{color:var(--bt-text); text-decoration-color:var(--bt-gold)}
+.prints button, .prints select, #lang-select{background:var(--bt-surface); border-color:var(--bt-hair);
+  color:var(--bt-text); border-radius:8px}
+#settings-panel .prints button, #settings-panel .prints select, #settings-panel #lang-select,
+#settings-panel .mode:not(.on){background:var(--bt-bg)}
+@media (min-width:1024px) and (min-height:700px){
+  #settings-panel .prints button, #settings-panel .prints select, #settings-panel #lang-select,
+  #settings-panel .mode:not(.on){background:var(--bt-surface)}
+}
+.prints select:hover, .prints select:focus-visible, #lang-select:hover, #lang-select:focus-visible{background:var(--bt-surface-2)}
+
+/* ---- scale sheet ---- */
+#scale-sheet, .sheetsurf{background:var(--bt-surface)}
+#scale-title{color:var(--bt-text)}
+.sheetlabel, #scale-or span, .sheethint, #scale-fields-note, #scale-line-note,
+#scale-fine-toggle, #scale-delete{color:var(--bt-text-2)}
+#scale-box, #scale-name, #scale-fields input{background:var(--bt-bg); border-color:var(--bt-hair);
+  color:var(--bt-text)}
+#scale-parse, #scale-refusal, #scale-msg, #scale-guidance #scale-layout-state,
+#scale-drawer-status, #scale-field-msg.info{color:var(--bt-text-2)}
+.sheetbody, #scale-sheet.lipped #scale-footslide{border-color:var(--bt-hair)}
+#scale-sheet.lipped #scale-footslide, #scale-sheet.lipped #scale-guidance,
+#scale-plate-band, #scale-plate-band #scale-layout-hint{background:var(--bt-surface)}
+#scale-drawer-status{background:var(--bt-surface); box-shadow:0 var(--sp-1) 0 var(--bt-surface)}
+#scale-tabs{border-bottom-color:var(--bt-hair)}
+#scale-tabs [role=tab]{color:var(--bt-text-2)}
+#scale-tabs [role=tab].on{color:var(--bt-text)}
+#scale-tabs [role=tab].on::after{background:var(--bt-teal)}
+#scale-or::before, #scale-or::after{background:var(--bt-hair)}
+#scale-preview{border-color:var(--bt-hair)}
+#scale-lip::after{background:var(--bt-text-2)}
+#scale-generate, #scale-next{border-radius:12px; background:var(--bt-text); border-color:var(--bt-text); color:var(--bt-bg)}
+#scale-swatches .dot.sel::after{box-shadow:0 0 0 2px var(--bt-text)}
+
+/* ---- About ---- */
+#about, .abouthead{background:var(--bt-bg); color:var(--bt-text)}
+.abouthead{border-bottom:1px solid var(--bt-hair)}
+#about h2{color:var(--bt-text)}
+#about h3{color:var(--bt-text)}
+#about h4{color:var(--bt-text-2)}
+#about a{color:var(--bt-text); text-decoration-color:var(--bt-gold)}
+#about-close{border-radius:12px}
+#about-close{white-space:nowrap}

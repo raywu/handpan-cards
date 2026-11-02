@@ -1,0 +1,18 @@
+/* Direction A - scale pages and handpan-101 (shoot.js does not render 404).
+   Same lockup above each page's header. Scale pages keep their per-scale root
+   accent (links, h2, rules, CTA). Their dark ground moves from the cool
+   #15181b to the app's warm #1a1815 (flat, no gradient: the gradient's top
+   stop #26221c would pull every scale accent under 4.5:1 right where the
+   breadcrumb link sits). Light scheme unchanged. Generator follow-up:
+   BG_DARK = "#1a1815" in tools/gen_scale_page.py, which moves Kurd 9 / Sabye 9
+   accent #3D81D6 (4.48:1 on the new ground) to #4184D7. */
+main > header::before{content:""; display:block; height:64px; max-width:300px;
+  margin:0 0 16px; background:url(/_look/logo/horizontal-full.svg) left center/contain no-repeat}
+@media (min-width:640px){ main > header::before{height:80px; max-width:380px} }
+@media (prefers-color-scheme:dark){ :root{--bg:#1a1815} }
+/* Light scheme (scale pages only; handpan-101 is dark-only): the full-colour
+   glow never sits on a light ground, so the dark-ink mono lockup. */
+@media (prefers-color-scheme:light){
+  html:not(:has(meta[property="og:type"][content="article"])) main > header::before{
+    background-image:url(/_look/logo/horizontal-mono-light.svg)}
+}
