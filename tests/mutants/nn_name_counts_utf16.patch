@@ -1,0 +1,15 @@
+# kills: the 40 limit counts code points, not UTF-16 units (NAN)
+# suite: node --test --test-name-pattern ^the.40.limit.counts.code.points..not.UTF.16.units..NAN.$ tests/core.test.js
+# NAN: a name is measured in UTF-16 units, so 40 emoji (80 units) is refused.
+diff --git a/src/engine/core.js b/src/engine/core.js
+--- a/src/engine/core.js
++++ b/src/engine/core.js
+@@ -338,7 +338,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var name = options.name;
+       if (typeof name !== "string") return badNote(name);
+       name = name.replace(/^\s+/, "").replace(/\s+$/, "");
+-      var nameLength = codePointLength(name);
++      var nameLength = name.length;
+       if (NAME_REFUSED_RE.test(name) || nameLength < 1 || nameLength > 40) {
+         return badNote(name);
+       }
