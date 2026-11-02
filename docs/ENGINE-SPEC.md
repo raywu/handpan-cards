@@ -1213,8 +1213,9 @@ and 9 mutant notes. Values are fractions of the pan radius R.
 - On Neotone cards glyphs are sized per K8: main name 0.80325 x 0.62 x `main.r`,
   main number 0.64 x 0.62 x `main.r`, ding name 0.70875 x 0.623 x `ding.r`, lens
   name 0.8232 x 0.565 x `main.r`, `M<n>` 0.64 x 0.5 x `main.r`; octave digit 0.66 x
-  its name. The 3.6 pt print floor is unchanged and applies to every glyph of every
-  tonefield and lens. The label-rule size is computed from `main.r`
+  its name. The 3.6 pt print floor applies to every main, ding and number glyph;
+  lens names (and their octave digits) shrink to fit the lens and may go below it
+  (`LENS_FIT_FLOOR` = 0.1 pt, owner 2026-11-01). The label-rule size is computed from `main.r`
   (`mutant.r` for the lens); the inscribed radius only caps the fitted width at
   1.47 x that radius (the radius of the largest circle inscribed in the drawn lens or
   crescent), and the name is stepped down in 0.1 pt until it fits. Gate G1 results are in the plan's "Frozen v2 fixture".
