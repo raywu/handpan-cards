@@ -19017,6 +19017,26 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(hits.filter((h) => /tabindex="0"/.test(h)).length, 1, "one roving stop");
   });
 
+  test("NEO7b: an empty mutant tonefield draws only a small orange label like the M1 label, no dashed circle, and keeps its button", async () => {
+    const app = boot();
+    openNeo(app, BOTTOM_AMARA);
+    goLayout(app);
+    const html = String(app.els["scale-preview"].innerHTML || "");
+    const texts = [...html.matchAll(/<text\b[^>]*>[\s\S]*?<\/text>/g)].map((m) => m[0]);
+    const attr = (t, a) => (t.match(new RegExp(`${a}="([^"]*)"`)) || [])[1];
+    const label = (n) => texts.find((t) => new RegExp(`>${n}</text>`).test(t) && /fill="#E27005"/.test(t));
+    const filled = label("M1"), empty = label("M9");
+    assert.ok(filled, "M1 label is drawn");
+    assert.ok(empty, "M9 label is orange");
+    assert.strictEqual(attr(empty, "font-size"), attr(filled, "font-size"), "same size as M1");
+    assert.strictEqual(attr(empty, "font-weight"), attr(filled, "font-weight"), "same weight as M1");
+    assert.ok(!texts.some((t) => />M9<\/text>/.test(t) && /#8a8a8a/.test(t)), "no grey M9");
+    const dashedMutants = [...html.matchAll(/<circle[^>]*stroke-dasharray[^>]*\/>/g)].length;
+    const emptyMain = 9 - (app.get("profileMap") || []).slice(0, 9).filter((k) => k !== null).length;
+    assert.strictEqual(dashedMutants, emptyMain, "dashed circles remain only on empty main tonefields");
+    assert.ok(nhits(app).some((h) => /^Tonefield 9 mutant, empty$/.test((h.match(/aria-label="([^"]*)"/) || [])[1])), "the empty mutant keeps its button");
+  });
+
   test("NEO8: a swap inside a ring, a move to an empty tonefield, and a refused cross-ring drop", async () => {
     const app = boot();
     openNeo(app, BOTTOM_AMARA);
