@@ -2345,6 +2345,163 @@ test("SO: a 5 degree nudge can rotate the numbering while the order around the r
     "C3@300=U1 Db3@235=U4 Eb3@0=U3 Bb3@140=U6 Db4@285=U2 Ab5@120=U5");
 });
 
+/* MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included (owner 2026-10-31). */
+const mn3Reflect = (entries) => plain(HPE.layout.reflectAngles({ bottom: entries })).bottom;
+const mn3Positions = (r) => soBottom(r).map((n) => `${n.angle}=${n.label}`).sort().join(" ");
+
+test("MN3: reflectAngles reflects explicit entries across the vertical axis, keeps null, and is its own inverse", () => {
+  assert.equal(HPE.layout.reflectAngles(null), null);
+  assert.equal(HPE.layout.reflectAngles(undefined), null);
+  assert.deepEqual(mn3Reflect([285, null, 0, 90, 180, 270, 355]), [255, null, 180, 90, 0, 270, 185]);
+  for (const list of [[285, null, 240, null], [0, 5, 355, 180], [null, null]]) {
+    assert.deepEqual(mn3Reflect(mn3Reflect(list)), list);
+  }
+  for (let a = 0; a < 360; a += 5) {
+    const r = mn3Reflect([a])[0];
+    assert.equal(r % 5, 0);
+    assert.ok(r >= 0 && r < 360);
+  }
+});
+
+test("MN3: Pygmy C3 slid 300 -> 285 shows U1; with MIRROR BOTTOM on C3 is at 255 and Db3 at 300, Db3 reads U1 and C3 U2", () => {
+  assert.equal(soLine(soSolve({ angles: { bottom: [285, null, null, null, null, null] } })),
+    "C3@285=U1 Db3@240=U2 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
+  const entries = mn3Reflect([285, null, null, null, null, null]);
+  assert.deepEqual(entries, [255, null, null, null, null, null]);
+  assert.equal(soLine(soSolve({ mirrorBottom: true, angles: { bottom: entries } })),
+    "C3@255=U2 Db3@300=U1 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5");
+});
+
+test("MN3: a reflected layout is the mirror image: every note at 180 minus its angle, in either frame, and reflecting back restores the identical solve", () => {
+  for (const entries of [[285, null, null, null, null, null], [null, 100, null, null, 270, null], [270, 240, null, null, null, null]]) {
+    for (const mirrored of [false, true]) {
+      const off = soSolve({ mirrorBottom: mirrored, angles: { bottom: entries } });
+      const back = mn3Reflect(entries);
+      const on = soSolve({ mirrorBottom: !mirrored, angles: { bottom: back } });
+      assert.ok(off.ok, JSON.stringify([entries, mirrored]));
+      assert.ok(on.ok);
+      soBottom(off).forEach((n, k) => assert.equal(soBottom(on)[k].angle, soNorm(180 - n.angle)));
+      const again = soSolve({ mirrorBottom: mirrored, angles: { bottom: mn3Reflect(back) } });
+      assert.deepEqual(plain(again), plain(off));
+    }
+  }
+});
+
+test("MN3: a dev-only MN2 rule-S record [285,240] with MIRROR BOTTOM on reflects to [255,300] on the first toggle", () => {
+  assert.deepEqual(mn3Reflect([285, 240, null, null, null, null]), [255, 300, null, null, null, null]);
+  assert.equal(soLine(soSolve({ mirrorBottom: false, angles: { bottom: [255, 300, null, null, null, null] } })),
+    "C3@255=U2 Db3@300=U1 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
+});
+
+const MN3E = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+const mn3Fixture = JSON.parse(fs.readFileSync(path.join(FIXTURES, "mirror_placed_v1.json"), "utf8"));
+const mn3Line = (r) => {
+  assert.ok(r.ok, r.ok ? "" : `refused ${r.code}`);
+  return soBottom(r).map((n) => `${n.name}@${n.angle}=${n.label}`).join(" ");
+};
+const mn3Angles = (line) => line.replace(/=U\d+/g, "");
+
+test("MN3 release safety: records and v6 links with MIRROR BOTTOM and angles draw the same angles as origin/main and the same numbers as before MN3", () => {
+  assert.ok(mn3Fixture.cases.length >= 6);
+  for (const c of mn3Fixture.cases) {
+    const parsed = MN3E.core.parseSeed(c.record.s, {});
+    assert.ok(parsed.ok, c.id);
+    const fromRecord = mn3Line(MN3E.layout.solve(parsed.value, c.record.o));
+    assert.equal(fromRecord, c.expected, `record ${c.id}`);
+    assert.equal(mn3Angles(fromRecord), mn3Angles(c.mainExpected), `angles vs main ${c.id}`);
+    const decoded = MN3E.share.decode(c.link);
+    assert.ok(decoded.ok, `${c.id} ${decoded.code}`);
+    const fromLink = mn3Line(MN3E.layout.solve(decoded.value, {}));
+    assert.equal(fromLink, c.linkExpected, `link ${c.id}`);
+    assert.equal(mn3Angles(fromLink), mn3Angles(c.mainLinkExpected), `link angles vs main ${c.id}`);
+    assert.equal(MN3E.share.encode({ fields: parsed.value.fields, options: c.record.o }).value, c.link, `encode ${c.id}`);
+  }
+});
+
+const MN3_NOTES = ["C", "D", "E", "F", "G", "A", "B", "C"];
+const mn3Seed = (n) => {
+  const bottoms = Array.from({ length: n }, (_, k) => `[${MN3_NOTES[k]}${k < 7 ? 2 : 3}]`).join(" ");
+  const parsed = HPE.core.parseSeed(`${bottoms} (D4) E4 F4 G4 A4 B4 C5 D5`, {});
+  assert.ok(parsed.ok, `n=${n} ${parsed.ok ? "" : parsed.code}`);
+  return parsed.value;
+};
+/* An oracle that does not call bottomClash: bottom gaps against the floor
+ * (smallest multiple of 5 above the touching angle, capped by the default
+ * gap) and bottom circles against the rim, inner and ding circles. */
+const mn3Overlap = (seed, opts, entries) => {
+  const base = HPE.layout.solve(seed, { ...opts, angles: null });
+  const g = base.value.geom;
+  const f = base.value.fields;
+  const ids = Object.keys(f).filter((id) => f[id][3] === "bottom").sort((a, b) => a - b);
+  const at = ids.map((id, k) => (entries[k] === null ? f[id][4] : entries[k]));
+  const gap = (a, b) => { const d = Math.abs(soNorm(a) - soNorm(b)); return Math.min(d, 360 - d); };
+  const defaults = ids.map((id) => f[id][4]);
+  let defGap = Infinity;
+  for (let i = 0; i < defaults.length; i += 1) for (let j = i + 1; j < defaults.length; j += 1) defGap = Math.min(defGap, gap(defaults[i], defaults[j]));
+  const touch = 2 * Math.asin(Math.min(1, g.r_bnote / g.bottom)) * 180 / Math.PI;
+  const floor = ids.length < 2 ? 0 : Math.min((Math.floor(touch / 5 + 1e-9) + 1) * 5, defGap);
+  for (let i = 0; i < at.length; i += 1) for (let j = i + 1; j < at.length; j += 1) if (gap(at[i], at[j]) < floor - 1e-9) return true;
+  const pt = (rad, deg) => [rad * Math.cos(deg * Math.PI / 180), rad * Math.sin(deg * Math.PI / 180)];
+  for (let i = 0; i < at.length; i += 1) {
+    const mine = pt(g.bottom, at[i]);
+    for (const id of Object.keys(f)) {
+      const zone = f[id][3];
+      let there;
+      let reach;
+      if (zone === "rim" || zone === "inner") { there = pt(zone === "rim" ? g.rim : g.inner, f[id][4]); reach = g.r_note; }
+      else if (zone === "ding") { there = [0, -g.ding_dy]; reach = g.r_ding; }
+      else continue;
+      if (Math.hypot(mine[0] - there[0], mine[1] - there[1]) < g.r_bnote + reach - 1e-9) return true;
+    }
+  }
+  return false;
+};
+
+test("MN3: across bottom rings of 2..8 notes, both anchors and both frames, a single slide in steps of 5 toggles MIRROR BOTTOM unless a real overlap exists, and toggling twice returns the identical layout", () => {
+  let accepted = 0;
+  let refused = 0;
+  for (let n = 2; n <= 8; n += 1) {
+    const seed = mn3Seed(n);
+    for (const anchor of ["one", "between"]) {
+      for (const mirrored of [false, true]) {
+        for (let i = 0; i < n; i += 1) {
+          for (let a = 0; a < 360; a += 5) {
+            const entries = Array.from({ length: n }, () => null);
+            entries[i] = a;
+            const opts = { anchor, mirrorBottom: mirrored };
+            const off = HPE.layout.solve(seed, { ...opts, angles: { bottom: entries } });
+            if (!off.ok) continue;
+            const back = mn3Reflect(entries);
+            const flipped = { anchor, mirrorBottom: !mirrored };
+            const on = HPE.layout.solve(seed, { ...flipped, angles: { bottom: back } });
+            const overlap = mn3Overlap(seed, flipped, back);
+            assert.equal(on.ok, !overlap, `n=${n} ${anchor} mirrored=${mirrored} i=${i} a=${a}: solve ${on.ok} oracle overlap ${overlap}`);
+            if (!on.ok) { refused += 1; continue; }
+            accepted += 1;
+            const twice = HPE.layout.solve(seed, { ...opts, angles: { bottom: mn3Reflect(back) } });
+            assert.deepEqual(plain(twice), plain(off), `n=${n} ${anchor} mirrored=${mirrored} i=${i} a=${a}`);
+          }
+        }
+      }
+    }
+  }
+  assert.ok(accepted > 5000, `accepted ${accepted}`);
+  assert.equal(refused, 0, "the top shell is symmetric, so a reflection of an accepted layout never overlaps");
+});
+
+test("MN3: odd rings (5 and 7 bottom notes) with a note on the axis toggle, which MN2 refused", () => {
+  for (const n of [5, 7]) {
+    const seed = mn3Seed(n);
+    for (const anchor of ["one", "between"]) {
+      const entries = Array.from({ length: n }, () => null);
+      entries[0] = 90;
+      const off = HPE.layout.solve(seed, { anchor, angles: { bottom: entries } });
+      if (!off.ok) continue;
+      assert.ok(HPE.layout.solve(seed, { anchor, mirrorBottom: true, angles: { bottom: mn3Reflect(entries) } }).ok, `${n} ${anchor}`);
+    }
+  }
+});
+
 /* ---------------- section 18: the Neotone profile layout ------------------- */
 
 const PAIRED = JSON.parse(fs.readFileSync(path.join(FIXTURES, "paired_profile_v3.json"), "utf8"));

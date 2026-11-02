@@ -19218,6 +19218,88 @@ describe("NEO: Neotone sheet, saves and links", () => {
   });
 });
 
+describe("MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included", () => {
+  const SEED = "[C3] [D3] [E3] (A3) C4 D4 E4 F4";
+  const orbit = (a, r = 115) => ({ x: 200 + r * Math.cos(a * Math.PI / 180), y: 200 - r * Math.sin(a * Math.PI / 180) });
+  const ang = (app) => JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+  const bottoms = (app) => [101, 102, 103].map((id) => `${app.get(`lastSolved.fields[${id}][4]`)}=${app.get(`lastSolved.fields[${id}][5]`)}`);
+  const slide = (app, name, a) => {
+    const g = DG.down(app, name, "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    const q = orbit(a);
+    DG.moveTo(app, g, q.x, q.y);
+    DG.release(app, g, q.x, q.y);
+  };
+
+  test("MN3: MIRROR BOTTOM after sliding C3 to 300 reflects it to 240, leaves the unplaced notes to the solver, and the numbers stay with the positions", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    assert.deepStrictEqual(ang(app), { bottom: [300, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(ang(app), { bottom: [240, null, null] });
+    assert.strictEqual(app.get("lastSolved.fields[101][4]"), 240);
+    const mirroredHome = app.get("JSON.stringify(HPE.layout.solve(lastSeed,{mirrorBottom:true,anchor:anchor,angles:null}).value.fields[102][4])");
+    assert.strictEqual(String(app.get("lastSolved.fields[102][4]")), mirroredHome);
+  });
+
+  test("MN3: MIRROR BOTTOM with no hand-placed notes leaves layoutAngles null", async () => {
+    const app = await dgOpen({}, SEED);
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+    assert.strictEqual(app.get("bottomMirror()"), true);
+  });
+
+  test("MN3: toggling MIRROR BOTTOM twice returns the identical layoutAngles, drawing and share string", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    const start = ang(app);
+    const link = app.get("JSON.stringify(sheetOptions())");
+    const drawn = bottoms(app);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), false);
+    assert.deepStrictEqual(ang(app), start);
+    assert.strictEqual(app.get("JSON.stringify(sheetOptions())"), link);
+    assert.deepStrictEqual(bottoms(app), drawn);
+  });
+
+  test("MN3: the MIRROR BOTTOM notice says every note swaps sides, the placed ones too, not that they stay put", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    const text = app.els["scale-drawer-status"].textContent;
+    assert.ok(text.includes(JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", "en.json"), "utf8"))["sheet.mirror_keeps_numbers"]), text);
+    assert.doesNotMatch(text, /stay put/);
+    assert.match(text, /placed too/);
+    assert.doesNotMatch(text, /too close/);
+  });
+
+  test("MN3: RESET LAYOUT after a toggle clears the angles", async () => {
+    const app = await dgOpen({}, SEED);
+    slide(app, "C3", 300);
+    app.els["scale-mirror-bottom"].click();
+    app.els["scale-layout-reset"].click();
+    assert.strictEqual(app.get("layoutAngles"), null);
+  });
+});
+
+describe("MN3: a 5-note bottom ring toggles", () => {
+  test("MN3: a 5-note bottom ring with a slid note reflects it on MIRROR BOTTOM instead of refusing (MN2 refused)", async () => {
+    const app = await dgOpen({}, "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+    const g = DG.down(app, "C3", "mouse");
+    DG.moveTo(app, g, g.x + 6, g.y);
+    DG.moveTo(app, g, 315, 200);
+    DG.release(app, g, 315, 200);
+    const start = JSON.parse(app.get("JSON.stringify(layoutAngles)"));
+    assert.deepStrictEqual(start, { bottom: [0, null, null, null, null] });
+    app.els["scale-mirror-bottom"].click();
+    assert.strictEqual(app.get("bottomMirror()"), true);
+    assert.deepStrictEqual(JSON.parse(app.get("JSON.stringify(layoutAngles)")), { bottom: [180, null, null, null, null] });
+    assert.doesNotMatch(app.els["scale-drawer-status"].textContent, /too close/);
+  });
+});
+
 describe("MV: the saved-scale handoff (switched off in the committed bytes)", () => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const webcrypto = require("node:crypto").webcrypto;
