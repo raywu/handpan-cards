@@ -9173,6 +9173,7 @@ function run() {
     const TABLE = [15, 14, 11];   // #0f0e0b
     const TABLE2 = [15, 14, 11];  // #0f0e0b
     const FRAME = 4;              // outer pixel frame width to sample
+    const PAPER = [246, 244, 237]; // #F6F4ED: the field-guide sheet ground (never white)
 
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
     // pixels entirely in-browser (an <img> onto a <canvas>) so no PNG decoder
@@ -9190,7 +9191,7 @@ function run() {
     //    paints a background at all; ~10.4 from --table, ~12.08 measured
     //    under the ab_root_bg_dropped mutant) - so it needs a tight
     //    tolerance (~5) that sits strictly between those two numbers.
-    async function edgeCheck(tol) {
+    async function edgeCheck(tol, alt) {
       const shot = await b.send("Page.captureScreenshot", { format: "png" });
       return b.eval(`
         return new Promise((resolve, reject) => {
@@ -9203,7 +9204,7 @@ function run() {
             ctx.drawImage(img, 0, 0);
             const data = ctx.getImageData(0, 0, w, h).data;
             const table = ${JSON.stringify(TABLE)};
-            const table2 = ${JSON.stringify(TABLE2)};
+            const table2 = ${JSON.stringify(alt || TABLE2)};
             const dist = (r, g, bch, t) =>
               Math.sqrt((r - t[0]) ** 2 + (g - t[1]) ** 2 + (bch - t[2]) ** 2);
             let bad = null;
@@ -9244,15 +9245,15 @@ function run() {
       });
     }
 
-    test("with the scale sheet open, the outer frame stays table-coloured", async () => {
+    test("with the scale sheet open, the outer frame is the table or the paper ground, never white", async () => {
       await freshLoad();
       try {
         await b.setViewport(390, 844, true);
         await openSheet();
         await b.settle();
-        const r = await edgeCheck(20);
+        const r = await edgeCheck(20, PAPER);
         assert.strictEqual(r.bad, null,
-          `edge pixel not table-coloured with the sheet open: ${JSON.stringify(r.bad)}`);
+          `edge pixel neither table nor paper coloured with the sheet open: ${JSON.stringify(r.bad)}`);
       } finally {
         await b.setViewport(900, 900, false);
       }
