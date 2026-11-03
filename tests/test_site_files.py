@@ -7,7 +7,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SITE = "https://handpantheory.com/"
+SITE = "https://handpan.raywu.org/"
 NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
 
 
@@ -248,28 +248,19 @@ class SiteFilesTest(unittest.TestCase):
             "localhost": False})
 
 class HandpantheoryHostSetTest(unittest.TestCase):
-    HANDPANTHEORY_HOST_FILES = sorted(
-        ["README.md", "handpan-101/index.html", "index.html", "llms.txt", "robots.txt", "sitemap.xml",
-         "src/engine/pdfcards.js", "tools/gen_scale_page.py", "tools/hifi.py", "tools/preview.sh",
-         "tools/sandbox.js", "tools/scale_pages.json"]
-        + ["scales/%s/index.html" % s for s in (
-            "c-sharp-hijaz-9", "c-sharp-mystic-8", "d-aegean-18", "d-amara-10", "d-amara-9", "d-integral-9",
-            "d-kurd-10", "d-kurd-9", "d-sabye-9", "e-amara-20", "e-equinox-9", "e-romanian-hijaz-9",
-            "f-low-pygmy-18", "f-low-pygmy-9", "f-magic-voyage-8", "f-sharp-akebono-9")]
-        + ["scales/index.html"])
+    PRINT_MARK_FILES = ["index.html", "src/engine/pdfcards.js", "tools/hifi.py"]
 
     def test_the_handpantheory_host_string_file_set_is_exactly_the_listed_set(self):
         out = subprocess.run(["git", "grep", "-l", "handpantheory", "--", ".", ":!docs", ":!tests", ":!*.md"],
                              cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
-        readme = ["README.md"] if "handpantheory" in read("README.md") else []
-        self.assertEqual(sorted(out + readme), self.HANDPANTHEORY_HOST_FILES)
+        self.assertEqual(sorted(out), self.PRINT_MARK_FILES)
+        self.assertNotIn("handpantheory", read("README.md"))
 
-    def test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_nowhere_in_index_html(self):
+    def test_canonical_and_og_url_name_the_current_host_and_the_new_host_is_absent_from_index_html(self):
         html = read("index.html")
-        self.assertIn('<link rel="canonical" href="https://handpantheory.com/">', html)
-        self.assertIn('<meta property="og:url" content="https://handpantheory.com/">', html)
-        old = [l for l in html.splitlines() if "handpan." + "raywu.org" in l]
-        self.assertEqual([l.strip() for l in old if not l.lstrip().startswith("//")], [])
+        self.assertIn('<link rel="canonical" href="https://handpan.raywu.org/">', html)
+        self.assertIn('<meta property="og:url" content="https://handpan.raywu.org/">', html)
+        self.assertEqual([l for l in html.splitlines() if "handpantheory" in l and "URL_MARK" not in l], [])
         self.assertIn("const MOVE_FROM = null;", html)
         self.assertIn("const MOVE_TARGET = null;", html)
 
