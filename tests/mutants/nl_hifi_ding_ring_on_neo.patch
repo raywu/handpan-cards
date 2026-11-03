@@ -1,4 +1,4 @@
-# kills: ProfileRenderAgreement.test_band_and_hairline_agree
+# kills: test_band_and_hairline_agree
 # suite: python3 -m unittest -k test_band_and_hairline_agree tests.test_render_agreement
 # fault: Keep the ding ring on a Neotone card in hifi.
 diff --git a/tools/hifi.py b/tools/hifi.py
