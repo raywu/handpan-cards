@@ -1,0 +1,16 @@
+# kills: NEO4f: placing a note on a demo slot takes it as an empty slot; the other demo note stays where it was
+# NEO4f: each demo note keeps its own fixed tonefield
+# suite: node --test --test-name-pattern=NEO4f tests/app.test.js
+# fault: Put a demo note in the first free mutant tonefield instead of its own.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14122,7 +14122,7 @@ function shownMap() {
+   const demo = neoDemoNotes();
+   if (!demo.length) return profileMap;
+   const next = profileMap.slice();
+-  for (const n of demo) next[NEO_DEMO_SLOT[n.midi]] = "b" + n.midi;
++  for (const n of demo) next[next.indexOf(null, NEO_MAIN)] = "b" + n.midi;
+   return next;
+ }
+ const listOf = (items) => items.length < 2 ? items.join("")
