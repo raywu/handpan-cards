@@ -1,0 +1,17 @@
+# kills: ProfileRenderAgreement.test_a_lit_lens_is_a_half_tint_fill_with_no_band_stroke
+# suite: python3 -m unittest tests.test_render_agreement.ProfileRenderAgreement.test_a_lit_lens_is_a_half_tint_fill_with_no_band_stroke
+# fault: Stroke a 0.024R band around a lit lens in hifi again.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -536,6 +536,10 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
+                 c.setStrokeColor(colour(st(mid)))
+                 c.setLineWidth(band)
+                 _place_ops(c, fig["crescent_band"], cx, cy, R, th, 1, 0)
++            if lid is not None and st(lid) != "off":
++                c.setStrokeColor(colour(st(lid)))
++                c.setLineWidth(R * 0.024)
++                _place_ops(c, fig["lens"], cx, cy, R, th, 1, 0)
+             c.setStrokeColor(black)
+             c.setLineWidth(out)
+             c.circle(px, py, rr, stroke=1, fill=0)

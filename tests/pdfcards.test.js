@@ -1235,12 +1235,20 @@ const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - 
 const lensFillsOf = (page) => page.ops.filter((o) => o.op === "path" && o.mode === "f*");
 
 test("NL: a lit lens fills with the 0.5 tint of its state colour and draws no lens band stroke", () => {
-  const { page, R, deck } = paCard(PA.pygmy, 0);
-  const root = tint50(deck.col_root), tone = tint50(deck.col_tone);
-  const fills = lensFillsOf(page).map((o) => rgb(o.fill).join());
-  assert.ok(fills.includes(root.join()) || fills.includes(tone.join()), "a tinted lens is emitted");
-  for (const f of fills) assert.ok([root, tone, [1, 1, 1], [0.9529, 0.9451, 0.9608]].some((c) => c.join() === f), "lens fill " + f);
-  assert.ok(!page.ops.some((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.024 * R)), "no lens band stroke");
+  let lit = 0;
+  for (const [name, p] of [["pygmy", PA.pygmy], ["hijaz", PA.hijaz]]) {
+    p.deck.chords.forEach((_, i) => {
+      const { page, R, deck } = paCard(p, i);
+      const root = tint50(deck.col_root), tone = tint50(deck.col_tone);
+      for (const o of lensFillsOf(page)) {
+        const f = rgb(o.fill).join();
+        assert.ok([root, tone, [1, 1, 1], [0.9529, 0.9451, 0.9608]].some((c) => c.join() === f), `${name} ${i}: lens fill ${f}`);
+        if (f === root.join() || f === tone.join()) lit++;
+      }
+      assert.ok(!page.ops.some((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.024 * R)), "no lens band stroke");
+    });
+  }
+  assert.ok(lit >= 1, "a tinted lens is emitted somewhere");
 });
 
 test("NL: the name ink reaches 4.5:1 on every emitted lens fill, all cases and chords", () => {
@@ -1249,6 +1257,19 @@ test("NL: the name ink reaches 4.5:1 on every emitted lens fill, all cases and c
     p.deck.chords.forEach((_, i) => {
       for (const o of lensFillsOf(paCard(p, i).page)) assert.ok(contrast(ink, rgb(o.fill)) >= 4.5, `${name} ${i}: ${rgb(o.fill)}`);
     });
+  }
+});
+
+test("NL: lensTint is the half mix with white and clears 4.5:1 for every palette colour", () => {
+  const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  const hexes = [...html.matchAll(/\{root: "(#[0-9A-F]{6})", tone: "(#[0-9A-F]{6})"\}/g)].flatMap((m) => [m[1], m[2]]);
+  assert.ok(hexes.length >= 20);
+  const ink = [0.141, 0.141, 0.141];
+  for (const h of hexes) {
+    const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+    const t = P.lensTint(c);
+    c.forEach((v, i) => assert.ok(near(t[i], (v + 1) / 2, 1e-9), h));
+    assert.ok(contrast(ink, t) >= 4.5, `${h} tint ${rgb(t)} has ${contrast(ink, t)}`);
   }
 });
 

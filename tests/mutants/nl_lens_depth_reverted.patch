@@ -1,0 +1,15 @@
+# kills: NL: the lens is 0.32 to 0.35 of a main note by area, from HPE.layout.PROFILE
+# suite: node --test --test-name-pattern=lens.is.0.32.to.0.35 tests/pdfcards.test.js
+# fault: Revert the layout lens depth to 0.3333, so the lens falls back to a fifth of a main note.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -746,7 +746,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     id: "paired", rev: 4, tonefields: 9,
+     angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
+     main: { orbit: 0.745, r: 0.19 },
+-    mutant: { depth: 0.45, r: 0.19 },
++    mutant: { depth: 0.3333, r: 0.19 },
+     ding: { r: 0.2, dy: 0 },
+     decor: { r: 0.355 },
+     n_in: 0.085, number_out: 1.0758, extent_margin: 0.06,
