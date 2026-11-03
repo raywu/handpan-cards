@@ -1441,7 +1441,7 @@ html.about-open{overflow:hidden}
 #scale-sheet #scale-fields #scale-neotone{background:#FFFFFF; accent-color:#6756B5}
 #scale-sheet #scale-fields input::placeholder, #scale-sheet #scale-box::placeholder{color:#5E5850}
 #scale-sheet #scale-fields.passive input, #scale-sheet #scale-box.passive{
-  color:#5E5850; background:transparent; border-style:dashed; border-color:#8A847B}
+  color:#46413A; background:transparent; border-style:dashed; border-color:#8A847B}
 #scale-sheet #scale-box.bad, #scale-sheet #scale-fields input.bad{
   border-color:#242424; box-shadow:inset 0 0 0 1px #242424}
 #scale-sheet #scale-box.bad, #scale-sheet #scale-fields input.bad{border:1px solid #242424}
@@ -1452,12 +1452,14 @@ html.about-open{overflow:hidden}
 #scale-sheet #scale-msg.warn, #scale-sheet #scale-msg.ok, #scale-sheet #scale-drawer-status.warn,
 #scale-sheet #scale-layout-state, #scale-sheet #scale-field-msg, #scale-sheet #scale-neotone-extra,
 #scale-sheet #scale-del-note, #scale-sheet #scale-fields.stale #scale-fields-note,
-#scale-sheet #scale-delete[data-armed]{color:#242424; font-weight:600}
+#scale-sheet #scale-delete[data-armed]{color:#242424}
+#scale-sheet #scale-delete[data-armed]:active{color:#5A49A6}
 #scale-sheet #scale-fields.stale input, #scale-sheet #scale-box.stale{text-decoration-color:#8A847B}
 
 #scale-sheet #scale-tabs{border-bottom-color:#8A847B}
 #scale-sheet #scale-tabs [role=tab]{color:#5E5850}
 #scale-sheet #scale-tabs [role=tab].on{color:#242424}
+#scale-sheet #scale-tabs [role=tab].on:active{color:#6756B5}
 #scale-sheet #scale-tabs [role=tab].on::after{background:#6756B5}
 #scale-sheet #scale-tabs [role=tab]:active{color:#242424}
 #scale-sheet #scale-or::before, #scale-sheet #scale-or::after{background:#8A847B}
@@ -1475,7 +1477,8 @@ html.about-open{overflow:hidden}
 #scale-sheet #scale-fine-toggle:active, #scale-sheet #scale-delete:active{color:#242424}
 #scale-sheet #scale-fine-toggle:disabled{color:#8A847B; opacity:1}
 #scale-sheet #scale-generate, #scale-sheet #scale-next{background:#6756B5; border-color:#6756B5; color:#FFFFFF}
-#scale-sheet #scale-generate:hover:not(:disabled), #scale-sheet #scale-next:hover:not(:disabled){background:#5A49A6; border-color:#5A49A6}
+#scale-sheet #scale-generate:hover:not(:disabled), #scale-sheet #scale-next:hover:not(:disabled),
+#scale-sheet #scale-generate:active:not(:disabled), #scale-sheet #scale-next:active:not(:disabled){background:#5A49A6; border-color:#5A49A6}
 #scale-sheet #scale-generate:disabled, #scale-sheet #scale-generate:disabled:active{
   background:#F6F4ED; border-color:#8A847B; color:#8A847B; opacity:1}
 /* field-guide:end */
