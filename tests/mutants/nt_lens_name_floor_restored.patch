@@ -4,12 +4,12 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -521,7 +521,7 @@ HPE.pdfcards = (function () {
+@@ -552,7 +552,7 @@ HPE.pdfcards = (function () {
      });
    }
  
 -  var LENS_FIT_FLOOR = 0.1;
 +  var LENS_FIT_FLOOR = 3.6 / 0.66;
  
-   function neoFit(name, oct, size, cap, floor) {
-     while (size - 0.1 >= floor && noteW(name, oct, "Label", size) > cap) size -= 0.1;
+   // A lit lens is its state colour mixed half with white (name ink reaches
+   // 4.5:1 on every palette colour; owner 2026-11-03).
