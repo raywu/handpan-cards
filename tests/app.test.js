@@ -19026,11 +19026,72 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(deck.fields["10"][3], "inner", "deck data is untouched");
   });
 
+  const PYGMY_INNER = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+  const demoSlots = (app) => plain(app.get("shownMap()")).map((k, i) => (k !== null && map(app)[i] === null ? i : -1)).filter((i) => i !== -1);
+  const M1_TEXT = "Neotone has 9 main tonefields. Inner notes F5 and G5 have no tonefield: remove them to save.";
+
   test("NEO4c: a user scale with inner notes gets M1 and no demo placement", async () => {
     const app = boot();
-    openNeo(app, TOP_PYGMY);
+    openNeo(app, PYGMY_INNER);
     const place = plain(app.get("lastSolved.geom.place"));
     assert.strictEqual(Object.keys(place).length, 15, "F5 and G5 are left out of the picture");
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent, M1_TEXT);
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.deepStrictEqual(demoSlots(app), []);
+  });
+
+  test("NEO4d: a built-in Kurd with inner notes F5 G5 typed in gets M1 and no demo placement", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "kurd");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    app.type(app.els["scale-box"].value.replace(/\s*\|.*$/, "") + " | F5 G5");
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent, M1_TEXT);
+    assert.deepStrictEqual(demoSlots(app), [], "no demo on another built-in");
+    const place = plain(app.get("lastSolved.geom.place"));
+    const midis = Object.keys(place).map((id) => plain(app.get("lastSolved.fields"))[id][2]);
+    assert.ok(!midis.includes(77) && !midis.includes(79), "F5 and G5 are not placed");
+  });
+
+  const aria = (app, slot) => (nhits(app).find((h) => h.includes(`data-slot="${slot}"`)).match(/aria-label="([^"]*)"/) || [])[1];
+  const pygmyNeo = async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    goLayout(app);
+    return app;
+  };
+
+  test("NEO4e: a demo tonefield is named as a free demo slot, and tapping it with nothing picked picks nothing", async () => {
+    const app = await pygmyNeo();
+    assert.deepStrictEqual(demoSlots(app), [15, 16]);
+    assert.strictEqual(aria(app, 15), "Tonefield 7 mutant, demo F5, free for placement");
+    assert.strictEqual(aria(app, 16), "Tonefield 8 mutant, demo G5, free for placement");
+    app.run("neoTap(15)");
+    assert.strictEqual(app.get("neoPick"), -1);
+    assert.strictEqual(app.els["scale-neotone-unused"].textContent, "Tonefield 9 has no mutant note. That's fine.");
+  });
+
+  test("NEO4f: placing a note on a demo slot takes it as an empty slot; the other demo note stays where it was", async () => {
+    const app = await pygmyNeo();
+    const c3 = app.get("noteNameOf(profileMap[9])");
+    app.run("neoTap(9)");
+    app.run("neoTap(15)");
+    assert.strictEqual(app.els["scale-drawer-status"].textContent, `Moved ${c3} to tonefield 7.`);
+    assert.strictEqual(map(app)[15] !== null, true, "the note is stored at M7");
+    assert.strictEqual(map(app)[9], null);
+    assert.deepStrictEqual(demoSlots(app), [16], "F5 gave way, G5 did not move");
+    assert.strictEqual(plain(app.get("shownMap()"))[9], null, "F5 did not jump to M1");
+  });
+
+  test("NEO4g: a demo note is drawn only when every loose note is a demo note", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    app.type(PYGMY_INNER.replace("F5 G5", "F5 G5 A5"));
+    assert.deepStrictEqual(demoSlots(app), []);
     assert.strictEqual(app.els["scale-generate"].disabled, true);
   });
 
@@ -19088,6 +19149,12 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(attr(empty, "font-size"), attr(filled, "font-size"), "same size as M1");
     assert.strictEqual(attr(empty, "font-weight"), attr(filled, "font-weight"), "same weight as M1");
     assert.ok(!texts.some((t) => />M9<\/text>/.test(t) && /#8a8a8a/.test(t)), "no grey M9");
+    const polar = (t) => {
+      const x = Number(attr(t, "x")), y = Number(attr(t, "y")) - Number(attr(t, "font-size")) * 0.34;
+      return { r: Math.hypot(x, y), deg: (Math.atan2(-y, x) * 180) / Math.PI };
+    };
+    assert.ok(Math.abs(polar(empty).r - polar(filled).r) < 1e-3, "the empty M label sits on the same orbit as the filled one");
+    assert.ok(Math.abs(polar(empty).deg - app.get("HPE.layout.PROFILE.angles[8]")) < 1e-2, "at its tonefield's angle");
     const dashedMutants = [...html.matchAll(/<circle[^>]*stroke-dasharray[^>]*\/>/g)].length;
     const emptyMain = 9 - (app.get("profileMap") || []).slice(0, 9).filter((k) => k !== null).length;
     assert.strictEqual(dashedMutants, emptyMain, "dashed circles remain only on empty main tonefields");
