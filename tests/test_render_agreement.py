@@ -640,7 +640,7 @@ PROFILE_FIXTURES = {
     "profile_kurd9": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_kurd9_v2.json"),
     "profile_hijaz": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_hijaz_v2.json"),
 }
-PROFILE_FILE = os.path.join(paths.ROOT, "tests", "fixtures", "paired_profile_v3.json")
+PROFILE_FILE = os.path.join(paths.ROOT, "tests", "fixtures", "paired_profile_v4.json")
 
 
 def _profile_payload(name):
@@ -781,9 +781,22 @@ class ProfileRenderAgreement(RenderAgreement):
                   "n_in", "number_out", "extent_margin"):
             self.assertEqual(hifi.PROFILE_DRAW[k], p[k], k)
         self.assertEqual(hifi.PROFILE_DRAW["stroke"], {
-            "outline": 0.012, "decor": 0.0076, "main_band": 0.046, "lens_band": 0.024})
+            "outline": 0.012, "decor": 0.0076, "main_band": 0.046})
         self.assertEqual(hifi.PROFILE_DRAW["glyph"], {
             "main": 0.62, "number": 0.62, "ding": 0.623, "lens": 0.565, "mnum": 0.5})
+
+    def test_a_lit_lens_is_a_half_tint_fill_with_no_band_stroke(self):
+        deck = self.decks["profile_pygmy"]
+        rec = RecordingCanvas()
+        hifi.chord_card(rec, 0.0, 0.0, deck, 1, deck["chords"][0])
+        want = set()
+        for c in (hifi.BLUE, hifi.GREEN):
+            want.add("#%02X%02X%02X" % tuple(round((v + 1) / 2 * 255) for v in (c.red, c.green, c.blue)))
+        fills = {p["fill"] for p in rec.paths if p["fill"] and not p["stroke"]}
+        self.assertTrue(fills & want, "no tinted lens fill in %s" % sorted(fills))
+        R = deck["R"]
+        self.assertFalse([p for p in rec.paths if p["lw"] is not None and abs(p["lw"] - R * 0.024) < 1e-9],
+                         "a lens band stroke is still drawn")
 
     def _number_centre(self, name, chord_index, label):
         deck = self.decks[name]

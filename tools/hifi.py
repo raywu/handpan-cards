@@ -333,7 +333,7 @@ def draw_ring(c, x, y, r, state):
     c.circle(x, y, r * 0.74, stroke=1, fill=0)
 
 
-# The paired-area profile's draw figures (tests/fixtures/paired_profile_v3.json,
+# The paired-area profile's draw figures (tests/fixtures/paired_profile_v4.json,
 # ENGINE-SPEC section 18, plus the stroke and glyph figures of the Neotone
 # card), held equal to the fixture by a test. A deck whose geom carries
 # `place` is drawn from it; every other deck takes the acoustic path.
@@ -341,17 +341,22 @@ PROFILE_DRAW = {
     "tonefields": 9,
     "angles": [270, 230, 310, 190, 350, 150, 30, 110, 70],
     "main": {"orbit": 0.745, "r": 0.19},
-    "mutant": {"depth": 0.3333, "r": 0.19},
+    "mutant": {"depth": 0.45, "r": 0.19},
     "ding": {"r": 0.2, "dy": 0},
     "decor": {"r": 0.355},
     "n_in": 0.085, "number_out": 1.0758, "extent_margin": 0.06,
-    "stroke": {"outline": 0.012, "decor": 0.0076, "main_band": 0.046,
-               "lens_band": 0.024},
+    "stroke": {"outline": 0.012, "decor": 0.0076, "main_band": 0.046},
     "glyph": {"main": 0.62, "number": 0.62, "ding": 0.623, "lens": 0.565,
               "mnum": 0.5},
 }
 DECOR_GREY = Color(0.7333, 0.7333, 0.7333)
 LENS_EMPTY = Color(0.9529, 0.9451, 0.9608)
+LENS_TINT = 0.5
+
+
+def lens_tint(col):
+    """A lit lens: its state colour mixed half with white (owner 2026-11-03)."""
+    return Color(*(v + (1 - v) * LENS_TINT for v in (col.red, col.green, col.blue)))
 
 
 def profile_radius(geom, band_half=74.0):
@@ -416,13 +421,11 @@ def _mutant_figures():
     lens_c = round(pd["main"]["orbit"] - (2 * r - depth), 4)
     st = pd["stroke"]
     dm = st["decor"] + st["main_band"] / 2
-    dl = st["decor"] + st["outline"] + st["lens_band"] / 2
     o, rl = pd["main"]["orbit"], pd["mutant"]["r"]
     return {
         "depth": depth, "lens_c": lens_c, "rl": rl,
         "lens": lens_ops(o, r, lens_c, rl),
         "crescent_band": crescent_ops(o, r - dm, lens_c, rl + dm),
-        "lens_band": lens_ops(o, r - dl, lens_c, rl - dl),
     }
 
 
@@ -526,16 +529,13 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
         c.setLineWidth(out)
         c.circle(px, py, rr, stroke=1, fill=1)
         if has_mut:
-            c.setFillColor(white if lid is not None else LENS_EMPTY)
+            c.setFillColor(lens_tint(colour(st(lid))) if lid is not None and st(lid) != "off"
+                           else white if lid is not None else LENS_EMPTY)
             _place_ops(c, fig["lens"], cx, cy, R, th, 0, 1)
             if mid is not None and st(mid) != "off":
                 c.setStrokeColor(colour(st(mid)))
                 c.setLineWidth(band)
                 _place_ops(c, fig["crescent_band"], cx, cy, R, th, 1, 0)
-            if lid is not None and st(lid) != "off":
-                c.setStrokeColor(colour(st(lid)))
-                c.setLineWidth(R * stk["lens_band"])
-                _place_ops(c, fig["lens_band"], cx, cy, R, th, 1, 0)
             c.setStrokeColor(black)
             c.setLineWidth(out)
             c.circle(px, py, rr, stroke=1, fill=0)
