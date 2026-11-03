@@ -264,12 +264,14 @@ class HandpantheoryHostSetTest(unittest.TestCase):
         readme = ["README.md"] if "handpantheory" in read("README.md") else []
         self.assertEqual(sorted(out + readme), self.HANDPANTHEORY_HOST_FILES)
 
-    def test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_only_in_the_switch(self):
+    def test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_nowhere_in_index_html(self):
         html = read("index.html")
         self.assertIn('<link rel="canonical" href="https://handpantheory.com/">', html)
         self.assertIn('<meta property="og:url" content="https://handpantheory.com/">', html)
         old = [l for l in html.splitlines() if "handpan." + "raywu.org" in l]
-        self.assertEqual([l.strip() for l in old if not l.lstrip().startswith("//")], ['const MOVE_FROM = "handpan.raywu.org";'])
+        self.assertEqual([l.strip() for l in old if not l.lstrip().startswith("//")], [])
+        self.assertIn("const MOVE_FROM = null;", html)
+        self.assertIn("const MOVE_TARGET = null;", html)
 
 
 if __name__ == "__main__":
