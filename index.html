@@ -3802,8 +3802,10 @@ HPE.pdfcards = (function () {
     var dr = R * g.r_ding;
     c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
     c.setLineWidth(out);
+    var dingLit = plan.ding.st !== "off";
+    if (plan.hasMut && dingLit) c.setFillColor(lensTint(colour(plan.ding.st)));
     c.circle(cx, cy - R * (g.ding_dy || 0), dr, 1, 1);
-    if (plan.ding.st !== "off") {
+    if (dingLit && !plan.hasMut) {
       c.setStrokeColor(colour(plan.ding.st));
       c.setLineWidth(R * stk.main_band);
       c.circle(cx, cy - R * (g.ding_dy || 0),
@@ -3815,17 +3817,15 @@ HPE.pdfcards = (function () {
     c.setLineJoin(1);
     plan.tones.forEach(function (t) {
       var th = t.theta, p = pos(t.orbit, th), rr = R * t.r;
-      c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
+      c.setDash();
+      c.setFillColor(plan.hasMut && t.main && t.main.st !== "off" ? lensTint(colour(t.main.st)) : WHITE);
+      c.setStrokeColor(BLACK);
       c.setLineWidth(out);
       c.circle(p[0], p[1], rr, 1, 1);
       if (plan.hasMut) {
         var f = plan.fig;
         c.setFillColor(t.lens ? (t.lens.st !== "off" ? lensTint(colour(t.lens.st)) : WHITE) : LENS_EMPTY);
         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 0, 1);
-        if (t.main && t.main.st !== "off") {
-          c.setStrokeColor(colour(t.main.st)); c.setLineWidth(R * stk.main_band);
-          c.pathOps(neoPoint(f.crescentBand, cx, cy, R, th, 1), 1, 0);
-        }
         c.setStrokeColor(BLACK); c.setLineWidth(out);
         c.circle(p[0], p[1], rr, 1, 0);
         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
@@ -11980,20 +11980,20 @@ function neoSvg(d, sets, C, R) {
     `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${col}" stroke-width="${w}"/>`;
   let s = `<circle r="${R * PD.decor.r}" fill="none" stroke="#bbb" stroke-width="${R * stk.decor}"/>`;
   const dy = (g.ding_dy || 0) * R, dr = R * g.r_ding;
-  s += `<circle cx="0" cy="${dy}" r="${dr}" fill="#fff" stroke="#000" stroke-width="${out}"/>`;
-  if (plan.ding.st !== "off")
+  const dingLit = plan.ding.st !== "off";
+  s += `<circle cx="0" cy="${dy}" r="${dr}" fill="${plan.hasMut && dingLit ? tintHex(colour(plan.ding.st)) : "#fff"}" stroke="#000" stroke-width="${out}"/>`;
+  if (dingLit && !plan.hasMut)
     s += ring(0, dy, dr - R * (stk.decor + stk.main_band / 2), R * stk.main_band, colour(plan.ding.st));
   s += name(0, dy, plan.ding.name, plan.ding.oct, plan.dingSize, "#242424");
   const lines = [];
   for (const t of plan.tones) {
     const [x, y] = pos(t.orbit, t.theta), rr = R * t.r;
-    s += `<circle cx="${x}" cy="${y}" r="${rr}" fill="#fff" stroke="#000" stroke-width="${out}"/>`;
+    const mainFill = plan.hasMut && t.main && t.main.st !== "off" ? tintHex(colour(t.main.st)) : "#fff";
+    s += `<circle cx="${x}" cy="${y}" r="${rr}" fill="${mainFill}" stroke="#000" stroke-width="${out}"/>`;
     if (plan.hasMut) {
       const f = plan.fig;
       const lensFill = !t.lens ? "#f3f1f5" : t.lens.st !== "off" ? tintHex(colour(t.lens.st)) : "#fff";
       s += `<path d="${path(f.lens, t.theta)}" fill="${lensFill}" stroke="none"/>`;
-      if (t.main && t.main.st !== "off")
-        s += `<path d="${path(f.crescentBand, t.theta)}" fill="none" stroke="${colour(t.main.st)}" stroke-width="${R * stk.main_band}" stroke-linejoin="round"/>`;
       s += `<circle cx="${x}" cy="${y}" r="${rr}" fill="none" stroke="#000" stroke-width="${out}"/>`;
       s += `<path d="${path(f.lens, t.theta)}" fill="none" stroke="#000" stroke-width="${out}" stroke-linejoin="round"/>`;
     } else if (t.main.st !== "off") {

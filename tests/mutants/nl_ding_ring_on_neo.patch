@@ -1,0 +1,16 @@
+# kills: NS: a lit Neotone ding fills with the half tint and draws no ring
+# suite: node --test --test-name-pattern=lit.Neotone.ding.fills tests/pdfcards.test.js
+# fault: Keep the ding ring on a Neotone card.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -595,7 +595,7 @@ HPE.pdfcards = (function () {
+     var dingLit = plan.ding.st !== "off";
+     if (plan.hasMut && dingLit) c.setFillColor(lensTint(colour(plan.ding.st)));
+     c.circle(cx, cy - R * (g.ding_dy || 0), dr, 1, 1);
+-    if (dingLit && !plan.hasMut) {
++    if (dingLit) {
+       c.setStrokeColor(colour(plan.ding.st));
+       c.setLineWidth(R * stk.main_band);
+       c.circle(cx, cy - R * (g.ding_dy || 0),
+

@@ -5,9 +5,9 @@ diff --git a/tools/hifi.py b/tools/hifi.py
 --- a/tools/hifi.py
 +++ b/tools/hifi.py
 @@ -536,6 +536,10 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
-                 c.setStrokeColor(colour(st(mid)))
-                 c.setLineWidth(band)
-                 _place_ops(c, fig["crescent_band"], cx, cy, R, th, 1, 0)
+             c.setFillColor(lens_tint(colour(st(lid))) if lid is not None and st(lid) != "off"
+                            else white if lid is not None else LENS_EMPTY)
+             _place_ops(c, fig["lens"], cx, cy, R, th, 0, 1)
 +            if lid is not None and st(lid) != "off":
 +                c.setStrokeColor(colour(st(lid)))
 +                c.setLineWidth(R * 0.024)
@@ -15,3 +15,4 @@ diff --git a/tools/hifi.py b/tools/hifi.py
              c.setStrokeColor(black)
              c.setLineWidth(out)
              c.circle(px, py, rr, stroke=1, fill=0)
+

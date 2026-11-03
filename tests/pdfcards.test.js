@@ -1052,7 +1052,7 @@ test("PA: lens and crescent are analytic closed paths of arcs of at most a quart
   assert.ok(near(P.lensOps(f.main.orbit, f.main.r, lensC, f.mutant.r)[0][1], 0.6, 0.1));
 });
 
-test("PA: K3 strokes: black outlines 0.012R, band 0.046R (the lens is a tint fill, no band), a decor ring 0.355R at 0.0076R, round joins", () => {
+test("PA: K3 strokes: black outlines 0.012R, no band (main, lens and ding are tint fills), a decor ring 0.355R at 0.0076R, round joins", () => {
   const { page, R, cx, cy } = paCard(PA.pygmy, 0);
   const decor = page.ops.find((o) => o.op === "circle" && near(o.r, 0.355 * R));
   assert.ok(decor && near(decor.width, 0.0076 * R));
@@ -1060,15 +1060,8 @@ test("PA: K3 strokes: black outlines 0.012R, band 0.046R (the lens is a tint fil
   const outlines = page.ops.filter((o) => o.op === "circle" && near(o.width, 0.012 * R));
   assert.ok(outlines.length >= 10);
   for (const o of outlines) assert.deepStrictEqual(rgb(o.stroke), [0, 0, 0]);
-  const bands = page.ops.filter((o) => o.op === "path" && o.mode === "S" && !near(o.width, 0.012 * R));
-  assert.ok(bands.length >= 3);
-  for (const b of bands) {
-    assert.ok(near(b.width, 0.046 * R), "band width " + b.width);
-    assert.equal(b.join, 1, "round join");
-  }
-  const ringBands = page.ops.filter((o) => o.op === "circle" && near(o.width, 0.046 * R));
-  assert.ok(ringBands.length >= 1, "the lit ding is a ring band");
-  assert.ok(ringBands.every((b) => near(b.r, 0.2 * R - (0.0076 + 0.023) * R)));
+  assert.ok(!page.ops.some((o) => (o.op === "path" || o.op === "circle") && near(o.width, 0.046 * R)), "no band stroke: lit notes are tint fills");
+  assert.ok(page.ops.filter((o) => o.op === "path" && o.mode === "S").every((o) => o.join === 1), "round joins");
   assert.ok(!page.ops.some((o) => o.op === "circle" && near(o.width, 0.55)), "no inner hairline");
 });
 
@@ -1141,18 +1134,20 @@ test("PA: numbers: main outside the rim at 1.0758 on a mutant card, M<n> on the 
   assert.ok(!page.ops.some((o) => o.op === "text" && /^M\d$/.test(o.s) && o.s === "M9"), "no number for an empty slot");
 });
 
-test("PA: a lit lens and a lit crescent draw their own band; an empty main and an empty lens draw neutral", () => {
+test("PA: a lit main fills its tonefield with the tint and strokes no crescent band; an empty main and an empty lens draw neutral", () => {
   const { page, R, cx, cy, deck } = paCard(PA.hijaz, 0);
-  const root = rgb(deck.col_root), tone = rgb(deck.col_tone);
-  const lit = page.ops.filter((o) => o.op === "path" && o.mode === "S" && !near(o.width, 0.012 * R));
-  for (const b of lit) assert.ok([root, tone].some((c) => c.join() === rgb(b.stroke).join()));
-  assert.ok(lit.every((b) => near(b.width, 0.046 * R)), "only the crescent band strokes; the lens has none");
-  const empties = page.ops.filter((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.012 * R));
-  for (const e of empties) assert.deepStrictEqual(rgb(e.stroke), [0, 0, 0], "outlines are black, never an error colour");
+  const tints = stateColours().map((c) => c.map((v) => +((v + 1) / 2).toFixed(4)).join());
+  const mainCircles = page.ops.filter((o) => o.op === "circle" && o.m === "B*" && near(o.width, 0.012 * R) && o.r < 0.25 * R && o.r > 0.1 * R && !near(o.r, 0.2 * R));
+  assert.ok(mainCircles.some((o) => tints.includes(rgb(o.fill).join())), "a lit main fills with a state tint");
+  for (const o of mainCircles) assert.ok(["1,1,1", ...tints].includes(rgb(o.fill).join()), "main fill is white or a tint");
+  assert.ok(!page.ops.some((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.046 * R)), "no crescent band stroke");
+  const outlines = page.ops.filter((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.012 * R));
+  for (const e of outlines) assert.deepStrictEqual(rgb(e.stroke), [0, 0, 0], "outlines are black, never an error colour");
   const p9 = pt(cx, cy, R, 70, 0.745);
   const disk = page.ops.find((o) => o.op === "circle" && near(o.x, p9[0]) && near(o.y, p9[1]) && o.m === "B*");
   assert.ok(disk, "main tonefield 9 is drawn though empty");
   assert.deepStrictEqual(rgb(disk.stroke), [0, 0, 0]);
+  assert.deepStrictEqual(rgb(disk.fill), [1, 1, 1], "an empty main stays white");
 });
 
 test("PA: K5 and K7: root frame, no BOTTOM NOTES badge, no dashed ring, no Neotone tag; the footer is the saved name and #n", () => {
@@ -1486,4 +1481,72 @@ test("URL mark: a generated deck with a long accented name has one mark per chor
     assert.ok(/^[\x20-\x7e]+$/.test(foot[0].s), foot[0].s);
     assert.ok(foot[0].s.startsWith("Cafe Ete") && foot[0].s.endsWith("..."), foot[0].s);
   });
+});
+
+/* ---- Neotone solid tint (owner 2026-11-03): main and ding ---------------- */
+
+const stateColours = () => [[0.043, 0.482, 0.459], [0.867, 0.561, 0], ...[PA.pygmy, PA.hijaz, PA.kurd].flatMap((q) => {
+  const d = HPE.pdfdeck.fromGenerated(q);
+  return [d.col_root, d.col_tone];
+})].filter(Boolean);
+const mainDisks = (page, R) => page.ops.filter((o) => o.op === "circle" && o.m === "B*" && near(o.width, 0.012 * R) && o.r > 0.1 * R && o.r < 0.25 * R && !near(o.r, 0.2 * R));
+const dingDisks = (page, R) => page.ops.filter((o) => o.op === "circle" && o.m === "B*" && near(o.r, 0.2 * R));
+
+test("NS: a lit Neotone main fills its circle with the half tint and strokes nothing in the state colour", () => {
+  let lit = 0;
+  for (const p of [PA.pygmy, PA.hijaz]) {
+    const stateStrokes = stateColours().map((c) => rgb(c).join());
+    const tints = stateColours().map((c) => tint50(c).join());
+    p.deck.chords.forEach((_, i) => {
+      const { page, R } = paCard(p, i);
+      for (const o of mainDisks(page, R)) {
+        const f = rgb(o.fill).join();
+        assert.ok(["1,1,1", ...tints].includes(f), "main fill " + f);
+        if (tints.includes(f)) lit++;
+      }
+      const stroked = page.ops.filter((o) => (o.op === "path" || o.op === "circle") && (o.mode === "S" || o.m === "S") && stateStrokes.includes(rgb(o.stroke).join()));
+      assert.deepStrictEqual(stroked, [], "no stroke in a state colour");
+    });
+  }
+  assert.ok(lit >= 1, "a tinted main is emitted somewhere");
+});
+
+test("NS: a lit Neotone ding fills with the half tint and draws no ring", () => {
+  let lit = 0;
+  for (const p of [PA.pygmy, PA.hijaz]) {
+    const tints = stateColours().map((c) => tint50(c).join());
+    p.deck.chords.forEach((_, i) => {
+      const { page, R } = paCard(p, i);
+      const dings = dingDisks(page, R);
+      assert.equal(dings.length, 1, "one ding disk");
+      const f = rgb(dings[0].fill).join();
+      assert.ok(["1,1,1", ...tints].includes(f), "ding fill " + f);
+      if (tints.includes(f)) lit++;
+      assert.ok(!page.ops.some((o) => o.op === "circle" && near(o.r, 0.2 * R - R * (0.0076 + 0.046 / 2))), "no ding ring");
+    });
+  }
+  assert.ok(lit >= 1, "a tinted ding is emitted somewhere");
+});
+
+test("NS: cards without a mutant note draw byte-for-byte as at the base commit", () => {
+  const sha = (page) => require("node:crypto").createHash("sha256").update(JSON.stringify(page.ops)).digest("hex");
+  const kurd = JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "profile_case_kurd9_v2.json"), "utf8"));
+  assert.ok(kurd.deck.geom.place, "a placed card with no mutant note");
+  const pdeck = HPE.pdfdeck.fromGenerated(kurd);
+  pdeck.R = P.profileRadius(kurd.deck.geom);
+  pdeck.col_root = [0.043, 0.482, 0.459]; pdeck.col_tone = [0.867, 0.561, 0];
+  P.build(pdeck);
+  const placed = { page: tracingPage() };
+  P._internal.chordCard(new P._internal.Canvas(placed.page), 0, 0, pdeck, 1, pdeck.chords[0]);
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  const parsed = E.core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
+  const built = E.select.build(parsed.value);
+  const std = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: built.value });
+  assert.ok(!built.value.geom.place, "a standard, non-placed card");
+  std.col_root = [0.043, 0.482, 0.459]; std.col_tone = [0.867, 0.561, 0];
+  P.build(std);
+  const page = tracingPage();
+  P._internal.chordCard(new P._internal.Canvas(page), 0, 0, std, 1, std.chords[0]);
+  assert.equal(sha(placed.page), "697d4045b7018dfa6b9af9b73b4622903a208c1c030093268324ecea1cb1a8c3");
+  assert.equal(sha(page), "e0b845b3fda7682873764cb37881169c0fadf395f2d582bb5d10da4405df06a0");
 });
