@@ -19626,3 +19626,119 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.deepStrictEqual(envelopeAt(origin).importedIds, before.importedIds);
   });
 });
+
+describe("FG: field guide light ground for the menu, forms and About (phase 2)", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const BEGIN = "/* field-guide:begin */";
+  const END = "/* field-guide:end */";
+  const block = () => {
+    const a = html.indexOf(BEGIN), b = html.indexOf(END);
+    assert.ok(a > 0 && b > a, "no field-guide block in the stylesheet");
+    return html.slice(a + BEGIN.length, b).replace(/\/\*[\s\S]*?\*\//g, "");
+  };
+  const rules = () => [...block().matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ sel: m[1].split(",").map((s) => s.trim()), body: m[2] }));
+  const lum = (hex) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+  const find = (sel) => rules().filter((r) => r.sel.includes(sel)).map((r) => r.body).join(";");
+
+  test("FG: the block sits before the print block, which stays last", () => {
+    assert.ok(html.indexOf(END) < html.indexOf("@media print"));
+    assert.ok(html.lastIndexOf("@media print") > html.indexOf(END));
+  });
+
+  test("FG: root stays color-scheme:dark; light is scoped to the panel, sheet and About", () => {
+    assert.match(html, /:root\{\s*color-scheme:dark;/);
+    const scoped = rules().find((r) => /color-scheme:\s*light/.test(r.body));
+    assert.ok(scoped, "no color-scheme:light rule");
+    for (const s of ["#settings-panel", "#scale-sheet", "#about"]) assert.ok(scoped.sel.includes(s), s);
+    assert.ok(!scoped.sel.includes(":root") && !scoped.sel.includes("body"));
+  });
+
+  test("FG: every selector is scoped to the panel, sheet or About", () => {
+    for (const r of rules()) for (const s of r.sel)
+      assert.match(s, /^(#settings-panel|#scale-sheet|\.sheetsurf|#about|\.abouthead|@)/, `unscoped: ${s}`);
+  });
+
+  test("FG: protected card, progression, badge and diagram selectors are never touched", () => {
+    const b = block();
+    for (const p of [".card", ".prog", ".rail", ".badge", ".panhit", ".panghost", ".nhit", ".face", ".flip", "--ink", "--paper", "--root", "--tone"])
+      assert.ok(!b.includes(p), `block mentions ${p}`);
+  });
+
+  test("FG: roles are the approved tokens and the text pairs pass 4.5:1", () => {
+    const b = block();
+    for (const hex of ["#F6F4ED", "#FFFFFF", "#242424", "#5E5850", "#8A847B", "#6756B5"])
+      assert.ok(b.toUpperCase().includes(hex), hex);
+    assert.ok(ratio("#242424", "#F6F4ED") >= 4.5);
+    assert.ok(ratio("#5E5850", "#F6F4ED") >= 4.5);
+    assert.ok(ratio("#5E5850", "#FFFFFF") >= 4.5);
+    assert.ok(ratio("#FFFFFF", "#6756B5") >= 4.5);
+    assert.ok(ratio("#6756B5", "#F6F4ED") >= 4.5);
+    assert.ok(ratio("#8A847B", "#F6F4ED") >= 3);
+  });
+
+  test("FG: A1/A19 focus ring is a 2px ink ring, differs from the violet fill, never the teal", () => {
+    const f = find("#settings-panel :focus-visible");
+    assert.match(f, /outline:\s*2px solid #242424/i);
+    assert.match(f, /outline-offset:\s*2px/);
+    assert.ok(ratio("#242424", "#F6F4ED") >= 3);
+    assert.notStrictEqual("#242424", "#6756B5");
+    assert.ok(!/44e0d8/i.test(block()));
+    assert.match(find("#scale-sheet :focus-visible"), /outline:\s*2px solid #242424/i);
+    assert.match(find("#about :focus-visible"), /outline:\s*2px solid #242424/i);
+  });
+
+  test("FG: A2/A20 error state is ink text, a 2px ink border and an icon, never orange", () => {
+    assert.ok(!/E27005/i.test(block()));
+    assert.match(find("#scale-sheet #scale-box.bad"), /border:\s*1px solid #242424/i);
+    assert.match(find("#scale-sheet #scale-box.bad"), /box-shadow:\s*inset 0 0 0 1px #242424/i);
+    assert.match(find("#scale-sheet #scale-fields input.bad"), /box-shadow:\s*inset 0 0 0 1px #242424/i);
+    assert.match(find("#scale-sheet #scale-refusal.err"), /color:\s*#242424/i);
+    assert.match(find("#scale-sheet #scale-msg.err"), /color:\s*#242424/i);
+    assert.match(find("#scale-sheet #scale-refusal.err::before"), /content:/);
+    assert.match(find("#scale-sheet #scale-msg.err::before"), /content:/);
+  });
+
+  test("FG: selected controls are violet with white text; inactive stay neutral", () => {
+    const on = find("#settings-panel .mode.on");
+    assert.match(on, /background:\s*#6756B5/i);
+    assert.match(on, /color:\s*#FFFFFF/i);
+    assert.match(find("#settings-panel .mode:not(.on)"), /background:\s*#FFFFFF/i);
+    assert.match(find("#settings-panel .mode"), /color:\s*#242424/i);
+    assert.match(find("#scale-sheet #scale-generate"), /background:\s*#6756B5/i);
+  });
+
+  test("FG: A5 disabled uses #8A847B text, not opacity alone; checkbox accent is violet", () => {
+    assert.match(find("#scale-sheet .mode:disabled"), /color:\s*#8A847B/i);
+    assert.match(find("#scale-sheet #scale-generate:disabled"), /color:\s*#8A847B/i);
+    assert.match(find("#scale-sheet #scale-fields #scale-neotone"), /accent-color:\s*#6756B5/i);
+  });
+
+  test("FG: panel, sheet and About ground is paper; the pan plate and swatch geometry are untouched", () => {
+    assert.match(find("#settings-panel"), /background:\s*#F6F4ED/i);
+    assert.match(find("#scale-sheet"), /background:\s*#F6F4ED/i);
+    assert.match(find(".sheetsurf"), /background:\s*#F6F4ED/i);
+    assert.match(find("#about"), /background:\s*#F6F4ED/i);
+    const b = block();
+    assert.ok(!/#scale-preview[^{]*\{[^}]*(width|height|padding)/.test(b));
+    assert.ok(!/#scale-swatches[^{]*\{[^}]*(width|height|padding)/.test(b));
+  });
+
+  test("FG: the desktop sidebar keeps a 4px table-coloured right edge", () => {
+    assert.match(block(), /box-shadow:\s*inset -4px 0 0 #0F0E0B/i);
+  });
+
+  test("FG: no text or font-size is changed by the block", () => {
+    assert.ok(!/font-size|font:|padding|margin|width|height/.test(block().replace(/(vertical-align|margin-right|width|height)[^;}]*/g,"").replace(/box-shadow[^;}]*/g,"")), "block changes geometry or type");
+  });
+});

@@ -239,3 +239,9 @@ AFK decisions: A1 ink focus ring; A2 error = ink + icon + aria-invalid border (O
 
 ## Build receipts (lane P/A, 2026-11-02)
 Phase 0: `docs/plans/assets/2026-11-02-field-guide/phase0-receipt.md` (base, tools, hashes, ownership, token gate, A5 state table). `PRODUCT.md` and `surface-briefs.md` seeded per A9. Phase 1: `phase1-evidence/` and `phase1-receipt.md` in the same folder. Stopped at the Phase 1 owner fidelity gate; Phases 2-4 not started.
+
+## Phase 1 gate and decision log (2026-11-02, AFK)
+- Phase 1 owner gate: owner accepted fidelity of the vector master, "continue without pixel exact" (overlay differing_fraction 0.006577, edge fringes only).
+- AFK auto-decisions (owner may revisit): (a) the 16px favicon stays the faithful master downscaled, no separate simplified 16px mark; (b) the master stays single-colour as shipped in Phase 1, no 4-colour variant in this lane.
+- Ownership record: the `hn_h1_name_span_dropped` mutant context refresh in 04ce3f3e was outside the Lane A list; it is required because the new lockup changes the h1 span context the mutant anchors on. Added to Lane A.
+- Phase 2 (lane U): implemented as ONE scoped override block (`field-guide:begin/end` in the index.html stylesheet, before the CJK block so the print block stays last). Existing dark rules are left byte-identical because tests/test_scale_pages.py (Lane R) pins the About rules; the block wins by cascade order at equal specificity. Error border keeps the 1px border and adds an inset 1px ink shadow (a real 2px border would grow the 48px fields). Desktop sidebar keeps a 4px `#0F0E0B` inset edge so the existing "outer 4px frame is table-coloured" e2e guard holds (owner may prefer a full-bleed paper sidebar, which needs that test changed). Header controls (`#settings-trigger`, `#share-copy`, `#share-url`, chips) and page-level `.announce` sit on dark ground and are unchanged.

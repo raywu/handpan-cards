@@ -1386,6 +1386,100 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
 html.about-open{overflow:hidden}
 
+/* ---- field guide: light ground for the menu, forms and About (phase 2) ------
+   Scoped overrides, later in the cascade than the dark rules they replace, so
+   the practice screen, the header and every card renderer keep their own
+   values. Roles: paper #F6F4ED, field #FFFFFF, ink #242424, muted #5E5850,
+   border #8A847B, action #6756B5. Violet is for selected and primary states
+   only; inactive controls stay neutral. Errors on light ground are ink text, a
+   leading icon and a doubled ink border (orange stays on dark ground and in the
+   protected renderers). Only colours change here: no size, spacing or copy. */
+/* field-guide:begin */
+#settings-panel, #scale-sheet, #about{color-scheme:light}
+#settings-panel{background:#F6F4ED; color:#242424}
+#scale-sheet{background:#F6F4ED; color:#242424}
+#scale-sheet .sheetsurf, .sheetsurf{background:#F6F4ED; color:#242424}
+#about{background:#F6F4ED; color:#242424}
+#about .abouthead{background:#F6F4ED; border-bottom-color:#8A847B}
+@media (min-width:1024px) and (min-height:700px){
+  #settings-panel{background:#F6F4ED; border-left-color:#8A847B; box-shadow:inset -4px 0 0 #0F0E0B}
+}
+#settings-panel :focus-visible{outline:2px solid #242424; outline-offset:2px}
+#scale-sheet :focus-visible{outline:2px solid #242424; outline-offset:2px}
+#about :focus-visible{outline:2px solid #242424; outline-offset:2px}
+
+#settings-panel .panel-heading, #about h4{color:#5E5850}
+#settings-panel .panel-note{color:#5E5850}
+#settings-panel .panel-note a, #about a{color:#6756B5; text-decoration-color:#6756B5}
+#about h2, #about h3{color:#242424}
+
+#settings-panel .mode, #scale-sheet .mode, #about .mode,
+#settings-panel .prints button, #settings-panel .prints select, #settings-panel #lang-select{
+  background:#FFFFFF; color:#242424; border-color:#8A847B}
+#settings-panel .mode:not(.on), #scale-sheet .mode:not(.on), #about .mode:not(.on){background:#FFFFFF}
+#settings-panel .mode:hover, #scale-sheet .mode:hover, #about .mode:hover,
+#settings-panel .prints button:hover, #settings-panel .prints select:hover, #settings-panel #lang-select:hover{
+  background:#F6F4ED; border-color:#242424}
+#settings-panel .prints button:focus-visible, #settings-panel .prints select:focus-visible, #settings-panel #lang-select:focus-visible{
+  background:#FFFFFF}
+#settings-panel .mode:not(.on):active, #scale-sheet .mode:not(.on):active, #about .mode:not(.on):active,
+#settings-panel .prints button:active, #settings-panel .prints select:active, #settings-panel #lang-select:active{
+  background:#F6F4ED; color:#242424}
+#settings-panel .mode.on, #scale-sheet .mode.on, #about .mode.on{
+  background:#6756B5; color:#FFFFFF; border-color:#6756B5}
+#settings-panel .mode.on:active, #scale-sheet .mode.on:active{background:#5A49A6}
+#settings-panel .mode:disabled, #scale-sheet .mode:disabled, #settings-panel .prints button:disabled{
+  background:#F6F4ED; color:#8A847B; border-color:#8A847B; opacity:1}
+
+#scale-sheet #scale-title{color:#242424}
+#scale-sheet .sheetlabel, #scale-sheet .sheethint, #scale-sheet #scale-parse, #scale-sheet #scale-refusal,
+#scale-sheet #scale-msg, #scale-sheet #scale-or span, #scale-sheet #scale-fields-note, #scale-sheet #scale-line-note,
+#scale-sheet #scale-field-msg.info, #scale-sheet #scale-field-msg.stale, #scale-sheet #scale-drawer-status,
+#scale-sheet #scale-guidance #scale-layout-state{color:#5E5850}
+#scale-sheet #scale-box, #scale-sheet #scale-name, #scale-sheet #scale-fields input{
+  background:#FFFFFF; color:#242424; border-color:#8A847B}
+#scale-sheet #scale-fields #scale-neotone{background:#FFFFFF; accent-color:#6756B5}
+#scale-sheet #scale-fields input::placeholder, #scale-sheet #scale-box::placeholder{color:#5E5850}
+#scale-sheet #scale-fields.passive input, #scale-sheet #scale-box.passive{
+  color:#5E5850; background:transparent; border-style:dashed; border-color:#8A847B}
+#scale-sheet #scale-box.bad, #scale-sheet #scale-fields input.bad{
+  border-color:#242424; box-shadow:inset 0 0 0 1px #242424}
+#scale-sheet #scale-box.bad, #scale-sheet #scale-fields input.bad{border:1px solid #242424}
+#scale-sheet #scale-refusal.err, #scale-sheet #scale-msg.err{color:#242424}
+#scale-sheet #scale-refusal.err::before, #scale-sheet #scale-msg.err::before{
+  content:""; display:inline-block; width:1em; height:1em; margin-right:.4em; vertical-align:-.15em;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%23242424'/%3E%3Crect x='7.1' y='3.4' width='1.8' height='6' fill='%23fff'/%3E%3Crect x='7.1' y='10.9' width='1.8' height='1.8' fill='%23fff'/%3E%3C/svg%3E") center/contain no-repeat}
+#scale-sheet #scale-msg.warn, #scale-sheet #scale-msg.ok, #scale-sheet #scale-drawer-status.warn,
+#scale-sheet #scale-layout-state, #scale-sheet #scale-field-msg, #scale-sheet #scale-neotone-extra,
+#scale-sheet #scale-del-note, #scale-sheet #scale-fields.stale #scale-fields-note,
+#scale-sheet #scale-delete[data-armed]{color:#242424; font-weight:600}
+#scale-sheet #scale-fields.stale input, #scale-sheet #scale-box.stale{text-decoration-color:#8A847B}
+
+#scale-sheet #scale-tabs{border-bottom-color:#8A847B}
+#scale-sheet #scale-tabs [role=tab]{color:#5E5850}
+#scale-sheet #scale-tabs [role=tab].on{color:#242424}
+#scale-sheet #scale-tabs [role=tab].on::after{background:#6756B5}
+#scale-sheet #scale-tabs [role=tab]:active{color:#242424}
+#scale-sheet #scale-or::before, #scale-sheet #scale-or::after{background:#8A847B}
+#scale-sheet .sheetbody{border-bottom-color:#8A847B}
+#scale-sheet #scale-preview{border-color:#8A847B; color:#f6f4ed}
+#scale-sheet #scale-plate-band{background:#F6F4ED}
+#scale-sheet #scale-plate-band #scale-layout-hint{background:#F6F4ED; color:#242424}
+#scale-sheet #scale-drawer-status{background:#F6F4ED; box-shadow:0 var(--sp-1) 0 #F6F4ED}
+#scale-sheet.lipped #scale-footslide{background:#F6F4ED; border-top-color:#8A847B}
+#scale-sheet.lipped #scale-guidance{background:#F6F4ED}
+#scale-sheet #scale-lip::after{background:#8A847B}
+#scale-sheet #scale-swatches .dot.sel::after, #scale-sheet #scale-swatches .dot.sel:active::after{box-shadow:0 0 0 2px #242424}
+#scale-sheet #scale-swatches .dot:active::after{box-shadow:0 0 0 2px #8A847B}
+#scale-sheet #scale-fine-toggle, #scale-sheet #scale-delete{color:#5E5850}
+#scale-sheet #scale-fine-toggle:active, #scale-sheet #scale-delete:active{color:#242424}
+#scale-sheet #scale-fine-toggle:disabled{color:#8A847B; opacity:1}
+#scale-sheet #scale-generate, #scale-sheet #scale-next{background:#6756B5; border-color:#6756B5; color:#FFFFFF}
+#scale-sheet #scale-generate:hover:not(:disabled), #scale-sheet #scale-next:hover:not(:disabled){background:#5A49A6; border-color:#5A49A6}
+#scale-sheet #scale-generate:disabled, #scale-sheet #scale-generate:disabled:active{
+  background:#F6F4ED; border-color:#8A847B; color:#8A847B; opacity:1}
+/* field-guide:end */
+
 /* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */
 :lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) #lang-select, :lang(ja) .panel-note, :lang(ja) .chip{
   font-family:"Nunito Sans", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", "Noto Sans JP", sans-serif}
