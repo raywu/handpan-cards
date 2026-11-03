@@ -5213,7 +5213,7 @@ function run() {
     }
   });
 
-  test("DR1 line 38: each drawer control shows the global 2px teal #44e0d8 focus ring from the keyboard", async () => {
+  test("DR1 line 38: each drawer control shows the 2px ink #242424 focus ring (field guide, light sheet) from the keyboard", async () => {
     try {
       await addWithDrawer(380, 780);
       await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
@@ -5221,8 +5221,28 @@ function run() {
         assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
         const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
           return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
-        assert.deepStrictEqual(o, { w: "2px", c: "rgb(68, 224, 216)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
+        assert.deepStrictEqual(o, { w: "2px", c: "rgb(36, 36, 36)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
       }
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
+  test("FG: a focused panhit and a Neotone nhit on the Layout diagram keep outline none", async () => {
+    try {
+      await addWithDrawer(380, 780);
+      const ring = (sel) => b.eval(`const el = document.querySelector(${JSON.stringify(sel)});
+        if (!el) return null;
+        el.focus({ focusVisible: true });
+        const cs = getComputedStyle(el);
+        return { on: document.activeElement === el, s: cs.outlineStyle };`);
+      const pan = await ring("#scale-preview .panhit");
+      assert.deepStrictEqual(pan, { on: true, s: "none" }, `panhit: ${JSON.stringify(pan)}`);
+      await b.eval(`document.getElementById("scale-mode-neotone").click(); return true;`);
+      await b.waitFor(`!!document.querySelector("#scale-preview .nhit")`, { label: "Neotone nhit targets" });
+      const nh = await ring("#scale-preview .nhit");
+      assert.deepStrictEqual(nh, { on: true, s: "none" }, `nhit: ${JSON.stringify(nh)}`);
     } finally {
       await b.key("Escape", "Escape", 27);
       await b.setViewport(900, 900, false);
@@ -5270,19 +5290,20 @@ function run() {
       await openSheet();
       await b.eval(`document.getElementById("scale-tab-layout").click();`);
       const op = () => b.eval(`return { hintShown: !document.getElementById("scale-layout-hint").hidden,
-        mirror: getComputedStyle(document.getElementById("scale-mirror")).opacity };`);
+        mirror: getComputedStyle(document.getElementById("scale-mirror")).opacity,
+        mirrorColor: getComputedStyle(document.getElementById("scale-mirror")).color };`);
       const empty = await op();
-      assert.strictEqual(empty.mirror, "0.5", "a disabled drawer control is not dimmed");
+      assert.strictEqual(empty.mirrorColor, "rgb(138, 132, 123)", "a disabled drawer control does not paint the field-guide disabled #8A847B");
       assert.strictEqual(empty.hintShown, true, "the empty-state hint is hidden on an empty scale");
       await typeScale("(D3) A3 C4 D4");
       const typed = await op();
       assert.strictEqual(typed.mirror, "1");
       assert.strictEqual(typed.hintShown, false, "the hint stayed after the scale parsed");
       const mb = await b.eval(`const e = document.getElementById("scale-mirror-bottom");
-        return { off: e.disabled, o: getComputedStyle(e).opacity,
-          top: getComputedStyle(document.getElementById("scale-mirror")).opacity };`);
-      assert.deepStrictEqual(mb, { off: true, o: "0.5", top: "1" },
-        "a disabled drawer switch is not dimmed to .5, or an enabled one is");
+        return { off: e.disabled, c: getComputedStyle(e).color,
+          top: getComputedStyle(document.getElementById("scale-mirror")).color };`);
+      assert.deepStrictEqual(mb, { off: true, c: "rgb(138, 132, 123)", top: "rgb(36, 36, 36)" },
+        "a disabled drawer switch does not paint #8A847B, or an enabled one does");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -5440,7 +5461,7 @@ function run() {
       assert.ok(st.name.length > 0, "the Name field is empty");
       assert.strictEqual(st.primary, "SAVE CHANGES");
       assert.strictEqual(st.del, "DELETE THIS SCALE");
-      assert.strictEqual(st.delColor, "rgb(169, 163, 154)", "the delete link is not #a9a39a");
+      assert.strictEqual(st.delColor, "rgb(94, 88, 80)", "the delete link is not the field-guide muted #5E5850");
       assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
       assert.ok(st.body.sw <= st.body.cw + 1,
@@ -5768,9 +5789,9 @@ function run() {
       assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
         "the armed delete button keeps its amber under the thumb - the press that "
         + "destroys the deck is the one control on the page that does not answer");
-      assert.strictEqual(held.color, "rgb(246, 244, 237)",
-        "the armed delete button presses to something other than #f6f4ed, which is "
-        + "the pressed colour every other control on this page uses");
+      assert.strictEqual(held.color, "rgb(90, 73, 166)",
+        "the armed delete button presses to something other than the field-guide hover violet #5A49A6 "
+        + "(paper ground: the dark-ground pressed colour #f6f4ed would vanish)");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the held press was released" });
     } finally {
@@ -5794,8 +5815,8 @@ function run() {
       assert.strictEqual(armed.open, true, "the first tap on DELETE closed the page");
       assert.strictEqual(armed.text, "TAP AGAIN TO DELETE",
         "the armed delete button does not say what the next tap does");
-      assert.strictEqual(armed.color, "rgb(227, 178, 92)",
-        "the armed delete button is not in warning amber");
+      assert.strictEqual(armed.color, "rgb(36, 36, 36)",
+        "the armed delete button is not in ink (field guide: no amber on paper)");
       assert.ok(armed.h >= 44, `the armed button shrank to ${armed.h}px, under the 44px target`);
       await b.click("#scale-delete");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
@@ -7286,8 +7307,8 @@ function run() {
       assert.strictEqual(m.msgParent, "scale-guidance");
       assert.strictEqual(m.noteParent, "scale-guidance");
       assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
-      assert.strictEqual(m.noteColor, "rgb(169, 163, 154)", "N-A9: the notice is not the sheet's neutral #a9a39a inside the slot");
-      assert.strictEqual(m.warnColor, "rgb(227, 178, 92)", "N-A9: #scale-msg.warn is not amber #e3b25c");
+      assert.strictEqual(m.noteColor, "rgb(94, 88, 80)", "N-A9: the notice is not the field-guide muted #5E5850 inside the slot");
+      assert.strictEqual(m.warnColor, "rgb(36, 36, 36)", "N-A9: #scale-msg.warn is not ink #242424 (field guide: no amber on paper)");
       assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
       assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
     } finally {
@@ -8829,10 +8850,10 @@ function run() {
         assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
         assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
         assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
-        const teal = "rgb(68, 224, 216)";
+        const teal = "rgb(103, 86, 181)";
         const underlined = (t) => (t.bw === "2px" && t.bc === teal) || (t.afH === "2px" && t.afBg === teal);
-        assert.ok(underlined(sel), `the selected tab has no 2px teal underline: ${JSON.stringify(sel)}`);
-        assert.ok(!underlined(other), "the unselected tab is underlined in teal");
+        assert.ok(underlined(sel), `the selected tab has no 2px violet underline: ${JSON.stringify(sel)}`);
+        assert.ok(!underlined(other), "the unselected tab is underlined in violet");
         assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
         assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
       } finally {
@@ -9173,6 +9194,7 @@ function run() {
     const TABLE = [15, 14, 11];   // #0f0e0b
     const TABLE2 = [15, 14, 11];  // #0f0e0b
     const FRAME = 4;              // outer pixel frame width to sample
+    const PAPER = [246, 244, 237]; // #F6F4ED: the field-guide sheet ground (never white)
 
     // Renders the CURRENT page to a real PNG via CDP, then decodes it back to
     // pixels entirely in-browser (an <img> onto a <canvas>) so no PNG decoder
@@ -9190,7 +9212,7 @@ function run() {
     //    paints a background at all; ~10.4 from --table, ~12.08 measured
     //    under the ab_root_bg_dropped mutant) - so it needs a tight
     //    tolerance (~5) that sits strictly between those two numbers.
-    async function edgeCheck(tol) {
+    async function edgeCheck(tol, alt, altTol) {
       const shot = await b.send("Page.captureScreenshot", { format: "png" });
       return b.eval(`
         return new Promise((resolve, reject) => {
@@ -9203,7 +9225,8 @@ function run() {
             ctx.drawImage(img, 0, 0);
             const data = ctx.getImageData(0, 0, w, h).data;
             const table = ${JSON.stringify(TABLE)};
-            const table2 = ${JSON.stringify(TABLE2)};
+            const table2 = ${JSON.stringify(alt || TABLE2)};
+            const tol2 = ${altTol === undefined ? tol : altTol};
             const dist = (r, g, bch, t) =>
               Math.sqrt((r - t[0]) ** 2 + (g - t[1]) ** 2 + (bch - t[2]) ** 2);
             let bad = null;
@@ -9211,7 +9234,7 @@ function run() {
               if (bad || x < 0 || y < 0 || x >= w || y >= h) return;
               const i = (y * w + x) * 4;
               const r = data[i], g = data[i + 1], bch = data[i + 2];
-              if (Math.min(dist(r, g, bch, table), dist(r, g, bch, table2)) > ${tol}) {
+              if (dist(r, g, bch, table) > ${tol} && dist(r, g, bch, table2) > tol2) {
                 bad = { x, y, r, g, b: bch };
               }
             };
@@ -9244,15 +9267,15 @@ function run() {
       });
     }
 
-    test("with the scale sheet open, the outer frame stays table-coloured", async () => {
+    test("with the scale sheet open, the outer frame is the table or the paper ground, never white", async () => {
       await freshLoad();
       try {
         await b.setViewport(390, 844, true);
         await openSheet();
         await b.settle();
-        const r = await edgeCheck(20);
+        const r = await edgeCheck(20, PAPER, 4);
         assert.strictEqual(r.bad, null,
-          `edge pixel not table-coloured with the sheet open: ${JSON.stringify(r.bad)}`);
+          `edge pixel neither table nor paper coloured with the sheet open: ${JSON.stringify(r.bad)}`);
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -10949,7 +10972,7 @@ function run() {
           }
           const ring = await b.eval(`const el = document.getElementById("tier-basic"); el.focus({ focusVisible: true });
             const cs = getComputedStyle(el); return [cs.outlineWidth, cs.outlineColor, cs.outlineStyle];`);
-          assert.deepStrictEqual(ring, ["2px", "rgb(68, 224, 216)", "solid"], `${w}x${h}: global focus ring`);
+          assert.deepStrictEqual(ring, ["2px", "rgb(36, 36, 36)", "solid"], `${w}x${h}: field-guide ink focus ring`);
         }
       } finally { await b.setViewport(900, 900, false); }
     });

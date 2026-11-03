@@ -1,0 +1,18 @@
+{
+  "state": "pending-not-written",
+  "reason": "Linear connector is not installed/connected in this session. Do not claim an issue exists.",
+  "workspace": "bamboo-grove",
+  "teamKey": "TRI",
+  "teamId": "3ab0b7c5-c456-49fd-8555-d6952cb0a3d1",
+  "workstreamKey": "raywu/handpan-cards#field-guide-brand",
+  "operation": "search-stable-key-then-create-or-update",
+  "title": "Apply Field guide brand across Handpan Theory",
+  "priorityRequested": "P1",
+  "priorityWriteRule": "Inspect the connected tool priority schema and apply P1. Do not substitute High or an unverified numeric priority.",
+  "statusRequested": "Todo",
+  "deliveryLabelRequested": "planned",
+  "assigneeRequested": "owner Ray (resolve authenticated user; no guessed UUID)",
+  "preserveExistingProjectAndNonDeliveryLabels": true,
+  "description": "Plan: docs/plans/2026-11-02-field-guide-brand-implementation.md\nKey: raywu/handpan-cards#field-guide-brand\nPlanning only; implementation not authorized. Apply approved 01 Field guide / Two contours across root UI and actual learning pages. Preserve all cards/progressions, geometry/fonts/colors/data, engine/storage/share links and print layout. Faithful vector conversion and owner fidelity review precede application. Full exact-head validate, independent reviews, actual served DEV checks and owner phone QA remain future gates. See plan for assets, ownership, commands and approval boundaries.\n\nPlanning-only worktree: /Users/ray/Projects/handpan-theory-brand\nPlanning branch: design/handpan-theory-brand; initial base 19a91883.\nHandoff prompt: docs/prompts/2026-11-02-field-guide-integrator.md\nPreserve this planning checkout. After explicit implementation approval, create/use the verified isolated development code worktree described in the plan. No push/PR, merge or deployment is authorized. Priority requested: P1; resolve connector schema before writing. Assignee: owner Ray, resolve authenticated identity.",
+  "lifecycleNote": "Plan-only handoff prepared. Brand sheet approved; implementation not started. Preserve planned/Todo. Record added/stop comments only after verified issue resolution under existing lifecycle conventions."
+}
