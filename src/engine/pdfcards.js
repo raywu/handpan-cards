@@ -386,7 +386,7 @@ HPE.pdfcards = (function () {
   }
 
   // The paired-area profile's draw figures: a literal copy of
-  // tests/fixtures/paired_profile_v3.json (ENGINE-SPEC section 18) plus the
+  // tests/fixtures/paired_profile_v4.json (ENGINE-SPEC section 18) plus the
   // stroke and glyph figures of the Neotone card (course-correction plan K3
   // and K8), held equal to the fixture and to HPE.layout.PROFILE by a test.
   // pdf_build.js loads no layout module, so the figures cannot be read from
@@ -396,11 +396,11 @@ HPE.pdfcards = (function () {
     tonefields: 9,
     angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
     main: { orbit: 0.745, r: 0.19 },
-    mutant: { depth: 0.3333, r: 0.19 },
+    mutant: { depth: 0.45, r: 0.19 },
     ding: { r: 0.2, dy: 0 },
     decor: { r: 0.355 },
     n_in: 0.085, number_out: 1.0758, extent_margin: 0.06,
-    stroke: { outline: 0.012, decor: 0.0076, main_band: 0.046, lens_band: 0.024 },
+    stroke: { outline: 0.012, decor: 0.0076, main_band: 0.046 },
     glyph: { main: 0.62, number: 0.62, ding: 0.623, lens: 0.565, mnum: 0.5 }
   };
 
@@ -473,12 +473,10 @@ HPE.pdfcards = (function () {
     var lensC = neoRound(pd.main.orbit - (2 * r - depth));
     var st = pd.stroke;
     var dm = st.decor + st.main_band / 2;
-    var dl = st.decor + st.outline + st.lens_band / 2;
     return {
       depth: depth, lensC: lensC, r: r, rl: pd.mutant.r,
       lens: lensOps(pd.main.orbit, r, lensC, pd.mutant.r),
-      crescentBand: crescentOps(pd.main.orbit, r - dm, lensC, pd.mutant.r + dm),
-      lensBand: lensOps(pd.main.orbit, r - dl, lensC, pd.mutant.r - dl)
+      crescentBand: crescentOps(pd.main.orbit, r - dm, lensC, pd.mutant.r + dm)
     };
   }
 
@@ -556,6 +554,13 @@ HPE.pdfcards = (function () {
 
   var LENS_FIT_FLOOR = 0.1;
 
+  // A lit lens is its state colour mixed half with white (name ink reaches
+  // 4.5:1 on every palette colour; owner 2026-11-03).
+  var LENS_TINT = 0.5;
+  function lensTint(col) {
+    return col.map(function (v) { return v + (1 - v) * LENS_TINT; });
+  }
+
   function neoFit(name, oct, size, cap, floor) {
     while (size - 0.1 >= floor && noteW(name, oct, "Label", size) > cap) size -= 0.1;
     return size;
@@ -587,8 +592,10 @@ HPE.pdfcards = (function () {
     var dr = R * g.r_ding;
     c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
     c.setLineWidth(out);
+    var dingLit = plan.ding.st !== "off";
+    if (plan.hasMut && dingLit) c.setFillColor(lensTint(colour(plan.ding.st)));
     c.circle(cx, cy - R * (g.ding_dy || 0), dr, 1, 1);
-    if (plan.ding.st !== "off") {
+    if (dingLit && !plan.hasMut) {
       c.setStrokeColor(colour(plan.ding.st));
       c.setLineWidth(R * stk.main_band);
       c.circle(cx, cy - R * (g.ding_dy || 0),
@@ -600,21 +607,15 @@ HPE.pdfcards = (function () {
     c.setLineJoin(1);
     plan.tones.forEach(function (t) {
       var th = t.theta, p = pos(t.orbit, th), rr = R * t.r;
-      c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
+      c.setDash();
+      c.setFillColor(plan.hasMut && t.main && t.main.st !== "off" ? lensTint(colour(t.main.st)) : WHITE);
+      c.setStrokeColor(BLACK);
       c.setLineWidth(out);
       c.circle(p[0], p[1], rr, 1, 1);
       if (plan.hasMut) {
         var f = plan.fig;
-        c.setFillColor(t.lens ? WHITE : LENS_EMPTY);
+        c.setFillColor(t.lens ? (t.lens.st !== "off" ? lensTint(colour(t.lens.st)) : WHITE) : LENS_EMPTY);
         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 0, 1);
-        if (t.main && t.main.st !== "off") {
-          c.setStrokeColor(colour(t.main.st)); c.setLineWidth(R * stk.main_band);
-          c.pathOps(neoPoint(f.crescentBand, cx, cy, R, th, 1), 1, 0);
-        }
-        if (t.lens && t.lens.st !== "off") {
-          c.setStrokeColor(colour(t.lens.st)); c.setLineWidth(R * stk.lens_band);
-          c.pathOps(neoPoint(f.lensBand, cx, cy, R, th, 1), 1, 0);
-        }
         c.setStrokeColor(BLACK); c.setLineWidth(out);
         c.circle(p[0], p[1], rr, 1, 0);
         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
@@ -1000,6 +1001,7 @@ HPE.pdfcards = (function () {
     profileExtent: profileExtent,
     PROFILE_DRAW: PROFILE_DRAW,
     neoPlan: neoPlan,
+    lensTint: lensTint,
     neoLensSize: neoLensSize,
     lensOps: lensOps,
     crescentOps: crescentOps,

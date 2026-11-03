@@ -41,8 +41,10 @@ for (const d of DECKS) {
     let fields = [];
     if (d.geom && d.geom.place) {
       // Neotone: a field is a black 1.2-wide outline circle (a main tonefield
-      // or the ding); its band is a ring circle, or a crescent path where the
-      // card has a lens. Mirrors neo_fields in tests/test_render_agreement.py.
+      // or the ding). Where the card has a mutant note a lit field is a solid
+      // half-tint fill of its state colour; where it has none it carries a
+      // ring circle in the state colour. Mirrors neo_fields in
+      // tests/test_render_agreement.py.
       const byXY = new Map();
       for (const c of circles) {
         if (/stroke="#000"/.test(c.attrs) && Math.abs(+c.attrs.match(/stroke-width="([\d.eE+-]+)"/)[1] - 1.2) < 0.01) {
@@ -50,22 +52,22 @@ for (const d of DECKS) {
           if (!byXY.has(k)) byXY.set(k, { x: r3(c.x), y: r3(c.y), r: r3(c.r), state: "off" });
         }
       }
+      const tintHex = (hex) => "#" + [1, 3, 5].map((i) => {
+        const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+        return Math.round((v + (1 - v) * 0.5) * 255).toString(16).padStart(2, "0");
+      }).join("");
       const stateOf = (col) => (col === d.colors.root ? "root" : col === d.colors.tone ? "tone" : null);
+      const tintOf = (col) => (col === tintHex(d.colors.root) ? "root" : col === tintHex(d.colors.tone) ? "tone" : null);
       for (const c of circles) {
         const f = byXY.get(`${r3(c.x)},${r3(c.y)}`);
+        if (!f) continue;
         const col = (c.attrs.match(/stroke="([^"]+)"/) || [])[1];
-        if (f && stateOf(col)) {
+        const fill = (c.attrs.match(/fill="([^"]+)"/) || [])[1];
+        if (stateOf(col)) {
           f.state = stateOf(col);
           f.bandWidth = r3(+c.attrs.match(/stroke-width="([\d.eE+-]+)"/)[1]);
-        }
-      }
-      const mains = [...byXY.values()].filter((f) => f.r < 25);
-      for (const m of svg.matchAll(/<path d="M([-\d.eE+]+) ([-\d.eE+]+)[^"]*"[^>]*?stroke="([^"]+)" stroke-width="([\d.eE+-]+)"/g)) {
-        const w = +m[4], st = stateOf(m[3]);
-        if (st && Math.abs(w - 4.6) < 0.01 && mains.length) {
-          const f = mains.reduce((a, b) => (Math.hypot(a.x - +m[1], a.y - +m[2]) <= Math.hypot(b.x - +m[1], b.y - +m[2]) ? a : b));
-          f.state = st;
-          f.bandWidth = r3(w);
+        } else if (tintOf(fill)) {
+          f.state = tintOf(fill);
         }
       }
       fields = [...byXY.values()];

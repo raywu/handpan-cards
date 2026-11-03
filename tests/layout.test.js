@@ -2504,7 +2504,7 @@ test("MN3: odd rings (5 and 7 bottom notes) with a note on the axis toggle, whic
 
 /* ---------------- section 18: the Neotone profile layout ------------------- */
 
-const PAIRED = JSON.parse(fs.readFileSync(path.join(FIXTURES, "paired_profile_v3.json"), "utf8"));
+const PAIRED = JSON.parse(fs.readFileSync(path.join(FIXTURES, "paired_profile_v4.json"), "utf8"));
 const PHPE = loadEngine(["core", "layout"]);
 PHPE.core.PROFILE_ENABLED = true;
 const PL_SEEDS = {
@@ -2534,11 +2534,11 @@ const plProposal = (str) => {
 const plPropose = (str) => plProposal(str).map;
 const plNames = (fields, ids) => ids.map((id) => fields[id][0] + fields[id][1]);
 
-test("PL: HPE.layout.PROFILE is exactly the frozen rev 3 fixture", () => {
+test("PL: HPE.layout.PROFILE is exactly the frozen rev 4 fixture", () => {
   assert.deepEqual(plain(PHPE.layout.PROFILE), PAIRED);
-  assert.equal(PAIRED.rev, 3);
+  assert.equal(PAIRED.rev, 4);
   assert.deepEqual(PAIRED.main, { orbit: 0.745, r: 0.19 });
-  assert.deepEqual(PAIRED.mutant, { depth: 0.3333, r: 0.19 });
+  assert.deepEqual(PAIRED.mutant, { depth: 0.45, r: 0.19 });
   assert.deepEqual(PAIRED.ding, { r: 0.2, dy: 0 });
   assert.deepEqual(PAIRED.decor, { r: 0.355 });
   assert.equal(PAIRED.n_in, 0.085);
@@ -2611,7 +2611,7 @@ test("PL: solve on a scale with a mutant note places every note by kind: main at
         assert.equal(r.value.fields[fid][5], "M" + (slot - 8));
       }
     }
-    assert.equal(lensC, 0.4917);
+    assert.equal(lensC, 0.536);
   }
 });
 

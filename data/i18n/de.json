@@ -139,6 +139,7 @@
   "sheet.neotone_ring_main": "Haupt",
   "sheet.neotone_ring_mutant": "Mutant",
   "sheet.neotone_empty": "leer",
+  "sheet.neotone_demo": "Demo {note}, frei zum Platzieren",
   "sheet.neotone_picked": "{note} aufgenommen. Tippe auf ein anderes Tonfeld im selben Ring.",
   "sheet.neotone_swapped": "{a} und {b} getauscht.",
   "sheet.neotone_moved": "{a} nach Tonfeld {n} verschoben.",

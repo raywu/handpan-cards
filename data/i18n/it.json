@@ -139,6 +139,7 @@
   "sheet.neotone_ring_main": "principale",
   "sheet.neotone_ring_mutant": "mutante",
   "sheet.neotone_empty": "vuoto",
+  "sheet.neotone_demo": "dimostrazione {note}, libero per il posizionamento",
   "sheet.neotone_picked": "{note} sollevata. Tocca un altro campo tonale dello stesso anello.",
   "sheet.neotone_swapped": "{a} e {b} scambiate.",
   "sheet.neotone_moved": "{a} spostata nel campo tonale {n}.",

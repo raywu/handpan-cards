@@ -91,7 +91,9 @@ exactly where its diagram has it.
 - No note-count caps: a crowded pan draws smaller with `SMALL_LABELS`; never refused.
   `SMALL_LABELS` (`labelFloor`) ignores bottom octave digits; the separate print
   3.6 pt floor covers every glyph, bottom octave digits included, except Neotone
-  lens labels (below).
+  lens names (below). `labelFloor` reads pre-fit sizes (`src/engine/layout.js`), so a
+  lens name shrunk under 3.6 pt does not fire `SMALL_LABELS` (intended under the
+  exemption; the PA lens-shrink test in `tests/pdfcards.test.js`).
 - Bottom angle overrides (`options.angles.bottom`, custom decks only): multiples
   of 5 in [0, 360) or null; bottom ring only; applied LAST (after mirrorBottom
   and seats); an overlap is never allowed (floor = smallest multiple of 5 above
@@ -161,8 +163,24 @@ exactly where its diagram has it.
   for Hijaz, Pygmy and Amara 9 only. Note name larger than its index number on
   the five built-ins. Print floor 3.6 pt for every diagram glyph
   (`fit_note`'s own floor is 2.5 pt, so the test is the guard), except Neotone
-  lens labels: they shrink to fit the lens and may go below 3.6 pt
+  lens names: they shrink to fit the lens and may go below 3.6 pt
   (`LENS_FIT_FLOOR` = 0.1 pt, owner 2026-11-01).
+  **Neotone lens (owner 2026-11-03, option D):** a lit lens is filled with its state
+  colour mixed half with white (`LENS_TINT` 0.5 in `HPE.pdfcards.lensTint`, `tools/hifi.py`
+  `lens_tint`, and `neoSvg` in `index.html`); there is no lens band stroke. The name ink
+  (#242424) reaches 4.5:1 on that tint for every palette colour (`tests/pdfcards.test.js`
+  "NL: lensTint ..."), and the tint against a plain white lens is 1.6 to 2.35:1, so the
+  plate edge is carried by the black lens outline. The lens depth is 0.45 of the main
+  diameter (fixture rev 4), a lens about a third of a main note by area (0.34, test
+  "NL: the lens is 0.32 to 0.35 ..."). **Solid tint (owner 2026-11-03):** on a Neotone card with a mutant note (`plan.hasMut`) a
+  lit main note and a lit ding are filled with the same half tint, the tint being the fill
+  of the existing outline circle; the crescent band and the ding ring are not drawn
+  (`crescentBand` stays computed for the name fit). A placed card without a mutant note, and
+  every standard card, keep their ring bands and a white ding, byte for byte (`tests/pdfcards.test.js`
+  "NS: ..."; `tests/test_render_agreement.py` reads lit state from the tint fill).
+  K1 delta: the card reference's `lens_orbit` (0.4917) no longer holds; the lens centre is
+  0.536 (the "PA: K1" test names the exception). The inner lens edge (0.346R) clears the
+  decor ring (0.355R) by only 0.009R.
   `hifi.LABEL_WIDTH_RATIO` = 1.47. Constants are written once per language:
   `HPE.core.LABEL_RULE` in `src/engine/core.js` and `tools/hifi.py`; a second
   copy fails `tests/test_render_agreement.py`.
