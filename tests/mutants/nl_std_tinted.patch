@@ -1,0 +1,16 @@
+# kills: NS: cards without a mutant note draw byte-for-byte as at the base commit
+# suite: node --test --test-name-pattern=byte.for.byte tests/pdfcards.test.js
+# fault: Tint the ding of a Neotone card that has no mutant note.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -593,7 +593,7 @@ HPE.pdfcards = (function () {
+     c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
+     c.setLineWidth(out);
+     var dingLit = plan.ding.st !== "off";
+-    if (plan.hasMut && dingLit) c.setFillColor(lensTint(colour(plan.ding.st)));
++    if (dingLit) c.setFillColor(lensTint(colour(plan.ding.st)));
+     c.circle(cx, cy - R * (g.ding_dy || 0), dr, 1, 1);
+     if (dingLit && !plan.hasMut) {
+       c.setStrokeColor(colour(plan.ding.st));
+

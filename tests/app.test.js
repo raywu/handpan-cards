@@ -19811,3 +19811,41 @@ describe("FG: field guide light ground for the menu, forms and About (phase 2)",
     assert.ok(!/font-size|font:|padding|margin|width|height/.test(block().replace(/(vertical-align|margin-right|width|height)[^;}]*/g,"").replace(/box-shadow[^;}]*/g,"")), "block changes geometry or type");
   });
 });
+
+describe("Neotone solid tint (owner 2026-11-03)", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const fixture = (f) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", f), "utf8")).deck;
+  const tintHex = (hex) => "#" + [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return Math.round((v + (1 - v) * 0.5) * 255).toString(16).padStart(2, "0");
+  }).join("");
+
+  test("a Neotone card with a mutant note tints its lit mains and ding and draws no state-colour stroke", () => {
+    const app = boot();
+    const d = fixture("profile_case_pygmy_v2.json");
+    const [root, tone] = [d.colors.root.toLowerCase(), d.colors.tone.toLowerCase()];
+    const tints = [tintHex(root), tintHex(tone)];
+    let tintedDisks = 0;
+    let tintedDing = 0;
+    d.chords.forEach((_, i) => {
+      const svg = app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(d.chords[i])})`);
+      for (const m of svg.matchAll(/<(?:circle|path)[^>]*stroke="(#[0-9a-fA-F]{6})"/g))
+        assert.ok(![root, tone].includes(m[1].toLowerCase()), "state-colour stroke " + m[1]);
+      for (const m of svg.matchAll(/<circle cx="(-?[\d.e-]+)" cy="(-?[\d.e-]+)" r="([\d.e-]+)" fill="(#[0-9a-f]{3,6})" stroke="#000"/g)) {
+        if (!tints.includes(m[4])) continue;
+        if (Math.abs(+m[3] - 20) < 1e-6) tintedDing++; else tintedDisks++;
+      }
+    });
+    assert.ok(tintedDisks >= 1, "a tinted main disk");
+    assert.ok(tintedDing >= 1, "a tinted ding");
+  });
+
+  test("a placed card with no mutant note keeps its ring bands and a white ding", () => {
+    const app = boot();
+    const d = fixture("profile_case_kurd9_v2.json");
+    const svgs = d.chords.map((c) => app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(c)})`));
+    assert.ok(svgs.some((s) => new RegExp(`<circle[^>]*fill="none" stroke="${d.colors.root}"`, "i").test(s)), "a ring band");
+    for (const s of svgs) assert.ok(!/r="20" fill="#(?!fff")/.test(s), "the ding stays white");
+  });
+});
