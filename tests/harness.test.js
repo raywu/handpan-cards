@@ -1387,7 +1387,7 @@ test("SVH11 explicit readiness rejects errors and bounded incomplete state inste
   await assert.rejects(app.waitFor('false',{timeout:20}),/readiness.*timed out/i);
   await assert.rejects(app.waitFor('(()=>{throw new Error("readiness fault")})()'),/readiness fault/);
   await assert.rejects(app.waitFor('new Promise(()=>{})',{timeout:20}),/readiness.*timed out/i);
-  await assert.rejects(app.waitFor('(()=>{const e=Date.now()+60;while(Date.now()<e){}return false})()',{timeout:5}),/readiness.*timed out/i);
+  await assert.rejects(app.waitFor('(()=>{const e=Date.now()+200;while(Date.now()<e){}return false})()',{timeout:5}),/readiness.*timed out/i);
   await assert.rejects(app.waitFor('(()=>{while(true){}})()',{timeout:20}),/timed out/i);
   await assert.rejects(app.clickAsync(app.els.next),/until/);
   assert.strictEqual(await app.waitFor('Promise.resolve(true)'),true);

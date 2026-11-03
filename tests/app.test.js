@@ -19720,7 +19720,7 @@ describe("Neotone solid tint (owner 2026-11-03)", () => {
         assert.ok(![root, tone].includes(m[1].toLowerCase()), "state-colour stroke " + m[1]);
       for (const m of svg.matchAll(/<circle cx="(-?[\d.e-]+)" cy="(-?[\d.e-]+)" r="([\d.e-]+)" fill="(#[0-9a-f]{3,6})" stroke="#000"/g)) {
         if (!tints.includes(m[4])) continue;
-        if (Math.abs(+m[3] - 20) < 1e-6) tintedDing++; else tintedDisks++;
+        if (Math.abs(+m[3] - 100 * d.geom.r_ding) < 1e-6) tintedDing++; else tintedDisks++;
       }
     });
     assert.ok(tintedDisks >= 1, "a tinted main disk");
@@ -19732,6 +19732,9 @@ describe("Neotone solid tint (owner 2026-11-03)", () => {
     const d = fixture("profile_case_kurd9_v2.json");
     const svgs = d.chords.map((c) => app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(c)})`));
     assert.ok(svgs.some((s) => new RegExp(`<circle[^>]*fill="none" stroke="${d.colors.root}"`, "i").test(s)), "a ring band");
-    for (const s of svgs) assert.ok(!/r="20" fill="#(?!fff")/.test(s), "the ding stays white");
+    const dingR = 100 * d.geom.r_ding;
+    for (const s of svgs)
+      for (const m of s.matchAll(/<circle[^>]*r="([\d.e-]+)" fill="(#[0-9a-fA-F]{3,6})"/g))
+        if (Math.abs(+m[1] - dingR) < 1e-6) assert.strictEqual(m[2].toLowerCase(), "#fff", "the ding stays white");
   });
 });

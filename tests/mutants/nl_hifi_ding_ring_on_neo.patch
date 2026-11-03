@@ -1,0 +1,15 @@
+# kills: ProfileRenderAgreement.test_band_and_hairline_agree
+# suite: python3 -m unittest -k test_band_and_hairline_agree tests.test_render_agreement
+# fault: Keep the ding ring on a Neotone card in hifi.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -514,7 +514,7 @@
+     if has_mut and ding_lit:
+         c.setFillColor(lens_tint(colour(st(ding))))
+     c.circle(cx, cy - ding_dy, dr, stroke=1, fill=1)
+-    if ding_lit and not has_mut:
++    if ding_lit:
+         c.setStrokeColor(colour(st(ding)))
+         c.setLineWidth(band)
+         c.circle(cx, cy - ding_dy, dr - inset, stroke=1, fill=0)
