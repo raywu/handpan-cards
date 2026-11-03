@@ -1407,6 +1407,8 @@ html.about-open{overflow:hidden}
 #settings-panel :focus-visible{outline:2px solid #242424; outline-offset:2px}
 #scale-sheet :focus-visible{outline:2px solid #242424; outline-offset:2px}
 #about :focus-visible{outline:2px solid #242424; outline-offset:2px}
+#scale-sheet #scale-preview .panhit:focus-visible, #scale-sheet #scale-preview .nhit:focus-visible{outline:none}
+#scale-sheet #scale-lip:focus-visible{outline-offset:-2px}
 
 #settings-panel .panel-heading, #about h4{color:#5E5850}
 #settings-panel .panel-note{color:#5E5850}
@@ -1443,8 +1445,7 @@ html.about-open{overflow:hidden}
 #scale-sheet #scale-fields.passive input, #scale-sheet #scale-box.passive{
   color:#46413A; background:transparent; border-style:dashed; border-color:#8A847B}
 #scale-sheet #scale-box.bad, #scale-sheet #scale-fields input.bad{
-  border-color:#242424; box-shadow:inset 0 0 0 1px #242424}
-#scale-sheet #scale-box.bad, #scale-sheet #scale-fields input.bad{border:1px solid #242424}
+  border:1px solid #242424; box-shadow:inset 0 0 0 1px #242424}
 #scale-sheet #scale-refusal.err, #scale-sheet #scale-msg.err{color:#242424}
 #scale-sheet #scale-refusal.err::before, #scale-sheet #scale-msg.err::before{
   content:""; display:inline-block; width:1em; height:1em; margin-right:.4em; vertical-align:-.15em;

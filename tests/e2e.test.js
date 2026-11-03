@@ -5229,6 +5229,26 @@ function run() {
     }
   });
 
+  test("FG: a focused panhit and a Neotone nhit on the Layout diagram keep outline none", async () => {
+    try {
+      await addWithDrawer(380, 780);
+      const ring = (sel) => b.eval(`const el = document.querySelector(${JSON.stringify(sel)});
+        if (!el) return null;
+        el.focus({ focusVisible: true });
+        const cs = getComputedStyle(el);
+        return { on: document.activeElement === el, s: cs.outlineStyle };`);
+      const pan = await ring("#scale-preview .panhit");
+      assert.deepStrictEqual(pan, { on: true, s: "none" }, `panhit: ${JSON.stringify(pan)}`);
+      await b.eval(`document.getElementById("scale-mode-neotone").click(); return true;`);
+      await b.waitFor(`!!document.querySelector("#scale-preview .nhit")`, { label: "Neotone nhit targets" });
+      const nh = await ring("#scale-preview .nhit");
+      assert.deepStrictEqual(nh, { on: true, s: "none" }, `nhit: ${JSON.stringify(nh)}`);
+    } finally {
+      await b.key("Escape", "Escape", 27);
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("DR1 line 39: the drawer and its controls have no transition or animation", async () => {
     try {
       await addWithDrawer(380, 780);
@@ -9192,7 +9212,7 @@ function run() {
     //    paints a background at all; ~10.4 from --table, ~12.08 measured
     //    under the ab_root_bg_dropped mutant) - so it needs a tight
     //    tolerance (~5) that sits strictly between those two numbers.
-    async function edgeCheck(tol, alt) {
+    async function edgeCheck(tol, alt, altTol) {
       const shot = await b.send("Page.captureScreenshot", { format: "png" });
       return b.eval(`
         return new Promise((resolve, reject) => {
@@ -9206,6 +9226,7 @@ function run() {
             const data = ctx.getImageData(0, 0, w, h).data;
             const table = ${JSON.stringify(TABLE)};
             const table2 = ${JSON.stringify(alt || TABLE2)};
+            const tol2 = ${altTol === undefined ? tol : altTol};
             const dist = (r, g, bch, t) =>
               Math.sqrt((r - t[0]) ** 2 + (g - t[1]) ** 2 + (bch - t[2]) ** 2);
             let bad = null;
@@ -9213,7 +9234,7 @@ function run() {
               if (bad || x < 0 || y < 0 || x >= w || y >= h) return;
               const i = (y * w + x) * 4;
               const r = data[i], g = data[i + 1], bch = data[i + 2];
-              if (Math.min(dist(r, g, bch, table), dist(r, g, bch, table2)) > ${tol}) {
+              if (dist(r, g, bch, table) > ${tol} && dist(r, g, bch, table2) > tol2) {
                 bad = { x, y, r, g, b: bch };
               }
             };
@@ -9252,7 +9273,7 @@ function run() {
         await b.setViewport(390, 844, true);
         await openSheet();
         await b.settle();
-        const r = await edgeCheck(20, PAPER);
+        const r = await edgeCheck(20, PAPER, 4);
         assert.strictEqual(r.bad, null,
           `edge pixel neither table nor paper coloured with the sheet open: ${JSON.stringify(r.bad)}`);
       } finally {

@@ -1,6 +1,6 @@
 # kills: PH: 380x780 the tabs are a text strip with a 2px teal underline on the selected one, 44px tall
 # suite: node --test --test-name-pattern ^PH:.380x780.the.tabs.are.a.text.strip tests/e2e.test.js
-# Drops the selected tab's underline, so Scale and Layout no longer read as tabs.
+# Drops the selected tab's violet underline, so Scale and Layout no longer read as tabs.
 # Retargeted at the field-guide rule 2026-11-03: the selected tab's violet underline is dropped.
 diff --git a/index.html b/index.html
 --- a/index.html

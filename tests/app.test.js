@@ -19670,7 +19670,9 @@ describe("FG: field guide light ground for the menu, forms and About (phase 2)",
   });
 
   test("FG: protected card, progression, badge and diagram selectors are never touched", () => {
-    const b = block();
+    const EXCL = "#scale-sheet #scale-preview .panhit:focus-visible, #scale-sheet #scale-preview .nhit:focus-visible{outline:none}";
+    assert.ok(block().includes(EXCL), "diagram focus exclusion missing");
+    const b = block().replace(EXCL, "");
     for (const p of [".card", ".prog", ".rail", ".badge", ".panhit", ".panghost", ".nhit", ".face", ".flip", "--ink", "--paper", "--root", "--tone"])
       assert.ok(!b.includes(p), `block mentions ${p}`);
   });
@@ -19698,7 +19700,7 @@ describe("FG: field guide light ground for the menu, forms and About (phase 2)",
     assert.match(find("#about :focus-visible"), /outline:\s*2px solid #242424/i);
   });
 
-  test("FG: A2/A20 error state is ink text, a 2px ink border and an icon, never orange", () => {
+  test("FG: A2/A20 error state is ink text, a 1px ink border plus inset 1px ink shadow and an icon, never orange", () => {
     assert.ok(!/E27005/i.test(block()));
     assert.match(find("#scale-sheet #scale-box.bad"), /border:\s*1px solid #242424/i);
     assert.match(find("#scale-sheet #scale-box.bad"), /box-shadow:\s*inset 0 0 0 1px #242424/i);
