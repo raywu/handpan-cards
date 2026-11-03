@@ -1,0 +1,15 @@
+# kills: NEO7b: the empty mutant M label sits on the same orbit as the filled one
+# suite: node --test --test-name-pattern=NEO7b tests/app.test.js
+# fault: Push the preview's empty M label off the card's orbit.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14308,7 +14308,7 @@ function neotoneOverlay(solved, hits) {
+     const label = slot < NEO_MAIN ? String((slot % NEO_MAIN) + 1) : "M" + ((slot % NEO_MAIN) + 1);
+     if (key === null && slot >= NEO_MAIN) {
+       const th = HPE.layout.PROFILE.angles[slot % NEO_MAIN] * Math.PI / 180;
+-      const u = 100 * plan.mnumU, fs = Math.max(plan.mnumSize({ r: HPE.layout.PROFILE.main.r }) * 100, 3.6);
++      const u = 110 * plan.mnumU, fs = Math.max(plan.mnumSize({ r: HPE.layout.PROFILE.main.r }) * 100, 3.6);
+       const lx = Math.round(u * Math.cos(th) * 10000) / 10000, ly = Math.round(-u * Math.sin(th) * 10000) / 10000;
+       rings += `<text x="${lx}" y="${Math.round((ly + fs * 0.34) * 10000) / 10000}" text-anchor="middle" fill="#E27005"`
+         + ` font-family="Nunito Sans, sans-serif" font-weight="600" font-size="${fs}">${label}</text>`;

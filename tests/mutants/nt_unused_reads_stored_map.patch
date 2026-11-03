@@ -1,0 +1,15 @@
+# kills: NEO4e: the M4 hint counts the demo notes as mutant notes
+# suite: node --test --test-name-pattern=NEO4e tests/app.test.js
+# fault: Make the unused-tonefields hint read the stored map instead of the drawn one.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14183,7 +14183,7 @@ function neoExtraText() {
+ /** M4: the mutant tonefields nothing pairs with. Neutral, never a warning. */
+ function neoUnusedText() {
+   if (!neotoneOn() || !boxOk || !profileMap) return "";
+-  const shown = shownMap();
++  const shown = profileMap;
+   if (!shown.slice(NEO_MAIN).some((k) => k !== null)) return "";
+   const free = [];
+   for (let i = 0; i < NEO_MAIN; i += 1) if (shown[NEO_MAIN + i] === null) free.push(i + 1);
