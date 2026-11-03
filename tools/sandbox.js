@@ -1143,7 +1143,13 @@ function boot(opts = {}) {
     return bounded((async () => {
       const deadline = Date.now() + timeout;
       do {
-        const value = await getAsync(expression, { timeout: Math.max(1, deadline - Date.now()) });
+        let value;
+        try {
+          value = await getAsync(expression, { timeout: Math.max(1, deadline - Date.now()) });
+        } catch (error) {
+          if (error && error.code === "ERR_SCRIPT_EXECUTION_TIMEOUT") throw new Error("sandbox readiness timed out");
+          throw error;
+        }
         if (value) return value;
         await new Promise(resolve => setTimeout(resolve, 1));
       } while (Date.now() < deadline);
