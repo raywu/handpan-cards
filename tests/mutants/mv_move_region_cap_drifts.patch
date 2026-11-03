@@ -6,8 +6,8 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -17037,7 +17037,7 @@ window.addEventListener("hashchange", async () => {
  /* ---------------- saved-scale handoff (armed) ---------------- */
- const MOVE_FROM = "handpan.raywu.org";
- const MOVE_TARGET = "https://handpantheory.com";
+ const MOVE_FROM = null;
+ const MOVE_TARGET = null;
 -const MOVE_CAP = 20000;
 +const MOVE_CAP = 20001;
  const MOVE_ARMED = MOVE_FROM !== null && MOVE_TARGET !== null;

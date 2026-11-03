@@ -19446,10 +19446,10 @@ describe("MV: the saved-scale handoff (armed for production in the committed byt
     html: "<script>window.__savedIdbFixtureOnly=true;</script>" });
   const envelopeAt = (origin, host = NEW_HOST) => JSON.parse(savedRaw(realmAt(origin, host)));
 
-  test("MV: the committed bytes arm handpan.raywu.org -> https://handpantheory.com", () => {
+  test("MV: the committed bytes leave the move switched off (both constants null)", () => {
     const html = INDEX_HTML();
-    assert.match(html, /^const MOVE_FROM = "handpan\.raywu\.org";$/m);
-    assert.match(html, /^const MOVE_TARGET = "https:\/\/handpantheory\.com";$/m);
+    assert.match(html, /^const MOVE_FROM = null;$/m);
+    assert.match(html, /^const MOVE_TARGET = null;$/m);
     assert.match(html, /^const MOVE_CAP = 20000;$/m);
   });
 
@@ -19462,10 +19462,8 @@ describe("MV: the saved-scale handoff (armed for production in the committed byt
     const shipped = region(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8"));
     const from = "moveDigest(moveCanon(read.record))";
     assert.strictEqual(shipped.split(from).length, 2, "the shipped region no longer holds the one line #790 changed");
-    const armed = shipped.replace(from, () => "moveDigest(moveCanon(row.r))")
-      .replace("const MOVE_FROM = null;", () => 'const MOVE_FROM = "handpan.raywu.org";')
-      .replace("const MOVE_TARGET = null;", () => 'const MOVE_TARGET = "https://handpantheory.com";');
-    assert.strictEqual(region(INDEX_HTML()), armed);
+    const expected = shipped.replace(from, () => "moveDigest(moveCanon(row.r))");
+    assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
   });
 
