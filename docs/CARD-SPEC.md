@@ -90,7 +90,8 @@ exactly where its diagram has it.
   inner notes means a centred ding.
 - No note-count caps: a crowded pan draws smaller with `SMALL_LABELS`; never refused.
   `SMALL_LABELS` (`labelFloor`) ignores bottom octave digits; the separate print
-  3.6 pt floor covers every glyph, bottom octave digits included.
+  3.6 pt floor covers every glyph, bottom octave digits included, except Neotone
+  lens labels (below).
 - Bottom angle overrides (`options.angles.bottom`, custom decks only): multiples
   of 5 in [0, 360) or null; bottom ring only; applied LAST (after mirrorBottom
   and seats); an overlap is never allowed (floor = smallest multiple of 5 above
@@ -159,7 +160,9 @@ exactly where its diagram has it.
   the PRE-RULE size per renderer - print vs `f_*`, app vs `f_* x 1.05` - asserted
   for Hijaz, Pygmy and Amara 9 only. Note name larger than its index number on
   the five built-ins. Print floor 3.6 pt for every diagram glyph
-  (`fit_note`'s own floor is 2.5 pt, so the test is the guard).
+  (`fit_note`'s own floor is 2.5 pt, so the test is the guard), except Neotone
+  lens labels: they shrink to fit the lens and may go below 3.6 pt
+  (`LENS_FIT_FLOOR` = 0.1 pt, owner 2026-11-01).
   `hifi.LABEL_WIDTH_RATIO` = 1.47. Constants are written once per language:
   `HPE.core.LABEL_RULE` in `src/engine/core.js` and `tools/hifi.py`; a second
   copy fails `tests/test_render_agreement.py`.
