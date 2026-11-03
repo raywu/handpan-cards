@@ -886,7 +886,7 @@ const PA = (() => {
   const path = require("node:path");
   const read = (f) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", f), "utf8"));
   return {
-    frozen: read("paired_profile_v3.json"),
+    frozen: read("paired_profile_v4.json"),
     pygmy: read("profile_case_pygmy_v2.json"),
     kurd: read("profile_case_kurd9_v2.json"),
     hijaz: read("profile_case_hijaz_v2.json"),
@@ -936,7 +936,7 @@ const rgb = (c) => (c ? c.map((v) => +v.toFixed(4)) : c);
 const pt = (cx, cy, R, deg, u) => [cx + R * u * Math.cos((deg * Math.PI) / 180), cy + R * u * Math.sin((deg * Math.PI) / 180)];
 const diagram = (page, cx, cy, R) => page.ops.filter((o) => Math.hypot((o.x === undefined ? cx : o.x) - cx, (o.y === undefined ? cy : o.y) - cy) <= R * 1.3);
 
-test("PA: the draw figures are a literal copy of the rev 3 profile fixture and of HPE.layout.PROFILE", () => {
+test("PA: the draw figures are a literal copy of the rev 4 profile fixture and of HPE.layout.PROFILE", () => {
   const f = PA.frozen;
   const keys = ["tonefields", "angles", "main", "mutant", "ding", "decor", "n_in", "number_out", "extent_margin"];
   const draw = JSON.parse(JSON.stringify(P.PROFILE_DRAW));
@@ -949,7 +949,7 @@ test("PA: the draw figures are a literal copy of the rev 3 profile fixture and o
 
 test("PA: the K3 and K8 figures are the plan's, written once", () => {
   assert.deepStrictEqual(JSON.parse(JSON.stringify(P.PROFILE_DRAW.stroke)),
-    { outline: 0.012, decor: 0.0076, main_band: 0.046, lens_band: 0.024 });
+    { outline: 0.012, decor: 0.0076, main_band: 0.046 });
   assert.deepStrictEqual(JSON.parse(JSON.stringify(P.PROFILE_DRAW.glyph)),
     { main: 0.62, number: 0.62, ding: 0.623, lens: 0.565, mnum: 0.5 });
   const r = HPE.core.LABEL_RULE;
@@ -1030,7 +1030,7 @@ test("PA: lens and crescent are analytic closed paths of arcs of at most a quart
   const f = P.PROFILE_DRAW;
   const depth = 2 * f.main.r * f.mutant.depth;
   const lensC = Math.round((f.main.orbit - (2 * f.main.r - depth)) * 1e4) / 1e4;
-  assert.equal(lensC, 0.4917);
+  assert.equal(lensC, 0.536);
   for (const make of [P.lensOps, P.crescentOps]) {
     const ops = make(f.main.orbit, f.main.r, lensC, f.mutant.r);
     assert.equal(ops[0][0], "m");
@@ -1052,7 +1052,7 @@ test("PA: lens and crescent are analytic closed paths of arcs of at most a quart
   assert.ok(near(P.lensOps(f.main.orbit, f.main.r, lensC, f.mutant.r)[0][1], 0.6, 0.1));
 });
 
-test("PA: K3 strokes: black outlines 0.012R, bands 0.046R and 0.024R, a decor ring 0.355R at 0.0076R, round joins", () => {
+test("PA: K3 strokes: black outlines 0.012R, band 0.046R (the lens is a tint fill, no band), a decor ring 0.355R at 0.0076R, round joins", () => {
   const { page, R, cx, cy } = paCard(PA.pygmy, 0);
   const decor = page.ops.find((o) => o.op === "circle" && near(o.r, 0.355 * R));
   assert.ok(decor && near(decor.width, 0.0076 * R));
@@ -1063,7 +1063,7 @@ test("PA: K3 strokes: black outlines 0.012R, bands 0.046R and 0.024R, a decor ri
   const bands = page.ops.filter((o) => o.op === "path" && o.mode === "S" && !near(o.width, 0.012 * R));
   assert.ok(bands.length >= 3);
   for (const b of bands) {
-    assert.ok(near(b.width, 0.046 * R) || near(b.width, 0.024 * R), "band width " + b.width);
+    assert.ok(near(b.width, 0.046 * R), "band width " + b.width);
     assert.equal(b.join, 1, "round join");
   }
   const ringBands = page.ops.filter((o) => o.op === "circle" && near(o.width, 0.046 * R));
@@ -1089,7 +1089,7 @@ test("PA: K8 glyph sizes: main names, numbers and M<n> are at or over 3.6 pt on 
       const texts = page.ops.filter((o) => o.op === "text" && Math.hypot(o.x - cx, o.y - cy) <= R * 1.15 &&
         (o.face === "Label" || o.face === "LabelSB"));
       assert.ok(texts.length > 10, name);
-      const onLens = (t) => Math.abs(Math.hypot(t.x - cx, t.y - cy) - 0.618 * R) < 0.05 * R;
+      const onLens = (t) => Math.abs(Math.hypot(t.x - cx, t.y - cy) - 0.6405 * R) < 0.09 * R;
       for (const t of texts) assert.ok(t.size >= 3.6 - 1e-9 || (onLens(t) && /^([A-G][b#]?|\d)$/.test(t.s)), `${name}: ${t.s} at ${t.size}`);
       const sizes = new Set(texts.filter((t) => /^[A-G][b#]?$/.test(t.s)).map((t) => +t.size.toFixed(3)));
       for (const s of sizes) {
@@ -1103,14 +1103,14 @@ test("PA: K8 glyph sizes: main names, numbers and M<n> are at or over 3.6 pt on 
   const { page, cx, cy } = paCard(PA.pygmy, 0);
   const octaves = page.ops.filter((o) => o.op === "text" && /^\d$/.test(o.s) && o.size < 5.5 && o.size > 0.5 &&
     o.face === "Label" && Math.hypot(o.x - cx, o.y - cy) <= R);
-  const lensOct = octaves.filter((o) => Math.abs(Math.hypot(o.x - cx, o.y - cy) - 0.618 * R) < 0.05 * R);
+  const lensOct = octaves.filter((o) => Math.abs(Math.hypot(o.x - cx, o.y - cy) - 0.6405 * R) < 0.09 * R);
   assert.ok(lensOct.length >= 1 && lensOct.every((o) => o.size <= 0.66 * want.lens + 2e-3), "lens octave digits are at most 0.66 of the lens name");
-  assert.ok(octaves.every((o) => o.size >= 3.6 - 1e-9 || Math.abs(Math.hypot(o.x - cx, o.y - cy) - 0.618 * R) < 0.05 * R));
+  assert.ok(octaves.every((o) => o.size >= 3.6 - 1e-9 || Math.abs(Math.hypot(o.x - cx, o.y - cy) - 0.6405 * R) < 0.09 * R));
   assert.ok(0.66 * want.ding - 3.6 >= 0.0015, "the ding octave clears the floor");
 });
 
 test("PA: a lens name shrinks to its cap and never overflows it, even under the 3.6 pt floor (owner 2026-11-01)", () => {
-  const R = 61.8, cap = HPE.core.LABEL_RULE.LABEL_WIDTH_RATIO * (2 * 0.19 / 3) / 2 * R;
+  const R = 61.8, cap = HPE.core.LABEL_RULE.LABEL_WIDTH_RATIO * (2 * 0.19 * 0.45) / 2 * R;
   const { page, cx, cy } = paCard(PA.pygmy, 0);
   const names = page.ops.filter((o) => o.op === "text" && /^[A-G][b#]?$/.test(o.s) && o.face === "Label" &&
     Math.hypot(o.x - cx, o.y - cy) <= R && Math.hypot(o.x - cx, o.y - cy) > 0.45 * R && o.size < 5.5);
@@ -1146,6 +1146,7 @@ test("PA: a lit lens and a lit crescent draw their own band; an empty main and a
   const root = rgb(deck.col_root), tone = rgb(deck.col_tone);
   const lit = page.ops.filter((o) => o.op === "path" && o.mode === "S" && !near(o.width, 0.012 * R));
   for (const b of lit) assert.ok([root, tone].some((c) => c.join() === rgb(b.stroke).join()));
+  assert.ok(lit.every((b) => near(b.width, 0.046 * R)), "only the crescent band strokes; the lens has none");
   const empties = page.ops.filter((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.012 * R));
   for (const e of empties) assert.deepStrictEqual(rgb(e.stroke), [0, 0, 0], "outlines are black, never an error colour");
   const p9 = pt(cx, cy, R, 70, 0.745);
@@ -1190,7 +1191,8 @@ test("PA: K1: the drawn card matches the Chord Card reference within 1% of R on 
       const want = rot(t.main, -ref.angle_offset);
       assert.ok(disks.some((d) => dist(u(d.x, d.y), want) <= 0.01), `${key}: tonefield at ${t.angle}`);
     }
-    if (ref.lens_orbit) assert.ok(near(P.PROFILE_DRAW.main.orbit - (2 * P.PROFILE_DRAW.main.r - 2 * P.PROFILE_DRAW.main.r * P.PROFILE_DRAW.mutant.depth), ref.lens_orbit, 0.01));
+    // K1 delta: lens depth 0.45, owner 2026-11-03 (lens centre 0.536, not the reference 0.4917)
+    if (ref.lens_orbit) assert.ok(near(P.PROFILE_DRAW.main.orbit - (2 * P.PROFILE_DRAW.main.r - 2 * P.PROFILE_DRAW.main.r * P.PROFILE_DRAW.mutant.depth), 0.536, 1e-4));
     const centre = (o) => { const w = HPE.pdf.stringWidth(o.s, o.face, o.size); return u(o.x + w / 2, o.y + o.size * 0.36); };
     const nums = page.ops.filter((o) => o.op === "text" && /^\d$/.test(o.s) && o.face === "Label" && Math.hypot(o.x - cx, o.y - cy) <= R * 1.3);
     for (const t of ref.tonefields) {
@@ -1223,6 +1225,117 @@ test("PA: the app pan() draws the Neotone card from the same plan: paths, bands,
   const ext = Number(svg.match(/viewBox="(-?[\d.]+) /)[1]);
   assert.ok(near(-ext, 100 * P.profileExtent(d.geom), 1e-6), "the viewBox is the print extent");
   assert.ok(/>M1</.test(svg) && />1</.test(svg));
+});
+
+/* ---- Neotone lens legibility (owner 2026-11-03, option D) ---------------- */
+
+const tint50 = (c) => c.map((v) => +((v + 1) / 2).toFixed(4));
+const lum = (c) => { const f = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+const lensFillsOf = (page) => page.ops.filter((o) => o.op === "path" && o.mode === "f*");
+
+test("NL: a lit lens fills with the 0.5 tint of its state colour and draws no lens band stroke", () => {
+  let lit = 0;
+  for (const [name, p] of [["pygmy", PA.pygmy], ["hijaz", PA.hijaz]]) {
+    p.deck.chords.forEach((_, i) => {
+      const { page, R } = paCard(p, i);
+      const states = [[0.043, 0.482, 0.459], [0.867, 0.561, 0], ...[PA.pygmy, PA.hijaz, PA.kurd].flatMap((q) => {
+        const d = HPE.pdfdeck.fromGenerated(q);
+        return [d.col_root, d.col_tone];
+      })].filter(Boolean).map((c) => tint50(c).join());
+      for (const o of lensFillsOf(page)) {
+        const f = rgb(o.fill).join();
+        assert.ok([...states, "1,1,1", "0.9529,0.9451,0.9608"].includes(f), `${name} ${i}: lens fill ${f}`);
+        if (states.includes(f)) lit++;
+      }
+      assert.ok(!page.ops.some((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.024 * R)), "no lens band stroke");
+    });
+  }
+  assert.ok(lit >= 1, "a tinted lens is emitted somewhere");
+});
+
+test("NL: the name ink reaches 4.5:1 on every emitted lens fill, all cases and chords", () => {
+  const ink = [0.141, 0.141, 0.141];
+  for (const [name, p] of CASES_PA()) {
+    p.deck.chords.forEach((_, i) => {
+      for (const o of lensFillsOf(paCard(p, i).page)) assert.ok(contrast(ink, rgb(o.fill)) >= 4.5, `${name} ${i}: ${rgb(o.fill)}`);
+    });
+  }
+});
+
+test("NL: lensTint is the half mix with white and clears 4.5:1 for every palette colour", () => {
+  const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  const hexes = [...html.matchAll(/\{root: "(#[0-9A-F]{6})", tone: "(#[0-9A-F]{6})"\}/g)].flatMap((m) => [m[1], m[2]]);
+  assert.ok(hexes.length >= 20);
+  const ink = [0.141, 0.141, 0.141];
+  for (const h of hexes) {
+    const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+    const t = P.lensTint(c);
+    c.forEach((v, i) => assert.ok(near(t[i], (v + 1) / 2, 1e-9), h));
+    assert.ok(contrast(ink, t) >= 4.5, `${h} tint ${rgb(t)} has ${contrast(ink, t)}`);
+  }
+});
+
+test("NL: the lens is 0.32 to 0.35 of a main note by area, from HPE.layout.PROFILE", () => {
+  const E = loadEngine(["core", "layout"]);
+  const pr = E.layout.PROFILE, r = pr.main.r;
+  const d = 2 * r - 2 * r * pr.mutant.depth;
+  const area = 2 * r * r * Math.acos(d / (2 * r)) - (d / 2) * Math.sqrt(4 * r * r - d * d);
+  const ratio = area / (Math.PI * r * r);
+  assert.ok(ratio >= 0.32 && ratio <= 0.35, "ratio " + ratio);
+});
+
+test("NL: lens names sit inside the lens and main names inside the crescent, on every Neotone card", () => {
+  const f = P.PROFILE_DRAW, r = f.main.r, depth = 2 * r * f.mutant.depth;
+  const lensC = Math.round((f.main.orbit - (2 * r - depth)) * 1e4) / 1e4;
+  const glyphs = (page, c, R, cx, cy) => page.ops.filter((o) => o.op === "text" && /^([A-G][b#]?|\d)$/.test(o.s) &&
+    (o.face === "Label" || o.face === "LabelSB") && Math.hypot(o.x - c[0], o.y - c[1]) <= 0.1 * R);
+  let seenLens = 0, seenMain = 0;
+  for (const [name, p] of [["pygmy", PA.pygmy], ["hijaz", PA.hijaz]]) {
+    p.deck.chords.forEach((_, i) => {
+      const { page, R, cx, cy } = paCard(p, i);
+      f.angles.forEach((a) => {
+        const rad = (a * Math.PI) / 180;
+        const local = (x, y) => { const dx = (x - cx) / R, dy = (y - cy) / R; return [dx * Math.cos(rad) + dy * Math.sin(rad), -dx * Math.sin(rad) + dy * Math.cos(rad)]; };
+        const corners = (g) => {
+          const xs = g.flatMap((t) => [t.x, t.x + HPE.pdf.stringWidth(t.s, t.face, t.size)]);
+          const lo = Math.min(...g.map((t) => t.y)), hi = Math.max(...g.map((t) => t.y + t.size * 0.7));
+          return [[Math.min(...xs), lo], [Math.max(...xs), lo], [Math.min(...xs), hi], [Math.max(...xs), hi]].map((q) => local(q[0], q[1]));
+        };
+        const lensAt = pt(cx, cy, R, a, lensC + r - depth / 2);
+        const lg = glyphs(page, lensAt, R, cx, cy).filter((t) => t.size > 1);
+        if (lg.length) {
+          seenLens++;
+          for (const [u, v] of corners(lg)) {
+            assert.ok(Math.hypot(u - f.main.orbit, v) <= r && Math.hypot(u - lensC, v) <= f.mutant.r, `${name} ${i} ${a}: lens glyph corner ${u},${v} outside the lens`);
+          }
+        }
+        const mainAt = pt(cx, cy, R, a, f.main.orbit + depth / 2);
+        const mg = glyphs(page, mainAt, R, cx, cy).filter((t) => /^[A-G]/.test(t.s) || t.size < 5);
+        if (mg.length) {
+          seenMain++;
+          for (const [u, v] of corners(mg)) {
+            assert.ok(Math.hypot(u - f.main.orbit, v) <= r && Math.hypot(u - lensC, v) >= f.mutant.r + f.stroke.outline / 2, `${name} ${i} ${a}: main glyph corner ${u},${v} off the crescent ${JSON.stringify(mg.map((t) => [t.s, t.size, t.x, t.y]))}`);
+          }
+        }
+      });
+    });
+  }
+  assert.ok(seenLens >= 10 && seenMain >= 10, `checked ${seenLens} lens and ${seenMain} main names`);
+});
+
+test("NL: the app SVG fills a lit lens with the tint hex and strokes no lens band", () => {
+  const { boot } = require("./helpers/sandbox.js");
+  const app = boot();
+  const d = PA.pygmy.deck;
+  const svg = app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(d.chords[0])})`);
+  assert.ok(!new RegExp(`stroke-width="${100 * 0.024}"`).test(svg), "no lens band stroke");
+  const fills = [...svg.matchAll(/<path d="[^"]*" fill="(#[0-9a-f]{6})" stroke="none"\/>/g)].map((m) => m[1]);
+  const plain = new Set(["#ffffff", "#fff", "#f3f1f5"]);
+  const lit = fills.filter((c) => !plain.has(c));
+  assert.ok(lit.length >= 1, "a tinted lens fill exists");
+  const hexLum = (h) => lum([1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255));
+  for (const h of lit) assert.ok((hexLum(h) + 0.05) / (lum([0.141, 0.141, 0.141]) + 0.05) >= 4.5, "contrast on " + h);
 });
 
 // docs/plans/2026-10-31-print-url-mark.md: the print-only handpantheory.com mark.

@@ -1158,7 +1158,7 @@ sheets); the rule is that phases APPEND, never renumber or rename.
   octatonic diminished and augmented hexatonic fixture seeds, which do contain
   fifths.
 
-## 18. Neotone profile (map rev 2, fixture rev 3: engine lane E2, renderers P2, app U2)
+## 18. Neotone profile (map rev 2, fixture rev 4: engine lane E2, renderers P2, app U2)
 
 Plan: `docs/plans/2026-10-30-neotone-option-b.md` (Refs TRI-17), which revises
 `docs/plans/2026-10-30-neotone-build.md`. Everything here is the contract lane E2
@@ -1174,13 +1174,13 @@ side; mutant tonefield N belongs to main tonefield N. Top (rim) notes fill the
 main tonefields; bottom notes become mutant notes and fill the mutant
 tonefields. Inner notes (after `|`) never get a tonefield.
 
-### 18.1 The frozen profile (fixture rev 3)
+### 18.1 The frozen profile (fixture rev 4)
 
-`tests/fixtures/paired_profile_v3.json` is the one profile (`id` `paired`, `rev`
-3), written once by hand and pinned by sha256 in
+`tests/fixtures/paired_profile_v4.json` is the one profile (`id` `paired`, `rev`
+4), written once by hand and pinned by sha256 in
 `tests/test_fixture_integrity.py`. `tests/fixtures/paired_profile_v1.json` (rev 1,
-outer secondary ring) and `tests/fixtures/paired_profile_v2.json` (rev 2, larger
-tonefields) are SUPERSEDED: they stay, pinned, and no engine code reads them. Tonefield k sits at `angles[k-1]`; slot `pk` is main tonefield k and slot `sk`
+outer secondary ring), `tests/fixtures/paired_profile_v2.json` (rev 2, larger
+tonefields) and `tests/fixtures/paired_profile_v3.json` (rev 3, depth 1/3) are SUPERSEDED: they stay, pinned, and no engine code reads them. Tonefield k sits at `angles[k-1]`; slot `pk` is main tonefield k and slot `sk`
 is mutant tonefield k. `slots` lists `p1..p9` then `s1..s9`: capacity is 9 main
 and 9 mutant notes. Values are fractions of the pan radius R.
 
@@ -1189,13 +1189,13 @@ and 9 mutant notes. Values are fractions of the pan radius R.
 - Decor ring: a circle of radius `decor.r` (0.355) at the pan centre, drawn on every
   Neotone card and the Layout preview; not a tonefield, never lit, never labelled.
 - Lens: a circle of radius `mutant.r` (0.19) on the same radial line. With
-  `depth = 2 x main.r x mutant.depth` (mutant.depth 1/3 is the fraction of the main
-  diameter, so depth is 0.1267), its centre sits at `lensC = main.orbit - (2 x main.r
-  - depth)` from the pan centre (0.4917). Only the overlap with the main circle is
+  `depth = 2 x main.r x mutant.depth` (mutant.depth 0.45 is the fraction of the main
+  diameter, so depth is 0.171), its centre sits at `lensC = main.orbit - (2 x main.r
+  - depth)` from the pan centre (0.536). Only the overlap with the main circle is
   drawn, so the lens spans `depth` radially from the main circle's ding-side edge.
   The formula is parametric in `mutant.depth`.
 - Mutant tonefield name: centred in the lens, at `lensC + mutant.r - depth/2`
-  (0.6183). Main name: at orbit + depth/2 (0.8083) on every tonefield of a card that has a
+  (0.6405). Main name: at orbit + depth/2 (0.8305) on every tonefield of a card that has a
   mutant note (empty lenses included). A card with none draws the Standard geometry of
   its notes (18.4), names at the field centre.
 - Numbers: the main number sits at `number_out` (1.0758) from the pan centre, outside
@@ -1205,7 +1205,8 @@ and 9 mutant notes. Values are fractions of the pan radius R.
   `M<n>`), not the bare label-rule 0.64 x `main.r`. The main number sits outside
   the rim only when the scale has at least one mutant note; with none, main numbers sit at the Standard
   spot (orbit - r - n_in = 0.47).
-- Strokes (renderers): outline 0.012, main band 0.046, lens band 0.024.
+- Strokes (renderers): outline 0.012, main band 0.046. A lit lens has no band: it is
+  filled with its state colour mixed half with white (CARD-SPEC, Neotone lens).
 - Print extent: the furthest of `number_out` + the unscaled number size (0.64 x
   `main.r`, without the K8 factor) / 2 and the ding edge, plus `extent_margin` (0.06); extent = 1.0758 +
   0.64 x 0.19 / 2 + 0.06 = 1.1966, R = round(74 / extent, 1) = 61.8 in
@@ -1343,7 +1344,7 @@ whole library, when an opaque row owns a slot.
 
 ### 18.7 Fixtures that pin the contract
 
-`tests/fixtures/paired_profile_v3.json` (fixture rev 3; v1 and v2 are superseded
+`tests/fixtures/paired_profile_v4.json` (fixture rev 4; v1, v2 and v3 are superseded
 and kept) and `tests/fixtures/shipped_client_ee5438d0.html.txt` (a verbatim
 `git show ee5438d0:index.html`, the shipped client for the mixed-version
 isolation suite). All are sha256-pinned in `tests/test_fixture_integrity.py`; a
@@ -1352,6 +1353,6 @@ change is a new revision, never an in-place edit.
 Two revisions are counted separately. The map rev (`options.profile.rev`) is the
 map format: rev 2, and served DEV produced rev 1 maps (flag on since #752), so rev
 2 keeps the rev 1 migration of 18.2. The fixture rev
-(`paired_profile_vN.json` `"rev"`) is the geometry: `paired_profile_v3.json`, rev 3
-(owner OD1, 2026-11-01). A geometry revision never changes the map format, so a rev
-2 map draws on fixture rev 3 unchanged; v1 and v2 are superseded and kept.
+(`paired_profile_vN.json` `"rev"`) is the geometry: `paired_profile_v4.json`, rev 4
+(owner 2026-11-03; rev 3 was owner OD1, 2026-11-01). A geometry revision never changes the map format, so a rev
+2 map draws on fixture rev 4 unchanged; v1, v2 and v3 are superseded and kept.
