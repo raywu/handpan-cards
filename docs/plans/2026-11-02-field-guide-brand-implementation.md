@@ -192,3 +192,47 @@ Review/decision log (fill with reviewer, reviewed plan hash/SHA, finding severit
 - Design update verification: `brand_plan_handoff_design_review` — **Ready for handoff; no material issues in the updates**. Visual approval/protection and no-execution boundaries preserved.
 - Readiness criteria 1–11: **PASS for planning handoff**, respectively: no open blocker/high; assumptions explicitly verified/gated; smallest approach justified; phases owned and observable; dependencies listed; behavior/failure verification covered; recovery feasible; continuation precise; scope/stop explicit; protected-region proof specified; durable evidence self-contained. These passes do not satisfy future execution gates.
 - Current stop: **Queued locally, not started. Linear publication/P1 assignment remains pending connector connection and verification.** Current owner instruction is plan-only; no implementation, remote branch/PR, integration or deployment action has been taken.
+
+## Round-2 review amendments (2026-11-02). Binding; override the sections above where they differ.
+Sources: design-review.md (DES-R2-*), eng-review.md (ENG-R2-*), same folder.
+
+- A1 (DES-R2-1, AFK routine): light-ground focus ring = 2px solid #242424, offset 2px (14.1:1 on paper), scoped to #settings-panel, .sheetsurf, #about and reading pages. Teal #44e0d8 stays on dark ground. .prog, .flip and card rings untouched. Phase 2 test: focus ring computed colour on a violet-selected control differs from the selection fill and is >=3:1 against both paper and violet.
+- A2 (DES-R2-2, OWNER DECISION; AFK default recorded): error state on light ground = ink #242424 text + leading error icon + aria-invalid with a 2px #242424 border; #E27005 stays on dark ground only. Alternative for the owner: approve a new error token >=4.5:1 on paper. token-check covers whichever is chosen.
+- A3 (DES-R2-3, ENG-R2-3, AFK routine): reading pages (hub, 16 scale pages, 101, 404) become light-only: `color-scheme:light`, the `<picture>` prefers-color-scheme switch is removed, ink lockup always. .prog keeps its dark plate unconditionally. Test changes owned by Lane R: test_scale_pages.py SCALE_LOCKUP_IMG/MONO_SOURCE assertions rewritten to the single ink source.
+- A4 (DES-R2-4): root stays `color-scheme:dark`; `color-scheme:light` scoped to the panel, sheet and About. Phase 2 self-check: Paper select, Language select and Neotone checkbox rendered in Safari and Chromium, screenshots in the evidence folder.
+- A5 (DES-R2-5): Phase 0 deliverable adds a state table for every light-ground control (rest, hover, focus, selected, disabled, expanded, checked): hex + contrast per state. Fixes required by the table: disabled uses #8A847B text not opacity alone; expanded trigger ground is paper with ink border (no #221f1a under violet); checkbox accent-color #6756B5 on light ground.
+- A6 (DES-R2-6): token-check.json regenerated in Phase 0 with labelled pairs: ink/paper, muted/paper, muted/field, border/paper (>=3:1 non-text), white/violet, focus/paper, focus/violet, error/paper, expanded state. Phase 0 fails if any text pair <4.5 or non-text <3.
+- A7 (DES-R2-7): favicon = master fitted centred on a #0F0E0B square tile with 12% clear space; 16/32px renders checked against light and dark tab chrome; if the mark fails legibility at 16px, record an accepted limitation for owner review, do not redraw.
+- A8 (DES-R2-8): Phase 2 states the lockup aspect ratio and a minimum wordmark cap height of 11px; header-budget check adds a 320px-wide cell (available ~170px).
+- A9 (DES-R2-9): Impeccable init seeds PRODUCT.md and surface briefs only from the approved brand sheet and manifest; modes Operate (root, menu, forms) and Read (learning pages, About, 404); asks no new questions.
+- A10 (DES-R2-10): no new navigation, no dark header band, no decorative violet fills; the reference image is a palette and type reference only.
+- A11 (ENG-R2-1): Lane A also owns the tests/app.test.js favicon and `LG:` tests and tests/mutants/nm_favicon_ink_dropped.patch; Phase 1 verify adds `node --test --test-name-pattern='favicon|LG:' tests/app.test.js`.
+- A12 (ENG-R2-2): Lane A extends tools/make_icons.py to render the reading-header @2x/@3x PNGs (fitz, same as touch icon/og) and covers them under `--check`. If the lockup aspect ratio changes, Lane R updates LOCKUP, SCALE_LOCKUP_IMG, handpan-101, 404.html and test_scale_pages.py (FULL_IMG, MONO_SOURCE, the 2x/3x slot test) in one commit.
+- A13 (ENG-R2-4): Phase 0 ancestry check: `git diff --quiet origin/main origin/dev -- . ':!docs/plans' ':!docs/prompts'`. Pass: branch from origin/main and open M and D PRs from that one head. Fail: stop and amend the plan. The implement-on-dev-then-transfer procedure is removed.
+- A14 (ENG-R2-5): Linear: TRI-49, priority High (P1 = High, owner 2026-10-28), PRs say `Refs TRI-49`. The "connector missing" and "do not assume P1 = High" text is void; linear-pending.json is marked applied when the planning branch next changes.
+- A15 (ENG-R2-6): vectorisation method: potrace per colour layer of the 4-colour master (local tool, output committed; not a CI dependency). Objective gate before owner fidelity review: rasterise the SVG via make_icons.raster at 1154px and compare to the master with differing_fraction <= 0.02.
+- A16 (ENG-R2-7): i18n step is unconditional: `python3 tools/sync_i18n.py --check`, no I18N key diff against $BASE (this is the "audit"), and panel_fit `--lang` for de, es, fr, it, ja, zh-Hans, zh-Hant.
+- A17 (ENG-R2-8): a panel_fit `--lang` failure is attributed by rerunning the same locale with base = candidate minus the brand CSS; a fail on both is a pre-existing translation-length issue, logged, not fixed in this workstream.
+- A18 (ENG-R2-9): Lane I owns tests/suite_health.py FLOORS rows (test_icons, test_scale_pages, app.test.js) and the README mutant count, set from the CI run artifacts at the final head.
+
+## Round-3 amendments (2026-11-02, AFK). Binding; override A1-A18 where they differ.
+Regroup lesson: round-3 failures were all precision gaps in A1-A18 (test math, selector lists), not structural; the approach is unchanged.
+- A19 (R3-1): A1 test replaced: the 2px offset places the ring on paper, so assert ring #242424 vs adjacent paper >=3:1 (14.1:1) and ring colour != the violet selection fill. No ring-vs-violet contrast assertion.
+- A20 (R3-2): A2 applies only to `#scale-box.bad`, `#scale-fields input.bad`, `#scale-refusal.err`, `#scale-msg.err`, `.announce.err` (plus the `#scale-neotone` accent per A5). #E27005 in `#scale-preview .nhit:focus-visible`, `.panhit:active`, `.panghost`, card `.badge` and all card/diagram renderer fills is PROTECTED and unchanged.
+- A21 (R3-3): Lane R owns every color-scheme assertion in tests/test_scale_pages.py (`color-scheme:light dark`, the `.prog` prefers-color-scheme:light query, `prefers-color-scheme:dark{:root`, SHARED_ROOT `color-scheme:dark`) and tests/test_handpan_101_page.py. Hub, 101 and 404 move dark -> light. The `.prog` light media query is unwrapped so its dark plate applies unconditionally with today's values.
+- A22 (R3-4): A5 expanded-state rows: `#settings-trigger[aria-expanded=true]` is on the dark header and keeps its current dark treatment (no paper ground; A10). `#scale-fine-toggle` and `#scale-lip` carry aria-expanded with no expanded style; they get no new style, only the light-ground focus ring (A1). The #221f1a fix in A5 is void.
+- A23 (R3-5): A5 state table adds `#scale-generate:disabled:active` and `#share-copy:disabled:active`.
+- A24 (R3-6): A15 comparison flattens both the master and the rasterised SVG onto #0F0E0B at 1154px RGB before differing_fraction.
+
+## Regroup-1 amendments (2026-11-02, AFK). Binding.
+- A25 (G1-1, G1-L1): A6's `focus/violet` pair is replaced by `focus/paper` plus a recorded `focus != violet fill` row; the `expanded state` pair covers only `#settings-trigger[aria-expanded=true]` vs the dark header per A22.
+- A26 (G1-L2): A21 adds to A3's Lane R test list; it does not replace it.
+
+## Regroup-2 lows (2026-11-02, AFK). Binding.
+- A27 (G2-L1): A5 disabled rows are labelled WCAG 1.4.3-exempt, informational only.
+- A28 (G2-L2): Phase 0 records the computed colours for `#settings-trigger[aria-expanded=true]` vs the dark header; below 3:1 is a pre-existing defect, logged, not fixed here.
+- A29 (G2-L3): the "Pending Linear handoff" section is superseded by A14.
+
+## Review log
+Rounds: DES-R2 NOT READY, ENG-R2 READY w/ mediums, R3 NOT READY (1 high), regroup-1 NOT READY (1 medium), regroup-2 READY (lows only, applied as A27-A29).
+AFK decisions: A1 ink focus ring; A2 error = ink + icon + aria-invalid border (OWNER may instead approve a >=4.5:1 error token); A3 reading pages light-only; A15 potrace + 2% overlay gate; A22 trigger keeps dark treatment.
