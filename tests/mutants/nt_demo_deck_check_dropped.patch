@@ -1,4 +1,5 @@
-# kills: NEO4d: the demo is only for the built-in Pygmy; a typed Kurd with F5 G5 gets no demo
+# kills: NEO4d: a built-in Kurd with inner notes F5 G5 typed in gets M1 and no demo placement
+# NEO4d: the demo is only for the built-in Pygmy; a typed Kurd with F5 G5 gets no demo
 # suite: node --test --test-name-pattern=NEO4d tests/app.test.js
 # fault: Drop the built-in Pygmy check so any built-in scale gets the demo.
 diff --git a/index.html b/index.html

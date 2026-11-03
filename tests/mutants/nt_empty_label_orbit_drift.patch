@@ -1,4 +1,5 @@
-# kills: NEO7b: the empty mutant M label sits on the same orbit as the filled one
+# kills: NEO7b: an empty mutant tonefield draws only a small orange label like the M1 label, no dashed circle, and keeps its button
+# NEO7b: the empty mutant M label sits on the same orbit as the filled one
 # suite: node --test --test-name-pattern=NEO7b tests/app.test.js
 # fault: Push the preview's empty M label off the card's orbit.
 diff --git a/index.html b/index.html

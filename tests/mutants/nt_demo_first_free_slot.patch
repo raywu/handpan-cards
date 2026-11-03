@@ -1,4 +1,5 @@
-# kills: NEO4f: each demo note keeps its own fixed tonefield
+# kills: NEO4f: placing a note on a demo slot takes it as an empty slot; the other demo note stays where it was
+# NEO4f: each demo note keeps its own fixed tonefield
 # suite: node --test --test-name-pattern=NEO4f tests/app.test.js
 # fault: Put a demo note in the first free mutant tonefield instead of its own.
 diff --git a/index.html b/index.html

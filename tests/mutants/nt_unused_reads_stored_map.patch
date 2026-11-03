@@ -1,4 +1,5 @@
-# kills: NEO4e: the M4 hint counts the demo notes as mutant notes
+# kills: NEO4e: a demo tonefield is named as a free demo slot, and tapping it with nothing picked picks nothing
+# NEO4e: the M4 hint counts the demo notes as mutant notes
 # suite: node --test --test-name-pattern=NEO4e tests/app.test.js
 # fault: Make the unused-tonefields hint read the stored map instead of the drawn one.
 diff --git a/index.html b/index.html

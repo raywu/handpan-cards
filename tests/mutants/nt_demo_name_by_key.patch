@@ -1,4 +1,5 @@
-# kills: NEO4e: a demo tonefield is named with its note
+# kills: NEO4e: a demo tonefield is named as a free demo slot, and tapping it with nothing picked picks nothing
+# NEO4e: a demo tonefield is named with its note
 # suite: node --test --test-name-pattern=NEO4e tests/app.test.js
 # fault: Find a note's name by key, which a demo note's bottom key never matches.
 diff --git a/index.html b/index.html
