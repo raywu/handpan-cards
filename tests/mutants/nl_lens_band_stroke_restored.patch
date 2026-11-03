@@ -5,9 +5,9 @@ diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
 @@ -616,6 +616,10 @@ HPE.pdfcards = (function () {
-           c.setStrokeColor(colour(t.main.st)); c.setLineWidth(R * stk.main_band);
-           c.pathOps(neoPoint(f.crescentBand, cx, cy, R, th, 1), 1, 0);
-         }
+         var f = plan.fig;
+         c.setFillColor(t.lens ? (t.lens.st !== "off" ? lensTint(colour(t.lens.st)) : WHITE) : LENS_EMPTY);
+         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 0, 1);
 +        if (t.lens && t.lens.st !== "off") {
 +          c.setStrokeColor(colour(t.lens.st)); c.setLineWidth(R * 0.024);
 +          c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
@@ -15,3 +15,4 @@ diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
          c.setStrokeColor(BLACK); c.setLineWidth(out);
          c.circle(p[0], p[1], rr, 1, 0);
          c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
+
