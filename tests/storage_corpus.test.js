@@ -588,3 +588,33 @@ test("SC: a prod-written non-ASCII-named record boots readable in its chip and i
   assert.deepStrictEqual(row(envelopeOf(second)), row(booted), "SAVE of another scale changed the row");
   assert.strictEqual(second.store[b.key], raw, "SAVE wrote the old key");
 });
+
+test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport intact", async () => {
+  if (!MOVED) return;
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const armed = HTML.replace(/^const MOVE_FROM = .*;$/m, () => 'const MOVE_FROM = "old.example";')
+    .replace(/^const MOVE_TARGET = .*;$/m, () => 'const MOVE_TARGET = "https://new.example";');
+  const page = (referrer) => `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + armed;
+  const bootAt = async (origin, href, referrer) => {
+    const app = boot({ html: page(referrer), origin, href, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true,
+      crypto: require("node:crypto").webcrypto, abortController: true });
+    for (let i = 0; i < 80 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i += 1) await new Promise((r) => setTimeout(r, 25));
+    await settle();
+    return app;
+  };
+  for (const [n, blob] of Object.entries(BLOBS)) {
+    const old = await bootAt(createOrigin({ storage: storageOf(blob) }), "https://old.example/index.html", "");
+    const url = old.get("window.__replaced");
+    assert.ok(url && url.startsWith("https://new.example/"), `${n}: the old host did not forward`);
+    const oldEnv = envelopeOf(old);
+    const readable = plain(old.get(`savedState.entries.filter(r=>readSavedRecord(r.record).ok).map(r=>({i:r.instanceId,r:r.record}))`));
+    const dest = await bootAt(createOrigin({}), url, "https://old.example/");
+    const arrived = plain(envelopeOf(dest).entries.map((e) => e.record));
+    const distinct = (rs) => [...new Set(rs.map((r) => JSON.stringify(r)))].sort();
+    assert.deepStrictEqual(distinct(arrived), distinct(readable.map((x) => x.r)), `${n}: records changed in the move (byte-identical duplicates collapse on the new host by design)`);
+    const replaced = new Set(arrived.map((r) => r.o && r.o.replaces).filter(Boolean));
+    assert.deepStrictEqual(plain(envelopeOf(dest).hidden.slice().sort()), plain(oldEnv.hidden.filter((id) => !replaced.has(id)).sort()),
+      `${n}: hidden ids changed in the move (a seed that arrives replaced stays visible by design)`);
+    assert.deepStrictEqual(envelopeOf(old), oldEnv, `${n}: the old store changed`);
+  }
+});

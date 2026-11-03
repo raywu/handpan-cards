@@ -56,8 +56,8 @@ function run() {
       "var fail=false;try{fail=localStorage.getItem('moveFail')==='1'&&String(arguments[0]).indexOf('importedIds')>=0;}catch(e){}" +
       "if(fail)throw new Error('injected write failure');return p.apply(this,arguments);};})();</script>";
     return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
-      .replace("const MOVE_FROM = null;", () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
-      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
+      .replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
+      .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
       .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${moveMode.cap || 20000};`)
       .replace("<head>", () => "<head>" + inject);
   }
@@ -20691,6 +20691,38 @@ function run() {
       await b.waitFor(atNew(), { label: "the jump" });
       await sleep(800);
       assert.deepStrictEqual(names(await peek(NEW())).sort(), ["L1", "L2", "L3"]);
+    });
+
+    test("move: a non-ASCII-named record moves by the normal path and shows its chip on the new host", async () => {
+      on(); await clearOrigin(NEW());
+      const prod = [rec("Caf\u00e9 \u65e5\u672c"), rec("Caf\u00e9 \u2713", SEED2), rec("ASCII", "(D3) A3 C4 D4 E4 F4 G4 A4")];
+      await seed(OLD(), prod);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
+      await sleep(800);
+      assert.deepStrictEqual(names(await peek(NEW())).sort(), ["ASCII", "Caf\u00e9 \u2713", "Caf\u00e9 \u65e5\u672c"]);
+      const chips = await b.eval(`return [...document.querySelectorAll('#decks .chip')].map(c=>c.getAttribute('aria-label')||c.textContent);`);
+      for (const n of ["Caf\u00e9 \u65e5\u672c", "Caf\u00e9 \u2713"]) {
+        assert.strictEqual(chips.filter((c) => c.includes(n)).length, 1, "one chip for " + n);
+      }
+      assert.deepStrictEqual(names(await peek(OLD())).sort(), ["ASCII", "Caf\u00e9 \u2713", "Caf\u00e9 \u65e5\u672c"], "the old store is untouched");
+    });
+
+    test("move: paired-area rev 1 and rev 2 records arrive byte-identical", async () => {
+      on(); await clearOrigin(NEW());
+      const keep = moveMode; moveMode = null;
+      await go(OLD() + "/index.html");
+      const prof = await b.eval(`const f=HPE.core.parseSeed(${JSON.stringify(OLDSEED)}).value.fields;return HPE.layout.proposeProfile(f).value.map;`);
+      moveMode = keep;
+      const v5 = (name, rev) => ({ v: 5, s: OLDSEED, o: { name, palette: 1, profile: { id: "paired", rev, map: prof } } });
+      const records = [v5("PAIRED ONE", 1), v5("PAIRED TWO", 2), rec("ACOUSTIC", SEED2)];
+      await seed(OLD(), records);
+      await go(OLD() + "/index.html");
+      await b.waitFor(atNew(), { label: "the jump" });
+      await sleep(800);
+      const byName = (x, y) => x.o.name.localeCompare(y.o.name);
+      const arrived = (await peek(NEW())).entries.map((row) => row.record).sort(byName);
+      assert.deepStrictEqual(arrived, [...records].sort(byName));
     });
 
     test("move: a NEEDS_NEWER_APP record in the payload is skipped and the rest import", async () => {
