@@ -1239,11 +1239,14 @@ test("NL: a lit lens fills with the 0.5 tint of its state colour and draws no le
   for (const [name, p] of [["pygmy", PA.pygmy], ["hijaz", PA.hijaz]]) {
     p.deck.chords.forEach((_, i) => {
       const { page, R } = paCard(p, i);
-      const root = tint50([0.043, 0.482, 0.459]), tone = tint50([0.867, 0.561, 0]);
+      const states = [[0.043, 0.482, 0.459], [0.867, 0.561, 0], ...[PA.pygmy, PA.hijaz, PA.kurd].flatMap((q) => {
+        const d = HPE.pdfdeck.fromGenerated(q);
+        return [d.col_root, d.col_tone];
+      })].filter(Boolean).map((c) => tint50(c).join());
       for (const o of lensFillsOf(page)) {
         const f = rgb(o.fill).join();
-        assert.ok([root, tone, [1, 1, 1], [0.9529, 0.9451, 0.9608]].some((c) => c.join() === f), `${name} ${i}: lens fill ${f}`);
-        if (f === root.join() || f === tone.join()) lit++;
+        assert.ok([...states, "1,1,1", "0.9529,0.9451,0.9608"].includes(f), `${name} ${i}: lens fill ${f}`);
+        if (states.includes(f)) lit++;
       }
       assert.ok(!page.ops.some((o) => o.op === "path" && o.mode === "S" && near(o.width, 0.024 * R)), "no lens band stroke");
     });
