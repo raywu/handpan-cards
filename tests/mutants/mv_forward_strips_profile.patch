@@ -1,0 +1,15 @@
+# kills: move: paired-area rev 1 and rev 2 records arrive byte-identical
+# suite: node --test --test-name-pattern ^move..paired.area.rev.1.and.rev.2.records.arrive.byte.identical$ tests/e2e.test.js
+# why: the old host drops the paired-area profile from v5 rows before encoding, so they arrive unreadable and are skipped.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17069,7 +17069,7 @@ async function moveForward() {
+   if (savedMode !== "durable" || !savedState) return false;
+   const rows = savedState.entries.map(row => {
+     const read = readSavedRecord(row.record);
+-    return { i: row.instanceId, r: read.ok ? read.record : row.record };
++    return { i: row.instanceId, r: read.ok ? (read.record.v === 5 ? { ...read.record, o: { ...read.record.o, profile: undefined } } : read.record) : row.record };
+   });
+   const hidden = savedState.hidden.slice();
+   if (!rows.length && !hidden.length) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }

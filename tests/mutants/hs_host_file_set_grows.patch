@@ -1,0 +1,11 @@
+# kills: test_the_handpantheory_host_string_file_set_is_exactly_the_listed_set
+# suite: python3 -m unittest -k test_the_handpantheory_host_string_file_set_is_exactly_the_listed_set tests.test_site_files
+# why: CNAME starts naming the new host, a file outside the listed set, so a stray host string ships unreviewed.
+diff --git a/CNAME b/CNAME
+--- a/CNAME
++++ b/CNAME
+@@ -1 +1 @@
+-handpan.raywu.org
+\ No newline at end of file
++handpantheory.com
+\ No newline at end of file

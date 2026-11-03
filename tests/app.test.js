@@ -3996,7 +3996,7 @@ test("the touch icon and the preview image exist and are named once", async () =
     "the PNG rel=icon must reuse apple-touch-icon.png");
   assert.ok(fs.existsSync(path.join(ROOT, touch)), `${touch} missing at the repo root`);
   const og = metaContent(html, "property", "og:image");
-  assert.strictEqual(og, "https://handpan.raywu.org/og.png");
+  assert.strictEqual(og, "https://handpantheory.com/og.png");
   assert.ok(fs.existsSync(path.join(ROOT, "og.png")), "og.png missing at the repo root");
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
@@ -9709,7 +9709,7 @@ describe("discoverability: structured data", () => {
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpan.raywu.org"]);
+    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpantheory.com"]);
     const hostEntry = site.alternateName[1];
     assert.strictEqual(hostEntry, hostEntry.toLowerCase());
     assert.strictEqual(hostEntry, new URL(canonical).host);
@@ -9746,7 +9746,7 @@ describe("discoverability: structured data", () => {
     const ld = ldBlock();
     assert.strictEqual(ld["@context"], "https://schema.org");
     const app = node("WebApplication");
-    assert.strictEqual(app.url, "https://handpan.raywu.org/");
+    assert.strictEqual(app.url, "https://handpantheory.com/");
     assert.strictEqual(app.applicationCategory, "MusicApplication");
     assert.strictEqual(app.operatingSystem, "Any");
     assert.strictEqual(app.browserRequirements, "Requires JavaScript");
@@ -19408,7 +19408,7 @@ describe("MN3: a 5-note bottom ring toggles", () => {
   });
 });
 
-describe("MV: the saved-scale handoff (switched off in the committed bytes)", () => {
+describe("MV: the saved-scale handoff (armed for production in the committed bytes)", () => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const webcrypto = require("node:crypto").webcrypto;
   const OLD_HOST = "old.example", NEW_HOST = "new.example", TARGET = "https://new.example";
@@ -19424,9 +19424,9 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
   const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
   function movePage({ on = true, cap = 20000, referrer = "" } = {}) {
     let html = INDEX_HTML();
-    if (on) html = html.replace("const MOVE_FROM = null;", () => `const MOVE_FROM = "${OLD_HOST}";`)
-      .replace("const MOVE_TARGET = null;", () => `const MOVE_TARGET = "${TARGET}";`)
-      .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
+    html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
+      .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
+    if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
     return `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + html;
   }
   const settle = async app => { for (let i = 0; i < 40 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
@@ -19446,10 +19446,11 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     html: "<script>window.__savedIdbFixtureOnly=true;</script>" });
   const envelopeAt = (origin, host = NEW_HOST) => JSON.parse(savedRaw(realmAt(origin, host)));
 
-  test("the committed bytes have both switches null", () => {
+  test("MV: the committed bytes arm handpan.raywu.org -> https://handpantheory.com", () => {
     const html = INDEX_HTML();
-    assert.match(html, /^const MOVE_FROM = null;$/m);
-    assert.match(html, /^const MOVE_TARGET = null;$/m);
+    assert.match(html, /^const MOVE_FROM = "handpan\.raywu\.org";$/m);
+    assert.match(html, /^const MOVE_TARGET = "https:\/\/handpantheory\.com";$/m);
+    assert.match(html, /^const MOVE_CAP = 20000;$/m);
   });
 
   test("the move region equals c6ef6b58's with only #790's dedupe-key line applied", () => {
@@ -19461,7 +19462,10 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const shipped = region(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8"));
     const from = "moveDigest(moveCanon(read.record))";
     assert.strictEqual(shipped.split(from).length, 2, "the shipped region no longer holds the one line #790 changed");
-    assert.strictEqual(region(INDEX_HTML()), shipped.replace(from, () => "moveDigest(moveCanon(row.r))"));
+    const armed = shipped.replace(from, () => "moveDigest(moveCanon(row.r))")
+      .replace("const MOVE_FROM = null;", () => 'const MOVE_FROM = "handpan.raywu.org";')
+      .replace("const MOVE_TARGET = null;", () => 'const MOVE_TARGET = "https://handpantheory.com";');
+    assert.strictEqual(region(INDEX_HTML()), armed);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
   });
 

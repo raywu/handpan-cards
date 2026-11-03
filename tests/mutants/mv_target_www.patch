@@ -1,0 +1,15 @@
+# kills: MV: the committed bytes arm handpan.raywu.org -> https://handpantheory.com
+# suite: node --test --test-name-pattern ^MV..the.committed.bytes.arm.handpan tests/app.test.js
+# why: the target names the www host, which would hop through the www redirect on every jump.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17036,7 +17036,7 @@ window.addEventListener("hashchange", async () => {
+ 
+ /* ---------------- saved-scale handoff (armed) ---------------- */
+ const MOVE_FROM = "handpan.raywu.org";
+-const MOVE_TARGET = "https://handpantheory.com";
++const MOVE_TARGET = "https://www.handpantheory.com";
+ const MOVE_CAP = 20000;
+ const MOVE_ARMED = MOVE_FROM !== null && MOVE_TARGET !== null;
+ const MOVE_ON_OLD = MOVE_ARMED && location.hostname === MOVE_FROM;
