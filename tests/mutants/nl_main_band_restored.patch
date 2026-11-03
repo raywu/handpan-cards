@@ -1,0 +1,18 @@
+# kills: NS: a lit Neotone main fills its circle with the half tint and strokes nothing in the state colour
+# suite: node --test --test-name-pattern=lit.Neotone.main.fills tests/pdfcards.test.js
+# fault: Stroke the closed crescent band over a lit main again.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -616,6 +616,10 @@ HPE.pdfcards = (function () {
+         var f = plan.fig;
+         c.setFillColor(t.lens ? (t.lens.st !== "off" ? lensTint(colour(t.lens.st)) : WHITE) : LENS_EMPTY);
+         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 0, 1);
++        if (t.main && t.main.st !== "off") {
++          c.setStrokeColor(colour(t.main.st)); c.setLineWidth(R * stk.main_band);
++          c.pathOps(neoPoint(f.crescentBand, cx, cy, R, th, 1), 1, 0);
++        }
+         c.setStrokeColor(BLACK); c.setLineWidth(out);
+         c.circle(p[0], p[1], rr, 1, 0);
+         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
+

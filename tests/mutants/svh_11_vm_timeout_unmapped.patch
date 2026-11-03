@@ -1,0 +1,15 @@
+# kills: SVH11 explicit readiness rejects errors and bounded incomplete state instead of treating microtasks as ready
+# suite: node --test --test-reporter=tap --test-name-pattern ^SVH11.explicit tests/harness.test.js
+# fault: A vm script timeout during readiness surfaces its own message instead of the readiness timeout.
+diff --git a/tools/sandbox.js b/tools/sandbox.js
+--- a/tools/sandbox.js
++++ b/tools/sandbox.js
+@@ -1147,7 +1147,7 @@
+         try {
+           value = await getAsync(expression, { timeout: Math.max(1, deadline - Date.now()) });
+         } catch (error) {
+-          if (error && error.code === "ERR_SCRIPT_EXECUTION_TIMEOUT") throw new Error("sandbox readiness timed out");
++          if (false) throw new Error("sandbox readiness timed out");
+           throw error;
+         }
+         if (value) return value;

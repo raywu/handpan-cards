@@ -1,0 +1,16 @@
+# kills: NEO4d: a built-in Kurd with inner notes F5 G5 typed in gets M1 and no demo placement
+# NEO4d: the demo is only for the built-in Pygmy; a typed Kurd with F5 G5 gets no demo
+# suite: node --test --test-name-pattern=NEO4d tests/app.test.js
+# fault: Drop the built-in Pygmy check so any built-in scale gets the demo.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14111,7 +14111,7 @@ const noteNameOf = (key) => { const n = profileNoteList.find((x) => x.midi === N
+ const NEO_DEMO_DECK = "pygmy";
+ const NEO_DEMO_SLOT = { 77: NEO_MAIN + 6, 79: NEO_MAIN + 7 };
+ function neoDemoNotes() {
+-  if (!neoConversion() || editedDeck().id !== NEO_DEMO_DECK || !profileMap) return [];
++  if (!neoConversion() || !profileMap) return [];
+   const loose = unplacedNotes();
+   const demo = loose.filter((n) => n.zone === "inner" && n.midi in NEO_DEMO_SLOT);
+   return demo.length === loose.length ? demo.filter((n) => profileMap[NEO_DEMO_SLOT[n.midi]] === null) : [];

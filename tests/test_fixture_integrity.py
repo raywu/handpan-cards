@@ -171,7 +171,7 @@ class TestMakerStrings(unittest.TestCase):
 
 # ---- Neotone (paired-area profile), lane T ---------------------------------
 # paired_profile_v1.json below is SUPERSEDED by paired_profile_v2.json (Option B,
-# lane T2), which is SUPERSEDED by paired_profile_v3.json (course correction, lane E2). It stays, pinned, because a change is a new rev; no engine code reads it.
+# lane T2), which is SUPERSEDED by paired_profile_v3.json (course correction, lane E2), which is SUPERSEDED by paired_profile_v4.json (lens depth 0.45, owner 2026-11-03). It stays, pinned, because a change is a new rev; no engine code reads it.
 # docs/plans/2026-10-30-neotone-build.md, "Frozen profile fixture". The fixture
 # is written once by hand and is never derived from the implementation; the
 # sha256 below is the reviewer-visible pin. A change is a new rev, before merge
@@ -468,6 +468,7 @@ class TestPairedProfileV2Fixture(unittest.TestCase):
 
 
 EXPECTED_PROFILE_V3_SHA256 = "f53fcffcd4009294ff8e8635dd944131146c89f8d41945a87f0024453a18ee1f"
+EXPECTED_PROFILE_V4_SHA256 = "a40768cdfe961a430b41a56a42168e098b1941e4a9f79ab45c2b4a2639893791"
 PROFILE_V3_FIXTURE = os.path.join(FIXTURES, "paired_profile_v3.json")
 
 PV3 = {
@@ -487,6 +488,28 @@ def load_profile_v3():
         return json.load(fh)
 
 
+class TestPairedProfileV4Fixture(unittest.TestCase):
+    def test_v4_is_v3_with_a_deeper_lens(self):
+        with open(os.path.join(FIXTURES, "paired_profile_v4.json"), encoding="utf-8") as fh:
+            v4 = json.load(fh)
+        want = dict(PV3, rev=4, mutant={"depth": 0.45, "r": 0.19})
+        self.assertEqual(v4, want)
+
+    def test_v4_sha256_is_pinned(self):
+        with open(os.path.join(FIXTURES, "paired_profile_v4.json"), "rb") as fh:
+            self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_PROFILE_V4_SHA256,
+                             "the v4 profile is frozen. Change = rev 5 with a rev-4 reader.")
+
+    def test_v4_lens_is_about_a_third_of_a_main_note(self):
+        with open(os.path.join(FIXTURES, "paired_profile_v4.json"), encoding="utf-8") as fh:
+            v4 = json.load(fh)
+        r = v4["main"]["r"]
+        d = 2 * r - 2 * r * v4["mutant"]["depth"]
+        area = 2 * r * r * math.acos(d / (2 * r)) - d / 2 * math.sqrt(4 * r * r - d * d)
+        self.assertTrue(0.32 <= area / (math.pi * r * r) <= 0.35, area / (math.pi * r * r))
+        self.assertAlmostEqual(lens_geometry(v4)["centre"], 0.536, places=4)
+
+
 class TestPairedProfileV3Fixture(unittest.TestCase):
     def test_exact_frozen_content(self):
         self.assertEqual(load_profile_v3(), PV3)
@@ -495,6 +518,10 @@ class TestPairedProfileV3Fixture(unittest.TestCase):
         with open(PROFILE_V3_FIXTURE, "rb") as fh:
             self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_PROFILE_V3_SHA256,
                              "the v3 profile is frozen. Change = rev 4 with a rev-3 reader.")
+
+    def test_v3_is_kept_pinned_and_superseded(self):
+        with open(__file__, encoding="utf-8") as fh:
+            self.assertIn("SUPERSEDED by paired_profile_v4.json", fh.read())
 
     def test_v2_is_kept_pinned_and_superseded(self):
         self.assertEqual(load_v2()["rev"], 2)
@@ -630,7 +657,8 @@ class TestEngineSpecProfileSection(unittest.TestCase):
                        "geom.place", "`id,rev,map`", "NEEDS_NEWER_APP",
                        "BAD_NOTE", "tests/fixtures/paired_profile_v1.json",
                        "tests/fixtures/paired_profile_v2.json",
-                       "tests/fixtures/paired_profile_v3.json", "migrateProfile",
+                       "tests/fixtures/paired_profile_v3.json",
+                       "tests/fixtures/paired_profile_v4.json", "migrateProfile",
                        "NEOTONE_INPUT", "decor", "tonefield",
                        "mutant tonefield", "lens", "ring-strict", "unplaced",
                        "pitch order", "rev 2", "M<n>",

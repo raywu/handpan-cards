@@ -1,0 +1,18 @@
+# kills: NL: a lit lens fills with the 0.5 tint of its state colour and draws no lens band stroke
+# suite: node --test --test-name-pattern=lit.lens.fills.with.the.0.5.tint tests/pdfcards.test.js
+# fault: Stroke a 0.024R band around a lit lens again, over the tint fill.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -616,6 +616,10 @@ HPE.pdfcards = (function () {
+         var f = plan.fig;
+         c.setFillColor(t.lens ? (t.lens.st !== "off" ? lensTint(colour(t.lens.st)) : WHITE) : LENS_EMPTY);
+         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 0, 1);
++        if (t.lens && t.lens.st !== "off") {
++          c.setStrokeColor(colour(t.lens.st)); c.setLineWidth(R * 0.024);
++          c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
++        }
+         c.setStrokeColor(BLACK); c.setLineWidth(out);
+         c.circle(p[0], p[1], rr, 1, 0);
+         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
+

@@ -67,7 +67,8 @@ class RecordingCanvas:
 
     def circle(self, x, y, r, stroke=1, fill=0):
         self.circles.append({"x": x, "y": y, "r": r, "lw": self._lw,
-                             "stroke": self._stroke, "dashed": self._dashed})
+                             "stroke": self._stroke, "dashed": self._dashed,
+                             "fill": self._fill if fill else None})
 
     def beginPath(self):
         return _PathRec()
@@ -120,25 +121,31 @@ class _PathRec:
         pass
 
 
+def _tint_hex(root_hex):
+    v = [int(root_hex[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    return "#%02X%02X%02X" % tuple(round((x + (1 - x) * 0.5) * 255) for x in v)
+
+
 def neo_fields(circles, paths, root_hex, tone_hex, outline_w):
     """The Neotone card's fields from its drawing: a field is a black outline
-    circle of width 0.012R (a main tonefield or the ding); a lit one carries a
-    root or tone band, a ring circle where the card has no lens and a crescent
-    path where it has. Circles are (x, y, r, stroke, width, ...) in R = 100,
-    y-down; paths are (x, y, stroke, width) at their start point."""
+    circle of width 0.012R (a main tonefield or the ding). Where the card has
+    a mutant note a lit field is a solid half-tint fill of its state colour
+    (root or tone); where it has none it carries a root or tone ring circle.
+    Circles are (x, y, r, stroke, width, fill) in R = 100, y-down; paths are
+    unused now that no crescent band is drawn."""
     fields = {}
-    for x, y, r, stroke, w in circles:
+    for x, y, r, stroke, w, fill in circles:
         if stroke == "#000000" and abs(w - outline_w) < 0.01:
             fields.setdefault((x, y), {"x": x, "y": y, "r": r, "state": "off"})
     state_of = {root_hex: "root", tone_hex: "tone"}
-    for x, y, r, stroke, w in circles:
-        if (x, y) in fields and stroke in state_of:
+    tint_of = {_tint_hex(root_hex): "root", _tint_hex(tone_hex): "tone"}
+    for x, y, r, stroke, w, fill in circles:
+        if (x, y) not in fields:
+            continue
+        if stroke in state_of:
             fields[(x, y)].update(state=state_of[stroke], bandWidth=w)
-    mains = [f for f in fields.values() if f["r"] < 25]
-    for x, y, stroke, w in paths:
-        if stroke in state_of and abs(w - 4.6) < 0.01 and mains:
-            f = min(mains, key=lambda m: math.hypot(m["x"] - x, m["y"] - y))
-            f.update(state=state_of[stroke], bandWidth=w)
+        elif fill in tint_of:
+            fields[(x, y)]["state"] = tint_of[fill]
     return sorted(fields.values(), key=lambda f: (f["x"], f["y"]))
 
 
@@ -173,7 +180,7 @@ def render_print(deck):
             if g.get("place"):
                 k = 100 / R
                 circles = [(round((c["x"] - cx) * k, 3), round(-(c["y"] - cy) * k, 3),
-                            round(c["r"] * k, 3), c["stroke"], round(c["lw"] * k, 3))
+                            round(c["r"] * k, 3), c["stroke"], round(c["lw"] * k, 3), c["fill"])
                            for c in rec.circles[chrome:]]
                 paths = [(round((q["start"][0] - cx) * k, 3), round(-(q["start"][1] - cy) * k, 3),
                           q["stroke"], round(q["lw"] * k, 3)) for q in rec.paths if q["fill"] is None]
@@ -640,7 +647,7 @@ PROFILE_FIXTURES = {
     "profile_kurd9": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_kurd9_v2.json"),
     "profile_hijaz": os.path.join(paths.ROOT, "tests", "fixtures", "profile_case_hijaz_v2.json"),
 }
-PROFILE_FILE = os.path.join(paths.ROOT, "tests", "fixtures", "paired_profile_v3.json")
+PROFILE_FILE = os.path.join(paths.ROOT, "tests", "fixtures", "paired_profile_v4.json")
 
 
 def _profile_payload(name):
@@ -726,15 +733,25 @@ class ProfileRenderAgreement(RenderAgreement):
                 self.assertEqual(card["badgeText"], "", "%s %s" % (side, app_c["name"]))
 
     def test_band_and_hairline_agree(self):
-        """Neotone has no inner hairline (K3): a lit main or ding carries one
-        band of 4.6, in both renderers."""
+        """Neotone has no inner hairline (K3). A lit field on a card with a
+        mutant note is a tint fill with no band; on a card without one it
+        carries one ring band of 4.6, in both renderers."""
         for app_c, print_c in self.each_card():
             for side, card in (("app", app_c), ("print", print_c)):
                 for f in card["fields"]:
                     self.assertNotIn("hairlineR", f)
-                    if f["state"] != "off":
+                    if "bandWidth" in f or (f["state"] != "off" and app_c["deck"] == "profile_kurd9"):
                         self.assertAlmostEqual(f["bandWidth"], 4.6, delta=0.01,
                                                msg="%s %s %s" % (side, app_c["name"], f))
+                    if app_c["deck"] == "profile_pygmy":
+                        self.assertNotIn("bandWidth", f, "%s %s" % (side, app_c["name"]))
+
+    def test_a_lit_neotone_card_yields_lit_fields_in_both_renderers(self):
+        for deck_id in ("profile_pygmy", "profile_kurd9"):
+            for side, cards in (("app", [c for c in self.app if c["deck"] == deck_id]),
+                                ("print", self.print_[deck_id])):
+                lit = [f for c in cards for f in c["fields"] if f["state"] != "off"]
+                self.assertTrue(lit, "%s %s: no lit field read back" % (side, deck_id))
 
     def test_kurd9_places_every_note_where_the_standard_card_does(self):
         deck = _profile_payload("profile_kurd9")["deck"]
@@ -781,9 +798,45 @@ class ProfileRenderAgreement(RenderAgreement):
                   "n_in", "number_out", "extent_margin"):
             self.assertEqual(hifi.PROFILE_DRAW[k], p[k], k)
         self.assertEqual(hifi.PROFILE_DRAW["stroke"], {
-            "outline": 0.012, "decor": 0.0076, "main_band": 0.046, "lens_band": 0.024})
+            "outline": 0.012, "decor": 0.0076, "main_band": 0.046})
         self.assertEqual(hifi.PROFILE_DRAW["glyph"], {
             "main": 0.62, "number": 0.62, "ding": 0.623, "lens": 0.565, "mnum": 0.5})
+
+    def test_a_lit_lens_is_a_half_tint_fill_with_no_band_stroke(self):
+        deck = self.decks["profile_pygmy"]
+        rec = RecordingCanvas()
+        hifi.chord_card(rec, 0.0, 0.0, deck, 1, deck["chords"][0])
+        want = set()
+        for c in (hifi.BLUE, hifi.GREEN):
+            want.add("#%02X%02X%02X" % tuple(round((v + 1) / 2 * 255) for v in (c.red, c.green, c.blue)))
+        fills = {p["fill"] for p in rec.paths if p["fill"] and not p["stroke"]}
+        self.assertTrue(fills & want, "no tinted lens fill in %s" % sorted(fills))
+        R = deck["R"]
+        self.assertFalse([p for p in rec.paths if p["lw"] is not None and abs(p["lw"] - R * 0.024) < 1e-9],
+                         "a lens band stroke is still drawn")
+
+    def test_a_lit_main_and_ding_are_half_tint_fills_with_no_band(self):
+        deck = self.decks["profile_pygmy"]
+        want = set()
+        for c in (hifi.BLUE, hifi.GREEN):
+            want.add("#%02X%02X%02X" % tuple(round((v + 1) / 2 * 255) for v in (c.red, c.green, c.blue)))
+        R = deck["R"]
+        lit_main = lit_ding = 0
+        for n, chord in enumerate(deck["chords"], 1):
+            rec = RecordingCanvas()
+            hifi.chord_card(rec, 0.0, 0.0, deck, n, chord)
+            cx, cy = hifi.CW / 2, deck["cy"]
+            for c in rec.circles:
+                if c["fill"] in want:
+                    if abs(c["r"] - 0.2 * R) < 1e-6:
+                        lit_ding += 1
+                    elif 0.1 * R < c["r"] < 0.25 * R:
+                        lit_main += 1
+                self.assertFalse(c["stroke"] in (_hex(hifi.BLUE), _hex(hifi.GREEN)) and c["lw"] is not None
+                                 and abs(c["lw"] - R * 0.046) < 1e-9, "a ring or band stroke is still drawn")
+            self.assertFalse([p for p in rec.paths if p["lw"] is not None and abs(p["lw"] - R * 0.046) < 1e-9],
+                             "a crescent band stroke is still drawn")
+        self.assertTrue(lit_main and lit_ding, "no tinted main/ding fill: %d/%d" % (lit_main, lit_ding))
 
     def _number_centre(self, name, chord_index, label):
         deck = self.decks[name]

@@ -132,6 +132,7 @@
   "sheet.neotone_ring_main": "主",
   "sheet.neotone_ring_mutant": "Mutant",
   "sheet.neotone_empty": "空",
+  "sheet.neotone_demo": "示範 {note}，可放置",
   "sheet.neotone_picked": "已拿起 {note}。請點選同一圈的另一個音位。",
   "sheet.neotone_swapped": "已互換 {a} 和 {b}。",
   "sheet.neotone_moved": "已把 {a} 移到音位 {n}。",

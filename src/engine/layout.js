@@ -738,15 +738,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* ---- the Neotone profile (ENGINE-SPEC 18) ------------------------------ *
    * The frozen generic profile, a literal copy of
-   * tests/fixtures/paired_profile_v3.json (a test holds them equal). Tonefield
+   * tests/fixtures/paired_profile_v4.json (a test holds them equal). Tonefield
    * k sits at angles[k-1]; slot pk is the main tonefield there, sk the mutant
    * tonefield (a lens) toward the centre of it. Fractions of R.
    */
   var PROFILE = {
-    id: "paired", rev: 3, tonefields: 9,
+    id: "paired", rev: 4, tonefields: 9,
     angles: [270, 230, 310, 190, 350, 150, 30, 110, 70],
     main: { orbit: 0.745, r: 0.19 },
-    mutant: { depth: 0.3333, r: 0.19 },
+    mutant: { depth: 0.45, r: 0.19 },
     ding: { r: 0.2, dy: 0 },
     decor: { r: 0.355 },
     n_in: 0.085, number_out: 1.0758, extent_margin: 0.06,

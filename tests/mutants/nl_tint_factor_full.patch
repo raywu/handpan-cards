@@ -1,0 +1,15 @@
+# kills: NL: lensTint is the half mix with white and clears 4.5:1 for every palette colour
+# suite: node --test --test-name-pattern=lensTint.is.the.half.mix tests/pdfcards.test.js
+# fault: Fill a lit lens with its full state colour instead of the half tint, so the name ink fails contrast on roots.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -556,7 +556,7 @@ HPE.pdfcards = (function () {
+ 
+   // A lit lens is its state colour mixed half with white (name ink reaches
+   // 4.5:1 on every palette colour; owner 2026-11-03).
+-  var LENS_TINT = 0.5;
++  var LENS_TINT = 1;
+   function lensTint(col) {
+     return col.map(function (v) { return v + (1 - v) * LENS_TINT; });
+   }

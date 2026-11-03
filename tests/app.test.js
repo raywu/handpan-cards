@@ -15483,7 +15483,7 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
     assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed (domain move handoff) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
@@ -19022,11 +19022,72 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(deck.fields["10"][3], "inner", "deck data is untouched");
   });
 
+  const PYGMY_INNER = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
+  const demoSlots = (app) => plain(app.get("shownMap()")).map((k, i) => (k !== null && map(app)[i] === null ? i : -1)).filter((i) => i !== -1);
+  const M1_TEXT = "Neotone has 9 main tonefields. Inner notes F5 and G5 have no tonefield: remove them to save.";
+
   test("NEO4c: a user scale with inner notes gets M1 and no demo placement", async () => {
     const app = boot();
-    openNeo(app, TOP_PYGMY);
+    openNeo(app, PYGMY_INNER);
     const place = plain(app.get("lastSolved.geom.place"));
     assert.strictEqual(Object.keys(place).length, 15, "F5 and G5 are left out of the picture");
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent, M1_TEXT);
+    assert.strictEqual(app.els["scale-generate"].disabled, true);
+    assert.deepStrictEqual(demoSlots(app), []);
+  });
+
+  test("NEO4d: a built-in Kurd with inner notes F5 G5 typed in gets M1 and no demo placement", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "kurd");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    app.type(app.els["scale-box"].value.replace(/\s*\|.*$/, "") + " | F5 G5");
+    assert.strictEqual(app.els["scale-neotone-msg"].textContent, M1_TEXT);
+    assert.deepStrictEqual(demoSlots(app), [], "no demo on another built-in");
+    const place = plain(app.get("lastSolved.geom.place"));
+    const midis = Object.keys(place).map((id) => plain(app.get("lastSolved.fields"))[id][2]);
+    assert.ok(!midis.includes(77) && !midis.includes(79), "F5 and G5 are not placed");
+  });
+
+  const aria = (app, slot) => (nhits(app).find((h) => h.includes(`data-slot="${slot}"`)).match(/aria-label="([^"]*)"/) || [])[1];
+  const pygmyNeo = async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    goLayout(app);
+    return app;
+  };
+
+  test("NEO4e: a demo tonefield is named as a free demo slot, and tapping it with nothing picked picks nothing", async () => {
+    const app = await pygmyNeo();
+    assert.deepStrictEqual(demoSlots(app), [15, 16]);
+    assert.strictEqual(aria(app, 15), "Tonefield 7 mutant, demo F5, free for placement");
+    assert.strictEqual(aria(app, 16), "Tonefield 8 mutant, demo G5, free for placement");
+    app.run("neoTap(15)");
+    assert.strictEqual(app.get("neoPick"), -1);
+    assert.strictEqual(app.els["scale-neotone-unused"].textContent, "Tonefield 9 has no mutant note. That's fine.");
+  });
+
+  test("NEO4f: placing a note on a demo slot takes it as an empty slot; the other demo note stays where it was", async () => {
+    const app = await pygmyNeo();
+    const c3 = app.get("noteNameOf(profileMap[9])");
+    app.run("neoTap(9)");
+    app.run("neoTap(15)");
+    assert.strictEqual(app.els["scale-drawer-status"].textContent, `Moved ${c3} to tonefield 7.`);
+    assert.strictEqual(map(app)[15] !== null, true, "the note is stored at M7");
+    assert.strictEqual(map(app)[9], null);
+    assert.deepStrictEqual(demoSlots(app), [16], "F5 gave way, G5 did not move");
+    assert.strictEqual(plain(app.get("shownMap()"))[9], null, "F5 did not jump to M1");
+  });
+
+  test("NEO4g: a demo note is drawn only when every loose note is a demo note", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "pygmy");
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    app.type(PYGMY_INNER.replace("F5 G5", "F5 G5 A5"));
+    assert.deepStrictEqual(demoSlots(app), []);
     assert.strictEqual(app.els["scale-generate"].disabled, true);
   });
 
@@ -19084,6 +19145,12 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(attr(empty, "font-size"), attr(filled, "font-size"), "same size as M1");
     assert.strictEqual(attr(empty, "font-weight"), attr(filled, "font-weight"), "same weight as M1");
     assert.ok(!texts.some((t) => />M9<\/text>/.test(t) && /#8a8a8a/.test(t)), "no grey M9");
+    const polar = (t) => {
+      const x = Number(attr(t, "x")), y = Number(attr(t, "y")) - Number(attr(t, "font-size")) * 0.34;
+      return { r: Math.hypot(x, y), deg: (Math.atan2(-y, x) * 180) / Math.PI };
+    };
+    assert.ok(Math.abs(polar(empty).r - polar(filled).r) < 1e-3, "the empty M label sits on the same orbit as the filled one");
+    assert.ok(Math.abs(polar(empty).deg - app.get("HPE.layout.PROFILE.angles[8]")) < 1e-2, "at its tonefield's angle");
     const dashedMutants = [...html.matchAll(/<circle[^>]*stroke-dasharray[^>]*\/>/g)].length;
     const emptyMain = 9 - (app.get("profileMap") || []).slice(0, 9).filter((k) => k !== null).length;
     assert.strictEqual(dashedMutants, emptyMain, "dashed circles remain only on empty main tonefields");
@@ -19742,5 +19809,43 @@ describe("FG: field guide light ground for the menu, forms and About (phase 2)",
 
   test("FG: no text or font-size is changed by the block", () => {
     assert.ok(!/font-size|font:|padding|margin|width|height/.test(block().replace(/(vertical-align|margin-right|width|height)[^;}]*/g,"").replace(/box-shadow[^;}]*/g,"")), "block changes geometry or type");
+  });
+});
+
+describe("Neotone solid tint (owner 2026-11-03)", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const fixture = (f) => JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", f), "utf8")).deck;
+  const tintHex = (hex) => "#" + [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return Math.round((v + (1 - v) * 0.5) * 255).toString(16).padStart(2, "0");
+  }).join("");
+
+  test("a Neotone card with a mutant note tints its lit mains and ding and draws no state-colour stroke", () => {
+    const app = boot();
+    const d = fixture("profile_case_pygmy_v2.json");
+    const [root, tone] = [d.colors.root.toLowerCase(), d.colors.tone.toLowerCase()];
+    const tints = [tintHex(root), tintHex(tone)];
+    let tintedDisks = 0;
+    let tintedDing = 0;
+    d.chords.forEach((_, i) => {
+      const svg = app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(d.chords[i])})`);
+      for (const m of svg.matchAll(/<(?:circle|path)[^>]*stroke="(#[0-9a-fA-F]{6})"/g))
+        assert.ok(![root, tone].includes(m[1].toLowerCase()), "state-colour stroke " + m[1]);
+      for (const m of svg.matchAll(/<circle cx="(-?[\d.e-]+)" cy="(-?[\d.e-]+)" r="([\d.e-]+)" fill="(#[0-9a-f]{3,6})" stroke="#000"/g)) {
+        if (!tints.includes(m[4])) continue;
+        if (Math.abs(+m[3] - 20) < 1e-6) tintedDing++; else tintedDisks++;
+      }
+    });
+    assert.ok(tintedDisks >= 1, "a tinted main disk");
+    assert.ok(tintedDing >= 1, "a tinted ding");
+  });
+
+  test("a placed card with no mutant note keeps its ring bands and a white ding", () => {
+    const app = boot();
+    const d = fixture("profile_case_kurd9_v2.json");
+    const svgs = d.chords.map((c) => app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(c)})`));
+    assert.ok(svgs.some((s) => new RegExp(`<circle[^>]*fill="none" stroke="${d.colors.root}"`, "i").test(s)), "a ring band");
+    for (const s of svgs) assert.ok(!/r="20" fill="#(?!fff")/.test(s), "the ding stays white");
   });
 });

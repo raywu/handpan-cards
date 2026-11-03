@@ -132,6 +132,7 @@
   "sheet.neotone_ring_main": "メイン",
   "sheet.neotone_ring_mutant": "ミュータント",
   "sheet.neotone_empty": "空",
+  "sheet.neotone_demo": "デモ{note}、配置できます",
   "sheet.neotone_picked": "{note}を持ち上げました。同じリングの別のトーンフィールドをタップしてください。",
   "sheet.neotone_swapped": "{a}と{b}を入れ替えました。",
   "sheet.neotone_moved": "{a}をトーンフィールド{n}へ移動しました。",
