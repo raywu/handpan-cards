@@ -1238,8 +1238,8 @@ test("NL: a lit lens fills with the 0.5 tint of its state colour and draws no le
   let lit = 0;
   for (const [name, p] of [["pygmy", PA.pygmy], ["hijaz", PA.hijaz]]) {
     p.deck.chords.forEach((_, i) => {
-      const { page, R, deck } = paCard(p, i);
-      const root = tint50(deck.col_root), tone = tint50(deck.col_tone);
+      const { page, R } = paCard(p, i);
+      const root = tint50([0.043, 0.482, 0.459]), tone = tint50([0.867, 0.561, 0]);
       for (const o of lensFillsOf(page)) {
         const f = rgb(o.fill).join();
         assert.ok([root, tone, [1, 1, 1], [0.9529, 0.9451, 0.9608]].some((c) => c.join() === f), `${name} ${i}: lens fill ${f}`);
