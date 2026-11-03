@@ -510,8 +510,11 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
     c.setFillColor(white)
     c.setStrokeColor(black)
     c.setLineWidth(out)
+    ding_lit = st(ding) != "off"
+    if has_mut and ding_lit:
+        c.setFillColor(lens_tint(colour(st(ding))))
     c.circle(cx, cy - ding_dy, dr, stroke=1, fill=1)
-    if st(ding) != "off":
+    if ding_lit and not has_mut:
         c.setStrokeColor(colour(st(ding)))
         c.setLineWidth(band)
         c.circle(cx, cy - ding_dy, dr - inset, stroke=1, fill=0)
@@ -524,7 +527,8 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
         px, py = pos(orbit, th)
         rr = R * r
         c.setDash()
-        c.setFillColor(white)
+        c.setFillColor(lens_tint(colour(st(mid))) if has_mut and mid is not None and st(mid) != "off"
+                       else white)
         c.setStrokeColor(black)
         c.setLineWidth(out)
         c.circle(px, py, rr, stroke=1, fill=1)
@@ -532,10 +536,6 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
             c.setFillColor(lens_tint(colour(st(lid))) if lid is not None and st(lid) != "off"
                            else white if lid is not None else LENS_EMPTY)
             _place_ops(c, fig["lens"], cx, cy, R, th, 0, 1)
-            if mid is not None and st(mid) != "off":
-                c.setStrokeColor(colour(st(mid)))
-                c.setLineWidth(band)
-                _place_ops(c, fig["crescent_band"], cx, cy, R, th, 1, 0)
             c.setStrokeColor(black)
             c.setLineWidth(out)
             c.circle(px, py, rr, stroke=1, fill=0)

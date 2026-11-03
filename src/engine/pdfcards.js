@@ -592,8 +592,10 @@ HPE.pdfcards = (function () {
     var dr = R * g.r_ding;
     c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
     c.setLineWidth(out);
+    var dingLit = plan.ding.st !== "off";
+    if (plan.hasMut && dingLit) c.setFillColor(lensTint(colour(plan.ding.st)));
     c.circle(cx, cy - R * (g.ding_dy || 0), dr, 1, 1);
-    if (plan.ding.st !== "off") {
+    if (dingLit && !plan.hasMut) {
       c.setStrokeColor(colour(plan.ding.st));
       c.setLineWidth(R * stk.main_band);
       c.circle(cx, cy - R * (g.ding_dy || 0),
@@ -605,17 +607,15 @@ HPE.pdfcards = (function () {
     c.setLineJoin(1);
     plan.tones.forEach(function (t) {
       var th = t.theta, p = pos(t.orbit, th), rr = R * t.r;
-      c.setDash(); c.setFillColor(WHITE); c.setStrokeColor(BLACK);
+      c.setDash();
+      c.setFillColor(plan.hasMut && t.main && t.main.st !== "off" ? lensTint(colour(t.main.st)) : WHITE);
+      c.setStrokeColor(BLACK);
       c.setLineWidth(out);
       c.circle(p[0], p[1], rr, 1, 1);
       if (plan.hasMut) {
         var f = plan.fig;
         c.setFillColor(t.lens ? (t.lens.st !== "off" ? lensTint(colour(t.lens.st)) : WHITE) : LENS_EMPTY);
         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 0, 1);
-        if (t.main && t.main.st !== "off") {
-          c.setStrokeColor(colour(t.main.st)); c.setLineWidth(R * stk.main_band);
-          c.pathOps(neoPoint(f.crescentBand, cx, cy, R, th, 1), 1, 0);
-        }
         c.setStrokeColor(BLACK); c.setLineWidth(out);
         c.circle(p[0], p[1], rr, 1, 0);
         c.pathOps(neoPoint(f.lens, cx, cy, R, th, 1), 1, 0);
