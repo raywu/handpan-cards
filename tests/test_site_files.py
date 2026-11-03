@@ -7,7 +7,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SITE = "https://handpan.raywu.org/"
+SITE = "https://handpantheory.com/"
 NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
 
 
@@ -246,6 +246,31 @@ class SiteFilesTest(unittest.TestCase):
             "handpan-cards.pages.dev": False, "abc123.handpan-cards.pages.dev": False,
             "evilhandpan-cards-dev.pages.dev": False, "handpan-cards-dev.pages.dev.evil.com": False,
             "localhost": False})
+
+class HandpantheoryHostSetTest(unittest.TestCase):
+    HANDPANTHEORY_HOST_FILES = sorted(
+        ["README.md", "handpan-101/index.html", "index.html", "llms.txt", "robots.txt", "sitemap.xml",
+         "src/engine/pdfcards.js", "tools/gen_scale_page.py", "tools/hifi.py", "tools/preview.sh",
+         "tools/sandbox.js", "tools/scale_pages.json"]
+        + ["scales/%s/index.html" % s for s in (
+            "c-sharp-hijaz-9", "c-sharp-mystic-8", "d-aegean-18", "d-amara-10", "d-amara-9", "d-integral-9",
+            "d-kurd-10", "d-kurd-9", "d-sabye-9", "e-amara-20", "e-equinox-9", "e-romanian-hijaz-9",
+            "f-low-pygmy-18", "f-low-pygmy-9", "f-magic-voyage-8", "f-sharp-akebono-9")]
+        + ["scales/index.html"])
+
+    def test_the_handpantheory_host_string_file_set_is_exactly_the_listed_set(self):
+        out = subprocess.run(["git", "grep", "-l", "handpantheory", "--", ".", ":!docs", ":!tests", ":!*.md"],
+                             cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+        readme = ["README.md"] if "handpantheory" in read("README.md") else []
+        self.assertEqual(sorted(out + readme), self.HANDPANTHEORY_HOST_FILES)
+
+    def test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_only_in_the_switch(self):
+        html = read("index.html")
+        self.assertIn('<link rel="canonical" href="https://handpantheory.com/">', html)
+        self.assertIn('<meta property="og:url" content="https://handpantheory.com/">', html)
+        old = [l for l in html.splitlines() if "handpan." + "raywu.org" in l]
+        self.assertEqual([l.strip() for l in old if not l.lstrip().startswith("//")], ['const MOVE_FROM = "handpan.raywu.org";'])
+
 
 if __name__ == "__main__":
     unittest.main()

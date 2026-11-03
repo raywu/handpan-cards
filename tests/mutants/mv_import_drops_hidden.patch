@@ -1,0 +1,15 @@
+# kills: SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport intact
+# suite: node --test --test-name-pattern ^SC..every.stored_blobs_v1.blob.forwards.through tests/storage_corpus.test.js
+# why: the new host ignores the hidden ids in the payload, so a hidden seed reappears after the move.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17104,7 +17104,7 @@ async function moveImport(code) {
+       if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+     }
+   }
+-  const hidden = (Array.isArray(data.h) ? data.h : []).filter(x => typeof x === "string" && x.length <= 64).slice(0, 50);
++  const hidden = (Array.isArray(data.h) ? data.h : []).filter(x => typeof x === "string" && x.length <= 64).slice(0, 0);
+   return commitSaved({ type: "move-import", collectionId: savedState.collectionId, items, hidden });
+ }
+ let moveNoticeEl = null, moveNoticeTimer = null;
