@@ -1,5 +1,5 @@
-# kills: test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_only_in_the_switch
-# suite: python3 -m unittest -k test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_only_in_the_switch tests.test_site_files
+# kills: test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_nowhere_in_index_html
+# suite: python3 -m unittest -k test_canonical_and_og_url_name_the_new_host_and_the_old_host_survives_nowhere_in_index_html tests.test_site_files
 # why: the app head canonical points back at the old host, which now forwards to the new one.
 diff --git a/index.html b/index.html
 --- a/index.html
