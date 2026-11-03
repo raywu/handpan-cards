@@ -236,3 +236,6 @@ Regroup lesson: round-3 failures were all precision gaps in A1-A18 (test math, s
 ## Review log
 Rounds: DES-R2 NOT READY, ENG-R2 READY w/ mediums, R3 NOT READY (1 high), regroup-1 NOT READY (1 medium), regroup-2 READY (lows only, applied as A27-A29).
 AFK decisions: A1 ink focus ring; A2 error = ink + icon + aria-invalid border (OWNER may instead approve a >=4.5:1 error token); A3 reading pages light-only; A15 potrace + 2% overlay gate; A22 trigger keeps dark treatment.
+
+## Build receipts (lane P/A, 2026-11-02)
+Phase 0: `docs/plans/assets/2026-11-02-field-guide/phase0-receipt.md` (base, tools, hashes, ownership, token gate, A5 state table). `PRODUCT.md` and `surface-briefs.md` seeded per A9. Phase 1: `phase1-evidence/` and `phase1-receipt.md` in the same folder. Stopped at the Phase 1 owner fidelity gate; Phases 2-4 not started.

@@ -53,8 +53,8 @@
     },
     {
       "path": "token-check.json",
-      "sha256": "7a0db33bb97de7f017578fece28935a5409785b2e8aefb35bb890bdc3c56b50c",
-      "bytes": 425
+      "sha256": "88044b28de5cbcff7375392a8189c9c1219cb49b1d2b048998a88afd83ffcf99",
+      "bytes": 3370
     },
     {
       "path": "preservation-evidence.json",

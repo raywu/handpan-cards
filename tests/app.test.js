@@ -3974,17 +3974,16 @@ test("the description says free and progressions early, equals og:description an
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
 });
 
-test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a round tile", async () => {
+test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a square tile", async () => {
   const html = headHtml();
   const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
   assert.ok(href.startsWith("data:image/svg+xml,"), "the SVG icon is not a data: URI");
   const svg = decodeURIComponent(href.slice("data:image/svg+xml,".length));
   assert.match(svg, /^<svg[^>]*\sviewBox='0 0 64 64'/, "the SVG has no 64x64 viewBox");
-  assert.match(svg, /<circle cx='32' cy='32' r='32' fill='#0f0e0b'\/>/, "no #0f0e0b round tile");
-  assert.ok((svg.match(/#E6C99B/g) || []).length >= 8, "the mark-small ink #E6C99B is missing");
-  assert.ok(svg.includes("id='fav-smm'") && svg.includes("url(#fav-smm)"), "the mask id is not prefixed fav-");
-  assert.ok(!/#smm\b|id='smm'/.test(svg), "an unprefixed mask id survives");
-  assert.ok(!/#0B7B75|#DD8F00/i.test(svg), "an Amara teal or amber is still in the icon");
+  assert.match(svg, /<rect width='64' height='64' fill='#0F0E0B'\/>/, "no #0F0E0B square tile");
+  assert.ok(!/<circle/.test(svg), "the tile is round");
+  assert.ok((svg.match(/#F6F4ED/g) || []).length >= 1, "the ivory master ink #F6F4ED is missing");
+  assert.ok(!/#E6C99B|#44E0D8|#0B7B75|#DD8F00/i.test(svg), "an old mark colour or an Amara teal or amber is still in the icon");
   assert.ok(!/<(text|title)\b|role=|aria-label=/.test(svg), "the icon carries text, a title or a role");
 });
 
@@ -4026,6 +4025,7 @@ describe("logo in the app: the header lockup", () => {
   test("LG: exactly one horizontal-full svg in the h1, no <img>, no visible Handpan Chords in the header", async () => {
     const h1 = h1Html();
     assert.strictEqual((h1.match(/<svg\b[^>]*viewBox="0 0 683\.93 196"/g) || []).length, 1);
+    assert.ok(/fill="#F6F4ED"/.test(h1), "the lockup is not the ivory Two contours master");
     assert.strictEqual((h1.match(/<svg\b/g) || []).length, 1);
     assert.ok(!/<img\b/.test(header()), "an <img> is in the header");
     const visible = header().replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<span class="sr-only">[^<]*<\/span>/g, "").replace(/<[^>]*>/g, " ");
@@ -4047,13 +4047,9 @@ describe("logo in the app: the header lockup", () => {
     assert.deepStrictEqual([...new Set(dup)], [], "duplicate ids");
     const lockup = h.slice(h.indexOf("<!-- brand:lockup begin -->"), h.indexOf("<!-- brand:lockup end -->"));
     const refs = [...lockup.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)].map((m) => m[1] || m[2]);
-    assert.ok(refs.length > 0, "the lockup references nothing");
     for (const r of refs) assert.ok(ids.includes(r), `dangling reference #${r}`);
-    for (const id of ["hpt-hfm", "hpt-hfo", "hpt-hfg", "hpt-hfs", "hpt-hfb",
-        "hpt-hfL0", "hpt-hfL1", "hpt-hfL2", "hpt-hfL3", "hpt-hfL4", "hpt-hfL5"]) {
-      assert.ok(ids.includes(id), `lockup id ${id} missing`);
-    }
     assert.ok(!ids.some((id) => /^hf/.test(id)), "an unprefixed lockup id survives");
+    assert.ok(!/\sid="hpt-/.test(lockup) || refs.length > 0, "an orphan lockup id");
   });
 });
 

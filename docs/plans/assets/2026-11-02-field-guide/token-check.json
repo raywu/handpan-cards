@@ -16,5 +16,143 @@
     "focusOnDark": 3.29,
     "fieldBorder": 3.71
   },
-  "scope": "Proposed token pairs only; not full UI accessibility validation"
+  "labelledPairs": [
+    {
+      "pair": "ink/paper",
+      "fg": "#242424",
+      "bg": "#F6F4ED",
+      "kind": "text",
+      "ratio": 14.1,
+      "min": 4.5,
+      "pass_": true
+    },
+    {
+      "pair": "muted/paper",
+      "fg": "#5E5850",
+      "bg": "#F6F4ED",
+      "kind": "text",
+      "ratio": 6.39,
+      "min": 4.5,
+      "pass_": true
+    },
+    {
+      "pair": "muted/field",
+      "fg": "#5E5850",
+      "bg": "#FFFFFF",
+      "kind": "text",
+      "ratio": 7.03,
+      "min": 4.5,
+      "pass_": true
+    },
+    {
+      "pair": "border/paper",
+      "fg": "#8A847B",
+      "bg": "#F6F4ED",
+      "kind": "nontext",
+      "ratio": 3.37,
+      "min": 3,
+      "pass_": true
+    },
+    {
+      "pair": "border/field",
+      "fg": "#8A847B",
+      "bg": "#FFFFFF",
+      "kind": "nontext",
+      "ratio": 3.71,
+      "min": 3,
+      "pass_": true
+    },
+    {
+      "pair": "white/violet",
+      "fg": "#FFFFFF",
+      "bg": "#6756B5",
+      "kind": "text",
+      "ratio": 5.87,
+      "min": 4.5,
+      "pass_": true
+    },
+    {
+      "pair": "violet/paper (links)",
+      "fg": "#6756B5",
+      "bg": "#F6F4ED",
+      "kind": "text",
+      "ratio": 5.34,
+      "min": 4.5,
+      "pass_": true
+    },
+    {
+      "pair": "violet/field (links)",
+      "fg": "#6756B5",
+      "bg": "#FFFFFF",
+      "kind": "text",
+      "ratio": 5.87,
+      "min": 4.5,
+      "pass_": true
+    },
+    {
+      "pair": "focus/paper (ring #242424)",
+      "fg": "#242424",
+      "bg": "#F6F4ED",
+      "kind": "nontext",
+      "ratio": 14.1,
+      "min": 3,
+      "pass_": true
+    },
+    {
+      "pair": "focus/field",
+      "fg": "#242424",
+      "bg": "#FFFFFF",
+      "kind": "nontext",
+      "ratio": 15.52,
+      "min": 3,
+      "pass_": true
+    },
+    {
+      "pair": "error/paper (ink text per A2)",
+      "fg": "#242424",
+      "bg": "#F6F4ED",
+      "kind": "text",
+      "ratio": 14.1,
+      "min": 4.5,
+      "pass_": true
+    },
+    {
+      "pair": "error border/paper (2px ink)",
+      "fg": "#242424",
+      "bg": "#F6F4ED",
+      "kind": "nontext",
+      "ratio": 14.1,
+      "min": 3,
+      "pass_": true
+    },
+    {
+      "pair": "violet/paper (non-text fill)",
+      "fg": "#6756B5",
+      "bg": "#F6F4ED",
+      "kind": "nontext",
+      "ratio": 5.34,
+      "min": 3,
+      "pass_": true
+    }
+  ],
+  "focusNotViolet": {
+    "row": "focus != violet fill",
+    "focus": "#242424",
+    "violet": "#6756B5",
+    "distinct": true,
+    "ratio_between": 2.64
+  },
+  "expandedState": {
+    "pair": "#settings-trigger[aria-expanded=true] vs dark header (A22/A28, existing CSS)",
+    "fill": "#221f1a",
+    "header_ground": "#0f0e0b",
+    "border": "#a9a39a",
+    "text": "#f6f4ed",
+    "border_vs_header": 7.71,
+    "fill_vs_header": 1.18,
+    "text_vs_fill": 14.92,
+    "note": "border carries the non-text boundary; fill alone is 1.0x subtle; pre-existing, not changed here"
+  },
+  "scope": "Proposed token pairs only; not full UI accessibility validation. Regenerated in Phase 0 per A6/A25.",
+  "failures": []
 }
