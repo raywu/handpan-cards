@@ -1,0 +1,20 @@
+{
+  "tokens": {
+    "canvas": "#0F0E0B",
+    "paper": "#F6F4ED",
+    "field": "#FFFFFF",
+    "ink": "#242424",
+    "muted": "#5E5850",
+    "border": "#8A847B",
+    "action": "#6756B5"
+  },
+  "contrasts": {
+    "body": 14.1,
+    "muted": 7.03,
+    "primaryLabel": 5.34,
+    "actionLink": 5.34,
+    "focusOnDark": 3.29,
+    "fieldBorder": 3.71
+  },
+  "scope": "Proposed token pairs only; not full UI accessibility validation"
+}
