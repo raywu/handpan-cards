@@ -126,6 +126,7 @@
   "sheet.neotone_builtin_plain": "{name} 是內建音階。儲存會建立新音階，內建音階維持原樣。",
   "sheet.neotone_name_label": "名稱",
   "sheet.neotone_name_suffix": "Neotone Mutant",
+  "sheet.neotone_name_suffix_plain": "Neotone",
   "sheet.neotone_name_hint": "建議的名稱，可以修改。",
   "sheet.drawer_hint_neotone": "點選一個音，再點同一圈的另一個音即可互換；點選空音位可把音移過去。也可以按住音拖曳。",
   "sheet.tonefield_label": "音位 {n} {ring}，{note}",

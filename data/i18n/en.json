@@ -133,6 +133,7 @@
   "sheet.neotone_builtin_plain": "{name} is a built-in. Saving creates a new scale; the built-in stays as it is.",
   "sheet.neotone_name_label": "Name",
   "sheet.neotone_name_suffix": "Neotone Mutant",
+  "sheet.neotone_name_suffix_plain": "Neotone",
   "sheet.neotone_name_hint": "Suggested name; you can change it.",
   "sheet.drawer_hint_neotone": "Tap a note, then tap another in the same ring to swap them, or tap an empty tonefield to move the note there. Or hold a note and drag it.",
   "sheet.tonefield_label": "Tonefield {n} {ring}, {note}",

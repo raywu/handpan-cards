@@ -1,0 +1,15 @@
+# kills: test_the_card_plate_stays_dark_on_the_light_scale_pages
+# suite: python3 -m unittest -k test_the_card_plate_stays_dark_on_the_light_scale_pages tests.test_scale_pages
+# A scale page progression plate takes the light ground.
+diff --git a/scales/d-kurd-9/index.html b/scales/d-kurd-9/index.html
+--- a/scales/d-kurd-9/index.html
++++ b/scales/d-kurd-9/index.html
+@@ -30,7 +30,7 @@ section.plain h2,section.history h2{color:var(--fg);font-size:20px;margin:0 0 4p
+ .ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+ .open{align-self:flex-start;background:var(--act);color:#fff;border:1px solid var(--act);text-decoration:none;font-weight:700;letter-spacing:.06em;font-size:14px;border-radius:12px;padding:11px 15px}
+ .open.ghost{background:var(--s);color:var(--act);border-color:var(--h)}
+-.prog{isolation:isolate;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--s:#1a1814;--h:#3a352d;--t:#44e0d8;--r:#357CD4}.prog::before{content:"";position:absolute;top:-12px;bottom:-14px;left:50%;width:min(calc(100% + 24px),372px);transform:translateX(-50%);z-index:-1;border-radius:12px;background:var(--bg)}
++.prog{isolation:isolate;--bg:#f6f4ed;--fg:#f6f4ed;--muted:#a9a39a;--s:#1a1814;--h:#3a352d;--t:#44e0d8;--r:#357CD4}.prog::before{content:"";position:absolute;top:-12px;bottom:-14px;left:50%;width:min(calc(100% + 24px),372px);transform:translateX(-50%);z-index:-1;border-radius:12px;background:var(--bg)}
+ ol{margin:0;padding-left:20px;max-width:66ch}
+ dl.who{margin:8px 0 0;display:grid;grid-template-columns:max-content 1fr;gap:2px 10px}
+ dl.who dt{font-weight:700}

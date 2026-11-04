@@ -30,14 +30,14 @@ PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#
 BG_LIGHT = "#f6f4ed"
 BG_DARK = "#0f0e0b"
 BROWN = "#0f0e0b"
-SHARED_ROOT = ":root{color-scheme:dark;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--r:#f6f4ed;"
+SHARED_ROOT = ":root{color-scheme:light;--bg:#f6f4ed;--fg:#242424;--muted:#5e5850;--act:#6756b5;--r:#242424;"
 SHARED_RULES = [
-    "body{background:var(--bg);color:var(--fg);font-family:\"Nunito Sans\",system-ui,sans-serif;line-height:1.55;",
+    "body{background:var(--bg);color:var(--fg);font-family:\"Nunito Sans\",system-ui,sans-serif;font-size:16px;line-height:1.5;",
     "h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}",
     "font-size:24px;",
-    "a{color:var(--r);font-weight:600;text-decoration:underline;text-decoration-color:#f5c78e;text-decoration-thickness:1.5px;text-underline-offset:3px}",
+    "a{color:var(--act);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
     "a:hover{text-decoration-thickness:2.5px}",
-    "a:focus-visible{outline:2px solid #44e0d8;outline-offset:2px;border-radius:2px}",
+    "a:focus-visible{outline:2px solid #242424;outline-offset:2px;border-radius:2px}",
 ]
 
 # Independent oracle for the plan's page table (Round 4 dispositions, row 0 from Round 7 H3,
@@ -792,7 +792,7 @@ class SwipeScriptTest(unittest.TestCase):
     @staticmethod
     def without_card_css(html):
         html = re.sub(r'<meta name="theme-color" content="#\w+">', '<meta name="theme-color">', html)
-        html = re.sub(r"<style>\n:root\{color-scheme:light dark;.*?</style>\n", "<style></style>\n", html, flags=re.S)
+        html = re.sub(r"<style>\n:root\{color-scheme:light(?: dark)?;.*?</style>\n", "<style></style>\n", html, flags=re.S)
         html = re.sub(r"<style>[^<]*</style>(?=<label class=\"wrap\">)", "<style></style>", html)
         html = re.sub(r"<header>.*?(?=<h1>)", "<header>", html, count=1, flags=re.S)
         html = html.replace('<div class="hint">Tap to reveal the notes</div>', "")
@@ -843,7 +843,8 @@ class ContrastTest(unittest.TestCase):
                 self.assertGreaterEqual(ratio(dark, BG_DARK), 4.5)
                 html = html_of(slug)
                 self.assertIn("--r:%s}" % light, html)
-                self.assertIn("--r:%s}}" % dark, html)
+                self.assertIn("--r:%s}" % dark, html)
+                self.assertNotIn("prefers-color-scheme", html)
 
     def test_the_kurd_accents_are_the_shipped_pair(self):
         row = table()["d-kurd-10"]
@@ -871,7 +872,8 @@ class ContrastTest(unittest.TestCase):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
-                self.assertIn("@media (prefers-color-scheme:light){.prog{isolation:isolate;--bg:#0f0e0b;", html)
+                self.assertIn(".prog{isolation:isolate;--bg:#0f0e0b;", html)
+                self.assertNotIn("prefers-color-scheme", html)
                 m = re.search(r"\.prog::before\{([^}]*)\}", html)
                 self.assertTrue(m)
                 rule = m.group(1)
@@ -883,26 +885,31 @@ class ContrastTest(unittest.TestCase):
 
     def test_the_light_text_and_focus_tokens_meet_contrast_on_the_light_ground(self):
         for slug in ROWS:
-            root = re.search(r":root\{color-scheme:light dark;([^}]*)\}", html_of(slug)).group(1)
+            root = re.search(r":root\{color-scheme:light;([^}]*)\}", html_of(slug)).group(1)
             tokens = dict(t.split(":") for t in root.split(";"))
             with self.subTest(page=slug):
                 self.assertGreaterEqual(ratio(tokens["--muted"], tokens["--bg"]), 4.5)
                 self.assertGreaterEqual(ratio(tokens["--t"], tokens["--bg"]), 3)
                 self.assertGreaterEqual(ratio(tokens["--fg"], tokens["--bg"]), 7)
+                self.assertGreaterEqual(ratio(tokens["--act"], tokens["--bg"]), 4.5)
+                self.assertGreaterEqual(ratio("#ffffff", tokens["--act"]), 4.5)
+                self.assertGreaterEqual(ratio(tokens["--h"], tokens["--bg"]), 3)
 
     def test_the_theme_colour_is_the_rows_light_accent(self):
         for slug, row in table().items():
             with self.subTest(page=slug):
                 self.assertEqual(Page(html_of(slug)).meta("theme-color"), row["accent_light"])
 
-    def test_cta_buttons_are_at_least_44px_and_dark_theme_overrides_exist(self):
+    def test_cta_buttons_are_at_least_44px_and_take_the_violet_action_colour(self):
         for slug in ROWS:
             html = html_of(slug)
             with self.subTest(page=slug):
                 self.assertIn("padding:11px 15px", html)
                 self.assertIn("border-radius:12px", html)
                 self.assertIn("font-size:14px", html)
-                self.assertIn("@media (prefers-color-scheme:dark){:root{", html)
+                self.assertNotIn("@media (prefers-color-scheme:dark)", html)
+                self.assertIn("background:var(--act);color:#fff;border:1px solid var(--act)", html)
+                self.assertIn(".open.ghost{background:var(--s);color:var(--act);border-color:var(--h)}", html)
                 self.assertIn("background:#fff;color:#242424", html)
 
 
@@ -1061,7 +1068,7 @@ class AlsoTryTest(unittest.TestCase):
 
 
 class SharedBrownHeadTest(unittest.TestCase):
-    def test_the_explore_index_takes_the_shared_dark_only_head(self):
+    def test_the_explore_index_takes_the_shared_light_only_head(self):
         html = read("scales/index.html")
         self.assertIn(SHARED_ROOT.rstrip(";") + "}", html)
         for rule in SHARED_RULES:
@@ -1069,14 +1076,15 @@ class SharedBrownHeadTest(unittest.TestCase):
                 self.assertIn(rule, html)
         self.assertRegex(html, r"h2\{font-family:Marcellus,serif;font-weight:400;font-size:24px;margin:0;color:var\(--r\)\}")
         self.assertNotIn("prefers-color-scheme", html)
-        self.assertEqual(Page(html).meta("theme-color"), BROWN)
+        self.assertEqual(Page(html).meta("theme-color"), BG_LIGHT)
         self.assertEqual(html, gen.hub_page())
 
     def test_the_scale_pages_keep_their_own_head(self):
         for slug in ROWS:
             with self.subTest(page=slug):
                 html = html_of(slug)
-                self.assertIn("prefers-color-scheme:dark", html)
+                self.assertIn(":root{color-scheme:light;", html)
+                self.assertNotIn("prefers-color-scheme", html)
 
     def test_the_about_overlay_takes_the_shared_rules(self):
         css = read("index.html")
@@ -1097,10 +1105,8 @@ class SharedBrownHeadTest(unittest.TestCase):
             self.assertGreaterEqual(ratio(colour, BROWN), 4.5)
 
 
-FULL_IMG = ('<img src="/brand/horizontal-full.svg" srcset="/brand/horizontal-full@2x.png 2x, '
-            '/brand/horizontal-full@3x.png 3x" alt="" width="223" height="64">')
-MONO_SOURCE = ('<source media="(prefers-color-scheme: light)" srcset="/brand/horizontal-mono-light.svg 1x, '
-               '/brand/horizontal-mono-light@2x.png 2x, /brand/horizontal-mono-light@3x.png 3x">')
+INK_IMG = ('<img src="/brand/horizontal-mono-light.svg" srcset="/brand/horizontal-mono-light@2x.png 2x, '
+           '/brand/horizontal-mono-light@3x.png 3x" alt="" width="223" height="64">')
 
 
 class HeaderLockupTest(unittest.TestCase):
@@ -1128,14 +1134,9 @@ class HeaderLockupTest(unittest.TestCase):
                 head = self.header(name)
                 first = re.search(r"<a\b[^>]*>.*?</a>", head, re.S).group(0)
                 self.assertRegex(first, r'^<a href="/" aria-label="Handpan Theory home"[ >]')
-                self.assertEqual(re.findall(r"<img\b[^>]*>", first), [FULL_IMG])
-                sources = re.findall(r"<source\b[^>]*>", first)
-                if re.fullmatch(r"scales/[^/]+/index\.html", name):
-                    self.assertEqual(sources, [MONO_SOURCE])
-                    self.assertRegex(first, r"<picture>.*</picture>")
-                else:
-                    self.assertEqual(sources, [])
-                    self.assertNotIn("<picture", first)
+                self.assertEqual(re.findall(r"<img\b[^>]*>", first), [INK_IMG])
+                self.assertEqual(re.findall(r"<source\b[^>]*>", first), [])
+                self.assertNotIn("<picture", first)
                 self.assertNotIn("&larr;", head)
                 self.assertNotIn("Home", head)
 
@@ -1348,3 +1349,48 @@ class NeotonePageTest(unittest.TestCase):
     def test_sitemap_and_llms_list_the_page(self):
         self.assertIn("<loc>%sscales/neotone/</loc>" % SITE, read("sitemap.xml"))
         self.assertIn("(%sscales/neotone/)" % SITE, read("llms.txt"))
+
+
+class ReadingSurfaceTest(unittest.TestCase):
+    """Hub, scale pages, Handpan 101 and 404 are light-only reading pages with violet links and actions."""
+
+    PAGES = HeaderLockupTest.PAGES
+
+    def style(self, name):
+        return re.search(r"<style>(.*?)</style>", read(name), re.S).group(1)
+
+    def test_every_reading_page_is_light_only_on_the_paper_ground(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                css = self.style(name)
+                self.assertIn(":root{color-scheme:light", css)
+                self.assertNotIn("color-scheme:dark", css)
+                self.assertNotRegex(css, r"color-scheme:\s*light\s+dark")
+                self.assertNotIn("prefers-color-scheme", css)
+                self.assertIn("#f6f4ed", css)
+                self.assertNotIn("#0f0e0b;color:#f6f4ed", css)
+
+    def test_every_reading_page_draws_links_in_the_violet_action_colour(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                css = self.style(name)
+                if name == "404.html":
+                    self.assertRegex(css, r"\ba\{color:#6756b5;")
+                else:
+                    self.assertIn("--act:#6756b5", css)
+                    self.assertRegex(css, r"(^|\n)a\{color:var\(--act\);")
+
+    def test_the_focus_ring_on_the_light_ground_is_ink(self):
+        for name in self.PAGES:
+            with self.subTest(page=name):
+                self.assertRegex(self.style(name), r"a:focus-visible\{outline:2px solid (#242424|var\(--t\));")
+                self.assertGreaterEqual(ratio("#242424", "#f6f4ed"), 3)
+                token = re.search(r":root\{[^}]*--t:([^;}]+)", self.style(name))
+                if token:
+                    self.assertEqual(token.group(1), "#242424")
+
+    def test_the_card_plate_stays_dark_on_the_light_scale_pages(self):
+        for slug in ROWS:
+            with self.subTest(page=slug):
+                css = self.style("scales/%s/index.html" % slug)
+                self.assertIn(".prog{isolation:isolate;--bg:#0f0e0b;--fg:#f6f4ed;--muted:#a9a39a;--s:#1a1814;--h:#3a352d;--t:#44e0d8;", css)

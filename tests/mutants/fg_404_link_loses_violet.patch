@@ -1,0 +1,15 @@
+# kills: test_every_reading_page_draws_links_in_the_violet_action_colour
+# suite: python3 -m unittest -k test_every_reading_page_draws_links_in_the_violet_action_colour tests.test_scale_pages
+# The 404 link colour falls back to ink.
+diff --git a/404.html b/404.html
+--- a/404.html
++++ b/404.html
+@@ -10,7 +10,7 @@
+ <style>
+ :root{color-scheme:light}
+ body{font:16px/1.5 "Nunito Sans",system-ui,sans-serif;max-width:32rem;margin:15vh auto;padding:0 16px;background:#f6f4ed;color:#242424}
+-a{color:#6756b5;font-weight:600;text-decoration-thickness:1.5px;text-underline-offset:3px}
++a{color:#242424;font-weight:600;text-decoration-thickness:1.5px;text-underline-offset:3px}
+ a:focus-visible{outline:2px solid #242424;outline-offset:2px}
+ a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
+ a.brand img{display:block;height:64px;width:auto;max-width:100%}
