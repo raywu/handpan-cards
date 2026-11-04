@@ -1,0 +1,15 @@
+# kills: test_every_reading_page_is_light_only_on_the_paper_ground
+# suite: python3 -m unittest -k test_every_reading_page_is_light_only_on_the_paper_ground tests.test_scale_pages
+# The explore index turns its colour scheme back to light dark.
+diff --git a/scales/index.html b/scales/index.html
+--- a/scales/index.html
++++ b/scales/index.html
+@@ -17,7 +17,7 @@
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Bitter:wght@400;600&family=Nunito+Sans:wght@400;600;700&display=swap">
+ <style>
+-:root{color-scheme:light;--bg:#f6f4ed;--fg:#242424;--muted:#5e5850;--act:#6756b5;--r:#242424}
++:root{color-scheme:light dark;--bg:#f6f4ed;--fg:#242424;--muted:#5e5850;--act:#6756b5;--r:#242424}
+ body{background:var(--bg);color:var(--fg);font-family:"Nunito Sans",system-ui,sans-serif;font-size:16px;line-height:1.5;margin:0;padding:20px 16px 48px}
+ main{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+ h1{font-family:Marcellus,serif;font-weight:400;font-size:clamp(30px,7vw,44px);margin:0;line-height:1.15}
