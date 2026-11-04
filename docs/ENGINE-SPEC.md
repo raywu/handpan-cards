@@ -1367,7 +1367,7 @@ on every call.
   `tierContext(deck).basicCells[].seqs`. A `basicVocab` card that joins no loop is not
   in it.
 - `easyMedium` = `easy` plus every card in at least one sequence `classifyTier` labels
-  `intermediate`. In budget (`countMediumNodes` <= `MEDIUM_ENUM_BUDGET`) that is the
+  `intermediate` (so connected, closing as a loop, at most one colour card). In budget (`countMediumNodes` <= `MEDIUM_ENUM_BUDGET`) that is the
   exhaustive MEDIUM enumeration. Over budget it is the pure (anchor-only) cells, then
   one search per colour card over the anchors plus that card, the card used exactly
   once (a MEDIUM sequence holds at most one colour card). So EASY + MEDIUM is every
@@ -1380,4 +1380,3 @@ on every call.
 `cards` (shop variant only; non-empty, sorted, distinct, in range, else it throws). Each
 card keeps its app number (`#n` = index + 1), so a filtered sheet has gaps, and the sheet
 is padded to a multiple of 9 with empty slots. `cards` omitted: byte-identical to today.
-

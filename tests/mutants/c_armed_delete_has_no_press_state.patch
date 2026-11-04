@@ -11,14 +11,15 @@
 # deliberately LAST in the <style> element. It redefines"), so the hunk's
 # trailing context line and line number were updated to match; the mutated
 # line itself is unchanged.
+# Retargeted at the field-guide rule 2026-11-03: the armed delete has no pressed colour on the light sheet.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1268,7 +1268,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-    the file - so without this the armed button is the only control on the page
-    that does not answer a press. Confirming a delete is the press that most
-    needs the acknowledgement. */
--#scale-delete[data-armed]:active{color:#f6f4ed}
+@@ -1453,7 +1453,6 @@ html.about-open{overflow:hidden}
+ #scale-sheet #scale-layout-state, #scale-sheet #scale-field-msg, #scale-sheet #scale-neotone-extra,
+ #scale-sheet #scale-del-note, #scale-sheet #scale-fields.stale #scale-fields-note,
+ #scale-sheet #scale-delete[data-armed]{color:#242424}
+-#scale-sheet #scale-delete[data-armed]:active{color:#5A49A6}
+ #scale-sheet #scale-fields.stale input, #scale-sheet #scale-box.stale{text-decoration-color:#8A847B}
  
- /* ---- the first screen and the about overlay (about-off-main plan, lane O) ----
-    #app holds header, main, footer and the live region and is exactly as tall
+ #scale-sheet #scale-tabs{border-bottom-color:#8A847B}

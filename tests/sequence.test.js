@@ -2500,9 +2500,17 @@ test("tierCards easy is the union of the BASIC loops, not basicVocab", () => {
   }
 });
 
+test("tierCards easy leaves out a basicVocab card that joins no loop", () => {
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  const deck = full.select.build(full.core.parseLegacySeed("(D#3) A3 B3 E4 A4 A#4 D#5", {}).value).value;
+  assert.deepStrictEqual(host(full.sequence._internal.tierContext(deck).basicVocab), [0, 2, 4]);
+  assert.deepStrictEqual(host(full.sequence.tierCards(deck)).easy, [0, 2]);
+});
+
 test("tierCards on a no-home deck is empty", () => {
   const full = loadEngine(FULL_ENGINE_MODULES);
   const deck = full.select.build(full.core.parseLegacySeed("(C3) G3 D4 G4 D5", {}).value).value;
+  assert.strictEqual(full.sequence._internal.tierContext(deck).homeAnchorIdx, null);
   assert.deepStrictEqual(host(full.sequence.tierCards(deck)), { easy: [], easyMedium: [] });
 });
 

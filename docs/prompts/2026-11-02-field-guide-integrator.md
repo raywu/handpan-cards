@@ -1,0 +1,7 @@
+Pick up the P1 Handpan Theory Field guide branding workstream in `/Users/ray/Projects/handpan-theory-brand`, branch `design/handpan-theory-brand`.
+
+Read `docs/plans/2026-11-02-field-guide-brand-implementation.md` and its approved visual package at `docs/plans/assets/2026-11-02-field-guide/`. Use `$impeccable`; do not invoke `/reviewed-plan` recursively. Verify the branch, current development base, plan review results and Linear record before proceeding.
+
+This handoff is **plan-only; implementation is not authorized**. Follow any subsequent explicit owner authorization. Preserve card/progression implementation, fonts, colors, diagrams, data, readability, saved scales, existing modes and add/edit flows. Implement only the approved Field guide identity once authorized, using generated-source workflows and independent engineering/design review.
+
+Preserve this planning-only worktree. After explicit implementation approval, create/use the separate verified dev-based code worktree described in the plan and carry this committed handoff package into it. Keep every change isolated in an owned worktree. Serialize browser jobs and satisfy exact-head validation before any separately approved integration. Do not push, merge, deploy, change print layouts, or alter CLAUDE.md without the applicable separate approval. Report the next bounded action and any unmet gate. Linear target: P1, planned/Todo; search the plan's stable workstream key before creating a duplicate.

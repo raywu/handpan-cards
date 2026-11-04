@@ -931,7 +931,7 @@ HPE.pdfcards = (function () {
       throw new Error("pdfcards.build: cards must be a non-empty array");
     }
     list.forEach(function (k, j) {
-      if (!(k % 1 === 0) || k < 0 || k >= n || (j > 0 && k <= list[j - 1])) {
+      if (!Number.isInteger(k) || k < 0 || k >= n || (j > 0 && k <= list[j - 1])) {
         throw new Error("pdfcards.build: cards must be sorted, distinct indices in range");
       }
     });
@@ -941,7 +941,7 @@ HPE.pdfcards = (function () {
   // ---- build (tools/hifi.py's build()) -------------------------------------
   function build(deck, opts) {
     opts = opts || {};
-    if (opts.cards && opts.variant !== "shop") {
+    if (opts.cards !== undefined && opts.variant !== "shop") {
       throw new Error("pdfcards.build: cards needs the shop variant");
     }
     // The "full" variant (anything but "shop": title card, legend card, blank
@@ -961,7 +961,7 @@ HPE.pdfcards = (function () {
     var cards = [];
     var i;
     if (chordsOnly) {
-      var picked = opts.cards ? checkedCards(opts.cards, deck.chords.length) :
+      var picked = opts.cards !== undefined ? checkedCards(opts.cards, deck.chords.length) :
         deck.chords.map(function (_, k) { return k; });
       picked.forEach(function (k) {
         cards.push(["chord", [k + 1, deck.chords[k]]]);

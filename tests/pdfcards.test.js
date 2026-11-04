@@ -1584,7 +1584,7 @@ test("build without cards is byte-identical to the all-cards build", () => {
 test("build refuses empty, unsorted, duplicate and out-of-range cards, and cards off the shop variant", () => {
   const deck = fixture();
   const n = deck.chords.length;
-  const bad = [[], [3, 1], [1, 1], [-1], [n], [1.5], "1,2"];
+  const bad = [[], [3, 1], [1, 1], [-1], [n], [1.5], "1,2", ["1"], [1, "2"], null, 0, false, ""];
   for (const cards of bad) {
     assert.throws(() => P.build(deck, { variant: "shop", cards }), /pdfcards\.build: cards/, JSON.stringify(cards));
   }

@@ -172,9 +172,12 @@ exactly where its diagram has it.
   "NL: lensTint ..."), and the tint against a plain white lens is 1.6 to 2.35:1, so the
   plate edge is carried by the black lens outline. The lens depth is 0.45 of the main
   diameter (fixture rev 4), a lens about a third of a main note by area (0.34, test
-  "NL: the lens is 0.32 to 0.35 ..."). **Solid tint (owner 2026-11-03):** on a Neotone card with a mutant note (`plan.hasMut`) a
+  "NL: the lens is 0.32 to 0.35 ...").
+  **Solid tint (owner 2026-11-03):** on a Neotone card with a mutant note (`plan.hasMut`) a
   lit main note and a lit ding are filled with the same half tint, the tint being the fill
-  of the existing outline circle; the crescent band and the ding ring are not drawn
+  of the existing outline circle. One tint serves main notes, lens and ding: `lensTint` in
+  `src/engine/pdfcards.js` (print) and `tintHex` in `neoSvg` in `index.html` (app),
+  `lens_tint` in `tools/hifi.py`. The crescent band and the ding ring are not drawn
   (`crescentBand` stays computed for the name fit). A placed card without a mutant note, and
   every standard card, keep their ring bands and a white ding, byte for byte (`tests/pdfcards.test.js`
   "NS: ..."; `tests/test_render_agreement.py` reads lit state from the tint fill).

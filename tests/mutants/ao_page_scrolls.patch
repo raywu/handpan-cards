@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1364,7 +1364,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1384,7 +1384,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #about a{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1.5px; text-underline-offset:3px}
  #about a:hover{text-decoration-thickness:2.5px}
  #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
 -html.about-open{overflow:hidden}
 +html.about-open{overflow:auto}
  
- /* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */
- :lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) #lang-select, :lang(ja) .panel-note, :lang(ja) .chip{
+ /* ---- field guide: light ground for the menu, forms and About (phase 2) ------
+    Scoped overrides, later in the cascade than the dark rules they replace, so

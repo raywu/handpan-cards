@@ -3974,17 +3974,16 @@ test("the description says free and progressions early, equals og:description an
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
 });
 
-test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a round tile", async () => {
+test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a square tile", async () => {
   const html = headHtml();
   const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
   assert.ok(href.startsWith("data:image/svg+xml,"), "the SVG icon is not a data: URI");
   const svg = decodeURIComponent(href.slice("data:image/svg+xml,".length));
   assert.match(svg, /^<svg[^>]*\sviewBox='0 0 64 64'/, "the SVG has no 64x64 viewBox");
-  assert.match(svg, /<circle cx='32' cy='32' r='32' fill='#0f0e0b'\/>/, "no #0f0e0b round tile");
-  assert.ok((svg.match(/#E6C99B/g) || []).length >= 8, "the mark-small ink #E6C99B is missing");
-  assert.ok(svg.includes("id='fav-smm'") && svg.includes("url(#fav-smm)"), "the mask id is not prefixed fav-");
-  assert.ok(!/#smm\b|id='smm'/.test(svg), "an unprefixed mask id survives");
-  assert.ok(!/#0B7B75|#DD8F00/i.test(svg), "an Amara teal or amber is still in the icon");
+  assert.match(svg, /<rect width='64' height='64' fill='#0F0E0B'\/>/, "no #0F0E0B square tile");
+  assert.ok(!/<circle/.test(svg), "the tile is round");
+  assert.ok((svg.match(/#F6F4ED/g) || []).length >= 1, "the ivory master ink #F6F4ED is missing");
+  assert.ok(!/#E6C99B|#44E0D8|#0B7B75|#DD8F00/i.test(svg), "an old mark colour or an Amara teal or amber is still in the icon");
   assert.ok(!/<(text|title)\b|role=|aria-label=/.test(svg), "the icon carries text, a title or a role");
 });
 
@@ -4026,6 +4025,7 @@ describe("logo in the app: the header lockup", () => {
   test("LG: exactly one horizontal-full svg in the h1, no <img>, no visible Handpan Chords in the header", async () => {
     const h1 = h1Html();
     assert.strictEqual((h1.match(/<svg\b[^>]*viewBox="0 0 683\.93 196"/g) || []).length, 1);
+    assert.ok(/fill="#F6F4ED"/.test(h1), "the lockup is not the ivory Two contours master");
     assert.strictEqual((h1.match(/<svg\b/g) || []).length, 1);
     assert.ok(!/<img\b/.test(header()), "an <img> is in the header");
     const visible = header().replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<span class="sr-only">[^<]*<\/span>/g, "").replace(/<[^>]*>/g, " ");
@@ -4047,13 +4047,9 @@ describe("logo in the app: the header lockup", () => {
     assert.deepStrictEqual([...new Set(dup)], [], "duplicate ids");
     const lockup = h.slice(h.indexOf("<!-- brand:lockup begin -->"), h.indexOf("<!-- brand:lockup end -->"));
     const refs = [...lockup.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)].map((m) => m[1] || m[2]);
-    assert.ok(refs.length > 0, "the lockup references nothing");
     for (const r of refs) assert.ok(ids.includes(r), `dangling reference #${r}`);
-    for (const id of ["hpt-hfm", "hpt-hfo", "hpt-hfg", "hpt-hfs", "hpt-hfb",
-        "hpt-hfL0", "hpt-hfL1", "hpt-hfL2", "hpt-hfL3", "hpt-hfL4", "hpt-hfL5"]) {
-      assert.ok(ids.includes(id), `lockup id ${id} missing`);
-    }
     assert.ok(!ids.some((id) => /^hf/.test(id)), "an unprefixed lockup id survives");
+    assert.ok(!/\sid="hpt-/.test(lockup) || refs.length > 0, "an orphan lockup id");
   });
 });
 
@@ -19698,6 +19694,124 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
   });
 });
 
+describe("FG: field guide light ground for the menu, forms and About (phase 2)", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const BEGIN = "/* field-guide:begin */";
+  const END = "/* field-guide:end */";
+  const block = () => {
+    const a = html.indexOf(BEGIN), b = html.indexOf(END);
+    assert.ok(a > 0 && b > a, "no field-guide block in the stylesheet");
+    return html.slice(a + BEGIN.length, b).replace(/\/\*[\s\S]*?\*\//g, "");
+  };
+  const rules = () => [...block().matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ sel: m[1].split(",").map((s) => s.trim()), body: m[2] }));
+  const lum = (hex) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+  const find = (sel) => rules().filter((r) => r.sel.includes(sel)).map((r) => r.body).join(";");
+
+  test("FG: the block sits before the print block, which stays last", () => {
+    assert.ok(html.indexOf(END) < html.indexOf("@media print"));
+    assert.ok(html.lastIndexOf("@media print") > html.indexOf(END));
+  });
+
+  test("FG: root stays color-scheme:dark; light is scoped to the panel, sheet and About", () => {
+    assert.match(html, /:root\{\s*color-scheme:dark;/);
+    const scoped = rules().find((r) => /color-scheme:\s*light/.test(r.body));
+    assert.ok(scoped, "no color-scheme:light rule");
+    for (const s of ["#settings-panel", "#scale-sheet", "#about"]) assert.ok(scoped.sel.includes(s), s);
+    assert.ok(!scoped.sel.includes(":root") && !scoped.sel.includes("body"));
+  });
+
+  test("FG: every selector is scoped to the panel, sheet or About", () => {
+    for (const r of rules()) for (const s of r.sel)
+      assert.match(s, /^(#settings-panel|#scale-sheet|\.sheetsurf|#about|\.abouthead|@)/, `unscoped: ${s}`);
+  });
+
+  test("FG: protected card, progression, badge and diagram selectors are never touched", () => {
+    const EXCL = "#scale-sheet #scale-preview .panhit:focus-visible, #scale-sheet #scale-preview .nhit:focus-visible{outline:none}";
+    assert.ok(block().includes(EXCL), "diagram focus exclusion missing");
+    const b = block().replace(EXCL, "");
+    for (const p of [".card", ".prog", ".rail", ".badge", ".panhit", ".panghost", ".nhit", ".face", ".flip", "--ink", "--paper", "--root", "--tone"])
+      assert.ok(!b.includes(p), `block mentions ${p}`);
+  });
+
+  test("FG: roles are the approved tokens and the text pairs pass 4.5:1", () => {
+    const b = block();
+    for (const hex of ["#F6F4ED", "#FFFFFF", "#242424", "#5E5850", "#8A847B", "#6756B5"])
+      assert.ok(b.toUpperCase().includes(hex), hex);
+    assert.ok(ratio("#242424", "#F6F4ED") >= 4.5);
+    assert.ok(ratio("#5E5850", "#F6F4ED") >= 4.5);
+    assert.ok(ratio("#5E5850", "#FFFFFF") >= 4.5);
+    assert.ok(ratio("#FFFFFF", "#6756B5") >= 4.5);
+    assert.ok(ratio("#6756B5", "#F6F4ED") >= 4.5);
+    assert.ok(ratio("#8A847B", "#F6F4ED") >= 3);
+  });
+
+  test("FG: A1/A19 focus ring is a 2px ink ring, differs from the violet fill, never the teal", () => {
+    const f = find("#settings-panel :focus-visible");
+    assert.match(f, /outline:\s*2px solid #242424/i);
+    assert.match(f, /outline-offset:\s*2px/);
+    assert.ok(ratio("#242424", "#F6F4ED") >= 3);
+    assert.notStrictEqual("#242424", "#6756B5");
+    assert.ok(!/44e0d8/i.test(block()));
+    assert.match(find("#scale-sheet :focus-visible"), /outline:\s*2px solid #242424/i);
+    assert.match(find("#about :focus-visible"), /outline:\s*2px solid #242424/i);
+  });
+
+  test("FG: A2/A20 error state is ink text, a 1px ink border plus inset 1px ink shadow and an icon, never orange", () => {
+    assert.ok(!/E27005/i.test(block()));
+    assert.match(find("#scale-sheet #scale-box.bad"), /border:\s*1px solid #242424/i);
+    assert.match(find("#scale-sheet #scale-box.bad"), /box-shadow:\s*inset 0 0 0 1px #242424/i);
+    assert.match(find("#scale-sheet #scale-fields input.bad"), /box-shadow:\s*inset 0 0 0 1px #242424/i);
+    assert.match(find("#scale-sheet #scale-refusal.err"), /color:\s*#242424/i);
+    assert.match(find("#scale-sheet #scale-msg.err"), /color:\s*#242424/i);
+    assert.match(find("#scale-sheet #scale-refusal.err::before"), /content:/);
+    assert.match(find("#scale-sheet #scale-msg.err::before"), /content:/);
+  });
+
+  test("FG: selected controls are violet with white text; inactive stay neutral", () => {
+    const on = find("#settings-panel .mode.on");
+    assert.match(on, /background:\s*#6756B5/i);
+    assert.match(on, /color:\s*#FFFFFF/i);
+    assert.match(find("#settings-panel .mode:not(.on)"), /background:\s*#FFFFFF/i);
+    assert.match(find("#settings-panel .mode"), /color:\s*#242424/i);
+    assert.match(find("#scale-sheet #scale-generate"), /background:\s*#6756B5/i);
+  });
+
+  test("FG: A5 disabled uses #8A847B text, not opacity alone; checkbox accent is violet", () => {
+    assert.match(find("#scale-sheet .mode:disabled"), /color:\s*#8A847B/i);
+    assert.match(find("#scale-sheet #scale-generate:disabled"), /color:\s*#8A847B/i);
+    assert.match(find("#scale-sheet #scale-fields #scale-neotone"), /accent-color:\s*#6756B5/i);
+  });
+
+  test("FG: panel, sheet and About ground is paper; the pan plate and swatch geometry are untouched", () => {
+    assert.match(find("#settings-panel"), /background:\s*#F6F4ED/i);
+    assert.match(find("#scale-sheet"), /background:\s*#F6F4ED/i);
+    assert.match(find(".sheetsurf"), /background:\s*#F6F4ED/i);
+    assert.match(find("#about"), /background:\s*#F6F4ED/i);
+    const b = block();
+    assert.ok(!/#scale-preview[^{]*\{[^}]*(width|height|padding)/.test(b));
+    assert.ok(!/#scale-swatches[^{]*\{[^}]*(width|height|padding)/.test(b));
+  });
+
+  test("FG: the desktop sidebar keeps a 4px table-coloured right edge", () => {
+    assert.match(block(), /box-shadow:\s*inset -4px 0 0 #0F0E0B/i);
+  });
+
+  test("FG: no text or font-size is changed by the block", () => {
+    assert.ok(!/font-size|font:|padding|margin|width|height/.test(block().replace(/(vertical-align|margin-right|width|height)[^;}]*/g,"").replace(/box-shadow[^;}]*/g,"")), "block changes geometry or type");
+  });
+});
+
 describe("Neotone solid tint (owner 2026-11-03)", () => {
   const fs = require("node:fs");
   const path = require("node:path");
@@ -19720,7 +19834,7 @@ describe("Neotone solid tint (owner 2026-11-03)", () => {
         assert.ok(![root, tone].includes(m[1].toLowerCase()), "state-colour stroke " + m[1]);
       for (const m of svg.matchAll(/<circle cx="(-?[\d.e-]+)" cy="(-?[\d.e-]+)" r="([\d.e-]+)" fill="(#[0-9a-f]{3,6})" stroke="#000"/g)) {
         if (!tints.includes(m[4])) continue;
-        if (Math.abs(+m[3] - 20) < 1e-6) tintedDing++; else tintedDisks++;
+        if (Math.abs(+m[3] - 100 * d.geom.r_ding) < 1e-6) tintedDing++; else tintedDisks++;
       }
     });
     assert.ok(tintedDisks >= 1, "a tinted main disk");
@@ -19732,6 +19846,9 @@ describe("Neotone solid tint (owner 2026-11-03)", () => {
     const d = fixture("profile_case_kurd9_v2.json");
     const svgs = d.chords.map((c) => app.get(`pan(${JSON.stringify(d)}, ${JSON.stringify(c)})`));
     assert.ok(svgs.some((s) => new RegExp(`<circle[^>]*fill="none" stroke="${d.colors.root}"`, "i").test(s)), "a ring band");
-    for (const s of svgs) assert.ok(!/r="20" fill="#(?!fff")/.test(s), "the ding stays white");
+    const dingR = 100 * d.geom.r_ding;
+    for (const s of svgs)
+      for (const m of s.matchAll(/<circle[^>]*r="([\d.e-]+)" fill="(#[0-9a-fA-F]{3,6})"/g))
+        if (Math.abs(+m[1] - dingR) < 1e-6) assert.strictEqual(m[2].toLowerCase(), "#fff", "the ding stays white");
   });
 });
