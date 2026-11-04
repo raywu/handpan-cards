@@ -133,6 +133,7 @@
   "sheet.neotone_builtin_plain": "{name} ist eine eingebaute Skala. Beim Speichern entsteht eine neue Skala; die eingebaute bleibt, wie sie ist.",
   "sheet.neotone_name_label": "Name",
   "sheet.neotone_name_suffix": "Neotone Mutant",
+  "sheet.neotone_name_suffix_plain": "Neotone",
   "sheet.neotone_name_hint": "Vorgeschlagener Name; du kannst ihn ändern.",
   "sheet.drawer_hint_neotone": "Tippe auf einen Ton und dann auf einen anderen im selben Ring, um beide zu tauschen, oder auf ein leeres Tonfeld, um den Ton dorthin zu verschieben. Oder halte einen Ton gedrückt und ziehe ihn.",
   "sheet.tonefield_label": "Tonfeld {n} {ring}, {note}",

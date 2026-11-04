@@ -15483,7 +15483,7 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
     assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed (domain move handoff) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
@@ -18921,6 +18921,13 @@ describe("NEO: Neotone sheet, saves and links", () => {
     app.clickChip(d.name);
     return d;
   };
+  const nnFire = (app, id, type) => app.els[id].dispatchEvent({ type });
+  const nnType = (app, k, text) => {
+    nnFire(app, "scale-" + k, "focus");
+    app.els["scale-" + k].value = text;
+    nnFire(app, "scale-" + k, "input");
+  };
+  const nnSettle = (app, k) => nnFire(app, "scale-" + k, "blur");
 
   test("NEO1: the labels, the switch and the checkbox carry the approved en values, and no Option A control is served", async () => {
     const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
@@ -19187,7 +19194,7 @@ describe("NEO: Neotone sheet, saves and links", () => {
     const before = app.els["scale-name"].value;
     app.els["scale-neotone"].checked = true;
     app.els["scale-neotone"].onchange();
-    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone Mutant`);
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone`);
     assert.strictEqual(app.els["scale-name-label"].textContent, "Name");
     assert.strictEqual(app.els["scale-neotone-name-hint"].textContent, "Suggested name; you can change it.");
     assert.match(app.els["scale-neotone-builtin"].textContent, /is a built-in\. Saving creates a new scale; the built-in stays as it is\.$/);
@@ -19196,6 +19203,62 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(app.els["scale-name"].value, before, "untick restores an untouched name");
     assert.strictEqual(app.els["scale-name-label"].textContent, "SCALE NAME");
     assert.ok(d);
+  });
+
+  test("NN1: a built-in with no bottom notes converts to '<name> Neotone', one with bottom notes to '<name> Neotone Mutant'", async () => {
+    const deckBottoms = (id) => JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8")).find((x) => x.id === id);
+    const hasBottom = (id) => JSON.stringify(deckBottoms(id)).includes('"bottom"');
+    assert.strictEqual(hasBottom("amara"), false, "Amara has no bottom zones");
+    assert.strictEqual(hasBottom("pygmy"), true, "Pygmy has bottom zones");
+    const plainApp = await durableBoot();
+    openBuiltin(plainApp, "amara");
+    const beforeA = plainApp.els["scale-name"].value;
+    plainApp.els["scale-neotone"].checked = true;
+    plainApp.els["scale-neotone"].onchange();
+    assert.strictEqual(plainApp.els["scale-name"].value, `${beforeA} Neotone`);
+    const mutApp = await durableBoot();
+    openBuiltin(mutApp, "pygmy");
+    const beforeP = mutApp.els["scale-name"].value;
+    mutApp.els["scale-neotone"].checked = true;
+    mutApp.els["scale-neotone"].onchange();
+    assert.strictEqual(mutApp.els["scale-name"].value, `${beforeP} Neotone Mutant`);
+  });
+
+  test("NN2: with the name untouched the suffix follows the bottom notes (bottom field and scale box); a typed name is never renamed", async () => {
+    const app = await durableBoot();
+    openBuiltin(app, "amara");
+    const before = app.els["scale-name"].value;
+    app.els["scale-neotone"].checked = true;
+    app.els["scale-neotone"].onchange();
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone`);
+    nnType(app, "bottom", "B2");
+    nnSettle(app, "bottom");
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone Mutant`, "bottom field");
+    nnType(app, "bottom", "");
+    nnSettle(app, "bottom");
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone`, "cleared bottom field");
+    nnFire(app, "scale-box", "focus");
+    app.els["scale-box"].value = "[B2] " + app.els["scale-box"].value;
+    nnFire(app, "scale-box", "input");
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone Mutant`, "[B2] typed in the scale box");
+    app.els["scale-box"].value = app.els["scale-box"].value.replace("[B2] ", "");
+    nnFire(app, "scale-box", "input");
+    assert.strictEqual(app.els["scale-name"].value, `${before} Neotone`, "[B2] removed from the scale box");
+    const typed = await durableBoot();
+    openBuiltin(typed, "amara");
+    typed.els["scale-neotone"].checked = true;
+    typed.els["scale-neotone"].onchange();
+    typed.els["scale-name"].value = "Mine";
+    nnFire(typed, "scale-name", "input");
+    nnType(typed, "bottom", "B2");
+    nnSettle(typed, "bottom");
+    assert.strictEqual(typed.els["scale-name"].value, "Mine");
+  });
+
+  test("NN3: the light-sheet placeholder colour is #8A847B and typed text is still #242424", () => {
+    const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.match(html, /#scale-sheet #scale-fields input::placeholder, #scale-sheet #scale-box::placeholder\{color:#8A847B\}/);
+    assert.match(html, /#scale-sheet #scale-box, #scale-sheet #scale-name, #scale-sheet #scale-fields input\{\s*background:#FFFFFF; color:#242424/);
   });
 
   test("NEO10: a Neotone SAVE on a seeded scale writes a v5 rev 2 record as a separate entry with no replaces", async () => {

@@ -1,0 +1,47 @@
+{
+ "slug": "neotone",
+ "name": "Neotone",
+ "root": "C#",
+ "kind": "new",
+ "seed": "(C#3) [E3] [F#3] G#3 A3 B3 C#4 D#4 E4 F#4 G#4 [B4] [C#5]",
+ "typed": "C# Annaziska 13",
+ "palette": 1,
+ "profile": {
+  "id": "paired",
+  "rev": 2,
+  "map": [
+   "r56",
+   "r57",
+   "r59",
+   "r61",
+   "r63",
+   "r64",
+   "r66",
+   "r68",
+   null,
+   "b52",
+   "b54",
+   "b71",
+   "b73",
+   null,
+   null,
+   null,
+   null,
+   null
+  ]
+ },
+ "popularized": false,
+ "colors": {
+  "root": "#6D40A3",
+  "tone": "#C9971E"
+ },
+ "accent_light": "#6D40A3",
+ "accent_dark": "#9269C4",
+ "pick": [
+  1,
+  11,
+  24
+ ],
+ "cta": "/#s=7/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/pair-r56.r57.r59.r61.r63.r64.r66.r68.-.b52.b54.b71.b73.-.-.-.-.-/34e6e9",
+ "updated": "2026-11-03"
+}

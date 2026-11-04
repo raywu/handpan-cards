@@ -1,0 +1,15 @@
+# kills: NN1: a built-in with no bottom notes converts to '<name> Neotone', one with bottom notes to '<name> Neotone Mutant'
+# suite: node --test --test-name-pattern=^NN1. tests/app.test.js
+# fault: A Neotone name always ends in Mutant, even with no bottom notes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14303,7 +14303,7 @@ function applyNeoName() {
+   const base = editedDeck().name;
+   const parsed = HPE.core.parseSeed(String(scaleBox.value || ""), layoutOptions());
+   const mutant = parsed.ok && Object.values(parsed.value.fields).some((f) => f[3] === "bottom");
+-  nameBox.value = neotoneOn() ? base + " " + t(mutant ? "sheet.neotone_name_suffix" : "sheet.neotone_name_suffix_plain") : base;
++  nameBox.value = neotoneOn() ? base + " " + t("sheet.neotone_name_suffix") : base;
+ }
+ const setHint = (el, text) => {
+   if (el.textContent !== text) el.textContent = text;
