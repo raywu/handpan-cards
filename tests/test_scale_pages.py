@@ -1010,7 +1010,7 @@ class HubAndSiblingsTest(unittest.TestCase):
         html = read("scales/index.html")
         self.assertEqual(html, gen.hub_page())
         self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html), ["Handpan scale chord charts"])
-        self.assertEqual(re.findall(r"<h2>(.*?)</h2>", html), GROUPS)
+        self.assertEqual(re.findall(r"<h2>(.*?)</h2>", html), GROUPS + ["Neotone"])
         want = [(r["slug"], r["name"]) for r in gen.load_rows()]
         got = re.findall(r'<li><a href="/scales/([a-z0-9-]+)/">(.*?) handpan chords</a></li>', html)
         self.assertEqual(got, want)
@@ -1338,12 +1338,15 @@ class NeotonePageTest(unittest.TestCase):
         self.assertIn("/#add", hrefs)
         self.assertIn("/scales/", hrefs)
 
-    def test_the_hub_links_the_page_once_outside_the_groups(self):
+    def test_the_hub_links_the_page_once_under_its_own_heading(self):
         html = read("scales/index.html")
         self.assertEqual(html, gen.hub_page())
         self.assertEqual(html.count('href="/scales/neotone/"'), 1)
-        tail = html[html.rindex("</section>"):]
-        self.assertIn('<p><a href="/scales/neotone/">', tail)
+        sections = re.findall(r'<section class="group">(.*?)</section>', html, re.S)
+        last = sections[-1]
+        self.assertEqual(re.findall(r"<h2>(.*?)</h2>", last), ["Neotone"])
+        self.assertRegex(last, r'<p class="muted">[^<]+</p>')
+        self.assertIn('<p><a href="/scales/neotone/">Neotone handpan chords</a></p>', last)
         self.assertEqual(len(re.findall(r'<li><a href="/scales/', html)), 16)
 
     def test_sitemap_and_llms_list_the_page(self):
