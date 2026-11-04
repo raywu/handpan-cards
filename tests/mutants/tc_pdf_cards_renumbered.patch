@@ -4,8 +4,8 @@
 diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
 --- a/src/engine/pdfcards.js
 +++ b/src/engine/pdfcards.js
-@@ -964,7 +964,7 @@
-       var picked = opts.cards ? checkedCards(opts.cards, deck.chords.length) :
+@@ -964,7 +964,7 @@ HPE.pdfcards = (function () {
+       var picked = opts.cards !== undefined ? checkedCards(opts.cards, deck.chords.length) :
          deck.chords.map(function (_, k) { return k; });
        picked.forEach(function (k) {
 -        cards.push(["chord", [k + 1, deck.chords[k]]]);
