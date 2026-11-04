@@ -1149,6 +1149,207 @@ class HeaderLockupTest(unittest.TestCase):
                 self.assertRegex(self.header(name), r"</a></p>\n(<p>.*</p>\n)?<h1>[^<]+</h1>\n")
 
 
+P0_LINK = ("/#s=7/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/"
+           "pair-r56.r57.r59.r61.r63.r64.r66.r68.-.b52.b54.b71.b73.-.-.-.-.-/34e6e9")
+P0_MAP = ["r56", "r57", "r59", "r61", "r63", "r64", "r66", "r68", None, "b52", "b54", "b71", "b73",
+          None, None, None, None, None]
+DISCLAIMER = "Neotone is a trademark of its maker. Handpan Theory is not affiliated with or endorsed by Neotone."
+_NEO = {}
+
+
+def neo():
+    if not _NEO:
+        row = gen.load_neotone_row()
+        _NEO["row"] = row
+        _NEO["data"] = gen.engine([row])["rows"][row["slug"]]
+        _NEO["html"] = gen.neotone_page(row)
+    return _NEO
+
+
+def neo_fixture():
+    return json.loads(read("tests/fixtures/neotone_page_v1.json"))
+
+
+class NeotonePageTest(unittest.TestCase):
+    def test_the_row_is_separate_from_the_scale_table_and_carries_the_p0_profile(self):
+        row = gen.load_neotone_row()
+        self.assertNotIn("neotone", table())
+        self.assertEqual(len(gen.load_rows()), 16)
+        self.assertEqual(row["slug"], "neotone")
+        self.assertEqual(row["profile"], {"id": "paired", "rev": 2, "map": P0_MAP})
+        self.assertEqual(row["cta"], P0_LINK)
+        self.assertEqual(row["typed"], "C# Annaziska 13")
+
+    def test_the_page_file_is_what_the_generator_writes(self):
+        self.assertEqual(read("scales/neotone/index.html"), neo()["html"])
+
+    def test_check_flags_exit_zero(self):
+        for args in (["--neotone", "--check"], ["--neotone", "--fixture", "--check"]):
+            with self.subTest(args=args):
+                r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py")] + args,
+                                   cwd=ROOT, capture_output=True, text=True)
+                self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_the_neotone_fixture_has_not_drifted_and_leaves_the_scale_fixture_alone(self):
+        self.assertEqual(gen.neotone_fixture_data(), read("tests/fixtures/neotone_page_v1.json"))
+        self.assertEqual(gen.fixture_data(gen.load_rows()), read("tests/fixtures/scale_pages_v1.json"))
+        self.assertNotIn("neotone", fixture())
+
+    def test_main_fixture_writes_only_the_neotone_fixture(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = os.path.join(tmp, "n.json")
+            old = gen.NEOTONE_FIXTURE
+            gen.NEOTONE_FIXTURE = target
+            try:
+                self.assertEqual(gen.main(["--neotone", "--fixture"]), 0)
+            finally:
+                gen.NEOTONE_FIXTURE = old
+            with open(target, encoding="utf-8") as f:
+                self.assertEqual(f.read(), read("tests/fixtures/neotone_page_v1.json"))
+
+    def test_the_cta_is_a_v7_link_that_decodes_to_the_profile_and_re_encodes(self):
+        html = neo()["html"]
+        self.assertIn('<a class="open" href="%s">' % P0_LINK, html)
+        self.assertTrue(P0_LINK.startswith("/#s=7/"))
+        self.assertEqual("/#s=" + neo()["data"]["share"], P0_LINK)
+        src = ("const { loadEngine } = require(%r + '/tools/engine_loader.js');"
+               "const HPE = loadEngine(['core','voicing','layout','naming','select','share']);"
+               "const d = HPE.share.decode(process.argv[1]);"
+               "const e = HPE.share.encode(d.value);"
+               "console.log(JSON.stringify({ok: d.ok, ver: d.value.version, profile: d.value.options.profile, again: e.value}));"
+               % ROOT)
+        out = json.loads(subprocess.run(["node", "-e", src, P0_LINK[4:]], capture_output=True, text=True,
+                                        check=True).stdout)
+        self.assertTrue(out["ok"])
+        self.assertEqual(out["profile"]["map"], P0_MAP)
+        self.assertEqual(out["profile"]["rev"], 2)
+        self.assertEqual(out["again"], P0_LINK[4:])
+
+    def test_cards_equal_the_apps_pan_of_build_generated_and_carry_the_lens(self):
+        row = neo()["row"]
+        src = ("const { boot } = require(%r + '/tools/sandbox.js');"
+               "const app = boot();"
+               "const o = JSON.parse(process.argv[1]);"
+               "const r = app.get('buildGenerated(' + JSON.stringify(o.seed) + ',' + JSON.stringify(o.opts) + ')');"
+               "const d = r.value;"
+               "console.log(JSON.stringify(o.pick.map(n => app.get('pan(' + JSON.stringify(d) + ',' + JSON.stringify(d.chords[n-1]) + ')').replace(/\\s*\\n\\s*/g, ' '))));"
+               % ROOT)
+        arg = json.dumps({"seed": row["seed"], "pick": row["pick"],
+                          "opts": {"palette": row["palette"], "name": row["typed"], "profile": row["profile"]}})
+        want = json.loads(subprocess.run(["node", "-e", src, arg], capture_output=True, text=True,
+                                         check=True).stdout)
+        got = [c["svg"] for c in neo()["data"]["cards"]]
+        self.assertEqual(got, want)
+        standard = gen.engine([dict(table()["d-kurd-9"], pick=row["pick"])])["rows"]["d-kurd-9"]
+        self.assertNotEqual(got[0], standard["cards"][0]["svg"])
+        lens = 'stroke-linejoin="round"'
+        self.assertTrue(all(lens in svg for svg in got))
+        self.assertFalse(any(lens in c["svg"] for c in standard["cards"]))
+
+    def test_the_deck_is_placed_and_no_card_has_a_badge(self):
+        data = neo()["data"]
+        self.assertTrue(data["geom"].get("place"))
+        self.assertEqual([c["bottom"] for c in data["cards"]], [0, 0, 0])
+        html = neo()["html"]
+        self.assertNotIn('class="badge"', html)
+        self.assertNotIn("BOTTOM NOTE", html)
+        self.assertNotIn(".badge", html)
+
+    def test_some_card_shows_a_mutant_number_and_no_page_text_says_bottom_shell(self):
+        html = neo()["html"]
+        nums = [c["numbers"] for c in neo()["data"]["cards"]]
+        self.assertTrue(any(re.search(r"\bM\d\b", n) for n in nums), nums)
+        low = Page(html).visible().lower()
+        self.assertNotIn("bottom-shell", low)
+        self.assertNotIn("bottom shell", low)
+        self.assertNotIn("BOTTOM NOTE", Page(html).visible())
+
+    def test_the_card_back_is_the_same_shape_as_the_scale_pages(self):
+        fx = neo_fixture()["neotone"]
+        self.assertEqual([c["n"] for c in fx["cards"]], neo()["row"]["pick"])
+        self.assertEqual(fx["profile"], neo()["row"]["profile"])
+        self.assertEqual(fx["share"], P0_LINK[4:])
+
+    def test_head_h1_canonical_and_matching_titles(self):
+        page = Page(neo()["html"])
+        self.assertEqual(page.canonical(), SITE + "scales/neotone/")
+        h1 = re.findall(r"<h1>(.*?)</h1>", neo()["html"])
+        self.assertEqual(h1, ["Neotone handpan chords"])
+        title = re.search(r"<title>(.*?)</title>", neo()["html"]).group(1)
+        self.assertEqual(title, h1[0])
+        self.assertEqual(page.meta("og:title", "property"), h1[0])
+        self.assertEqual(page.meta("description"), page.meta("og:description", "property"))
+        self.assertIn("Neotone", page.meta("description"))
+
+    def test_the_steps_quote_the_apps_shipped_strings(self):
+        en = json.loads(read("data/i18n/en.json"))
+        text = Page(neo()["html"]).norm()
+        self.assertIn(en["sheet.neotone_check"], text)
+        self.assertIn(en["sheet.mode_neotone"], text)
+        self.assertIn(en["sheet.layout_mode"], text)
+        self.assertIn(en["panel.add"], text)
+
+    def test_the_disclaimer_is_visible_and_no_image_is_a_maker_asset(self):
+        html = neo()["html"]
+        self.assertIn(DISCLAIMER, Page(html).norm())
+        imgs = re.findall(r'<img\b[^>]*src="([^"]*)"', html)
+        self.assertTrue(all(s.startswith("/brand/") for s in imgs), imgs)
+
+    def test_related_has_no_sibling_links_and_says_all_sixteen(self):
+        html = neo()["html"]
+        self.assertEqual(re.findall(r'<li><a href="/scales/([a-z0-9-]+)/">', html), [])
+        self.assertIn('<a href="/scales/">All 16 handpan scale chord charts</a>', html)
+
+    def test_a_row_without_updated_still_renders_the_old_date_in_both_places(self):
+        row = {k: v for k, v in gen.load_neotone_row().items() if k != "updated"}
+        html = gen.neotone_page(row)
+        self.assertEqual(re.findall(r'<time datetime="([^"]*)"', html), ["2026-10-28"])
+        self.assertIn('"dateModified":"2026-10-28"', html)
+
+    def test_json_ld_strings_are_visible_and_date_modified_equals_the_visible_time(self):
+        html = neo()["html"]
+        ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
+        seen = Page(html).visible()
+        for s in strings(ld):
+            if s != "Home":
+                self.assertIn(s, seen)
+        self.assertEqual(ld["@type"], "WebPage")
+        self.assertEqual(ld["publisher"], {"@type": "Organization", "name": "Handpan Theory"})
+        self.assertEqual(re.findall(r'<time datetime="([^"]*)"', html), [ld["dateModified"]])
+        self.assertEqual(ld["dateModified"], neo()["row"]["updated"])
+
+    def test_visible_text_wording_size_hosts_and_scripts(self):
+        html = neo()["html"]
+        vis = Page(html).visible()
+        self.assertIsNone(re.search(r"deck|paired|HPT", vis, re.I))
+        self.assertLess(len(html.encode("utf-8")), SIZE_CAP)
+        for host in re.findall(r"https?://([^/\"'\s<>)]+)", html):
+            self.assertIn(host, ALLOWED_HOSTS)
+        kinds = [s[0] for s in Page(html).scripts]
+        self.assertEqual(kinds, ["application/ld+json", None])
+
+    def test_page_names_the_layout_in_visible_text_and_links_the_app_and_101(self):
+        text = Page(neo()["html"]).norm()
+        for phrase in ("mutant", "tonefield", "How to read a Neotone chord card", "What is the Neotone layout?",
+                       "Make your own Neotone scale"):
+            self.assertIn(phrase, text)
+        hrefs = Page(neo()["html"]).hrefs()
+        self.assertIn("/handpan-101/", hrefs)
+        self.assertIn("/#add", hrefs)
+        self.assertIn("/scales/", hrefs)
+
+    def test_the_hub_links_the_page_once_outside_the_groups(self):
+        html = read("scales/index.html")
+        self.assertEqual(html, gen.hub_page())
+        self.assertEqual(html.count('href="/scales/neotone/"'), 1)
+        tail = html[html.rindex("</section>"):]
+        self.assertIn('<p><a href="/scales/neotone/">', tail)
+        self.assertEqual(len(re.findall(r'<li><a href="/scales/', html)), 16)
+
+    def test_sitemap_and_llms_list_the_page(self):
+        self.assertIn("<loc>%sscales/neotone/</loc>" % SITE, read("sitemap.xml"))
+        self.assertIn("(%sscales/neotone/)" % SITE, read("llms.txt"))
+
 class ReadingSurfaceTest(unittest.TestCase):
     """Hub, scale pages, Handpan 101 and 404 are light-only reading pages with violet links and actions."""
 
