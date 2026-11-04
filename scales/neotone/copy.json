@@ -1,9 +1,9 @@
 {
-  "lead_html": "Neotone is a digital handpan with nine main tonefields, each with a mutant tonefield inside it. This page shows what the Neotone layout looks like in Handpan Theory and gives three chord cards you can play from it.",
+  "lead_html": "Neotone is a digital handpan. The 10-note model has nine tonefields around a ding; the 19-note Mutant model adds a mutant tonefield inside each of the nine. This page shows what the Neotone layout looks like in Handpan Theory and gives three chord cards you can play from it.",
   "alias_html": "",
   "history_heading": "What is the Neotone layout?",
   "history_html": [
-    "A Neotone layout has nine main tonefields, and inside each one sits a mutant tonefield. Your top notes go in the main tonefields. Your bottom notes become the mutant notes, each linked to a main tonefield. Inner notes are not placed.",
+    "A Neotone layout has nine main tonefields; on the 19-note Mutant model, inside each one sits a mutant tonefield. Your top notes go in the main tonefields. Your bottom notes become the mutant notes, each linked to a main tonefield. Inner notes are not placed.",
     "On a chord card the main tonefields are the large circles and each mutant tonefield is the small lens inside its circle. The notes in the chord light up, so you can see which main and mutant notes to strike together."
   ],
   "progression_tail_html": ", main and mutant notes.",
