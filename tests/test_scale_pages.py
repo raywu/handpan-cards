@@ -1350,6 +1350,7 @@ class NeotonePageTest(unittest.TestCase):
         self.assertIn("<loc>%sscales/neotone/</loc>" % SITE, read("sitemap.xml"))
         self.assertIn("(%sscales/neotone/)" % SITE, read("llms.txt"))
 
+
 class ReadingSurfaceTest(unittest.TestCase):
     """Hub, scale pages, Handpan 101 and 404 are light-only reading pages with violet links and actions."""
 
