@@ -1,0 +1,54 @@
+[
+  {
+    "key": "field",
+    "view": "root-phone",
+    "protectedPixelChanges": 0
+  },
+  {
+    "key": "field",
+    "view": "root-tablet",
+    "protectedPixelChanges": 0
+  },
+  {
+    "key": "field",
+    "view": "root-desktop",
+    "protectedPixelChanges": 0
+  },
+  {
+    "key": "field",
+    "view": "layout-phone",
+    "diagramExact": true,
+    "diagramRegion": [
+      76,
+      311,
+      608,
+      607
+    ]
+  },
+  {
+    "key": "school",
+    "view": "root-phone",
+    "protectedPixelChanges": 0
+  },
+  {
+    "key": "school",
+    "view": "root-tablet",
+    "protectedPixelChanges": 0
+  },
+  {
+    "key": "school",
+    "view": "root-desktop",
+    "protectedPixelChanges": 0
+  },
+  {
+    "key": "school",
+    "view": "layout-phone",
+    "diagramExact": true,
+    "diagramRegion": [
+      76,
+      311,
+      608,
+      607
+    ]
+  }
+]

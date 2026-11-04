@@ -126,13 +126,12 @@ def _tint_hex(root_hex):
     return "#%02X%02X%02X" % tuple(round((x + (1 - x) * 0.5) * 255) for x in v)
 
 
-def neo_fields(circles, paths, root_hex, tone_hex, outline_w):
+def neo_fields(circles, root_hex, tone_hex, outline_w):
     """The Neotone card's fields from its drawing: a field is a black outline
     circle of width 0.012R (a main tonefield or the ding). Where the card has
     a mutant note a lit field is a solid half-tint fill of its state colour
     (root or tone); where it has none it carries a root or tone ring circle.
-    Circles are (x, y, r, stroke, width, fill) in R = 100, y-down; paths are
-    unused now that no crescent band is drawn."""
+    Circles are (x, y, r, stroke, width, fill) in R = 100, y-down."""
     fields = {}
     for x, y, r, stroke, w, fill in circles:
         if stroke == "#000000" and abs(w - outline_w) < 0.01:
@@ -182,9 +181,7 @@ def render_print(deck):
                 circles = [(round((c["x"] - cx) * k, 3), round(-(c["y"] - cy) * k, 3),
                             round(c["r"] * k, 3), c["stroke"], round(c["lw"] * k, 3), c["fill"])
                            for c in rec.circles[chrome:]]
-                paths = [(round((q["start"][0] - cx) * k, 3), round(-(q["start"][1] - cy) * k, 3),
-                          q["stroke"], round(q["lw"] * k, 3)) for q in rec.paths if q["fill"] is None]
-                fields = neo_fields(circles, paths, root_hex, tone_hex, 1.2)
+                fields = neo_fields(circles, root_hex, tone_hex, 1.2)
             else:
                 fields = None
             groups = {}
