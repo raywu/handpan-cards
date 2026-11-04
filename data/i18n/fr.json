@@ -133,6 +133,7 @@
   "sheet.neotone_builtin_plain": "{name} est une gamme intégrée. L'enregistrement crée une nouvelle gamme ; l'intégrée reste telle quelle.",
   "sheet.neotone_name_label": "Nom",
   "sheet.neotone_name_suffix": "Neotone Mutant",
+  "sheet.neotone_name_suffix_plain": "Neotone",
   "sheet.neotone_name_hint": "Nom suggéré ; vous pouvez le changer.",
   "sheet.drawer_hint_neotone": "Touchez une note, puis une autre du même anneau pour les échanger, ou un champ tonal vide pour y déplacer la note. Ou maintenez une note et faites-la glisser.",
   "sheet.tonefield_label": "Champ tonal {n} {ring}, {note}",
