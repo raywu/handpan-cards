@@ -4,11 +4,14 @@
 A SYNC step, not a build step, like inline_engine.py. `brand/*.svg` is the only
 copy of the logo and three things come from it:
 
-- the SVG favicon data URI in index.html, from brand/mark-small.svg on a round
-  tile (text, compared exactly);
+- the SVG favicon data URI in index.html, from brand/mark.svg (the Two contours
+  master) fitted on a square #0F0E0B tile with 12% clear space (text, compared
+  exactly);
 - the `brand:lockup` region inside the app's h1, from brand/horizontal-full.svg
   with role, aria-label and <title> stripped, aria-hidden added and every id
   prefixed `hpt-` (text, compared exactly);
+- the reading-header rasters brand/horizontal-{full,mono-light}@{2,3}x.png at
+  223x64 times the scale, from the two horizontal SVGs;
 - apple-touch-icon.png from brand/app-icon-full.svg and og.png from
   brand/stacked-full.svg, checked in as committed bytes. `--check` re-renders
   each in memory and compares it with the file under a pixel tolerance
@@ -16,7 +19,12 @@ copy of the logo and three things come from it:
   changed colour or a moved shape alters whole regions and fails by an order
   of magnitude.
 
-Plan: docs/plans/2026-10-31-logo-in-app.md (D3, D5, D7).
+The brand SVGs are traced from the approved master by brand/build_master.py (a
+local tool; potrace is not a CI dependency). `master_differing_fraction` is the
+objective fidelity gate (plan A15/A24).
+
+Plan: docs/plans/2026-10-31-logo-in-app.md (D3, D5, D7);
+docs/plans/2026-11-02-field-guide-brand-implementation.md (Phase 1, A7, A12, A15, A24).
 """
 import os
 import re
@@ -36,8 +44,11 @@ OG_PNG = "og.png"
 TOUCH_SIZE = 180
 OG_SIZE = (1200, 630)
 
-GROUND = (0x1A / 255, 0x18 / 255, 0x14 / 255)
-PAPER = (0xF4 / 255, 0xF0 / 255, 0xE8 / 255)
+GROUND = (0x0F / 255, 0x0E / 255, 0x0B / 255)
+PAPER = (0xF6 / 255, 0xF4 / 255, 0xED / 255)
+MASTER_PNG = os.path.join(ROOT, "docs", "plans", "assets", "2026-11-02-field-guide", "approved-logo-master.png")
+MASTER_SIZE = (1154, 979)
+MAX_MASTER_DIFFERING_FRACTION = 0.02
 
 # og.png layout: the stacked lockup (626.19 x 557.31) centred inside the
 # square-crop safe zone x 285..915, two lines of copy under it.
@@ -48,8 +59,10 @@ OG_LINES = (
 )
 
 SOURCES = {TOUCH_PNG: "app-icon-full.svg", OG_PNG: "stacked-full.svg"}
-FAVICON_TILE = "#0f0e0b"
-FAVICON_TRANSFORM = "translate(6 19.35) scale(0.09391)"
+FAVICON_TILE = "#0F0E0B"
+FAVICON_CLEAR = 0.12
+READING_RASTERS = ("horizontal-full", "horizontal-mono-light")
+READING_SLOT = (223, 64)
 LOCKUP_BEGIN = "<!-- brand:lockup begin -->"
 LOCKUP_END = "<!-- brand:lockup end -->"
 LOCKUP_RE = re.compile(re.escape(LOCKUP_BEGIN) + r"\n(.*)\n" + re.escape(LOCKUP_END), re.S)
@@ -72,14 +85,20 @@ def _body(svg):
 
 
 def favicon_href(mark=None):
-    body = _body(mark if mark is not None else brand_svg("mark-small.svg"))
-    body = body.replace('id="smm"', 'id="fav-smm"').replace("url(#smm)", "url(#fav-smm)")
+    mark = mark if mark is not None else brand_svg("mark.svg")
+    w, h = (float(v) for v in re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', mark).groups())
+    scale = 64 * (1 - 2 * FAVICON_CLEAR) / w
+    body = _body(mark).replace('"', "'")
     svg = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>"
-           "<circle cx='32' cy='32' r='32' fill='%s'/><g transform='%s'>%s</g></svg>"
-           % (FAVICON_TILE, FAVICON_TRANSFORM, body.replace('"', "'")))
+           "<rect width='64' height='64' fill='%s'/><g transform='translate(%s %s) scale(%s)'>%s</g></svg>"
+           % (FAVICON_TILE, _num(64 * FAVICON_CLEAR), _num((64 - h * scale) / 2), _num(scale, 6), body))
     for ch, enc in (("%", "%25"), ("#", "%23"), ("<", "%3C"), (">", "%3E"), ('"', "%22")):
         svg = svg.replace(ch, enc)
     return "data:image/svg+xml," + svg
+
+
+def _num(v, places=3):
+    return ("%.*f" % (places, v)).rstrip("0").rstrip(".")
 
 
 def lockup_svg(horizontal=None):
@@ -102,7 +121,7 @@ def favicon_drift(root=ROOT, mark=None):
     if not m:
         return "no SVG rel=icon data URI in index.html"
     if m.group(1) != favicon_href(mark):
-        return "the favicon data URI is not the encoded brand/mark-small.svg tile"
+        return "the favicon data URI is not the encoded brand/mark.svg tile"
     return None
 
 
@@ -151,10 +170,42 @@ def render_og(svg):
     return page.get_pixmap(matrix=fitz.Matrix(1, 1), alpha=False)
 
 
+def reading_name(name, scale):
+    return "brand/%s@%dx.png" % (name, scale)
+
+
+def render_reading(svg, scale):
+    doc = fitz.open(stream=svg.encode("utf-8"), filetype="svg")
+    page = doc[0]
+    w, h = READING_SLOT[0] * scale, READING_SLOT[1] * scale
+    return page.get_pixmap(matrix=fitz.Matrix(w / page.rect.width, h / page.rect.height), alpha=True)
+
+
 def render(sources=None):
     sources = sources or {}
-    return {TOUCH_PNG: render_touch(sources.get(TOUCH_PNG) or brand_svg(SOURCES[TOUCH_PNG])),
-            OG_PNG: render_og(sources.get(OG_PNG) or brand_svg(SOURCES[OG_PNG]))}
+    out = {TOUCH_PNG: render_touch(sources.get(TOUCH_PNG) or brand_svg(SOURCES[TOUCH_PNG])),
+           OG_PNG: render_og(sources.get(OG_PNG) or brand_svg(SOURCES[OG_PNG]))}
+    for name in READING_RASTERS:
+        for scale in (2, 3):
+            key = reading_name(name, scale)
+            out[key] = render_reading(sources.get(key) or brand_svg(name + ".svg"), scale)
+    return out
+
+
+def master_differing_fraction(mark_svg=None):
+    """A15/A24: the vector mark vs the approved master, both flattened onto the
+    canvas ground at the master's own size."""
+    ground = tuple(round(c * 255) for c in GROUND)
+
+    def flat(pix):
+        s, n, out = pix.samples, pix.n, bytearray()
+        for i in range(0, len(s), n):
+            a = s[i + 3] / 255 if n == 4 else 1
+            out += bytes(round(s[i + c] * a + ground[c] * (1 - a)) for c in range(3))
+        return fitz.Pixmap(fitz.csRGB, pix.width, pix.height, bytes(out), False)
+
+    vec = raster(mark_svg if mark_svg is not None else brand_svg("mark.svg"), MASTER_SIZE[0])
+    return differing_fraction(flat(fitz.Pixmap(MASTER_PNG)), flat(vec))
 
 
 def differing_fraction(a, b, clip=None):
@@ -183,6 +234,9 @@ REGIONS = {
     TOUCH_PNG: (None,),
     OG_PNG: (None, tuple(int(v) for v in OG_ICON_RECT)),
 }
+for _n in READING_RASTERS:
+    for _s in (2, 3):
+        REGIONS[reading_name(_n, _s)] = (None,)
 
 
 def check(sources=None, root=ROOT):
@@ -193,7 +247,7 @@ def check(sources=None, root=ROOT):
             verdicts[name] = (False, 1.0)
             continue
         on_disk = fitz.Pixmap(path)
-        if on_disk.alpha:
+        if on_disk.alpha != fresh.alpha:
             on_disk = fitz.Pixmap(on_disk, 0)
         frac = max(differing_fraction(fresh, on_disk, clip) for clip in REGIONS[name])
         verdicts[name] = (frac <= MAX_DIFFERING_FRACTION, frac)
@@ -226,9 +280,13 @@ def main(argv):
                 stale = True
                 print(f"make_icons: {name} is stale ({frac:.2%} of pixels differ); "
                       f"run python3 tools/make_icons.py")
+        frac = master_differing_fraction()
+        if frac > MAX_MASTER_DIFFERING_FRACTION:
+            stale = True
+            print(f"make_icons: brand/mark.svg differs from the approved master in {frac:.2%} of pixels")
         if stale:
             return 1
-        print("make_icons: favicon, lockup, apple-touch-icon.png and og.png are current")
+        print("make_icons: favicon, lockup, reading rasters, apple-touch-icon.png and og.png are current")
         return 0
     sync_index()
     for name, pix in render().items():

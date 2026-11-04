@@ -1,0 +1,110 @@
+{
+  "approvedDirection": "01 / Field guide",
+  "approvedLogo": "Two contours",
+  "brandSheetApproved": true,
+  "implementationAuthorized": false,
+  "planningOnly": true,
+  "sourceCaptureDate": "2026-11-03T06:05:04.991Z",
+  "sourceAppSha256": "a42f952fb74af63590aace717268e7d11cf193264b6ff80f59a476b6ef051e26",
+  "originalCaptureUrl": "https://handpan.raywu.org/",
+  "planBase": "19a91883",
+  "notes": [
+    "Brand sheet and root studies are approved visual references; selected-learning-reference is an earlier directional screenshot, not exact implementation approval of generated pixel colors or layout. Brand sheet tokens govern.",
+    "Retained source screenshots allow protected-region comparison; refresh same-base baselines before implementation.",
+    "Historical temp paths in evidence are provenance only. No handoff dependency on those temp paths.",
+    "Print margin/cover proposal is excluded from implementation until separately approved.",
+    "approved-logo-master.png is ivory artwork on transparent alpha; it appears blank on a white viewer background. approved-logo-on-dark.png is a visibility reference from the same unchanged master, flattened on #0F0E0B."
+  ],
+  "files": [
+    {
+      "path": "approved-brand-sheet.png",
+      "sha256": "c81e261c5001e5cd7db593ddc1ace3bc33c8acc1dd96119c743cfab141c83e0b",
+      "bytes": 946729
+    },
+    {
+      "path": "approved-logo-master.png",
+      "sha256": "bc774e27337a93b03b27f0c67231dab5c6de2fa1b4081ad5b30147a336f16f7f",
+      "bytes": 11820
+    },
+    {
+      "path": "approved-root-mobile.png",
+      "sha256": "9fdc792f94312a0e4a609d7cfddbbd7b44961fcf99b4d0c6e947b827fa13bdd1",
+      "bytes": 1397565
+    },
+    {
+      "path": "approved-layout-editor.png",
+      "sha256": "073dfa86312dcade96a9a611c4cb50a12d9cfefef7938862da579a8582ece1e0",
+      "bytes": 955912
+    },
+    {
+      "path": "approved-tablet.png",
+      "sha256": "a451625fecee287eddd858f3051181522ee2a8c0966e75dab3bcf0e9b71112b0",
+      "bytes": 597754
+    },
+    {
+      "path": "approved-desktop.png",
+      "sha256": "251509355d1d0aa9e18f0876f63db8eb51a724a0cd2e8ecbf081685cc46b1e93",
+      "bytes": 348298
+    },
+    {
+      "path": "selected-learning-reference.png",
+      "sha256": "50eceb111ec55005024945f4696f98102457ff8d3c39e6c736ab8faac887fe86",
+      "bytes": 1152790
+    },
+    {
+      "path": "token-check.json",
+      "sha256": "88044b28de5cbcff7375392a8189c9c1219cb49b1d2b048998a88afd83ffcf99",
+      "bytes": 3370
+    },
+    {
+      "path": "preservation-evidence.json",
+      "sha256": "0e83774639a31eb679ff30d7e6c7f6b50c7fa3345ba36ac711078ff6274083b5",
+      "bytes": 836
+    },
+    {
+      "path": "source-captures/root-phone.png",
+      "sha256": "dff59ee5f48b51016fb8cff3dcac39948b14411fb4cb4df4e603958057c9e8a5",
+      "bytes": 87821
+    },
+    {
+      "path": "source-captures/menu-phone.png",
+      "sha256": "8bb69fec9c71eb55042f54e7a87bb0c940fe2494989992b67a2359b69aa1b308",
+      "bytes": 77832
+    },
+    {
+      "path": "source-captures/add-phone.png",
+      "sha256": "546aff864045357800d6b00ff67aca233361a69e5dc4712813a716ae473e34d5",
+      "bytes": 99709
+    },
+    {
+      "path": "source-captures/edit-phone.png",
+      "sha256": "b4acd7a60cd6db7bfb08104f3e2b0a8f2f66c083c453a1328ef918c3a2d4d26f",
+      "bytes": 90568
+    },
+    {
+      "path": "source-captures/layout-phone.png",
+      "sha256": "7a4878e2d985d985a50e4b05732059f6499c5d43e8e6dcbe9fefb676f8135497",
+      "bytes": 140829
+    },
+    {
+      "path": "source-captures/root-tablet.png",
+      "sha256": "7e168d4add45319a810ca375821fac753097666c77ee5d16787cfcf1c1d9c519",
+      "bytes": 113282
+    },
+    {
+      "path": "source-captures/edit-tablet.png",
+      "sha256": "6c6419af1e50f33ec5673b8257f5a601e3281e48176170aeef4680e0105a4795",
+      "bytes": 34383
+    },
+    {
+      "path": "source-captures/root-desktop.png",
+      "sha256": "7ffe59e3d7a9a5809137492f29523220517f85ae69ac1366306208159fe812cb",
+      "bytes": 136357
+    },
+    {
+      "path": "approved-logo-on-dark.png",
+      "sha256": "c458704ac9b9571a28d218f84b60d3025bb4310bf9882f7f31198506ee501215",
+      "bytes": 10849
+    }
+  ]
+}

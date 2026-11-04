@@ -45,14 +45,14 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertEqual(p.meta("og:image", "property"), SITE + "og.png")
         self.assertEqual(p.meta("og:type", "property"), "article")
 
-    def test_theme_colours_are_the_app_brown_and_gold(self):
+    def test_theme_colours_are_the_paper_ground_and_violet_action(self):
         html = read(PATH)
         self.assertIn(SHARED_ROOT, html)
         self.assertNotIn("prefers-color-scheme", html)
         self.assertNotIn("#433b2c", html)
         self.assertNotIn("#fbfaf8", html)
         self.assertNotIn("#1a1815", html)
-        self.assertEqual(page().meta("theme-color"), "#0f0e0b")
+        self.assertEqual(page().meta("theme-color"), "#f6f4ed")
 
     def test_the_shared_h1_h2_body_and_link_rules(self):
         html = read(PATH)
@@ -67,13 +67,13 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertTrue(rules)
         colours = [c for r in rules for c in re.findall(r"(?:^|;)\s*color:([^;]+)", r)]
         self.assertEqual(colours[-1].strip(), "var(--r)")
-        self.assertIn("--r:#f6f4ed", style)
+        self.assertIn("--r:#242424", style)
 
-    def test_the_open_button_text_is_the_ground_on_text_primary(self):
+    def test_the_open_button_is_white_on_the_violet_action(self):
         html = read(PATH)
-        self.assertRegex(html, r"\.open\{[^}]*color:#0f0e0b")
-        self.assertRegex(html, r"a\.open\{color:#0f0e0b;")
-        self.assertNotIn("color:#fff", html)
+        self.assertRegex(html, r"\.open\{[^}]*background:var\(--act\);color:#fff")
+        self.assertRegex(html, r"a\.open\{color:#fff;")
+        self.assertGreaterEqual(ratio("#ffffff", "#6756b5"), 4.5)
 
     def test_chord_progressions_video_ends_videos_to_start_with(self):
         html = read(PATH)
@@ -83,10 +83,10 @@ class Handpan101PageTest(unittest.TestCase):
         self.assertEqual(len(items), 4)
         self.assertNotIn("-BD13QhFJ-M", re.search(r"<h2>Resources</h2>(.*?)</section>", html, re.S).group(1))
 
-    def test_every_primary_and_text_colour_passes_contrast_on_the_brown(self):
-        for colour in ("#f5c78e", "#f6f4ed", "#a9a39a"):
+    def test_every_primary_and_text_colour_passes_contrast_on_the_paper(self):
+        for colour in ("#242424", "#5e5850", "#6756b5"):
             with self.subTest(colour=colour):
-                self.assertGreaterEqual(ratio(colour, "#0f0e0b"), 4.5)
+                self.assertGreaterEqual(ratio(colour, "#f6f4ed"), 4.5)
 
     def test_structure_h1_then_h2_one_main_lang_en(self):
         html = read(PATH)
