@@ -6,7 +6,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -14464,7 +14464,6 @@ const aboutOpenBtn = document.getElementById("about-open");
  const aboutCloseBtn = document.getElementById("about-close");
- const aboutBackground = () => [document.querySelector("#app"), settingsPanel].filter(Boolean);
+ const aboutBackground = () => [document.querySelector("#app"), settingsPanel, moveBannerEl].filter(Boolean);
  function syncAboutHead() {
 -  if (!aboutOpen) return;
    const head = document.querySelector(".abouthead");
