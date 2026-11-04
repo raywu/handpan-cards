@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14137,7 +14137,7 @@ function syncParseState({ paint }) {
+@@ -14830,7 +14830,7 @@ function syncParseState({ paint }) {
  function updateParse() {
    neoTyping = true;
    buildRefused=false;
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +
    if (drawerOpen) layoutStatus("");
    syncParseState({ paint: true });
- }
+   applyNeoName();
