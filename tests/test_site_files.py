@@ -171,6 +171,13 @@ class SiteFilesTest(unittest.TestCase):
         self.assertNotRegex(page, r"(?i)rel=[\"']canonical")
         self.assertNotRegex(page, r"(?i)http-equiv=[\"']refresh")
 
+    def test_handpan_101_links_the_neotone_page_in_chords_section(self):
+        html = read("handpan-101/index.html")
+        m = re.search(r"<h2>Chords on a handpan</h2>(.*?)</section>", html, re.S)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1).count('<a href="/scales/neotone/">'), 1)
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, "scales", "neotone", "index.html")))
+
     def test_publish_script_builds_exactly_the_allowlist_byte_for_byte(self):
         allow_files = ["index.html", "404.html", "sitemap.xml", "robots.txt", "llms.txt",
                        "_headers", "og.png", "apple-touch-icon.png"]

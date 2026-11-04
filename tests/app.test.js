@@ -3974,6 +3974,18 @@ test("the description says free and progressions early, equals og:description an
     `"progressions" is not inside the first 110 characters: ${JSON.stringify(cut)}`);
 });
 
+test("NSA: the description names Neotone in all three copies and the About text links the Neotone chord page", async () => {
+  const html = headHtml();
+  const metas = [metaContent(html, "name", "description"), metaContent(html, "property", "og:description"),
+    /"description": "([^"]*)"/.exec(html)[1]];
+  for (const m of metas) assert.match(m, /Neotone/);
+  assert.strictEqual(new Set(metas).size, 1);
+  const about = /<section id="about"[\s\S]*?<\/section>/.exec(INDEX_HTML())[0];
+  assert.strictEqual((about.match(/<a href="\/scales\/neotone\/">/g) || []).length, 1);
+  assert.match(about, /Neotone/);
+  assert.ok(fs.existsSync(path.join(__dirname, "..", "scales", "neotone", "index.html")));
+});
+
 test("the favicon is an inline SVG data URI drawing the Handpan Theory mark on a square tile", async () => {
   const html = headHtml();
   const href = linkHref(html, "icon", `\\s+type="image/svg\\+xml"`);
