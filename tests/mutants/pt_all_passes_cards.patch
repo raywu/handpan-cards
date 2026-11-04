@@ -1,5 +1,5 @@
-# kills: each option builds exactly the tierCards set; ALL builds the unfiltered default
-# suite: node --test --test-name-pattern each.option.builds.exactly.the.tierCards.set tests/app.test.js
+# kills: hijaz: each option builds exactly the tierCards set; ALL builds the unfiltered default
+# suite: node --test --test-name-pattern hijaz..each.option.builds.exactly.the.tierCards.set tests/app.test.js
 # Lane U (PDF tier menu). ALL passes a cards option too, so the default bytes are no longer the unfiltered build.
 
 diff --git a/index.html b/index.html

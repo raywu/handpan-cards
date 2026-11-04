@@ -3303,8 +3303,8 @@ function run() {
           const seen = [];
           URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
           const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-            .find(el => el.textContent.trim() === "DOWNLOAD PDF");
-          if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
+            .find(el => el.id === "print-pdf-all");
+          if (!btn) return { err: "no ALL item in the DOWNLOAD PDF menu" };
           try { btn.click(); } finally { URL.createObjectURL = real; }
           if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
           const u8 = new Uint8Array(await seen[0].arrayBuffer());

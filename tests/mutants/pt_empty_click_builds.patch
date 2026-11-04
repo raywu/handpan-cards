@@ -1,5 +1,5 @@
-# kills: an option whose set is empty is disabled when the menu opens
-# suite: node --test --test-name-pattern an.option.whose.set.is.empty.is.disabled tests/app.test.js
+# kills: an option whose set is empty is disabled when the menu opens; ALL never is; an empty click builds nothing
+# suite: node --test --test-name-pattern an.option.whose.set.is.empty.is.disabled.when.the.menu.opens tests/app.test.js
 # Lane U (PDF tier menu). An item with an empty set still builds a PDF when tapped.
 
 diff --git a/index.html b/index.html

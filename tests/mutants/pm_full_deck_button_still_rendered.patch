@@ -1,4 +1,4 @@
-# kills: PM rule 1: the print row is DOWNLOAD PDF then the paper select, and no full-deck control is rendered
+# kills: PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper select, and no full-deck control is rendered
 # suite: node --test --test-name-pattern PM.rule.1 tests/app.test.js
 # Lane PM. Puts a FULL DECK PDF button back at the head of the print row, so the panel again offers a
 # full-deck control the plan removed.

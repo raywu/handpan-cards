@@ -1,5 +1,5 @@
-# kills: closePanel closes an open menu; Escape closes only the menu and returns focus
-# suite: node --test --test-name-pattern Escape.closes.only.the.menu.and.returns.focus tests/app.test.js
+# kills: closePanel closes an open menu; Escape closes only the menu and returns focus to the trigger
+# suite: node --test --test-name-pattern Escape.closes.only.the.menu.and.returns.focus.to.the.trigger tests/app.test.js
 # Lane U (PDF tier menu). Escape closes the menu but leaves focus off the trigger.
 
 diff --git a/index.html b/index.html
