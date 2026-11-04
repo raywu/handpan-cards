@@ -1,0 +1,16 @@
+# kills: tierCards runs once per scale however often the menu opens or a PDF builds
+# suite: node --test --test-name-pattern tierCards.runs.once.per.scale tests/app.test.js
+# Lane U (PDF tier menu). The cache is bypassed, so tierCards recomputes on every open and build.
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12423,7 +12423,7 @@ const pdfTierCache = new Map();
+ function pdfTierSets(d) {
+   const key = d.id + "|" + JSON.stringify(d.fields);
+   let sets = pdfTierCache.get(key);
+-  if (!sets) {
++  if (true) {
+     sets = HPE.sequence.tierCards(d);
+     pdfTierCache.set(key, sets);
+   }

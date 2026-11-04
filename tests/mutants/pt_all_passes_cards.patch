@@ -1,0 +1,16 @@
+# kills: each option builds exactly the tierCards set; ALL builds the unfiltered default
+# suite: node --test --test-name-pattern each.option.builds.exactly.the.tierCards.set tests/app.test.js
+# Lane U (PDF tier menu). ALL passes a cards option too, so the default bytes are no longer the unfiltered build.
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12497,7 +12497,7 @@ function downloadDeckPDF(variant, btn, option = "all") {
+   rowButtons.forEach(b => { b.disabled = true; });
+   try {
+     pdfDeck.auto_name = printNameSource(d).auto_name;
+-    const bytes = HPE.pdfcards.build(pdfDeck, cards ? { variant, paper: printPaper, cards } : { variant, paper: printPaper });
++    const bytes = HPE.pdfcards.build(pdfDeck, { variant, paper: printPaper, cards });
+     const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+     if (isIOS(navigator.userAgent)) {
+       // `<a download>` is not honoured by iOS Safari: the tap does nothing at

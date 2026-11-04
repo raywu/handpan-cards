@@ -1,18 +1,11 @@
-# kills: the legacy print sheet is gone: no #printroot, no openPrintSheet, no window.print caller
-# suite: node --test --test-name-pattern ^the.legacy.print.sheet.is.gone. tests/app.test.js
-# Q2: re-introduces a `window.print(` call in code (not a comment), the
-# browser print dialog the R1 retirement removed in favour of the
-# client-built PDF. Guards that the lock test's code-shaped regex, not just
-# the old narrower forms, still catches a real reintroduction.
-# Re-cut 2026-10-08 (lane PM): the context moved with the not-used comment above downloadDeckPDF. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11125,6 +11125,7 @@ function pdfFileName(d, variant, paper) {
- // card, blank padding) has no control. The settings panel offers DOWNLOAD PDF,
- // which calls this with 'shop'. 'full' is kept for tests and a future return.
- function downloadDeckPDF(variant, btn) {
+@@ -12466,6 +12466,7 @@ function togglePrintMenu() {
+   setPrintMenu(true);
+ }
+ function downloadDeckPDF(variant, btn, option = "all") {
 +  if (false) { window.print() }
    const d = deck();
-   // One function, one decision: a built-in deck's print overlay lives under
-   // `print` in data/decks.json (carried into `const DECKS` above); a
+   let cards;
+   if (option !== "all") {

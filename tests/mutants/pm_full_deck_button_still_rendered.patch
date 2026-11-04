@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1719,6 +1719,7 @@ html.about-open{overflow:hidden}
+@@ -1987,6 +1987,7 @@ html.about-open{overflow:hidden}
    <div class="panel-group">
      <h3 class="panel-heading">Print this scale</h3>
      <div class="prints">
 +      <button type="button" onclick="downloadDeckPDF('full', this); closePanel();">FULL DECK PDF</button>
-       <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
-       <!-- The paper choice keeps the panel open (design direction, "After an
-            action"): the next tap is a print button, not a new task. -->
+       <button type="button" id="print-download" aria-haspopup="menu" aria-expanded="false" aria-controls="print-menu" onclick="togglePrintMenu();">DOWNLOAD PDF</button>
+       <div id="print-menu" role="menu" aria-label="PDF download options" hidden>
+         <button type="button" role="menuitem" id="print-pdf-easy" onclick="downloadDeckPDF('shop', this, 'easy'); closePanel();">EASY</button>

@@ -1,0 +1,16 @@
+# kills: an option whose set is empty is disabled when the menu opens
+# suite: node --test --test-name-pattern an.option.whose.set.is.empty.is.disabled tests/app.test.js
+# Lane U (PDF tier menu). An item with an empty set still builds a PDF when tapped.
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12470,7 +12470,7 @@ function downloadDeckPDF(variant, btn, option = "all") {
+   let cards;
+   if (option !== "all") {
+     cards = pdfTierSets(d)[PDF_TIER_KEYS[option]];
+-    if (!cards || !cards.length) return;
++    if (!cards) return;
+   }
+   setPrintMenu(false);
+   // One function, one decision: a built-in deck's print overlay lives under

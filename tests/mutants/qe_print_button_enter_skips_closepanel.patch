@@ -1,19 +1,12 @@
-# kills: Enter on a print button runs its real click handler and does not flip the card
-# suite: node --test --test-name-pattern ^Enter.on.a.print.button.runs.its.real.click.handler.and.does.not.flip.the.card$ tests/e2e.test.js
-# Drops closePanel() from the DOWNLOAD PDF button's onclick, so activating it
-# (by Enter, same as by mouse) never closes the settings panel - the kind of
-# wiring break finding 9 (quality refactor 2026-09-30) needed a non-vacuous
-# test to catch.
-# Re-cut 2026-10-08 (lane PM): the one print button is DOWNLOAD PDF. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1719,7 +1719,7 @@ html.about-open{overflow:hidden}
-   <div class="panel-group">
-     <h3 class="panel-heading">Print this scale</h3>
+@@ -1989,7 +1989,7 @@ html.about-open{overflow:hidden}
      <div class="prints">
--      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
-+      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this);">DOWNLOAD PDF</button>
-       <!-- The paper choice keeps the panel open (design direction, "After an
-            action"): the next tap is a print button, not a new task. -->
-       <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
+       <button type="button" id="print-download" aria-haspopup="menu" aria-expanded="false" aria-controls="print-menu" onclick="togglePrintMenu();">DOWNLOAD PDF</button>
+       <div id="print-menu" role="menu" aria-label="PDF download options" hidden>
+-        <button type="button" role="menuitem" id="print-pdf-easy" onclick="downloadDeckPDF('shop', this, 'easy'); closePanel();">EASY</button>
++        <button type="button" role="menuitem" id="print-pdf-easy" onclick="downloadDeckPDF('shop', this, 'easy');">EASY</button>
+         <button type="button" role="menuitem" id="print-pdf-easy_medium" onclick="downloadDeckPDF('shop', this, 'easy_medium'); closePanel();">EASY + MEDIUM</button>
+         <button type="button" role="menuitem" id="print-pdf-all" onclick="downloadDeckPDF('shop', this, 'all'); closePanel();">ALL</button>
+       </div>
