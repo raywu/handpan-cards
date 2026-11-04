@@ -1,0 +1,16 @@
+# kills: test_each_published_scale_has_a_captioned_table_equal_to_the_manual
+# suite: python3 -m unittest -k test_each_published_scale_has_a_captioned_table_equal_to_the_manual tests.test_scale_pages
+# Two Astronaut mutant-ring cells (fields 6 and 7) swap places in the page data, so the table misstates the layout.
+diff --git a/tools/neotone_page.json b/tools/neotone_page.json
+--- a/tools/neotone_page.json
++++ b/tools/neotone_page.json
+@@ -196,8 +196,8 @@
+     "-",
+     "-",
+     "G5",
+-    "D#5",
+     "C5",
++    "D#5",
+     "G#4",
+     "-"
+    ],

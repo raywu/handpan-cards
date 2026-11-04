@@ -104,7 +104,7 @@ function card(d, n) {
     svg,
   };
 }
-const out = { rows: {}, alt: {} };
+const out = { rows: {}, alt: {}, defaults: [] };
 for (const r of input.rows) {
   let d, p = null;
   if (r.deck) d = decks.find((x) => x.id === r.deck);
@@ -128,6 +128,12 @@ for (const r of input.rows) {
     out.alt[r.slug] = { share: code, again: dec.ok ? shareOf({ value: dec.value }) : null, ok: dec.ok };
   }
 }
+for (const d of input.defaults || []) {
+  const p = seedOf({ slug: d.name }, d);
+  const share = shareOf(p);
+  const dec = HPE.share.decode(share);
+  out.defaults.push({ name: d.name, seed: HPE.core.formatSeed(p.value), share, ok: dec.ok && shareOf({ value: dec.value }) === share });
+}
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -137,9 +143,9 @@ def load_rows():
         return json.load(f)
 
 
-def engine(rows):
+def engine(rows, defaults=()):
     env = dict(os.environ, GSP_ROOT=ROOT)
-    run = subprocess.run(["node", "-e", NODE_SRC], input=json.dumps({"rows": rows}), capture_output=True,
+    run = subprocess.run(["node", "-e", NODE_SRC], input=json.dumps({"rows": rows, "defaults": list(defaults)}), capture_output=True,
                          text=True, env=env, cwd=ROOT)
     if run.returncode:
         raise SystemExit("gen_scale_page: engine failed: " + run.stderr.strip())
@@ -440,6 +446,32 @@ def load_copy(row):
         return json.load(f)
 
 
+def defaults_html(row, shares):
+    link = {d["name"]: d["share"] for d in shares}
+    out = ['<section class="plain">\n<h2>Neotone factory scales</h2>\n'
+           "<p>The Neotone One Mutant ships with nine scales on the DOME hotkeys. These are the factory defaults; "
+           "your own layouts can differ. Field numbers run from the lowest side note (1) to the highest (9).</p>\n"]
+    for d in row["defaults"]:
+        out.append("<h3>%s</h3>\n" % esc(d["name"]))
+        out.append('<p class="muted">Hotkey %s.</p>\n' % esc(d["hotkey"]))
+        if "notes" in d:
+            out.append("<p>%s</p>\n" % esc(d["notes"]))
+            out.append('<p class="muted">Tonefield layout not published by Neotone.</p>\n')
+            continue
+        cols = "".join('<th scope="col">%s</th>' % h for h in ["Ding"] + [str(i) for i in range(1, 10)])
+        cells = lambda label, vals: '<tr><th scope="row">%s</th>%s</tr>\n' % (
+            label, "".join("<td>%s</td>" % esc(c) for c in vals))
+        out.append('<div style="overflow-x:auto"><table>\n<caption>%s</caption>\n<tr><td></td>%s</tr>\n'
+                   % (esc(d["name"]), cols))
+        out.append(cells("Main", [d["ding"]] + d["main"]))
+        out.append(cells("Mutant", ["-"] + (d["mutant"] or ["-"] * 9)))
+        out.append("</table></div>\n")
+        out.append('<div class="ctas"><a class="open" href="/#s=%s">Practice %s</a></div>\n'
+                   % (link[d["name"]], esc(d["name"])))
+    out.append("</section>\n")
+    return "".join(out)
+
+
 def render(row, data, rows_by_slug, copy, alt=None):
     frozen = row["kind"] == "frozen"
     neo = row["slug"] == NEOTONE_SLUG
@@ -536,7 +568,8 @@ def render(row, data, rows_by_slug, copy, alt=None):
                '<a class="open ghost" href="/#add">ADD YOUR OWN SCALE</a></div>\n'
                % (cta, esc((data["name"] if neo else name).upper())))
     if neo:
-        out.append("</section>\n" '<section class="plain">\n<h2>Make your own Neotone scale</h2>\n<ol>%s</ol>\n</section>\n'
+        out.append("</section>\n" + defaults_html(row, data["defaults"]))
+        out.append('<section class="plain">\n<h2>Make your own Neotone scale</h2>\n<ol>%s</ol>\n</section>\n'
                    % "".join("<li>%s</li>\n" % step for step in copy["steps_html"]))
         out.append('<section class="related">\n<h2>More chord charts</h2>\n'
                    '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n' % len(load_rows()))
@@ -589,7 +622,8 @@ def load_neotone_row():
 
 def neotone_page(row=None):
     row = row or load_neotone_row()
-    data = engine([row])["rows"][row["slug"]]
+    res = engine([row], [d for d in row.get("defaults", []) if "seed" in d])
+    data = dict(res["rows"][row["slug"]], defaults=res["defaults"])
     return render(row, data, {row["slug"]: row}, load_copy(row))
 
 
@@ -597,6 +631,8 @@ def neotone_fixture_data(row=None):
     row = row or load_neotone_row()
     out = json.loads(fixture_data([row]))
     out[row["slug"]]["profile"] = row["profile"]
+    res = engine([row], [d for d in row.get("defaults", []) if "seed" in d])
+    out[row["slug"]]["defaults"] = [{k: v for k, v in d.items() if k != "ok"} for d in res["defaults"]]
     return json.dumps(out, indent=1, sort_keys=True) + "\n"
 
 

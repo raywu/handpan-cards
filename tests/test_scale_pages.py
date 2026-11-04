@@ -25,6 +25,7 @@ ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org
                  "www.veritashandpans.com", "www.spirithandpan.com", "www.panart.ch", "www.muziker.al",
                  "www.mudrahandpans.com", "www.kirstein.de", "www.halleonard.com", "www.boullard.ch"}
 SIZE_CAP = 62 * 1024 - 800
+NEO_SIZE_CAP = 72 * 1024
 PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#2563B0", "#3B7A2A",
             "#C0452C", "#B3263A"]
 BG_LIGHT = "#f6f4ed"
@@ -1156,6 +1157,35 @@ P0_MAP = ["r56", "r57", "r59", "r61", "r63", "r64", "r66", "r68", None, "b52", "
 DISCLAIMER = "Neotone is a trademark of its maker. Handpan Theory is not affiliated with or endorsed by Neotone."
 _NEO = {}
 
+ASTRO_SEED = "(F2) [A#2] [C3] C#3 D#3 F3 G3 G#3 C4 D#4 F4 G4 [G#4] [C5] [D#5] [G5]"
+ASTRO_MAP = ["r49", "r51", "r53", "r55", "r56", "r60", "r63", "r65", "r67", "b46", "b48", None, None, "b79", "b75",
+             "b72", "b68", None]
+FACTORY = [
+    ("B Amara", "DOME+1", "B2", "F#3 A3 B3 C#4 D4 E4 F#4 A4 B4"),
+    ("C Aegean", "DOME+2", "C3", "E3 G3 B3 C4 E4 F#4 G4 B4 E5"),
+    ("C# Pygmy", "DOME+3", "C#3", "F#3 G#3 A3 C#4 E4 F#4 G#4 A4 C#5"),
+    ("D Kurd", "DOME+4", "D3", "A3 Bb3 C4 D4 E4 F4 G4 A4 C5"),
+    ("F# Pygmy", "DOME+5", "F#2", "C#3 F#3 G#3 A3 C#4 E4 F#4 G#4 A4"),
+    ("G Romanian Hijaz", "DOME+6", "G3", "C4 D4 D#4 F#4 G4 A4 A#4 C5 D5"),
+]
+ASTRO = ("F2 Astronaut 16", "DOME+9", "F2", "C#3 D#3 F3 G3 G#3 C4 D#4 F4 G4", "A#2 C3 - - G5 D#5 C5 G#4 -")
+NOT_PUBLISHED = [
+    ("Eb La Sirena 16", "DOME+7", "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 F4 F#4 A#4 C5 D#5 F5"),
+    ("B2 Onoleo 15", "DOME+8", "B2 E3 F#3 G3 A3 B3 C4 D#4 E4 F#4 G4 A4 B4 C5 D#5"),
+]
+
+
+def factory_section():
+    html = neo()["html"]
+    m = re.search(r"<h2>Neotone factory scales</h2>(.*?)</section>", html, re.S)
+    return m.group(1) if m else ""
+
+
+def factory_blocks():
+    parts = re.split(r"<h3>", factory_section())[1:]
+    return {re.match(r"(.*?)</h3>", b).group(1): b for b in parts}
+
+
 
 def neo():
     if not _NEO:
@@ -1322,7 +1352,7 @@ class NeotonePageTest(unittest.TestCase):
         html = neo()["html"]
         vis = Page(html).visible()
         self.assertIsNone(re.search(r"deck|paired|HPT", vis, re.I))
-        self.assertLess(len(html.encode("utf-8")), SIZE_CAP)
+        self.assertLess(len(html.encode("utf-8")), NEO_SIZE_CAP)
         for host in re.findall(r"https?://([^/\"'\s<>)]+)", html):
             self.assertIn(host, ALLOWED_HOSTS)
         kinds = [s[0] for s in Page(html).scripts]
@@ -1348,6 +1378,78 @@ class NeotonePageTest(unittest.TestCase):
         self.assertRegex(last, r'<p class="muted">[^<]+</p>')
         self.assertIn('<p><a href="/scales/neotone/">Neotone handpan chords</a></p>', last)
         self.assertEqual(len(re.findall(r'<li><a href="/scales/', html)), 16)
+
+    def test_the_factory_section_exists_once_after_the_example_and_before_the_steps(self):
+        html = neo()["html"]
+        self.assertEqual(html.count("<h2>Neotone factory scales</h2>"), 1)
+        self.assertLess(html.index('id="neotone"'), html.index("Neotone factory scales"))
+        self.assertLess(html.index("Neotone factory scales"), html.index("Make your own Neotone scale"))
+        self.assertEqual(list(factory_blocks()), [n for n, *_ in FACTORY] + [n for n, *_ in NOT_PUBLISHED] + [ASTRO[0]])
+
+    def test_each_published_scale_has_a_captioned_table_equal_to_the_manual(self):
+        blocks = factory_blocks()
+        rows = [(n, h, d, m.split(), ["-"] * 9) for n, h, d, m in FACTORY]
+        rows.append((ASTRO[0], ASTRO[1], ASTRO[2], ASTRO[3].split(), ASTRO[4].split()))
+        for name, hot, ding, main, mutant in rows:
+            with self.subTest(name=name):
+                b = blocks[name]
+                self.assertIn(hot, b)
+                self.assertIn("<caption>%s</caption>" % name, b)
+                self.assertEqual(len(re.findall(r'<th scope="col">', b)), 10)
+                heads = re.findall(r'<th scope="col">(.*?)</th>', b)
+                self.assertEqual(heads, ["Ding"] + [str(i) for i in range(1, 10)])
+                trs = re.findall(r"<tr>(.*?)</tr>", b, re.S)
+                cells = [re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", t) for t in trs]
+                self.assertEqual(cells[1], ["Main", ding] + main)
+                self.assertEqual(cells[2], ["Mutant", "-"] + mutant)
+
+    def test_unpublished_layouts_list_notes_and_carry_no_link(self):
+        blocks = factory_blocks()
+        for name, hot, notes in NOT_PUBLISHED:
+            with self.subTest(name=name):
+                b = blocks[name]
+                self.assertIn(hot, b)
+                self.assertIn(notes, b)
+                self.assertIn("layout not published by Neotone", b)
+                self.assertNotIn("<a ", b)
+                self.assertNotIn("<table", b)
+
+    def test_each_published_scale_has_one_practice_link_that_decodes_and_round_trips(self):
+        blocks = factory_blocks()
+        names = [n for n, *_ in FACTORY] + [ASTRO[0]]
+        seeds = {}
+        links = {}
+        for n in names:
+            found = re.findall(r'<a class="open" href="(/#s=[^"]+)">Practice %s</a>' % re.escape(n), blocks[n])
+            self.assertEqual(len(found), 1, n)
+            links[n] = found[0][4:]
+        src = ("const { loadEngine } = require(%r + '/tools/engine_loader.js');"
+               "const HPE = loadEngine(['core','voicing','layout','naming','select','share']);"
+               "const out = JSON.parse(process.argv[1]).map(c => {"
+               "const d = HPE.share.decode(c); const e = HPE.share.encode(d.value);"
+               "return {ok: d.ok, seed: HPE.core.formatSeed(d.value), profile: d.value.options.profile || null, again: e.value};});"
+               "console.log(JSON.stringify(out));" % ROOT)
+        got = json.loads(subprocess.run(["node", "-e", src, json.dumps([links[n] for n in names])],
+                                        capture_output=True, text=True, check=True).stdout)
+        for n, g in zip(names, got):
+            with self.subTest(name=n):
+                self.assertTrue(g["ok"])
+                self.assertEqual(g["again"], links[n])
+        for (n, _h, ding, main), g in zip(FACTORY, got):
+            self.assertEqual(g["seed"], "(%s) %s" % (ding, main.replace("Bb", "A#")))
+            self.assertIsNone(g["profile"])
+        self.assertEqual(got[-1]["seed"], ASTRO_SEED)
+        self.assertEqual(got[-1]["profile"]["map"], ASTRO_MAP)
+        self.assertEqual(got[-1]["profile"]["rev"], 2)
+
+    def test_the_fixture_carries_the_factory_links_and_the_disclaimer_stays_last_but_one(self):
+        fx = neo_fixture()["neotone"]["defaults"]
+        blocks = factory_blocks()
+        self.assertEqual([d["name"] for d in fx], [n for n, *_ in FACTORY] + [ASTRO[0]])
+        for d in fx:
+            self.assertIn('href="/#s=%s">Practice %s</a>' % (d["share"], d["name"]), blocks[d["name"]])
+        ps = re.findall(r"<p[^>]*>(.*?)</p>", neo()["html"], re.S)
+        self.assertIn(DISCLAIMER, ps[-2])
 
     def test_sitemap_and_llms_list_the_page(self):
         self.assertIn("<loc>%sscales/neotone/</loc>" % SITE, read("sitemap.xml"))
