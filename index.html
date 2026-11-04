@@ -1313,8 +1313,9 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   width:calc(100% - 32px); max-width:420px; padding:10px 14px; border-radius:10px; background:#2a2620;
   border:1px solid #4a4336; color:#f1ead9; font:600 12px/1.45 "Nunito Sans"; text-align:center; cursor:pointer}
 .move-notice[hidden]{display:none}
-.move-banner{box-sizing:border-box; width:100%; max-width:520px; margin:0 0 8px; padding:10px 12px; border-radius:10px;
-  background:#2a2620; border:1px solid #4a4336; color:#f1ead9; font:600 12.5px/1.45 "Nunito Sans"; flex:none}
+.move-banner{box-sizing:border-box; position:fixed; z-index:25; left:50%; transform:translateX(-50%);
+  bottom:max(var(--sp-2), env(safe-area-inset-bottom)); width:calc(100% - 32px); max-width:520px; padding:10px 12px; border-radius:10px;
+  background:#2a2620; border:1px solid #4a4336; color:#f1ead9; font:600 12.5px/1.45 "Nunito Sans"; box-shadow:0 4px 18px rgba(0,0,0,.5)}
 .move-banner[hidden]{display:none}
 .move-banner-msg{margin:0 0 6px; overflow-wrap:anywhere}
 .move-banner-actions{display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-1) var(--sp-3)}
@@ -15418,6 +15419,7 @@ function updateSavedStatus() {
   if(el.textContent!==text)el.textContent=text;
   el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");
   document.getElementById("scale-conflict-separate").textContent=t("saved.separate");
+  refreshMoveBanner();
 }
 function hideSavedConflict() {
   conflictVisible=false;
@@ -16593,7 +16595,7 @@ let aboutOpen = false;
 const aboutSection = document.getElementById("about");
 const aboutOpenBtn = document.getElementById("about-open");
 const aboutCloseBtn = document.getElementById("about-close");
-const aboutBackground = () => [document.querySelector("#app"), settingsPanel].filter(Boolean);
+const aboutBackground = () => [document.querySelector("#app"), settingsPanel, moveBannerEl].filter(Boolean);
 function syncAboutHead() {
   if (!aboutOpen) return;
   const head = document.querySelector(".abouthead");
@@ -17427,7 +17429,10 @@ function moveGo() {
   location.assign(moveUrl().url);
 }
 const MOVE_DISMISS_KEY = "hpfc.move.dismissed";
-let moveBannerEl = null, moveBannerMsg = null, moveBannerGo = null, moveBannerDismiss = null;
+let moveBannerEl = null, moveBannerMsg = null, moveBannerGo = null, moveBannerDismiss = null, moveBannerDismissed = false;
+function refreshMoveBanner() {
+  if (moveBannerEl && !moveBannerDismissed) renderMoveBanner();
+}
 function renderMoveBanner() {
   if (!MOVE_ON_OLD) return;
   if (!moveBannerEl) {
@@ -17447,6 +17452,7 @@ function renderMoveBanner() {
     moveBannerDismiss.setAttribute("type", "button");
     moveBannerDismiss.addEventListener("click", () => {
       moveBannerEl.hidden = true;
+      moveBannerDismissed = true;
       try { sessionStorage.setItem(MOVE_DISMISS_KEY, "1"); } catch (e) {}
     });
     actions.appendChild(moveBannerGo);
@@ -17455,6 +17461,8 @@ function renderMoveBanner() {
     moveBannerEl.appendChild(actions);
     const first = document.body.firstChild;
     if (first) document.body.insertBefore(moveBannerEl, first); else document.body.appendChild(moveBannerEl);
+    background.push(moveBannerEl);
+    panelBackground.push(moveBannerEl);
   }
   const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
   const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];

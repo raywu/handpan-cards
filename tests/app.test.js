@@ -19782,19 +19782,90 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.ok(!/if \(!MOVE_ON_OLD\) loadAnalytics/.test(html));
   });
 
-  test("T-D1: no href, action or formaction holds the payload or the target, and the buttons are type=button", async () => {
+  test("T-D1: no href, action or formaction in the document holds the payload or the target, and the buttons are type=button", async () => {
     const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    const attrs = JSON.parse(app.get(`JSON.stringify([...document.querySelectorAll('[href],[action],[formaction]')].flatMap(e => ['href','action','formaction'].map(a => e.getAttribute(a)).filter(v => v !== null)))`));
+    for (const v of attrs) assert.ok(!/#move=|new\.example/.test(v), v);
     for (const name of ["moveBannerGo", "moveBannerDismiss"]) {
       assert.strictEqual(app.get(`${name}.getAttribute('type')`), "button");
-      for (const attr of ["href", "action", "formaction"]) {
-        const v = app.get(`${name}.getAttribute('${attr}')`);
-        assert.ok(v === null || v === undefined || !/#move=|new\.example/.test(v), `${name} ${attr}`);
-      }
     }
     assert.strictEqual(app.get("moveBannerEl.getAttribute('role')"), "region");
     assert.ok(app.get("moveBannerEl.getAttribute('aria-label')"));
     assert.strictEqual(app.get("moveBannerEl.style.position || ''"), "");
   });
+
+  test("the banner is inert behind the scale sheet, the panel and About, and live again after", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    const inert = () => app.get("!!moveBannerEl.inert");
+    assert.strictEqual(inert(), false);
+    app.run("openScaleSheet()");
+    assert.strictEqual(inert(), true, "sheet");
+    assert.strictEqual(app.get("moveBannerEl.getAttribute('aria-hidden')"), "true");
+    app.run("closeScaleSheet()");
+    assert.strictEqual(inert(), false, "sheet closed");
+    app.run("openPanel()");
+    assert.strictEqual(inert(), true, "panel");
+    app.run("closePanel()");
+    assert.strictEqual(inert(), false, "panel closed");
+    app.run("openAbout()");
+    assert.strictEqual(inert(), true, "about");
+    app.run("closeAbout()");
+    assert.strictEqual(inert(), false, "about closed");
+  });
+
+  test("switching language re-renders the banner copy, and the over-cap line follows the store across MOVE_CAP", async () => {
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(3) });
+    assert.match(bannerText(app), /Your 3 saved scales can come with you/);
+    app.run('setLang("fr")');
+    const fr = bannerText(app);
+    assert.doesNotMatch(fr, /Your 3 saved scales can come with you/);
+    assert.strictEqual(app.get("moveBannerGo.textContent"), app.get('t("move.go")'));
+    app.run('setLang("en")');
+    assert.match(bannerText(app), /Your 3 saved scales can come with you/);
+  });
+
+  test("saved-scale changes re-render the banner across MOVE_CAP in both directions", async () => {
+    const fits = await boot2({ host: OLD_HOST, records: manyRecs(4) });
+    const per = Math.ceil(fits.get("moveUrl().url.length") / 4);
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(3), cap: per * 4 - 40 });
+    assert.doesNotMatch(bannerText(app), /fit in one move/);
+    const grown = app.get(`(() => { const e = JSON.parse(JSON.stringify(savedState)), n = e.entries.length;
+      for (let i = 0; i < 3; i++) { const row = JSON.parse(JSON.stringify(e.entries[0]));
+        row.instanceId = "00000000-0000-4000-8000-0000000009" + String(i).padStart(2, "0");
+        row.displayOrdinal = n + i + 1; e.entries.push(row); e.usedInstanceIds.push(row.instanceId); }
+      e.revision++; e.nextDisplayOrdinal = e.entries.length + 1;
+      return applySavedSnapshot(e, new Map()).ok; })()`);
+    assert.strictEqual(grown, true);
+    assert.strictEqual(app.get("savedState.entries.length"), 6);
+    assert.match(bannerText(app), /\d of your 6 saved scales fit in one move/, "growing past the cap adds the line");
+    const shrunk = app.get(`(() => { const e = JSON.parse(JSON.stringify(savedState));
+      e.entries.length = 3; e.revision++; return applySavedSnapshot(e, new Map()).ok; })()`);
+    assert.strictEqual(shrunk, true);
+    assert.doesNotMatch(bannerText(app), /fit in one move/, "shrinking back under the cap drops the line");
+    assert.match(bannerText(app), /Your 3 saved scales/);
+  });
+
+  test("deleting a saved scale re-renders the banner counts and drops the over-cap line", async () => {
+    const probe = await boot2({ host: OLD_HOST, records: manyRecs(4) });
+    const per = Math.ceil(probe.get("moveUrl().url.length") / 4);
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(5), cap: per * 4 + 20 });
+    assert.match(bannerText(app), /4 of your 5 saved scales fit in one move/);
+    const result = await removeLast(app);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(app.get("savedState.entries.length"), 4);
+    assert.match(bannerText(app), /Your 4 saved scales can come with you/);
+    assert.doesNotMatch(bannerText(app), /fit in one move/);
+  });
+
+  test("a dismissed banner stays hidden when the store or language changes", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], session: {} });
+    app.click(app.get("moveBannerDismiss"));
+    app.run('setLang("fr")');
+    assert.strictEqual(app.get("moveBannerEl.hidden"), true);
+  });
+
+  const removeLast = app => app.getAsync(`(() => { const e = savedState, row = e.entries[e.entries.length - 1];
+    return commitSaved({type:"delete",collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision}); })()`);
 
   test("T-D2: dismiss hides the banner for the session, and a fresh session shows it again", async () => {
     const app = await boot2({ host: OLD_HOST, records: [rec("A")], session: {} });
@@ -19820,6 +19891,15 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
   test("T-D3: in session mode the banner offers only the new address and the click carries no payload", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], storage: undefined });
     app.get("savedMode='session'");
+    app.get("renderMoveBanner()");
+    assert.strictEqual(app.get("moveBannerGo.textContent"), "OPEN new.example");
+    assert.strictEqual(bannerText(app), "Handpan Theory now lives at new.example.");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
+  });
+
+  test("T-D3: in protected mode the banner offers only the new address and the click carries no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
+    app.get("savedMode='protected'");
     app.get("renderMoveBanner()");
     assert.strictEqual(app.get("moveBannerGo.textContent"), "OPEN new.example");
     assert.strictEqual(bannerText(app), "Handpan Theory now lives at new.example.");

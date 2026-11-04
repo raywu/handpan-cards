@@ -20679,6 +20679,46 @@ function run() {
       return commitSaved({type:'delete',collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision});`);
     afterEach(async () => { moveMode = null; });
 
+    test("move: the banner is the first element of body and carries no payload in any attribute of the document", async () => {
+      on(); await seed(OLD(), [rec("A")]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+      assert.strictEqual(await b.eval(`return document.body.firstElementChild.id;`), "move-banner");
+      const attrs = await b.eval(`return [...document.querySelectorAll('[href],[action],[formaction]')].flatMap(e => ['href','action','formaction'].map(a => e.getAttribute(a)).filter(v => v !== null));`);
+      assert.ok(attrs.length > 0, "the document-wide query finds attributes");
+      for (const v of attrs) assert.ok(!/#move=/.test(v), v);
+    });
+
+    test("move: the banner is an overlay - the footer stays put, and it does not overflow at 375x580 and 320 wide in all 8 locales", async () => {
+      on(); await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      try {
+        for (const [w, h] of [[375, 580], [320, 568]]) {
+          await b.setViewport(w, h, true);
+          await go(OLD() + "/index.html");
+          await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+          const footerBottom = () => b.eval(`return document.querySelector('footer').getBoundingClientRect().bottom;`);
+          const shown = await footerBottom();
+          await b.eval(`document.getElementById('move-banner').hidden = true; return true;`);
+          const hidden = await footerBottom();
+          assert.strictEqual(shown, hidden, `the banner does not move the footer at ${w}`);
+          await b.eval(`document.getElementById('move-banner').hidden = false; return true;`);
+          const langs = await b.eval(`return LANGS.slice();`);
+          assert.strictEqual(langs.length, 8);
+          for (const lang of langs) {
+            await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+            const r = await b.eval(`const el = document.getElementById('move-banner'), r = el.getBoundingClientRect();
+              return { sw: el.scrollWidth, cw: el.clientWidth, left: r.left, right: r.right, bottom: r.bottom, vw: innerWidth, vh: innerHeight,
+                text: el.querySelector('.move-banner-msg').textContent,
+                btns: [...el.querySelectorAll('button')].map(x => { const q = x.getBoundingClientRect(); return q.left >= r.left && q.right <= r.right; }) };`);
+            assert.ok(r.sw <= r.cw, `${lang} ${w}: horizontal overflow ${r.sw} > ${r.cw}`);
+            assert.ok(r.left >= 0 && r.right <= r.vw, `${lang} ${w}: inside the viewport width`);
+            assert.ok(r.bottom <= r.vh, `${lang} ${w}: inside the viewport height`);
+            assert.ok(r.btns.every(Boolean), `${lang} ${w}: buttons inside the banner`);
+          }
+        }
+      } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
+    });
+
     test("move: a crafted #move= link with no MOVE_FROM referrer writes nothing and opens the then hash", async () => {
       on(); await clearOrigin(NEW());
       await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("CRAFTED")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`);
@@ -20906,17 +20946,23 @@ function run() {
       assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), ["A", "B"]);
     });
 
-    test("move: a redirected old path lands in one hop on the new host with its fragment, and the new host has no redirect", async () => {
+    test("move: a click on an old path lands on the new host in one hop with its search and fragment, keeps the old host in Back history, and the new host has no redirect", async () => {
       on(); await clearOrigin(NEW());
       await seed(OLD(), [rec("A")]);
-      const before = (await b.send("Page.getNavigationHistory")).entries.length;
-      await goOld(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
+      await go(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
+      await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+      const history = async () => { const h = await b.send("Page.getNavigationHistory"); return { n: h.entries.length, at: h.currentIndex, urls: h.entries.map((e) => e.url) }; };
+      const old = await history();
+      assert.ok(old.urls[old.at].startsWith(OLD()), "the old page is current before the click");
+      await pressMove();
       await b.waitFor(atNew(), { label: "the jump" });
       const w = await where();
       assert.strictEqual(w.search, "?x=1");
       assert.ok(w.hash.startsWith("#deck=") || w.hash === "");
-      const after = (await b.send("Page.getNavigationHistory")).entries.length;
-      assert.ok(after - before <= 1, "one history entry for the whole hop");
+      const after = await history();
+      assert.strictEqual(after.n - old.n, 1, "one new history entry for the whole hop");
+      assert.strictEqual(after.at, old.at + 1);
+      assert.ok(after.urls[after.at - 1].startsWith(OLD()), "Back goes to the old host");
       await go(NEW() + "/index.html");
       assert.strictEqual((await where()).origin, NEW(), "the new host does not redirect");
     });
