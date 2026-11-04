@@ -133,6 +133,7 @@
   "sheet.neotone_builtin_plain": "{name} è una scala integrata. Salvando si crea una nuova scala; quella integrata resta com'è.",
   "sheet.neotone_name_label": "Nome",
   "sheet.neotone_name_suffix": "Neotone Mutant",
+  "sheet.neotone_name_suffix_plain": "Neotone",
   "sheet.neotone_name_hint": "Nome suggerito; puoi cambiarlo.",
   "sheet.drawer_hint_neotone": "Tocca una nota, poi un'altra dello stesso anello per scambiarle, oppure un campo tonale vuoto per spostarvi la nota. Oppure tieni premuta una nota e trascinala.",
   "sheet.tonefield_label": "Campo tonale {n} {ring}, {note}",
