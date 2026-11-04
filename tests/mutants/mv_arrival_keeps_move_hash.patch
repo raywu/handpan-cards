@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15818,7 +15818,7 @@
+@@ -17356,7 +17356,7 @@ if (MOVE_ARMED && !MOVE_ON_OLD) {
      let fromOld = false;
      try { fromOld = new URL(document.referrer).hostname === MOVE_FROM; } catch (e) {}
      movePayload = fromOld ? arrived[1] : null;
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +    history.replaceState(history.state, "", location.pathname + location.search + location.hash);
    }
  }
- async function moveForward() {
+ async function moveImport(code) {
