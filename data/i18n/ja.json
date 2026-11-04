@@ -126,6 +126,7 @@
   "sheet.neotone_builtin_plain": "{name}は組み込みのスケールです。保存すると新しいスケールが作られ、組み込みはそのままです。",
   "sheet.neotone_name_label": "名前",
   "sheet.neotone_name_suffix": "Neotone Mutant",
+  "sheet.neotone_name_suffix_plain": "Neotone",
   "sheet.neotone_name_hint": "提案された名前です。変更できます。",
   "sheet.drawer_hint_neotone": "ノートをタップし、同じリングの別のノートをタップすると入れ替わります。空のトーンフィールドをタップすると、そこへ移動します。ノートを長押ししてドラッグもできます。",
   "sheet.tonefield_label": "トーンフィールド{n}（{ring}）、{note}",
