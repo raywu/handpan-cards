@@ -1,3 +1,10 @@
+# kills: Enter on a print button runs its real click handler and does not flip the card
+# suite: node --test --test-name-pattern ^Enter.on.a.print.button.runs.its.real.click.handler.and.does.not.flip.the.card$ tests/e2e.test.js
+# Drops closePanel() from the DOWNLOAD PDF button's onclick, so activating it
+# (by Enter, same as by mouse) never closes the settings panel - the kind of
+# wiring break finding 9 (quality refactor 2026-09-30) needed a non-vacuous
+# test to catch.
+# Re-cut 2026-10-08 (lane PM): the one print button is DOWNLOAD PDF. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

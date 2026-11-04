@@ -10,7 +10,7 @@ diff --git a/index.html b/index.html
    try {
      pdfDeck.auto_name = printNameSource(d).auto_name;
 -    const bytes = HPE.pdfcards.build(pdfDeck, cards ? { variant, paper: printPaper, cards } : { variant, paper: printPaper });
-+    const bytes = HPE.pdfcards.build(pdfDeck, { variant, paper: printPaper, cards });
++    const bytes = HPE.pdfcards.build(pdfDeck, { variant, paper: printPaper, cards: pdfTierSets(d).easyMedium });
      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
      if (isIOS(navigator.userAgent)) {
        // `<a download>` is not honoured by iOS Safari: the tap does nothing at

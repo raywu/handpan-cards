@@ -1,3 +1,10 @@
+# kills: the legacy print sheet is gone: no #printroot, no openPrintSheet, no window.print caller
+# suite: node --test --test-name-pattern ^the.legacy.print.sheet.is.gone. tests/app.test.js
+# Q2: re-introduces a `window.print(` call in code (not a comment), the
+# browser print dialog the R1 retirement removed in favour of the
+# client-built PDF. Guards that the lock test's code-shaped regex, not just
+# the old narrower forms, still catches a real reintroduction.
+# Re-cut 2026-10-08 (lane PM): the context moved with the not-used comment above downloadDeckPDF. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

@@ -1,3 +1,6 @@
+# kills: test_inline_engine_sync_keeps_the_i18n_region
+# suite: python3 -m unittest -k test_inline_engine_sync_keeps_the_i18n_region tests.test_render_agreement
+# The i18n region sits inside the engine wrapper again, so inline_engine drops it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

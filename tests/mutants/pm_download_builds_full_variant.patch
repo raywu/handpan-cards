@@ -1,3 +1,6 @@
+# kills: PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byte what main built
+# suite: node --test --test-name-pattern PM.rule.3 tests/app.test.js
+# Lane PM. DOWNLOAD PDF asks for the 'full' variant, so a tap builds the full deck instead of the chord-only sheets.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

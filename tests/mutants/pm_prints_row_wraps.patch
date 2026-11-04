@@ -1,3 +1,6 @@
+# kills: every row of the settings panel is flush: each visual line spans the row from edge to edge
+# suite: node --test --test-name-pattern every.row.of.the.settings.panel.is.flush tests/e2e.test.js
+# Lane PM. The print row wraps again and DOWNLOAD PDF takes a whole line, so the paper select falls onto a second one.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
