@@ -1,0 +1,15 @@
+# kills: T-C1: over-cap store of 116 says so before the click, then one click carries exactly the largest prefix under MOVE_CAP
+# suite: node --test --test-name-pattern=T.C1..over.cap.store.of.116 tests/app.test.js
+# why: the banner stops saying how many scales fit before the click, so the rest are left behind without warning.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17458,7 +17458,7 @@
+   }
+   const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
+   const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
+-  if (info.total > info.carried) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
++  if (false) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
+   moveBannerEl.setAttribute("aria-label", t("move.banner_label"));
+   moveBannerMsg.textContent = lines.join(" ");
+   moveBannerGo.textContent = info.carried > 0 ? t("move.go") : t("move.go_plain", { host });

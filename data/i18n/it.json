@@ -352,5 +352,15 @@
     "one": "La tua scala salvata si è spostata qui.",
     "other": "Le tue {n} scale salvate si sono spostate qui."
   },
-  "move.failed": "Le tue scale salvate sono ancora al vecchio indirizzo. Riapri il vecchio indirizzo per spostarle."
+  "move.failed": "Le tue scale salvate sono ancora al vecchio indirizzo. Riapri il vecchio indirizzo per spostarle.",
+  "move.banner": {
+    "one": "Handpan Theory ora si trova su {host}. La tua scala salvata può venire con te.",
+    "other": "Handpan Theory ora si trova su {host}. Le tue {n} scale salvate possono venire con te."
+  },
+  "move.banner_empty": "Handpan Theory ora si trova su {host}.",
+  "move.banner_overcap": "{n} delle tue {total} scale salvate stanno in un solo trasferimento. Le altre restano qui, a questo indirizzo.",
+  "move.go": "SPOSTA LE MIE SCALE",
+  "move.go_plain": "APRI {host}",
+  "move.dismiss": "Nascondi per ora",
+  "move.banner_label": "Handpan Theory si è spostato"
 }

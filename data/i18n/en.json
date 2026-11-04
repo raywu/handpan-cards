@@ -352,5 +352,15 @@
     "one": "Your saved scale moved here.",
     "other": "Your {n} saved scales moved here."
   },
-  "move.failed": "Your saved scales are still at the old address. Open the old address again to move them."
+  "move.failed": "Your saved scales are still at the old address. Open the old address again to move them.",
+  "move.banner": {
+    "one": "Handpan Theory now lives at {host}. Your saved scale can come with you.",
+    "other": "Handpan Theory now lives at {host}. Your {n} saved scales can come with you."
+  },
+  "move.banner_empty": "Handpan Theory now lives at {host}.",
+  "move.banner_overcap": "{n} of your {total} saved scales fit in one move. The rest stay here at this address.",
+  "move.go": "MOVE MY SCALES",
+  "move.go_plain": "OPEN {host}",
+  "move.dismiss": "Hide for now",
+  "move.banner_label": "Handpan Theory has moved"
 }

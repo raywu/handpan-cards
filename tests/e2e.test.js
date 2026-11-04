@@ -20641,6 +20641,14 @@ function run() {
       await loaded;
       await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the page to boot" });
     }
+    const bannerReady = `!!document.querySelector('#move-banner button.move-go') && !document.getElementById('move-banner').hidden`;
+    const bannerText = () => b.eval(`return document.querySelector('#move-banner .move-banner-msg').textContent;`);
+    const pressMove = () => b.eval(`document.querySelector('#move-banner button.move-go').click();return true;`);
+    async function goOld(url = OLD() + "/index.html", referrer) {
+      await go(url, referrer);
+      await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+      await pressMove();
+    }
     async function peek(origin) {
       const keep = moveMode; moveMode = null;
       try { await go(origin + "/index.html"); return await nativeSavedEnvelope(b); } finally { moveMode = keep; }
@@ -20681,7 +20689,7 @@ function run() {
     test("move: revisit after edit/delete re-imports nothing - edit then delete a scale on the new host, revisit old /, no duplicate and no resurrection", async () => {
       on(); await clearOrigin(NEW());
       await seed(OLD(), [rec("ONE"), rec("TWO", SEED2)]);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
       const first = await nativeSavedEnvelope(b);
       assert.deepStrictEqual(names(first).sort(), ["ONE", "TWO"]);
@@ -20691,7 +20699,7 @@ function run() {
         built=buildGenerated(row.record.s,{...row.record.o,name:'ONE EDITED'});
         return commitSaved({type:'edit',collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision,
           candidate:{record:scaleRecord(seedOf(built.value)),deck:built.value}});`);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(atNew(), { label: "the second jump" });
       await sleep(500);
       const after = await nativeSavedEnvelope(b);
@@ -20703,7 +20711,7 @@ function run() {
       on();
       await seed(NEW(), [rec("NEW KURD", KURDSEED, { replaces: "kurd" })], { slots: { kurd: uid(9) } }, SV.ids.collectionB, 9);
       await seed(OLD(), [rec("OLD KURD", KURDSEED, { replaces: "kurd" })], { slots: { kurd: uid(1) } });
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
       const e = await nativeSavedEnvelope(b);
       assert.strictEqual(e.slots.kurd, uid(9));
@@ -20716,7 +20724,7 @@ function run() {
       on();
       await seed(NEW(), [rec("NEW HIJAZ", "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4", { replaces: "hijaz" })], { slots: { hijaz: uid(9) } }, SV.ids.collectionB, 9);
       await seed(OLD(), [], { hidden: ["hijaz", "pygmy"] });
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(atNew(), { label: "the jump" });
       await sleep(800);
       const e = await peek(NEW());
@@ -20724,15 +20732,67 @@ function run() {
       assert.ok(!e.hidden.includes("hijaz"), "a replaced seed stays visible");
     });
 
-    test("move: two old tabs forwarding at once import each record once", async () => {
+    test("move: pressing the button twice, from two loads of the old host, imports each record once", async () => {
       on(); await clearOrigin(NEW());
       await seed(OLD(), [rec("A"), rec("B", SEED2), rec("C", "(D3) A3 C4 D4 E4 F4 G4 A4")]);
-      const { targetId } = await b.send("Target.createTarget", { url: OLD() + "/index.html" }, false);
-      try {
-        await go(OLD() + "/index.html");
-        await sleep(2500);
-        assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B", "C"]);
-      } finally { await b.send("Target.closeTarget", { targetId }, false).catch(() => {}); }
+      await goOld();
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      await goOld();
+      await b.waitFor(atNew(), { label: "the second move" });
+      await sleep(800);
+      assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B", "C"]);
+    });
+
+    test("T-E1: a real click on the banner button lands on the new host with the origin referrer, every scale arrives, and the notice counts them", async () => {
+      on(); await clearOrigin(NEW());
+      const eight = Array.from({ length: 8 }, (_, i) => rec(`E${i + 1}`, i % 2 ? SEED2 : OLDSEED));
+      await seed(OLD(), eight);
+      await go(OLD() + "/index.html");
+      await b.waitFor(bannerReady, { label: "the move banner" });
+      assert.strictEqual((await where()).origin, OLD(), "nothing navigated at boot");
+      await sleep(500);
+      assert.strictEqual((await where()).origin, OLD(), "still on the old host");
+      await pressMove();
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      assert.strictEqual(await b.eval(`return new URL(document.referrer).hostname;`), "127.0.0.1");
+      assert.strictEqual(await noticeText(), "Your 8 saved scales moved here.");
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), eight.map((r) => r.o.name).sort());
+    });
+
+    test("T-E2: n200 over the cap says so before the click, one click moves the largest prefix that fits, and Back finds the banner and all 200 still on the old host", async () => {
+      on(); await clearOrigin(NEW());
+      const many = Array.from({ length: 200 }, (_, i) => rec(`S${i + 1} ${"x".repeat(30)}`));
+      await seed(OLD(), many);
+      await go(OLD() + "/index.html");
+      await b.waitFor(bannerReady, { label: "the move banner" });
+      const line = await bannerText();
+      const fit = /(\d+) of your 200 saved scales fit in one move\. The rest stay here at this address\./.exec(line);
+      assert.ok(fit, line);
+      const n = Number(fit[1]);
+      assert.ok(n > 0 && n < 200, String(n));
+      await pressMove();
+      await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), many.slice(0, n).map((r) => r.o.name));
+      await b.eval(`history.back();return true;`);
+      await b.waitFor(`location.origin===${JSON.stringify(OLD())} && ${bannerReady}`, { label: "Back to the old host" });
+      assert.strictEqual(await bannerText(), line);
+      assert.strictEqual((await nativeSavedEnvelope(b)).entries.length, 200);
+    });
+
+    test("T-E3: an old-host #s= link and a #deck= link open on the old host with the banner and the route intact", async () => {
+      on();
+      await seed(OLD(), [rec("A")]);
+      const keep = moveMode; moveMode = null;
+      const code = await b.eval(`const s=HPE.core.parseSeed(${JSON.stringify(OLDSEED)});return HPE.share.encode({fields:s.value.fields,options:{}}).value;`);
+      moveMode = keep;
+      await go(`${OLD()}/index.html#s=${code}`);
+      await b.waitFor(bannerReady, { label: "the move banner" });
+      assert.strictEqual((await where()).origin, OLD());
+      assert.ok((await where()).hash.startsWith("#s="), (await where()).hash);
+      await go(`${OLD()}/index.html#deck=f-low-pygmy-18`);
+      await b.waitFor(bannerReady, { label: "the move banner" });
+      assert.strictEqual((await where()).origin, OLD());
+      assert.strictEqual((await where()).hash, "#deck=f-low-pygmy-18");
     });
 
     test("move: #move= is stripped to the then hash before render, and Back or reload does not re-import", async () => {
@@ -20752,7 +20812,7 @@ function run() {
       const keep = moveMode; moveMode = null;
       const code = await b.eval(`const s=HPE.core.parseSeed(${JSON.stringify(OLDSEED)});return HPE.share.encode({fields:s.value.fields,options:{}}).value;`);
       moveMode = keep;
-      await go(`${OLD()}/index.html#s=${code}`);
+      await goOld(`${OLD()}/index.html#s=${code}`);
       await b.waitFor(atNew(), { label: "the jump" });
       assert.ok(/^#(s=|deck=)/.test((await where()).hash), "the link is carried");
       assert.strictEqual(await noticeText(), null);
@@ -20761,7 +20821,7 @@ function run() {
     test("move: a payload over MOVE_CAP still forwards, carrying only the prefix that fits, and old storage is untouched", async () => {
       on(50); await clearOrigin(NEW());
       await seed(OLD(), [rec("A"), rec("B", SEED2)]);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(atNew(), { label: "the jump" });
       await sleep(800);
       assert.strictEqual(await noticeText(), null);
@@ -20772,7 +20832,7 @@ function run() {
     test("move: a store held only in legacy storage keys forwards every record", async () => {
       on(); await clearOrigin(NEW());
       await seedLegacy(OLD(), [rec("L1"), rec("L2", SEED2), rec("L3", "(D3) A3 C4 D4 E4 F4 G4 A4")]);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(atNew(), { label: "the jump" });
       await sleep(800);
       assert.deepStrictEqual(names(await peek(NEW())).sort(), ["L1", "L2", "L3"]);
@@ -20782,7 +20842,7 @@ function run() {
       on(); await clearOrigin(NEW());
       const prod = [rec("Caf\u00e9 \u65e5\u672c"), rec("Caf\u00e9 \u2713", SEED2), rec("ASCII", "(D3) A3 C4 D4 E4 F4 G4 A4")];
       await seed(OLD(), prod);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(atNew(), { label: "the jump" });
       await sleep(800);
       assert.deepStrictEqual(names(await peek(NEW())).sort(), ["ASCII", "Caf\u00e9 \u2713", "Caf\u00e9 \u65e5\u672c"]);
@@ -20802,7 +20862,7 @@ function run() {
       const v5 = (name, rev) => ({ v: 5, s: OLDSEED, o: { name, palette: 1, profile: { id: "paired", rev, map: prof } } });
       const records = [v5("PAIRED ONE", 1), v5("PAIRED TWO", 2), rec("ACOUSTIC", SEED2)];
       await seed(OLD(), records);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(atNew(), { label: "the jump" });
       await sleep(800);
       const byName = (x, y) => x.o.name.localeCompare(y.o.name);
@@ -20834,14 +20894,14 @@ function run() {
       await seed(OLD(), [rec("A"), rec("B", SEED2)]);
       await go(NEW() + "/index.html");
       await b.eval(`localStorage.setItem('moveFail','1');return true;`);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(noticeShown, { label: "the failure message" });
       assert.match(await noticeText(), /still at the old address/);
       const failed = await nativeSavedEnvelope(b);
       assert.deepStrictEqual(failed.entries, []);
       assert.ok(!failed.importedIds || failed.importedIds.length === 0);
       await b.eval(`localStorage.removeItem('moveFail');return true;`);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
       assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), ["A", "B"]);
     });
@@ -20850,7 +20910,7 @@ function run() {
       on(); await clearOrigin(NEW());
       await seed(OLD(), [rec("A")]);
       const before = (await b.send("Page.getNavigationHistory")).entries.length;
-      await go(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
+      await goOld(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
       await b.waitFor(atNew(), { label: "the jump" });
       const w = await where();
       assert.strictEqual(w.search, "?x=1");
@@ -20883,10 +20943,10 @@ function run() {
     test("move: re-flip after a rollback imports only records saved on the old host meanwhile, no duplicates", async () => {
       on(); await clearOrigin(NEW());
       await seed(OLD(), [rec("A")]);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(`${atNew()} && ${noticeShown}`, { label: "the notice" });
       await seed(OLD(), [rec("A"), rec("B", SEED2)]);
-      await go(OLD() + "/index.html");
+      await goOld();
       await b.waitFor(atNew(), { label: "the second jump" });
       await sleep(800);
       assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B"]);

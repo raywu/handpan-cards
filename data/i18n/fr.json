@@ -352,5 +352,15 @@
     "one": "Votre gamme enregistrée a déménagé ici.",
     "other": "Vos {n} gammes enregistrées ont déménagé ici."
   },
-  "move.failed": "Vos gammes enregistrées sont toujours à l'ancienne adresse. Rouvrez l'ancienne adresse pour les déplacer."
+  "move.failed": "Vos gammes enregistrées sont toujours à l'ancienne adresse. Rouvrez l'ancienne adresse pour les déplacer.",
+  "move.banner": {
+    "one": "Handpan Theory est maintenant sur {host}. Votre gamme enregistrée peut vous suivre.",
+    "other": "Handpan Theory est maintenant sur {host}. Vos {n} gammes enregistrées peuvent vous suivre."
+  },
+  "move.banner_empty": "Handpan Theory est maintenant sur {host}.",
+  "move.banner_overcap": "{n} de vos {total} gammes enregistrées tiennent en un seul transfert. Les autres restent ici, à cette adresse.",
+  "move.go": "TRANSFÉRER MES GAMMES",
+  "move.go_plain": "OUVRIR {host}",
+  "move.dismiss": "Masquer pour l'instant",
+  "move.banner_label": "Handpan Theory a déménagé"
 }

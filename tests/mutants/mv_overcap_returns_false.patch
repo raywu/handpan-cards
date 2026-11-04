@@ -1,11 +1,11 @@
-# kills: over-cap store of 116 still forwards, carrying exactly the largest prefix under MOVE_CAP
-# suite: node --test --test-name-pattern=over.cap.store.of.116 tests/app.test.js
-# fault: Restore the old behaviour where an over-cap store returns false and the user stays on the old host.
+# kills: T-C1: over-cap store of 116 says so before the click, then one click carries exactly the largest prefix under MOVE_CAP
+# suite: node --test --test-name-pattern=T.C1..over.cap.store.of.116 tests/app.test.js
+# fault: An over-cap store carries nothing instead of the largest prefix that fits.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15892,16 +15892,7 @@
-   if (!rows.length && !hidden.length) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
+@@ -17411,16 +17411,7 @@
+   if (!rows.length && !hidden.length) return plain;
    const encodeRows = n => moveEncode(JSON.stringify({ r: rows.slice(0, n), h: hidden }));
    let carried = rows.length, code = encodeRows(carried);
 -  if (code.length > MOVE_CAP) {
@@ -16,9 +16,9 @@ diff --git a/index.html b/index.html
 -    }
 -    carried = lo;
 -    code = encodeRows(carried);
--    if (code.length > MOVE_CAP) { location.replace(MOVE_TARGET + "/" + location.search + location.hash); return true; }
+-    if (code.length > MOVE_CAP) return { ...plain, total: rows.length };
 -  }
-+  if (code.length > MOVE_CAP) return false;
-   location.replace(MOVE_TARGET + "/" + location.search + "#move=" + code + "&then=" + encodeURIComponent(location.hash));
-   return true;
++  if (code.length > MOVE_CAP) return { ...plain, total: rows.length };
+   return { url: MOVE_TARGET + "/" + moveArrivalSearch + "#move=" + code + "&then=" + encodeURIComponent(moveArrivalHash), carried, total: rows.length };
  }
+ function moveGo() {
