@@ -1,0 +1,15 @@
+# kills: build with cards prints only those cards, keeps the app numbers, pads to 9
+# suite: node --test --test-name-pattern ^build.with.cards.prints.only.those.cards tests/pdfcards.test.js
+# A filtered sheet is not padded to a whole page of 9 slots.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -966,7 +966,7 @@
+       picked.forEach(function (k) {
+         cards.push(["chord", [k + 1, deck.chords[k]]]);
+       });
+-      while (cards.length % 9 !== 0) cards.push(["skip", null]);
++      while (cards.length % 9 !== 0 && !opts.cards) cards.push(["skip", null]);
+     } else {
+       cards.push(["title", null]);
+       cards.push(["legend", null]);

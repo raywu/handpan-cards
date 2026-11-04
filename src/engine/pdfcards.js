@@ -923,9 +923,27 @@ HPE.pdfcards = (function () {
     c.line(x + 18, y + deck.y_num - 3, x + CW - 18, y + deck.y_num - 3);
   }
 
+  // opts.cards: the app's chord indices to print (shop variant only), sorted,
+  // distinct, in range. Each keeps its app number (#n = index + 1), so a
+  // filtered sheet has gaps.
+  function checkedCards(list, n) {
+    if (!Array.isArray(list) || !list.length) {
+      throw new Error("pdfcards.build: cards must be a non-empty array");
+    }
+    list.forEach(function (k, j) {
+      if (!(k % 1 === 0) || k < 0 || k >= n || (j > 0 && k <= list[j - 1])) {
+        throw new Error("pdfcards.build: cards must be sorted, distinct indices in range");
+      }
+    });
+    return list;
+  }
+
   // ---- build (tools/hifi.py's build()) -------------------------------------
   function build(deck, opts) {
     opts = opts || {};
+    if (opts.cards && opts.variant !== "shop") {
+      throw new Error("pdfcards.build: cards needs the shop variant");
+    }
     // The "full" variant (anything but "shop": title card, legend card, blank
     // padding) is not used by the app since 2026-10-08; kept, and tested.
     var chordsOnly = opts.variant === "shop";
@@ -943,9 +961,11 @@ HPE.pdfcards = (function () {
     var cards = [];
     var i;
     if (chordsOnly) {
-      for (i = 0; i < deck.chords.length; i++) {
-        cards.push(["chord", [i + 1, deck.chords[i]]]);
-      }
+      var picked = opts.cards ? checkedCards(opts.cards, deck.chords.length) :
+        deck.chords.map(function (_, k) { return k; });
+      picked.forEach(function (k) {
+        cards.push(["chord", [k + 1, deck.chords[k]]]);
+      });
       while (cards.length % 9 !== 0) cards.push(["skip", null]);
     } else {
       cards.push(["title", null]);

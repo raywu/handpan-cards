@@ -225,6 +225,9 @@ bottom`. `chords[].fields` is the canonical voicing in spelling order.
 - Card **62.65 x 87.21 mm (177.6 x 247.2 pt, poker size)**, US Letter 3x3,
   gutters 12.2/9.4 pt, crop marks at all card edges, 2.00-inch calibration bar
   on page 1 (print at 100% / Actual Size).
+- The browser build can print a subset of a scale's cards (`opts.cards`, engine rule in
+  `docs/ENGINE-SPEC.md` section 19): cards keep their app `#n`, gaps allowed, and the
+  `tools/hifi.py` / `tools/decks.py` output stays the full set.
 
 ## App behaviour
 
