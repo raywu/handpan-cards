@@ -1,0 +1,47 @@
+{
+ "slug": "neotone-f2-astronaut-16",
+ "name": "F2 Astronaut 16",
+ "root": "F",
+ "kind": "new",
+ "seed": "(F2) [A#2] [C3] C#3 D#3 F3 G3 G#3 C4 D#4 F4 G4 [G#4] [C5] [D#5] [G5]",
+ "typed": "F2 Astronaut 16",
+ "palette": 1,
+ "profile": {
+  "id": "paired",
+  "rev": 2,
+  "map": [
+   "r49",
+   "r51",
+   "r53",
+   "r55",
+   "r56",
+   "r60",
+   "r63",
+   "r65",
+   "r67",
+   "b46",
+   "b48",
+   null,
+   null,
+   "b79",
+   "b75",
+   "b72",
+   "b68",
+   null
+  ]
+ },
+ "popularized": false,
+ "colors": {
+  "root": "#6D40A3",
+  "tone": "#C9971E"
+ },
+ "accent_light": "#6D40A3",
+ "accent_dark": "#9269C4",
+ "pick": [
+  1,
+  25,
+  30
+ ],
+ "cta": "/#s=7/(F2)_uAs2_uC3_Cs3_Ds3_F3_G3_Gs3_C4_Ds4_F4_G4_uGs4_uC5_uDs5_uG5/F2+Astronaut+16/palette-2/pair-r49.r51.r53.r55.r56.r60.r63.r65.r67.b46.b48.-.-.b79.b75.b72.b68.-/c759d7",
+ "updated": "2026-11-03"
+}

@@ -24,3 +24,5 @@
 - [e-amara-20](https://handpan.raywu.org/scales/e-amara-20/)
 - [e-equinox-9](https://handpan.raywu.org/scales/e-equinox-9/)
 - [f-magic-voyage-8](https://handpan.raywu.org/scales/f-magic-voyage-8/)
+- [neotone](https://handpan.raywu.org/scales/neotone/)
+- [neotone-f2-astronaut-16](https://handpan.raywu.org/scales/neotone-f2-astronaut-16/)
