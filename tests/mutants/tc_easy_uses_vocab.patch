@@ -1,0 +1,19 @@
+# kills: tierCards easy leaves out a basicVocab card that joins no loop
+# suite: node --test --test-name-pattern ^tierCards.easy.leaves.out.a.basicVocab.card.that.joins.no.loop tests/sequence.test.js
+# EASY takes the whole BASIC vocabulary, including cards that join no loop.
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -1112,11 +1112,7 @@
+     var easy = {};
+     var all = {};
+     if (ctx.homeAnchorIdx === null) return { easy: [], easyMedium: [] };
+-    ctx.basicCells.forEach(function (cell) {
+-      cell.seqs.forEach(function (seq) {
+-        seq.forEach(function (i) { easy[i] = true; all[i] = true; });
+-      });
+-    });
++    ctx.basicVocab.forEach(function (i) { easy[i] = true; all[i] = true; });
+     var matrix = buildConnectMatrix(deck);
+     if (mediumNodeCount(deck, ctx, matrix) <= MEDIUM_ENUM_BUDGET) {
+       mediumCells(deck).forEach(function (cell) {

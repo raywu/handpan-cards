@@ -1550,3 +1550,65 @@ test("NS: cards without a mutant note draw byte-for-byte as at the base commit",
   assert.equal(sha(placed.page), "697d4045b7018dfa6b9af9b73b4622903a208c1c030093268324ecea1cb1a8c3");
   assert.equal(sha(page), "e0b845b3fda7682873764cb37881169c0fadf395f2d582bb5d10da4405df06a0");
 });
+
+// ---- opts.cards: the PDF tier options (docs/plans/2026-11-03-pdf-tier-options.md) ----
+
+function cardNumbers(bytes) {
+  const text = pdfGlyphs(bytes).map((g) => g.ch).join("");
+  return (text.match(/#\d+/g) || []).map((s) => Number(s.slice(1)));
+}
+
+test("build with cards prints only those cards, keeps the app numbers, pads to 9", () => {
+  const deck = fixture();
+  const n = deck.chords.length;
+  assert.ok(n > 10, "fixture needs more than one page of cards");
+  const all = cardNumbers(P.build(deck, { variant: "shop" }));
+  assert.deepStrictEqual(all, Array.from({ length: n }, (_, i) => i + 1));
+  const bytes = P.build(deck, { variant: "shop", cards: [1, 4, 7] });
+  assert.deepStrictEqual(cardNumbers(bytes), [2, 5, 8]);
+  assert.equal(pages(bytes), 1);
+  const ten = Array.from({ length: 10 }, (_, i) => i);
+  assert.equal(pages(P.build(deck, { variant: "shop", cards: ten })), 2);
+  assert.deepStrictEqual(cardNumbers(P.build(deck, { variant: "shop", cards: ten })), ten.map((i) => i + 1));
+});
+
+test("build without cards is byte-identical to the all-cards build", () => {
+  const deck = fixture();
+  const a = P.build(deck, { variant: "shop" });
+  const b = P.build(deck, { variant: "shop" });
+  assert.deepStrictEqual(Buffer.from(a), Buffer.from(b), "build is deterministic");
+  const every = deck.chords.map((_, i) => i);
+  assert.deepStrictEqual(Buffer.from(P.build(deck, { variant: "shop", cards: every })), Buffer.from(a));
+});
+
+test("build refuses empty, unsorted, duplicate and out-of-range cards, and cards off the shop variant", () => {
+  const deck = fixture();
+  const n = deck.chords.length;
+  const bad = [[], [3, 1], [1, 1], [-1], [n], [1.5], "1,2", ["1"], [1, "2"], null, 0, false, ""];
+  for (const cards of bad) {
+    assert.throws(() => P.build(deck, { variant: "shop", cards }), /pdfcards\.build: cards/, JSON.stringify(cards));
+  }
+  assert.throws(() => P.build(deck, { variant: "full", cards: [0] }), /needs the shop variant/);
+  assert.throws(() => P.build(deck, { cards: [0] }), /needs the shop variant/);
+});
+
+test("the PDF adapters keep chord i equal to the app's chord i", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const DECKS = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", "decks.json"), "utf8"));
+  for (const d of DECKS) {
+    const pdf = HPE.pdfdeck.fromBuiltin(d, d.print);
+    assert.equal(pdf.chords.length, d.chords.length, d.id);
+    d.chords.forEach((c, i) => {
+      assert.equal(JSON.stringify(pdf.chords[i]), JSON.stringify([c.main, c.sup, c.subtitle, c.fields, c.roots]), `${d.id} #${i}`);
+    });
+  }
+  const E = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+  const parsed = E.core.parseLegacySeed("(D3) A3 C4 D4 E4 F4 G4 A4 C5", {});
+  const built = E.select.build(parsed.value).value;
+  const pdf = HPE.pdfdeck.fromGenerated({ seed: E.core.formatSeed(parsed.value), deck: built });
+  assert.equal(pdf.chords.length, built.chords.length);
+  built.chords.forEach((c, i) => {
+    assert.equal(JSON.stringify(pdf.chords[i]), JSON.stringify([c.main, c.sup, c.subtitle, c.fields, c.roots]), `generated #${i}`);
+  });
+});

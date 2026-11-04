@@ -2436,3 +2436,122 @@ test("R4-E tierOf refuses chords that are not a non-empty array, by name", () =>
   }
   assert.strictEqual(E.sequence.tierOf(deck, [0, 1, 2, 3]), "basic", "control");
 });
+
+// ---- tierCards: the PDF tier options (docs/plans/2026-11-03-pdf-tier-options.md) ----
+
+function tierOracle(S, deck) {
+  const I = S._internal;
+  const ctx = I.tierContext(deck);
+  const out = { easy: [], easyMedium: [] };
+  if (ctx.homeAnchorIdx === null) return out;
+  const easy = new Set();
+  for (const len of [2, 3, 4]) {
+    for (const seq of S.sequences(deck, len)) seq.forEach((i) => easy.add(i));
+  }
+  const matrix = I.buildConnectMatrix(deck);
+  const pool = I.tierPool(deck, "intermediate", ctx.anchorsList);
+  const anchors = new Set(ctx.anchorsList);
+  const cards = new Set(easy);
+  for (const len of [3, 4]) {
+    const seq = [];
+    const rec = (colours) => {
+      if (seq.length === len) {
+        if (seq[len - 1] !== seq[0] && matrix[seq[len - 1]][seq[0]] &&
+            I.classifyTier(deck, seq, ctx) === "intermediate") seq.forEach((i) => cards.add(i));
+        return;
+      }
+      for (const c of pool) {
+        if (seq.length && (seq.includes(c) || !matrix[seq[seq.length - 1]][c])) continue;
+        const colour = anchors.has(c) ? 0 : 1;
+        if (colours + colour > 1) continue;
+        seq.push(c);
+        rec(colours + colour);
+        seq.pop();
+      }
+    };
+    rec(0);
+  }
+  out.easy = [...easy].sort((a, b) => a - b);
+  out.easyMedium = [...cards].sort((a, b) => a - b);
+  return out;
+}
+
+test("tierCards on every built-in equals the brute-force union, easy within easyMedium", () => {
+  const S = engine().sequence;
+  for (const deck of DECKS) {
+    const got = host(S.tierCards(deck));
+    const want = tierOracle(S, deck);
+    assert.deepStrictEqual(got.easy, want.easy, `${deck.id}: easy`);
+    assert.deepStrictEqual(got.easyMedium, want.easyMedium, `${deck.id}: easyMedium`);
+    assert.ok(got.easy.every((i) => got.easyMedium.includes(i)), `${deck.id}: cumulative`);
+    assert.ok(got.easy.length > 0 && got.easyMedium.length <= deck.chords.length, `${deck.id}: range`);
+    assert.deepStrictEqual(got.easy, [...new Set(got.easy)].sort((a, b) => a - b), `${deck.id}: sorted distinct`);
+  }
+});
+
+test("tierCards easy is the union of the BASIC loops, not basicVocab", () => {
+  const S = engine().sequence;
+  const I = S._internal;
+  for (const deck of DECKS) {
+    const ctx = I.tierContext(deck);
+    const loops = new Set();
+    ctx.basicCells.forEach((c) => c.seqs.forEach((q) => q.forEach((i) => loops.add(i))));
+    assert.deepStrictEqual(host(S.tierCards(deck)).easy, [...loops].sort((x, y) => x - y), deck.id);
+  }
+});
+
+test("tierCards easy leaves out a basicVocab card that joins no loop", () => {
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  const deck = full.select.build(full.core.parseLegacySeed("(D#3) A3 B3 E4 A4 A#4 D#5", {}).value).value;
+  assert.deepStrictEqual(host(full.sequence._internal.tierContext(deck).basicVocab), [0, 2, 4]);
+  assert.deepStrictEqual(host(full.sequence.tierCards(deck)).easy, [0, 2]);
+});
+
+test("tierCards on a no-home deck is empty", () => {
+  const full = loadEngine(FULL_ENGINE_MODULES);
+  const deck = full.select.build(full.core.parseLegacySeed("(C3) G3 D4 G4 D5", {}).value).value;
+  assert.strictEqual(full.sequence._internal.tierContext(deck).homeAnchorIdx, null);
+  assert.deepStrictEqual(host(full.sequence.tierCards(deck)), { easy: [], easyMedium: [] });
+});
+
+test("tierCards on an over-budget pan equals the oracle without touching Math.random", () => {
+  const { S, deck } = truncatingDeck(TRUNCATING_SEEDS[1]);
+  const I = S._internal;
+  assert.ok(I.mediumNodeCount(deck, I.tierContext(deck), I.buildConnectMatrix(deck)) > 60000);
+  const real = Math.random;
+  Math.random = () => { throw new Error("tierCards must not sample"); };
+  let got;
+  try {
+    got = host(S.tierCards(deck));
+  } finally {
+    Math.random = real;
+  }
+  assert.deepStrictEqual(got, tierOracle(S, deck));
+  assert.deepStrictEqual(host(S.tierCards(deck)), got, "deterministic");
+});
+
+test("tierCards equals the oracle on the generated fixtures, colour-card cards included", () => {
+  // A search over 23,000 random pans and every fixture found no anchor that
+  // appears only beside a colour card, so the oracle equality is the guard:
+  // it covers the per-colour-card search whichever branch a deck takes.
+  const S = generated().full.sequence;
+  const { sweep, reviewer } = generated();
+  const decks = [...TRUNCATING_SEEDS, REGISTER_HOME_SEED].map((s) => truncatingDeck(s).deck);
+  decks.push(...reviewer.map((r) => r.deck), ...sweep.filter((r) => r.n <= 9).map((r) => r.deck));
+  let withColour = 0;
+  for (const deck of decks) {
+    const got = host(S.tierCards(deck));
+    assert.deepStrictEqual(got, tierOracle(S, deck), "oracle");
+    const anchors = new Set(S._internal.tierContext(deck).anchorsList);
+    if (got.easyMedium.some((i) => !anchors.has(i))) withColour += 1;
+  }
+  assert.ok(withColour >= 1, "no fixture put a colour card in EASY + MEDIUM");
+});
+
+test("tierCards stays inside a tap on the largest sweep deck", () => {
+  const { sweep, full } = generated();
+  const deck = sweep[sweep.length - 1].deck;
+  const t0 = Date.now();
+  full.sequence.tierCards(deck);
+  assert.ok(Date.now() - t0 < 500, `took ${Date.now() - t0} ms`);
+});
