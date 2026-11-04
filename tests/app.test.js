@@ -19562,21 +19562,24 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     slots: {}, hidden: [],
     migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] }, ...extra });
   const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
-  function movePage({ on = true, cap = 20000, referrer = "" } = {}) {
+  function movePage({ on = true, cap = 20000, referrer = "", session = null } = {}) {
     let html = INDEX_HTML();
     html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
     if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
-    return `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + html;
+    const ss = session === null ? "" : `window.__ss=${JSON.stringify(session)};window.sessionStorage={getItem:k=>k in window.__ss?window.__ss[k]:null,setItem:(k,v)=>{window.__ss[k]=String(v)},removeItem:k=>{delete window.__ss[k]}};`;
+    return `<script>location.replace=function(u){window.__replaced=String(u)};location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};${ss}</script>` + html;
   }
-  const settle = async app => { for (let i = 0; i < 40 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
-  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage }) {
+  const settle = async app => { for (let i = 0; i < 40 && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
+  const clickMove = app => { app.click(app.get("moveBannerGo")); return app.get("window.__assigned"); };
+  const bannerText = app => app.get("moveBannerMsg.textContent");
+  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage, session }) {
     if (records) {
       const realm = realmAt(origin, host);
       await idbRecord(realm, { write: true, value: JSON.stringify(envelopeOf(records, extra)) });
     }
     const app = boot({ origin, storage, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true, crypto: webcrypto,
-      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer }) });
+      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer, session }) });
     await settle(app);
     app.fixtureOrigin = origin;
     return app;
@@ -19602,7 +19605,10 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const shipped = region(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8"));
     const from = "moveDigest(moveCanon(read.record))";
     assert.strictEqual(shipped.split(from).length, 2, "the shipped region no longer holds the one line #790 changed");
-    const expected = shipped.replace(from, () => "moveDigest(moveCanon(row.r))");
+    const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
+    assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
+    assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
+    const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))");
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
   });
@@ -19615,18 +19621,47 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.strictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).importedIds, undefined);
   });
 
-  test("the old host forwards before any render, with the payload, and never loads analytics", async () => {
-    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
-    const to = app.get("window.__replaced");
-    assert.ok(to.startsWith(TARGET + "/#move="), to);
-    assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
-    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true, "the app did not boot");
-    assert.strictEqual(gtag(app).length, 0);
+  test("T-B1: the old host boots, never navigates at boot, shows the move banner and loads analytics", async () => {
+    const stores = [{ records: [] }, { records: [rec("A")] }, { records: manyRecs(116) }, { records: [], extra: { hidden: ["kurd"] } }];
+    for (const hash of ["", "#deck=f-low-pygmy-18", "#s=6/D3-A3-C4/x/y", "#add"]) {
+      for (const store of stores) {
+        const app = await boot2({ host: OLD_HOST, hash, ...store });
+        assert.strictEqual(app.get("window.__replaced"), undefined, hash);
+        assert.strictEqual(app.get("window.__assigned"), undefined, hash);
+        assert.strictEqual(app.get("booted"), true, hash);
+        assert.strictEqual(app.get("moveBannerEl.hidden"), false, hash);
+      }
+    }
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    assert.strictEqual(gtag(app).length, 1);
+    assert.strictEqual(app.get("analyticsLoaded"), true);
   });
 
-  test("an empty old store forwards with no payload", async () => {
+  test("the banner counts the saved scales and says nothing is carried when the store is empty", async () => {
+    const one = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    assert.match(bannerText(one), /now lives at new\.example\. Your saved scale can come with you\./);
+    assert.strictEqual(one.get("moveBannerGo.textContent"), "MOVE MY SCALES");
+    const two = await boot2({ host: OLD_HOST, records: [rec("A"), rec("B")] });
+    assert.match(bannerText(two), /Your 2 saved scales can come with you\./);
+    const none = await boot2({ host: OLD_HOST, records: [] });
+    assert.strictEqual(bannerText(none), "Handpan Theory now lives at new.example.");
+    assert.strictEqual(none.get("moveBannerGo.textContent"), "OPEN new.example");
+    assert.doesNotMatch(bannerText(none), /\bdeck/i);
+  });
+
+  test("T-C0: the click with an empty store assigns the new address with search and hash, no payload", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [] });
-    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
+    assert.strictEqual(app.get("window.__replaced"), undefined);
+  });
+
+  test("a click carries the payload with the then hash, and the old store is untouched", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
+    assert.strictEqual(app.get("window.__assigned"), undefined, "nothing navigates before the click");
+    const to = clickMove(app);
+    assert.ok(to.startsWith(TARGET + "/#move="), to);
+    assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
+    assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
   });
 
   const codeOf = url => /#move=([A-Za-z0-9_-]*)&then=/.exec(url)[1];
@@ -19634,20 +19669,23 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
   const manyRecs = n => Array.from({ length: n }, (_, i) => rec(`S${i + 1} ${"x".repeat(30)}`));
 
   for (const total of [116, 200]) {
-    test(`over-cap store of ${total} still forwards, carrying exactly the largest prefix under MOVE_CAP`, async () => {
+    test(`T-C1: over-cap store of ${total} says so before the click, then one click carries exactly the largest prefix under MOVE_CAP`, async () => {
       const records = manyRecs(total);
       const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records, extra: { hidden: ["kurd"] } });
-      const to = old.get("window.__replaced");
+      assert.strictEqual(old.get("window.__assigned"), undefined);
+      const to = clickMove(old);
       assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
       assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
       const code = codeOf(to);
       assert.ok(code.length <= 20000);
       const rows = rowsOf(code);
       assert.ok(rows.length > 0 && rows.length < total, `carried ${rows.length}`);
+      assert.ok(bannerText(old).includes(`${rows.length} of your ${total} saved scales fit in one move. The rest stay here at this address.`), bannerText(old));
       assert.deepStrictEqual(rows.map(r => r.r.o.name), records.slice(0, rows.length).map(r => r.o.name));
       const more = Buffer.from(JSON.stringify({ r: records.slice(0, rows.length + 1).map((r, i) => ({ i: uid(i + 1), r })), h: ["kurd"] })).toString("base64url");
       assert.ok(more.length > 20000, "one more record would not fit");
       assert.deepStrictEqual(JSON.parse(Buffer.from(code, "base64url").toString()).h, ["kurd"]);
+      assert.strictEqual(clickMove(old), to, "a second click carries the same prefix");
       assert.deepStrictEqual(envelopeAt(old.fixtureOrigin, OLD_HOST).entries.length, total, "old storage untouched");
       const origin = createOrigin({});
       const hash = `#move=${code}&then=`;
@@ -19660,20 +19698,26 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     });
   }
 
-  test("an over-cap store with a #s= hash forwards with the hash preserved and no notice path on the old host", async () => {
+  test("an under-cap store shows no over-cap line", async () => {
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(3) });
+    assert.doesNotMatch(bannerText(app), /fit in one move/);
+  });
+
+  test("an over-cap store with a #s= hash keeps the hash across the click", async () => {
     const hash = "#s=6/D3-A3-C4/x/y";
     const app = await boot2({ host: OLD_HOST, hash, records: manyRecs(200) });
-    const to = app.get("window.__replaced");
+    assert.strictEqual(app.get("booted"), true);
+    assert.notStrictEqual(app.get("location.hash"), hash, "the booted app rewrites the live hash");
+    const to = clickMove(app);
     assert.ok(to.startsWith(TARGET + "/#move="), String(to));
     assert.ok(to.endsWith("&then=" + encodeURIComponent(hash)), to);
-    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true);
   });
 
   test("saved scales with accented, CJK and emoji names move intact, once, and count UTF-8 bytes toward MOVE_CAP", async () => {
     const names = ["\u00c9cho", "\u65e5\u672c\u8a9e\u306e\u97f3", "\ud83c\udfb5 Tune"];
     const records = names.map(n => rec(n));
     const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records });
-    const to = old.get("window.__replaced");
+    const to = clickMove(old);
     assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
     const code = codeOf(to);
     assert.deepStrictEqual(rowsOf(code).map(r => r.r.o.name), names);
@@ -19687,7 +19731,7 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.strictEqual(envelopeAt(origin).entries.length, 3, "revisit adds no duplicates");
     const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
     const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
-    assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+    assert.strictEqual(rowsOf(codeOf(clickMove(tight))).length, 2, "one byte under the cap drops the last row");
   });
 
   const nanCanon = v => Array.isArray(v) ? "[" + v.map(nanCanon).join(",") + "]" :
@@ -19709,16 +19753,77 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["Bad\u0007name", "Caf\u00e9"]);
   });
 
-  test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {
+  test("when not even one record fits under MOVE_CAP the click still assigns, with no payload", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], cap: 10 });
-    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
     assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
   });
 
   test("the new host never forwards", async () => {
     const app = await boot2({ host: NEW_HOST, records: [rec("A")] });
     assert.strictEqual(app.get("window.__replaced"), undefined);
+    assert.strictEqual(app.get("window.__assigned"), undefined);
     assert.strictEqual(app.get("booted"), true);
+    assert.strictEqual(app.get("moveBannerEl"), null, "no banner on the new host");
+  });
+
+  test("with the switches null there is no banner and the analytics path is unchanged", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], on: false });
+    assert.strictEqual(app.get("moveBannerEl"), null);
+  });
+
+  test("T-B2: outside moveGo, index.html never navigates the page to the target", () => {
+    const html = INDEX_HTML();
+    assert.ok(!/location\.replace\(\s*MOVE_TARGET/.test(html), "location.replace(MOVE_TARGET is back");
+    assert.strictEqual(html.split("location.assign(").length - 1, 1, "exactly one location.assign");
+    const a = html.indexOf("function moveGo"), b = html.indexOf("location.assign(");
+    assert.ok(a > 0 && b > a && html.indexOf("\n}\n", a) > b, "the assign is not inside moveGo");
+    assert.ok(!/MOVE_ON_OLD\)\s*return \{jumped/.test(html));
+    assert.ok(!/if \(!MOVE_ON_OLD\) loadAnalytics/.test(html));
+  });
+
+  test("T-D1: no href, action or formaction holds the payload or the target, and the buttons are type=button", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    for (const name of ["moveBannerGo", "moveBannerDismiss"]) {
+      assert.strictEqual(app.get(`${name}.getAttribute('type')`), "button");
+      for (const attr of ["href", "action", "formaction"]) {
+        const v = app.get(`${name}.getAttribute('${attr}')`);
+        assert.ok(v === null || v === undefined || !/#move=|new\.example/.test(v), `${name} ${attr}`);
+      }
+    }
+    assert.strictEqual(app.get("moveBannerEl.getAttribute('role')"), "region");
+    assert.ok(app.get("moveBannerEl.getAttribute('aria-label')"));
+    assert.strictEqual(app.get("moveBannerEl.style.position || ''"), "");
+  });
+
+  test("T-D2: dismiss hides the banner for the session, and a fresh session shows it again", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], session: {} });
+    assert.strictEqual(app.get("moveBannerEl.hidden"), false);
+    app.click(app.get("moveBannerDismiss"));
+    assert.strictEqual(app.get("moveBannerEl.hidden"), true);
+    assert.strictEqual(app.get("window.__assigned"), undefined);
+    const kept = JSON.parse(app.get("JSON.stringify(window.__ss)"));
+    assert.ok(Object.keys(kept).length === 1, "one session key");
+    const again = await boot2({ host: OLD_HOST, records: [rec("A")], session: kept });
+    assert.strictEqual(again.get("moveBannerEl === null"), true);
+    const fresh = await boot2({ host: OLD_HOST, records: [rec("A")], session: {} });
+    assert.strictEqual(fresh.get("moveBannerEl.hidden"), false);
+    assert.strictEqual(JSON.stringify(fresh.localStorage ? fresh.get("Object.keys(localStorage)") : []).includes("move"), false);
+  });
+
+  test("dismiss still hides the banner when session storage throws", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    app.click(app.get("moveBannerDismiss"));
+    assert.strictEqual(app.get("moveBannerEl.hidden"), true);
+  });
+
+  test("T-D3: in session mode the banner offers only the new address and the click carries no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], storage: undefined });
+    app.get("savedMode='session'");
+    app.get("renderMoveBanner()");
+    assert.strictEqual(app.get("moveBannerGo.textContent"), "OPEN new.example");
+    assert.strictEqual(bannerText(app), "Handpan Theory now lives at new.example.");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
   });
 
   test("a move link is stripped to the then hash and imports once, however often it is replayed", async () => {

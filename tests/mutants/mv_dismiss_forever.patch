@@ -1,0 +1,24 @@
+# kills: T-D2: dismiss hides the banner for the session, and a fresh session shows it again
+# suite: node --test --test-name-pattern=T.D2..dismiss.hides tests/app.test.js
+# why: dismiss is kept in localStorage, so the banner never returns on a later visit.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17432,7 +17432,7 @@
+   if (!MOVE_ON_OLD) return;
+   if (!moveBannerEl) {
+     let dismissed = false;
+-    try { dismissed = sessionStorage.getItem(MOVE_DISMISS_KEY) === "1"; } catch (e) {}
++    try { dismissed = localStorage.getItem(MOVE_DISMISS_KEY) === "1"; } catch (e) {}
+     if (dismissed) return;
+     const make = (tag, cls) => { const el = document.createElement(tag); el.className = cls; return el; };
+     moveBannerEl = make("div", "move-banner");
+@@ -17447,7 +17447,7 @@
+     moveBannerDismiss.setAttribute("type", "button");
+     moveBannerDismiss.addEventListener("click", () => {
+       moveBannerEl.hidden = true;
+-      try { sessionStorage.setItem(MOVE_DISMISS_KEY, "1"); } catch (e) {}
++      try { localStorage.setItem(MOVE_DISMISS_KEY, "1"); } catch (e) {}
+     });
+     actions.appendChild(moveBannerGo);
+     actions.appendChild(moveBannerDismiss);

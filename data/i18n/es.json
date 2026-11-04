@@ -352,5 +352,15 @@
     "one": "Tu escala guardada se ha mudado aquí.",
     "other": "Tus {n} escalas guardadas se han mudado aquí."
   },
-  "move.failed": "Tus escalas guardadas siguen en la dirección anterior. Abre de nuevo la dirección anterior para moverlas."
+  "move.failed": "Tus escalas guardadas siguen en la dirección anterior. Abre de nuevo la dirección anterior para moverlas.",
+  "move.banner": {
+    "one": "Handpan Theory ahora está en {host}. Tu escala guardada puede venir contigo.",
+    "other": "Handpan Theory ahora está en {host}. Tus {n} escalas guardadas pueden venir contigo."
+  },
+  "move.banner_empty": "Handpan Theory ahora está en {host}.",
+  "move.banner_overcap": "{n} de tus {total} escalas guardadas caben en una mudanza. El resto se queda aquí, en esta dirección.",
+  "move.go": "MUDAR MIS ESCALAS",
+  "move.go_plain": "ABRIR {host}",
+  "move.dismiss": "Ocultar por ahora",
+  "move.banner_label": "Handpan Theory se ha mudado"
 }

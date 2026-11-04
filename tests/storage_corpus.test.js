@@ -594,17 +594,18 @@ test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport inta
   const { createOrigin } = require("./helpers/sandbox.js");
   const armed = HTML.replace(/^const MOVE_FROM = .*;$/m, () => 'const MOVE_FROM = "old.example";')
     .replace(/^const MOVE_TARGET = .*;$/m, () => 'const MOVE_TARGET = "https://new.example";');
-  const page = (referrer) => `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + armed;
+  const page = (referrer) => `<script>location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + armed;
   const bootAt = async (origin, href, referrer) => {
     const app = boot({ html: page(referrer), origin, href, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true,
       crypto: require("node:crypto").webcrypto, abortController: true });
-    for (let i = 0; i < 80 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i += 1) await new Promise((r) => setTimeout(r, 25));
+    for (let i = 0; i < 80 && !app.get("typeof booted!=='undefined'&&booted"); i += 1) await new Promise((r) => setTimeout(r, 25));
     await settle();
     return app;
   };
   for (const [n, blob] of Object.entries(BLOBS)) {
     const old = await bootAt(createOrigin({ storage: storageOf(blob) }), "https://old.example/index.html", "");
-    const url = old.get("window.__replaced");
+    old.click(old.get("moveBannerGo"));
+    const url = old.get("window.__assigned");
     assert.ok(url && url.startsWith("https://new.example/"), `${n}: the old host did not forward`);
     const oldEnv = envelopeOf(old);
     const readable = plain(old.get(`savedState.entries.filter(r=>readSavedRecord(r.record).ok).map(r=>({i:r.instanceId,r:r.record}))`));

@@ -337,5 +337,14 @@
   "move.notice": {
     "other": "保存したスケール{n}件をこちらに移しました。"
   },
-  "move.failed": "保存したスケールはまだ以前のアドレスにあります。もう一度以前のアドレスを開くと移せます。"
+  "move.failed": "保存したスケールはまだ以前のアドレスにあります。もう一度以前のアドレスを開くと移せます。",
+  "move.banner": {
+    "other": "Handpan Theory は {host} に移転しました。保存したスケール{n}件を一緒に移せます。"
+  },
+  "move.banner_empty": "Handpan Theory は {host} に移転しました。",
+  "move.banner_overcap": "保存した{total}件のうち{n}件を一度に移せます。残りはこのアドレスに残ります。",
+  "move.go": "スケールを移す",
+  "move.go_plain": "{host} を開く",
+  "move.dismiss": "今は閉じる",
+  "move.banner_label": "Handpan Theory は移転しました"
 }
