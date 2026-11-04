@@ -1101,6 +1101,72 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return pickTiered(deck, rng, prev, t, ctx);
   }
 
+  // tierCards(deck): the cards the PDF tier options print (docs/plans/
+  // 2026-11-03-pdf-tier-options.md). `easy` is every card in a BASIC loop;
+  // `easyMedium` adds every card in any MEDIUM-classified sequence. Exact and
+  // deterministic on every deck, with no rng: in budget the exhaustive DFS
+  // runs; over budget the pure cells run alone, then one DFS per colour card
+  // over the anchors plus that card (a MEDIUM sequence holds at most one).
+  function tierCards(deck) {
+    var ctx = tierContext(deck);
+    var easy = {};
+    var all = {};
+    if (ctx.homeAnchorIdx === null) return { easy: [], easyMedium: [] };
+    ctx.basicCells.forEach(function (cell) {
+      cell.seqs.forEach(function (seq) {
+        seq.forEach(function (i) { easy[i] = true; all[i] = true; });
+      });
+    });
+    var matrix = buildConnectMatrix(deck);
+    if (mediumNodeCount(deck, ctx, matrix) <= MEDIUM_ENUM_BUDGET) {
+      mediumCells(deck).forEach(function (cell) {
+        cell.seqs.forEach(function (seq) {
+          seq.forEach(function (i) { all[i] = true; });
+        });
+      });
+    } else {
+      var pool = tierPool(deck, "intermediate", ctx.anchorsList);
+      var startSet = tierStartSet(deck, "intermediate", pool, ctx);
+      var isAnchor = function (i) { return ctx.anchorsList.indexOf(i) >= 0; };
+      var anchorPool = pool.filter(isAnchor);
+      var search = function (searchPool, colour) {
+        var starts = startSet.filter(function (i) { return searchPool.indexOf(i) >= 0; });
+        TIER_LENGTHS.intermediate.forEach(function (len) {
+          var seq = new Array(len);
+          var rec = function (depth, colourUsed) {
+            if (depth === len) {
+              if (seq[len - 1] !== seq[0] && matrix[seq[len - 1]][seq[0]] &&
+                  (colour === null || colourUsed) &&
+                  classifyTier(deck, seq, ctx) === "intermediate") {
+                seq.forEach(function (i) { all[i] = true; });
+              }
+              return;
+            }
+            var options = depth === 0 ? starts : searchPool;
+            for (var k = 0; k < options.length; k += 1) {
+              var cand = options[k];
+              if (depth > 0 && (cand === seq[depth - 1] || !matrix[seq[depth - 1]][cand])) continue;
+              if (seq.slice(0, depth).indexOf(cand) >= 0) continue;
+              var isColour = cand === colour;
+              if (isColour && colourUsed) continue;
+              seq[depth] = cand;
+              rec(depth + 1, colourUsed || isColour);
+            }
+          };
+          rec(0, false);
+        });
+      };
+      search(anchorPool, null);
+      pool.forEach(function (c) {
+        if (!isAnchor(c)) search(anchorPool.concat([c]), c);
+      });
+    }
+    var sorted = function (set) {
+      return Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+    };
+    return { easy: sorted(easy), easyMedium: sorted(all) };
+  }
+
   HPE.sequence = {
     STYLES: STYLES,
     TIERS: TIERS,
@@ -1108,6 +1174,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     sequences: sequences,
     tierOf: tierOf,
     pick: pick,
+    tierCards: tierCards,
     mulberry32: mulberry32,
     // Exposed for the hardware-independent regression tests: the node-count
     // tests reconstruct the real DFS / enumeration for a given deck and tier
