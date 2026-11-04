@@ -238,8 +238,8 @@ def hub_page(rows=None):
         out.append('<section class="group">\n<h2>%s</h2><p class="muted">%s</p>\n<ul class="rel">\n' % (esc(name), esc(blurb)))
         out.append("\n".join(link_item(r) for r in rows if r["group"] == name))
         out.append("\n</ul>\n</section>\n")
-    out.append('<p><a href="/scales/%s/">Neotone handpan chords</a>: chord cards for a Neotone layout.</p>\n'
-               % NEOTONE_SLUG)
+    out.append('<section class="group">\n<h2>Neotone</h2><p class="muted">Chord cards for any Neotone layout.</p>\n'
+               '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n</section>\n' % NEOTONE_SLUG)
     out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
                "</main>\n</body>\n</html>\n")
     return "".join(out)
