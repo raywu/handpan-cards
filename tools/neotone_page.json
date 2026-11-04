@@ -43,5 +43,192 @@
   24
  ],
  "cta": "/#s=7/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/pair-r56.r57.r59.r61.r63.r64.r66.r68.-.b52.b54.b71.b73.-.-.-.-.-/34e6e9",
- "updated": "2026-11-03"
+ "updated": "2026-11-03",
+ "defaults": [
+  {
+   "name": "B Amara",
+   "hotkey": "DOME+1",
+   "ding": "B2",
+   "main": [
+    "F#3",
+    "A3",
+    "B3",
+    "C#4",
+    "D4",
+    "E4",
+    "F#4",
+    "A4",
+    "B4"
+   ],
+   "mutant": null,
+   "seed": "(B2) F#3 A3 B3 C#4 D4 E4 F#4 A4 B4",
+   "typed": "B Amara",
+   "palette": 1
+  },
+  {
+   "name": "C Aegean",
+   "hotkey": "DOME+2",
+   "ding": "C3",
+   "main": [
+    "E3",
+    "G3",
+    "B3",
+    "C4",
+    "E4",
+    "F#4",
+    "G4",
+    "B4",
+    "E5"
+   ],
+   "mutant": null,
+   "seed": "(C3) E3 G3 B3 C4 E4 F#4 G4 B4 E5",
+   "typed": "C Aegean",
+   "palette": 1
+  },
+  {
+   "name": "C# Pygmy",
+   "hotkey": "DOME+3",
+   "ding": "C#3",
+   "main": [
+    "F#3",
+    "G#3",
+    "A3",
+    "C#4",
+    "E4",
+    "F#4",
+    "G#4",
+    "A4",
+    "C#5"
+   ],
+   "mutant": null,
+   "seed": "(C#3) F#3 G#3 A3 C#4 E4 F#4 G#4 A4 C#5",
+   "typed": "C# Pygmy",
+   "palette": 1
+  },
+  {
+   "name": "D Kurd",
+   "hotkey": "DOME+4",
+   "ding": "D3",
+   "main": [
+    "A3",
+    "Bb3",
+    "C4",
+    "D4",
+    "E4",
+    "F4",
+    "G4",
+    "A4",
+    "C5"
+   ],
+   "mutant": null,
+   "seed": "(D3) A3 A#3 C4 D4 E4 F4 G4 A4 C5",
+   "typed": "D Kurd",
+   "palette": 1
+  },
+  {
+   "name": "F# Pygmy",
+   "hotkey": "DOME+5",
+   "ding": "F#2",
+   "main": [
+    "C#3",
+    "F#3",
+    "G#3",
+    "A3",
+    "C#4",
+    "E4",
+    "F#4",
+    "G#4",
+    "A4"
+   ],
+   "mutant": null,
+   "seed": "(F#2) C#3 F#3 G#3 A3 C#4 E4 F#4 G#4 A4",
+   "typed": "F# Pygmy",
+   "palette": 1
+  },
+  {
+   "name": "G Romanian Hijaz",
+   "hotkey": "DOME+6",
+   "ding": "G3",
+   "main": [
+    "C4",
+    "D4",
+    "D#4",
+    "F#4",
+    "G4",
+    "A4",
+    "A#4",
+    "C5",
+    "D5"
+   ],
+   "mutant": null,
+   "seed": "(G3) C4 D4 D#4 F#4 G4 A4 A#4 C5 D5",
+   "typed": "G Romanian Hijaz",
+   "palette": 1
+  },
+  {
+   "name": "Eb La Sirena 16",
+   "hotkey": "DOME+7",
+   "notes": "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 F4 F#4 A#4 C5 D#5 F5"
+  },
+  {
+   "name": "B2 Onoleo 15",
+   "hotkey": "DOME+8",
+   "notes": "B2 E3 F#3 G3 A3 B3 C4 D#4 E4 F#4 G4 A4 B4 C5 D#5"
+  },
+  {
+   "name": "F2 Astronaut 16",
+   "hotkey": "DOME+9",
+   "ding": "F2",
+   "main": [
+    "C#3",
+    "D#3",
+    "F3",
+    "G3",
+    "G#3",
+    "C4",
+    "D#4",
+    "F4",
+    "G4"
+   ],
+   "mutant": [
+    "A#2",
+    "C3",
+    "-",
+    "-",
+    "G5",
+    "D#5",
+    "C5",
+    "G#4",
+    "-"
+   ],
+   "seed": "(F2) [A#2] [C3] C#3 D#3 F3 G3 G#3 C4 D#4 F4 G4 [G#4] [C5] [D#5] [G5]",
+   "typed": "F2 Astronaut 16",
+   "palette": 1,
+   "profile": {
+    "id": "paired",
+    "rev": 2,
+    "map": [
+     "r49",
+     "r51",
+     "r53",
+     "r55",
+     "r56",
+     "r60",
+     "r63",
+     "r65",
+     "r67",
+     "b46",
+     "b48",
+     null,
+     null,
+     "b79",
+     "b75",
+     "b72",
+     "b68",
+     null
+    ]
+   },
+   "page": "neotone-f2-astronaut-16"
+  }
+ ]
 }
