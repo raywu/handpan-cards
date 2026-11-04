@@ -1,0 +1,16 @@
+# kills: an option whose set is empty is disabled when the menu opens; ALL never is; an empty click builds nothing
+# suite: node --test --test-name-pattern an.option.whose.set.is.empty.is.disabled.when.the.menu.opens tests/app.test.js
+# Lane U (PDF tier menu). An empty EASY set is no longer disabled in the menu.
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12437,7 +12437,7 @@ const PDF_MENU_ITEMS = {
+ };
+ function printMenuState() {
+   const sets = pdfTierSets(deck());
+-  return { easy: !sets.easy.length, easy_medium: !sets.easyMedium.length, all: false };
++  return { easy: false, easy_medium: !sets.easyMedium.length, all: false };
+ }
+ function printMenuOpen() {
+   const menu = document.getElementById("print-menu");

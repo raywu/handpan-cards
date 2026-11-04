@@ -8,11 +8,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11125,6 +11125,7 @@ function pdfFileName(d, variant, paper) {
- // card, blank padding) has no control. The settings panel offers DOWNLOAD PDF,
- // which calls this with 'shop'. 'full' is kept for tests and a future return.
- function downloadDeckPDF(variant, btn) {
+@@ -12466,6 +12466,7 @@ function togglePrintMenu() {
+   setPrintMenu(true);
+ }
+ function downloadDeckPDF(variant, btn, option = "all") {
 +  if (false) { window.addEventListener("afterprint", () => {}); }
    const d = deck();
-   // One function, one decision: a built-in deck's print overlay lives under
-   // `print` in data/decks.json (carried into `const DECKS` above); a
+   let cards;
+   if (option !== "all") {
