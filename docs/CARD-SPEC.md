@@ -228,6 +228,9 @@ bottom`. `chords[].fields` is the canonical voicing in spelling order.
 - Card **62.65 x 87.21 mm (177.6 x 247.2 pt, poker size)**, US Letter 3x3,
   gutters 12.2/9.4 pt, crop marks at all card edges, 2.00-inch calibration bar
   on page 1 (print at 100% / Actual Size).
+- The browser build can print a subset of a scale's cards (`opts.cards`, engine rule in
+  `docs/ENGINE-SPEC.md` section 19): cards keep their app `#n`, gaps allowed, and the
+  `tools/hifi.py` / `tools/decks.py` output stays the full set.
 
 ## App behaviour
 
@@ -242,6 +245,14 @@ bottom`. `chords[].fields` is the canonical voicing in spelling order.
 - **Seeded decks:** SAVE writes a custom record with `replaces: "<seed id>"`;
   DELETE adds the id to `hidden` in the `hpfc` blob; RESET SEEDED SCALES clears both.
 - `analyticsAllowed()` is false on `.pages.dev`, `file:`, `localhost`, `127.0.0.1`, `[::1]`, webdriver and the `G-XXXXXXXXXX` placeholder id (`tests/app.test.js` "analyticsAllowed is false for the DEV host on Cloudflare Pages: no gtag script, no config, no event" and its sibling per-condition titles).
+- **DOWNLOAD PDF is a menu** (PDF tier options D1-D9): `#print-download` toggles `#print-menu` with
+  three cumulative items, EASY, EASY + MEDIUM, ALL (`HPE.sequence.tierCards`, computed once per
+  scale and cached in `pdfTierSets`). Nothing is remembered. The menu stays inside `.prints`, opens
+  upward when it would cross the panel bottom, and Escape closes only the menu. An option whose set
+  is empty is disabled. Filenames: `<Name>_CHORD_ONLY_EASY_<paper>.pdf`,
+  `<Name>_CHORD_ONLY_EASY_MEDIUM_<paper>.pdf`; ALL keeps the old name and passes no `cards`, so its
+  bytes are unchanged. `pdf_download` carries `cards` = `easy` / `easy_medium` / `all`
+  (`tests/app.test.js` "PDF tier menu (lane U)").
 - The sheet guidance slot (`#scale-guidance`) reserves nothing: with no message it
 is out of flow and 0px tall (owner 2026-10-20, superseding the guidance plan's
 36px reserve).

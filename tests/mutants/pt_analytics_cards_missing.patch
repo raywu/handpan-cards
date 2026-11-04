@@ -1,0 +1,16 @@
+# kills: pdf_download carries cards as a short enum and still no id or name
+# suite: node --test --test-name-pattern pdf_download.carries.cards.as.a.short.enum tests/app.test.js
+# Lane U (PDF tier menu). The cards enum is dropped from the pdf_download event.
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12516,7 +12516,7 @@ function downloadDeckPDF(variant, btn, option = "all") {
+     // (and Chrome's own download machinery) reads the URL after this function
+     // returns, and revoking early cancels the download with no diagnostic.
+     setTimeout(() => URL.revokeObjectURL(url), 60000);
+-    track("pdf_download", { paper: printPaper, deck_kind: deckKind(d), cards: option });
++    track("pdf_download", { paper: printPaper, deck_kind: deckKind(d) });
+   } finally {
+     setTimeout(() => { rowButtons.forEach(b => { b.disabled = false; }); }, 0);
+   }

@@ -1,0 +1,16 @@
+# kills: file names carry the option tag; ALL keeps today's name
+# suite: node --test --test-name-pattern file.names.carry.the.option.tag tests/app.test.js
+# Lane U (PDF tier menu). EASY drops its tag, so its file overwrites ALL's name on the desktop.
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12400,7 +12400,7 @@ function printNameSource(d) {
+   try { auto = HPE.select.deckName({ fields: d.fields, options: { ...(d.options || {}), name: undefined } }); } catch (e) {}
+   return { name: d.name, auto_name: auto };
+ }
+-const PDF_TIER_TAGS = { easy: "_EASY", easy_medium: "_EASY_MEDIUM", all: "" };
++const PDF_TIER_TAGS = { easy: "", easy_medium: "_EASY_MEDIUM", all: "" };
+ function pdfFileName(d, variant, paper, option) {
+   // The name is <Name>_CHORD_ONLY_<paper>.pdf, the shape tools/decks.py main() writes. The
+   // "_Cards_" branch is not used by the UI since 2026-10-08 (no control asks for

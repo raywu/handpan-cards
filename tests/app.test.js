@@ -3541,7 +3541,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   // One-pdf-path plan: every deck builds its PDF client-side - one panel, one
   // set of buttons, used for built-in and custom decks alike.
   assert.ok(!panel.includes("<a href="), "the panel must not link a pre-built PDF");
-  assert.match(panel, /onclick="downloadDeckPDF\('shop', this\); closePanel\(\);"/);
+  assert.match(panel, /onclick="downloadDeckPDF\('shop', this, 'all'\); closePanel\(\);"/);
   assert.ok(/<select id="print-paper-select"/.test(panel), "D16: the paper picker rides with the buttons");
 });
 
@@ -3560,14 +3560,15 @@ function pmPanel() {
   return src.slice(at, src.indexOf("<!-- The scale engine, inlined", at));
 }
 
-test("PM rule 1: the print row is DOWNLOAD PDF then the paper select, and no full-deck control is rendered", async () => {
+test("PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper select, and no full-deck control is rendered", async () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = pmPanel();
   const row = panel.slice(panel.indexOf('<div class="prints">'));
   const rowHtml = row.slice(0, row.indexOf("</select>") + 9);
-  const controls = [...rowHtml.matchAll(/<(button|select)\b[^>]*>/g)].map((m) => m[0]);
-  assert.strictEqual(controls.length, 2, "the print row holds exactly two controls");
-  assert.match(controls[0], /^<button type="button" id="print-download" onclick="downloadDeckPDF\('shop', this\); closePanel\(\);">$/);
+  const outsideMenu = rowHtml.replace(/<div id="print-menu"[\s\S]*?<\/div>/, "");
+  const controls = [...outsideMenu.matchAll(/<(button|select)\b[^>]*>/g)].map((m) => m[0]);
+  assert.strictEqual(controls.length, 2, "the print row holds exactly two controls beside the menu");
+  assert.match(controls[0], /^<button type="button" id="print-download" aria-haspopup="menu" aria-expanded="false" aria-controls="print-menu" onclick="togglePrintMenu\(\);">$/);
   assert.match(controls[1], /^<select id="print-paper-select"/);
   assert.match(rowHtml, /<button[^>]*>DOWNLOAD PDF<\/button>/);
   assert.ok(rowHtml.indexOf("<button") < rowHtml.indexOf("<select"), "the button leads the row");
@@ -3578,8 +3579,8 @@ test("PM rule 1: the print row is DOWNLOAD PDF then the paper select, and no ful
 
 test("PM rule 3: DOWNLOAD PDF names and builds the chord-only file, byte for byte what main built", async () => {
   const crypto = require("node:crypto");
-  const shopButton = pmPanel().match(/<button[^>]*onclick="downloadDeckPDF\('(\w+)', this\)[^>]*>(?:DOWNLOAD|CHORD-ONLY) PDF<\/button>/);
-  assert.ok(shopButton, "the chord-only print button is in the panel");
+  const shopButton = pmPanel().match(/<button[^>]*onclick="downloadDeckPDF\('(\w+)', this, 'all'\)[^>]*>ALL<\/button>/);
+  assert.ok(shopButton, "the ALL menu item is in the panel");
   assert.strictEqual(shopButton[1], "shop", "the button builds the chord-only variant");
   for (const id of ["hijaz", "pygmy", "amara"]) {
     for (const paper of ["letter", "a4"]) {
@@ -3866,7 +3867,7 @@ test("the CTA buttons call the emitter, built-in and custom alike", async () => 
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.strictEqual((src.match(/id="settings-panel"/g) || []).length, 1,
     "exactly one settings panel serves every deck");
-  const onclick = src.match(/<button[^>]*id="print-download"[^>]*onclick="([^"]*)"/)[1];
+  const onclick = src.match(/<button[^>]*id="print-pdf-all"[^>]*onclick="([^"]*)"/)[1];
   for (const kind of ["built-in", "custom"]) {
     const app = boot();
     if (kind === "custom") customDeck(app);
@@ -9910,13 +9911,14 @@ describe("discoverability: analytics events", () => {
     assert.deepStrictEqual(pv, [{ name: "progression_view", params: { tier: "advanced" } }]);
   });
 
-  test("downloadDeckPDF tracks pdf_download with paper and deck_kind", async () => {
+  test("downloadDeckPDF tracks pdf_download with paper, deck_kind and cards", async () => {
     const app = bootEv();
     const n = events(app).length;
     app.run('downloadDeckPDF("shop")');
     const pd = since(app, n).filter((e) => e.name === "pdf_download");
     assert.strictEqual(pd.length, 1);
-    assert.deepStrictEqual(Object.keys(pd[0].params).sort(), ["deck_kind", "paper"]);
+    assert.deepStrictEqual(Object.keys(pd[0].params).sort(), ["cards", "deck_kind", "paper"]);
+    assert.strictEqual(pd[0].params.cards, "all");
     assert.strictEqual(pd[0].params.deck_kind, "seeded");
   });
 
@@ -15495,8 +15497,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed",...neotoneKeys],addedPluralKeys=["move.notice"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed (domain move handoff) and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...neotoneKeys],addedPluralKeys=["move.notice"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed (domain move handoff), the four panel.pdf_* tier-menu keys and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -19925,5 +19927,160 @@ describe("Neotone solid tint (owner 2026-11-03)", () => {
     for (const s of svgs)
       for (const m of s.matchAll(/<circle[^>]*r="([\d.e-]+)" fill="(#[0-9a-fA-F]{3,6})"/g))
         if (Math.abs(+m[1] - dingR) < 1e-6) assert.strictEqual(m[2].toLowerCase(), "#fff", "the ding stays white");
+  });
+});
+
+
+describe("PDF tier menu (lane U)", () => {
+  const OPTIONS = [["easy", "EASY"], ["easy_medium", "EASY + MEDIUM"], ["all", "ALL"]];
+  const SRC = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  const menuHtml = () => {
+    const at = SRC.indexOf('<div id="print-menu"');
+    return SRC.slice(at, SRC.indexOf("</div>", at) + 6);
+  };
+  const spyBuild = (app) => app.run(`globalThis.__builds = [];
+    (function () { const real = HPE.pdfcards.build;
+      HPE.pdfcards.build = function (d, o) { __builds.push(o); return real.call(this, d, o); }; })()`);
+  const builds = (app) => JSON.parse(JSON.stringify(app.get("__builds")));
+  const withGa = (opts = {}) => boot({ html: withGaId("G-TEST123456"), webdriver: false, href: "https://example.test/index.html", ...opts });
+  const pdfEvents = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
+    .filter((e) => e[0] === "event" && e[1] === "pdf_download").map((e) => e[2]);
+
+  test("the menu holds exactly three items in order, inside .prints, closed by default", () => {
+    const html = menuHtml();
+    assert.match(html, /^<div id="print-menu" role="menu" aria-label="PDF download options" hidden>/);
+    const items = [...html.matchAll(/<button\b([^>]*)>([^<]*)<\/button>/g)];
+    assert.deepStrictEqual(items.map((m) => m[2]), OPTIONS.map((o) => o[1]));
+    items.forEach((m, i) => {
+      assert.match(m[1], /role="menuitem"/);
+      assert.ok(m[1].includes(`onclick="downloadDeckPDF('shop', this, '${OPTIONS[i][0]}'); closePanel();"`), m[1]);
+    });
+    const row = SRC.slice(SRC.indexOf('<div class="prints">'), SRC.indexOf("</select>", SRC.indexOf('<div class="prints">')));
+    assert.ok(row.includes(html), "the menu is a descendant of .prints");
+  });
+
+  test("the trigger toggles the menu and mirrors it in aria-expanded; nothing is stored", () => {
+    const app = boot();
+    const keys = Object.keys(app.store).sort();
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    app.run("togglePrintMenu()");
+    assert.strictEqual(app.els["print-menu"].hidden, false);
+    assert.strictEqual(app.els["print-download"].getAttribute("aria-expanded"), "true");
+    app.run("togglePrintMenu()");
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    assert.strictEqual(app.els["print-download"].getAttribute("aria-expanded"), "false");
+    assert.deepStrictEqual(Object.keys(app.store).sort(), keys, "choosing opens no new storage key");
+  });
+
+  test("closePanel closes an open menu; Escape closes only the menu and returns focus to the trigger", () => {
+    const app = boot();
+    app.run("openPanel(); togglePrintMenu()");
+    app.keydown("Escape");
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    assert.strictEqual(app.get("panelOpen"), true, "Escape on an open menu leaves the panel open");
+    assert.strictEqual(app.activeId(), "print-download");
+    app.run("togglePrintMenu()");
+    app.run("closePanel()");
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    app.keydown("Escape");
+    assert.strictEqual(app.get("panelOpen"), false);
+  });
+
+  test("Escape closes only the menu on the desktop sidebar, where the panel never opens", () => {
+    const app = boot();
+    app.run("togglePrintMenu()");
+    app.keydown("Escape");
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    assert.strictEqual(app.activeId(), "print-download");
+  });
+
+  test("an outside click closes the menu; a click inside .prints does not", () => {
+    const app = boot();
+    app.run("togglePrintMenu()");
+    const fire = (target) => (app.sandbox.document._l.click || []).forEach((fn) => fn({ type: "click", target }));
+    fire({ closest: (sel) => (sel === ".prints" ? {} : null) });
+    assert.strictEqual(app.els["print-menu"].hidden, false);
+    fire({ closest: () => null });
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+  });
+
+  for (const id of ["hijaz", "pygmy", "amara", "kurd"]) {
+    test(`${id}: each option builds exactly the tierCards set; ALL builds the unfiltered default`, () => {
+      const app = boot();
+      app.select(id);
+      const t = JSON.parse(JSON.stringify(app.get("HPE.sequence.tierCards(deck())")));
+      assert.ok(t.easy.length > 0);
+      spyBuild(app);
+      app.run(`downloadDeckPDF("shop", null, "easy"); downloadDeckPDF("shop", null, "easy_medium"); downloadDeckPDF("shop", null, "all");`);
+      const b = builds(app);
+      assert.deepStrictEqual(b[0].cards, t.easy);
+      assert.deepStrictEqual(b[1].cards, t.easyMedium);
+      assert.ok(!("cards" in b[2]), "ALL passes no cards option, so the bytes stay what they were");
+      assert.strictEqual(b[2].variant, "shop");
+    });
+  }
+
+  test("a custom scale filters too", () => {
+    const app = boot();
+    customDeck(app);
+    const t = JSON.parse(JSON.stringify(app.get("HPE.sequence.tierCards(deck())")));
+    spyBuild(app);
+    app.run('downloadDeckPDF("shop", null, "easy_medium")');
+    assert.deepStrictEqual(builds(app)[0].cards, t.easyMedium);
+  });
+
+  test("file names carry the option tag; ALL keeps today's name", () => {
+    const app = boot();
+    const names = {};
+    for (const [opt] of OPTIONS) {
+      app.run(`downloadDeckPDF("shop", null, "${opt}")`);
+      names[opt] = anchor(app).download;
+    }
+    assert.match(names.easy, /^[A-Za-z0-9_]+_CHORD_ONLY_EASY_Letter\.pdf$/);
+    assert.match(names.easy_medium, /^[A-Za-z0-9_]+_CHORD_ONLY_EASY_MEDIUM_Letter\.pdf$/);
+    assert.match(names.all, /^[A-Za-z0-9_]+_CHORD_ONLY_Letter\.pdf$/);
+    app.run('setPrintPaper("a4"); downloadDeckPDF("shop", null, "easy")');
+    assert.match(anchor(app).download, /_CHORD_ONLY_EASY_A4\.pdf$/);
+  });
+
+  test("tierCards runs once per scale however often the menu opens or a PDF builds", () => {
+    const app = boot();
+    app.run(`globalThis.__tc = 0; (function () { const real = HPE.sequence.tierCards;
+      HPE.sequence.tierCards = function (d) { __tc++; return real.call(this, d); }; })()`);
+    app.run('togglePrintMenu(); togglePrintMenu(); togglePrintMenu(); downloadDeckPDF("shop", null, "easy"); downloadDeckPDF("shop", null, "easy_medium");');
+    assert.strictEqual(app.get("__tc"), 1);
+    app.select("pygmy");
+    app.run("togglePrintMenu(); togglePrintMenu();");
+    assert.strictEqual(app.get("__tc"), 2, "a different scale computes its own set");
+  });
+
+  test("an option whose set is empty is disabled when the menu opens; ALL never is; an empty click builds nothing", () => {
+    const app = boot();
+    app.run(`HPE.sequence.tierCards = function () { return { easy: [], easyMedium: [] }; }`);
+    app.run("togglePrintMenu()");
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(app.get("printMenuState()"))), { easy: true, easy_medium: true, all: false });
+    app.run('downloadDeckPDF("shop", null, "easy")');
+    assert.strictEqual(app.blobs().length, 0);
+  });
+
+  test("equal sets still show all three options enabled", () => {
+    const app = boot();
+    app.run(`HPE.sequence.tierCards = function () { return { easy: [0, 1], easyMedium: [0, 1] }; }`);
+    app.run("togglePrintMenu()");
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(app.get("printMenuState()"))), { easy: false, easy_medium: false, all: false });
+  });
+
+  test("pdf_download carries cards as a short enum and still no id or name", () => {
+    const app = withGa();
+    app.run('downloadDeckPDF("shop", null, "easy"); downloadDeckPDF("shop", null, "easy_medium"); downloadDeckPDF("shop", null, "all");');
+    const ev = pdfEvents(app);
+    assert.deepStrictEqual(ev.map((e) => e.cards), ["easy", "easy_medium", "all"]);
+    for (const e of ev) assert.deepStrictEqual(Object.keys(e).sort(), ["cards", "deck_kind", "paper"]);
+  });
+
+  test("no timer or focus call sits between the item click and the build", () => {
+    const body = SRC.slice(SRC.indexOf("function downloadDeckPDF"), SRC.indexOf("const ISLAND ="));
+    const before = body.slice(body.indexOf("  try {"), body.indexOf("HPE.pdfcards.build("));
+    assert.ok(!/setTimeout|requestAnimationFrame|\.focus\(|await /.test(before), "the build runs inside the click's gesture");
   });
 });
