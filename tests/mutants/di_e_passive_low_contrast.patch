@@ -7,7 +7,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -1443,7 +1443,7 @@ html.about-open{overflow:hidden}
  #scale-sheet #scale-fields #scale-neotone{background:#FFFFFF; accent-color:#6756B5}
- #scale-sheet #scale-fields input::placeholder, #scale-sheet #scale-box::placeholder{color:#5E5850}
+ #scale-sheet #scale-fields input::placeholder, #scale-sheet #scale-box::placeholder{color:#8A847B}
  #scale-sheet #scale-fields.passive input, #scale-sheet #scale-box.passive{
 -  color:#46413A; background:transparent; border-style:dashed; border-color:#8A847B}
 +  color:#8A847B; background:transparent; border-style:dashed; border-color:#8A847B}
