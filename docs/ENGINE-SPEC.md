@@ -1356,3 +1356,27 @@ map format: rev 2, and served DEV produced rev 1 maps (flag on since #752), so r
 (`paired_profile_vN.json` `"rev"`) is the geometry: `paired_profile_v4.json`, rev 4
 (owner 2026-11-03; rev 3 was owner OD1, 2026-11-01). A geometry revision never changes the map format, so a rev
 2 map draws on fixture rev 4 unchanged; v1, v2 and v3 are superseded and kept.
+
+## 19. PDF tier cards (`HPE.sequence.tierCards`, `HPE.pdfcards.build` `opts.cards`)
+
+`HPE.sequence.tierCards(deck)` returns `{ easy: [i...], easyMedium: [i...] }`, sorted
+distinct app chord indices, computed on the app deck. It takes no rng and is the same
+on every call.
+
+- `easy` = every card in at least one EASY (`basic`) loop: the union of
+  `tierContext(deck).basicCells[].seqs`. A `basicVocab` card that joins no loop is not
+  in it.
+- `easyMedium` = `easy` plus every card in at least one sequence `classifyTier` labels
+  `intermediate` (so connected, closing as a loop, at most one colour card). In budget (`countMediumNodes` <= `MEDIUM_ENUM_BUDGET`) that is the
+  exhaustive MEDIUM enumeration. Over budget it is the pure (anchor-only) cells, then
+  one search per colour card over the anchors plus that card, the card used exactly
+  once (a MEDIUM sequence holds at most one colour card). So EASY + MEDIUM is every
+  card in ANY MEDIUM sequence; on an over-budget scale `pick` samples, so it may deal a
+  card rarely or never that this set includes.
+- A deck with no home anchor returns both lists empty.
+- ALL needs no call: every card.
+
+`HPE.pdfcards.build(deck, { variant: "shop", cards })` prints only the chord indices in
+`cards` (shop variant only; non-empty, sorted, distinct, in range, else it throws). Each
+card keeps its app number (`#n` = index + 1), so a filtered sheet has gaps, and the sheet
+is padded to a multiple of 9 with empty slots. `cards` omitted: byte-identical to today.

@@ -1,0 +1,15 @@
+# kills: build with cards prints only those cards, keeps the app numbers, pads to 9
+# suite: node --test --test-name-pattern ^build.with.cards.prints.only.those.cards tests/pdfcards.test.js
+# A filtered sheet renumbers its cards 1..n instead of keeping the app's #n.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -964,7 +964,7 @@ HPE.pdfcards = (function () {
+       var picked = opts.cards !== undefined ? checkedCards(opts.cards, deck.chords.length) :
+         deck.chords.map(function (_, k) { return k; });
+       picked.forEach(function (k) {
+-        cards.push(["chord", [k + 1, deck.chords[k]]]);
++        cards.push(["chord", [cards.length + 1, deck.chords[k]]]);
+       });
+       while (cards.length % 9 !== 0) cards.push(["skip", null]);
+     } else {

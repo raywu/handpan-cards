@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14659,7 +14659,6 @@ document.addEventListener("keydown", e => {
+@@ -16779,7 +16779,6 @@ document.addEventListener("keydown", e => {
        if (drawerOpen && pickRef) putDownPick();
        else closeScaleSheet();
      }
 -    return;
    }
-   // While the settings panel is open it owns the keyboard too (eng review
-   // C3), the same guard sheetOpen gets: Escape closes it, Tab cycles the
+   // An open PDF menu owns Escape (it closes alone, focus back on its trigger, the panel
+   // stays) and no arrow key reaches the card beneath it. This sits before the panelOpen

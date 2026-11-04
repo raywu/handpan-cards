@@ -1,0 +1,15 @@
+# kills: tierCards on every built-in equals the brute-force union, easy within easyMedium
+# suite: node --test --test-name-pattern ^tierCards.on.every.built-in.equals.the.brute-force.union tests/sequence.test.js
+# EASY + MEDIUM drops the EASY cards, so the options stop being cumulative.
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -1164,7 +1164,7 @@
+     var sorted = function (set) {
+       return Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+     };
+-    return { easy: sorted(easy), easyMedium: sorted(all) };
++    return { easy: sorted(easy), easyMedium: sorted(all).filter(function (i) { return !easy[i]; }) };
+   }
+ 
+   HPE.sequence = {

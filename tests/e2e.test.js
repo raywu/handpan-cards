@@ -1114,16 +1114,16 @@ function run() {
       const id = meta[i].id;
       const m = await shape();
       assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
-      assert.strictEqual(m.buttons, 1, `deck ${id}: expected exactly 1 button, found ${m.buttons}`);
+      assert.strictEqual(m.buttons, 4, `deck ${id}: expected the trigger and 3 menu items, found ${m.buttons}`);
       assert.strictEqual(m.selects, 1, `deck ${id}: expected exactly 1 paper select, found ${m.selects}`);
-      assert.deepStrictEqual(m.labels, ["DOWNLOAD PDF"], `deck ${id}`);
+      assert.deepStrictEqual(m.labels, ["DOWNLOAD PDF", "EASY", "EASY + MEDIUM", "ALL"], `deck ${id}`);
     }
 
     // And a generated deck gets the identical row - it is the same element.
     await generate(SIX_SCALES[1]);
     const g = await shape();
     assert.strictEqual(g.anchors, 0, "generated deck: .prints still renders an <a>");
-    assert.strictEqual(g.buttons, 1, "generated deck: expected exactly 1 button");
+    assert.strictEqual(g.buttons, 4, "generated deck: expected the trigger and 3 menu items");
     assert.strictEqual(g.selects, 1, "generated deck: expected exactly 1 paper select");
   });
 
@@ -1203,13 +1203,16 @@ function run() {
       // profiles; suppress activation so the test cannot hang on a modal
       // that has nothing to do with the guard under test.
       HTMLAnchorElement.prototype.click = function () {};
-      const btn = document.querySelector("#settings-panel .prints button"); // DOWNLOAD PDF
+      togglePrintMenu();
+      const btn = document.getElementById("print-pdf-all");
       btn.click();
+      const disabled = [...document.querySelectorAll("#settings-panel .prints button")].filter(x => x.disabled).length;
       btn.click(); // the "second tap queued while the first is still running"
-      return window.__buildCount;
+      return { built: window.__buildCount, disabled };
     `);
-    assert.strictEqual(count, 1,
-      `two taps on DOWNLOAD PDF queued in the same task ran HPE.pdfcards.build ${count} time(s), not 1`);
+    assert.strictEqual(count.disabled, 4, "the trigger and all 3 menu items are disabled during the build");
+    assert.strictEqual(count.built, 1,
+      `two taps on a menu item queued in the same task ran HPE.pdfcards.build ${count.built} time(s), not 1`);
   });
 
   /* The `finally` in downloadDeckPDF must re-enable the buttons on BOTH the
@@ -1227,7 +1230,8 @@ function run() {
       window.onerror = () => true;
       return true;
     `);
-    const sel = "#settings-panel .prints button";
+    const sel = "#print-pdf-all";
+    await b.click("#print-download");
     await b.click(sel);
     // The build threw synchronously, but the row's re-enable is deferred via
     // setTimeout(0) - a genuine macrotask gap, not a CSS transition - so poll
@@ -1264,7 +1268,8 @@ function run() {
     await b.eval(`
       window.__buildCalls = [];
       HPE.pdfcards.build = (deck, opts) => { window.__buildCalls.push(opts); };
-      document.querySelector("#settings-panel .prints button").focus();
+      togglePrintMenu();
+      document.getElementById("print-pdf-all").focus();
       return true;
     `);
     await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
@@ -2367,6 +2372,63 @@ function run() {
     });
   })()`;
 
+  test("PDF tier menu: opens under the row without moving it, three tappable items fit in every locale, the panel stays open, Escape closes only the menu",
+    { timeout: 300000 }, async () => {
+      await freshLoad();
+      try {
+        const langs = await b.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
+        assert.strictEqual(langs.length, 8, "eight UI locales");
+        for (const [vw, vh, over] of [[320, 568, true], [380, 700, true], [844, 390, true], [1024, 700, false]]) {
+          await b.setViewport(vw, vh, over);
+          await b.settle();
+          for (const lang of langs) {
+            await openSettingsPanel();
+            await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            const label = `${vw}x${vh} ${lang}`;
+            const MEASURE = `(() => {
+              const row = document.querySelector("#settings-panel .prints"), trig = document.getElementById("print-download");
+              const menu = document.getElementById("print-menu");
+              const items = [...menu.querySelectorAll("button")];
+              return {
+                rowH: row.getBoundingClientRect().height, trigW: trig.getBoundingClientRect().width,
+                rowBottom: row.getBoundingClientRect().bottom, rowTop: row.getBoundingClientRect().top,
+                open: !!menu.offsetParent, expanded: trig.getAttribute("aria-expanded"),
+                panelHidden: getComputedStyle(document.getElementById("settings-panel")).display === "none",
+                items: items.map(i => { const r = i.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                  return { id: i.id, h: r.height, top: r.top, left: r.left, right: r.right, spill: i.scrollWidth - i.clientWidth, hit: hit === i || i.contains(hit) }; }),
+              };
+            })()`;
+            const closed = await b.eval(`return ${MEASURE};`);
+            assert.strictEqual(closed.open, false, `${label}: menu starts closed`);
+            await b.click("#print-download");
+            await b.waitFor(`!!document.getElementById("print-menu").offsetParent`, { label: "menu to open" });
+            const m = await b.eval(`return ${MEASURE};`);
+            assert.strictEqual(m.expanded, "true", `${label}: aria-expanded`);
+            assert.strictEqual(m.rowH, closed.rowH, `${label}: opening the menu changed the row height`);
+            assert.strictEqual(m.trigW, closed.trigW, `${label}: opening the menu changed the trigger width`);
+            assert.strictEqual(m.panelHidden, false, `${label}: opening the menu closed the panel`);
+            assert.deepStrictEqual(m.items.map((i) => i.id), ["print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all"]);
+            for (const i of m.items) {
+              assert.ok(i.h >= 44, `${label}: ${i.id} is under the 44px target (${i.h})`);
+              assert.ok(i.spill <= 0, `${label}: ${i.id} clips its text`);
+              assert.ok(i.left >= 0 && i.right <= vw + 0.5, `${label}: ${i.id} leaves the viewport`);
+              assert.ok(i.top >= m.rowBottom - 0.5 || i.top + i.h <= m.rowTop + 0.5, `${label}: ${i.id} overlaps the print row ${JSON.stringify([i, m.rowTop, m.rowBottom])}`);
+              assert.ok(i.top >= 0 && i.top + i.h <= vh + 0.5, `${label}: ${i.id} leaves the viewport vertically`);
+              assert.ok(i.hit, `${label}: ${i.id} is covered by something else at its centre`);
+            }
+            await b.key("Escape", "Escape", 27);
+            const after = await b.eval(`return ${MEASURE};`);
+            assert.strictEqual(after.open, false, `${label}: Escape left the menu open`);
+            assert.strictEqual(after.panelHidden, false, `${label}: Escape on an open menu closed the panel`);
+            await b.key("Escape", "Escape", 27);
+          }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
   test("every row of the settings panel is flush: each visual line spans the row from edge to edge",
     async () => {
       await freshLoad();
@@ -2386,7 +2448,7 @@ function run() {
           }
           const prints = await b.eval(`
             const row = document.querySelector("#settings-panel .prints");
-            const kids = [...row.children];
+            const kids = [...row.children].filter(k => k.offsetParent);
             const tops = kids.map(k => k.getBoundingClientRect().top);
             return { n: kids.length, oneLine: Math.max(...tops) - Math.min(...tops) < 2,
               tall: Math.min(...kids.map(k => k.getBoundingClientRect().height)),
@@ -3136,9 +3198,9 @@ function run() {
         const real = URL.createObjectURL;
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
-        const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-          .find(el => el.textContent.trim() === "DOWNLOAD PDF");
-        if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
+        togglePrintMenu();
+        const btn = document.getElementById("print-pdf-all");
+        if (!btn) return { err: "no ALL item in the DOWNLOAD PDF menu" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -3241,8 +3303,8 @@ function run() {
           const seen = [];
           URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
           const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-            .find(el => el.textContent.trim() === "DOWNLOAD PDF");
-          if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
+            .find(el => el.id === "print-pdf-all");
+          if (!btn) return { err: "no ALL item in the DOWNLOAD PDF menu" };
           try { btn.click(); } finally { URL.createObjectURL = real; }
           if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
           const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -3295,9 +3357,9 @@ function run() {
         const real = URL.createObjectURL;
         const seen = [];
         URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
-        const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-          .find(el => el.textContent.trim() === "DOWNLOAD PDF");
-        if (!btn) return { err: "no DOWNLOAD PDF button in the settings panel" };
+        togglePrintMenu();
+        const btn = document.getElementById("print-pdf-all");
+        if (!btn) return { err: "no ALL item in the DOWNLOAD PDF menu" };
         try { btn.click(); } finally { URL.createObjectURL = real; }
         if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
         const u8 = new Uint8Array(await seen[0].arrayBuffer());
@@ -9484,9 +9546,9 @@ function run() {
               const real = URL.createObjectURL;
               const seen = [];
               URL.createObjectURL = function (blob) { seen.push(blob); return real.call(URL, blob); };
-              const btn = [...document.querySelectorAll("#settings-panel .prints button")]
-                .find(el => el.textContent.trim() === ${JSON.stringify(label)});
-              if (!btn) return { err: "no " + ${JSON.stringify(label)} + " button in the sidebar" };
+              togglePrintMenu();
+              const btn = document.getElementById("print-pdf-all");
+              if (!btn) return { err: "no ALL item in the sidebar's " + ${JSON.stringify(label)} + " menu" };
               try { btn.click(); } finally { URL.createObjectURL = real; }
               if (seen.length !== 1) return { err: seen.length + " blobs, not 1" };
               return { type: seen[0].type, n: seen[0].size };
