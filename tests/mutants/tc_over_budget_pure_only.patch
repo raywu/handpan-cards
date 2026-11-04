@@ -1,0 +1,15 @@
+# kills: tierCards on an over-budget pan equals the oracle without touching Math.random
+# suite: node --test --test-name-pattern ^tierCards.on.an.over-budget.pan.equals.the.oracle tests/sequence.test.js
+# The over-budget branch searches the pure cells only and never the colour cards.
+diff --git a/src/engine/sequence.js b/src/engine/sequence.js
+--- a/src/engine/sequence.js
++++ b/src/engine/sequence.js
+@@ -1158,7 +1158,7 @@
+       };
+       search(anchorPool, null);
+       pool.forEach(function (c) {
+-        if (!isAnchor(c)) search(anchorPool.concat([c]), c);
++        if (!isAnchor(c) && false) search(anchorPool.concat([c]), c);
+       });
+     }
+     var sorted = function (set) {

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1719,7 +1719,7 @@ html.about-open{overflow:hidden}
-   <div class="panel-group">
-     <h3 class="panel-heading">Print this scale</h3>
-     <div class="prints">
--      <button type="button" id="print-download" onclick="downloadDeckPDF('shop', this); closePanel();">DOWNLOAD PDF</button>
-+      <button type="button" id="print-download" onclick="downloadDeckPDF('full', this); closePanel();">DOWNLOAD PDF</button>
+@@ -1991,7 +1991,7 @@ html.about-open{overflow:hidden}
+       <div id="print-menu" role="menu" aria-label="PDF download options" hidden>
+         <button type="button" role="menuitem" id="print-pdf-easy" onclick="downloadDeckPDF('shop', this, 'easy'); closePanel();">EASY</button>
+         <button type="button" role="menuitem" id="print-pdf-easy_medium" onclick="downloadDeckPDF('shop', this, 'easy_medium'); closePanel();">EASY + MEDIUM</button>
+-        <button type="button" role="menuitem" id="print-pdf-all" onclick="downloadDeckPDF('shop', this, 'all'); closePanel();">ALL</button>
++        <button type="button" role="menuitem" id="print-pdf-all" onclick="downloadDeckPDF('full', this, 'all'); closePanel();">ALL</button>
+       </div>
        <!-- The paper choice keeps the panel open (design direction, "After an
             action"): the next tap is a print button, not a new task. -->
-       <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
