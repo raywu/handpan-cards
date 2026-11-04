@@ -1163,6 +1163,7 @@ class ReadingSurfaceTest(unittest.TestCase):
                 css = self.style(name)
                 self.assertIn(":root{color-scheme:light", css)
                 self.assertNotIn("color-scheme:dark", css)
+                self.assertNotRegex(css, r"color-scheme:\s*light\s+dark")
                 self.assertNotIn("prefers-color-scheme", css)
                 self.assertIn("#f6f4ed", css)
                 self.assertNotIn("#0f0e0b;color:#f6f4ed", css)
@@ -1182,6 +1183,9 @@ class ReadingSurfaceTest(unittest.TestCase):
             with self.subTest(page=name):
                 self.assertRegex(self.style(name), r"a:focus-visible\{outline:2px solid (#242424|var\(--t\));")
                 self.assertGreaterEqual(ratio("#242424", "#f6f4ed"), 3)
+                token = re.search(r":root\{[^}]*--t:([^;}]+)", self.style(name))
+                if token:
+                    self.assertEqual(token.group(1), "#242424")
 
     def test_the_card_plate_stays_dark_on_the_light_scale_pages(self):
         for slug in ROWS:
