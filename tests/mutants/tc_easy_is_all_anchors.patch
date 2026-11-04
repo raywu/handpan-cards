@@ -1,6 +1,6 @@
 # kills: tierCards easy is the union of the BASIC loops, not basicVocab
 # suite: node --test --test-name-pattern ^tierCards.easy.is.the.union.of.the.BASIC.loops tests/sequence.test.js
-# EASY takes the whole BASIC vocabulary, including cards that join no loop.
+# EASY takes every anchor instead of the cards the BASIC loops use.
 diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 --- a/src/engine/sequence.js
 +++ b/src/engine/sequence.js
@@ -13,7 +13,7 @@ diff --git a/src/engine/sequence.js b/src/engine/sequence.js
 -        seq.forEach(function (i) { easy[i] = true; all[i] = true; });
 -      });
 -    });
-+    ctx.basicVocab.forEach(function (i) { easy[i] = true; all[i] = true; });
++    ctx.anchorsList.forEach(function (i) { easy[i] = true; all[i] = true; });
      var matrix = buildConnectMatrix(deck);
      if (mediumNodeCount(deck, ctx, matrix) <= MEDIUM_ENUM_BUDGET) {
        mediumCells(deck).forEach(function (cell) {
