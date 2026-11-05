@@ -359,6 +359,7 @@
   },
   "move.banner_empty": "Handpan Theory now lives at {host}.",
   "move.banner_overcap": "{n} of your {total} saved scales fit in one move. The rest stay here at this address.",
+  "move.deadline": "On {date} this address will start opening {host}. Scales not moved by then stay behind and can't be opened.",
   "move.go": "MOVE MY SCALES",
   "move.go_plain": "OPEN {host}",
   "move.dismiss": "Hide for now",

@@ -1,0 +1,14 @@
+# kills: MV: a set deadline adds the dated line in all 8 locales
+# suite: node --test --test-name-pattern=MV..a.set.deadline.adds tests/app.test.js
+# why: the banner never shows the deadline line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17474,7 +17474,6 @@
+   const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
+   const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
+   if (info.total > info.carried) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
+-  if (MOVE_DEADLINE) lines.push(t("move.deadline", { date: moveDeadlineText(), host }));
+   moveBannerEl.setAttribute("aria-label", t("move.banner_label"));
+   moveBannerMsg.textContent = lines.join(" ");
+   moveBannerGo.textContent = info.carried > 0 ? t("move.go") : t("move.go_plain", { host });

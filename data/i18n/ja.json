@@ -343,6 +343,7 @@
   },
   "move.banner_empty": "Handpan Theory は {host} に移転しました。",
   "move.banner_overcap": "保存した{total}件のうち{n}件を一度に移せます。残りはこのアドレスに残ります。",
+  "move.deadline": "{date}から、このアドレスは{host}を開くようになります。それまでに移していないスケールはここに残り、開けなくなります。",
   "move.go": "スケールを移す",
   "move.go_plain": "{host} を開く",
   "move.dismiss": "今は閉じる",

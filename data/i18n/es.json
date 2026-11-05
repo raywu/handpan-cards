@@ -359,6 +359,7 @@
   },
   "move.banner_empty": "Handpan Theory ahora está en {host}.",
   "move.banner_overcap": "{n} de tus {total} escalas guardadas caben en una mudanza. El resto se queda aquí, en esta dirección.",
+  "move.deadline": "El {date} esta dirección empezará a abrir {host}. Las escalas que no se hayan movido para entonces se quedarán aquí y no se podrán abrir.",
   "move.go": "MUDAR MIS ESCALAS",
   "move.go_plain": "ABRIR {host}",
   "move.dismiss": "Ocultar por ahora",

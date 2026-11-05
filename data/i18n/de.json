@@ -359,6 +359,7 @@
   },
   "move.banner_empty": "Handpan Theory ist jetzt unter {host} zu finden.",
   "move.banner_overcap": "{n} von deinen {total} gespeicherten Skalen passen in einen Umzug. Die übrigen bleiben hier unter dieser Adresse.",
+  "move.deadline": "Am {date} wird diese Adresse stattdessen {host} öffnen. Skalen, die bis dahin nicht umgezogen sind, bleiben zurück und lassen sich nicht mehr öffnen.",
   "move.go": "SKALEN UMZIEHEN",
   "move.go_plain": "{host} ÖFFNEN",
   "move.dismiss": "Vorerst ausblenden",
