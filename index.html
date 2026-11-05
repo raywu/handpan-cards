@@ -17403,7 +17403,7 @@ function moveReport(result) {
 }
 const moveArrivalSearch = location.search, moveArrivalHash = location.hash;
 function moveUrl() {
-  const plain = { url: MOVE_TARGET + "/" + moveArrivalSearch + moveArrivalHash, carried: 0, total: 0 };
+  const plain = { url: MOVE_TARGET + "/" + moveArrivalSearch + (moveThenOk(moveArrivalHash) ? moveArrivalHash : ""), carried: 0, total: 0 };
   if (savedMode !== "durable" || !savedState) return plain;
   const rows = savedState.entries.map(row => {
     const read = readSavedRecord(row.record);
