@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17458,7 +17458,7 @@
+@@ -17473,7 +17473,7 @@ function renderMoveBanner() {
    }
    const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
    const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
 -  if (info.total > info.carried) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
 +  if (false) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
+   if (MOVE_DEADLINE) lines.push(t("move.deadline", { date: moveDeadlineText(), host }));
    moveBannerEl.setAttribute("aria-label", t("move.banner_label"));
    moveBannerMsg.textContent = lines.join(" ");
-   moveBannerGo.textContent = info.carried > 0 ? t("move.go") : t("move.go_plain", { host });

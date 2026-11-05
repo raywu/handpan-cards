@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17461,6 +17461,7 @@
-   if (info.total > info.carried) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
+@@ -17477,6 +17477,7 @@
+   if (MOVE_DEADLINE) lines.push(t("move.deadline", { date: moveDeadlineText(), host }));
    moveBannerEl.setAttribute("aria-label", t("move.banner_label"));
    moveBannerMsg.textContent = lines.join(" ");
 +  moveBannerGo.setAttribute("href", info.url);
