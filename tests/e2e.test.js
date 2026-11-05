@@ -2263,6 +2263,46 @@ function run() {
     }
   });
 
+  test("NT: at 375px the Neotone factory table fits, links stay in view, nomut rows hide, and at 1024 they show", async () => {
+    try {
+      await freshLoad();
+      const page = new globalThis.URL(URL).origin + "/scales/neotone/";
+      const probe = `
+        const vw = document.documentElement.clientWidth;
+        const tb = [...document.querySelectorAll("table tbody")];
+        const over = [...document.querySelectorAll("table tbody, table th, table td")]
+          .filter((e) => !e.matches("th[scope=row]") && e.scrollWidth > e.clientWidth + 1).length;
+        const links = [...document.querySelectorAll("table tbody a")];
+        const out = links.filter((a) => { const r = a.getBoundingClientRect(); return r.left < 0 || r.right > vw + 1; }).length;
+        const card = (n) => tb.find((t) => t.textContent.includes(n));
+        const shown = (t) => [...t.querySelectorAll("tr")].map((r) => getComputedStyle(r).display !== "none");
+        return { sw: document.documentElement.scrollWidth, over, out, links: links.length, tbodies: tb.length,
+          nomutHidden: [...document.querySelectorAll("tr.nomut")].filter((r) => getComputedStyle(r).display === "none").length,
+          nomut: document.querySelectorAll("tr.nomut").length,
+          sirena: card("La Sirena") && { np: card("La Sirena").textContent.includes("Layout not published"), note: !!card("La Sirena").querySelector("tr.note"), rows: shown(card("La Sirena")) },
+          onoleo: card("Onoleo") && { np: card("Onoleo").textContent.includes("Layout not published"), note: !!card("Onoleo").querySelector("tr.note") } };`;
+      await b.setViewport(375, 812, true);
+      await b.send("Page.navigate", { url: page });
+      await b.waitFor(`location.pathname === "/scales/neotone/" && document.querySelectorAll("table tbody").length === 9`, { label: "the Neotone page" });
+      await b.settle();
+      const m = await b.eval(probe);
+      assert.ok(m.sw <= 375, `page scrollWidth ${m.sw}`);
+      assert.strictEqual(m.over, 0, "no tbody or cell overflows");
+      assert.strictEqual(m.out, 0, "every Practice link is inside the viewport");
+      assert.strictEqual(m.tbodies, 9);
+      assert.ok(m.sirena.np && m.sirena.note && m.onoleo.np && m.onoleo.note, JSON.stringify([m.sirena, m.onoleo]));
+      assert.ok(m.sirena.rows.every(Boolean), "La Sirena shows its mutant row");
+      assert.strictEqual(m.nomutHidden, m.nomut, "nomut rows are hidden on the phone");
+      await b.setViewport(1024, 800, false);
+      await b.settle();
+      const d = await b.eval(probe);
+      assert.strictEqual(d.nomutHidden, 0, "nomut rows show at 1024");
+      assert.ok(d.sw <= 1024);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
+
   test("Resources links activate on click and on Enter, to the right href, without closing the panel or changing mode/card",
     async () => {
       await freshLoad();

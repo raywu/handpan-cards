@@ -1,0 +1,15 @@
+# kills: test_each_published_scale_has_three_rows_header_cells_and_a_rowspan_practice_cell
+# suite: python3 -m unittest -k test_each_published_scale_has_three_rows_header_cells_and_a_rowspan_practice_cell tests.test_scale_pages
+# The Practice cell stops spanning the three rows of its scale.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -503,7 +503,7 @@
+         ding, top, mut = spread_cells(d["name"], d["notes"]) if spread else (d["ding"], d["main"], d["mutant"] or ["-"] * 9)
+         cta = ("Layout not published" if spread else
+                '<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])))
+-        out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td rowspan="3">%s</td></tr>\n'
++        out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td>%s</td></tr>\n'
+                    % (esc(d["name"]), esc(d["hotkey"]), heads, cta))
+         out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
+         out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
