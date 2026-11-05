@@ -1,0 +1,12 @@
+# kills: N1: the payload handoff carries a legitimate then hash and an empty one for a crafted #move=
+# suite: node --test --test-name-pattern ^N1..the.payload.handoff.carries.a.legitimate.then.hash.and.an.empty.one.for.a.crafted..move.$ tests/app.test.js
+# The payload handoff puts the raw arrival hash in then=, so a crafted #move= hash travels to the target.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17425,4 +17425,4 @@
+     if (code.length > MOVE_CAP) return { ...plain, total: rows.length };
+   }
+-  return { url: MOVE_TARGET + "/" + moveArrivalSearch + "#move=" + code + "&then=" + encodeURIComponent(then), carried, total: rows.length };
++  return { url: MOVE_TARGET + "/" + moveArrivalSearch + "#move=" + code + "&then=" + encodeURIComponent(moveArrivalHash), carried, total: rows.length };
+ }
