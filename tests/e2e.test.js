@@ -20719,6 +20719,27 @@ function run() {
       } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
     });
 
+    test("move: the banner covers no footer control and no top menu control at 375x580, 320x568 and 1280x800", async () => {
+      on(); await seed(OLD(), [rec("A")]);
+      try {
+        for (const [w, h] of [[375, 580], [320, 568], [1280, 800]]) {
+          await b.setViewport(w, h, w < 600);
+          await go(OLD() + "/index.html");
+          await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+          const hits = await b.eval(`return ['#prev','#next','#shuffle','#count','#settings-trigger','#share-copy'].map(sel => {
+            const el = document.querySelector(sel), r = el.getBoundingClientRect();
+            if (!r.width || !r.height) return { sel, ok: true, skipped: true };
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return { sel, ok: !!hit && (hit === el || el.contains(hit)), hit: hit && (hit.id || hit.className || hit.tagName) };
+          });`);
+          for (const sel of ["#prev", "#next", "#shuffle", "#count"]) assert.ok(!hits.find(x => x.sel === sel).skipped, `${w}x${h}: ${sel} is rendered`);
+          for (const x of hits) assert.ok(x.ok, `${w}x${h}: ${x.sel} is covered by ${x.hit}`);
+          const top = await b.eval(`const r = document.getElementById('move-banner').getBoundingClientRect(); return r.top < innerHeight / 2;`);
+          assert.ok(top, `${w}x${h}: the banner sits in the top half`);
+        }
+      } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
+    });
+
     test("move: a crafted #move= link with no MOVE_FROM referrer writes nothing and opens the then hash", async () => {
       on(); await clearOrigin(NEW());
       await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("CRAFTED")]])}&then=${encodeURIComponent("#deck=f-low-pygmy-18")}`);

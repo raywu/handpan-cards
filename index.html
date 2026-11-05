@@ -1314,7 +1314,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   border:1px solid #4a4336; color:#f1ead9; font:600 12px/1.45 "Nunito Sans"; text-align:center; cursor:pointer}
 .move-notice[hidden]{display:none}
 .move-banner{box-sizing:border-box; position:fixed; z-index:25; left:50%; transform:translateX(-50%);
-  bottom:max(var(--sp-2), env(safe-area-inset-bottom)); width:calc(100% - 32px); max-width:520px; padding:10px 12px; border-radius:10px;
+  top:var(--move-top, max(var(--sp-2), env(safe-area-inset-top))); width:calc(100% - 32px); max-width:520px; padding:10px 12px; border-radius:10px;
   background:#2a2620; border:1px solid #4a4336; color:#f1ead9; font:600 12.5px/1.45 "Nunito Sans"; box-shadow:0 4px 18px rgba(0,0,0,.5)}
 .move-banner[hidden]{display:none}
 .move-banner-msg{margin:0 0 6px; overflow-wrap:anywhere}
@@ -17463,6 +17463,8 @@ function renderMoveBanner() {
     if (first) document.body.insertBefore(moveBannerEl, first); else document.body.appendChild(moveBannerEl);
     background.push(moveBannerEl);
     panelBackground.push(moveBannerEl);
+    if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);
+    window.addEventListener("resize", placeMoveBanner);
   }
   const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
   const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
@@ -17473,6 +17475,13 @@ function renderMoveBanner() {
   moveBannerDismiss.textContent = t("move.dismiss");
   moveBannerDismiss.setAttribute("aria-label", t("move.dismiss"));
   moveBannerEl.hidden = false;
+  placeMoveBanner();
+}
+function placeMoveBanner() {
+  const row = document.querySelector("header .hrow");
+  if (!moveBannerEl || !row) return;
+  const bottom = row.getBoundingClientRect().bottom;
+  if (bottom > 0) moveBannerEl.style.setProperty("--move-top", Math.ceil(bottom) + 4 + "px");
 }
 
 /* ---------------- go ---------------- */

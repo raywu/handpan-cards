@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +    document.body.appendChild(moveBannerEl);
      background.push(moveBannerEl);
      panelBackground.push(moveBannerEl);
-   }
+     if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);

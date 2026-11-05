@@ -19795,7 +19795,6 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     }
     assert.strictEqual(app.get("moveBannerEl.getAttribute('role')"), "region");
     assert.ok(app.get("moveBannerEl.getAttribute('aria-label')"));
-    assert.strictEqual(app.get("moveBannerEl.style.position || ''"), "");
   });
 
   test("the banner is inert behind the scale sheet, the panel and About, and live again after", async () => {
@@ -19815,6 +19814,17 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.strictEqual(inert(), true, "about");
     app.run("closeAbout()");
     assert.strictEqual(inert(), false, "about closed");
+  });
+
+  test("a banner created after a modal is already open starts inert, and goes live when the modal closes", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    app.run("document.body.removeChild(moveBannerEl); background.splice(background.indexOf(moveBannerEl), 1); panelBackground.splice(panelBackground.indexOf(moveBannerEl), 1); moveBannerEl = null;");
+    app.run("openScaleSheet()");
+    app.run("renderMoveBanner()");
+    assert.strictEqual(app.get("!!moveBannerEl.inert"), true, "created behind the open sheet");
+    assert.strictEqual(app.get("moveBannerEl.getAttribute('aria-hidden')"), "true");
+    app.run("closeScaleSheet()");
+    assert.strictEqual(app.get("!!moveBannerEl.inert"), false, "sheet closed");
   });
 
   test("switching language re-renders the banner copy, and the over-cap line follows the store across MOVE_CAP", async () => {

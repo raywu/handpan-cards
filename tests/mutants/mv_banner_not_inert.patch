@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
      if (first) document.body.insertBefore(moveBannerEl, first); else document.body.appendChild(moveBannerEl);
 -    background.push(moveBannerEl);
 -    panelBackground.push(moveBannerEl);
+     if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);
+     window.addEventListener("resize", placeMoveBanner);
    }
-   const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
-   const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
