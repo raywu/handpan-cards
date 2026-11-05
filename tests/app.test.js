@@ -19782,12 +19782,16 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.ok(!/if \(!MOVE_ON_OLD\) loadAnalytics/.test(html));
   });
 
-  test("T-D1: no href, action or formaction in the document holds the payload or the target, and the buttons are type=button", async () => {
+  test("T-D1: no href, action or formaction holds the payload or the target, and the buttons are type=button", async () => {
     const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
     const attrs = JSON.parse(app.get(`JSON.stringify([...document.querySelectorAll('[href],[action],[formaction]')].flatMap(e => ['href','action','formaction'].map(a => e.getAttribute(a)).filter(v => v !== null)))`));
     for (const v of attrs) assert.ok(!/#move=|new\.example/.test(v), v);
     for (const name of ["moveBannerGo", "moveBannerDismiss"]) {
       assert.strictEqual(app.get(`${name}.getAttribute('type')`), "button");
+      for (const attr of ["href", "action", "formaction"]) {
+        const v = app.get(`${name}.getAttribute('${attr}')`);
+        assert.ok(v === null || v === undefined || !/#move=|new\.example/.test(v), `${name} ${attr}`);
+      }
     }
     assert.strictEqual(app.get("moveBannerEl.getAttribute('role')"), "region");
     assert.ok(app.get("moveBannerEl.getAttribute('aria-label')"));

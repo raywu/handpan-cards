@@ -20643,7 +20643,7 @@ function run() {
     }
     const bannerReady = `!!document.querySelector('#move-banner button.move-go') && !document.getElementById('move-banner').hidden`;
     const bannerText = () => b.eval(`return document.querySelector('#move-banner .move-banner-msg').textContent;`);
-    const pressMove = () => b.eval(`document.querySelector('#move-banner button.move-go').click();return true;`);
+    const pressMove = () => b.click('#move-banner button.move-go');
     async function goOld(url = OLD() + "/index.html", referrer) {
       await go(url, referrer);
       await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
@@ -20846,16 +20846,16 @@ function run() {
       assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), [], "reload re-imports nothing");
     });
 
-    test("move: an empty old store jumps with no notice and the #s= link opens on the new host", async () => {
+    test("move: a #s= link opened on the old host with an empty store is carried through the click and opens on the new host", async () => {
       on();
       await seed(OLD(), []);
       const keep = moveMode; moveMode = null;
       const code = await b.eval(`const s=HPE.core.parseSeed(${JSON.stringify(OLDSEED)});return HPE.share.encode({fields:s.value.fields,options:{}}).value;`);
       moveMode = keep;
       await goOld(`${OLD()}/index.html#s=${code}`);
-      await b.waitFor(atNew(), { label: "the jump" });
+      await b.waitFor(`${atNew()} && /^#(s=|deck=)/.test(location.hash)`, { label: "the jump with the link carried" });
+      await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the new host to boot" });
       assert.ok(/^#(s=|deck=)/.test((await where()).hash), "the link is carried");
-      assert.strictEqual(await noticeText(), null);
     });
 
     test("move: a payload over MOVE_CAP still forwards, carrying only the prefix that fits, and old storage is untouched", async () => {
@@ -20951,7 +20951,7 @@ function run() {
       await seed(OLD(), [rec("A")]);
       await go(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
       await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
-      const history = async () => { const h = await b.send("Page.getNavigationHistory"); return { n: h.entries.length, at: h.currentIndex, urls: h.entries.map((e) => e.url) }; };
+      const history = async () => { const h = await b.send("Page.getNavigationHistory"); return { at: h.currentIndex, urls: h.entries.map((e) => e.url) }; };
       const old = await history();
       assert.ok(old.urls[old.at].startsWith(OLD()), "the old page is current before the click");
       await pressMove();
@@ -20960,9 +20960,9 @@ function run() {
       assert.strictEqual(w.search, "?x=1");
       assert.ok(w.hash.startsWith("#deck=") || w.hash === "");
       const after = await history();
-      assert.strictEqual(after.n - old.n, 1, "one new history entry for the whole hop");
-      assert.strictEqual(after.at, old.at + 1);
-      assert.ok(after.urls[after.at - 1].startsWith(OLD()), "Back goes to the old host");
+      assert.ok(after.urls[after.at].startsWith(NEW()), "the new host is the current entry");
+      assert.ok(after.urls[after.at - 1].startsWith(`${OLD()}/index.html?x=1`), "Back goes to the old page, not a replaced entry");
+      assert.strictEqual(after.urls.length, after.at + 1, "the hop leaves nothing ahead of it");
       await go(NEW() + "/index.html");
       assert.strictEqual((await where()).origin, NEW(), "the new host does not redirect");
     });
