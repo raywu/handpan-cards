@@ -477,10 +477,10 @@ def load_copy(row):
         return json.load(f)
 
 
-def spread_cells(name, notes):
+def spread_cells(name, notes, given=None):
     ns = notes.split()
-    ding = "-"
-    if re.match(r"[A-G][#b]?\d$", name.split()[0]) and name.split()[0] == ns[0]:
+    ding = given or "-"
+    if not given and re.match(r"[A-G][#b]?\d$", name.split()[0]) and name.split()[0] == ns[0]:
         ding = ns.pop(0)
     top, m = ns[:9], ns[9:]
     mut = ["-"] * 9
@@ -497,7 +497,7 @@ def midi_of(note):
 def spread_default(d):
     if "notes" not in d:
         return d
-    ding, top, mut = spread_cells(d["name"], d["notes"])
+    ding, top, mut = spread_cells(d["name"], d["notes"], d.get("ding"))
     if ding == "-":
         return d
     placed = [m for m in mut if m != "-"]
@@ -517,7 +517,7 @@ def defaults_html(row, shares):
     heads = "".join('<th scope="col">%s</th>' % h for h in ["Ding"] + [str(i) for i in range(1, 10)])
     for d in row["defaults"]:
         spread = "notes" in d
-        ding, top, mut = spread_cells(d["name"], d["notes"]) if spread else (d["ding"], d["main"], d["mutant"] or ["-"] * 9)
+        ding, top, mut = spread_cells(d["name"], d["notes"], d.get("ding")) if spread else (d["ding"], d["main"], d["mutant"] or ["-"] * 9)
         linked = d["name"] in link
         cta = ('<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])) if linked else
                "Layout not published")

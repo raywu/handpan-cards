@@ -2279,7 +2279,7 @@ function run() {
         return { sw: document.documentElement.scrollWidth, over, out, links: links.length, tbodies: tb.length,
           nomutHidden: [...document.querySelectorAll("tr.nomut")].filter((r) => getComputedStyle(r).display === "none").length,
           nomut: document.querySelectorAll("tr.nomut").length,
-          sirena: card("La Sirena") && { np: card("La Sirena").textContent.includes("Layout not published"), note: !!card("La Sirena").querySelector("tr.note"), rows: shown(card("La Sirena")) },
+          sirena: card("La Sirena") && { np: card("La Sirena").textContent.includes("Layout not published"), note: !!card("La Sirena").querySelector("tr.note"), practice: !!card("La Sirena").querySelector("a[href^='/#s=']"), rows: shown(card("La Sirena")) },
           onoleo: card("Onoleo") && { np: card("Onoleo").textContent.includes("Layout not published"), note: !!card("Onoleo").querySelector("tr.note"), practice: !!card("Onoleo").querySelector("a[href^='/#s=']") } };`;
       await b.setViewport(375, 812, true);
       await b.send("Page.navigate", { url: page });
@@ -2290,7 +2290,7 @@ function run() {
       assert.strictEqual(m.over, 0, "no tbody or cell overflows");
       assert.strictEqual(m.out, 0, "every Practice link is inside the viewport");
       assert.strictEqual(m.tbodies, 9);
-      assert.ok(m.sirena.np && m.sirena.note, JSON.stringify(m.sirena));
+      assert.ok(m.sirena.practice && !m.sirena.np && !m.sirena.note, "La Sirena has a Practice link and no disclaimer: " + JSON.stringify(m.sirena));
       assert.ok(m.onoleo.practice && !m.onoleo.np && !m.onoleo.note, "Onoleo has a Practice link and no disclaimer: " + JSON.stringify(m.onoleo));
       assert.ok(m.sirena.rows.every(Boolean), "La Sirena shows its mutant row");
       assert.strictEqual(m.nomutHidden, m.nomut, "nomut rows are hidden on the phone");
