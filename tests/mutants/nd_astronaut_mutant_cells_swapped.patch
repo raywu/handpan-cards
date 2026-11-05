@@ -1,5 +1,5 @@
-# kills: test_the_astronaut_mutant_cells_sit_under_their_fields
-# suite: python3 -m unittest -k test_the_astronaut_mutant_cells_sit_under_their_fields tests.test_scale_pages
+# kills: test_the_astronaut_mutant_cells_sit_under_their_fields_not_shifted_left
+# suite: python3 -m unittest -k test_the_astronaut_mutant_cells_sit_under_their_fields_not_shifted_left tests.test_scale_pages
 # Two Astronaut mutant-ring cells (fields 6 and 7) swap places in the page data, so the table misstates the layout.
 diff --git a/tools/neotone_page.json b/tools/neotone_page.json
 --- a/tools/neotone_page.json

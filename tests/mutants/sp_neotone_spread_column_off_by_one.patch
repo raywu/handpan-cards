@@ -1,5 +1,5 @@
-# kills: test_spread_cells_places_mutants_evenly
-# suite: python3 -m unittest -k test_spread_cells_places_mutants_evenly tests.test_scale_pages
+# kills: test_spread_cells_places_mutants_evenly_and_pops_a_ding_only_when_the_name_carries_it
+# suite: python3 -m unittest -k test_spread_cells_places_mutants_evenly_and_pops_a_ding_only_when_the_name_carries_it tests.test_scale_pages
 # The evenly spaced mutant columns for the unpublished layouts shift one field right.
 diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
 --- a/tools/gen_scale_page.py
