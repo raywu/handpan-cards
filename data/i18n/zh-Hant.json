@@ -337,5 +337,14 @@
   "move.notice": {
     "other": "已將你儲存的 {n} 個音階移到這裡。"
   },
-  "move.failed": "你儲存的音階仍在舊網址。請再次開啟舊網址以移轉。"
+  "move.failed": "你儲存的音階仍在舊網址。請再次開啟舊網址以移轉。",
+  "move.banner": {
+    "other": "Handpan Theory 現已遷至 {host}。你儲存的 {n} 個音階可以一起帶走。"
+  },
+  "move.banner_empty": "Handpan Theory 現已遷至 {host}。",
+  "move.banner_overcap": "你儲存的 {total} 個音階中，有 {n} 個可一次移走。其餘的會留在這個位址。",
+  "move.go": "移動我的音階",
+  "move.go_plain": "開啟 {host}",
+  "move.dismiss": "暫時隱藏",
+  "move.banner_label": "Handpan Theory 已遷移"
 }

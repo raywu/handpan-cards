@@ -1,0 +1,16 @@
+# kills: move: the banner covers no footer control and no top menu control at 375x580, 320x568, 1280x800, 667x375, 568x320 and 844x390
+# (the banner falls back to the header bottom when the header row has no box in phone landscape)
+# suite: node --test --test-name-pattern=banner.covers.no.footer.control tests/e2e.test.js
+# why: with header .hrow display:contents the banner sits at ~6px and covers the share button.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17481,7 +17481,7 @@ function placeMoveBanner() {
+   const row = document.querySelector("header .hrow");
+   if (!moveBannerEl || !row) return;
+   const rect = row.getBoundingClientRect();
+-  const bottom = rect.height > 0 ? rect.bottom : document.querySelector("header").getBoundingClientRect().bottom;
++  const bottom = rect.bottom;
+   if (bottom > 0) moveBannerEl.style.setProperty("--move-top", Math.ceil(bottom) + 4 + "px");
+ }
+ 

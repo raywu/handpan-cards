@@ -1,15 +1,15 @@
-# kills: the old host forwards before any render, with the payload, and never loads analytics
-# suite: node --test --test-name-pattern=the.old.host.forwards.before.any.render tests/app.test.js
-# fault: Load analytics on the old host even when it is about to forward.
+# kills: T-B1: the old host boots, never navigates at boot, shows the move banner and loads analytics
+# suite: node --test --test-name-pattern=T.B1..the.old.host.boots tests/app.test.js
+# why: the old host stops loading analytics again, the suppression that looked like a redirect kit.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15872,7 +15872,7 @@
+@@ -17468,7 +17468,7 @@
  }
  
  /* ---------------- go ---------------- */
--if (!MOVE_ON_OLD) loadAnalytics();
-+loadAnalytics();
+-loadAnalytics();
++if (!MOVE_ON_OLD) loadAnalytics();
  sheet.setAttribute("hidden", "");buildSwatches();paintLayout();resyncSheet(true);
  // Only a newly migrated legacy selection can be missing. Once the collection
  // exists, its tagged preference is authoritative; immutable recovery bytes must

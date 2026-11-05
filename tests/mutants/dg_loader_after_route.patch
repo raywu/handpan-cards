@@ -5,11 +5,19 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15874,3 +15874,2 @@
+@@ -17468,7 +17468,6 @@
+ }
+ 
  /* ---------------- go ---------------- */
--if (!MOVE_ON_OLD) loadAnalytics();
+-loadAnalytics();
  sheet.setAttribute("hidden", "");buildSwatches();paintLayout();resyncSheet(true);
-@@ -15907,2 +15906,3 @@
+ // Only a newly migrated legacy selection can be missing. Once the collection
+ // exists, its tagged preference is authoritative; immutable recovery bytes must
+@@ -17501,6 +17500,7 @@
+     if(result&&typeof result.then==="function")return result.then(finish);
+   }else if(routed)selectDeck({kind:"builtin",id:routed},true,false);
    finish();
 +  loadAnalytics();
  }
+ const initialization=initializeSavedCollection();
+ const moveFlow=!MOVE_ARMED ? null : Promise.resolve(initialization).then(async()=>{

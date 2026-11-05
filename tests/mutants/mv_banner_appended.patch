@@ -1,0 +1,15 @@
+# kills: move: the banner is the first element of body and carries no payload in any attribute of the document
+# suite: node --test --test-name-pattern=move..the.banner.is.the.first tests/e2e.test.js
+# why: the banner is appended to the end of body instead of inserted first.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17460,7 +17460,7 @@ function renderMoveBanner() {
+     moveBannerEl.appendChild(moveBannerMsg);
+     moveBannerEl.appendChild(actions);
+     const first = document.body.firstChild;
+-    if (first) document.body.insertBefore(moveBannerEl, first); else document.body.appendChild(moveBannerEl);
++    document.body.appendChild(moveBannerEl);
+     background.push(moveBannerEl);
+     panelBackground.push(moveBannerEl);
+     if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);

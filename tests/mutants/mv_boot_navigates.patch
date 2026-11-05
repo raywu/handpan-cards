@@ -1,0 +1,15 @@
+# kills: T-B1: the old host boots, never navigates at boot, shows the move banner and loads analytics
+# suite: node --test --test-name-pattern=T.B1..the.old.host.boots tests/app.test.js
+# why: the old host navigates to the target at boot again, with no click.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17509,7 +17509,7 @@
+   } catch(e) {}
+   return {};
+ });
+-const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot()).then(()=>{moveReport(flow.result);renderMoveBanner();})) :
++const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot()).then(()=>{moveReport(flow.result);renderMoveBanner();if(MOVE_ON_OLD)moveGo();})) :
+   initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot());
+ 
+ </script>

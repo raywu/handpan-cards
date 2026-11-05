@@ -15497,8 +15497,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...neotoneKeys],addedPluralKeys=["move.notice"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed (domain move handoff), the four panel.pdf_* tier-menu keys and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -19562,21 +19562,24 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     slots: {}, hidden: [],
     migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] }, ...extra });
   const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
-  function movePage({ on = true, cap = 20000, referrer = "" } = {}) {
+  function movePage({ on = true, cap = 20000, referrer = "", session = null } = {}) {
     let html = INDEX_HTML();
     html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
     if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
-    return `<script>location.replace=function(u){window.__replaced=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + html;
+    const ss = session === null ? "" : `window.__ss=${JSON.stringify(session)};window.sessionStorage={getItem:k=>k in window.__ss?window.__ss[k]:null,setItem:(k,v)=>{window.__ss[k]=String(v)},removeItem:k=>{delete window.__ss[k]}};`;
+    return `<script>location.replace=function(u){window.__replaced=String(u)};location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};${ss}</script>` + html;
   }
-  const settle = async app => { for (let i = 0; i < 40 && !app.get("window.__replaced") && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
-  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage }) {
+  const settle = async app => { for (let i = 0; i < 40 && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
+  const clickMove = app => { app.click(app.get("moveBannerGo")); return app.get("window.__assigned"); };
+  const bannerText = app => app.get("moveBannerMsg.textContent");
+  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage, session }) {
     if (records) {
       const realm = realmAt(origin, host);
       await idbRecord(realm, { write: true, value: JSON.stringify(envelopeOf(records, extra)) });
     }
     const app = boot({ origin, storage, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true, crypto: webcrypto,
-      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer }) });
+      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer, session }) });
     await settle(app);
     app.fixtureOrigin = origin;
     return app;
@@ -19602,7 +19605,10 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const shipped = region(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8"));
     const from = "moveDigest(moveCanon(read.record))";
     assert.strictEqual(shipped.split(from).length, 2, "the shipped region no longer holds the one line #790 changed");
-    const expected = shipped.replace(from, () => "moveDigest(moveCanon(row.r))");
+    const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
+    assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
+    assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
+    const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))");
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
   });
@@ -19615,18 +19621,47 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.strictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).importedIds, undefined);
   });
 
-  test("the old host forwards before any render, with the payload, and never loads analytics", async () => {
-    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
-    const to = app.get("window.__replaced");
-    assert.ok(to.startsWith(TARGET + "/#move="), to);
-    assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
-    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true, "the app did not boot");
-    assert.strictEqual(gtag(app).length, 0);
+  test("T-B1: the old host boots, never navigates at boot, shows the move banner and loads analytics", async () => {
+    const stores = [{ records: [] }, { records: [rec("A")] }, { records: manyRecs(116) }, { records: [], extra: { hidden: ["kurd"] } }];
+    for (const hash of ["", "#deck=f-low-pygmy-18", "#s=6/D3-A3-C4/x/y", "#add"]) {
+      for (const store of stores) {
+        const app = await boot2({ host: OLD_HOST, hash, ...store });
+        assert.strictEqual(app.get("window.__replaced"), undefined, hash);
+        assert.strictEqual(app.get("window.__assigned"), undefined, hash);
+        assert.strictEqual(app.get("booted"), true, hash);
+        assert.strictEqual(app.get("moveBannerEl.hidden"), false, hash);
+      }
+    }
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    assert.strictEqual(gtag(app).length, 1);
+    assert.strictEqual(app.get("analyticsLoaded"), true);
   });
 
-  test("an empty old store forwards with no payload", async () => {
+  test("the banner counts the saved scales and says nothing is carried when the store is empty", async () => {
+    const one = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    assert.match(bannerText(one), /now lives at new\.example\. Your saved scale can come with you\./);
+    assert.strictEqual(one.get("moveBannerGo.textContent"), "MOVE MY SCALES");
+    const two = await boot2({ host: OLD_HOST, records: [rec("A"), rec("B")] });
+    assert.match(bannerText(two), /Your 2 saved scales can come with you\./);
+    const none = await boot2({ host: OLD_HOST, records: [] });
+    assert.strictEqual(bannerText(none), "Handpan Theory now lives at new.example.");
+    assert.strictEqual(none.get("moveBannerGo.textContent"), "OPEN new.example");
+    assert.doesNotMatch(bannerText(none), /\bdeck/i);
+  });
+
+  test("T-C0: the click with an empty store assigns the new address with search and hash, no payload", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [] });
-    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
+    assert.strictEqual(app.get("window.__replaced"), undefined);
+  });
+
+  test("a click carries the payload with the then hash, and the old store is untouched", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
+    assert.strictEqual(app.get("window.__assigned"), undefined, "nothing navigates before the click");
+    const to = clickMove(app);
+    assert.ok(to.startsWith(TARGET + "/#move="), to);
+    assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
+    assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
   });
 
   const codeOf = url => /#move=([A-Za-z0-9_-]*)&then=/.exec(url)[1];
@@ -19634,20 +19669,23 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
   const manyRecs = n => Array.from({ length: n }, (_, i) => rec(`S${i + 1} ${"x".repeat(30)}`));
 
   for (const total of [116, 200]) {
-    test(`over-cap store of ${total} still forwards, carrying exactly the largest prefix under MOVE_CAP`, async () => {
+    test(`T-C1: over-cap store of ${total} says so before the click, then one click carries exactly the largest prefix under MOVE_CAP`, async () => {
       const records = manyRecs(total);
       const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records, extra: { hidden: ["kurd"] } });
-      const to = old.get("window.__replaced");
+      assert.strictEqual(old.get("window.__assigned"), undefined);
+      const to = clickMove(old);
       assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
       assert.ok(to.endsWith("&then=" + encodeURIComponent("#deck=f-low-pygmy-18")), to);
       const code = codeOf(to);
       assert.ok(code.length <= 20000);
       const rows = rowsOf(code);
       assert.ok(rows.length > 0 && rows.length < total, `carried ${rows.length}`);
+      assert.ok(bannerText(old).includes(`${rows.length} of your ${total} saved scales fit in one move. The rest stay here at this address.`), bannerText(old));
       assert.deepStrictEqual(rows.map(r => r.r.o.name), records.slice(0, rows.length).map(r => r.o.name));
       const more = Buffer.from(JSON.stringify({ r: records.slice(0, rows.length + 1).map((r, i) => ({ i: uid(i + 1), r })), h: ["kurd"] })).toString("base64url");
       assert.ok(more.length > 20000, "one more record would not fit");
       assert.deepStrictEqual(JSON.parse(Buffer.from(code, "base64url").toString()).h, ["kurd"]);
+      assert.strictEqual(clickMove(old), to, "a second click carries the same prefix");
       assert.deepStrictEqual(envelopeAt(old.fixtureOrigin, OLD_HOST).entries.length, total, "old storage untouched");
       const origin = createOrigin({});
       const hash = `#move=${code}&then=`;
@@ -19660,20 +19698,26 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     });
   }
 
-  test("an over-cap store with a #s= hash forwards with the hash preserved and no notice path on the old host", async () => {
+  test("an under-cap store shows no over-cap line", async () => {
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(3) });
+    assert.doesNotMatch(bannerText(app), /fit in one move/);
+  });
+
+  test("an over-cap store with a #s= hash keeps the hash across the click", async () => {
     const hash = "#s=6/D3-A3-C4/x/y";
     const app = await boot2({ host: OLD_HOST, hash, records: manyRecs(200) });
-    const to = app.get("window.__replaced");
+    assert.strictEqual(app.get("booted"), true);
+    assert.notStrictEqual(app.get("location.hash"), hash, "the booted app rewrites the live hash");
+    const to = clickMove(app);
     assert.ok(to.startsWith(TARGET + "/#move="), String(to));
     assert.ok(to.endsWith("&then=" + encodeURIComponent(hash)), to);
-    assert.notStrictEqual(app.get("typeof booted!=='undefined'&&booted"), true);
   });
 
   test("saved scales with accented, CJK and emoji names move intact, once, and count UTF-8 bytes toward MOVE_CAP", async () => {
     const names = ["\u00c9cho", "\u65e5\u672c\u8a9e\u306e\u97f3", "\ud83c\udfb5 Tune"];
     const records = names.map(n => rec(n));
     const old = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records });
-    const to = old.get("window.__replaced");
+    const to = clickMove(old);
     assert.ok(to && to.startsWith(TARGET + "/#move="), String(to));
     const code = codeOf(to);
     assert.deepStrictEqual(rowsOf(code).map(r => r.r.o.name), names);
@@ -19687,7 +19731,7 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.strictEqual(envelopeAt(origin).entries.length, 3, "revisit adds no duplicates");
     const exact = Buffer.from(JSON.stringify({ r: rowsOf(code).map(r => ({ i: r.i, r: r.r })), h: [] })).toString("base64url").length;
     const tight = await boot2({ host: OLD_HOST, records, cap: exact - 1 });
-    assert.strictEqual(rowsOf(codeOf(tight.get("window.__replaced"))).length, 2, "one byte under the cap drops the last row");
+    assert.strictEqual(rowsOf(codeOf(clickMove(tight))).length, 2, "one byte under the cap drops the last row");
   });
 
   const nanCanon = v => Array.isArray(v) ? "[" + v.map(nanCanon).join(",") + "]" :
@@ -19709,16 +19753,171 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["Bad\u0007name", "Caf\u00e9"]);
   });
 
-  test("when not even one record fits under MOVE_CAP the old host still forwards, with no payload", async () => {
+  test("when not even one record fits under MOVE_CAP the click still assigns, with no payload", async () => {
     const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], cap: 10 });
-    assert.strictEqual(app.get("window.__replaced"), TARGET + "/#deck=f-low-pygmy-18");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
     assert.deepStrictEqual(envelopeAt(app.fixtureOrigin, OLD_HOST).entries.map(r => r.record.o.name), ["A"]);
   });
 
   test("the new host never forwards", async () => {
     const app = await boot2({ host: NEW_HOST, records: [rec("A")] });
     assert.strictEqual(app.get("window.__replaced"), undefined);
+    assert.strictEqual(app.get("window.__assigned"), undefined);
     assert.strictEqual(app.get("booted"), true);
+    assert.strictEqual(app.get("moveBannerEl"), null, "no banner on the new host");
+  });
+
+  test("with the switches null there is no banner and the analytics path is unchanged", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], on: false });
+    assert.strictEqual(app.get("moveBannerEl"), null);
+  });
+
+  test("T-B2: outside moveGo, index.html never navigates the page to the target", () => {
+    const html = INDEX_HTML();
+    assert.ok(!/location\.replace\(\s*MOVE_TARGET/.test(html), "location.replace(MOVE_TARGET is back");
+    assert.strictEqual(html.split("location.assign(").length - 1, 1, "exactly one location.assign");
+    const a = html.indexOf("function moveGo"), b = html.indexOf("location.assign(");
+    assert.ok(a > 0 && b > a && html.indexOf("\n}\n", a) > b, "the assign is not inside moveGo");
+    assert.ok(!/MOVE_ON_OLD\)\s*return \{jumped/.test(html));
+    assert.ok(!/if \(!MOVE_ON_OLD\) loadAnalytics/.test(html));
+  });
+
+  test("T-D1: no href, action or formaction holds the payload or the target, and the buttons are type=button", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    const attrs = JSON.parse(app.get(`JSON.stringify([...document.querySelectorAll('[href],[action],[formaction]')].flatMap(e => ['href','action','formaction'].map(a => e.getAttribute(a)).filter(v => v !== null)))`));
+    for (const v of attrs) assert.ok(!/#move=|new\.example/.test(v), v);
+    for (const name of ["moveBannerGo", "moveBannerDismiss"]) {
+      assert.strictEqual(app.get(`${name}.getAttribute('type')`), "button");
+      for (const attr of ["href", "action", "formaction"]) {
+        const v = app.get(`${name}.getAttribute('${attr}')`);
+        assert.ok(v === null || v === undefined || !/#move=|new\.example/.test(v), `${name} ${attr}`);
+      }
+    }
+    assert.strictEqual(app.get("moveBannerEl.getAttribute('role')"), "region");
+    assert.ok(app.get("moveBannerEl.getAttribute('aria-label')"));
+  });
+
+  test("the banner is inert behind the scale sheet, the panel and About, and live again after", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    const inert = () => app.get("!!moveBannerEl.inert");
+    assert.strictEqual(inert(), false);
+    app.run("openScaleSheet()");
+    assert.strictEqual(inert(), true, "sheet");
+    assert.strictEqual(app.get("moveBannerEl.getAttribute('aria-hidden')"), "true");
+    app.run("closeScaleSheet()");
+    assert.strictEqual(inert(), false, "sheet closed");
+    app.run("openPanel()");
+    assert.strictEqual(inert(), true, "panel");
+    app.run("closePanel()");
+    assert.strictEqual(inert(), false, "panel closed");
+    app.run("openAbout()");
+    assert.strictEqual(inert(), true, "about");
+    app.run("closeAbout()");
+    assert.strictEqual(inert(), false, "about closed");
+  });
+
+  test("a banner created after a modal is already open starts inert, and goes live when the modal closes", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    app.run("document.body.removeChild(moveBannerEl); background.splice(background.indexOf(moveBannerEl), 1); panelBackground.splice(panelBackground.indexOf(moveBannerEl), 1); moveBannerEl = null;");
+    app.run("openScaleSheet()");
+    app.run("renderMoveBanner()");
+    assert.strictEqual(app.get("!!moveBannerEl.inert"), true, "created behind the open sheet");
+    assert.strictEqual(app.get("moveBannerEl.getAttribute('aria-hidden')"), "true");
+    app.run("closeScaleSheet()");
+    assert.strictEqual(app.get("!!moveBannerEl.inert"), false, "sheet closed");
+  });
+
+  test("switching language re-renders the banner copy, and the over-cap line follows the store across MOVE_CAP", async () => {
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(3) });
+    assert.match(bannerText(app), /Your 3 saved scales can come with you/);
+    app.run('setLang("fr")');
+    const fr = bannerText(app);
+    assert.doesNotMatch(fr, /Your 3 saved scales can come with you/);
+    assert.strictEqual(app.get("moveBannerGo.textContent"), app.get('t("move.go")'));
+    app.run('setLang("en")');
+    assert.match(bannerText(app), /Your 3 saved scales can come with you/);
+  });
+
+  test("saved-scale changes re-render the banner across MOVE_CAP in both directions", async () => {
+    const fits = await boot2({ host: OLD_HOST, records: manyRecs(4) });
+    const per = Math.ceil(fits.get("moveUrl().url.length") / 4);
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(3), cap: per * 4 - 40 });
+    assert.doesNotMatch(bannerText(app), /fit in one move/);
+    const grown = app.get(`(() => { const e = JSON.parse(JSON.stringify(savedState)), n = e.entries.length;
+      for (let i = 0; i < 3; i++) { const row = JSON.parse(JSON.stringify(e.entries[0]));
+        row.instanceId = "00000000-0000-4000-8000-0000000009" + String(i).padStart(2, "0");
+        row.displayOrdinal = n + i + 1; e.entries.push(row); e.usedInstanceIds.push(row.instanceId); }
+      e.revision++; e.nextDisplayOrdinal = e.entries.length + 1;
+      return applySavedSnapshot(e, new Map()).ok; })()`);
+    assert.strictEqual(grown, true);
+    assert.strictEqual(app.get("savedState.entries.length"), 6);
+    assert.match(bannerText(app), /\d of your 6 saved scales fit in one move/, "growing past the cap adds the line");
+    const shrunk = app.get(`(() => { const e = JSON.parse(JSON.stringify(savedState));
+      e.entries.length = 3; e.revision++; return applySavedSnapshot(e, new Map()).ok; })()`);
+    assert.strictEqual(shrunk, true);
+    assert.doesNotMatch(bannerText(app), /fit in one move/, "shrinking back under the cap drops the line");
+    assert.match(bannerText(app), /Your 3 saved scales/);
+  });
+
+  test("deleting a saved scale re-renders the banner counts and drops the over-cap line", async () => {
+    const probe = await boot2({ host: OLD_HOST, records: manyRecs(4) });
+    const per = Math.ceil(probe.get("moveUrl().url.length") / 4);
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(5), cap: per * 4 + 20 });
+    assert.match(bannerText(app), /4 of your 5 saved scales fit in one move/);
+    const result = await removeLast(app);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(app.get("savedState.entries.length"), 4);
+    assert.match(bannerText(app), /Your 4 saved scales can come with you/);
+    assert.doesNotMatch(bannerText(app), /fit in one move/);
+  });
+
+  test("a dismissed banner stays hidden when the store or language changes", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], session: {} });
+    app.click(app.get("moveBannerDismiss"));
+    app.run('setLang("fr")');
+    assert.strictEqual(app.get("moveBannerEl.hidden"), true);
+  });
+
+  const removeLast = app => app.getAsync(`(() => { const e = savedState, row = e.entries[e.entries.length - 1];
+    return commitSaved({type:"delete",collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision}); })()`);
+
+  test("T-D2: dismiss hides the banner for the session, and a fresh session shows it again", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], session: {} });
+    assert.strictEqual(app.get("moveBannerEl.hidden"), false);
+    app.click(app.get("moveBannerDismiss"));
+    assert.strictEqual(app.get("moveBannerEl.hidden"), true);
+    assert.strictEqual(app.get("window.__assigned"), undefined);
+    const kept = JSON.parse(app.get("JSON.stringify(window.__ss)"));
+    assert.ok(Object.keys(kept).length === 1, "one session key");
+    const again = await boot2({ host: OLD_HOST, records: [rec("A")], session: kept });
+    assert.strictEqual(again.get("moveBannerEl === null"), true);
+    const fresh = await boot2({ host: OLD_HOST, records: [rec("A")], session: {} });
+    assert.strictEqual(fresh.get("moveBannerEl.hidden"), false);
+    assert.strictEqual(JSON.stringify(fresh.localStorage ? fresh.get("Object.keys(localStorage)") : []).includes("move"), false);
+  });
+
+  test("dismiss still hides the banner when session storage throws", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    app.click(app.get("moveBannerDismiss"));
+    assert.strictEqual(app.get("moveBannerEl.hidden"), true);
+  });
+
+  test("T-D3: in session mode the banner offers only the new address and the click carries no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")], storage: undefined });
+    app.get("savedMode='session'");
+    app.get("renderMoveBanner()");
+    assert.strictEqual(app.get("moveBannerGo.textContent"), "OPEN new.example");
+    assert.strictEqual(bannerText(app), "Handpan Theory now lives at new.example.");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
+  });
+
+  test("T-D3: in protected mode the banner offers only the new address and the click carries no payload", async () => {
+    const app = await boot2({ host: OLD_HOST, hash: "#deck=f-low-pygmy-18", records: [rec("A")] });
+    app.get("savedMode='protected'");
+    app.get("renderMoveBanner()");
+    assert.strictEqual(app.get("moveBannerGo.textContent"), "OPEN new.example");
+    assert.strictEqual(bannerText(app), "Handpan Theory now lives at new.example.");
+    assert.strictEqual(clickMove(app), TARGET + "/#deck=f-low-pygmy-18");
   });
 
   test("a move link is stripped to the then hash and imports once, however often it is replayed", async () => {

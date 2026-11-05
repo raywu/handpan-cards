@@ -1,0 +1,14 @@
+# kills: T-D1: no href, action or formaction holds the payload or the target, and the buttons are type=button
+# suite: node --test --test-name-pattern=T.D1..no.href tests/app.test.js
+# why: the banner button carries the move URL, payload included, in an href that crawlers and long-press previews can read.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17461,6 +17461,7 @@
+   if (info.total > info.carried) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
+   moveBannerEl.setAttribute("aria-label", t("move.banner_label"));
+   moveBannerMsg.textContent = lines.join(" ");
++  moveBannerGo.setAttribute("href", info.url);
+   moveBannerGo.textContent = info.carried > 0 ? t("move.go") : t("move.go_plain", { host });
+   moveBannerDismiss.textContent = t("move.dismiss");
+   moveBannerDismiss.setAttribute("aria-label", t("move.dismiss"));

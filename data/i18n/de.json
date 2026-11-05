@@ -352,5 +352,15 @@
     "one": "Deine gespeicherte Skala ist hierher umgezogen.",
     "other": "Deine {n} gespeicherten Skalen sind hierher umgezogen."
   },
-  "move.failed": "Deine gespeicherten Skalen sind noch unter der alten Adresse. Öffne die alte Adresse erneut, um sie zu verschieben."
+  "move.failed": "Deine gespeicherten Skalen sind noch unter der alten Adresse. Öffne die alte Adresse erneut, um sie zu verschieben.",
+  "move.banner": {
+    "one": "Handpan Theory ist jetzt unter {host} zu finden. Deine gespeicherte Skala kann mitkommen.",
+    "other": "Handpan Theory ist jetzt unter {host} zu finden. Deine {n} gespeicherten Skalen können mitkommen."
+  },
+  "move.banner_empty": "Handpan Theory ist jetzt unter {host} zu finden.",
+  "move.banner_overcap": "{n} von deinen {total} gespeicherten Skalen passen in einen Umzug. Die übrigen bleiben hier unter dieser Adresse.",
+  "move.go": "SKALEN UMZIEHEN",
+  "move.go_plain": "{host} ÖFFNEN",
+  "move.dismiss": "Vorerst ausblenden",
+  "move.banner_label": "Handpan Theory ist umgezogen"
 }
