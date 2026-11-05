@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
    } catch(e) {}
    return {};
  });
--const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot()).then(()=>{moveReport(flow.result);renderMoveBanner();})) :
-+const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot()).then(()=>{moveReport(flow.result);renderMoveBanner();if(MOVE_ON_OLD)moveGo();})) :
-   initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot());
+ const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot()).then(()=>{moveReport(flow.result);renderMoveBanner();})) :
+-  (initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot())).then(renderMoveBanner);
++  (initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot())).then(()=>{renderMoveBanner();if(MOVE_ON_OLD)moveGo();});
  
  </script>

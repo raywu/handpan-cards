@@ -17330,9 +17330,9 @@ window.addEventListener("hashchange", async () => {
   syncRoute();
 });
 
-/* ---------------- saved-scale handoff (switched off: both constants null) ---------------- */
-const MOVE_FROM = null;
-const MOVE_TARGET = null;
+/* ---------------- saved-scale handoff (armed: old host offers the move) ---------------- */
+const MOVE_FROM = "handpan.raywu.org";
+const MOVE_TARGET = "https://handpantheory.com";
 const MOVE_CAP = 20000;
 const MOVE_ARMED = MOVE_FROM !== null && MOVE_TARGET !== null;
 const MOVE_ON_OLD = MOVE_ARMED && location.hostname === MOVE_FROM;
@@ -17522,14 +17522,14 @@ function finishSavedBoot() {
   finish();
 }
 const initialization=initializeSavedCollection();
-const moveFlow=!MOVE_ARMED ? null : Promise.resolve(initialization).then(async()=>{
+const moveFlow=!MOVE_ARMED||movePayload===null ? null : Promise.resolve(initialization).then(async()=>{
   try {
     if(movePayload!==null)return {result:await moveImport(movePayload)};
   } catch(e) {}
   return {};
 });
 const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot()).then(()=>{moveReport(flow.result);renderMoveBanner();})) :
-  initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot());
+  (initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot())).then(renderMoveBanner);
 
 </script>
 </body>
