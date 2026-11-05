@@ -20955,10 +20955,10 @@ function run() {
       const old = await history();
       assert.ok(old.urls[old.at].startsWith(OLD()), "the old page is current before the click");
       await pressMove();
-      await b.waitFor(atNew(), { label: "the jump" });
+      await b.waitFor(`${atNew()} && !location.hash.startsWith('#move=')`, { label: "the jump settled" });
       const w = await where();
       assert.strictEqual(w.search, "?x=1");
-      assert.ok(w.hash.startsWith("#deck=") || w.hash === "");
+      assert.ok(w.hash.startsWith("#deck=") || w.hash === "", `hash ${w.hash.slice(0, 40)}`);
       const after = await history();
       assert.ok(after.urls[after.at].startsWith(NEW()), "the new host is the current entry");
       assert.ok(after.urls[after.at - 1].startsWith(`${OLD()}/index.html?x=1`), "Back goes to the old page, not a replaced entry");
