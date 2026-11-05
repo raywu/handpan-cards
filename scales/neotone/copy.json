@@ -1,5 +1,5 @@
 {
-  "lead_html": "Neotone is a digital handpan. The 10-note model has nine tonefields around a ding; the 19-note Mutant model adds a mutant tonefield inside each of the nine. This page shows what the Neotone layout looks like in Handpan Theory and gives three chord cards you can play from it.",
+  "lead_html": "Neotone is a digital handpan. The 10-note model has nine tonefields around a ding; the 19-note Mutant model adds a mutant tonefield inside each of the nine.",
   "alias_html": "",
   "history_heading": "What is the Neotone layout?",
   "history_html": [
@@ -8,7 +8,7 @@
   ],
   "progression_tail_html": ", main and mutant notes.",
   "steps_html": [
-    "Open the app and tap <b>+ ADD A SCALE</b>.",
+    "Open the app and tap <a href=\"/#add\"><b>+ ADD A SCALE</b></a>.",
     "Type your scale, top notes first.",
     "Tick <b>Neotone</b>, or set <b>LAYOUT</b> to <b>NEOTONE</b>.",
     "Tap <b>GENERATE CARDS</b>, then practice every chord card for your own pan."

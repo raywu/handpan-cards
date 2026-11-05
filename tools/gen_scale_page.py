@@ -413,7 +413,7 @@ th[scope=rowgroup]{text-align:left;font-weight:700;padding:5px 8px 5px 10px}
 .hk{display:block;color:var(--muted);font-size:12px;font-weight:400}
 th[scope=col]{color:var(--muted);font-size:12px;font-weight:600}
 th[scope=row]{text-align:left;color:var(--muted);font-size:13px;padding-left:10px;white-space:nowrap}
-td[rowspan]{font:13px "Nunito Sans",sans-serif;color:var(--muted);text-align:left;white-space:normal;padding:5px 10px 5px 14px;vertical-align:middle;width:9em}
+td[rowspan]{font:13px "Nunito Sans",sans-serif;color:var(--muted);text-align:center;white-space:normal;padding:5px 10px 5px 14px;vertical-align:middle;width:9em}
 td[rowspan] .open{display:inline-flex;align-items:center;box-sizing:border-box;min-height:44px;letter-spacing:0;line-height:1.3;color:#fff}
 .note td{font:12px "Nunito Sans",sans-serif;color:var(--muted);text-align:left;white-space:normal;padding:0 10px 8px}
 @media (max-width:599px){table{display:block}
@@ -422,7 +422,7 @@ tbody>tr:first-child>*{border:0}
 tr{display:contents}
 th,td{padding:4px 0}
 th[scope=rowgroup]{grid-area:1/1/2/6;padding:0 6px 6px 2px}
-td[rowspan]{grid-area:1/6/2/11;padding:0 2px 6px 0;text-align:right;font-size:13px}
+td[rowspan]{grid-area:1/6/2/11;width:auto;padding:0 2px 6px 0;text-align:center;font-size:13px}
 th[scope=row]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .nomut{display:none}
 .note td{grid-column:1/-1;padding:6px 2px 0}
@@ -477,10 +477,10 @@ def load_copy(row):
         return json.load(f)
 
 
-def spread_cells(name, notes):
+def spread_cells(name, notes, given=None):
     ns = notes.split()
-    ding = "-"
-    if re.match(r"[A-G][#b]?\d$", name.split()[0]) and name.split()[0] == ns[0]:
+    ding = given or "-"
+    if not given and re.match(r"[A-G][#b]?\d$", name.split()[0]) and name.split()[0] == ns[0]:
         ding = ns.pop(0)
     top, m = ns[:9], ns[9:]
     mut = ["-"] * 9
@@ -489,26 +489,44 @@ def spread_cells(name, notes):
     return ding, top, mut
 
 
+def midi_of(note):
+    m = re.match(r"([A-G])([#b]?)(\d)$", note)
+    return 12 * (int(m.group(3)) + 1) + {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}[m.group(1)] + {"": 0, "#": 1, "b": -1}[m.group(2)]
+
+
+def spread_default(d):
+    if "notes" not in d:
+        return d
+    ding, top, mut = spread_cells(d["name"], d["notes"], d.get("ding"))
+    if ding == "-":
+        return d
+    placed = [m for m in mut if m != "-"]
+    seed = "(%s) %s %s" % (ding, " ".join(top), " ".join("[%s]" % m for m in placed))
+    amap = ["r%d" % midi_of(n) for n in top] + [None if m == "-" else "b%d" % midi_of(m) for m in mut]
+    return dict(d, seed=seed, typed=d["name"], palette=1, profile={"id": "paired", "rev": 2, "map": amap})
+
+
 def defaults_html(row, shares):
     link = {d["name"]: d["share"] for d in shares}
     out = ['<section class="plain">\n<h2>Neotone factory scales</h2>\n'
            "<p>The Neotone One Mutant ships with nine scales on the DOME hotkeys. These are the factory defaults; "
            "your own layouts can differ. Field numbers run from the lowest side note (1) to the highest (9). "
-           "The second line of each scale lists its mutant notes.</p>\n"
+           "The Mutant Notes row lists each scale's mutant notes.</p>\n"
            '<table>\n<caption class="vh">Neotone factory scales</caption>\n']
     cells = lambda vals: "".join("<td>%s</td>" % esc(c) for c in vals)
     heads = "".join('<th scope="col">%s</th>' % h for h in ["Ding"] + [str(i) for i in range(1, 10)])
     for d in row["defaults"]:
         spread = "notes" in d
-        ding, top, mut = spread_cells(d["name"], d["notes"]) if spread else (d["ding"], d["main"], d["mutant"] or ["-"] * 9)
-        cta = ("Layout not published" if spread else
-               '<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])))
+        ding, top, mut = spread_cells(d["name"], d["notes"], d.get("ding")) if spread else (d["ding"], d["main"], d["mutant"] or ["-"] * 9)
+        linked = d["name"] in link
+        cta = ('<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])) if linked else
+               "Layout not published")
         out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td rowspan="3">%s</td></tr>\n'
                    % (esc(d["name"]), esc(d["hotkey"]), heads, cta))
         out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
         out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
                    % (' class="nomut"' if not spread and not d["mutant"] else "", cells(["-"] + mut)))
-        if spread:
+        if not linked:
             out.append('<tr class="note"><td colspan="12">%s</td></tr>\n' % SPREAD_NOTE)
         out.append("</tbody>\n")
     out.append("</table>\n</section>\n")
@@ -566,8 +584,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
         guide = '<a href="/handpan-101/">Handpan 101</a>'
         lead = copy["lead_html"] + " New to handpan? Read %s first." % guide
     elif neo:
-        lead = copy["lead_html"] + " The app has %d chord cards for the example scale below." % data["count"]
-        lead += " %s is one of the factory scales listed further down." % esc(data["name"])
+        lead = copy["lead_html"]
         lead += ' New to handpan? Read <a href="/handpan-101/">Handpan 101: how to play a handpan</a> first.'
     else:
         lead = copy["lead_html"] + " The app has %d chord cards for this scale." % data["count"]
@@ -667,7 +684,7 @@ def load_neotone_row():
 
 def neotone_page(row=None):
     row = row or load_neotone_row()
-    res = engine([row], [d for d in row.get("defaults", []) if "seed" in d])
+    res = engine([row], [d for d in map(spread_default, row.get("defaults", [])) if "seed" in d])
     data = dict(res["rows"][row["slug"]], defaults=res["defaults"])
     return render(row, data, {row["slug"]: row}, load_copy(row))
 
@@ -676,7 +693,7 @@ def neotone_fixture_data(row=None):
     row = row or load_neotone_row()
     out = json.loads(fixture_data([row]))
     out[row["slug"]]["profile"] = row["profile"]
-    res = engine([row], [d for d in row.get("defaults", []) if "seed" in d])
+    res = engine([row], [d for d in map(spread_default, row.get("defaults", [])) if "seed" in d])
     out[row["slug"]]["defaults"] = [{k: v for k, v in d.items() if k != "ok"} for d in res["defaults"]]
     return json.dumps(out, indent=1, sort_keys=True) + "\n"
 

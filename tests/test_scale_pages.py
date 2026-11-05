@@ -1170,14 +1170,21 @@ FACTORY = [
     ("G Romanian Hijaz", "DOME+6", "G3", "C4 D4 D#4 F#4 G4 A4 A#4 C5 D5"),
 ]
 SPREAD = [
-    ("Eb La Sirena 16", "DOME+7", "-", "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4", "F4 - F#4 A#4 - C5 D#5 - F5"),
-    ("B2 Onoleo 15", "DOME+8", "B2", "E3 F#3 G3 A3 B3 C4 D#4 E4 F#4", "G4 - A4 - B4 - C5 - D#5"),
+    ("Eb La Sirena 16", "DOME+7", "D#2", "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4", "F4 - F#4 A#4 - C5 D#5 - F5"),
 ]
+ONOLEO = ("B2 Onoleo 15", "DOME+8", "B2", "E3 F#3 G3 A3 B3 C4 D#4 E4 F#4", "G4 - A4 - B4 - C5 - D#5")
+ONOLEO_SEED = "(B2) E3 F#3 G3 A3 B3 C4 D#4 E4 F#4 [G4] [A4] [B4] [C5] [D#5]"
+ONOLEO_MAP = ["r52", "r54", "r55", "r57", "r59", "r60", "r63", "r64", "r66", "b67", None, "b69", None, "b71", None,
+              "b72", None, "b75"]
 NOT_PUBLISHED = [
     ("Eb La Sirena 16", "DOME+7", "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 F4 F#4 A#4 C5 D#5 F5"),
     ("B2 Onoleo 15", "DOME+8", "B2 E3 F#3 G3 A3 B3 C4 D#4 E4 F#4 G4 A4 B4 C5 D#5"),
 ]
-ORDER = [n for n, *_ in FACTORY] + [n for n, *_ in SPREAD] + [ASTRO[0]]
+ORDER = [n for n, *_ in FACTORY] + [n for n, *_ in SPREAD] + [ONOLEO[0]] + [ASTRO[0]]
+LINKED = SPREAD + [ONOLEO]
+SIRENA_SEED = "(D#2) C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 [F4] [F#4] [A#4] [C5] [D#5] [F5]"
+SIRENA_MAP = ["r49", "r51", "r53", "r54", "r56", "r58", "r60", "r61", "r63", "b65", None, "b66", "b70", None, "b72",
+              "b75", None, "b77"]
 SPREAD_NOTE = "Field positions are spaced evenly for reading; Neotone has not published this layout."
 
 
@@ -1437,8 +1444,6 @@ class NeotonePageTest(unittest.TestCase):
         self.assertIn('<section class="scale" id="neotone">\n<h2>F2 Astronaut 16</h2>', html)
         self.assertIn("PRACTICE F2 ASTRONAUT 16</a>", html)
         self.assertNotIn("Annaziska", html)
-        self.assertIn("chord cards for the example scale below", html)
-        self.assertIn("F2 Astronaut 16 is one of the factory scales listed further down", Page(html).norm())
 
     def test_the_factory_section_exists_once_after_the_example_and_before_the_steps(self):
         html = neo()["html"]
@@ -1491,26 +1496,66 @@ class NeotonePageTest(unittest.TestCase):
         self.assertEqual(factory_section().count("nomut"), 6)
 
     def test_spread_cells_places_mutants_evenly_and_pops_a_ding_only_when_the_name_carries_it(self):
-        for name, _h, ding, top, mut in SPREAD:
+        for name, _h, ding, top, mut in LINKED:
             with self.subTest(name=name):
                 notes = dict((n, x) for n, _h2, x in NOT_PUBLISHED)[name]
-                got = gen.spread_cells(name, notes)
+                got = gen.spread_cells(name, notes, ding if name.startswith("Eb") else None)
                 self.assertEqual(got, (ding, top.split(), mut.split()))
         self.assertEqual(gen.spread_cells("X1 Z", "A B C D E F G H I J")[2], ["-"] * 4 + ["J"] + ["-"] * 4)
 
-    def test_spread_scales_are_tbodies_with_the_note_a_not_published_cell_and_no_link(self):
+    def test_spread_scales_have_a_practice_link_and_neither_the_not_published_text_nor_the_spread_note(self):
         blocks = factory_blocks()
-        for name, hot, ding, top, mut in SPREAD:
+        for name, hot, ding, top, mut in LINKED:
             with self.subTest(name=name):
                 b = blocks[name]
                 self.assertIn(hot, b)
                 cells = block_cells(b)
                 self.assertEqual(cells[1], ["Top Notes", ding] + top.split())
                 self.assertEqual(cells[2], ["Mutant Notes", "-"] + mut.split())
-                self.assertIn(SPREAD_NOTE, b)
-                self.assertIn("Layout not published", b)
-                self.assertNotIn("<a ", b)
+                self.assertRegex(b, r'<td rowspan="3"><a class="open" href="/#s=[^"]+">Practice %s</a></td>' % re.escape(name))
+                self.assertNotIn("Layout not published", b)
+                self.assertNotIn(SPREAD_NOTE, b)
+                self.assertNotIn('class="note"', b)
                 self.assertNotIn("nomut", b)
+
+    def test_spread_practice_links_decode_to_their_notes_with_the_spread_mutant_map(self):
+        for name, seed, amap in [(SPREAD[0][0], SIRENA_SEED, SIRENA_MAP), (ONOLEO[0], ONOLEO_SEED, ONOLEO_MAP)]:
+            with self.subTest(name=name):
+                link = re.search(r'href="/#s=([^"]+)">Practice %s' % re.escape(name), factory_blocks()[name]).group(1)
+                src = ("const { loadEngine } = require(%r + '/tools/engine_loader.js');"
+                       "const HPE = loadEngine(['core','share']);"
+                       "const d = HPE.share.decode(process.argv[1]);"
+                       "console.log(JSON.stringify({ok: d.ok, seed: HPE.core.formatSeed(d.value), map: d.value.options.profile.map}));" % ROOT)
+                got = json.loads(subprocess.run(["node", "-e", src, link], capture_output=True, text=True, check=True).stdout)
+                self.assertTrue(got["ok"])
+                self.assertEqual(got["seed"], seed)
+                self.assertEqual(got["map"], amap)
+
+    def test_the_la_sirena_row_pins_the_owner_note_list_and_hotkey(self):
+        row = next(d for d in gen.load_neotone_row()["defaults"] if d["name"] == "Eb La Sirena 16")
+        self.assertEqual(row["hotkey"], "DOME+7")
+        self.assertEqual(row["ding"], "D#2")
+        self.assertEqual(row["notes"], "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 F4 F#4 A#4 C5 D#5 F5")
+
+    def test_the_add_a_scale_step_links_to_the_add_sheet_route(self):
+        self.assertIn('<li>Open the app and tap <a href="/#add"><b>+ ADD A SCALE</b></a>.</li>', neo()["html"])
+
+    def test_the_practice_cell_is_centred_on_desktop_and_fills_its_grid_area_on_the_phone(self):
+        css = re.search(r"<style>(.*?)</style>", neo()["html"], re.S).group(1)
+        desk, phone = css.split("@media (max-width:599px)")
+        self.assertRegex(desk, r"td\[rowspan\]\{[^}]*text-align:center")
+        self.assertRegex(phone, r"td\[rowspan\]\{grid-area:1/6/2/11;width:auto;[^}]*text-align:center")
+        self.assertNotIn("text-align:right", phone)
+
+    def test_the_intro_has_no_chord_card_count_or_page_description_sentence(self):
+        html = neo()["html"]
+        self.assertNotIn("This page shows", html)
+        self.assertNotIn("The app has", html)
+        self.assertNotIn("chord cards from the example scale", html)
+
+    def test_the_factory_intro_names_the_mutant_notes_row(self):
+        self.assertIn("The Mutant Notes row lists each scale's mutant notes.", Page(neo()["html"]).norm())
+        self.assertNotIn("second line", neo()["html"])
 
     def test_each_published_scale_has_one_practice_link_that_decodes_and_round_trips(self):
         blocks = factory_blocks()
@@ -1543,7 +1588,7 @@ class NeotonePageTest(unittest.TestCase):
     def test_the_fixture_carries_the_factory_links_and_the_disclaimer_stays_last_but_one(self):
         fx = neo_fixture()["neotone"]["defaults"]
         blocks = factory_blocks()
-        self.assertEqual([d["name"] for d in fx], [n for n, *_ in FACTORY] + [ASTRO[0]])
+        self.assertEqual([d["name"] for d in fx], [n for n, *_ in FACTORY] + [SPREAD[0][0], ONOLEO[0], ASTRO[0]])
         for d in fx:
             self.assertIn('href="/#s=%s">Practice %s</a>' % (d["share"], d["name"]), blocks[d["name"]])
         ps = re.findall(r"<p[^>]*>(.*?)</p>", neo()["html"], re.S)

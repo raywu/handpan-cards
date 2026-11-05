@@ -101,6 +101,16 @@
     "share": "6/(G3)_C4_D4_Ds4_Fs4_G4_A4_As4_C5_D5/G+Romanian+Hijaz/palette-2/7aabd7"
    },
    {
+    "name": "Eb La Sirena 16",
+    "seed": "(D#2) C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 [F4] [F#4] [A#4] [C5] [D#5] [F5]",
+    "share": "7/(Ds2)_Cs3_Ds3_F3_Fs3_Gs3_As3_C4_Cs4_Ds4_uF4_uFs4_uAs4_uC5_uDs5_uF5/Eb+La+Sirena+16/palette-2/pair-r49.r51.r53.r54.r56.r58.r60.r61.r63.b65.-.b66.b70.-.b72.b75.-.b77/6822d0"
+   },
+   {
+    "name": "B2 Onoleo 15",
+    "seed": "(B2) E3 F#3 G3 A3 B3 C4 D#4 E4 F#4 [G4] [A4] [B4] [C5] [D#5]",
+    "share": "7/(B2)_E3_Fs3_G3_A3_B3_C4_Ds4_E4_Fs4_uG4_uA4_uB4_uC5_uDs5/B2+Onoleo+15/palette-2/pair-r52.r54.r55.r57.r59.r60.r63.r64.r66.b67.-.b69.-.b71.-.b72.-.b75/7edaad"
+   },
+   {
     "name": "F2 Astronaut 16",
     "seed": "(F2) [A#2] [C3] C#3 D#3 F3 G3 G#3 C4 D#4 F4 G4 [G#4] [C5] [D#5] [G5]",
     "share": "7/(F2)_uAs2_uC3_Cs3_Ds3_F3_G3_Gs3_C4_Ds4_F4_G4_uGs4_uC5_uDs5_uG5/F2+Astronaut+16/palette-2/pair-r49.r51.r53.r55.r56.r60.r63.r65.r67.b46.b48.-.-.b79.b75.b72.b68.-/c759d7"
