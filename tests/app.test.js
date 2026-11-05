@@ -19637,6 +19637,30 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     assert.strictEqual(app.get("analyticsLoaded"), true);
   });
 
+  test("N1: the plain handoff forwards a legitimate arrival hash and drops a crafted #move= one", async () => {
+    for (const hash of ["", "#s=6/D3-A3-C4/x/y", "#deck=f-low-pygmy-18", "#add"]) {
+      const app = await boot2({ host: OLD_HOST, hash, records: [] });
+      assert.strictEqual(app.get("moveUrl().url"), `${TARGET}/${hash}`, hash);
+    }
+    for (const hash of ["#move=abc&then=%23add", "#move=", "#x=1"]) {
+      const app = await boot2({ host: OLD_HOST, hash, records: [] });
+      assert.strictEqual(app.get("moveUrl().url"), `${TARGET}/`, hash);
+    }
+  });
+
+  test("N1: the payload handoff carries a legitimate then hash and an empty one for a crafted #move=", async () => {
+    for (const hash of ["#s=6/D3-A3-C4/x/y", "#deck=f-low-pygmy-18", "#add"]) {
+      const app = await boot2({ host: OLD_HOST, hash, records: [rec("A")] });
+      assert.ok(app.get("moveUrl().url").endsWith("&then=" + encodeURIComponent(hash)), hash);
+    }
+    for (const hash of ["#move=abc&then=%23add", "#move=", "#x=1"]) {
+      const app = await boot2({ host: OLD_HOST, hash, records: [rec("A")] });
+      const url = app.get("moveUrl().url");
+      assert.ok(url.endsWith("&then="), url);
+      assert.strictEqual(url.split("#move=").length, 2, url);
+    }
+  });
+
   test("the banner counts the saved scales and says nothing is carried when the store is empty", async () => {
     const one = await boot2({ host: OLD_HOST, records: [rec("A")] });
     assert.match(bannerText(one), /now lives at new\.example\. Your saved scale can come with you\./);

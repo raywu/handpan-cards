@@ -1,0 +1,13 @@
+# kills: N1: the plain handoff forwards a legitimate arrival hash and drops a crafted #move= one
+# suite: node --test --test-name-pattern ^N1..the.plain.handoff.forwards.a.legitimate.arrival.hash.and.drops.a.crafted..move..one$ tests/app.test.js
+# The handoff forwards the arrival hash without checking moveThenOk, so a crafted #move= hash passes through.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17404,5 +17404,5 @@
+ const moveArrivalSearch = location.search, moveArrivalHash = location.hash;
+ function moveUrl() {
+-  const then = moveThenOk(moveArrivalHash) ? moveArrivalHash : "";
++  const then = moveArrivalHash;
+   const plain = { url: MOVE_TARGET + "/" + moveArrivalSearch + then, carried: 0, total: 0 };
+   if (savedMode !== "durable" || !savedState) return plain;

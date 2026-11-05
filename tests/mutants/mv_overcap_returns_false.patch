@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17411,16 +17411,7 @@
+@@ -17414,16 +17414,7 @@ function moveUrl() {
    if (!rows.length && !hidden.length) return plain;
    const encodeRows = n => moveEncode(JSON.stringify({ r: rows.slice(0, n), h: hidden }));
    let carried = rows.length, code = encodeRows(carried);
@@ -19,6 +19,6 @@ diff --git a/index.html b/index.html
 -    if (code.length > MOVE_CAP) return { ...plain, total: rows.length };
 -  }
 +  if (code.length > MOVE_CAP) return { ...plain, total: rows.length };
-   return { url: MOVE_TARGET + "/" + moveArrivalSearch + "#move=" + code + "&then=" + encodeURIComponent(moveArrivalHash), carried, total: rows.length };
+   return { url: MOVE_TARGET + "/" + moveArrivalSearch + "#move=" + code + "&then=" + encodeURIComponent(then), carried, total: rows.length };
  }
  function moveGo() {

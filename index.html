@@ -17403,7 +17403,8 @@ function moveReport(result) {
 }
 const moveArrivalSearch = location.search, moveArrivalHash = location.hash;
 function moveUrl() {
-  const plain = { url: MOVE_TARGET + "/" + moveArrivalSearch + moveArrivalHash, carried: 0, total: 0 };
+  const then = moveThenOk(moveArrivalHash) ? moveArrivalHash : "";
+  const plain = { url: MOVE_TARGET + "/" + moveArrivalSearch + then, carried: 0, total: 0 };
   if (savedMode !== "durable" || !savedState) return plain;
   const rows = savedState.entries.map(row => {
     const read = readSavedRecord(row.record);
@@ -17423,7 +17424,7 @@ function moveUrl() {
     code = encodeRows(carried);
     if (code.length > MOVE_CAP) return { ...plain, total: rows.length };
   }
-  return { url: MOVE_TARGET + "/" + moveArrivalSearch + "#move=" + code + "&then=" + encodeURIComponent(moveArrivalHash), carried, total: rows.length };
+  return { url: MOVE_TARGET + "/" + moveArrivalSearch + "#move=" + code + "&then=" + encodeURIComponent(then), carried, total: rows.length };
 }
 function moveGo() {
   location.assign(moveUrl().url);
