@@ -20643,7 +20643,7 @@ function run() {
     }
     const bannerReady = `!!document.querySelector('#move-banner button.move-go') && !document.getElementById('move-banner').hidden`;
     const bannerText = () => b.eval(`return document.querySelector('#move-banner .move-banner-msg').textContent;`);
-    const pressMove = () => b.eval(`document.querySelector('#move-banner button.move-go').click();return true;`);
+    const pressMove = () => b.click('#move-banner button.move-go');
     async function goOld(url = OLD() + "/index.html", referrer) {
       await go(url, referrer);
       await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
@@ -20678,6 +20678,67 @@ function run() {
     const remove = (name) => b.eval(`const e=savedState,row=e.entries.find(r=>r.record.o.name===${JSON.stringify(name)});
       return commitSaved({type:'delete',collectionId:e.collectionId,instanceId:row.instanceId,expectedRevision:row.revision});`);
     afterEach(async () => { moveMode = null; });
+
+    test("move: the banner is the first element of body and carries no payload in any attribute of the document", async () => {
+      on(); await seed(OLD(), [rec("A")]);
+      await go(OLD() + "/index.html");
+      await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+      assert.strictEqual(await b.eval(`return document.body.firstElementChild.id;`), "move-banner");
+      const attrs = await b.eval(`return [...document.querySelectorAll('[href],[action],[formaction]')].flatMap(e => ['href','action','formaction'].map(a => e.getAttribute(a)).filter(v => v !== null));`);
+      assert.ok(attrs.length > 0, "the document-wide query finds attributes");
+      for (const v of attrs) assert.ok(!/#move=/.test(v), v);
+    });
+
+    test("move: the banner is an overlay - the footer stays put, and it does not overflow at 375x580 and 320 wide in all 8 locales", async () => {
+      on(); await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      try {
+        for (const [w, h] of [[375, 580], [320, 568]]) {
+          await b.setViewport(w, h, true);
+          await go(OLD() + "/index.html");
+          await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+          const footerBottom = () => b.eval(`return document.querySelector('footer').getBoundingClientRect().bottom;`);
+          const shown = await footerBottom();
+          await b.eval(`document.getElementById('move-banner').hidden = true; return true;`);
+          const hidden = await footerBottom();
+          assert.strictEqual(shown, hidden, `the banner does not move the footer at ${w}`);
+          await b.eval(`document.getElementById('move-banner').hidden = false; return true;`);
+          const langs = await b.eval(`return LANGS.slice();`);
+          assert.strictEqual(langs.length, 8);
+          for (const lang of langs) {
+            await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+            const r = await b.eval(`const el = document.getElementById('move-banner'), r = el.getBoundingClientRect();
+              return { sw: el.scrollWidth, cw: el.clientWidth, left: r.left, right: r.right, bottom: r.bottom, vw: innerWidth, vh: innerHeight,
+                text: el.querySelector('.move-banner-msg').textContent,
+                btns: [...el.querySelectorAll('button')].map(x => { const q = x.getBoundingClientRect(); return q.left >= r.left && q.right <= r.right; }) };`);
+            assert.ok(r.sw <= r.cw, `${lang} ${w}: horizontal overflow ${r.sw} > ${r.cw}`);
+            assert.ok(r.left >= 0 && r.right <= r.vw, `${lang} ${w}: inside the viewport width`);
+            assert.ok(r.bottom <= r.vh, `${lang} ${w}: inside the viewport height`);
+            assert.ok(r.btns.every(Boolean), `${lang} ${w}: buttons inside the banner`);
+          }
+        }
+      } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
+    });
+
+    test("move: the banner covers no footer control and no top menu control at 375x580, 320x568, 1280x800, 667x375, 568x320 and 844x390", async () => {
+      on(); await seed(OLD(), [rec("A")]);
+      try {
+        for (const [w, h] of [[375, 580], [320, 568], [1280, 800], [667, 375], [568, 320], [844, 390]]) {
+          await b.setViewport(w, h, w < 900);
+          await go(OLD() + "/index.html");
+          await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+          const hits = await b.eval(`return ['#prev','#next','#shuffle','#count','#settings-trigger','#share-copy'].map(sel => {
+            const el = document.querySelector(sel), r = el.getBoundingClientRect();
+            if (!r.width || !r.height) return { sel, ok: true, skipped: true };
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return { sel, ok: !!hit && (hit === el || el.contains(hit)), hit: hit && (hit.id || hit.className || hit.tagName) };
+          });`);
+          for (const sel of ["#prev", "#next", "#shuffle", "#count"]) assert.ok(!hits.find(x => x.sel === sel).skipped, `${w}x${h}: ${sel} is rendered`);
+          for (const x of hits) assert.ok(x.ok, `${w}x${h}: ${x.sel} is covered by ${x.hit}`);
+          const top = await b.eval(`const r = document.getElementById('move-banner').getBoundingClientRect(); return r.top < innerHeight / 2;`);
+          assert.ok(top, `${w}x${h}: the banner sits in the top half`);
+        }
+      } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
+    });
 
     test("move: a crafted #move= link with no MOVE_FROM referrer writes nothing and opens the then hash", async () => {
       on(); await clearOrigin(NEW());
@@ -20806,16 +20867,16 @@ function run() {
       assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), [], "reload re-imports nothing");
     });
 
-    test("move: an empty old store jumps with no notice and the #s= link opens on the new host", async () => {
+    test("move: a #s= link opened on the old host with an empty store is carried through the click and opens on the new host", async () => {
       on();
       await seed(OLD(), []);
       const keep = moveMode; moveMode = null;
       const code = await b.eval(`const s=HPE.core.parseSeed(${JSON.stringify(OLDSEED)});return HPE.share.encode({fields:s.value.fields,options:{}}).value;`);
       moveMode = keep;
       await goOld(`${OLD()}/index.html#s=${code}`);
-      await b.waitFor(atNew(), { label: "the jump" });
+      await b.waitFor(`${atNew()} && /^#(s=|deck=)/.test(location.hash)`, { label: "the jump with the link carried" });
+      await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the new host to boot" });
       assert.ok(/^#(s=|deck=)/.test((await where()).hash), "the link is carried");
-      assert.strictEqual(await noticeText(), null);
     });
 
     test("move: a payload over MOVE_CAP still forwards, carrying only the prefix that fits, and old storage is untouched", async () => {
@@ -20906,17 +20967,23 @@ function run() {
       assert.deepStrictEqual(names(await nativeSavedEnvelope(b)).sort(), ["A", "B"]);
     });
 
-    test("move: a redirected old path lands in one hop on the new host with its fragment, and the new host has no redirect", async () => {
+    test("move: a click on an old path lands on the new host in one hop with its search and fragment, keeps the old host in Back history, and the new host has no redirect", async () => {
       on(); await clearOrigin(NEW());
       await seed(OLD(), [rec("A")]);
-      const before = (await b.send("Page.getNavigationHistory")).entries.length;
-      await goOld(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
-      await b.waitFor(atNew(), { label: "the jump" });
+      await go(`${OLD()}/index.html?x=1#deck=f-low-pygmy-18`);
+      await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
+      const history = async () => { const h = await b.send("Page.getNavigationHistory"); return { at: h.currentIndex, urls: h.entries.map((e) => e.url) }; };
+      const old = await history();
+      assert.ok(old.urls[old.at].startsWith(OLD()), "the old page is current before the click");
+      await pressMove();
+      await b.waitFor(`${atNew()} && !location.hash.startsWith('#move=')`, { label: "the jump settled" });
       const w = await where();
       assert.strictEqual(w.search, "?x=1");
-      assert.ok(w.hash.startsWith("#deck=") || w.hash === "");
-      const after = (await b.send("Page.getNavigationHistory")).entries.length;
-      assert.ok(after - before <= 1, "one history entry for the whole hop");
+      assert.ok(w.hash.startsWith("#deck=") || w.hash === "", `hash ${w.hash.slice(0, 40)}`);
+      const after = await history();
+      assert.ok(after.urls[after.at].startsWith(NEW()), "the new host is the current entry");
+      assert.ok(after.urls[after.at - 1].startsWith(`${OLD()}/index.html?x=1`), "Back goes to the old page, not a replaced entry");
+      assert.strictEqual(after.urls.length, after.at + 1, "the hop leaves nothing ahead of it");
       await go(NEW() + "/index.html");
       assert.strictEqual((await where()).origin, NEW(), "the new host does not redirect");
     });

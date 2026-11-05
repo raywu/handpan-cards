@@ -1,0 +1,15 @@
+# kills: the banner is inert behind the scale sheet, the panel and About, and live again after
+# suite: node --test --test-name-pattern=the.banner.is.inert.behind tests/app.test.js
+# why: the sheet and panel background lists leave the banner reachable behind a modal.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17461,8 +17461,6 @@ function renderMoveBanner() {
+     moveBannerEl.appendChild(actions);
+     const first = document.body.firstChild;
+     if (first) document.body.insertBefore(moveBannerEl, first); else document.body.appendChild(moveBannerEl);
+-    background.push(moveBannerEl);
+-    panelBackground.push(moveBannerEl);
+     if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);
+     window.addEventListener("resize", placeMoveBanner);
+   }

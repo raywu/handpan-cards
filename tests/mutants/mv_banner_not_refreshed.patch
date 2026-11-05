@@ -1,0 +1,14 @@
+# kills: saved-scale changes re-render the banner across MOVE_CAP in both directions
+# suite: node --test --test-name-pattern=saved.scale.changes.re.render tests/app.test.js
+# why: a saved-scale snapshot no longer re-renders the banner counts and over-cap line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15419,7 +15419,6 @@ function updateSavedStatus() {
+   if(el.textContent!==text)el.textContent=text;
+   el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");
+   document.getElementById("scale-conflict-separate").textContent=t("saved.separate");
+-  refreshMoveBanner();
+ }
+ function hideSavedConflict() {
+   conflictVisible=false;
