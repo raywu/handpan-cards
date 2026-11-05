@@ -1,0 +1,15 @@
+# kills: test_spread_cells_places_mutants_evenly_and_pops_a_ding_only_when_the_name_carries_it
+# suite: python3 -m unittest -k test_spread_cells_places_mutants_evenly_and_pops_a_ding_only_when_the_name_carries_it tests.test_scale_pages
+# The evenly spaced mutant columns for the unpublished layouts shift one field right.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -485,7 +485,7 @@
+     top, m = ns[:9], ns[9:]
+     mut = ["-"] * 9
+     for i, n in enumerate(m):
+-        mut[int((i + 0.5) * 9 / len(m))] = n
++        mut[int((i + 0.5) * 9 / len(m)) + 1] = n
+     return ding, top, mut
+ 
+ 
