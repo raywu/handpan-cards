@@ -9764,7 +9764,7 @@ describe("discoverability: structured data", () => {
     assert.strictEqual(app.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
     assert.ok(!("aggregateRating" in app) && !("review" in app), "a rating or review is marked up but never shown");
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
-    assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
+    assert.ok(!/"email"|@raywu\.org|@handpantheory\.com|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
     assert.strictEqual(app.name, SITE_NAME, "name differs from the site name");
     assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
@@ -11423,9 +11423,9 @@ describe("about overlay", () => {
     assert.deepStrictEqual(app.history.calls.slice(n).map((c) => c.type), ["replace"]);
   });
 
-  test("AO: About ends with a Contact heading and a mailto link to handpan@raywu.org", async () => {
+  test("AO: About ends with a Contact heading and a mailto link to hi@handpantheory.com", async () => {
     const inner = aboutHtml();
-    assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
+    assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:hi@handpantheory\.com">hi@handpantheory\.com<\/a><\/p>\s*$/);
   });
 
   test("AO: ABOUT is a full-width button alone in the last Resources row, and the last Resources stop before Language", async () => {
