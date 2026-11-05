@@ -1535,6 +1535,11 @@ class NeotonePageTest(unittest.TestCase):
         self.assertEqual(got["seed"], ONOLEO_SEED)
         self.assertEqual(got["map"], ONOLEO_MAP)
 
+    def test_the_la_sirena_row_pins_the_owner_note_list_and_hotkey(self):
+        row = next(d for d in gen.load_neotone_row()["defaults"] if d["name"] == "Eb La Sirena 16")
+        self.assertEqual(row["hotkey"], "DOME+7")
+        self.assertEqual(row["notes"], "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 F4 F#4 A#4 C5 D#5 F5")
+
     def test_the_add_a_scale_step_links_to_the_add_sheet_route(self):
         self.assertIn('<li>Open the app and tap <a href="/#add"><b>+ ADD A SCALE</b></a>.</li>', neo()["html"])
 
