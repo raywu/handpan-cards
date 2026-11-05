@@ -20,4 +20,4 @@ diff --git a/index.html b/index.html
 +  loadAnalytics();
  }
  const initialization=initializeSavedCollection();
- const moveFlow=!MOVE_ARMED ? null : Promise.resolve(initialization).then(async()=>{
+ const moveFlow=!MOVE_ARMED||movePayload===null ? null : Promise.resolve(initialization).then(async()=>{
