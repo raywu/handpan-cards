@@ -1,4 +1,5 @@
-# kills: the banner falls back to the header bottom when the header row has no box (phone landscape)
+# kills: move: the banner covers no footer control and no top menu control at 375x580, 320x568, 1280x800, 667x375, 568x320 and 844x390
+# (the banner falls back to the header bottom when the header row has no box in phone landscape)
 # suite: node --test --test-name-pattern=banner.covers.no.footer.control tests/e2e.test.js
 # why: with header .hrow display:contents the banner sits at ~6px and covers the share button.
 diff --git a/index.html b/index.html
