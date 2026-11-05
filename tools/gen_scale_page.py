@@ -406,10 +406,14 @@ CARD_CSS = """:host{display:block;width:min(322px,100%%);--root:%(root)s;--tone:
 .sepc{color:#75707c}"""
 
 BADGE_CSS = '\n.badge{font:600 9px/1 "Nunito Sans",system-ui,sans-serif;letter-spacing:.14em;color:#E27005;margin-bottom:6px}'
+NEO_TEXT_CSS = '\ntext{font-family:"Nunito Sans",sans-serif;text-anchor:middle}'
 
 
 def card_html(row, data, c, i, n):
     css = CARD_CSS % {"root": data["colors"]["root"], "tone": data["colors"]["tone"]}
+    if "profile" in row:
+        css += NEO_TEXT_CSS
+        c = dict(c, svg=c["svg"].replace(' text-anchor="middle"', "").replace(' font-family="Nunito Sans, sans-serif"', ""))
     if c["bottom"]:
         css += BADGE_CSS
     deg = '&nbsp;<span class="deg">%s</span>' % esc(c["degree"]) if c["degree"] else ""
