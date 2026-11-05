@@ -584,7 +584,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
         guide = '<a href="/handpan-101/">Handpan 101</a>'
         lead = copy["lead_html"] + " New to handpan? Read %s first." % guide
     elif neo:
-        lead = copy["lead_html"] + " Three chord cards from the example scale below; the app has all %d." % data["count"]
+        lead = copy["lead_html"]
         lead += ' New to handpan? Read <a href="/handpan-101/">Handpan 101: how to play a handpan</a> first.'
     else:
         lead = copy["lead_html"] + " The app has %d chord cards for this scale." % data["count"]

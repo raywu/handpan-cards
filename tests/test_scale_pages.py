@@ -1440,7 +1440,6 @@ class NeotonePageTest(unittest.TestCase):
         self.assertIn('<section class="scale" id="neotone">\n<h2>F2 Astronaut 16</h2>', html)
         self.assertIn("PRACTICE F2 ASTRONAUT 16</a>", html)
         self.assertNotIn("Annaziska", html)
-        self.assertIn("chord cards from the example scale below", html)
 
     def test_the_factory_section_exists_once_after_the_example_and_before_the_steps(self):
         html = neo()["html"]
@@ -1546,10 +1545,11 @@ class NeotonePageTest(unittest.TestCase):
         self.assertRegex(phone, r"td\[rowspan\]\{grid-area:1/6/2/11;width:auto;[^}]*text-align:center")
         self.assertNotIn("text-align:right", phone)
 
-    def test_the_intro_is_one_short_sentence_with_the_generated_card_count(self):
-        n = neo()["data"]["count"]
-        self.assertIn("Three chord cards from the example scale below; the app has all %d." % n, neo()["html"])
-        self.assertNotIn("This page shows", neo()["html"])
+    def test_the_intro_has_no_chord_card_count_or_page_description_sentence(self):
+        html = neo()["html"]
+        self.assertNotIn("This page shows", html)
+        self.assertNotIn("The app has", html)
+        self.assertNotIn("chord cards from the example scale", html)
 
     def test_the_factory_intro_names_the_mutant_notes_row(self):
         self.assertIn("The Mutant Notes row lists each scale's mutant notes.", Page(neo()["html"]).norm())
