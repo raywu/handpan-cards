@@ -20719,11 +20719,11 @@ function run() {
       } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
     });
 
-    test("move: the banner covers no footer control and no top menu control at 375x580, 320x568 and 1280x800", async () => {
+    test("move: the banner covers no footer control and no top menu control at 375x580, 320x568, 1280x800, 667x375, 568x320 and 844x390", async () => {
       on(); await seed(OLD(), [rec("A")]);
       try {
-        for (const [w, h] of [[375, 580], [320, 568], [1280, 800]]) {
-          await b.setViewport(w, h, w < 600);
+        for (const [w, h] of [[375, 580], [320, 568], [1280, 800], [667, 375], [568, 320], [844, 390]]) {
+          await b.setViewport(w, h, w < 900);
           await go(OLD() + "/index.html");
           await b.waitFor(bannerReady, { timeout: 15000, label: "the move banner" });
           const hits = await b.eval(`return ['#prev','#next','#shuffle','#count','#settings-trigger','#share-copy'].map(sel => {
