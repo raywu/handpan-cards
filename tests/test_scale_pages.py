@@ -26,6 +26,8 @@ ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org
                  "www.mudrahandpans.com", "www.kirstein.de", "www.halleonard.com", "www.boullard.ch"}
 SIZE_CAP = 62 * 1024 - 800
 NEO_SIZE_CAP = 66 * 1024
+NEO_TARGET = 60_979
+NEO_TEXT_RULE = 'text{font-family:"Nunito Sans",sans-serif;text-anchor:middle}'
 PALETTES = ["#E0559A", "#6D40A3", "#0B7B75", "#E2761B", "#C9971E", "#DD8F00", "#2563B0", "#3B7A2A",
             "#C0452C", "#B3263A"]
 BG_LIGHT = "#f6f4ed"
@@ -1201,6 +1203,44 @@ def neo():
 
 def neo_fixture():
     return json.loads(read("tests/fixtures/neotone_page_v1.json"))
+
+
+class NeotoneSizeCutTest(unittest.TestCase):
+    PAGES = ("neotone", "neotone-f2-astronaut-16")
+
+    def page(self, slug):
+        return read("scales/%s/index.html" % slug)
+
+    def test_the_neotone_page_is_under_the_target(self):
+        self.assertLessEqual(len(self.page("neotone").encode("utf-8")), NEO_TARGET)
+
+    def test_no_svg_text_carries_font_family_or_text_anchor(self):
+        for slug in self.PAGES:
+            with self.subTest(slug=slug):
+                texts = re.findall(r"<text\b[^>]*>", self.page(slug))
+                self.assertTrue(texts)
+                for t in texts:
+                    self.assertNotIn("font-family=", t)
+                    self.assertNotIn("text-anchor=", t)
+
+    def test_the_rule_is_in_each_shadow_style_and_on_no_other_page(self):
+        for slug in self.PAGES:
+            with self.subTest(slug=slug):
+                self.assertEqual(self.page(slug).count(NEO_TEXT_RULE), self.page(slug).count("<template shadowrootmode"))
+        for path in glob.glob(os.path.join(ROOT, "scales", "*", "index.html")):
+            if os.path.basename(os.path.dirname(path)) not in self.PAGES:
+                with self.subTest(path=path):
+                    self.assertNotIn(NEO_TEXT_RULE, open(path, encoding="utf-8").read())
+
+    def test_reinserting_the_attributes_gives_the_pan_output(self):
+        row = gen.load_neotone_row()
+        raw = [c["svg"] for c in gen.engine([row])["rows"][row["slug"]]["cards"]]
+        html = self.page("neotone")
+        svgs = re.findall(r"<svg\b.*?</svg>", html, re.S)
+        restored = [re.sub(r'<text x="([^"]*)" y="([^"]*)" fill="([^"]*)"',
+                           r'<text x="\1" y="\2" text-anchor="middle" fill="\3" font-family="Nunito Sans, sans-serif"', v)
+                    for v in svgs]
+        self.assertEqual(restored, raw)
 
 
 class NeotonePageTest(unittest.TestCase):
