@@ -19548,7 +19548,7 @@ describe("MN3: a 5-note bottom ring toggles", () => {
   });
 });
 
-describe("MV: the saved-scale handoff (switched off in the committed bytes)", () => {
+describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const webcrypto = require("node:crypto").webcrypto;
   const OLD_HOST = "old.example", NEW_HOST = "new.example", TARGET = "https://new.example";
@@ -19589,10 +19589,10 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     html: "<script>window.__savedIdbFixtureOnly=true;</script>" });
   const envelopeAt = (origin, host = NEW_HOST) => JSON.parse(savedRaw(realmAt(origin, host)));
 
-  test("MV: the committed bytes leave the move switched off (both constants null)", () => {
+  test("MV: the committed bytes arm the move from the old host to the new host", () => {
     const html = INDEX_HTML();
-    assert.match(html, /^const MOVE_FROM = null;$/m);
-    assert.match(html, /^const MOVE_TARGET = null;$/m);
+    assert.match(html, /^const MOVE_FROM = "handpan\.raywu\.org";$/m);
+    assert.match(html, /^const MOVE_TARGET = "https:\/\/handpantheory\.com";$/m);
     assert.match(html, /^const MOVE_CAP = 20000;$/m);
   });
 
@@ -19608,7 +19608,8 @@ describe("MV: the saved-scale handoff (switched off in the committed bytes)", ()
     const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
     assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
     assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
-    const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))");
+    const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))")
+      .replace("const MOVE_FROM = null;\nconst MOVE_TARGET = null;\n", () => 'const MOVE_FROM = "handpan.raywu.org";\nconst MOVE_TARGET = "https://handpantheory.com";\n');
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
   });

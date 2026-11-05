@@ -267,9 +267,10 @@ class HandpantheoryHostSetTest(unittest.TestCase):
         html = read("index.html")
         self.assertIn('<link rel="canonical" href="https://handpan.raywu.org/">', html)
         self.assertIn('<meta property="og:url" content="https://handpan.raywu.org/">', html)
-        self.assertEqual([l for l in html.splitlines() if "handpantheory" in l and "URL_MARK" not in l], [])
-        self.assertIn("const MOVE_FROM = null;", html)
-        self.assertIn("const MOVE_TARGET = null;", html)
+        self.assertEqual([l for l in html.splitlines() if "handpantheory" in l and "URL_MARK" not in l
+                          and l != 'const MOVE_TARGET = "https://handpantheory.com";'], [])
+        self.assertIn('const MOVE_FROM = "handpan.raywu.org";', html)
+        self.assertIn('const MOVE_TARGET = "https://handpantheory.com";', html)
 
 
 if __name__ == "__main__":
