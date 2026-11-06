@@ -1,0 +1,15 @@
+# kills: SE-G5: a pinned-cyclops scale saves, reloads and edits as record v6; an unpinned one stays v4
+# suite: node --test --test-name-pattern ^SE-G5..a.pinned-cyclops.scale.saves..reloads.and.edits.as.record.v6..an.unpinned.one.stays.v4$ tests/editor_model.test.js
+# fault: Do not carry pinned inner angles through the layout solve.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11276,7 +11276,7 @@ function buildGenerated(text, options, guard) {
+   // back from them, so a seat keeps its number (rule N).
+   const pinnedRing = ring => options && options.angles && Array.isArray(options.angles[ring]) &&
+     options.angles[ring].some(a => a !== null && a !== undefined);
+-  const bottomAngles = pinnedRing("bottom") || pinnedRing("inner") ? options.angles : null;
++  const bottomAngles = pinnedRing("bottom") ? options.angles : null;
+   if (wanted !== null || bottomAngles !== null) {
+     const o = built.value.options;
+     const asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor };
