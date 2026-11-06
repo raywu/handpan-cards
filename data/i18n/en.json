@@ -359,7 +359,7 @@
   },
   "move.banner_empty": "Handpan Theory now lives at {host}.",
   "move.banner_overcap": "{n} of your {total} saved scales fit in one move. The rest stay here at this address.",
-  "move.deadline": "On {date}, {from} will move to {host}. Please click \"Move my scales\" to migrate your custom scales, so you don't lose them!",
+  "move.deadline": "On {date}, {from} will move to {host}. Custom scales left here will be lost. Click \"Move my scales\" now to keep them.",
   "move.deadline_empty": "On {date}, {from} will move to {host}.",
   "move.go": "MOVE MY SCALES",
   "move.go_plain": "OPEN {host}",
