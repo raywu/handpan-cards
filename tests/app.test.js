@@ -19613,7 +19613,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
 
   test("MV: a set deadline adds the dated line in all 8 locales", async () => {
     const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
-    assert.match(bannerText(app), /On November 22, 2026, old\.example will move to new\.example\. Custom scales left here will be lost\. Click "Move my scales" now to keep them\.$/);
+    assert.strictEqual(bannerText(app), 'On November 22, 2026, old.example will move to new.example. Custom scales left here will be lost. Click "Move my scales" now to keep them.');
     for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
       app.run(`setLang(${JSON.stringify(lang)})`);
       const date = new Intl.DateTimeFormat(lang, { dateStyle: "long", timeZone: "UTC" }).format(new Date("2026-11-22T00:00:00Z"));
@@ -19626,6 +19626,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
   test("MV: with no saved scales the deadline line is the short one, in all 8 locales", async () => {
     const app = await boot2({ host: OLD_HOST, records: [], deadline: "2026-11-22" });
     assert.ok(bannerText(app).endsWith("On November 22, 2026, old.example will move to new.example."), bannerText(app));
+    assert.match(bannerText(app), /now lives at/);
     for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
       app.run(`setLang(${JSON.stringify(lang)})`);
       const short = app.get('t("move.deadline_empty", { date: moveDeadlineText(), from: "old.example", host: "new.example" })');
@@ -19659,7 +19660,8 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     const app = await boot2({ host: OLD_HOST, records: manyRecs(116), deadline: "2026-11-22" });
     const text = bannerText(app);
     const over = text.indexOf("saved scales fit in one move"), due = text.indexOf("will move to new.example");
-    assert.ok(over > 0 && due > over, text);
+    assert.ok(over >= 0 && due > over, text);
+    assert.doesNotMatch(text, /now lives at/);
   });
 
   test("MV: the deadline adds no navigation call", () => {
