@@ -1,4 +1,4 @@
-# kills: U2d-9 (D18): Reset is disabled when its scope holds no pin
+# kills: U2d-9 (D18): the Reset labels name the scope, the phone label is always Reset spacing, and Neotone disables it
 # suite: node --test --test-name-pattern ^U2d-9. tests/editor_shell.test.js
 # fault: Reset stays enabled for a scope with nothing pinned.
 diff --git a/index.html b/index.html

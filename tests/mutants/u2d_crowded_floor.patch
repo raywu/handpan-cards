@@ -1,4 +1,4 @@
-# kills: U2d-3 (D16): the crowded check refuses a floor under LABEL_FLOOR_PT
+# kills: U2d-3 (D16): the crowded check is the final word; 6th cyclops with a bottom note is refused with the pt figures, the 12th bottom with 4 cyclops is accepted
 # suite: node --test --test-name-pattern ^U2d-3. tests/editor_shell.test.js
 # fault: The floor compare is inverted, so a crowded add is accepted.
 diff --git a/index.html b/index.html

@@ -1,4 +1,4 @@
-# kills: U2d-8 (D18): the selected note's zone beats the selected zone, which beats every pinned zone
+# kills: U2d-8 (D18): the reset scope is the selected note's zone, else the selected zone, else every pinned zone; a rim note or the ding gives none
 # suite: node --test --test-name-pattern ^U2d-8. tests/editor_shell.test.js
 # fault: The zone is tried before the selected note, so a selected note resets the wrong zone.
 diff --git a/index.html b/index.html

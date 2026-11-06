@@ -1,4 +1,4 @@
-# kills: U2d-9 (D18): Reset is disabled on Neotone
+# kills: U2d-9 (D18): the Reset labels name the scope, the phone label is always Reset spacing, and Neotone disables it
 # suite: node --test --test-name-pattern ^U2d-9. tests/editor_shell.test.js
 # fault: Neotone no longer disables Reset.
 diff --git a/index.html b/index.html

@@ -1,4 +1,4 @@
-# kills: U2d-2 (D16): the area caps are 12 rim, 6 cyclops, 12 bottom, and a full area refuses the add
+# kills: U2d-2 (D16): the caps are 12 rim, 6 cyclops, 12 bottom; the add that would pass one is refused with the exact copy, one under is accepted
 # suite: node --test --test-name-pattern ^U2d-2. tests/editor_shell.test.js
 # fault: The cap compare is off by one, so a full area takes one more note.
 diff --git a/index.html b/index.html
