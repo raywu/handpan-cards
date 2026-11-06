@@ -1,4 +1,4 @@
-# kills: U2c-11: a cross-zone swap trades zones and keeps each seat
+# kills: U2c-11 (D4): a cross-zone swap trades zones and keeps each seat when both stay legal
 # suite: node --test --test-name-pattern ^U2c-11. tests/editor_shell.test.js
 # fault: A swap overwrites one slot with the other's note and drops its own, a replace.
 diff --git a/index.html b/index.html

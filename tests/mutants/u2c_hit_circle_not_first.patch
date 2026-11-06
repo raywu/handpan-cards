@@ -1,4 +1,4 @@
-# kills: U2c-14: a point inside a drawn circle hits that note first
+# kills: U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; the 43 unit areas catch the rest; holding yields to the zone under the pointer
 # suite: node --test --test-name-pattern ^U2c-14. tests/editor_shell.test.js
 # fault: The 43 unit areas are tried before the drawn circle, so a tap on a drawn note picks a neighbour.
 diff --git a/index.html b/index.html

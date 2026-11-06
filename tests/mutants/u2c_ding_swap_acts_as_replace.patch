@@ -1,4 +1,4 @@
-# kills: U2c-10: a placed note swaps seats with the ding
+# kills: U2c-10 (D23): a tray note replaces the ding; a placed note swaps seats with it
 # suite: node --test --test-name-pattern ^U2c-10. tests/editor_shell.test.js
 # fault: A swap with the ding writes nothing to the ding, so the dropped note stays duplicated.
 diff --git a/index.html b/index.html
