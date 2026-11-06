@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17474,7 +17474,7 @@
+@@ -17474,7 +17474,7 @@ function renderMoveBanner() {
    const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
-   const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
+   const lines = MOVE_DEADLINE && info.carried > 0 ? [] : [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
    if (info.total > info.carried) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
 -  if (MOVE_DEADLINE) lines.push(t(info.carried > 0 ? "move.deadline" : "move.deadline_empty", { date: moveDeadlineText(), from: MOVE_FROM, host }));
 +  if (MOVE_DEADLINE) lines.push(t(info.carried > 0 ? "move.deadline_empty" : "move.deadline", { date: moveDeadlineText(), from: MOVE_FROM, host }));
