@@ -1,0 +1,15 @@
+# kills: MV: the deadline date is pinned to UTC, not the viewer zone
+# suite: node --test --test-name-pattern=MV..the.deadline.date.is.pinned tests/app.test.js
+# why: the date is formatted in the viewer zone, so a western viewer sees the day before.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17404,7 +17404,7 @@
+ const moveArrivalSearch = location.search, moveArrivalHash = location.hash;
+ const MOVE_DEADLINE = null;
+ function moveDeadlineText() {
+-  return new Intl.DateTimeFormat(uiLang(), { dateStyle: "long", timeZone: "UTC" }).format(new Date(MOVE_DEADLINE + "T00:00:00Z"));
++  return new Intl.DateTimeFormat(uiLang(), { dateStyle: "long" }).format(new Date(MOVE_DEADLINE + "T00:00:00Z"));
+ }
+ function moveUrl() {
+   const then = moveThenOk(moveArrivalHash) ? moveArrivalHash : "";

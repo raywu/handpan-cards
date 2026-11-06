@@ -1,0 +1,15 @@
+# kills: MV: with no saved scales the deadline line is the short one, in all 8 locales
+# suite: node --test --test-name-pattern=MV..with.no.saved.scales.the.deadline tests/app.test.js
+# why: the empty and non-empty banners get each other deadline line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17474,7 +17474,7 @@
+   const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
+   const lines = [info.carried > 0 ? t("move.banner", { n: info.carried, host }) : t("move.banner_empty", { host })];
+   if (info.total > info.carried) lines.push(t("move.banner_overcap", { n: info.carried, total: info.total }));
+-  if (MOVE_DEADLINE) lines.push(t(info.carried > 0 ? "move.deadline" : "move.deadline_empty", { date: moveDeadlineText(), from: MOVE_FROM, host }));
++  if (MOVE_DEADLINE) lines.push(t(info.carried > 0 ? "move.deadline_empty" : "move.deadline", { date: moveDeadlineText(), from: MOVE_FROM, host }));
+   moveBannerEl.setAttribute("aria-label", t("move.banner_label"));
+   moveBannerMsg.textContent = lines.join(" ");
+   moveBannerGo.textContent = info.carried > 0 ? t("move.go") : t("move.go_plain", { host });
