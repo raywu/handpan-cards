@@ -7403,26 +7403,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  /* `options.angles` is the bottom ring's free-placement option: an object
-   * whose only key is `bottom`, a list with one entry per bottom note
+  /* `options.angles` is the free-placement option: an object whose keys are
+   * `bottom` and `inner`, each a list with one entry per note of that ring
    * (ascending by id), each an integer multiple of ANGLE_STEP in [0, 360) or
    * null for the solved angle. Shape only is checked here; the floor needs
    * the geometry and the effective placement, so `solve` checks it through
-   * bottomClash. A missing, null or all-null option reads as absent. */
+   * bottomClash and innerClash. A missing, null or all-null list reads as
+   * absent, and both absent reads as no option. */
   var ANGLE_STEP = 5;
+  var ANGLE_RINGS = ["bottom", "inner"];
 
-  function readAngles(value, counts) {
-    if (value === undefined || value === null) return { ok: true, value: null };
-    if (typeof value !== "object" || isArray(value)) return badNote(value);
-    var key;
-    for (key in value) {
-      if (Object.prototype.hasOwnProperty.call(value, key) && key !== "bottom") {
-        return badNote(value);
-      }
-    }
-    var list = value.bottom;
+  function readAngleList(list, count) {
     if (list === undefined || list === null) return { ok: true, value: null };
-    if (!isArray(list) || list.length !== counts.bottom) return badNote(list);
+    if (!isArray(list) || list.length !== count) return badNote(list);
     var any = false;
     for (var i = 0; i < list.length; i += 1) {
       var entry = list[i];
@@ -7434,7 +7427,29 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       any = true;
     }
-    return { ok: true, value: any ? { bottom: list.slice() } : null };
+    return { ok: true, value: any ? list.slice() : null };
+  }
+
+  function readAngles(value, counts) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (typeof value !== "object" || isArray(value)) return badNote(value);
+    var key;
+    for (key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key) && ANGLE_RINGS.indexOf(key) < 0) {
+        return badNote(value);
+      }
+    }
+    var out = {};
+    var any = false;
+    for (var r = 0; r < ANGLE_RINGS.length; r += 1) {
+      var read = readAngleList(value[ANGLE_RINGS[r]], counts[ANGLE_RINGS[r]]);
+      if (!read.ok) return read;
+      if (read.value) {
+        out[ANGLE_RINGS[r]] = read.value;
+        any = true;
+      }
+    }
+    return { ok: true, value: any ? out : null };
   }
 
   /* The short way round between two angles, in degrees. */
@@ -7507,6 +7522,64 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return null;
   }
 
+  /* The inner fan spans INNER_SPAN degrees about top centre, so a pinned inner
+   * angle must lie within it. */
+  function innerInSpan(angle) {
+    return angleGap(angle, 90) <= INNER_SPAN / 2;
+  }
+
+  function innerFloor(geom, defaults) {
+    var count = defaults.length;
+    if (count < 2) return 0;
+    var touch = 2 * Math.asin(Math.min(1, geom.r_note / geom.inner)) / DEG;
+    var strict = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
+    return Math.min(strict, defaultBottomGap(defaults));
+  }
+
+  /* The inner ring's floor predicate, bottomClash's twin: `list` holds the
+   * effective angle of each inner note in ascending id order. An angle outside
+   * the fan, or a pinned one whose number would sit under INNER_CLEARANCE
+   * from the ding (the ding offset is not re-solved for a pin), is refused
+   * (the id is the note itself), another inner note under
+   * the floor, a rim or bottom circle it would meet, or the ding, is named. */
+  function innerClash(geom, fields, list, i) {
+    var ids = collect(fields).inner;
+    var angleOf = function (k) {
+      return list[k] === null || list[k] === undefined ? fields[ids[k]][4] : list[k];
+    };
+    var at = angleOf(i);
+    if (!innerInSpan(at)) return ids[i];
+    if (at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
+    var floor = innerFloor(geom, ids.map(function (id) { return fields[id][4]; }));
+    var k;
+    for (k = 0; k < ids.length; k += 1) {
+      if (k === i) continue;
+      if (angleGap(at, angleOf(k)) < floor - CLASH_EPS) return ids[k];
+    }
+    var mine = point(geom.inner, at);
+    var id;
+    for (id in fields) {
+      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+      var zone = fields[id][3];
+      var there;
+      var reach;
+      if (zone === "rim") {
+        there = point(geom.rim, fields[id][4]);
+        reach = geom.r_note;
+      } else if (zone === "bottom") {
+        there = point(geom.bottom, fields[id][4]);
+        reach = geom.r_bnote;
+      } else if (zone === "ding") {
+        there = [0, -geom.ding_dy];
+        reach = geom.r_ding;
+      } else {
+        continue;
+      }
+      if (distance(mine, there) < geom.r_note + reach - CLASH_EPS) return id;
+    }
+    return null;
+  }
+
   /* The layout corrections of one call: `seats` (readSeats) and `angles`
    * (readAngles). With no angles this IS readSeats' result. With angles it is
    * the seats value (or an empty one) carrying `angles`, the EFFECTIVE bottom
@@ -7521,29 +7594,48 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var angles = readAngles(anglesValue, counts);
     if (!angles.ok) return angles;
     if (!angles.value) return seats;
-    if (seats.value && seats.value.bottom && seats.value.bottom.length) {
+    var asked = angles.value;
+    if (asked.bottom && seats.value && seats.value.bottom && seats.value.bottom.length) {
       return badNote(seats.value.bottom);
+    }
+    if (asked.inner && seats.value && seats.value.inner && seats.value.inner.length) {
+      return badNote(seats.value.inner);
     }
     var home = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
     var plainHome = placeZones(counts, false, false, anchor);
     var geom = geometry(counts, home);
-    var effective = [];
-    var i;
-    for (i = 0; i < home.bottoms.length; i += 1) {
-      var asked = angles.value.bottom[i];
-      effective.push(asked === null ? home.bottoms[i] : asked);
-    }
+    var effective = function (given, solved) {
+      return solved.map(function (angle, i) { return given[i] === null ? angle : given[i]; });
+    };
+    var bottoms = asked.bottom ? effective(asked.bottom, home.bottoms) : null;
+    var inners = asked.inner ? effective(asked.inner, home.inners) : null;
     var homeFields = merge(source, zones, home, null);
-    for (i = 0; i < effective.length; i += 1) {
-      if (bottomClash(geom, homeFields, effective, i) !== null) return badNote(angles.value.bottom);
+    var i;
+    if (bottoms) {
+      var withInner = merge(source, zones, { rims: home.rims, inners: inners || home.inners, bottoms: home.bottoms }, null);
+      for (i = 0; i < bottoms.length; i += 1) {
+        if (bottomClash(geom, withInner, bottoms, i) !== null) return badNote(asked.bottom);
+      }
+    }
+    if (inners) {
+      var withBottom = merge(source, zones, { rims: home.rims, inners: home.inners, bottoms: bottoms || home.bottoms }, null);
+      for (i = 0; i < inners.length; i += 1) {
+        if (innerClash(geom, withBottom, inners, i) !== null) return badNote(asked.inner);
+      }
     }
     var out = {};
     var key;
     for (key in (seats.value || {})) {
       if (Object.prototype.hasOwnProperty.call(seats.value, key)) out[key] = seats.value[key];
     }
-    out.angles = effective;
-    out.home = plainHome.bottoms;
+    if (bottoms) {
+      out.angles = bottoms;
+      out.home = plainHome.bottoms;
+    }
+    if (inners) {
+      out.innerAngles = inners;
+      out.innerHome = plainHome.inners;
+    }
     return { ok: true, value: out };
   }
 
@@ -7552,8 +7644,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * default, so the note in seat s carries seat s's label (slot 5). Labels are
    * read from `source`, never from the fields being written. */
   function merge(source, zones, placed, seats, partners) {
-    if (seats && seats.angles) {
-      placed = { rims: placed.rims, inners: placed.inners, bottoms: seats.angles };
+    if (seats && (seats.angles || seats.innerAngles)) {
+      placed = { rims: placed.rims, inners: seats.innerAngles || placed.inners, bottoms: seats.angles || placed.bottoms };
     }
     var fields = {};
     var id;
@@ -7577,6 +7669,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
+    if (seats && seats.innerAngles && seats.innerHome) {
+      cyclicLabels(source, zones.inner, seats.innerHome, seats.innerAngles, fields);
+    }
     return fields;
   }
 
@@ -7730,20 +7825,127 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   /* MN3 (owner 2026-10-31): MIRROR BOTTOM reflects every bottom note across
-   * the vertical axis, hand-placed ones included. An explicit entry `a` of
-   * `options.angles` becomes `norm(180 - a)`; a null entry stays null, because
-   * `solve` already reflects it. The toggle writes this list; `solve` itself
-   * is unchanged, so a stored `angles` keeps meaning "the drawn angle".
-   * Returns null when there is no list. A multiple of 5 stays one. */
-  function reflectAngles(angles) {
-    var list = angles && typeof angles === "object" ? angles.bottom : null;
-    if (!isArray(list)) return null;
-    return { bottom: list.map(function (a) { return a === null ? null : norm(180 - a); }) };
+   * the vertical axis, hand-placed ones included, and MIRROR TOP does the same
+   * for the inner fan. An explicit entry `a` of the asked ring (`bottom`, the
+   * default, or `inner`) becomes `norm(180 - a)`; a null entry stays null,
+   * because `solve` already reflects it, and the other ring is kept as stored.
+   * The toggle writes this list; `solve` itself is unchanged, so a stored
+   * `angles` keeps meaning "the drawn angle". Returns null when there is no
+   * list. A multiple of 5 stays one. */
+  function reflectAngles(angles, ring) {
+    if (!angles || typeof angles !== "object") return null;
+    var which = ring === "inner" ? "inner" : "bottom";
+    var out = {};
+    var any = false;
+    for (var r = 0; r < ANGLE_RINGS.length; r += 1) {
+      var list = angles[ANGLE_RINGS[r]];
+      if (!isArray(list)) continue;
+      any = true;
+      out[ANGLE_RINGS[r]] = ANGLE_RINGS[r] === which
+        ? list.map(function (a) { return a === null ? null : norm(180 - a); })
+        : list.slice();
+    }
+    return any ? out : null;
+  }
+
+  /* ---- snapTarget: the editor's drag hit-test ----------------------------- *
+   * A pure function of the geometry, a point in the pan's own frame (R units,
+   * x right, y up, angles counter-clockwise from +x, the ding toward 270) and
+   * the current occupancy. `occupancy` is {ding, top, inner, bottom} for a
+   * generated pan - `top`, `inner` and `bottom` each a list of {id, angle} in
+   * seat order - or {ding, main, mutant} for Neotone, lists of ids by slot.
+   * Returns {zone, seat, angle?, occupiedBy?} or null off the pan. A drawn
+   * circle is tested first, then the ding, then the bands: past the shell the
+   * bottom band, inside it the inner fan, otherwise the rim. */
+  function nearestSeat(list, angle) {
+    var best = 0;
+    var bestGap = Infinity;
+    for (var i = 0; i < list.length; i += 1) {
+      var gap = angleGap(list[i].angle, angle);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function targetOf(zone, seat, id, angle) {
+    var out = { zone: zone, seat: seat };
+    if (angle !== undefined) out.angle = angle;
+    if (id !== null && id !== undefined) out.occupiedBy = id;
+    return out;
+  }
+
+  function snapGeneric(geom, pt, occupancy, allowInnerAngle) {
+    var rings = [
+      ["top", geom.rim || RIM_PLAIN, geom.r_note || R_NOTE_MAX, false],
+      ["inner", geom.inner || INNER_ORB, geom.r_note || R_NOTE_MAX, allowInnerAngle],
+      ["bottom", geom.bottom || BOTTOM_ORB, geom.r_bnote || R_BNOTE_MAX, true]
+    ];
+    var i;
+    var r;
+    for (r = 0; r < rings.length; r += 1) {
+      var list = occupancy[rings[r][0]] || [];
+      for (i = 0; i < list.length; i += 1) {
+        if (distance(pt, point(rings[r][1], list[i].angle)) <= rings[r][2]) {
+          return targetOf(rings[r][0], i, list[i].id, rings[r][3] ? list[i].angle : undefined);
+        }
+      }
+    }
+    if (distance(pt, [0, -geom.ding_dy]) <= (geom.r_ding || R_DING)) {
+      return targetOf("ding", 0, occupancy.ding);
+    }
+    var radius = Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1]);
+    var angle = norm(Math.round(Math.atan2(pt[1], pt[0]) / DEG / ANGLE_STEP) * ANGLE_STEP);
+    var zone;
+    if (radius > 1) {
+      if (radius > (geom.bottom || BOTTOM_ORB) + (geom.r_bnote || R_BNOTE_MAX) + EXT_PAD) return null;
+      zone = "bottom";
+    } else {
+      var rimOrb = geom.rim || RIM_PLAIN;
+      var innerOrb = geom.inner || INNER_ORB;
+      var onFan = (occupancy.inner || []).length > 0 || allowInnerAngle;
+      zone = onFan && radius < (rimOrb + innerOrb) / 2 && innerInSpan(norm(Math.atan2(pt[1], pt[0]) / DEG))
+        ? "inner" : "top";
+    }
+    var ring = occupancy[zone] || [];
+    var seat = ring.length ? nearestSeat(ring, norm(Math.atan2(pt[1], pt[0]) / DEG)) : 0;
+    var holder = ring.length ? ring[seat].id : null;
+    if (zone === "top") return targetOf("top", seat, holder);
+    if (zone === "inner" && !allowInnerAngle) return targetOf("inner", seat, holder);
+    var orbit = zone === "inner" ? geom.inner || INNER_ORB : geom.bottom || BOTTOM_ORB;
+    var reach = zone === "inner" ? geom.r_note || R_NOTE_MAX : geom.r_bnote || R_BNOTE_MAX;
+    var touch = 2 * Math.asin(Math.min(1, reach / orbit)) / DEG;
+    var floor = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
+    if (ring.length >= 2) floor = Math.min(floor, defaultBottomGap(ring.map(function (n) { return n.angle; })));
+    var crowd = angleGap(angle, ring[seat] ? ring[seat].angle : 0);
+    return targetOf(zone, seat, ring.length && crowd < floor - CLASH_EPS ? ring[seat].id : null, angle);
+  }
+
+  function snapProfile(pt, occupancy) {
+    var radius = Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1]);
+    if (radius <= PROFILE.ding.r) return targetOf("ding", 0, occupancy.ding);
+    if (radius > 1) return null;
+    var angle = norm(Math.atan2(pt[1], pt[0]) / DEG);
+    var slot = nearestSeat(PROFILE.angles.map(function (a) { return { angle: a }; }), angle);
+    var lens = radius < (PROFILE.main.orbit + lensCentre()) / 2;
+    var ids = (lens ? occupancy.mutant : occupancy.main) || [];
+    return targetOf(lens ? "mutant" : "main", slot, ids[slot]);
+  }
+
+  function snapTarget(geom, pt, options) {
+    var occupancy = (options && options.occupancy) || {};
+    var kind = options && options.panKind !== undefined ? options.panKind : "acoustic";
+    if (kind === "profile") return snapProfile(pt, occupancy);
+    if (kind !== "acoustic") throw new Error("snapTarget: unknown panKind " + String(kind));
+    return snapGeneric(geom, pt, occupancy, !!(options && options.allowInnerAngle));
   }
 
   HPE.layout = {
     solve: solve,
     reflectAngles: reflectAngles,
+    snapTarget: snapTarget,
     proposeProfile: proposeProfile,
     PROFILE: PROFILE,
     slotOrder: slotOrder,
@@ -7751,6 +7953,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     readSeats: readSeats,
     readAngles: readAngles,
     bottomClash: bottomClash,
+    innerClash: innerClash,
+    innerClearance: innerClearance,
     rimAngles: rimAngles,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
@@ -8839,6 +9043,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // record v5; an acoustic seed never leaves v6 / record 4.
   var PROFILE_VERSION = 7;
   var PROFILE_RECORD_VERSION = 5;
+  // v8 carries pinned inner angles (`ai-`) and is written only when one is
+  // pinned; its record is v6. A bottom-only seed stays at v6 / record 4.
+  var ANGLES_VERSION = 6;
+  var INNER_VERSION = 8;
+  var INNER_RECORD_VERSION = 6;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -8969,12 +9178,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // shortens the link back to what it was.
   var RINGS = ["rim", "inner", "bottom"];
 
-  function seatsField(seats, skipBottom) {
+  function seatsField(seats, skipBottom, skipInner) {
     if (!seats || typeof seats !== "object") return "";
     var parts = [];
     var any = false;
     for (var r = 0; r < RINGS.length; r += 1) {
-      var list = skipBottom && RINGS[r] === "bottom" ? null : seats[RINGS[r]];
+      var skipped = (skipBottom && RINGS[r] === "bottom") || (skipInner && RINGS[r] === "inner");
+      var list = skipped ? null : seats[RINGS[r]];
       if (list && list.length) {
         any = true;
         parts.push(list.join(","));
@@ -8987,8 +9197,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // v6: the bottom ring's angles, one entry per note, an empty entry for the
   // solved angle. Written only when some entry is set.
-  function anglesField(angles) {
-    var list = angles && typeof angles === "object" ? angles.bottom : null;
+  function anglesField(angles, ring) {
+    var list = angles && typeof angles === "object" ? angles[ring] : null;
     if (!Array.isArray(list)) return "";
     var any = false;
     var parts = list.map(function (a) {
@@ -9086,7 +9296,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
     var scale = scaleSegment(seed.fields);
     var profiled = opts.profile !== undefined && opts.profile !== null;
-    var wire = String(profiled ? PROFILE_VERSION : VERSION);
+    var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
+    var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
     var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
@@ -9107,10 +9318,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     else if (mirrors.top) option("mirror-top");
     else if (mirrors.bottom) option("mirror-bottom");
     if (opts.anchor === "between") option("between");
-    var angles = anglesField(opts.angles);
-    var seats = seatsField(opts.seats, angles !== "");
+    var angles = anglesField(opts.angles, "bottom");
+    var seats = seatsField(opts.seats, angles !== "", innerAt !== "");
     if (seats !== "") option("seats-" + seats);
     if (angles !== "") option("at-" + angles);
+    if (innerAt !== "") option("ai-" + innerAt);
     segs.push(checkHex(meaning.join(SEP)));
     var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
@@ -9196,7 +9408,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
   }
 
-  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6 };
+  var INNER_RE = /^ai-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
+  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6, ai: 7 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -9246,6 +9459,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (found < 0) return badNote(text);
         options.parent = found;
       } else if ((m = PAIR_RE.exec(o))) {
+        if (text.charAt(0) === "8") return err("PROFILE_CONFLICT", {});
         if (!profiled) return badNote(text);
         at = OPTION_ORDER.pair;
         pairs += 1;
@@ -9275,12 +9489,18 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var delta = readDeltaLine(o.slice(6), 3);
         if (!delta) return badNote(text);
         carry.delta = delta;
-      } else if (text.charAt(0) === "6" && (m = ANGLES_RE.exec(o))) {
+      } else if ((text.charAt(0) === "6" || text.charAt(0) === "8") && (m = ANGLES_RE.exec(o))) {
         at = OPTION_ORDER.at;
         var entries = m[1].split(",");
         var list = entries.map(function (e) { return e === "" ? null : Number(e); });
         if (list.every(function (a) { return a === null; })) return badNote(text);
         carry.angles = list;
+      } else if (text.charAt(0) === "8" && (m = INNER_RE.exec(o))) {
+        at = OPTION_ORDER.ai;
+        var innerEntries = m[1].split(",");
+        var innerList = innerEntries.map(function (e) { return e === "" ? null : Number(e); });
+        if (innerList.every(function (a) { return a === null; })) return badNote(text);
+        carry.inner = innerList;
       } else {
         return badNote(text);
       }
@@ -9288,6 +9508,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rank = at;
     }
     if (profiled && pairs !== 1) return badNote(text);
+    if (text.charAt(0) === "8" && !carry.inner) return badNote(text);
     var read = HPE.core.parseSeed(scaleString(scale), options);
     if (!read.ok && profiled && options.profile.rev === 2 &&
         (read.code === "PROFILE_NOTE_MISSING" || read.code === "PROFILE_FULL")) {
@@ -9319,10 +9540,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (!read.ok) return badNote(text);
       if (read.value) result.value.options.seats = read.value;
     }
-    if (carry.angles) {
-      var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
-      if (bottomSeats && bottomSeats.length) return badNote(text);
-      var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
+    if (carry.angles || carry.inner) {
+      var seatLists = (carry.delta && carry.delta.seats) || {};
+      if (carry.angles && seatLists.bottom && seatLists.bottom.length) return badNote(text);
+      if (carry.inner && seatLists.inner && seatLists.inner.length) return badNote(text);
+      var pinned = {};
+      if (carry.angles) pinned.bottom = carry.angles;
+      if (carry.inner) pinned.inner = carry.inner;
+      var angles = HPE.layout.readAngles(pinned, counts);
       if (!angles.ok || !angles.value) return badNote(text);
       var o = result.value.options;
       var mirrors = HPE.layout.resolveMirrors(o, {});
@@ -9330,7 +9555,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (o.seats) asked.seats = o.seats;
       var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
       if (!placed.ok) return badNote(text);
-      result.value.options.angles = { bottom: carry.angles };
+      result.value.options.angles = pinned;
     }
     return result;
   }
@@ -9358,6 +9583,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // while making every version this build knows decodable, so a v1 link
     // still opens in a v2 app and only a genuinely NEWER one is refused.
     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
+    if (INDEX[text.charAt(0)] === INNER_VERSION && NEWEST >= ANGLES_VERSION) newest = INNER_VERSION;
     var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
@@ -9407,7 +9633,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function recordVersion(seed) {
     var opts = (seed && seed.options) || {};
-    return opts.profile !== undefined && opts.profile !== null ? PROFILE_RECORD_VERSION : RECORD_VERSION;
+    if (opts.profile !== undefined && opts.profile !== null) return PROFILE_RECORD_VERSION;
+    return anglesField(opts.angles, "inner") !== "" ? INNER_RECORD_VERSION : RECORD_VERSION;
   }
 
   HPE.share = {
@@ -9416,6 +9643,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     recordVersion: recordVersion,
     VERSION: VERSION,
     PROFILE_VERSION: PROFILE_VERSION,
+    INNER_VERSION: INNER_VERSION,
+    INNER_RECORD_VERSION: INNER_RECORD_VERSION,
     RECORD_VERSION: RECORD_VERSION,
     PROFILE_RECORD_VERSION: PROFILE_RECORD_VERSION,
     CAPS: CAPS
