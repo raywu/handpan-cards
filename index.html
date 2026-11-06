@@ -11274,8 +11274,9 @@ function buildGenerated(text, options, guard) {
   // The bottom angles ride the same way (decision 5): carried past parseSeed,
   // handed to layout.solve beside the seats; slot 4 and the bottom labels come
   // back from them, so a seat keeps its number (rule N).
-  const bottomAngles = options && options.angles && Array.isArray(options.angles.bottom) &&
-    options.angles.bottom.some(a => a !== null && a !== undefined) ? options.angles : null;
+  const pinnedRing = ring => options && options.angles && Array.isArray(options.angles[ring]) &&
+    options.angles[ring].some(a => a !== null && a !== undefined);
+  const bottomAngles = pinnedRing("bottom") || pinnedRing("inner") ? options.angles : null;
   if (wanted !== null || bottomAngles !== null) {
     const o = built.value.options;
     const asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor };
@@ -11305,7 +11306,11 @@ function buildGenerated(text, options, guard) {
 // break, so it is DERIVED and never re-declared.
 const SHARE_VERSION = HPE.share.RECORD_VERSION;
 const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
-const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? PROFILE_RECORD_VERSION : SHARE_VERSION;
+const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
+const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
+  o.angles.inner.some(a => a !== null && a !== undefined);
+const recordVersionFor = (o, profiled) => profiled ? PROFILE_RECORD_VERSION : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
 const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
 // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
 // its own version check on the wire format (share.js step 2), so this is the
@@ -11625,14 +11630,17 @@ function savedMeaning(deckValue) {
     o.anchor === "between" ? "between" : "one",
     normalizedSeats,
     angles.value ? angles.value.bottom : null];
+  const inner = angles.value && angles.value.inner;
   if (o.profile) meaning.push(o.profile.map);
+  else if (inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
   return JSON.stringify(meaning);
 }
 function readSavedRecord(record) {
   if (!savedObject(record) || typeof record.s !== "string" || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");
   try {
     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
-    if (profiled !== (record.v === PROFILE_RECORD_VERSION) ||
+    const pinned = !profiled && innerPinned(record.o);
+    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled !== (record.v === PROFILE_RECORD_VERSION) || pinned) ||
         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
     let canonical = record.s;
     if (record.v < SHARE_VERSION) {
@@ -11930,7 +11938,7 @@ function savedCandidate(command) {
       !savedObject(candidate.record) || typeof candidate.record.s !== "string")
     return savedFailure("invalid", "staged-candidate");
   const profiled = !!candidate.deck.options.profile;
-  if (candidate.record.v !== (profiled ? PROFILE_RECORD_VERSION : SHARE_VERSION) ||
+  if (candidate.record.v !== recordVersionFor(candidate.deck.options, profiled) ||
       (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)))
     return savedFailure("invalid", "staged-candidate");
   const record = savedClone(candidate.record);
@@ -17601,10 +17609,7 @@ async function moveImport(code) {
     if (!savedObject(row) || typeof row.i !== "string" || row.i.length > 64) continue;
     const read = readSavedRecord(row.r);
     if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), read });
-    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
-      const { name, ...bare } = row.r.o;
-      if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
-    }
+    else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
   }
   const hidden = (Array.isArray(data.h) ? data.h : []).filter(x => typeof x === "string" && x.length <= 64).slice(0, 50);
   return commitSaved({ type: "move-import", collectionId: savedState.collectionId, items, hidden });
