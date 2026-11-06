@@ -500,13 +500,13 @@ test("a payload over CAPS is rejected", () => {
 test("an over-cap payload is rejected WITHOUT parsing anything", () => {
   // The cap is the first gate, so an over-cap string that also carries a newer
   // version byte is refused on length and never reaches the version check.
-  const over = String(share.PROFILE_VERSION + 1) +
+  const over = String(share.INNER_VERSION + 1) +
     new Array(share.CAPS.payload + 8).join("A");
   const r = share.decode(over);
   assert.equal(r.ok, false);
   assert.notEqual(r.code, "NEEDS_NEWER_APP",
     "the payload cap must be checked before the version byte");
-  const under = String(share.PROFILE_VERSION + 1) + new Array(40).join("A");
+  const under = String(share.INNER_VERSION + 1) + new Array(40).join("A");
   assert.equal(share.decode(under).code, "NEEDS_NEWER_APP",
     "an under-cap newer link must still say NEEDS_NEWER_APP");
 });
@@ -1226,10 +1226,10 @@ test("a v2 link is NEEDS_NEWER_APP to an app pinned at v1", () => {
 test("a version byte above this app's is still NEEDS_NEWER_APP", () => {
   const str = encoded(parsed(BASE));
   for (const bump of [1, 2, 8]) {
-    const newer = VERSION_CHARS.charAt(share.PROFILE_VERSION + bump) + str.slice(1);
+    const newer = VERSION_CHARS.charAt(share.INNER_VERSION + bump) + str.slice(1);
     const r = share.decode(newer);
     assert.equal(r.ok, false);
-    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.PROFILE_VERSION + bump}`);
+    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.INNER_VERSION + bump}`);
     assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
   }
 });
@@ -1775,7 +1775,7 @@ test("SV: the auto label is ignored on receipt and lies outside the checksum", (
   }
 });
 
-test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 8 or above is NEEDS_NEWER_APP", () => {
+test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 9 or above is NEEDS_NEWER_APP", () => {
   const rest = V5_BUILTINS[0][4].slice(2);
   for (const lead of ["5", "6"]) {
     for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
@@ -1784,7 +1784,7 @@ test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 8 or above is NEEDS_NEWER_
     }
     reject(lead + rest);
   }
-  for (const version of ["8", "9", "A", "z", "_"]) {
+  for (const version of ["9", "A", "z", "_"]) {
     const r = share.decode(version + "/" + rest);
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", version);
@@ -2050,7 +2050,7 @@ test("PD: packed v1 to v4 links with a palette above 5 keep the exact numeric BA
 test("PD: gate precedence is unchanged: cap, then version, then integrity, then payload", () => {
   const good = forgeN("6", PD_SEG, "*x", ["palette-8"]);
   assert.equal(share.decode(good).ok, true);
-  assert.equal(share.decode("8" + good.slice(1)).code, "NEEDS_NEWER_APP");
+  assert.equal(share.decode("9" + good.slice(1)).code, "NEEDS_NEWER_APP");
   reject(good.slice(0, -1) + (good.endsWith("0") ? "1" : "0"));
   reject(forgeN("6", PD_SEG, "*" + "x".repeat(4100), ["palette-8"]));
 });
@@ -2200,14 +2200,14 @@ test("PV: every single-character flip of a v7 link is refused (the auto label is
   }
 });
 
-test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v8 always is", () => {
+test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v9 always is", () => {
   const link = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
   const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
   off.core.PROFILE_ENABLED = false;
   const r = off.share.decode(link);
   assert.equal(r.ok, false);
   assert.equal(r.code, "NEEDS_NEWER_APP");
-  assert.equal(PSH.share.decode("8" + link.slice(1)).code, "NEEDS_NEWER_APP");
+  assert.equal(PSH.share.decode("9" + link.slice(1)).code, "NEEDS_NEWER_APP");
 });
 
 test("PV: v7 shapes the grammar forbids are BAD_NOTE, and the good crafted link decodes", () => {
@@ -2421,4 +2421,191 @@ test("PARITY: the golden's links all decode to the seed they encode, and stay at
     }
   }
   assert.ok(links >= 40);
+});
+
+/* ---- Scale editor (TRI-59, lane E): wire v8, ai-, record v6 ------------- */
+
+const PYGMY_INNERS = 2;
+const withInner = (seed, list, bottom) => {
+  const copy = host(seed);
+  const angles = { inner: list };
+  if (bottom) angles.bottom = bottom;
+  copy.options = Object.assign({}, copy.options, { angles });
+  return copy;
+};
+const pygmyInner = (list, extra) => forgeN("8", PYGMY_SEG, "*x", ["between"].concat(extra || [], ["ai-" + list]));
+const NO_BOTTOM = [null, null, null, null, null, null];
+
+test("SE: the constants are wire 8 / record 6 for a pinned inner angle, and wire 6 / record 4 stay the default", () => {
+  assert.equal(share.INNER_VERSION, 8);
+  assert.equal(share.INNER_RECORD_VERSION, 6);
+  assert.equal(share.VERSION, 6);
+  assert.equal(share.RECORD_VERSION, 4);
+});
+
+test("SE: a scale with no pinned inner angle encodes at v6 whatever the inner list says", () => {
+  const base = encoded(pygmyPlain());
+  assert.ok(base.startsWith("6/"));
+  for (const none of [{ inner: [null, null] }, { inner: [] }, { inner: null }, { bottom: NO_BOTTOM, inner: [null, null] }]) {
+    const seed = host(pygmyPlain());
+    seed.options = Object.assign({}, seed.options, { angles: none });
+    assert.equal(encoded(seed), base, JSON.stringify(none));
+  }
+  const bottomOnly = encoded(withAngles(pygmyPlain(), [null, 225, null, 20, null, 130]));
+  assert.ok(bottomOnly.startsWith("6/"), "bottom angles alone stay at v6");
+});
+
+test("SE: a pinned inner angle writes v8 with ai- as the last option", () => {
+  const link = encoded(withInner(pygmyPlain(), [110, null]));
+  assert.ok(link.startsWith("8/"), link);
+  assert.deepEqual(optionSegs(link), ["between", "ai-110,"]);
+  const both = encoded(withInner(pygmyPlain(), [null, 60], [null, 225, null, 20, null, 130]));
+  assert.deepEqual(optionSegs(both), ["between", "at-,225,,20,,130", "ai-,60"]);
+  const dressed = encoded(withInner(seedNew(PYGMY_SCALE, { palette: 2, parent: 9, mirror: true, mirrorBottom: false, anchor: "between", name: "My Pan" }), [110, null]));
+  const segs = optionSegs(dressed);
+  assert.equal(segs[segs.length - 1], "ai-110,");
+  assert.equal(segs[0], "palette-3");
+  assert.ok(dressed.startsWith("8/"));
+});
+
+test("SE: an inner seats list is never written beside pinned inner angles", () => {
+  const seated = withSeats(withInner(pygmyPlain(), [110, null]), { inner: [1, 0], rim: identity(9).reverse() });
+  const link = encoded(seated);
+  const seatsSeg = optionSegs(link).find((x) => x.startsWith("seats-"));
+  assert.equal(seatsSeg, `seats-${identity(9).reverse().join(",")};;`);
+  assert.equal(encoded(withSeats(withInner(pygmyPlain(), [110, null]), { inner: [1, 0] })), encoded(withInner(pygmyPlain(), [110, null])));
+  assert.ok(optionSegs(encoded(withSeats(pygmyPlain(), { inner: [1, 0] }))).some((x) => x === "seats-;1,0;"));
+});
+
+test("SE: a v8 link round-trips: encode, decode and the seed comes back with the same angles", () => {
+  for (const seed of [
+    withInner(pygmyPlain(), [110, null]),
+    withInner(pygmyPlain(), [null, 60]),
+    withInner(pygmyPlain(), [105, 50]),
+    withInner(pygmyPlain(), [null, 60], [null, 225, null, 20, null, 130]),
+    withInner(seedNew(PYGMY_SCALE, { palette: 2, mirror: true, anchor: "between", name: "My Pan" }), [null, 110]),
+  ]) {
+    const link = encoded(seed);
+    const back = share.decode(link);
+    assert.equal(back.ok, true, `${link}: ${back.reason}`);
+    assert.deepStrictEqual(host(back.value.options.angles), host(seed.options.angles));
+    assert.equal(encoded(host(back.value)), link, "re-encoding is byte-identical");
+  }
+});
+
+test("SE: recordVersion is 6 for a pinned inner angle, 4 without, 5 for a profile", () => {
+  assert.equal(share.recordVersion(withInner(pygmyPlain(), [110, null])), 6);
+  assert.equal(share.recordVersion(withInner(pygmyPlain(), [null, null])), 4);
+  assert.equal(share.recordVersion(pygmyPlain()), 4);
+  assert.equal(share.recordVersion(withAngles(pygmyPlain(), [null, 225, null, 20, null, 130])), 4);
+  assert.equal(share.recordVersion(withInner(pygmyPlain(), [null, 60], [null, 225, null, 20, null, 130])), 6);
+  assert.equal(share.recordVersion(pSeed(PSEEDS.kurd)), 5);
+  assert.equal(PSH.share.recordVersion(pSeed(PSEEDS.kurd)), 5);
+});
+
+test("SE: a v8 link with ai- opens; with at- as well it opens; ai- alone or after at- is in order", () => {
+  const r = share.decode(pygmyInner("110,"));
+  assert.equal(r.ok, true, r.reason);
+  assert.deepStrictEqual(host(r.value.options.angles), { inner: [110, null] });
+  const both = share.decode(forgeN("8", PYGMY_SEG, "*x", ["between", "at-,225,,20,,130", "ai-,60"]));
+  assert.equal(both.ok, true, both.reason);
+  assert.deepStrictEqual(host(both.value.options.angles), { bottom: [null, 225, null, 20, null, 130], inner: [null, 60] });
+  const dressed = share.decode(forgeN("8", PYGMY_SEG, "*x", ["palette-3", "mirror-top", "between", "ai-,110"]));
+  assert.equal(dressed.ok, true, dressed.reason);
+});
+
+test("SE: a v8 link without ai- is BAD_NOTE, as is an at- only v8 link", () => {
+  reject(forgeN("8", PYGMY_SEG, "*x", ["between"]));
+  reject(forgeN("8", PYGMY_SEG, "*x", ["between", "at-,225,,20,,130"]));
+  reject(forgeN("8", PYGMY_SEG, "*x", []));
+});
+
+test("SE: ai- is BAD_NOTE on versions 5, 6 and 7, out of order, repeated or with nothing set", () => {
+  assert.equal(share.decode(pygmyInner("110,")).ok, true, "the control opens");
+  for (const version of ["5", "6", "7"]) {
+    reject(forgeN(version, PYGMY_SEG, "*x", ["between", "ai-110,"]));
+  }
+  reject(forgeN("8", PYGMY_SEG, "*x", ["ai-110,", "between"]));
+  reject(forgeN("8", PYGMY_SEG, "*x", ["between", "ai-110,", "at-,225,,20,,130"]));
+  reject(forgeN("8", PYGMY_SEG, "*x", ["between", "ai-110,", "ai-110,"]));
+  reject(forgeN("8", PYGMY_SEG, "*x", ["between", "seats-;;", "ai-110,"]));
+  reject(pygmyInner(","));
+  reject(pygmyInner(""));
+});
+
+test("SE: at- is read on v8, and still refused on v7", () => {
+  const at = "at-,225,,20,,130";
+  assert.equal(share.decode(forgeN("8", PYGMY_SEG, "*x", ["between", at, "ai-110,"])).ok, true);
+  assert.equal(share.decode(forgeN("6", PYGMY_SEG, "*x", ["between", at])).ok, true);
+  reject(forgeN("7", PYGMY_SEG, "*x", ["between", at]));
+});
+
+test("SE: an ai- list with a wrong length, a bad entry, a leading zero or an out-of-fan angle is BAD_NOTE", () => {
+  const bads = ["110", "110,,", ",,", "111,", "360,", "0110,", "05,", "x,", "-5,", "110.5,", "185,", "270,", "355,",
+    "0,0", "95,50", "95,", " 110,"];
+  for (const list of bads) {
+    const r = share.decode(pygmyInner(list));
+    assert.equal(r.ok, false, list);
+    assert.equal(r.code, "BAD_NOTE", list);
+  }
+  for (const list of ["110,", ",60", "105,50", "0,90", "180,90", ",5".replace(",5", "5,100")]) {
+    assert.equal(share.decode(pygmyInner(list)).ok, true, list);
+  }
+});
+
+test("SE: an inner seats list beside ai- is BAD_NOTE, a rim seats list is legal", () => {
+  reject(pygmyInner("110,", ["seats-;1,0;"]));
+  reject(pygmyInner("110,", ["seats-8,7,6,5,4,3,2,1,0;1,0;"]));
+  assert.equal(share.decode(pygmyInner("110,", ["seats-8,7,6,5,4,3,2,1,0;;"])).ok, true);
+  assert.equal(share.decode(pygmyInner("110,", ["seats-;;5,4,3,2,1,0"])).ok, true);
+  reject(forgeN("8", PYGMY_SEG, "*x", ["between", "seats-;;5,4,3,2,1,0", "at-,,,20,,", "ai-110,"]));
+});
+
+test("SE: ai- on a pan with no inner notes is BAD_NOTE", () => {
+  reject(forgeN("8", "(D3)_A3_C4_D4_E4_F4_G4_A4_C5", "*x", ["ai-110"]));
+});
+
+test("SE: pair- on a v8 link is PROFILE_CONFLICT, and v8 reads whatever PROFILE_ENABLED says", () => {
+  const conflict = share.decode(forgeN("8", KURD_SEG, "*x", [KURD_PAIR, "ai-110"]));
+  assert.equal(conflict.ok, false);
+  assert.equal(conflict.code, "PROFILE_CONFLICT");
+  const on = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+  const off = engineAtVersion(6);
+  on.core.PROFILE_ENABLED = true;
+  const link = pygmyInner("110,");
+  assert.equal(on.share.decode(link).ok, true, "enabled");
+  assert.equal(off.decode(link).ok, true, "disabled");
+  const v7 = encoded(pygmyPlain()).replace(/^6/, "7");
+  assert.equal(off.decode(v7).code, "NEEDS_NEWER_APP", "v7 stays gated by the flag");
+});
+
+test("SE: version 9 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8", () => {
+  const link = pygmyInner("110,");
+  for (const lead of ["9", "A", "B", "z"]) {
+    const r = share.decode(lead + link.slice(1));
+    assert.equal(r.ok, false);
+    assert.equal(r.code, "NEEDS_NEWER_APP", lead);
+  }
+  for (const pinned of [5, 4]) {
+    assert.equal(engineAtVersion(pinned).decode(link).code, "NEEDS_NEWER_APP", `pinned at ${pinned}`);
+  }
+  assert.equal(engineAtVersion(6).decode(link).ok, true);
+});
+
+test("SE: a v8 check is computed over the byte 8, and changing the inner angle changes it", () => {
+  const link = pygmyInner("110,");
+  assert.equal(share.decode(link).ok, true);
+  reject(link.slice(0, -1) + (link.endsWith("0") ? "1" : "0"));
+  assert.notEqual(pygmyInner("110,").split("/").pop(), pygmyInner("115,").split("/").pop());
+  const asSix = "6" + link.slice(1);
+  reject(asSix);
+});
+
+test("SE: a pinned inner angle clashing with the other inner note's floor is BAD_NOTE, never clamped", () => {
+  reject(pygmyInner("95,"));
+  assert.equal(share.decode(pygmyInner("105,")).ok, true, "53 from the other note, the floor under BETWEEN is 50");
+  assert.equal(share.decode(pygmyInner("110,")).ok, true);
+  const refused = share.decode(pygmyInner("95,50"));
+  assert.equal(refused.ok, false);
+  assert.equal(refused.code, "BAD_NOTE");
 });

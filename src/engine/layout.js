@@ -524,26 +524,19 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
-  /* `options.angles` is the bottom ring's free-placement option: an object
-   * whose only key is `bottom`, a list with one entry per bottom note
+  /* `options.angles` is the free-placement option: an object whose keys are
+   * `bottom` and `inner`, each a list with one entry per note of that ring
    * (ascending by id), each an integer multiple of ANGLE_STEP in [0, 360) or
    * null for the solved angle. Shape only is checked here; the floor needs
    * the geometry and the effective placement, so `solve` checks it through
-   * bottomClash. A missing, null or all-null option reads as absent. */
+   * bottomClash and innerClash. A missing, null or all-null list reads as
+   * absent, and both absent reads as no option. */
   var ANGLE_STEP = 5;
+  var ANGLE_RINGS = ["bottom", "inner"];
 
-  function readAngles(value, counts) {
-    if (value === undefined || value === null) return { ok: true, value: null };
-    if (typeof value !== "object" || isArray(value)) return badNote(value);
-    var key;
-    for (key in value) {
-      if (Object.prototype.hasOwnProperty.call(value, key) && key !== "bottom") {
-        return badNote(value);
-      }
-    }
-    var list = value.bottom;
+  function readAngleList(list, count) {
     if (list === undefined || list === null) return { ok: true, value: null };
-    if (!isArray(list) || list.length !== counts.bottom) return badNote(list);
+    if (!isArray(list) || list.length !== count) return badNote(list);
     var any = false;
     for (var i = 0; i < list.length; i += 1) {
       var entry = list[i];
@@ -555,7 +548,29 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
       any = true;
     }
-    return { ok: true, value: any ? { bottom: list.slice() } : null };
+    return { ok: true, value: any ? list.slice() : null };
+  }
+
+  function readAngles(value, counts) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (typeof value !== "object" || isArray(value)) return badNote(value);
+    var key;
+    for (key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key) && ANGLE_RINGS.indexOf(key) < 0) {
+        return badNote(value);
+      }
+    }
+    var out = {};
+    var any = false;
+    for (var r = 0; r < ANGLE_RINGS.length; r += 1) {
+      var read = readAngleList(value[ANGLE_RINGS[r]], counts[ANGLE_RINGS[r]]);
+      if (!read.ok) return read;
+      if (read.value) {
+        out[ANGLE_RINGS[r]] = read.value;
+        any = true;
+      }
+    }
+    return { ok: true, value: any ? out : null };
   }
 
   /* The short way round between two angles, in degrees. */
@@ -628,6 +643,61 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return null;
   }
 
+  /* The inner fan spans INNER_SPAN degrees about top centre, so a pinned inner
+   * angle must lie within it. */
+  function innerInSpan(angle) {
+    return angleGap(angle, 90) <= INNER_SPAN / 2;
+  }
+
+  function innerFloor(geom, defaults) {
+    var count = defaults.length;
+    if (count < 2) return 0;
+    var touch = 2 * Math.asin(Math.min(1, geom.r_note / geom.inner)) / DEG;
+    var strict = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
+    return Math.min(strict, defaultBottomGap(defaults));
+  }
+
+  /* The inner ring's floor predicate, bottomClash's twin: `list` holds the
+   * effective angle of each inner note in ascending id order. An angle outside
+   * the fan is refused (the id is the note itself), another inner note under
+   * the floor, a rim or bottom circle it would meet, or the ding, is named. */
+  function innerClash(geom, fields, list, i) {
+    var ids = collect(fields).inner;
+    var angleOf = function (k) {
+      return list[k] === null || list[k] === undefined ? fields[ids[k]][4] : list[k];
+    };
+    var at = angleOf(i);
+    if (!innerInSpan(at)) return ids[i];
+    var floor = innerFloor(geom, ids.map(function (id) { return fields[id][4]; }));
+    var k;
+    for (k = 0; k < ids.length; k += 1) {
+      if (k === i) continue;
+      if (angleGap(at, angleOf(k)) < floor - CLASH_EPS) return ids[k];
+    }
+    var mine = point(geom.inner, at);
+    var id;
+    for (id in fields) {
+      if (!Object.prototype.hasOwnProperty.call(fields, id)) continue;
+      var zone = fields[id][3];
+      var there;
+      var reach;
+      if (zone === "rim") {
+        there = point(geom.rim, fields[id][4]);
+        reach = geom.r_note;
+      } else if (zone === "bottom") {
+        there = point(geom.bottom, fields[id][4]);
+        reach = geom.r_bnote;
+      } else if (zone === "ding") {
+        there = [0, -geom.ding_dy];
+        reach = geom.r_ding;
+      } else {
+        continue;
+      }
+      if (distance(mine, there) < geom.r_note + reach - CLASH_EPS) return id;
+    }
+    return null;
+  }
+
   /* The layout corrections of one call: `seats` (readSeats) and `angles`
    * (readAngles). With no angles this IS readSeats' result. With angles it is
    * the seats value (or an empty one) carrying `angles`, the EFFECTIVE bottom
@@ -642,29 +712,48 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var angles = readAngles(anglesValue, counts);
     if (!angles.ok) return angles;
     if (!angles.value) return seats;
-    if (seats.value && seats.value.bottom && seats.value.bottom.length) {
+    var asked = angles.value;
+    if (asked.bottom && seats.value && seats.value.bottom && seats.value.bottom.length) {
       return badNote(seats.value.bottom);
+    }
+    if (asked.inner && seats.value && seats.value.inner && seats.value.inner.length) {
+      return badNote(seats.value.inner);
     }
     var home = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
     var plainHome = placeZones(counts, false, false, anchor);
     var geom = geometry(counts, home);
-    var effective = [];
-    var i;
-    for (i = 0; i < home.bottoms.length; i += 1) {
-      var asked = angles.value.bottom[i];
-      effective.push(asked === null ? home.bottoms[i] : asked);
-    }
+    var effective = function (given, solved) {
+      return solved.map(function (angle, i) { return given[i] === null ? angle : given[i]; });
+    };
+    var bottoms = asked.bottom ? effective(asked.bottom, home.bottoms) : null;
+    var inners = asked.inner ? effective(asked.inner, home.inners) : null;
     var homeFields = merge(source, zones, home, null);
-    for (i = 0; i < effective.length; i += 1) {
-      if (bottomClash(geom, homeFields, effective, i) !== null) return badNote(angles.value.bottom);
+    var i;
+    if (bottoms) {
+      var withInner = merge(source, zones, { rims: home.rims, inners: inners || home.inners, bottoms: home.bottoms }, null);
+      for (i = 0; i < bottoms.length; i += 1) {
+        if (bottomClash(geom, withInner, bottoms, i) !== null) return badNote(asked.bottom);
+      }
+    }
+    if (inners) {
+      var withBottom = merge(source, zones, { rims: home.rims, inners: home.inners, bottoms: bottoms || home.bottoms }, null);
+      for (i = 0; i < inners.length; i += 1) {
+        if (innerClash(geom, withBottom, inners, i) !== null) return badNote(asked.inner);
+      }
     }
     var out = {};
     var key;
     for (key in (seats.value || {})) {
       if (Object.prototype.hasOwnProperty.call(seats.value, key)) out[key] = seats.value[key];
     }
-    out.angles = effective;
-    out.home = plainHome.bottoms;
+    if (bottoms) {
+      out.angles = bottoms;
+      out.home = plainHome.bottoms;
+    }
+    if (inners) {
+      out.innerAngles = inners;
+      out.innerHome = plainHome.inners;
+    }
     return { ok: true, value: out };
   }
 
@@ -673,8 +762,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * default, so the note in seat s carries seat s's label (slot 5). Labels are
    * read from `source`, never from the fields being written. */
   function merge(source, zones, placed, seats, partners) {
-    if (seats && seats.angles) {
-      placed = { rims: placed.rims, inners: placed.inners, bottoms: seats.angles };
+    if (seats && (seats.angles || seats.innerAngles)) {
+      placed = { rims: placed.rims, inners: seats.innerAngles || placed.inners, bottoms: seats.angles || placed.bottoms };
     }
     var fields = {};
     var id;
@@ -698,6 +787,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }
     }
     if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
+    if (seats && seats.innerAngles && seats.innerHome) {
+      cyclicLabels(source, zones.inner, seats.innerHome, seats.innerAngles, fields);
+    }
     return fields;
   }
 
@@ -851,20 +943,125 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   /* MN3 (owner 2026-10-31): MIRROR BOTTOM reflects every bottom note across
-   * the vertical axis, hand-placed ones included. An explicit entry `a` of
-   * `options.angles` becomes `norm(180 - a)`; a null entry stays null, because
-   * `solve` already reflects it. The toggle writes this list; `solve` itself
-   * is unchanged, so a stored `angles` keeps meaning "the drawn angle".
-   * Returns null when there is no list. A multiple of 5 stays one. */
-  function reflectAngles(angles) {
-    var list = angles && typeof angles === "object" ? angles.bottom : null;
-    if (!isArray(list)) return null;
-    return { bottom: list.map(function (a) { return a === null ? null : norm(180 - a); }) };
+   * the vertical axis, hand-placed ones included, and MIRROR TOP does the same
+   * for the inner fan. An explicit entry `a` of the asked ring (`bottom`, the
+   * default, or `inner`) becomes `norm(180 - a)`; a null entry stays null,
+   * because `solve` already reflects it, and the other ring is kept as stored.
+   * The toggle writes this list; `solve` itself is unchanged, so a stored
+   * `angles` keeps meaning "the drawn angle". Returns null when there is no
+   * list. A multiple of 5 stays one. */
+  function reflectAngles(angles, ring) {
+    if (!angles || typeof angles !== "object") return null;
+    var which = ring === "inner" ? "inner" : "bottom";
+    var out = {};
+    var any = false;
+    for (var r = 0; r < ANGLE_RINGS.length; r += 1) {
+      var list = angles[ANGLE_RINGS[r]];
+      if (!isArray(list)) continue;
+      any = true;
+      out[ANGLE_RINGS[r]] = ANGLE_RINGS[r] === which
+        ? list.map(function (a) { return a === null ? null : norm(180 - a); })
+        : list.slice();
+    }
+    return any ? out : null;
+  }
+
+  /* ---- snapTarget: the editor's drag hit-test ----------------------------- *
+   * A pure function of the geometry, a point in the pan's own frame (R units,
+   * x right, y up, angles counter-clockwise from +x, the ding toward 270) and
+   * the current occupancy. `occupancy` is {ding, top, inner, bottom} for a
+   * generated pan - `top`, `inner` and `bottom` each a list of {id, angle} in
+   * seat order - or {ding, main, mutant} for Neotone, lists of ids by slot.
+   * Returns {zone, seat, angle?, occupiedBy?} or null off the pan. A drawn
+   * circle is tested first, then the ding, then the bands: past the shell the
+   * bottom band, inside it the inner fan, otherwise the rim. */
+  function nearestSeat(list, angle) {
+    var best = 0;
+    var bestGap = Infinity;
+    for (var i = 0; i < list.length; i += 1) {
+      var gap = angleGap(list[i].angle, angle);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function targetOf(zone, seat, id, angle) {
+    var out = { zone: zone, seat: seat };
+    if (angle !== undefined) out.angle = angle;
+    if (id !== null && id !== undefined) out.occupiedBy = id;
+    return out;
+  }
+
+  function snapGeneric(geom, pt, occupancy, allowInnerAngle) {
+    var rings = [
+      ["top", geom.rim || RIM_PLAIN, geom.r_note || R_NOTE_MAX, false],
+      ["inner", geom.inner || INNER_ORB, geom.r_note || R_NOTE_MAX, allowInnerAngle],
+      ["bottom", geom.bottom || BOTTOM_ORB, geom.r_bnote || R_BNOTE_MAX, true]
+    ];
+    var i;
+    var r;
+    for (r = 0; r < rings.length; r += 1) {
+      var list = occupancy[rings[r][0]] || [];
+      for (i = 0; i < list.length; i += 1) {
+        if (distance(pt, point(rings[r][1], list[i].angle)) <= rings[r][2]) {
+          return targetOf(rings[r][0], i, list[i].id, rings[r][3] ? list[i].angle : undefined);
+        }
+      }
+    }
+    if (distance(pt, [0, -geom.ding_dy]) <= (geom.r_ding || R_DING)) {
+      return targetOf("ding", 0, occupancy.ding);
+    }
+    var radius = Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1]);
+    var angle = norm(Math.round(Math.atan2(pt[1], pt[0]) / DEG / ANGLE_STEP) * ANGLE_STEP);
+    var zone;
+    if (radius > 1) {
+      if (radius > (geom.bottom || BOTTOM_ORB) + (geom.r_bnote || R_BNOTE_MAX) + EXT_PAD) return null;
+      zone = "bottom";
+    } else {
+      var rimOrb = geom.rim || RIM_PLAIN;
+      var innerOrb = geom.inner || INNER_ORB;
+      var onFan = (occupancy.inner || []).length > 0 || allowInnerAngle;
+      zone = onFan && radius < (rimOrb + innerOrb) / 2 && innerInSpan(norm(Math.atan2(pt[1], pt[0]) / DEG))
+        ? "inner" : "top";
+    }
+    var ring = occupancy[zone] || [];
+    var seat = ring.length ? nearestSeat(ring, norm(Math.atan2(pt[1], pt[0]) / DEG)) : 0;
+    var holder = ring.length ? ring[seat].id : null;
+    if (zone === "top") return targetOf("top", seat, holder);
+    if (zone === "inner" && !allowInnerAngle) return targetOf("inner", seat, holder);
+    var orbit = zone === "inner" ? geom.inner || INNER_ORB : geom.bottom || BOTTOM_ORB;
+    var reach = zone === "inner" ? geom.r_note || R_NOTE_MAX : geom.r_bnote || R_BNOTE_MAX;
+    var touch = 2 * Math.asin(Math.min(1, reach / orbit)) / DEG;
+    var floor = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
+    if (ring.length >= 2) floor = Math.min(floor, defaultBottomGap(ring.map(function (n) { return n.angle; })));
+    var crowd = angleGap(angle, ring[seat] ? ring[seat].angle : 0);
+    return targetOf(zone, seat, ring.length && crowd < floor - CLASH_EPS ? ring[seat].id : null, angle);
+  }
+
+  function snapProfile(pt, occupancy) {
+    var radius = Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1]);
+    if (radius <= PROFILE.ding.r) return targetOf("ding", 0, occupancy.ding);
+    if (radius > 1) return null;
+    var angle = norm(Math.atan2(pt[1], pt[0]) / DEG);
+    var slot = nearestSeat(PROFILE.angles.map(function (a) { return { angle: a }; }), angle);
+    var lens = radius < (PROFILE.main.orbit + lensCentre()) / 2;
+    var ids = (lens ? occupancy.mutant : occupancy.main) || [];
+    return targetOf(lens ? "mutant" : "main", slot, ids[slot]);
+  }
+
+  function snapTarget(geom, pt, options) {
+    var occupancy = (options && options.occupancy) || {};
+    if (options && options.panKind === "neotone") return snapProfile(pt, occupancy);
+    return snapGeneric(geom, pt, occupancy, !!(options && options.allowInnerAngle));
   }
 
   HPE.layout = {
     solve: solve,
     reflectAngles: reflectAngles,
+    snapTarget: snapTarget,
     proposeProfile: proposeProfile,
     PROFILE: PROFILE,
     slotOrder: slotOrder,
@@ -872,6 +1069,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     readSeats: readSeats,
     readAngles: readAngles,
     bottomClash: bottomClash,
+    innerClash: innerClash,
     rimAngles: rimAngles,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
