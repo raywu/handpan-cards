@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15235,7 +15235,7 @@ const editorEmptyModel = () => ({ fields: {}, options: {}, pins: [] });
- const editorIsEmpty = (m) => !Object.keys(m.fields).length;
+@@ -15384,7 +15384,7 @@ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
  const editorCanSave = (m) => !editorIsEmpty(m);
  const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
--const editorIsDirty = (base, m) => JSON.stringify(base) !== JSON.stringify(m);
+ const editorBare = (m) => { const { view, ...rest } = m; return rest; };
+-const editorIsDirty = (base, m) => JSON.stringify(editorBare(base)) !== JSON.stringify(editorBare(m));
 +const editorIsDirty = (base, m) => false;
  const editorLineText = (m) => (editorIsEmpty(m) ? "" : HPE.core.formatTyped(m.fields, m.options.seats));
  const editorProfileFor = (fields) => {

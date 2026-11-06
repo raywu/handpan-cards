@@ -1,0 +1,15 @@
+# kills: U2c-14: a point inside a drawn circle hits that note first
+# suite: node --test --test-name-pattern ^U2c-14. tests/editor_shell.test.js
+# fault: The 43 unit areas are tried before the drawn circle, so a tap on a drawn note picks a neighbour.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15344,7 +15344,7 @@ function editorHitAt(solved, pt, holding) {
+   }
+   const nearest = (list) => list.sort((x, y) => toward(x.c) - toward(y.c))[0];
+   const drawn = nearest(spots.filter((s) => toward(s.c) <= s.r));
+-  if (drawn) return drawn.ref;
++  if (false) return drawn.ref;
+   if (!holding) {
+     const wide = nearest(spots.filter((s) => s.wide && toward(s.c) <= EDITOR_HIT_AREA));
+     if (wide) return wide.ref;

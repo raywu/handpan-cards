@@ -187,7 +187,7 @@ test("U2c-2 (U2a nit 3): pins are oldest first; an exchange pins the unpinned no
   withModel(a, SCALE, `{ angles: { inner: [null, 55] } }`);
   assert.deepStrictEqual(plain(a.get(`editorSwapSeats(__m, "inner", 0, 1).value.pins`)), [{ ring: "inner", i: 1 }, { ring: "inner", i: 0 }]);
   withModel(a, SCALE, `{ seats: { inner: [1, 0] } }`);
-  const folded = plain(a.get(`editorSetAngle(__m, "inner", 0, 125).value`));
+  const folded = plain(a.get(`editorSetAngle(__m, "inner", 0, 60).value`));
   assert.deepStrictEqual(folded.pins, [{ ring: "inner", i: 1 }, { ring: "inner", i: 0 }], "the fold pins every note, the one set is newest");
   assert.strictEqual(folded.options.seats, undefined, "a fold drops the seat order");
 });
@@ -281,11 +281,12 @@ test("U2c-10 (D23): a tray note replaces the ding; a placed note swaps seats wit
   assert.strictEqual(rep.G3.zone, "ding");
   assert.strictEqual(rep.D3, undefined);
   assert.strictEqual(rep.C4.angle, 315, "the rim did not move");
-  const swap = solvedOf(a, `editorSwapNames(__m, { ring: "rim", i: 2 }, { ring: "ding", i: 0 }).value`);
-  assert.strictEqual(swap.C4.zone, "ding", "the dropped note is the ding");
-  assert.strictEqual(swap.D3.zone, "rim");
-  assert.strictEqual(swap.D3.angle, 315, "the old root took the dropped note's seat");
-  assert.strictEqual(swap.D4.angle, 180);
+  withModel(a, "[A2] " + SCALE);
+  const swap = solvedOf(a, `editorSwapNames(__m, { ring: "bottom", i: 0 }, { ring: "ding", i: 0 }).value`);
+  assert.strictEqual(swap.A2.zone, "ding", "the dropped note is the ding");
+  assert.strictEqual(swap.D3.zone, "bottom");
+  assert.strictEqual(swap.D3.angle, 90, "the old root took the dropped note's seat");
+  assert.strictEqual(plain(a.get(`editorSwapNames(__m, { ring: "rim", i: 2 }, { ring: "ding", i: 0 })`)).ok, false, "a ding above a rim note is not legal, the engine refuses");
 });
 
 test("U2c-11 (D4): a cross-zone swap trades zones and keeps each seat when both stay legal", () => {
@@ -325,8 +326,9 @@ test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; t
   const hit = (x, y, holding = false) => plain(a.get(`editorHitAt(__v, [${x}, ${y}], ${holding})`));
   const bottomAt = plain(a.get(`(() => { const id = ringIds(__v.fields, "bottom")[0]; const ang = __v.fields[id][4] * Math.PI / 180; return [__g.bottom * Math.cos(ang), __g.bottom * Math.sin(ang), __v.fields[id][4]]; })()`));
   assert.deepStrictEqual(hit(bottomAt[0], bottomAt[1]), { kind: "note", ring: "bottom", i: 0 });
-  const off = [bottomAt[0] + 0.3 * Math.cos(bottomAt[2] * Math.PI / 180), bottomAt[1] + 0.3 * Math.sin(bottomAt[2] * Math.PI / 180)];
-  assert.deepStrictEqual(hit(off[0], off[1]), { kind: "note", ring: "bottom", i: 0 }, "0.3 R away is inside the 43 unit area");
+  const turn = bottomAt[2] * Math.PI / 180 + 0.2 / 1.15;
+  const off = [1.15 * Math.cos(turn), 1.15 * Math.sin(turn)];
+  assert.deepStrictEqual(hit(off[0], off[1]), { kind: "note", ring: "bottom", i: 0 }, "0.2 R along the ring is outside the drawn circle and inside the 43 unit area");
   const held = hit(off[0], off[1], true);
   assert.strictEqual(held.kind, "spot");
   assert.strictEqual(held.ring, "bottom", "holding, the zone under the pointer wins");
@@ -336,4 +338,27 @@ test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; t
   const rimAt = plain(a.get(`(() => { const id = ringIds(__v.fields, "rim")[0]; const ang = __v.fields[id][4] * Math.PI / 180; return [__g.rim * Math.cos(ang), __g.rim * Math.sin(ang)]; })()`));
   assert.deepStrictEqual(hit(rimAt[0], rimAt[1]), { kind: "note", ring: "rim", i: 0 });
   assert.deepStrictEqual(hit(5, 5), { kind: "off" });
+});
+
+test("U2c-15 (parity 2): add, remove, swap, root replace and a pinned bottom angle land on the same record and share link as the same edit through today's tabs", () => {
+  const a = app();
+  const BASE = "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const via = (text, options) => plain(a.get(`(() => { const e = editorExport(editorLoad(${JSON.stringify(text)}, ${JSON.stringify(options)}).value); return { code: e.code, link: e.link, record: e.record }; })()`));
+  const model = (call) => plain(a.get(`(() => { const m0 = editorLoad(${JSON.stringify(BASE)}, undefined).value; const r = ${call}; if (!r.ok) return { refused: r.code }; const e = editorExport(r.value); return { code: e.code, link: e.link, record: e.record }; })()`));
+  const cases = [
+    ["add rim", `editorAdd(m0, "rim", "B4")`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 | C5 D5"],
+    ["add inner", `editorAdd(m0, "inner", "E5")`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5"],
+    ["add bottom", `editorAdd(m0, "bottom", "C3")`, "[A2] [B2] [C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+    ["remove rim", `editorRemove(m0, "rim", 7)`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 | C5 D5"],
+    ["remove inner", `editorRemove(m0, "inner", 1)`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5"],
+    ["remove bottom", `editorRemove(m0, "bottom", 0)`, "[B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+    ["swap rim seats", `editorSwapSeats(m0, "rim", 0, 1)`, BASE, { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }],
+    ["root replace", `editorReplaceDing(m0, "C3")`, "[A2] [B2] (C3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+    ["pinned bottom angle", `editorSetAngle(m0, "bottom", 0, 60, true)`, BASE, { angles: { bottom: [60, null] } }],
+  ];
+  for (const [label, call, text, options] of cases) {
+    const got = model(call);
+    assert.strictEqual(got.refused, undefined, label + " is accepted");
+    assert.deepStrictEqual(got, via(text, options), label + ": same record and share link as the tabs");
+  }
 });

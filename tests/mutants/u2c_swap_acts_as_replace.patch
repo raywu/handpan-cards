@@ -1,0 +1,15 @@
+# kills: U2c-11: a cross-zone swap trades zones and keeps each seat
+# suite: node --test --test-name-pattern ^U2c-11. tests/editor_shell.test.js
+# fault: A swap overwrites one slot with the other's note and drops its own, a replace.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15313,7 +15313,7 @@ function editorSwapNames(m, a, b) {
+   const set = (r, name) => { if (r.ring === "ding") entries.ding = name; else entries[r.ring][r.i].name = name; };
+   const [na, nb] = [get(a), get(b)];
+   set(a, nb);
+-  set(b, na);
++  
+   return editorRebuild(m, entries);
+ }
+ function editorPlace(m, ring, name, angle) {
