@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15138,7 +15138,7 @@ function editorApply(h, step) {
-   return res.ok ? { ok: true, history: { past: [...h.past, h.present], present: res.value, future: [] }, notice: res.notice } : res;
+@@ -15175,7 +15175,7 @@ function editorApply(h, step) {
+   return { ok: true, history: { past: [...h.past, h.present], present: res.value, future: [] }, notice: res.notice };
  }
  const editorUndo = (h) => (editorCanUndo(h)
 -  ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] } : h);
