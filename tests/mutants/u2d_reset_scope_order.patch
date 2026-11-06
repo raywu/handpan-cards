@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15348,8 +15348,8 @@
+@@ -15347,8 +15347,8 @@ function editorPlace(m, ring, name, angle) {
+ }
  const editorPinnedIn = (m, ring) => m.pins.some((p) => p.ring === ring);
- // D18: the selected note's zone, else the selected zone, else every pinned zone.
  function editorResetRings(m, sel, zone) {
 -  if (sel) return EDITOR_PINNABLE.includes(sel.ring) ? [sel.ring] : [];
    if (zone) return [zone];
