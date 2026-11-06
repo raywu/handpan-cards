@@ -1069,8 +1069,12 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   with neither list reads as no angles. Any other key is refused.
 - A pinned inner angle refuses an inner seats list (`seats-` with a non-empty
   inner part), exactly as `at-` refuses a bottom seats list. Each pinned inner
-  angle must lie inside INNER_SPAN + clearance and pass innerClash; out of
-  bound is refused, never clamped.
+  angle must lie inside INNER_SPAN (0 to 180 degrees about top centre), keep
+  `innerClearance(geom, [angle]) >= INNER_CLEARANCE` (0.01) against the solved
+  ding (the ding offset is not re-solved for a pin, so angles near the fan
+  ends are refused, the exact bound depending on the counts), and pass
+  innerClash; out of bound is refused as BAD_NOTE, never clamped. Decode and
+  encode both go through readCorrections, so both refuse.
 - `ai-` beside `pair-` (a Neotone profile) is PROFILE_CONFLICT; a profiled link
   stays version 7. A version 8 link must carry `ai-` with at least one pinned
   entry (no `ai-` is non-canonical and refused), and `pair-` on version 8 is
@@ -1078,6 +1082,26 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   above is NEEDS_NEWER_APP. Versions 1-7 decode unchanged.
 - MIRROR TOP reflects pinned inner angles (180 - a), as MIRROR BOTTOM reflects
   pinned bottom angles; the wire carries the angles as stored (absolute).
+
+### snapTarget (the editor's pointer hit-test)
+
+`HPE.layout.snapTarget(geom, point, options)` is pure: `geom` is `solve().geom`,
+`point` is `[x, y]` in pan units (SVG y down, the ding at `[0, -geom.ding_dy]`),
+`options` is `{panKind, occupancy, allowInnerAngle}`.
+
+- `panKind` is `"acoustic"` (the default when absent) or `"profile"` (a Neotone
+  profile, hit-tested against `PROFILE`). Any other value throws; it is never
+  read as acoustic.
+- `occupancy` names who sits where: `{ding: id, top: [{id, angle}], inner:
+  [{id, angle}], bottom: [{id, angle}]}` for acoustic, `{ding: id, main: [id],
+  mutant: [id]}` (slot order) for profile; a missing ring is empty.
+- `allowInnerAngle` (acoustic only) lets the inner ring return a snapped angle.
+- Returns `null` when the point is off the pan, else `{zone, seat, angle?,
+  occupiedBy?}` with `zone` one of `"ding"`, `"top"`, `"inner"`, `"bottom"`
+  (acoustic) or `"ding"`, `"main"`, `"mutant"` (profile); `seat` is the index in
+  that zone's ring; `angle` is present for the bottom ring, and for the inner
+  ring when `allowInnerAngle`, on the 5-degree step; `occupiedBy` is the id of
+  the note already there or too close (under the touching floor).
 
 ## 15. UI element ids
 

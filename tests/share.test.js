@@ -2540,15 +2540,15 @@ test("SE: at- is read on v8, and still refused on v7", () => {
   reject(forgeN("7", PYGMY_SEG, "*x", ["between", at]));
 });
 
-test("SE: an ai- list with a wrong length, a bad entry, a leading zero or an out-of-fan angle is BAD_NOTE", () => {
+test("SE: an ai- list with a wrong length, a bad entry, a leading zero, an out-of-fan angle or one whose number sits in the ding is BAD_NOTE", () => {
   const bads = ["110", "110,,", ",,", "111,", "360,", "0110,", "05,", "x,", "-5,", "110.5,", "185,", "270,", "355,",
-    "0,0", "95,50", "95,", " 110,"];
+    "0,0", "95,50", "95,", " 110,", "0,90", "180,90", "5,100", "175,", "180,", "180,0"];
   for (const list of bads) {
     const r = share.decode(pygmyInner(list));
     assert.equal(r.ok, false, list);
     assert.equal(r.code, "BAD_NOTE", list);
   }
-  for (const list of ["110,", ",60", "105,50", "0,90", "180,90", ",5".replace(",5", "5,100")]) {
+  for (const list of ["110,", ",60", "105,50", "45,125", "140,"]) {
     assert.equal(share.decode(pygmyInner(list)).ok, true, list);
   }
 });

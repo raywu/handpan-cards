@@ -2829,17 +2829,77 @@ test("SE: inner and bottom angles pin together, each ring on its own", () => {
   assert.deepStrictEqual(bottomAnglesOf(res.value.fields), [285, 240, 0, 180, 60, 120]);
 });
 
-test("SE: an inner angle outside the top fan (0 to 180) is BAD_NOTE and is never clamped", () => {
-  for (const pair of [[0, 90], [5, 100], [175, 80], [180, 90]]) {
+test("SE: an inner angle outside the top fan (past 180 degrees) is BAD_NOTE and is never clamped", () => {
+  for (const pair of [[110, null], [125, 50], [45, 125], [140, null]]) {
     const res = seSolve({ angles: { inner: pair } });
     assert.equal(res.ok, true, `${pair}: ${res.code}`);
-    assert.deepStrictEqual(innerAnglesOf(res.value.fields), pair, `${pair} is kept as given`);
+    assert.deepStrictEqual(innerAnglesOf(res.value.fields), [pair[0], pair[1] === null ? 52 : pair[1]], `${pair} is kept as given`);
   }
   for (const bad of [185, 190, 225, 270, 315, 355]) {
     const res = seSolve({ angles: { inner: [bad, null] } });
     assert.equal(res.ok, false, String(bad));
     assert.equal(res.code, "BAD_NOTE", String(bad));
   }
+});
+
+test("SE: a pinned inner angle near the fan ends is BAD_NOTE: its number would sit inside the ding (clearance below INNER_CLEARANCE), never clamped", () => {
+  for (const pair of [[180, 0], [0, 180], [5, 90], [175, 90], [180, null], [null, 0]]) {
+    const res = seSolve({ angles: { inner: pair } });
+    assert.equal(res.ok, false, String(pair));
+    assert.equal(res.code, "BAD_NOTE", String(pair));
+  }
+  for (const pin of [180, 0, 175]) {
+    const res = HPE.layout.solve(panFields(9, 1, 0), { angles: { inner: [pin] } });
+    assert.equal(res.code, "BAD_NOTE", `9/1/0 at ${pin}`);
+  }
+  assert.equal(HPE.layout.solve(panFields(9, 1, 0), { angles: { inner: [90] } }).ok, true, "the solved angle itself still passes");
+});
+
+test("SE: every accepted pinned inner angle keeps innerClearance at or above 0.01 (sweep over counts and 5-degree pins)", () => {
+  let accepted = 0;
+  let refused = 0;
+  for (const [rim, inner, bottom] of [[9, 1, 0], [9, 2, 6], [8, 1, 0], [7, 3, 4], [10, 2, 0], [6, 1, 0], [5, 4, 2]]) {
+    const home = HPE.layout.solve(panFields(rim, inner, bottom)).value;
+    assert.ok(HPE.layout.innerClearance(home.geom, innerAnglesOf(home.fields)) >= 0.01, `${rim}/${inner}/${bottom} home`);
+    for (let slot = 0; slot < inner; slot += 1) {
+      for (let angle = 0; angle <= 180; angle += 5) {
+        const list = new Array(inner).fill(null);
+        list[slot] = angle;
+        const res = HPE.layout.solve(panFields(rim, inner, bottom), { angles: { inner: list } });
+        if (!res.ok) {
+          assert.equal(res.code, "BAD_NOTE");
+          refused += 1;
+          continue;
+        }
+        accepted += 1;
+        const got = innerAnglesOf(res.value.fields);
+        const clearance = HPE.layout.innerClearance(res.value.geom, got);
+        assert.ok(clearance >= 0.01, `${rim}/${inner}/${bottom} slot ${slot} at ${angle}: clearance ${clearance}`);
+      }
+    }
+  }
+  assert.ok(accepted > 50 && refused > 20, `accepted ${accepted}, refused ${refused}`);
+});
+
+test("SE: innerClash names a rim note or a bottom note whose circle the pinned inner note would touch", () => {
+  const home = HPE.layout.solve(panFields(9, 1, 6)).value;
+  const clone = () => JSON.parse(JSON.stringify(home.fields));
+  const ofZone = (fields, zone) => Object.keys(fields).find((id) => fields[id][3] === zone);
+  const rimFields = clone();
+  const rimId = ofZone(rimFields, "rim");
+  rimFields[rimId][4] = 90;
+  const geom = JSON.parse(JSON.stringify(home.geom));
+  geom.rim = geom.inner + geom.r_note;
+  assert.equal(HPE.layout.innerClash(geom, rimFields, [90], 0), rimId, "a rim circle touching the pin");
+  geom.rim = geom.inner + 2 * geom.r_note + 0.05;
+  assert.equal(HPE.layout.innerClash(geom, rimFields, [90], 0), null, "clear of the rim circle");
+  const bottomFields = clone();
+  const bottomId = ofZone(bottomFields, "bottom");
+  bottomFields[bottomId][4] = 90;
+  const bgeom = JSON.parse(JSON.stringify(home.geom));
+  bgeom.bottom = bgeom.inner + bgeom.r_note;
+  assert.equal(HPE.layout.innerClash(bgeom, bottomFields, [90], 0), bottomId, "a bottom circle touching the pin");
+  assert.equal(HPE.layout.innerClash(home.geom, bottomFields, [90], 0), null, "the real bottom ring is far away");
 });
 
 test("SE: inner notes keep the touching floor: 55 degrees apart passes, 50 is BAD_NOTE", () => {
@@ -2922,7 +2982,7 @@ const seScene = () => {
 };
 const snap = (point, extra) => {
   const { geom, occupancy } = seScene();
-  return plain(HPE.layout.snapTarget(geom, point, Object.assign({ panKind: "generated", occupancy, allowInnerAngle: false }, extra)));
+  return plain(HPE.layout.snapTarget(geom, point, Object.assign({ panKind: "acoustic", occupancy, allowInnerAngle: false }, extra)));
 };
 
 test("SE snapTarget: the ding, a drawn circle and the empty bands each name their zone", () => {
@@ -2984,7 +3044,7 @@ test("SE snapTarget: inside the shell the radius picks inner over top at the mid
 });
 
 const NEO_OCC = { ding: null, main: ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"], mutant: [null, "b1", null, null, null, null, null, null, null] };
-const neo = (point) => plain(HPE.layout.snapTarget(seScene().geom, point, { panKind: "neotone", occupancy: NEO_OCC, allowInnerAngle: false }));
+const neo = (point) => plain(HPE.layout.snapTarget(seScene().geom, point, { panKind: "profile", occupancy: NEO_OCC, allowInnerAngle: false }));
 
 test("SE snapTarget: Neotone maps a point to the nearest main slot, the lens toward the centre, the ding, or off the pan", () => {
   const P = HPE.layout.PROFILE;
