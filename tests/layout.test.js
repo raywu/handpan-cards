@@ -2955,6 +2955,9 @@ test("SE snapTarget: an empty inner spot takes the nearest seat, or a snapped an
   assert.equal(snap(dot(geom.inner, 86.4), { allowInnerAngle: true }).angle, 85, "snaps to 5 degrees");
   assert.equal(snap(dot(geom.inner, 87.6), { allowInnerAngle: true }).angle, 90);
   assert.equal(snap(dot(geom.inner, 2), { allowInnerAngle: true }).angle, 0);
+  const onNote = snap(dot(geom.inner, 128));
+  assert.deepStrictEqual(onNote, { zone: "inner", seat: 0, occupiedBy: "10" }, "a drawn inner circle carries no angle unless angles are allowed");
+  assert.equal(snap(dot(geom.inner, 128), { allowInnerAngle: true }).angle, 128);
   const dragged = { ding: "0", top: [], inner: [{ id: "11", angle: 52 }], bottom: [] };
   assert.equal(snap(dot(geom.inner, 110), { allowInnerAngle: true, occupancy: dragged }).occupiedBy, undefined, "58 from the only other note is clear");
   assert.equal(snap(dot(geom.inner, 100), { allowInnerAngle: true, occupancy: dragged }).occupiedBy, "11", "48 from it is under the 55 floor");
