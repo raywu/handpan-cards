@@ -15302,6 +15302,211 @@ function solveNeotonePreview(seed) {
   return { ...res.value, unplaced: loose.map((n) => n.id) };
 }
 
+/* ---------------- scale editor model ----------------
+ * The one-panel editor's state, kept as the SEED the rest of the app already
+ * speaks (fields + options), so everything it exports goes through today's
+ * scaleRecord, shareCode and layout.solve and parity holds by construction. A
+ * model is {fields, options, pins}: `pins` is the order the cyclops and bottom
+ * angles were pinned in (oldest first), which is what "the newest pin" means; it
+ * is editor state and never leaves through editorExport. Every primitive is pure
+ * (the input is never touched) and answers {ok, value, notice?} or the engine's
+ * own refusal. A note is named by { ring, i }: its ring and its index among the
+ * ring's notes by ascending field id, the same address the legacy sheet uses.
+ * The model never trims: a scale over a cap loads and exports unchanged. The flag
+ * is scaffolding for the editor lanes; nothing reads it until the panel lands. */
+const ONE_PANEL = false;
+const EDITOR_RINGS = ["rim", "inner", "bottom"];
+const EDITOR_PINNABLE = ["inner", "bottom"];
+const EDITOR_CARRIED = ["seats", "angles", "replaces"];
+const editorClone = (v) => JSON.parse(JSON.stringify(v));
+const editorRefusal = (what) => ({ ok: false, code: "BAD_NOTE", reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(what).slice(0, 12)) });
+const editorPinsOf = (angles) => EDITOR_PINNABLE.flatMap((ring) => ((angles && angles[ring]) || [])
+  .map((a, i) => (a === null || a === undefined ? null : { ring, i })).filter(Boolean));
+// parseSeed's whitelist drops seats, angles and replaces, so they are carried back
+// exactly as buildGenerated carries them.
+function editorLoad(text, options) {
+  const seed = HPE.core.parseSeed(text, options);
+  if (!seed.ok) return seed;
+  const o = { ...seed.value.options };
+  for (const key of EDITOR_CARRIED) if (options && options[key] !== undefined && options[key] !== null) o[key] = editorClone(options[key]);
+  return { ok: true, value: { fields: seed.value.fields, options: o, pins: editorPinsOf(o.angles) } };
+}
+function editorLoadShare(code) {
+  const res = HPE.share.decode(String(code));
+  return res.ok ? editorLoad(HPE.core.formatSeed(res.value.fields), res.value.options) : res;
+}
+function editorLoadRecord(record) {
+  const ok = checkShareVersion(record && record.v);
+  if (!ok.ok) return ok;
+  const read = scaleReader(record.v)(record.s);
+  return read.ok ? editorLoad(HPE.core.formatSeed(read.value.fields), recordOptions(record)) : read;
+}
+function editorExport(m) {
+  const seed = { fields: m.fields, options: m.options };
+  const code = shareCode(seed);
+  return { s: HPE.core.formatSeed(m.fields), options: m.options, record: scaleRecord(seed), solve: HPE.layout.solve(seed),
+    code: code.ok ? code.value : undefined, link: shareLink(seed) };
+}
+const editorNames = (m, ring) => ringIds(m.fields, ring).map((id) => m.fields[id][0] + m.fields[id][1]);
+function editorText(m, parts) {
+  const ding = Object.keys(m.fields).filter((id) => m.fields[id][3] === "ding").map((id) => m.fields[id][0] + m.fields[id][1]);
+  return [parts.bottom.map((n) => "[" + n + "]").join(" "), "(" + ding[0] + ")", parts.rim.join(" "),
+    parts.inner.length ? "| " + parts.inner.join(" ") : ""].filter(Boolean).join(" ");
+}
+const editorTidy = (options, key) => {
+  if (options[key] && !Object.keys(options[key]).length) delete options[key];
+  if (key === "angles" && options.angles) {
+    for (const ring of EDITOR_PINNABLE) if (options.angles[ring] && options.angles[ring].every((a) => a === null)) delete options.angles[ring];
+    if (!Object.keys(options.angles).length) delete options.angles;
+  }
+};
+// The settled model: solved by the engine, and a pin the change itself made
+// clash is unpinned newest first (D18) until it solves or no pin is left.
+function editorSettle(m, notice) {
+  let cur = m;
+  const unpinned = [];
+  for (;;) {
+    const solved = HPE.layout.solve({ fields: cur.fields, options: cur.options });
+    if (solved.ok) {
+      const note = { ...notice, ...(unpinned.length ? { unpinned } : {}) };
+      return { ok: true, value: cur, ...(Object.keys(note).length ? { notice: note } : {}) };
+    }
+    if (!cur.pins.length) return solved;
+    const newest = cur.pins[cur.pins.length - 1];
+    unpinned.push(newest);
+    cur = editorWithAngle(cur, newest.ring, newest.i, null);
+  }
+}
+function editorWithAngle(m, ring, i, angle) {
+  const next = editorClone(m);
+  const list = (next.options.angles && next.options.angles[ring]) || Array.from({ length: ringIds(m.fields, ring).length }, () => null);
+  list[i] = angle;
+  next.options.angles = { ...next.options.angles, [ring]: list };
+  if (next.options.seats) delete next.options.seats[ring];
+  next.pins = next.pins.filter((p) => !(p.ring === ring && p.i === i));
+  if (angle !== null) next.pins.push({ ring, i });
+  editorTidy(next.options, "seats");
+  editorTidy(next.options, "angles");
+  return next;
+}
+function editorResize(m, ring, parts, change) {
+  const loaded = editorLoad(editorText(m, parts), { ...m.options, seats: null, angles: null });
+  if (!loaded.ok) return loaded;
+  const next = loaded.value;
+  const at = change.add ? editorNames(next, ring).findIndex((n) => !editorNames(m, ring).includes(n)) : change.remove;
+  const had = !!(m.options.seats && m.options.seats[ring]);
+  const o = next.options;
+  if (m.options.seats) o.seats = editorClone(m.options.seats);
+  if (o.seats) delete o.seats[ring];
+  if (m.options.angles) o.angles = editorClone(m.options.angles);
+  const list = o.angles && o.angles[ring];
+  if (list) list.splice(at, change.add ? 0 : 1, ...(change.add ? [null] : []));
+  next.pins = m.pins.filter((p) => !(p.ring === ring && p.i === at && !change.add)).map((p) => (p.ring === ring && p.i >= at && change.add ? { ring, i: p.i + 1 } : p.ring === ring && p.i > at ? { ring, i: p.i - 1 } : p));
+  editorTidy(o, "seats");
+  editorTidy(o, "angles");
+  return editorSettle(next, had ? { seatsReset: ring } : {});
+}
+const editorPartsOf = (m) => Object.fromEntries(EDITOR_RINGS.map((ring) => [ring, editorNames(m, ring)]));
+function editorAdd(m, ring, name) {
+  if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
+  const parts = editorPartsOf(m);
+  parts[ring].push(String(name));
+  return editorResize(m, ring, parts, { add: true });
+}
+function editorRemove(m, ring, i) {
+  if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= ringIds(m.fields, ring).length) return editorRefusal(ring + i);
+  const parts = editorPartsOf(m);
+  parts[ring].splice(i, 1);
+  return editorResize(m, ring, parts, { remove: i });
+}
+const editorInRing = (m, ring, ...ks) => ks.every((k) => Number.isInteger(k) && k >= 0 && k < ringIds(m.fields, ring).length);
+const editorSolve = (m) => HPE.layout.solve({ fields: m.fields, options: m.options });
+const editorAnglesOf = (solved, ring) => ringIds(solved.value.fields, ring).map((id) => solved.value.fields[id][4]);
+// The sheet's first slide on a seated ring pins every note where it sits, on its
+// 5 degree step, and drops the seat order, so no other note moves.
+function editorFold(m, ring, current) {
+  const next = editorClone(m);
+  next.options.angles = { ...next.options.angles, [ring]: current.map(stepOf) };
+  if (next.options.seats) delete next.options.seats[ring];
+  current.forEach((_, k) => { if (!next.pins.some((p) => p.ring === ring && p.i === k)) next.pins.push({ ring, i: k }); });
+  editorTidy(next.options, "seats");
+  return next;
+}
+function editorSetAngle(m, ring, i, angle) {
+  if (!EDITOR_PINNABLE.includes(ring) || !editorInRing(m, ring, i)) return editorRefusal(ring + i);
+  if (angle !== null && !Number.isFinite(angle)) return editorRefusal(angle);
+  const here = editorSolve(m);
+  if (!here.ok) return here;
+  let base = m;
+  if (angle !== null) {
+    const current = editorAnglesOf(here, ring);
+    const folding = !!(m.options.seats && m.options.seats[ring]);
+    if (!folding && stepOf(angle) === current[i]) return { ok: true, value: m };
+    if (folding) {
+      base = editorFold(m, ring, current);
+      const folded = editorSolve(base);
+      if (!folded.ok) return folded;
+    }
+  }
+  const next = editorWithAngle(base, ring, i, angle === null ? null : stepOf(angle));
+  const solved = editorSolve(next);
+  return solved.ok ? { ok: true, value: next } : solved;
+}
+function editorSwapSeats(m, ring, i, j) {
+  if (!EDITOR_RINGS.includes(ring) || !editorInRing(m, ring, i, j)) return editorRefusal(ring + i);
+  if (i === j) return { ok: true, value: m };
+  if (ring === "bottom" && m.options.angles && m.options.angles.bottom) return editorExchangeAngles(m, ring, i, j);
+  const next = editorClone(m);
+  const seats = (next.options.seats && next.options.seats[ring]) || identityOrder(ringIds(m.fields, ring).length);
+  [seats[i], seats[j]] = [seats[j], seats[i]];
+  next.options.seats = { ...next.options.seats, [ring]: seats };
+  if (seats.every((seat, k) => seat === k)) delete next.options.seats[ring];
+  editorTidy(next.options, "seats");
+  const solved = editorSolve(next);
+  return solved.ok ? { ok: true, value: next } : solved;
+}
+// Notes i and j trade the angles they sit at, each on its 5 degree step, and both end
+// up pinned; the seat order is left alone (the sheet's exchangeAngles).
+function editorExchangeAngles(m, ring, i, j) {
+  if (!EDITOR_PINNABLE.includes(ring) || !editorInRing(m, ring, i, j)) return editorRefusal(ring + i);
+  if (i === j) return { ok: true, value: m };
+  const here = editorSolve(m);
+  if (!here.ok) return here;
+  const current = editorAnglesOf(here, ring);
+  const next = editorClone(m);
+  const list = (next.options.angles && next.options.angles[ring]) || current.map(() => null);
+  list[i] = stepOf(current[j]);
+  list[j] = stepOf(current[i]);
+  next.options.angles = { ...next.options.angles, [ring]: list };
+  for (const k of [i, j]) if (!next.pins.some((p) => p.ring === ring && p.i === k)) next.pins.push({ ring, i: k });
+  const solved = editorSolve(next);
+  return solved.ok ? { ok: true, value: next } : solved;
+}
+function editorSetPalette(m, palette) {
+  if (!Number.isInteger(palette) || palette < 0 || palette > 9) return editorRefusal(palette);
+  if ((m.options.palette || 0) === palette) return { ok: true, value: m };
+  const next = editorClone(m);
+  next.options.palette = palette;
+  return { ok: true, value: next };
+}
+/* Undo / Redo: one step per accepted action that changes the model, a refused or
+ * unchanged action adds none and hands the same history back, and a
+ * new action after an Undo drops the Redo branch. The states are the immutable
+ * models above, so an Undo hands back the very model that was current. */
+const editorHistoryNew = (model) => ({ past: [], present: model, future: [] });
+const editorCanUndo = (h) => h.past.length > 0;
+const editorCanRedo = (h) => h.future.length > 0;
+function editorApply(h, step) {
+  const res = step(h.present);
+  if (!res.ok) return { ...res, history: h };
+  if (JSON.stringify(res.value) === JSON.stringify(h.present)) return { ok: true, history: h, notice: res.notice };
+  return { ok: true, history: { past: [...h.past, h.present], present: res.value, future: [] }, notice: res.notice };
+}
+const editorUndo = (h) => (editorCanUndo(h)
+  ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] } : h);
+const editorRedo = (h) => (editorCanRedo(h)
+  ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) } : h);
+
 /* The pan is role="img" with a name, so a screen reader reads it as content.
  * Three states, three names, because a render that is NOT of what is currently
  * in the box must not claim to be: "current" is the seed as typed, "example" is
