@@ -2330,3 +2330,95 @@ test("NAN: a readable link whose name holds a tab, newline, U+2028 or a bidi ove
     assert.equal(r.code, "BAD_NOTE");
   }
 });
+
+// Scale-editor lane E, first commit: golden parity captured from origin/main
+// e36333c9 before any engine edit (plan 2026-11-05-scale-editor-reinvent,
+// section 0 tests 1, 4, 5). Every case below is today's scale string, solved
+// layout, record (v, s, o) and share link; a scale with no pinned cyclops
+// angle must keep encoding to exactly these bytes. Written once with
+// HPE_WRITE_PARITY=1 on main; later lanes only read it.
+const PARITY_FILE = path.join(ROOT, "tests", "fixtures", "engine_parity_golden_v1.json");
+const PARITY_DECKS = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "decks.json"), "utf8"));
+const PARITY_CURRENT = [
+  "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 F5 G5 [Ab5]",
+  "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 [G5]"
+];
+const PARITY_DRESSED = { palette: 3, anchor: "between", mirror: true, mirrorBottom: false, name: "Parity" };
+
+function parityCase(label, string, reader, extra) {
+  const read = (reader === "legacy" ? core.parseLegacySeed : core.parseSeed)(string);
+  if (!read.ok) return { label, string, reader, parse: { ok: false, code: read.code } };
+  const fields = read.value.fields;
+  const out = { label, string, reader, formatSeed: core.formatSeed(fields) };
+  const seeds = {
+    plain: read.value.options,
+    dressed: Object.assign({}, read.value.options, PARITY_DRESSED)
+  };
+  const bottom = Object.keys(fields).filter((id) => fields[id][3] === "bottom").length;
+  if (bottom) {
+    const home = HPE.layout.solve({ fields, options: {} }).value.fields;
+    const ids = Object.keys(home).filter((id) => home[id][3] === "bottom").sort((a, b) => a - b);
+    seeds.pinned = Object.assign({}, read.value.options, {
+      angles: { bottom: ids.map((id, i) => (i === 0 ? ((Math.round(home[id][4] / 5) * 5 + 355) % 360) : null)) }
+    });
+    seeds.seated = Object.assign({}, read.value.options, {
+      seats: { bottom: ids.map((id, i) => (i + 1) % ids.length) }
+    });
+  }
+  out.cases = {};
+  for (const name of Object.keys(seeds)) {
+    const seed = { fields, options: seeds[name] };
+    const solved = HPE.layout.solve(seed);
+    const link = share.encode(seed);
+    out.cases[name] = {
+      options: seeds[name],
+      recordVersion: share.recordVersion(seed),
+      record: { v: share.recordVersion(seed), s: core.formatSeed(fields), o: seeds[name] },
+      solve: solved.ok ? { ok: true, geom: solved.value.geom, fields: solved.value.fields } : { ok: false, code: solved.code },
+      link: link.ok ? { ok: true, link: link.value } : { ok: false, code: link.code }
+    };
+  }
+  return out;
+}
+
+function parityCapture() {
+  const cases = [];
+  for (const row of synthetic) if (row.expect && row.expect.ok === true) cases.push(parityCase(row.name, row.string, row.reader));
+  for (const deck of PARITY_DECKS) cases.push(parityCase("deck " + deck.id, core.formatSeed(deck.fields), "current"));
+  PARITY_CURRENT.forEach((s, i) => cases.push(parityCase("current " + i, s, "current")));
+  return JSON.parse(JSON.stringify({
+    _what: "Today's scale string, solved layout, record and share link for the seeded scales and the synthetic corpus, captured from origin/main e36333c9 before the scale-editor engine lane edited anything.",
+    _why: "A scale with no pinned cyclops angle must keep encoding to exactly these bytes (plan section 0 tests 1, 4, 5). Written once with HPE_WRITE_PARITY=1; never regenerated.",
+    shareVersion: share.VERSION, recordVersion: share.RECORD_VERSION, profileVersion: share.PROFILE_VERSION,
+    cases
+  }));
+}
+
+if (process.env.HPE_WRITE_PARITY) {
+  fs.writeFileSync(PARITY_FILE, JSON.stringify(parityCapture(), null, 1) + "\n");
+}
+
+test("PARITY: every unpinned scale keeps today's string, layout, record and link byte for byte", () => {
+  const frozen = JSON.parse(fs.readFileSync(PARITY_FILE, "utf8"));
+  assert.ok(frozen.cases.length >= 20, "the golden covers the corpus");
+  assert.deepEqual(parityCapture().cases, frozen.cases);
+});
+
+test("PARITY: the golden's links all decode to the seed they encode, and stay at wire 6 and record 4", () => {
+  const frozen = JSON.parse(fs.readFileSync(PARITY_FILE, "utf8"));
+  let links = 0;
+  for (const c of frozen.cases) {
+    for (const k of Object.keys(c.cases || {})) {
+      const g = c.cases[k];
+      assert.equal(g.record.v, g.recordVersion, c.label + " " + k);
+      assert.equal(g.recordVersion, 4, c.label + " " + k);
+      if (!g.link.ok) continue;
+      links += 1;
+      assert.equal(g.link.link.charAt(0), "6", c.label + " " + k);
+      const back = share.decode(g.link.link);
+      assert.equal(back.ok, true, c.label + " " + k);
+      assert.equal(core.formatSeed(back.value.fields), g.record.s, c.label + " " + k);
+    }
+  }
+  assert.ok(links >= 40);
+});
