@@ -141,10 +141,10 @@ function run() {
     test("the editor pan is the card renderer's drawing of the solved layout, bottom notes as the outer ring", async () => {
       await fresh();
       await openAdd();
-      await typeLine("[C3 D3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5");
+      await typeLine("[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5");
       const r = await b.eval(`const m = editorSession.history.present; const s = editorSolve(m); const p = HPE.select.PALETTES[m.options.palette || 0];
         const expected = pan({ geom: s.value.geom, fields: s.value.fields, colors: { root: p.root, tone: p.tone } }, null, null);
-        return { same: document.getElementById("editor-pan").innerHTML.includes(expected), bottom: Object.values(m.fields).filter((f) => f[3] === "bottom").length };`);
+        return { same: (() => { const d = document.createElement("div"); d.innerHTML = expected; return d.innerHTML === document.getElementById("editor-pan").innerHTML; })(), bottom: Object.values(m.fields).filter((f) => f[3] === "bottom").length };`);
       assert.ok(r.bottom >= 2, "the fixture has bottom notes");
       assert.strictEqual(r.same, true);
     });
