@@ -10777,11 +10777,16 @@ HPE.sync = (function () {
           else op = insert(R, "new", { id: rid });
           if (op.id !== rid) alias[op.id] = rid;
           if (d && d.deckId !== undefined && !deckIdentity.has(d.deckId)) deckIdentity.set(d.deckId, d.identity);
-          baseUpdates.push({ rid, localId: op.id, rev: R.rev, mode: "committed" });
+          baseUpdates.push({ rid, localId: op.id, rev: R.rev, mode: collides ? "edited" : "committed" });
           continue;
         }
         if (!B) {
-          baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: equal(L.record, R.record) ? "committed" : "edited" });
+          if (equal(L.record, R.record)) baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
+          else {
+            insert(R, "conflict-copy", { id: fresh(), remoteId: null, record: copyOf(R.record) });
+            ops[ops.length - 1].remoteId = ops[ops.length - 1].id;
+            baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "edited" });
+          }
           continue;
         }
         if (R.rev <= B.rev) continue;

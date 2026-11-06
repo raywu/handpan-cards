@@ -1,0 +1,15 @@
+# kills: sync: re-sign-in after the other device edited meanwhile keeps both bodies on both devices with no conflict loop
+# suite: node --test --test-name-pattern re-sign-in.after.the.other.device.edited tests/sync.test.js
+# With no base and different bodies the local copy is marked edited without a conflict copy, so the push overwrites the other device's edit.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -142,7 +142,7 @@
+           continue;
+         }
+         if (!B) {
+-          if (equal(L.record, R.record)) baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
++          if (true) baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
+           else {
+             insert(R, "conflict-copy", { id: fresh(), remoteId: null, record: copyOf(R.record) });
+             ops[ops.length - 1].remoteId = ops[ops.length - 1].id;

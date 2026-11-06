@@ -338,6 +338,7 @@ test("sync: an identity collision without a meaning match makes a renamed copy u
   assert.notEqual(ins.id, "remote-1");
   assert.equal(ins.record.n, "Remote (2)");
   assert.equal(dev.sidecar.alias[ins.id], "remote-1");
+  assert.deepEqual(dev.sidecar.base["remote-1"], { rev: 2, localRevision: null });
   assert.equal(dev.entries.length, 2);
 });
 
@@ -503,13 +504,36 @@ test("sync: sidecar lost but scales kept: a remote tombstone applies only when b
   assert.equal(server.rows.get("diff").deleted, false);
 });
 
-test("sync: sidecar lost with a live remote of the same id and a different body pushes the local copy once, no duplicate", () => {
+test("sync: sidecar lost with a live remote of the same id and a different body keeps both bodies, local at the remote rev, remote as a conflict copy", () => {
   const server = new Server();
   server.rows.set("x", { scale_id: "x", rev: 2, deleted: false, record: rec("Theirs") });
   const dev = new Device([{ id: "x", record: rec("Mine") }]);
-  dev.pull(server);
-  assert.equal(dev.entries.length, 1);
-  assert.deepEqual(dev.push(server).plan.rows.map(r => [r.scale_id, r.base_rev]), [["x", 2]]);
+  const plan = dev.pull(server);
+  assert.deepEqual(plan.ops.map(o => [o.op, o.reason]), [["insert", "conflict-copy"]]);
+  assert.deepEqual(dev.names(), ["Mine", "Theirs (2)"]);
+  assert.deepEqual(dev.sidecar.base.x, { rev: 2, localRevision: null });
+  const rows = dev.push(server).plan.rows;
+  assert.deepEqual(rows.map(r => r.base_rev).sort(), [2, null]);
+  assert.equal(server.rows.get("x").record.n, "Mine");
+});
+
+test("sync: re-sign-in after the other device edited meanwhile keeps both bodies on both devices with no conflict loop", () => {
+  const server = new Server();
+  const a = new Device([{ id: "x", record: rec("Orig") }]);
+  const b = new Device([{ id: "x", record: rec("Orig") }]);
+  a.cycle(server); b.cycle(server);
+  a.sidecar = sync.emptySidecar();
+  b.edit("x", "Edited on B");
+  b.cycle(server);
+  const r = a.cycle(server);
+  assert.equal(r.conflicts, 0);
+  b.cycle(server); a.cycle(server);
+  assert.ok(a.names().includes("Orig") && a.names().some(n => n.startsWith("Edited on B")));
+  assert.equal(a.entries.length, 2);
+  assert.equal(b.entries.length, 2);
+  assert.deepEqual(a.names(), b.names());
+  assert.deepEqual(a.push(server).plan.rows, []);
+  assert.deepEqual(b.push(server).plan.rows, []);
 });
 
 test("sync: rows pushed in batches of at most 200", () => {
