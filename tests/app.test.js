@@ -15497,7 +15497,7 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
     assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
@@ -19601,6 +19601,10 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = null;$/m);
   });
 
+  test("MV: the committed deadline is null or a quoted YYYY-MM-DD literal", () => {
+    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = (null|"\d{4}-\d{2}-\d{2}");$/m);
+  });
+
   test("MV: with no deadline the banner has no deadline line", async () => {
     const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
     assert.strictEqual(bannerText(app), "Handpan Theory now lives at new.example. Your saved scale can come with you.");
@@ -19609,13 +19613,33 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
 
   test("MV: a set deadline adds the dated line in all 8 locales", async () => {
     const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
-    assert.match(bannerText(app), /On November 22, 2026 this address will start opening new\.example\. Scales not moved by then stay behind and can't be opened\.$/);
+    assert.match(bannerText(app), /On November 22, 2026, old\.example will move to new\.example\. Please click "Move my scales" to migrate your custom scales, so you don't lose them!$/);
     for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
       app.run(`setLang(${JSON.stringify(lang)})`);
       const date = new Intl.DateTimeFormat(lang, { dateStyle: "long", timeZone: "UTC" }).format(new Date("2026-11-22T00:00:00Z"));
-      const line = app.get('t("move.deadline", { date: moveDeadlineText(), host: "new.example" })');
+      const line = app.get('t("move.deadline", { date: moveDeadlineText(), from: "old.example", host: "new.example" })');
       assert.ok(line.includes(date), `${lang}: ${line}`);
       assert.ok(bannerText(app).endsWith(line), `${lang}: the deadline line closes the banner`);
+    }
+  });
+
+  test("MV: with no saved scales the deadline line is the short one, in all 8 locales", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [], deadline: "2026-11-22" });
+    assert.ok(bannerText(app).endsWith("On November 22, 2026, old.example will move to new.example."), bannerText(app));
+    for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
+      app.run(`setLang(${JSON.stringify(lang)})`);
+      const short = app.get('t("move.deadline_empty", { date: moveDeadlineText(), from: "old.example", host: "new.example" })');
+      assert.ok(bannerText(app).endsWith(short), `${lang}: short deadline line`);
+      assert.notStrictEqual(short, app.get('t("move.deadline", { date: moveDeadlineText(), from: "old.example", host: "new.example" })'), lang);
+    }
+  });
+
+  test("MV: with saved scales the deadline line names the Move my scales button, in all 8 locales", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
+    for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
+      app.run(`setLang(${JSON.stringify(lang)})`);
+      const long = app.get('t("move.deadline", { date: moveDeadlineText(), from: "old.example", host: "new.example" })');
+      assert.ok(bannerText(app).endsWith(long), `${lang}: long deadline line`);
     }
   });
 
@@ -19624,7 +19648,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     process.env.TZ = "America/Los_Angeles";
     try {
       const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
-      assert.match(bannerText(app), /On November 22, 2026 /);
+      assert.match(bannerText(app), /On November 22, 2026, /);
       assert.doesNotMatch(bannerText(app), /November 21/);
     } finally {
       if (was === undefined) delete process.env.TZ; else process.env.TZ = was;
@@ -19634,7 +19658,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
   test("MV: over-cap with a deadline shows the over-cap line, then the deadline line", async () => {
     const app = await boot2({ host: OLD_HOST, records: manyRecs(116), deadline: "2026-11-22" });
     const text = bannerText(app);
-    const over = text.indexOf("saved scales fit in one move"), due = text.indexOf("this address will start opening");
+    const over = text.indexOf("saved scales fit in one move"), due = text.indexOf("will move to new.example");
     assert.ok(over > 0 && due > over, text);
   });
 

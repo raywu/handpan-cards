@@ -20752,6 +20752,7 @@ function run() {
               return { sw: el.scrollWidth, cw: el.clientWidth, left: r.left, right: r.right, bottom: r.bottom, vw: innerWidth, vh: innerHeight,
                 text: el.querySelector('.move-banner-msg').textContent,
                 btns: [...el.querySelectorAll('button')].map(x => { const q = x.getBoundingClientRect(); return q.left >= r.left && q.right <= r.right; }) };`);
+            assert.match(r.text, /2026/, `${lang} ${w}: the banner carries the deadline date`);
             assert.ok(r.sw <= r.cw, `${lang} ${w}: horizontal overflow ${r.sw} > ${r.cw}`);
             assert.ok(r.left >= 0 && r.right <= r.vw, `${lang} ${w}: inside the viewport width`);
             assert.ok(r.bottom <= r.vh, `${lang} ${w}: inside the viewport height`);
