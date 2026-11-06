@@ -1,4 +1,4 @@
-# kills: a localOnly scale is not matched by meaning
+# kills: sync: a localOnly scale is not matched by meaning to a remote row
 # suite: node --test --test-name-pattern a.localOnly.scale.is.not.matched tests/sync.test.js
 # First-sync meaning matching adopts a declined scale, so it can be pushed.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

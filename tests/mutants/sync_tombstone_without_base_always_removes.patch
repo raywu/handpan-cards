@@ -1,4 +1,4 @@
-# kills: sidecar lost but scales kept
+# kills: sync: sidecar lost but scales kept: a remote tombstone applies only when bodies are equal; otherwise the local copy revives it (F22)
 # suite: node --test --test-name-pattern sidecar.lost.but.scales.kept tests/sync.test.js
 # With no base, any remote tombstone deletes the local copy, so a sidecar loss destroys edited scales.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

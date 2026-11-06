@@ -1,4 +1,4 @@
-# kills: rows pushed in batches of at most 200
+# kills: sync: rows pushed in batches of at most 200
 # suite: node --test --test-name-pattern rows.pushed.in.batches tests/sync.test.js
 # A push batch can exceed the server's 200-row call limit.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

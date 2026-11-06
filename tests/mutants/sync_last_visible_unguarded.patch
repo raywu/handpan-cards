@@ -1,4 +1,4 @@
-# kills: a delete that would empty the device is deferred
+# kills: sync: a delete that would empty the device is deferred, never applied alone (R1-7)
 # suite: node --test --test-name-pattern a.delete.that.would.empty.the.device tests/sync.test.js
 # A remote delete is applied even when it would remove the last visible scale.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

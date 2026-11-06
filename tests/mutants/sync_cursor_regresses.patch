@@ -1,4 +1,4 @@
-# kills: the cursor advances to the highest rev seen
+# kills: sync: the cursor advances to the highest rev seen and never goes back
 # suite: node --test --test-name-pattern the.cursor.advances.to.the.highest.rev tests/sync.test.js
 # The pull cursor can move backwards.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

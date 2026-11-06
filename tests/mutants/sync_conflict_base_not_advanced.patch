@@ -1,4 +1,4 @@
-# kills: edit-vs-edit converges to exactly two scales
+# kills: sync: edit-vs-edit converges to exactly two scales on both devices in one pull+push cycle (R1-4)
 # suite: node --test --test-name-pattern edit-vs-edit.converges.to.exactly.two.scales tests/sync.test.js
 # The conflict copy no longer advances the local base rev, so the local push always conflicts.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

@@ -1,4 +1,4 @@
-# kills: revive on A, edit on B, A pulls twice
+# kills: sync: revive on A, edit on B, A pulls twice -> exactly one scale on A, updated in place (R2-1)
 # suite: node --test --test-name-pattern revive.on.A,.edit.on.B tests/sync.test.js
 # The pull matches local entries by raw id, so each remote edit of a revived scale adds a duplicate.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

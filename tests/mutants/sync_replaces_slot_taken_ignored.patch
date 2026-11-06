@@ -1,4 +1,4 @@
-# kills: replaces is dropped when the seed slot is held
+# kills: sync: replaces is dropped when the seed slot is held or hidden locally
 # suite: node --test --test-name-pattern replaces.is.dropped.when.the.seed.slot tests/sync.test.js
 # A synced scale keeps replaces for a seed slot the device already holds.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

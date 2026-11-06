@@ -1,4 +1,4 @@
-# kills: localOnly entries are never in a push plan
+# kills: sync: localOnly entries are never in a push plan or a delete (R1-8)
 # suite: node --test --test-name-pattern localOnly.entries.are.never.in.a.push.plan tests/sync.test.js
 # Scales the owner declined to upload ('Not now') are pushed anyway.
 diff --git a/src/engine/sync.js b/src/engine/sync.js

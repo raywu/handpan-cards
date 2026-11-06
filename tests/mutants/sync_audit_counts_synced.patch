@@ -1,4 +1,4 @@
-# kills: first-sync audit counts only scales unmatched
+# kills: sync: first-sync audit counts only scales unmatched after matching; re-sign-in to the same account gives N=0 (R3-6)
 # suite: node --test --test-name-pattern first-sync.audit.counts.only.scales tests/sync.test.js
 # The 'Add N scales' count includes scales already in the account.
 diff --git a/src/engine/sync.js b/src/engine/sync.js
