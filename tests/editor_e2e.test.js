@@ -245,7 +245,7 @@ function run() {
     test("Standard to Neotone and back are one Undo step each", async () => {
       await fresh();
       await openAdd();
-      await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 | [A2]");
+      await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
       const steps = () => b.eval(`return editorSession.history.past.length;`);
       const kind = () => b.eval(`return !!editorSession.history.present.options.profile ? "neotone" : "standard";`);
       const s0 = await steps();

@@ -83,7 +83,7 @@ test("U2b-7: a commit is one history step and Undo restores the model that was c
 
 test("U2b-8: pan type Standard to Neotone proposes the profile and back removes it, each one history step", () => {
   const a = app();
-  withModel(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 | [A2]");
+  withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
   a.run(`globalThis.__h = editorHistoryNew(__m); true`);
   assert.strictEqual(a.get("editorKindOf(__m)"), "standard");
   a.run(`globalThis.__n = editorApply(__h, (m) => editorPanType(m, "neotone")); true`);
@@ -104,7 +104,7 @@ test("U2b-8: pan type Standard to Neotone proposes the profile and back removes 
 
 test("U2b-9: switching to Standard drops the profile without touching the seats; unpinning is not involved", () => {
   const a = app();
-  withModel(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 | [A2]", `{ palette: 2 }`);
+  withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `{ palette: 2 }`);
   a.run(`globalThis.__n = editorPanType(__m, "neotone").value; globalThis.__s = editorPanType(__n, "standard").value; true`);
   assert.strictEqual(a.get("JSON.stringify(__s) === JSON.stringify(__m)"), true);
 });
@@ -114,9 +114,9 @@ test("U2b-10: a new scale opens as the empty model and a built-in opens with its
   assert.deepStrictEqual(plain(a.get("editorModelFor(null)")), { fields: {}, options: {}, pins: [] });
   a.run(`globalThis.__d = DECKS[0]; globalThis.__bm = editorModelFor(__d, "builtin"); true`);
   assert.strictEqual(a.get("HPE.core.formatSeed(__bm.fields) === HPE.core.formatSeed(__d.fields)"), true);
-  assert.strictEqual(a.get("__bm.options.name"), undefined);
+  assert.strictEqual(a.get("!__bm.options.name"), true);
   assert.strictEqual(a.get("__bm.options.replaces"), undefined);
-  assert.strictEqual(a.get("__bm.options.palette"), a.get("seedPalette(__d.colors)") || undefined);
+  assert.strictEqual(a.get("__bm.options.palette || 0"), a.get("seedPalette(__d.colors)"));
   assert.deepStrictEqual(plain(a.get("__bm.pins")), []);
 });
 
@@ -141,7 +141,7 @@ test("U2b-12: dirty means the model differs from the one the panel opened with",
 
 test("U2b-13: the commit options of a Standard model are its options; a Neotone model keeps palette, name and the profile only", () => {
   const a = app();
-  withModel(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 | [A2]", `{ palette: 2, name: "Mine", replaces: "x" }`);
+  withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `{ palette: 2, name: "Mine", replaces: "x" }`);
   assert.deepStrictEqual(plain(a.get("editorCommitOptions(__m)")), plain(a.get("__m.options")));
   a.run(`globalThis.__n = editorPanType(__m, "neotone").value; true`);
   const o = plain(a.get("editorCommitOptions(__n)"));

@@ -364,5 +364,22 @@
   "move.go": "TRANSFÉRER MES GAMMES",
   "move.go_plain": "OUVRIR {host}",
   "move.dismiss": "Masquer pour l'instant",
-  "move.banner_label": "Handpan Theory a déménagé"
+  "move.banner_label": "Handpan Theory a déménagé",
+  "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.pins_reset": "Pins reset",
+  "editor.undo": "Undo",
+  "editor.redo": "Redo",
+  "editor.remove": "Remove note",
+  "editor.reset": "Reset spacing",
+  "editor.save": "Save scale",
+  "editor.dlg.title": "Save your changes?",
+  "editor.dlg.body": "This scale has changes that are not saved yet.",
+  "editor.dlg.save": "Save",
+  "editor.dlg.discard": "Discard",
+  "editor.dlg.keep": "Keep editing",
+  "editor.empty": "Type or paste the notes of your scale above.",
+  "editor.pan.aria": "Pan diagram",
+  "editor.pantype": "Pan type",
+  "editor.standard": "Standard",
+  "editor.neotone": "Neotone"
 }
