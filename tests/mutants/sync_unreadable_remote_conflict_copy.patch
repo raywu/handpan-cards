@@ -1,0 +1,15 @@
+# kills: sync: edit-vs-edit with an unreadable remote keeps both bodies on the server and on the newer build, no loop
+# suite: node --test --test-name-pattern edit.vs.edit.with.an.unreadable.remote tests/sync.test.js
+# An unreadable remote in a both-changed pull is inserted as an opaque conflict copy that planPush never sends, so the local body overwrites the newer build's edit.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -169,7 +169,7 @@
+           if (opaque) op.opaque = true;
+           ops.push(op);
+           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
+-        } else if (!readableIn(ctx, R.record)) {
++        } else if (false) {
+           keepOpaque(R, L);
+         } else {
+           insert(R, "conflict-copy", { id: fresh(), remoteId: null, record: copyOf(R.record) });
