@@ -1,0 +1,15 @@
+# kills: U2a-H1: every primitive undoes to the byte-equal model and Redo replays it; a new action clears Redo
+# suite: node --test --test-name-pattern ^U2a-H1:.every.primitive.undoes.to.the.byte-equal.model.and.Redo.replays.it;.a.new.action.clears.Redo$ tests/editor_model.test.js
+# fault: Undo keeps the current model instead of restoring the previous one.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15138,7 +15138,7 @@ function editorApply(h, step) {
+   return res.ok ? { ok: true, history: { past: [...h.past, h.present], present: res.value, future: [] }, notice: res.notice } : res;
+ }
+ const editorUndo = (h) => (editorCanUndo(h)
+-  ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] } : h);
++  ? { past: h.past.slice(0, -1), present: h.present, future: [h.present, ...h.future] } : h);
+ const editorRedo = (h) => (editorCanRedo(h)
+   ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) } : h);
+ 
