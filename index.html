@@ -7538,7 +7538,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   /* The inner ring's floor predicate, bottomClash's twin: `list` holds the
    * effective angle of each inner note in ascending id order. An angle outside
-   * the fan is refused (the id is the note itself), another inner note under
+   * the fan, or a pinned one whose number would sit under INNER_CLEARANCE
+   * from the ding (the ding offset is not re-solved for a pin), is refused
+   * (the id is the note itself), another inner note under
    * the floor, a rim or bottom circle it would meet, or the ding, is named. */
   function innerClash(geom, fields, list, i) {
     var ids = collect(fields).inner;
@@ -7547,6 +7549,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     };
     var at = angleOf(i);
     if (!innerInSpan(at)) return ids[i];
+    if (at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
     var floor = innerFloor(geom, ids.map(function (id) { return fields[id][4]; }));
     var k;
     for (k = 0; k < ids.length; k += 1) {
@@ -7933,7 +7936,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function snapTarget(geom, pt, options) {
     var occupancy = (options && options.occupancy) || {};
-    if (options && options.panKind === "neotone") return snapProfile(pt, occupancy);
+    var kind = options && options.panKind !== undefined ? options.panKind : "acoustic";
+    if (kind === "profile") return snapProfile(pt, occupancy);
+    if (kind !== "acoustic") throw new Error("snapTarget: unknown panKind " + String(kind));
     return snapGeneric(geom, pt, occupancy, !!(options && options.allowInnerAngle));
   }
 
@@ -7949,6 +7954,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     readAngles: readAngles,
     bottomClash: bottomClash,
     innerClash: innerClash,
+    innerClearance: innerClearance,
     rimAngles: rimAngles,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
