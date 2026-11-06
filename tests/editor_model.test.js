@@ -164,3 +164,343 @@ test("SE-R4-1: a v6 record round-trips byte-equal through moveUrl and moveImport
   await settle();
   assert.deepStrictEqual(envelopeOf(b).entries[0].record, stored);
 });
+
+// ---- U2a: the editor model, its edit primitives, Undo/Redo and the flag ----
+// docs/plans/2026-11-06-scale-editor-u2-split.md section 3 (U2a); the oracles are
+// the golden parity fixture, the share fixtures and the engine itself.
+const flagHelper = require("./helpers/editor_flag.js");
+const GOLDEN = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "engine_parity_golden_v1.json"), "utf8"));
+const CORPUS = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "engine_corpus_v1.json"), "utf8"));
+const js = (v) => JSON.stringify(v);
+const model = (app) => (text, options) => plain(app.get(`(() => { const r = editorLoad(${js(text)}, ${js(options)}); return r; })()`));
+
+test("U2a-F1: the flag helper substitutes the one ONE_PANEL line, length-preserving, and refuses any other count", () => {
+  assert.strictEqual((HTML.match(/const ONE_PANEL = (?:true |false);/g) || []).length, 1);
+  const on = flagHelper.apply(HTML, true);
+  assert.strictEqual(on.length, HTML.length);
+  assert.ok(on.includes("const ONE_PANEL = true ;"));
+  assert.strictEqual(flagHelper.apply(on, false), HTML);
+  assert.throws(() => flagHelper.apply("no flag here", true), /exactly one/);
+  assert.throws(() => flagHelper.apply("const ONE_PANEL = false;\nconst ONE_PANEL = false;", true), /exactly one/);
+});
+
+test("U2a-F2: the flag ships off, and boot({onePanel}) flips it without moving a byte", () => {
+  assert.strictEqual(appBoot().get("ONE_PANEL"), false);
+  assert.strictEqual(appBoot({ onePanel: false }).get("ONE_PANEL"), false);
+  assert.strictEqual(appBoot({ onePanel: true }).get("ONE_PANEL"), true);
+});
+
+// The suites that name index.html themselves, enumerated from the tree (not by one
+// grep of a call shape). Wrapping each loader in editor_flag.apply belongs to the lane
+// that turns the flag on (U2h): until then a NEW direct reader fails here, so the
+// inventory cannot grow silently, and every default boot() is already covered by
+// boot({onePanel}).
+const DIRECT_READERS = [
+  "tests/app.test.js", "tests/coverage_merge.test.js", "tests/drawer_drag.test.js", "tests/drawer_grid.test.js",
+  "tests/drawer_seats.test.js", "tests/e2e.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
+  "tests/helpers/dump_app_render.js", "tests/layout.test.js", "tests/link_corpus.test.js",
+  "tests/mutation_harness.test.js", "tests/pdfcards.test.js", "tests/sandbox_events.test.js", "tests/select.test.js",
+  "tests/sequence.test.js", "tests/storage_corpus.test.js", "tests/swipe.test.js",
+];
+test("U2a-F3: no suite starts reading index.html directly without joining the inventory", () => {
+  const root = path.join(__dirname, "..");
+  const files = [...fs.readdirSync(__dirname).filter((f) => f.endsWith(".js")).map((f) => "tests/" + f),
+    ...fs.readdirSync(path.join(__dirname, "helpers")).filter((f) => f.endsWith(".js")).map((f) => "tests/helpers/" + f)];
+  const named = files.filter((f) => !/editor_model\.test\.js$|editor_flag\.js$/.test(f) &&
+    fs.readFileSync(path.join(root, f), "utf8").includes("index.html")).sort();
+  assert.deepStrictEqual(named, [...DIRECT_READERS].sort());
+});
+
+const PARITY_KINDS = [];
+for (const c of GOLDEN.cases) for (const k of Object.keys(c.cases || {})) PARITY_KINDS.push([c, k]);
+
+test("U2a-P1: every golden scale loads into the model and exports byte-equal string, layout, record and link", () => {
+  const app = appBoot();
+  assert.ok(PARITY_KINDS.length >= 50);
+  for (const [c, k] of PARITY_KINDS) {
+    const g = c.cases[k];
+    const got = plain(app.get(`(() => {
+      const m = editorLoad(${js(c.formatSeed)}, ${js(g.options)});
+      if (!m.ok) return { ok: false, code: m.code };
+      const x = editorExport(m.value);
+      return { ok: true, s: x.s, record: x.record, options: x.options, code: x.code,
+        solve: x.solve.ok ? { ok: true, geom: x.solve.value.geom, fields: x.solve.value.fields } : { ok: false, code: x.solve.code } };
+    })()`));
+    const label = c.label + " " + k;
+    assert.strictEqual(got.ok, true, label);
+    assert.strictEqual(got.s, c.formatSeed, label);
+    assert.deepStrictEqual(got.record, g.record, label + " record");
+    assert.deepStrictEqual(got.solve, g.solve, label + " solve");
+    assert.strictEqual(got.code, g.link.ok ? g.link.link : undefined, label + " link");
+  }
+});
+
+test("U2a-P1b: every engine corpus string that parses loads into the model with the corpus fields and a stable text", () => {
+  const app = appBoot();
+  let n = 0;
+  for (const row of CORPUS.corpus.synthetic) {
+    if (!row.parse || !row.parse.ok) continue;
+    n += 1;
+    const got = plain(app.get(`(() => {
+      const m = editorLoad(HPE.core.formatSeed(${js(row.parse.fields)}));
+      return m.ok ? { fields: m.value.fields, again: editorLoad(editorExport(m.value).s).value.fields } : m;
+    })()`));
+    assert.deepStrictEqual(got.fields, row.parse.fields, row.name);
+    assert.deepStrictEqual(got.again, row.parse.fields, row.name + " re-parse");
+  }
+  assert.ok(n >= 10);
+});
+
+const FIXTURE_DIR = path.join(__dirname, "fixtures", "share_links_v1");
+const CAPTURE = `(code) => {
+  const dec = HPE.share.decode(code);
+  if (!dec.ok) return { refused: dec.code };
+  const m = editorLoadShare(code);
+  if (!m.ok) return { refused: m.code };
+  const x = editorExport(m.value);
+  return { record: x.record, direct: scaleRecord({ fields: dec.value.fields, options: dec.value.options }), code: x.code,
+    string: HPE.core.formatSeed(dec.value.fields) };
+}`;
+
+test("U2a-P4: every v1-v6 share fixture loads into the model and re-exports the record the decoded seed gives", () => {
+  const app = appBoot();
+  let n = 0;
+  for (const file of ["v1", "v2", "v3", "v4", "v5", "v6"]) {
+    const fx = JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, file + ".json"), "utf8"));
+    for (const e of fx.entries) {
+      n += 1;
+      const got = plain(app.get(`(${CAPTURE})(${js(e.link)})`));
+      assert.strictEqual(got.refused, undefined, file + " " + e.id);
+      assert.strictEqual(js(got.record), js(got.direct), file + " " + e.id);
+      assert.strictEqual(got.record.s, got.string, file + " " + e.id);
+    }
+  }
+  assert.ok(n >= 20);
+});
+
+const PROFILE_CODE = (app) => app.get(`(() => {
+  const s = HPE.core.parseSeed("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4").value;
+  const map = HPE.core.proposeProfileMap(s.fields).map;
+  const opts = { ...s.options, profile: { id: "paired", rev: 2, map } };
+  const r = HPE.share.encode({ fields: s.fields, options: opts });
+  return r.ok ? r.value : r;
+})()`);
+const PIN8 = (app) => app.get(`(() => {
+  const s = HPE.core.parseSeed("[A2] [B2] [C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5").value;
+  const opts = { ...s.options, palette: 4, angles: { inner: [125, 55], bottom: [null, 240, null] } };
+  const r = HPE.share.encode({ fields: s.fields, options: opts });
+  return r.ok ? r.value : r;
+})()`);
+
+test("U2a-P7: a v7 profile link and a v8 pinned-cyclops link (with at-, ai- and palette-N) round-trip through the model", () => {
+  const app = appBoot();
+  const v7 = PROFILE_CODE(app);
+  assert.strictEqual(typeof v7, "string");
+  assert.strictEqual(v7.charAt(0), "7");
+  const v8 = PIN8(app);
+  assert.strictEqual(typeof v8, "string");
+  assert.strictEqual(v8.charAt(0), "8");
+  assert.ok(/ai-/.test(v8) && /at-/.test(v8) && /palette-5/.test(v8), v8);
+  for (const code of [v7, v8]) {
+    const got = plain(app.get(`(${CAPTURE})(${js(code)})`));
+    assert.strictEqual(got.refused, undefined, code);
+    assert.strictEqual(js(got.record), js(got.direct), code);
+    assert.strictEqual(got.code, code, "the link re-exports byte-equal");
+  }
+  const rec8 = plain(app.get(`editorExport(editorLoadShare(${js(v8)}).value).record`));
+  assert.strictEqual(rec8.v, 6);
+  assert.deepStrictEqual(rec8.o.angles, { inner: [125, 55], bottom: [null, 240, null] });
+  assert.strictEqual(plain(app.get(`editorExport(editorLoadShare(${js(v7)}).value).record`)).v, 5);
+});
+
+test("U2a-P4b: a v9 link is refused through the existing needs-newer path", () => {
+  const app = appBoot();
+  const v8 = PIN8(app);
+  const forged = "9" + v8.slice(1);
+  const via = plain(app.get(`(() => { const a = HPE.share.decode(${js(forged)}); const b = editorLoadShare(${js(forged)}); return { a: a.code, b: b.code, ok: b.ok }; })()`));
+  assert.strictEqual(via.a, "NEEDS_NEWER_APP");
+  assert.strictEqual(via.b, "NEEDS_NEWER_APP");
+  assert.strictEqual(via.ok, false);
+  assert.strictEqual(plain(app.get(`editorLoadRecord({ v: 9, s: "(D3) A3 C4", o: {} })`)).code, "NEEDS_NEWER_APP");
+});
+
+const NOTES = (names) => names.join(" ");
+const R13 = ["A3", "Bb3", "B3", "C4", "C#4", "D4", "Eb4", "E4", "F4", "F#4", "G4", "Ab4", "A4"];
+const OVER = {
+  "13 rim": "(C3) " + NOTES(R13),
+  "7 cyclops": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | " + NOTES(["C5", "D5", "E5", "F5", "G5", "A5", "B5"]),
+  "13 bottom": "[A1] [Bb1] [B1] [C2] [C#2] [D2] [Eb2] [E2] [F2] [F#2] [G2] [Ab2] [A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4",
+};
+
+test("U2a-P9: an over-cap scale loads and exports unchanged; the model never trims", () => {
+  const app = appBoot();
+  for (const [label, text] of Object.entries(OVER)) {
+    const got = plain(app.get(`(() => {
+      const m = editorLoad(${js(text)});
+      if (!m.ok) return { ok: false, code: m.code };
+      const x = editorExport(m.value);
+      const direct = HPE.core.parseSeed(${js(text)}).value;
+      return { ok: true, s: x.s, again: editorLoad(x.s).value.fields, fields: direct.fields, record: x.record,
+        link: x.code, linkDirect: HPE.share.encode(direct).value };
+    })()`));
+    assert.strictEqual(got.ok, true, label);
+    assert.deepStrictEqual(got.again, got.fields, label);
+    assert.strictEqual(got.link, got.linkDirect, label);
+    assert.strictEqual(got.record.s, got.s, label);
+  }
+  const sizes = plain(app.get(`(() => { const r = ringSizes(editorLoad(${js(OVER["13 bottom"])}).value.fields); return r; })()`));
+  assert.strictEqual(sizes.bottom, 13);
+});
+
+const BASE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+const WITH_BOTTOM = "[A2] [B2] " + BASE;
+const run = (app, body) => plain(app.get(`(() => { ${body} })()`));
+const LOAD = (text, options) => `const m0 = editorLoad(${js(text)}, ${js(options)}).value;`;
+
+test("U2a-M1: adding or removing a note resets that ring's seats to solved and keeps every other ring's (D9)", () => {
+  const app = appBoot();
+  const seats = { rim: [1, 0, 2, 3, 4, 5, 6, 7], inner: [1, 0] };
+  const r = run(app, `${LOAD(BASE, { seats })}
+    const added = editorAdd(m0, "rim", "B4");
+    const removed = editorRemove(m0, "rim", 0);
+    const innerAdd = editorAdd(m0, "inner", "E5");
+    return { before: m0.options.seats, added: added.ok && added.value.options.seats, aNotice: added.notice,
+      removed: removed.ok && removed.value.options.seats, innerAdd: innerAdd.ok && innerAdd.value.options.seats,
+      size: added.ok && ringSizes(added.value.fields), solved: added.ok && editorExport(added.value).solve.ok };`);
+  assert.deepStrictEqual(r.before, seats);
+  assert.deepStrictEqual(r.added, { inner: [1, 0] }, "rim seats reset, inner kept");
+  assert.deepStrictEqual(r.aNotice, { seatsReset: "rim" });
+  assert.deepStrictEqual(r.removed, { inner: [1, 0] });
+  assert.deepStrictEqual(r.innerAdd, { rim: seats.rim }, "inner seats reset, rim kept");
+  assert.strictEqual(r.size.rim, 9);
+  assert.strictEqual(r.solved, true);
+});
+
+test("U2a-M2: a pinned angle survives a count change; a clash the change creates unpins the newest pin (D18)", () => {
+  const app = appBoot();
+  const kept = run(app, `${LOAD("[A2] [B2] " + BASE.slice(0), { angles: { bottom: [240, null] } })}
+    const added = editorAdd(m0, "bottom", "C3");
+    return { angles: added.value.options.angles, notice: added.notice };`);
+  assert.deepStrictEqual(kept.angles, { bottom: [240, null, null] }, "the pin stays, the newcomer is auto");
+  assert.strictEqual(kept.notice, undefined);
+  const clash = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [210, null] } })}
+    const added = editorAdd(m0, "bottom", "C3");
+    return { ok: added.ok, angles: added.value.options.angles, notice: added.notice, solved: editorExport(added.value).solve.ok };`);
+  assert.strictEqual(clash.ok, true);
+  assert.strictEqual(clash.angles, undefined, "the clashing pin is gone and the empty list dropped");
+  assert.deepStrictEqual(clash.notice, { unpinned: [{ ring: "bottom", i: 0 }] });
+  assert.strictEqual(clash.solved, true);
+  const newest = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [240, null] } })}
+    const second = editorSetAngle(m0, "bottom", 1, 100);
+    const added = editorAdd(second.value, "bottom", "C3");
+    return { pins: second.value.pins, angles: added.value.options.angles, notice: added.notice };`);
+  assert.deepStrictEqual(newest.notice.unpinned[0], { ring: "bottom", i: 1 }, "the pin set last goes first");
+  assert.deepStrictEqual(newest.angles, { bottom: [240, null, null] }, "the older pin stays when removing the newest clears the clash");
+});
+
+test("U2a-M3: primitives are pure and refuse without changing the model", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [null, 240] } })}
+    const snap = JSON.stringify(m0);
+    const deep = (o) => { Object.freeze(o); for (const k of Object.keys(o)) if (o[k] && typeof o[k] === "object") deep(o[k]); return o; };
+    deep(m0);
+    const outs = [editorAdd(m0, "rim", "B4"), editorRemove(m0, "inner", 0), editorSetAngle(m0, "bottom", 0, 100),
+      editorSwapSeats(m0, "rim", 0, 3), editorExchangeAngles(m0, "bottom", 0, 1), editorSetPalette(m0, 3)];
+    const refused = [editorAdd(m0, "rim", "A3"), editorAdd(m0, "rim", "nope"), editorRemove(m0, "rim", 99),
+      editorSetAngle(m0, "rim", 0, 100), editorSwapSeats(m0, "bottom", 0, 1), editorSetPalette(m0, 11)];
+    return { same: snap === JSON.stringify(m0), ok: outs.map((o) => o.ok), refused: refused.map((o) => o.ok) };`);
+  assert.strictEqual(r.same, true);
+  assert.deepStrictEqual(r.ok, [true, true, true, true, true, true]);
+  assert.deepStrictEqual(r.refused, [false, false, false, false, false, false],
+    "a duplicate, a non-note, a bad index, an angle on the rim, a seat swap beside bottom pins and a palette outside 0-9 are refused");
+});
+
+test("U2a-M4: random add/remove/pin/swap sequences never leave an invalid seat list or angle list (property)", () => {
+  const app = appBoot();
+  const r = run(app, `
+    let seed = 20261106; const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+    const pick = (a) => a[Math.floor(rnd() * a.length)];
+    const NAMES = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+    let m = editorLoad(${js(WITH_BOTTOM)}, { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7], inner: [1, 0] } }).value;
+    const canon = (v) => (v && typeof v === "object" ? (Array.isArray(v) ? v.map(canon) : Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])]))) : v);
+    const bad = []; let applied = 0, refused = 0, unpinned = 0, resets = 0;
+    for (let step = 0; step < 400; step += 1) {
+      const ring = pick(["rim", "inner", "bottom"]);
+      const n = ringSizes(m.fields)[ring];
+      const kind = pick(["add", "add", "remove", "pin", "swap", "xchg", "unpin"]);
+      let res;
+      if (kind === "add") res = editorAdd(m, ring, pick(NAMES) + (ring === "bottom" ? 2 : ring === "inner" ? 5 : 4));
+      else if (kind === "remove") res = editorRemove(m, ring, Math.floor(rnd() * Math.max(n, 1)));
+      else if (kind === "pin") res = editorSetAngle(m, ring, Math.floor(rnd() * Math.max(n, 1)), Math.floor(rnd() * 360));
+      else if (kind === "unpin") res = editorSetAngle(m, ring, Math.floor(rnd() * Math.max(n, 1)), null);
+      else if (kind === "swap") res = editorSwapSeats(m, ring, Math.floor(rnd() * Math.max(n, 1)), Math.floor(rnd() * Math.max(n, 1)));
+      else res = editorExchangeAngles(m, ring, Math.floor(rnd() * Math.max(n, 1)), Math.floor(rnd() * Math.max(n, 1)));
+      if (!res.ok) { refused += 1; continue; }
+      applied += 1;
+      if (res.notice && res.notice.unpinned) unpinned += 1;
+      if (res.notice && res.notice.seatsReset) resets += 1;
+      m = res.value;
+      const sizes = ringSizes(m.fields);
+      const o = m.options;
+      for (const rg of ["rim", "inner", "bottom"]) {
+        const s = o.seats && o.seats[rg];
+        if (s && (s.length !== sizes[rg] || [...s].sort((a, b) => a - b).some((v, i) => v !== i))) bad.push([step, "seats", rg, s]);
+        const a = o.angles && o.angles[rg];
+        if (a && (a.length !== sizes[rg] || a.every((v) => v === null))) bad.push([step, "angles", rg, a]);
+        if (o.angles && o.angles[rg] && o.seats && o.seats[rg] && rg !== "rim") bad.push([step, "both", rg]);
+      }
+      const x = editorExport(m);
+      if (!x.solve.ok) bad.push([step, "solve", x.solve.code]);
+      const back = editorLoadShare(x.code);
+      if (!back.ok || JSON.stringify(canon(editorExport(back.value).record)) !== JSON.stringify(canon(x.record))) bad.push([step, "roundtrip"]);
+    }
+    return { bad: bad.slice(0, 3), applied, refused, unpinned, resets };`);
+  assert.deepStrictEqual(r.bad, []);
+  assert.ok(r.applied > 100 && r.refused > 0, JSON.stringify(r));
+  assert.ok(r.resets > 0, "the walk reached a seat reset");
+});
+
+test("U2a-H1: every primitive undoes to the byte-equal model and Redo replays it; a new action clears Redo", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(WITH_BOTTOM, { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, angles: { bottom: [null, 240] } })}
+    const steps = [
+      (m) => editorAdd(m, "rim", "B4"), (m) => editorRemove(m, "inner", 0), (m) => editorSetAngle(m, "bottom", 0, 100),
+      (m) => editorSwapSeats(m, "rim", 0, 3), (m) => editorExchangeAngles(m, "bottom", 0, 1), (m) => editorSetPalette(m, 3),
+      (m) => editorAdd(m, "bottom", "C3"),
+    ];
+    let h = editorHistoryNew(m0);
+    const states = [JSON.stringify(m0)];
+    for (const step of steps) {
+      const res = editorApply(h, step);
+      if (!res.ok) return { failed: true };
+      h = res.history;
+      states.push(JSON.stringify(h.present));
+    }
+    const undone = [];
+    for (let i = steps.length; i > 0; i -= 1) { h = editorUndo(h); undone.push(JSON.stringify(h.present) === states[i - 1]); }
+    const extra = editorUndo(h);
+    const redone = [];
+    for (let i = 1; i <= steps.length; i += 1) { h = editorRedo(h); redone.push(JSON.stringify(h.present) === states[i]); }
+    const afterRedo = editorRedo(h);
+    const back = editorUndo(h);
+    const branched = editorApply(back, (m) => editorSetPalette(m, 7));
+    return { undone, redone, depth: states.length - 1, noop: extra === h || JSON.stringify(extra.present) === states[0],
+      noRedo: afterRedo.present === h.present, cleared: branched.history.future.length, canRedo: editorCanRedo(branched.history), canUndo: editorCanUndo(h) };`);
+  assert.strictEqual(r.failed, undefined);
+  assert.deepStrictEqual(r.undone, [true, true, true, true, true, true, true]);
+  assert.deepStrictEqual(r.redone, [true, true, true, true, true, true, true]);
+  assert.strictEqual(r.noop, true, "Undo at the start stays put");
+  assert.strictEqual(r.noRedo, true, "Redo at the end stays put");
+  assert.strictEqual(r.cleared, 0);
+  assert.strictEqual(r.canRedo, false);
+  assert.strictEqual(r.canUndo, true);
+});
+
+test("U2a-H2: a refused action adds no history step", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(BASE)}
+    const h = editorHistoryNew(m0);
+    const res = editorApply(h, (m) => editorAdd(m, "rim", "A3"));
+    return { ok: res.ok, code: res.code };`);
+  assert.strictEqual(r.ok, false);
+});
