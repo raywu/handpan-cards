@@ -19681,7 +19681,13 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
     assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
     assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
+    const droppedBranch = `    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
+      const { name, ...bare } = row.r.o;
+      if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+    }`;
+    assert.ok(shipped.includes(droppedBranch.replace("moveCanon(row.r)", "moveCanon(read.record)")) || shipped.includes(droppedBranch), "the shipped region no longer holds the branch lane U replaced");
     const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))")
+      .replace(droppedBranch, () => `    else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });`)
       .replace("const MOVE_FROM = null;\nconst MOVE_TARGET = null;\n", () => 'const MOVE_FROM = "handpan.raywu.org";\nconst MOVE_TARGET = "https://handpantheory.com";\n');
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
@@ -20050,11 +20056,15 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.ok(!/javascript/.test(app.get("location.href")));
   });
 
-  test("a record the app cannot read is skipped and the rest import", async () => {
+  test("a record the app cannot read is carried as opaque bytes and the rest import", async () => {
     const origin = createOrigin({});
-    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`;
+    const future = { v: 99, s: "future", o: {} };
+    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`;
     await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
-    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["GOOD"]);
+    const rows = envelopeAt(origin).entries.map(r => r.record);
+    assert.strictEqual(rows.length, 2, "the unreadable row is carried, never dropped (R4-1)");
+    assert.ok(rows.some(r => r.o.name === "GOOD"));
+    assert.deepStrictEqual(rows.find(r => r.v === 99), future);
   });
 
   test("an older build's edit keeps the top-level importedIds", async () => {
