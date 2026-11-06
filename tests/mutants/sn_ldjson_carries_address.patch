@@ -1,0 +1,14 @@
+# kills: the JSON-LD block parses and states only what the page shows
+# suite: node --test --test-name-pattern ^the.JSON-LD.block.parses tests/app.test.js
+# The JSON-LD block gains the bare contact address without an email key (owner gate G7 forbids it).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -52,6 +52,7 @@
+   "applicationCategory": "MusicApplication",
+   "operatingSystem": "Any",
+   "browserRequirements": "Requires JavaScript",
++  "contactPoint": "hi@handpantheory.com",
+   "isAccessibleForFree": true,
+   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+   "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"
