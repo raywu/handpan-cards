@@ -92,7 +92,7 @@ HPE.sync = (function () {
       if (d && d.deckId !== undefined) deckIdentity.set(d.deckId, d.identity);
     }
     const copyOf = record => (ctx.copyName ? ctx.copyName(record) : clone(record));
-    let cursor = sc.cursor, inserts = 0;
+    let cursor = sc.cursor, inserts = 0, held = false;
 
     const insert = (R, reason, extra) => {
       const rid = R.scale_id, readable = readableIn(ctx, R.record);
@@ -112,9 +112,9 @@ HPE.sync = (function () {
     };
 
     for (const R of remote) {
-      if (R.rev > cursor) cursor = R.rev;
       const rid = R.scale_id, B = base[rid], L = byRid.get(rid);
-      if (L && localOnly.has(L.id)) continue;
+      if (L && localOnly.has(L.id)) { held = true; continue; }
+      if (!held && R.rev > cursor) cursor = R.rev;
       if (!R.deleted && deferred.has(rid)) deferred.delete(rid);
 
       if (!R.deleted) {
@@ -128,8 +128,9 @@ HPE.sync = (function () {
             continue;
           }
           const d = readableIn(ctx, R.record) ? describeIn(ctx, R.record) : null;
-          const match = d && candidates.find(e => {
-            const dl = describeIn(ctx, e.record);
+          const match = candidates.find(e => {
+            if (equal(e.record, R.record)) return true;
+            const dl = d && describeIn(ctx, e.record);
             return dl && dl.meaning === d.meaning;
           });
           if (match) {
