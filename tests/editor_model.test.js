@@ -407,12 +407,12 @@ test("U2a-M3: primitives are pure and refuse without changing the model", () => 
     const outs = [editorAdd(m0, "rim", "B4"), editorRemove(m0, "inner", 0), editorSetAngle(m0, "bottom", 0, 100),
       editorSwapSeats(m0, "rim", 0, 3), editorExchangeAngles(m0, "bottom", 0, 1), editorSetPalette(m0, 3)];
     const refused = [editorAdd(m0, "rim", "A3"), editorAdd(m0, "rim", "nope"), editorRemove(m0, "rim", 99),
-      editorSetAngle(m0, "rim", 0, 100), editorSwapSeats(m0, "bottom", 0, 1), editorSetPalette(m0, 11)];
+      editorSetAngle(m0, "rim", 0, 100), editorSwapSeats(m0, "rim", 0, 99), editorSetPalette(m0, 11)];
     return { same: snap === JSON.stringify(m0), ok: outs.map((o) => o.ok), refused: refused.map((o) => o.ok) };`);
   assert.strictEqual(r.same, true);
   assert.deepStrictEqual(r.ok, [true, true, true, true, true, true]);
   assert.deepStrictEqual(r.refused, [false, false, false, false, false, false],
-    "a duplicate, a non-note, a bad index, an angle on the rim, a seat swap beside bottom pins and a palette outside 0-9 are refused");
+    "a duplicate, a non-note, a bad index, an angle on the rim, a seat swap off the ring and a palette outside 0-9 are refused");
 });
 
 test("U2a-M4: random add/remove/pin/swap sequences never leave an invalid seat list or angle list (property)", () => {
@@ -496,11 +496,186 @@ test("U2a-H1: every primitive undoes to the byte-equal model and Redo replays it
   assert.strictEqual(r.canUndo, true);
 });
 
-test("U2a-H2: a refused action adds no history step", () => {
+test("U2a-H2: a refused action adds no history step and hands the history back unchanged", () => {
   const app = appBoot();
   const r = run(app, `${LOAD(BASE)}
     const h = editorHistoryNew(m0);
     const res = editorApply(h, (m) => editorAdd(m, "rim", "A3"));
-    return { ok: res.ok, code: res.code };`);
+    const ok = editorApply(h, (m) => editorSetPalette(m, 3));
+    const again = editorApply(ok.history, (m) => editorAdd(m, "rim", "nope"));
+    return { ok: res.ok, code: res.code, same: res.history === h, depth: res.history.past.length,
+      again: again.history === ok.history, againDepth: again.history.past.length, canUndo: editorCanUndo(again.history) };`);
   assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.same, true, "the refused action returns the very history it was given");
+  assert.strictEqual(r.depth, 0);
+  assert.strictEqual(r.again, true);
+  assert.strictEqual(r.againDepth, 1, "one accepted step, none added by the refusal");
+  assert.strictEqual(r.canUndo, true);
+});
+
+test("U2a-H3: an action that changes nothing adds no Undo step", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [null, 240] }, seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } })}
+    const h = editorHistoryNew(m0);
+    const outs = [(m) => editorExchangeAngles(m, "bottom", 1, 1), (m) => editorSwapSeats(m, "rim", 2, 2),
+      (m) => editorSwapSeats(m, "bottom", 0, 0), (m) => editorSetPalette(m, 0), (m) => editorSetAngle(m, "bottom", 1, 240)]
+      .map((step) => { const res = editorApply(h, step); return { ok: res.ok, same: res.history === h, depth: res.history.past.length }; });
+    const real = editorApply(h, (m) => editorSwapSeats(m, "rim", 0, 1));
+    return { outs, real: real.history.past.length };`);
+  for (const o of r.outs) assert.deepStrictEqual(o, { ok: true, same: true, depth: 0 });
+  assert.strictEqual(r.real, 1, "a real change still adds its step");
+});
+
+// The legacy sheet's own functions are the oracle: the same scale and options are put in the
+// sheet's globals, the sheet's function runs, and the model must land on the same lists.
+const LEGACY = (text, opts) => `
+  const seed = HPE.core.parseSeed(${js(text)}).value;
+  const opts = ${js(opts || {})};
+  lastSeed = seed;
+  layoutSeats = opts.seats ? JSON.parse(JSON.stringify(opts.seats)) : null;
+  layoutAngles = opts.angles ? JSON.parse(JSON.stringify(opts.angles)) : null;
+  lastSolved = HPE.layout.solve({ fields: seed.fields, options: { ...seed.options, ...opts } }).value;
+  resyncSheet = () => {}; paintLayout = () => {};`;
+const legacy = (app, text, opts, call) => run(app, `${LEGACY(text, opts)}
+  const ok = ${call}; return { ok, angles: (layoutAngles && layoutAngles.bottom) || null, seats: layoutSeats };`);
+const modelRun = (app, text, opts, call) => run(app, `${LOAD(text, opts)}
+  const r = ${call};
+  if (!r.ok) return { ok: false, code: r.code, kept: JSON.stringify(m0) === JSON.stringify(m0) };
+  const o = r.value.options;
+  return { ok: true, angles: (o.angles && o.angles.bottom) || null, seats: o.seats || null,
+    inner: (o.angles && o.angles.inner) || null, link: editorExport(r.value).code,
+    solved: editorExport(r.value).solve.ok, noop: JSON.stringify(r.value) === JSON.stringify(m0) };`);
+const BOTTOM3 = "[A2] [B2] [C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+
+test("U2a-X1: exchanging two bottom notes trades their solved angles exactly as the sheet does, pinning both", () => {
+  const app = appBoot();
+  const cases = [
+    { opts: { angles: { bottom: [null, 240, null] } }, i: 0, j: 1, expect: [240, 330, null] },
+    { opts: { angles: { bottom: [null, null, 240] } }, i: 0, j: 1, expect: null },
+    { opts: { angles: { bottom: [60, 240, null] } }, i: 1, j: 0, expect: [240, 60, null] },
+  ];
+  for (const c of cases) {
+    const label = js(c.opts) + " " + c.i + "," + c.j;
+    const want = legacy(app, BOTTOM3, c.opts, `swapSeats("bottom", ${c.i}, ${c.j})`);
+    assert.strictEqual(want.ok, true, label);
+    if (c.expect) assert.deepStrictEqual(want.angles, c.expect, label + " the sheet's own result");
+    const viaExchange = modelRun(app, BOTTOM3, c.opts, `editorExchangeAngles(m0, "bottom", ${c.i}, ${c.j})`);
+    const viaSwap = modelRun(app, BOTTOM3, c.opts, `editorSwapSeats(m0, "bottom", ${c.i}, ${c.j})`);
+    for (const got of [viaExchange, viaSwap]) {
+      assert.strictEqual(got.ok, true, label);
+      assert.deepStrictEqual(got.angles, want.angles, label + " angles");
+      assert.deepStrictEqual(got.seats, want.seats, label + " seats");
+      assert.strictEqual(got.solved, true, label);
+      assert.strictEqual(got.noop, false, label + " the exchange changed the model");
+    }
+    assert.strictEqual(viaExchange.link, viaSwap.link, label + " one link");
+  }
+  const first = modelRun(app, BOTTOM3, cases[0].opts, 'editorExchangeAngles(m0, "bottom", 0, 1)');
+  assert.ok(first.link.includes("at-240,330,"), "the link carries both traded angles: " + first.link);
+});
+
+test("U2a-X2: an exchange the 5 degree steps cannot hold is refused as the sheet refuses it", () => {
+  const app = appBoot();
+  const n = 23;
+  const notes = Array.from({ length: n }, (_, k) => `[${"CDEFGAB"[k % 7]}${1 + Math.floor(k / 7)}]`).join(" ");
+  const text = notes + " (A3) C4 D4 E4 F4";
+  const opts = { angles: { bottom: Array.from({ length: n }, (_, k) => (k === 22 ? 90 : null)) } };
+  for (const [a, b] of [[0, 2], [2, 0]]) {
+    const want = legacy(app, text, opts, `swapSeats("bottom", ${a}, ${b})`);
+    assert.strictEqual(want.ok, false, "the sheet refuses " + a + "," + b);
+    assert.deepStrictEqual(want.angles, opts.angles.bottom, "and moves nothing");
+    for (const fn of ["editorExchangeAngles", "editorSwapSeats"]) {
+      const got = modelRun(app, text, opts, `${fn}(m0, "bottom", ${a}, ${b})`);
+      assert.strictEqual(got.ok, false, fn + " " + a + "," + b);
+    }
+  }
+});
+
+test("U2a-X3: a seat swap follows the sheet: seats without bottom pins, the angle trade with them", () => {
+  const app = appBoot();
+  const cases = [
+    { text: BASE, opts: {}, ring: "rim", i: 0, j: 3 },
+    { text: WITH_BOTTOM, opts: { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, ring: "rim", i: 1, j: 2 },
+    { text: BOTTOM3, opts: {}, ring: "bottom", i: 0, j: 2 },
+    { text: BOTTOM3, opts: { seats: { bottom: [1, 0, 2] } }, ring: "bottom", i: 0, j: 1 },
+  ];
+  for (const c of cases) {
+    const label = c.ring + " " + c.i + "," + c.j + " " + js(c.opts);
+    const want = legacy(app, c.text, c.opts, `swapSeats(${js(c.ring)}, ${c.i}, ${c.j})`);
+    const got = modelRun(app, c.text, c.opts, `editorSwapSeats(m0, ${js(c.ring)}, ${c.i}, ${c.j})`);
+    assert.strictEqual(got.ok, want.ok, label);
+    assert.deepStrictEqual(got.seats, want.seats, label + " seats");
+    assert.deepStrictEqual(got.angles, want.angles, label + " angles");
+  }
+  const cyclops = modelRun(app, BOTTOM3 + " | C5 D5", { angles: { inner: [125, 55] } }, 'editorSwapSeats(m0, "bottom", 0, 1)');
+  assert.deepStrictEqual(cyclops.seats, { bottom: [1, 0, 2] }, "a pinned cyclops is not a bottom pin: the seats trade");
+  assert.strictEqual(cyclops.angles, null);
+});
+
+test("U2a-X4: pinning a bottom note on a ring with a custom seat order first pins every note where it sits, as the sheet does", () => {
+  const app = appBoot();
+  const seated = { seats: { bottom: [1, 0, 2] } };
+  const want = legacy(app, BOTTOM3, seated, `slideNote({ ring: "bottom", i: 2 }, 95, "nudge", 1)`);
+  assert.deepStrictEqual(want.angles, [210, 330, 95], "the sheet's own result");
+  assert.strictEqual(want.seats, null, "the seat order is folded into the angles");
+  const got = modelRun(app, BOTTOM3, seated, 'editorSetAngle(m0, "bottom", 2, 95)');
+  assert.strictEqual(got.ok, true);
+  assert.deepStrictEqual(got.angles, want.angles);
+  assert.strictEqual(got.seats, null);
+  assert.strictEqual(got.solved, true);
+  const plain3 = modelRun(app, BOTTOM3, {}, 'editorSetAngle(m0, "bottom", 1, 300)');
+  const plainWant = legacy(app, BOTTOM3, {}, `slideNote({ ring: "bottom", i: 1 }, 300, "nudge", 1)`);
+  assert.deepStrictEqual(plain3.angles, plainWant.angles, "no seat order: only the one note is pinned");
+  assert.deepStrictEqual(plain3.angles, [null, 300, null]);
+});
+
+test("U2a-X5: pinning a note where it already sits changes nothing unless a seat order is being folded", () => {
+  const app = appBoot();
+  const solvedAt = run(app, `${LOAD(BOTTOM3)}
+    const s = HPE.layout.solve({ fields: m0.fields, options: m0.options }).value;
+    return ringIds(s.fields, "bottom").map((id) => s.fields[id][4]);`);
+  const want = legacy(app, BOTTOM3, {}, `slideNote({ ring: "bottom", i: 1 }, ${solvedAt[1]}, "nudge", 1)`);
+  assert.strictEqual(want.angles, null, "the sheet pins nothing");
+  const got = modelRun(app, BOTTOM3, {}, `editorSetAngle(m0, "bottom", 1, ${solvedAt[1]})`);
+  assert.strictEqual(got.ok, true);
+  assert.strictEqual(got.noop, true);
+  assert.strictEqual(got.angles, null);
+});
+
+test("U2a-X6: the inner ring folds its seat order into pins the same way", () => {
+  const app = appBoot();
+  const inner = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const before = run(app, `${LOAD(inner, { seats: { inner: [1, 0] } })}
+    const s = HPE.layout.solve({ fields: m0.fields, options: m0.options }).value;
+    return ringIds(s.fields, "inner").map((id) => s.fields[id][4]);`);
+  assert.deepStrictEqual(before, [52, 128]);
+  const got = modelRun(app, inner, { seats: { inner: [1, 0] } }, 'editorSetAngle(m0, "inner", 0, 55)');
+  assert.strictEqual(got.ok, true);
+  assert.deepStrictEqual(got.inner, [55, 130], "the other cyclops note stays where it sat, on its 5 degree step");
+  assert.strictEqual(got.seats, null);
+  assert.strictEqual(got.solved, true);
+});
+
+test("U2a-X7: a saved v4 and a saved v6 record load into the model and re-export the same record", () => {
+  const app = appBoot();
+  const records = [
+    { v: 4, s: WITH_BOTTOM.replace(" | C5 D5", ""), o: { palette: 3, seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } } },
+    { v: 4, s: WITH_BOTTOM.replace(" | C5 D5", ""), o: { palette: 0, angles: { bottom: [null, 240] } } },
+    { v: 6, s: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", o: { angles: { inner: [125, 55] } } },
+  ];
+  for (const rec of records) {
+    const label = "v" + rec.v + " " + js(rec.o);
+    const got = run(app, `const rec = ${js(rec)};
+      const read = readSavedRecord(rec);
+      const m = editorLoadRecord(rec);
+      if (!m.ok) return { ok: false, code: m.code, read: read.ok };
+      const x = editorExport(m.value);
+      return { ok: true, read: read.ok, v: x.record.v, s: x.record.s, o: x.record.o, solved: x.solve.ok };`);
+    assert.strictEqual(got.ok, true, label);
+    assert.strictEqual(got.read, true, label + " the app reads it too");
+    assert.strictEqual(got.v, rec.v, label);
+    assert.strictEqual(got.s, rec.s, label);
+    for (const key of Object.keys(rec.o)) assert.deepStrictEqual(got.o[key], rec.o[key], label + " " + key);
+    assert.strictEqual(got.solved, true, label);
+  }
 });
