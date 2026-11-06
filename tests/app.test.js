@@ -641,7 +641,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
+                     "layout", "naming", "select", "share", "sequence", "sync", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -652,7 +652,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence", "swipe"]);
+                                 "share", "sequence", "sync", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -1397,7 +1397,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.INNER_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -19681,7 +19681,13 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
     assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
     assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
+    const droppedBranch = `    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
+      const { name, ...bare } = row.r.o;
+      if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+    }`;
+    assert.ok(shipped.includes(droppedBranch.replace("moveCanon(row.r)", "moveCanon(read.record)")) || shipped.includes(droppedBranch), "the shipped region no longer holds the branch lane U replaced");
     const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))")
+      .replace(droppedBranch, () => `    else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });`)
       .replace("const MOVE_FROM = null;\nconst MOVE_TARGET = null;\n", () => 'const MOVE_FROM = "handpan.raywu.org";\nconst MOVE_TARGET = "https://handpantheory.com";\n');
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
@@ -20050,11 +20056,15 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.ok(!/javascript/.test(app.get("location.href")));
   });
 
-  test("a record the app cannot read is skipped and the rest import", async () => {
+  test("a record the app cannot read is carried as opaque bytes and the rest import", async () => {
     const origin = createOrigin({});
-    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`;
+    const future = { v: 99, s: "future", o: {} };
+    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`;
     await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
-    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["GOOD"]);
+    const rows = envelopeAt(origin).entries.map(r => r.record);
+    assert.strictEqual(rows.length, 2, "the unreadable row is carried, never dropped (R4-1)");
+    assert.ok(rows.some(r => r.o.name === "GOOD"));
+    assert.deepStrictEqual(rows.find(r => r.v === 99), future);
   });
 
   test("an older build's edit keeps the top-level importedIds", async () => {
