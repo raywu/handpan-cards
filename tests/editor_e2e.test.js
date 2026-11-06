@@ -576,9 +576,9 @@ function run() {
 
     test("D23 with a bottom copy of a rim note: a held tray note still replaces a rim note and the ding", async () => {
       await setup("[C4] " + SCALE);
-      await hold("G");
+      await hold("B");
       await tapNote("rim", 0);
-      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "rim")[0];`), "Bb3", "the A3 seat took G4's place in pitch order");
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "rim")[0];`), "Bb3", "A3 gave way to B4 in pitch order");
       assert.ok(!(await status()).includes("is not a note"));
     });
 
