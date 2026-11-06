@@ -132,7 +132,7 @@ function run() {
           line: document.getElementById("editor-line").getAttribute("aria-label") };`);
       assert.ok(r.names.every((n) => n.length > 0), JSON.stringify(r.names));
       assert.strictEqual(r.pan, "Pan diagram");
-      assert.strictEqual(r.role, "img");
+      assert.strictEqual(r.role, "group");
       assert.strictEqual(r.line, "Scale notes - tap to type or paste");
     });
   });
@@ -562,6 +562,32 @@ function run() {
       await tapNote("bottom", 2);
       assert.strictEqual(await status(), await b.eval(`return t("sheet.cannot_trade", { a: ${JSON.stringify(names[0])}, b: ${JSON.stringify(names[1])}, step: ANGLE_STEP });`));
       assert.deepStrictEqual(await model(), before);
+    });
+
+    test("D23 copy: a rim or cyclops note dropped on the ding is refused with a plain message; the hint only promises a bottom note", async () => {
+      await setup("[A2] " + SCALE);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-hint").textContent;`), "Drop a bottom note on the ding to swap it with the root.");
+      const before = await model();
+      await tapNote("rim", 0);
+      await tapNote("ding", 0);
+      assert.strictEqual(await status(), "Only a bottom note can swap with the ding.");
+      assert.deepStrictEqual(await model(), before);
+    });
+
+    test("D23 with a bottom copy of a rim note: a held tray note still replaces a rim note and the ding", async () => {
+      await setup("[C4] " + SCALE);
+      await hold("G");
+      await tapNote("rim", 0);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "rim")[0];`), "Bb3", "the A3 seat took G4's place in pitch order");
+      assert.ok(!(await status()).includes("is not a note"));
+    });
+
+    test("SE-15: the note labels are exposed, so no ancestor of a hit target is role=img", async () => {
+      await setup("[A2] " + SCALE);
+      const r = await b.eval(`const c = document.querySelector("#editor-pan .ehit"); return { img: !!c.closest('[role="img"]') && c.closest('[role="img"]') !== c, inside: !!c.parentElement.closest('[role="img"]'), pan: document.getElementById("editor-pan").getAttribute("role"), name: document.getElementById("editor-pan").getAttribute("aria-label") };`);
+      assert.strictEqual(r.inside, false);
+      assert.strictEqual(r.pan, "group");
+      assert.strictEqual(r.name, "Pan diagram");
     });
 
     test("SE-15: every note carries its zone and seat in its accessible name", async () => {

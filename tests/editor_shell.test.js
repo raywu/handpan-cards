@@ -362,3 +362,33 @@ test("U2c-15 (parity 2): add, remove, swap, root replace and a pinned bottom ang
     assert.deepStrictEqual(got, via(text, options), label + ": same record and share link as the tabs");
   }
 });
+
+test("U2c-16 (ENGINE-SPEC, D10): a bottom copy of a top note is legal, so replace, ding replace and a cross-zone swap all succeed on it; a same-shell repeat is still refused by the engine", () => {
+  const a = app();
+  const BASE = "[C4] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const model = (call) => plain(a.get(`(() => { const m0 = editorLoad(${JSON.stringify(BASE)}, undefined).value; const r = ${call}; if (!r.ok) return { refused: r.code, reason: r.reason }; const e = editorExport(r.value); return { code: e.code, link: e.link, record: e.record }; })()`));
+  const via = (text) => plain(a.get(`(() => { const e = editorExport(editorLoad(${JSON.stringify(text)}).value); return { code: e.code, link: e.link, record: e.record }; })()`));
+  const cases = [
+    ["replace a rim note (hold G3, tap A3)", `editorReplace(m0, "rim", 0, "G3")`, "[C4] (D3) G3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+    ["replace the ding", `editorReplaceDing(m0, "C3")`, "[C4] (C3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+    ["swap across zones", `editorSwapNames(m0, { ring: "rim", i: 7 }, { ring: "inner", i: 0 })`, "[C4] (D3) A3 Bb3 C4 D4 E4 F4 G4 C5 | A4 D5"],
+    ["replace the bottom copy", `editorReplace(m0, "bottom", 0, "C3")`, "[C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+  ];
+  for (const [label, call, text] of cases) {
+    const got = model(call);
+    assert.strictEqual(got.refused, undefined, label + " is accepted: " + got.reason);
+    assert.deepStrictEqual(got, via(text), label + ": same record and share link as the typed scale");
+  }
+  const repeat = model(`editorReplace(m0, "rim", 0, "C4")`);
+  assert.strictEqual(repeat.refused, "NOTE_REPEATED", "a repeat inside one shell keeps the engine's reason");
+  assert.doesNotMatch(repeat.reason, /is not a note/);
+});
+
+test("U2c-17 (nit 4): placing a pinned note keeps the add's notice and the pin's notice", () => {
+  const a = app();
+  withModel(a, "[A2] [B2] " + SCALE, `{ seats: { bottom: [1, 0] } }`);
+  a.run(`globalThis.__real = editorSetAngle; editorSetAngle = (...args) => { const r = __real(...args); return r.ok ? { ...r, notice: { unpinned: [{ ring: "bottom", i: 0 }] } } : r; }; true`);
+  const res = plain(a.get(`editorPlace(__m, "bottom", "C3", 120)`));
+  assert.strictEqual(res.ok, true);
+  assert.deepStrictEqual(res.notice, { seatsReset: "bottom", unpinned: [{ ring: "bottom", i: 0 }] });
+});
