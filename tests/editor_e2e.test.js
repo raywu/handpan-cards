@@ -775,6 +775,31 @@ function run() {
         assert.strictEqual((await model()).options.angles, undefined);
       });
 
+      test("an empty cyclops arc and bottom ring show as targets for a held note and take the first note by tap or pill", async () => {
+        await setup("(D3) " + RIM8);
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`), 0, "no targets without a hold");
+        await hold("E");
+        await b.click("#editor-oct-up");
+        assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-pan .etarget")].map((e) => e.dataset.ring);`), ["inner", "bottom"]);
+        await tapSpot(...polar(0.38, 90));
+        assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner");`), ["E5"], await status());
+        await hold("E");
+        await b.click("#editor-oct-down");
+        await b.click("#editor-oct-down");
+        await tapSpot(...polar(1.15, 150));
+        assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["E3"], await status());
+        await hold("F");
+        await b.click("#editor-pill-bottom");
+        assert.strictEqual((await pill("bottom")).text, "+ Bottom 2 of 12");
+      });
+
+      test("the octave stepper carries a visible Octave label and keeps its Octave n accessible name", async () => {
+        await setup(SCALE);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-oct-label").textContent;`), "Octave");
+        assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor-oct-label")).display !== "none";`), true);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-oct").getAttribute("aria-label");`), "Octave 4");
+      });
+
       test("D18 labels: a wide screen shows the scoped label, a phone shows 'Reset spacing' with the scope in the accessible name", async () => {
         await fresh(1100, 800);
         await openAdd();

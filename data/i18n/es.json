@@ -393,6 +393,7 @@
   "editor.seats_reset": "Custom seat order reset",
   "editor.tray.aria": "Notes",
   "editor.octave": "Octave {n}",
+  "editor.octave_label": "Octave",
   "editor.octave_down": "Octave down",
   "editor.octave_up": "Octave up",
   "editor.flats": "Flats",
