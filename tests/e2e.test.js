@@ -59,6 +59,7 @@ function run() {
       .replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
       .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${moveMode.cap || 20000};`)
+      .replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(moveMode.deadline || null)};`)
       .replace("<head>", () => "<head>" + inject);
   }
   function pseudoDeHtml() {
@@ -20663,7 +20664,7 @@ function run() {
     const port = () => server.address().port;
     const OLD = () => `http://127.0.0.1:${port()}`;
     const NEW = () => `http://localhost:${port()}`;
-    const on = (cap) => { moveMode = { from: "127.0.0.1", target: NEW(), cap }; };
+    const on = (cap, deadline) => { moveMode = { from: "127.0.0.1", target: NEW(), cap, deadline }; };
     const envelopeOf = (records, extra = {}, collectionId = SV.ids.collectionA, base = 1) => ({
       schema: 1, collectionId, revision: 1, slotStateRevision: 0,
       entries: records.map((record, i) => ({ instanceId: uid(base + i), revision: 1, displayOrdinal: i + 1, record: clone(record) })),
@@ -20731,7 +20732,7 @@ function run() {
     });
 
     test("move: the banner is an overlay - the footer stays put, and it does not overflow at 375x580 and 320 wide in all 8 locales", async () => {
-      on(); await seed(OLD(), [rec("A"), rec("B", SEED2)]);
+      on(undefined, "2026-11-22"); await seed(OLD(), [rec("A"), rec("B", SEED2)]);
       try {
         for (const [w, h] of [[375, 580], [320, 568]]) {
           await b.setViewport(w, h, true);
@@ -20751,6 +20752,7 @@ function run() {
               return { sw: el.scrollWidth, cw: el.clientWidth, left: r.left, right: r.right, bottom: r.bottom, vw: innerWidth, vh: innerHeight,
                 text: el.querySelector('.move-banner-msg').textContent,
                 btns: [...el.querySelectorAll('button')].map(x => { const q = x.getBoundingClientRect(); return q.left >= r.left && q.right <= r.right; }) };`);
+            assert.match(r.text, /2026/, `${lang} ${w}: the banner carries the deadline date`);
             assert.ok(r.sw <= r.cw, `${lang} ${w}: horizontal overflow ${r.sw} > ${r.cw}`);
             assert.ok(r.left >= 0 && r.right <= r.vw, `${lang} ${w}: inside the viewport width`);
             assert.ok(r.bottom <= r.vh, `${lang} ${w}: inside the viewport height`);
@@ -20761,7 +20763,7 @@ function run() {
     });
 
     test("move: the banner covers no footer control and no top menu control at 375x580, 320x568, 1280x800, 667x375, 568x320 and 844x390", async () => {
-      on(); await seed(OLD(), [rec("A")]);
+      on(undefined, "2026-11-22"); await seed(OLD(), [rec("A")]);
       try {
         for (const [w, h] of [[375, 580], [320, 568], [1280, 800], [667, 375], [568, 320], [844, 390]]) {
           await b.setViewport(w, h, w < 900);

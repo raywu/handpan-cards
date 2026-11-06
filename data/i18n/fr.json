@@ -359,6 +359,8 @@
   },
   "move.banner_empty": "Handpan Theory est maintenant sur {host}.",
   "move.banner_overcap": "{n} de vos {total} gammes enregistrées tiennent en un seul transfert. Les autres restent ici, à cette adresse.",
+  "move.deadline": "Le {date}, {from} déménagera vers {host}. Les gammes personnalisées laissées ici seront perdues. Touchez « Transférer mes gammes » maintenant pour les garder.",
+  "move.deadline_empty": "Le {date}, {from} déménagera vers {host}.",
   "move.go": "TRANSFÉRER MES GAMMES",
   "move.go_plain": "OUVRIR {host}",
   "move.dismiss": "Masquer pour l'instant",

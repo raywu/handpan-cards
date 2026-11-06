@@ -4,10 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17404,5 +17404,5 @@
- const moveArrivalSearch = location.search, moveArrivalHash = location.hash;
+@@ -17407,7 +17407,7 @@ function moveDeadlineText() {
+   return new Intl.DateTimeFormat(uiLang(), { dateStyle: "long", timeZone: "UTC" }).format(new Date(MOVE_DEADLINE + "T00:00:00Z"));
+ }
  function moveUrl() {
 -  const then = moveThenOk(moveArrivalHash) ? moveArrivalHash : "";
 +  const then = moveArrivalHash;
    const plain = { url: MOVE_TARGET + "/" + moveArrivalSearch + then, carried: 0, total: 0 };
    if (savedMode !== "durable" || !savedState) return plain;
+   const rows = savedState.entries.map(row => {
