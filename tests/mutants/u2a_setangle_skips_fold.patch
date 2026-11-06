@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15114,7 +15114,7 @@ function editorSetAngle(m, ring, i, angle) {
+@@ -15174,7 +15174,7 @@ function editorSetAngle(m, ring, i, angle, pin) {
      const current = editorAnglesOf(here, ring);
      const folding = !!(m.options.seats && m.options.seats[ring]);
-     if (!folding && stepOf(angle) === current[i]) return { ok: true, value: m };
+     if (!pin && !folding && stepOf(angle) === current[i]) return { ok: true, value: m };
 -    if (folding) {
 +    if (false) {
        base = editorFold(m, ring, current);
