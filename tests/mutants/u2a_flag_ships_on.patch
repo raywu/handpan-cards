@@ -1,0 +1,15 @@
+# kills: U2a-F2: the flag ships off, and boot({onePanel}) flips it without moving a byte
+# suite: node --test --test-name-pattern ^U2a-F2:.the.flag.ships.off..and.boot..onePanel...flips.it.without.moving.a.byte$ tests/editor_model.test.js
+# fault: Ship the ONE_PANEL constant on.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14986,7 +14986,7 @@ function solveNeotonePreview(seed) {
+  * ring's notes by ascending field id, the same address the legacy sheet uses.
+  * The model never trims: a scale over a cap loads and exports unchanged. The flag
+  * is scaffolding for the editor lanes; nothing reads it until the panel lands. */
+-const ONE_PANEL = false;
++const ONE_PANEL = true ;
+ const EDITOR_RINGS = ["rim", "inner", "bottom"];
+ const EDITOR_PINNABLE = ["inner", "bottom"];
+ const EDITOR_CARRIED = ["seats", "angles", "replaces"];
