@@ -1,0 +1,14 @@
+# kills: edit-vs-edit converges to exactly two scales
+# suite: node --test --test-name-pattern edit-vs-edit.converges.to.exactly.two.scales tests/sync.test.js
+# The conflict copy no longer advances the local base rev, so the local push always conflicts.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -158,7 +158,6 @@
+         } else {
+           insert(R, "conflict-copy", { id: fresh(), remoteId: null, record: copyOf(R.record) });
+           ops[ops.length - 1].remoteId = ops[ops.length - 1].id;
+-          baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "keep" });
+         }
+         continue;
+       }

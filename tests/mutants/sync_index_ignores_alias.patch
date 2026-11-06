@@ -1,0 +1,15 @@
+# kills: revive on A, edit on B, A pulls twice
+# suite: node --test --test-name-pattern revive.on.A,.edit.on.B tests/sync.test.js
+# The pull matches local entries by raw id, so each remote edit of a revived scale adds a duplicate.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -50,7 +50,7 @@
+   function index(local, alias) {
+     const byRid = new Map();
+     for (const e of local) {
+-      const rid = alias[e.id] || e.id;
++      const rid = e.id;
+       if (!byRid.has(rid)) byRid.set(rid, e);
+     }
+     return byRid;

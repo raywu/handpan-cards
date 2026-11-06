@@ -1,0 +1,15 @@
+# kills: localOnly entries are never in a push plan
+# suite: node --test --test-name-pattern localOnly.entries.are.never.in.a.push.plan tests/sync.test.js
+# Scales the owner declined to upload ('Not now') are pushed anyway.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -235,7 +235,7 @@
+     for (const e of local) {
+       const rid = sc.alias[e.id] || e.id;
+       live.add(rid);
+-      if (localOnly.has(e.id) || !readableIn(ctx, e.record)) continue;
++      if (!readableIn(ctx, e.record)) continue;
+       const b = sc.base[rid];
+       if (b && b.localRevision === e.revision) continue;
+       rows.push({ scale_id: rid, base_rev: b ? b.rev : null, record: clone(e.record), deleted: false });

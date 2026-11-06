@@ -1,0 +1,15 @@
+# kills: first-sync audit counts only scales unmatched
+# suite: node --test --test-name-pattern first-sync.audit.counts.only.scales tests/sync.test.js
+# The 'Add N scales' count includes scales already in the account.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -279,7 +279,7 @@
+   function firstSyncAudit(input) {
+     const sc = normalized(input.sidecar), held = new Set(sc.localOnly), ids = [];
+     for (const e of input.local || []) {
+-      if (sc.base[sc.alias[e.id] || e.id] || held.has(e.id)) continue;
++      if (held.has(e.id)) continue;
+       ids.push(e.id);
+     }
+     sc.localOnly = [...sc.localOnly, ...ids];

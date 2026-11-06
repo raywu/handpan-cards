@@ -1,0 +1,15 @@
+# kills: sidecar lost but scales kept
+# suite: node --test --test-name-pattern sidecar.lost.but.scales.kept tests/sync.test.js
+# With no base, any remote tombstone deletes the local copy, so a sidecar loss destroys edited scales.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -165,7 +165,7 @@
+ 
+       if (!L) { if (B) baseDrops.push(rid); continue; }
+       if (!B) {
+-        if (R.record && equal(L.record, R.record)) pendingRemoves.push({ R, L });
++        if (true) pendingRemoves.push({ R, L });
+         else baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "edited" });
+         continue;
+       }
