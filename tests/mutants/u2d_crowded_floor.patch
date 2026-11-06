@@ -1,0 +1,15 @@
+# kills: U2d-3 (D16): the crowded check refuses a floor under LABEL_FLOOR_PT
+# suite: node --test --test-name-pattern ^U2d-3. tests/editor_shell.test.js
+# fault: The floor compare is inverted, so a crowded add is accepted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15342,7 +15342,7 @@
+   const placed = editorPlaceAt(m, ring, name, angle);
+   if (!placed.ok || !capped) return placed;
+   const floor = HPE.layout.labelFloor(editorSolve(placed.value).value.geom);
+-  if (!(floor < HPE.layout.LABEL_FLOOR_PT)) return placed;
++  if (!(floor > HPE.layout.LABEL_FLOOR_PT)) return placed;
+   return editorAreaRefusal("TOO_CROWDED", t("editor.crowded", { pt: (Math.floor(floor * 100) / 100).toFixed(2), floor: HPE.layout.LABEL_FLOOR_PT }));
+ }
+ const editorPinnedIn = (m, ring) => m.pins.some((p) => p.ring === ring);

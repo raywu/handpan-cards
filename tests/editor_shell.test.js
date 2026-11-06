@@ -392,3 +392,166 @@ test("U2c-17 (nit 4): placing a pinned note keeps the add's notice and the pin's
   assert.strictEqual(res.ok, true);
   assert.deepStrictEqual(res.notice, { seatsReset: "bottom", unpinned: [{ ring: "bottom", i: 0 }] });
 });
+
+// ---- U2d: caps, crowded refusal, Reset spacing (D14, D16, D17, D18, parity 6 and 9) ----
+const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
+const CYC = ["C5", "D5", "E5", "F5", "G5", "A5", "B5"];
+const BOT = ["A2", "B2", "C3", "E3", "F3", "G3", "Bb2", "Db3", "Eb3", "Gb3", "Ab3", "B3"];
+const scaleOf = (rim, cyc, bot) => (bot ? BOT.slice(0, bot).map((n) => "[" + n + "]").join(" ") + " " : "") + "(D3) " + rim + (cyc ? " | " + CYC.slice(0, cyc).join(" ") : "");
+const todays = (a, text, options = "undefined") => plain(a.get(`(() => { const s = HPE.core.parseSeed(${JSON.stringify(text)}, ${options}); const seed = { fields: s.value.fields, options: s.value.options };
+  return { code: shareCode(seed).value, link: shareLink(seed), record: scaleRecord(seed) }; })()`));
+const exported = (a, expr) => plain(a.get(`(() => { const r = ${expr}; if (!r.ok) return { refused: r.code, reason: r.reason }; const e = editorExport(r.value); return { code: e.code, link: e.link, record: e.record }; })()`));
+
+test("U2d-1 (U2c nit 1): a bottom copy of a rim note placed on a scale lands on the record and share link of the typed text", () => {
+  const a = app();
+  const BASE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  withModel(a, BASE);
+  const placed = exported(a, `editorPlace(__m, "bottom", "C4")`);
+  assert.strictEqual(placed.refused, undefined, "the copy is accepted: " + placed.reason);
+  assert.deepStrictEqual(placed, todays(a, "[C4] " + BASE));
+  const viaTyped = exported(a, `editorLoad("[C4] " + ${JSON.stringify(BASE)})`);
+  assert.deepStrictEqual(placed, viaTyped);
+});
+
+test("U2d-2 (D16): the caps are 12 rim, 6 cyclops, 12 bottom; the add that would pass one is refused with the exact copy, one under is accepted", () => {
+  const a = app();
+  assert.deepStrictEqual(plain(a.get("EDITOR_CAPS")), { rim: 12, inner: 6, bottom: 12 });
+  withModel(a, scaleOf("A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5", 0, 0));
+  const full = plain(a.get(`editorPlace(__m, "rim", "F5")`));
+  assert.strictEqual(full.ok, false);
+  assert.strictEqual(full.code, "AREA_FULL");
+  assert.strictEqual(full.reason, "The rim is full at 12 notes. Remove one first.");
+  withModel(a, scaleOf("A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5", 0, 0));
+  assert.strictEqual(plain(a.get(`editorPlace(__m, "rim", "E5")`)).ok, true, "the 12th rim note is accepted");
+  withModel(a, scaleOf(RIM8, 6, 0));
+  assert.strictEqual(plain(a.get(`editorPlace(__m, "inner", "C6")`)).reason, "The cyclops is full at 6 notes. Remove one first.");
+  withModel(a, scaleOf(RIM8, 0, 12));
+  assert.strictEqual(plain(a.get(`editorPlace(__m, "bottom", "A1")`)).reason, "The bottom is full at 12 notes. Remove one first.");
+});
+
+test("U2d-3 (D16): the crowded check is the final word; 6th cyclops with a bottom note is refused with the pt figures, the 12th bottom with 4 cyclops is accepted", () => {
+  const a = app();
+  withModel(a, scaleOf(RIM8, 5, 1));
+  const crowded = plain(a.get(`editorPlace(__m, "inner", "C6")`));
+  assert.strictEqual(crowded.ok, false);
+  assert.strictEqual(crowded.code, "TOO_CROWDED");
+  assert.strictEqual(crowded.reason, "Too crowded: labels would print at 2.71 pt, under 3.6 pt. Remove a note first.");
+  withModel(a, scaleOf(RIM8, 4, 11));
+  const twelfth = plain(a.get(`editorPlace(__m, "bottom", "A1")`));
+  assert.strictEqual(twelfth.ok, true, "12 bottom with 4 cyclops fits: " + twelfth.reason);
+  assert.strictEqual(plain(a.get(`editorNames(editorPlace(__m, "bottom", "A1").value, "bottom").length`)), 12);
+});
+
+test("U2d-4 (D16): a refused add changes nothing, and removing from a crowded scale is never refused", () => {
+  const a = app();
+  withModel(a, scaleOf(RIM8, 5, 1));
+  const before = JSON.stringify(plain(a.get("__m")));
+  a.run(`editorPlace(__m, "inner", "C6"); true`);
+  assert.strictEqual(JSON.stringify(plain(a.get("__m"))), before);
+  assert.strictEqual(plain(a.get(`editorRemove(__m, "inner", 0)`)).ok, true);
+});
+
+test("U2d-5 (parity 9): an over-cap scale loads, renders and exports as today; only a further add into that area is refused", () => {
+  const a = app();
+  const RIM13 = "A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5";
+  withModel(a, scaleOf(RIM13, 0, 0));
+  assert.deepStrictEqual(exported(a, "{ ok: true, value: __m }"), todays(a, scaleOf(RIM13, 0, 0)));
+  assert.strictEqual(plain(a.get(`editorPlace(__m, "rim", "G5")`)).code, "AREA_FULL");
+  assert.strictEqual(plain(a.get(`editorPlace(__m, "bottom", "A2")`)).ok, true, "another area still accepts");
+  assert.strictEqual(plain(a.get(`editorRemove(__m, "rim", 0)`)).ok, true);
+  withModel(a, scaleOf(RIM8, 5, 0));
+  assert.deepStrictEqual(exported(a, "{ ok: true, value: __m }"), todays(a, scaleOf(RIM8, 5, 0)), "5 cyclops (over the saved 4) is untouched");
+});
+
+test("U2d-6 (D17): a rim join takes its pitch-order seat and an auto cyclops or bottom join stays unpinned", () => {
+  const a = app();
+  withModel(a, scaleOf(RIM8, 2, 1));
+  const rim = plain(a.get(`editorPlace(__m, "rim", "B3")`));
+  assert.deepStrictEqual(plain(a.get(`editorNames(editorPlace(__m, "rim", "B3").value, "rim")`)), ["A3", "Bb3", "B3", "C4", "D4", "E4", "F4", "G4", "A4"]);
+  assert.strictEqual(rim.value.options.angles, undefined);
+  assert.deepStrictEqual(exported(a, `editorPlace(__m, "rim", "B3")`), todays(a, scaleOf("A3 Bb3 B3 C4 D4 E4 F4 G4 A4", 2, 1)));
+  const inner = plain(a.get(`editorPlace(__m, "inner", "E5")`));
+  assert.deepStrictEqual(inner.value.pins, []);
+});
+
+test("U2d-7 (D5): a cyclops note placed at an exact angle writes angles.inner and saves as record v6 and a v8 link", () => {
+  const a = app();
+  withModel(a, scaleOf(RIM8, 2, 0));
+  const res = exported(a, `editorPlace(__m, "inner", "E5", 90)`);
+  assert.strictEqual(res.refused, undefined);
+  assert.strictEqual(res.record.v, 6);
+  assert.deepStrictEqual(res.record.o.angles.inner.filter((x) => x !== null), [90]);
+  assert.match(res.link.value, /#s=8/);
+  assert.strictEqual(exported(a, `{ ok: true, value: __m }`).record.v, 4, "the unpinned scale stays record v4");
+});
+
+const pinned = (a) => {
+  withModel(a, scaleOf(RIM8, 3, 3));
+  a.run(`globalThis.__m = [["bottom", 0, 60], ["bottom", 1, 120], ["inner", 2, 120]].reduce((m, [r, i, g]) => editorSetAngle(m, r, i, g, true).value, __m); true`);
+};
+
+test("U2d-8 (D18): the reset scope is the selected note's zone, else the selected zone, else every pinned zone; a rim note or the ding gives none", () => {
+  const a = app();
+  pinned(a);
+  const scope = (sel, zone) => plain(a.get(`editorResetRings(__m, ${JSON.stringify(sel)}, ${JSON.stringify(zone)})`));
+  assert.deepStrictEqual(scope({ ring: "bottom", i: 2 }, null), ["bottom"], "an unpinned bottom note still scopes its zone");
+  assert.deepStrictEqual(scope({ ring: "inner", i: 2 }, "bottom"), ["inner"], "the note beats the selected zone");
+  assert.deepStrictEqual(scope(null, "bottom"), ["bottom"]);
+  assert.deepStrictEqual(scope(null, null), ["inner", "bottom"]);
+  assert.deepStrictEqual(scope({ ring: "rim", i: 0 }, null), []);
+  assert.deepStrictEqual(scope({ ring: "ding", i: 0 }, "bottom"), []);
+  withModel(a, scaleOf(RIM8, 3, 3));
+  assert.deepStrictEqual(plain(a.get(`editorResetRings(__m, null, null)`)), [], "no pins, no scope");
+});
+
+test("U2d-9 (D18): the Reset labels name the scope, the phone label is always Reset spacing, and Neotone disables it", () => {
+  const a = app();
+  pinned(a);
+  const label = (sel, zone) => plain(a.get(`editorResetLabel(__m, ${JSON.stringify(sel)}, ${JSON.stringify(zone)})`));
+  assert.deepStrictEqual(label({ ring: "inner", i: 0 }, null), { text: "Reset cyclops spacing", aria: "Reset cyclops spacing", enabled: true });
+  assert.deepStrictEqual(label(null, "bottom"), { text: "Reset bottom spacing", aria: "Reset bottom spacing", enabled: true });
+  assert.deepStrictEqual(label(null, null), { text: "Reset spacing (2)", aria: "Reset cyclops and bottom spacing", enabled: true });
+  assert.deepStrictEqual(label({ ring: "rim", i: 0 }, null), { text: "Reset spacing", aria: "Reset spacing", enabled: false });
+  assert.strictEqual(label({ ring: "bottom", i: 2 }, null).enabled, true, "an unpinned note scopes its zone, which holds pins");
+  a.run(`globalThis.__m = editorResetSpacing(__m, ["bottom"]).value; true`);
+  assert.strictEqual(label({ ring: "bottom", i: 2 }, null).enabled, false, "no pin in the scope");
+  pinned(a);
+  withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+  a.run(`globalThis.__m = editorPanType(__m, "neotone").value; true`);
+  assert.ok(a.get("!!__m.options.profile"), "the fixture is on a Neotone profile");
+  assert.strictEqual(label(null, null).enabled, false);
+  a.run(`__m.pins = [{ ring: "bottom", i: 0 }]; true`);
+  assert.strictEqual(label({ ring: "bottom", i: 0 }, null).enabled, false, "Neotone disables Reset even with a stray pin");
+});
+
+test("U2d-10 (parity 6): Reset bottom spacing gives today's bytes, Reset cyclops spacing drops the v8 link, Reset (2) clears both in one step", () => {
+  const a = app();
+  const TEXT = scaleOf(RIM8, 3, 3);
+  withModel(a, TEXT, `{ angles: { bottom: [60, 120, null] } }`);
+  assert.deepStrictEqual(exported(a, `editorResetSpacing(__m, ["bottom"])`), todays(a, TEXT), "bottom reset: no at- option");
+  withModel(a, TEXT, `{ angles: { inner: [null, null, 120] } }`);
+  assert.match(exported(a, "{ ok: true, value: __m }").link.value, /#s=8/);
+  const back = exported(a, `editorResetSpacing(__m, ["inner"])`);
+  assert.deepStrictEqual(back, todays(a, TEXT));
+  assert.doesNotMatch(back.link.value, /#s=8/);
+  pinned(a);
+  const both = plain(a.get(`editorResetSpacing(__m, ["inner", "bottom"])`));
+  assert.strictEqual(both.ok, true);
+  assert.deepStrictEqual(both.value.pins, []);
+  assert.strictEqual(both.value.options.angles, undefined);
+  assert.deepStrictEqual(exported(a, `editorResetSpacing(__m, ["inner", "bottom"])`), todays(a, TEXT));
+  const hist = plain(a.get(`(() => { const h = editorApply(editorHistoryNew(__m), (m) => editorResetSpacing(m, ["inner", "bottom"])); return { past: h.history.past.length, undone: JSON.stringify(editorUndo(h.history).present) === JSON.stringify(__m) }; })()`));
+  assert.deepStrictEqual(hist, { past: 1, undone: true }, "one Undo step restores both");
+});
+
+test("U2d-11 (D18): the reset sets the angles to the engine's count-rule spacing and leaves the other zone's pins alone", () => {
+  const a = app();
+  pinned(a);
+  const res = plain(a.get(`(() => { const m = editorResetSpacing(__m, ["bottom"]).value; const s = editorSolve(m).value;
+    const fresh = editorSolve(editorLoad(${JSON.stringify(scaleOf(RIM8, 3, 3))}, { angles: { inner: [null, null, 120] } }).value).value;
+    return { got: editorAnglesOf({ value: s }, "bottom"), want: editorAnglesOf({ value: fresh }, "bottom"), pins: m.pins, angles: m.options.angles }; })()`));
+  assert.deepStrictEqual(res.got, res.want);
+  assert.deepStrictEqual(res.pins, [{ ring: "inner", i: 2 }]);
+  assert.deepStrictEqual(res.angles, { inner: [null, null, 120] });
+  assert.deepStrictEqual(plain(a.get(`editorResetSpacing(editorResetSpacing(__m, ["bottom"]).value, ["bottom"]).value.pins`)), [{ ring: "inner", i: 2 }], "nothing to reset is a no-op");
+});

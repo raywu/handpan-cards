@@ -26,6 +26,7 @@ function run() {
   let base = "";
   let flagOn = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
 
   before(async () => {
     server = http.createServer((req, res) => {
@@ -116,7 +117,7 @@ function run() {
       assert.strictEqual(r.sh, 800);
     });
 
-    test("Remove and Reset spacing are disabled placeholders; Undo and Redo start disabled", async () => {
+    test("Undo, Redo, Remove and Reset spacing start disabled with nothing edited, selected or pinned", async () => {
       await fresh();
       await openBuiltin();
       const r = await b.eval(`return ["editor-undo", "editor-redo", "editor-remove", "editor-reset"].map((id) => document.getElementById(id).disabled);`);
@@ -604,6 +605,215 @@ function run() {
       await tapNote("rim", 0, true);
       await tapNote("rim", 1, true);
       assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8] });
+    });
+
+    describe("U2d area pills, caps, crowded refusal, Reset spacing", () => {
+      const pill = (ring) => b.eval(`const p = document.getElementById("editor-pill-${ring}"); return { text: p.textContent, aria: p.getAttribute("aria-label"), disabled: p.disabled, full: p.getAttribute("aria-disabled") === "true" };`);
+      const reset = () => b.eval(`const r = document.getElementById("editor-reset"); const vis = (c) => getComputedStyle(r.querySelector(c)).display !== "none";
+        return { aria: r.getAttribute("aria-label"), disabled: r.disabled, visible: [...r.querySelectorAll("span")].filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent).join("|") };`);
+      const linkOf = () => b.eval(`return editorExport(editorSession.history.present).link.value;`);
+      const pastLen = () => b.eval(`return editorSession.history.past.length;`);
+      const RIM12 = "A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5";
+      const BOT_LINE = (n) => ["A2", "B2", "C3", "E3", "F3", "G3", "Bb2", "Db3", "Eb3", "Gb3", "Ab3", "B3"].slice(0, n).map((x) => "[" + x + "]").join(" ");
+
+      test("D17: the pills read '+ Rim n of 12', '+ Cyclops n of 6', '+ Bottom n of 12', wait for a held note, and add it at its auto position", async () => {
+        await setup(SCALE);
+        assert.deepStrictEqual(await pill("rim"), { text: "+ Rim 8 of 12", aria: "Add the held note to the rim, 8 of 12", disabled: true, full: false });
+        assert.strictEqual((await pill("inner")).text, "+ Cyclops 2 of 6");
+        assert.strictEqual((await pill("bottom")).text, "+ Bottom 0 of 12");
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-pills").getAttribute("aria-label");`), "Add the held note to an area");
+        await hold("B");
+        assert.strictEqual((await pill("rim")).disabled, false);
+        await b.click("#editor-pill-rim");
+        assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"], "pitch-order seat");
+        assert.strictEqual((await pill("rim")).text, "+ Rim 9 of 12", "the count follows the model live");
+        assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
+        await hold("E");
+        await b.click("#editor-oct-down");
+        await b.click("#editor-pill-bottom");
+        let m = await model();
+        assert.strictEqual(Object.values(m.fields).filter((f) => f[3] === "bottom").length, 1);
+        assert.strictEqual(m.options.angles, undefined, "an area add is auto, never pinned");
+        await hold("C");
+        for (let k = 0; k < 3; k++) await b.click("#editor-oct-up");
+        await b.click("#editor-pill-inner");
+        assert.strictEqual((await pill("inner")).text, "+ Cyclops 3 of 6", await status());
+        await b.click("#editor-undo");
+        assert.strictEqual((await pill("inner")).text, "+ Cyclops 2 of 6");
+      });
+
+      test("D16: a full area's pill is aria-disabled and a tap or pill into it is refused with the exact copy", async () => {
+        await setup("(D3) " + RIM12 + " | C6");
+        assert.deepStrictEqual(await pill("rim"), { text: "+ Rim 12 of 12", aria: "Add the held note to the rim, 12 of 12", disabled: true, full: true });
+        const core = async () => { const m = await model(); delete m.view; return m; };
+        const before = await core();
+        await hold("F");
+        await b.click("#editor-oct-up");
+        await b.click("#editor-pill-rim");
+        assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.");
+        assert.deepStrictEqual(await core(), before);
+        assert.strictEqual(await b.eval(`return editorSession.held !== null;`), true, "the note is still held");
+        await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+        assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.", "a drop into the rim is refused too");
+        assert.deepStrictEqual(await core(), before);
+        await b.click("#editor-pill-inner");
+        assert.strictEqual((await model()).fields && Object.values((await model()).fields).filter((f) => f[3] === "inner").length, 2, "another area still takes it");
+      });
+
+      test("D16 e2e: the 6th cyclops note is refused as crowded with a bottom note present; the 12th bottom note is accepted with 4 cyclops", async () => {
+        await setup(BOT_LINE(1) + " (D3) " + RIM8 + " | C5 D5 E5 F5 G5");
+        await hold("A");
+        await b.click("#editor-oct-up");
+        await b.click("#editor-oct-up");
+        await b.click("#editor-pill-inner");
+        assert.strictEqual(await status(), "Too crowded: labels would print at 2.71 pt, under 3.6 pt. Remove a note first.");
+        assert.strictEqual(Object.values((await model()).fields).filter((f) => f[3] === "inner").length, 5);
+        await setup(BOT_LINE(11) + " (D3) " + RIM8 + " | C5 D5 E5 F5");
+        await hold("D");
+        await b.click("#editor-oct-down");
+        await b.click("#editor-oct-down");
+        await b.click("#editor-pill-bottom");
+        assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 12, await status());
+        assert.strictEqual(await status(), "");
+      });
+
+      test("parity 9 save: an over-cap scale saves with the same record and share link; only a further add into that area is refused", async () => {
+        const OVER = "(D3) " + RIM12 + " F5";
+        await setup(OVER);
+        const want = await b.eval(`const s = HPE.core.parseSeed(${JSON.stringify(OVER)}); const seed = { fields: s.value.fields, options: s.value.options }; return { record: scaleRecord(seed), link: shareLink(seed).value };`);
+        assert.strictEqual(await linkOf(), want.link);
+        await hold("G");
+        await b.click("#editor-pill-rim");
+        assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.");
+        await hold("G");
+        assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
+        await b.click("#editor-save");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+        const got = await b.eval(`const e = savedState.entries[savedState.entries.length - 1]; return e.record;`);
+        assert.strictEqual(got.s, want.record.s);
+        assert.strictEqual(got.v, want.record.v);
+      });
+
+      test("D5: a cyclops note tapped at an exact angle saves as record v6 and reloads pinned", async () => {
+        await setup(SCALE);
+        await hold("E");
+        await b.click("#editor-oct-up");
+        await tapSpot(...polar(0.38, 90));
+        assert.deepStrictEqual((await model()).options.angles.inner.filter((a) => a !== null), [90]);
+        await b.click("#editor-save");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+        const rec = await b.eval(`const e = savedState.entries[savedState.entries.length - 1]; return { v: e.record.v, inner: e.record.o.angles.inner };`);
+        assert.strictEqual(rec.v, 6);
+        assert.deepStrictEqual(rec.inner.filter((a) => a !== null), [90]);
+        await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+        await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+        assert.deepStrictEqual((await model()).options.angles.inner.filter((a) => a !== null), [90]);
+        assert.strictEqual((await model()).pins.length, 1);
+      });
+
+      test("parity 6 / Re-space e2e: pins stay on an add; Reset bottom spacing re-spaces and drops at-, Undo restores; Reset spacing (2) clears both in one step, v8 gone", async () => {
+        await setup(BOT_LINE(3) + " (D3) " + RIM8 + " | C5 D5 E5");
+        for (const [ring, i, g] of [["bottom", 0, 60], ["bottom", 1, 120], ["inner", 2, 120]]) {
+          await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, ${JSON.stringify(ring)}, ${i}, ${g}, true)).history; editorRender(); return true;`);
+        }
+        assert.strictEqual((await model()).pins.length, 3);
+        await hold("E");
+        await b.click("#editor-oct-down");
+        await b.click("#editor-pill-bottom");
+        assert.strictEqual((await model()).pins.length, 3, "the add keeps the pins");
+        assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 4);
+        assert.match(await linkOf(), /at-/);
+        const unpinnedIdx = await b.eval(`const a = editorSession.history.present.options.angles.bottom; return a.findIndex((x) => x === null);`);
+        await tapNote("bottom", unpinnedIdx);
+        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset spacing" });
+        const before = await model();
+        const steps = await pastLen();
+        await b.click("#editor-reset");
+        assert.strictEqual(await pastLen(), steps + 1, "one Undo step");
+        const after = await model();
+        assert.strictEqual(after.options.angles.bottom, undefined);
+        assert.deepStrictEqual(after.options.angles.inner, before.options.angles.inner, "the cyclops pin is untouched");
+        assert.doesNotMatch(await linkOf(), /at-/);
+        assert.deepStrictEqual(await b.eval(`const s = editorSolve(editorSession.history.present).value; return editorAnglesOf({ value: s }, "bottom");`),
+          await b.eval(`return HPE.layout.bottomAngles(4);`).then((x) => x));
+        await b.click("#editor-undo");
+        assert.deepStrictEqual(await model(), before, "Undo restores the pins");
+        await b.eval(`editorSession.sel = null; editorRender(); return true;`);
+        assert.strictEqual((await reset()).aria, "Reset cyclops and bottom spacing");
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-reset").querySelector(".rs-short").textContent;`), "Reset spacing");
+        const steps2 = await pastLen();
+        await b.click("#editor-reset");
+        assert.strictEqual(await pastLen(), steps2 + 1, "both clear in one step");
+        const cleared = await model();
+        assert.strictEqual(cleared.options.angles, undefined);
+        assert.deepStrictEqual(cleared.pins, []);
+        assert.doesNotMatch(await linkOf(), /#s=8/);
+        assert.strictEqual((await reset()).disabled, true, "nothing left to reset");
+      });
+
+      test("D18 cyclops: resetting cyclops spacing drops the link back from v8", async () => {
+        await setup(SCALE);
+        await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 150, true)).history; editorRender(); return true;`);
+        assert.match(await linkOf(), /#s=8/);
+        await tapNote("inner", 0);
+        assert.deepStrictEqual(await reset(), { aria: "Reset cyclops spacing", disabled: false, visible: "Reset spacing" });
+        await b.click("#editor-reset");
+        assert.doesNotMatch(await linkOf(), /#s=8/);
+        assert.strictEqual((await model()).options.angles, undefined);
+      });
+
+      test("D18 zone: tapping the empty bottom ring selects the zone and scopes Reset to it; tapping it again clears the zone", async () => {
+        await setup("[A2] " + SCALE);
+        await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
+        await tapSpot(...polar(1.15, 150));
+        assert.strictEqual(await b.eval(`return editorSession.zone;`), "bottom");
+        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset spacing" });
+        await tapSpot(...polar(1.15, 150));
+        assert.strictEqual(await b.eval(`return editorSession.zone;`), null);
+        await tapSpot(...polar(1.15, 150));
+        await b.click("#editor-reset");
+        assert.strictEqual((await model()).options.angles, undefined);
+      });
+
+      test("D18 labels: a wide screen shows the scoped label, a phone shows 'Reset spacing' with the scope in the accessible name", async () => {
+        await fresh(1100, 800);
+        await openAdd();
+        await typeLine("[A2] [B2] " + SCALE);
+        await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); return true;`);
+        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
+        await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 150, true)).history; editorSession.sel = null; editorRender(); return true;`);
+        assert.deepStrictEqual(await reset(), { aria: "Reset cyclops and bottom spacing", disabled: false, visible: "Reset spacing (2)" });
+        await fresh(375, 667);
+        await openAdd();
+        await typeLine("[A2] [B2] " + SCALE);
+        await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); return true;`);
+        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset spacing" });
+      });
+
+      test("D18 disabled cases: a rim note or the ding selected gives an empty scope; Neotone disables Reset and hides the pills", async () => {
+        await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
+        assert.strictEqual((await reset()).disabled, false);
+        await tapNote("rim", 0);
+        assert.deepStrictEqual(await reset(), { aria: "Reset spacing", disabled: true, visible: "Reset spacing" });
+        await tapNote("rim", 0);
+        await tapNote("ding", 0);
+        assert.strictEqual((await reset()).disabled, true);
+        await tapNote("ding", 0);
+        await b.click("#editor-type-neotone");
+        assert.strictEqual((await reset()).disabled, true);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-pills").hasAttribute("hidden");`), true);
+      });
+
+      test("U2c nit 2: a tray note still replaces the ding when a bottom copy of a rim note is present", async () => {
+        await setup("[C4] " + SCALE);
+        await hold("G");
+        await b.click("#editor-oct-down");
+        await tapNote("ding", 0);
+        assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+        assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "G3");
+        assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["C4"]);
+      });
     });
   });
 

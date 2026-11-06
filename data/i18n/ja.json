@@ -387,5 +387,20 @@
   "editor.zone.bottom": "bottom",
   "editor.zone.ding": "ding",
   "editor.ding_bottom_only": "Only a bottom note can swap with the ding.",
-  "editor.hint": "Drop a bottom note on the ding to swap it with the root."
+  "editor.hint": "Drop a bottom note on the ding to swap it with the root.",
+  "editor.areas.aria": "Add the held note to an area",
+  "editor.pill.rim": "+ Rim {n} of {max}",
+  "editor.pill.inner": "+ Cyclops {n} of {max}",
+  "editor.pill.bottom": "+ Bottom {n} of {max}",
+  "editor.pill_aria.rim": "Add the held note to the rim, {n} of {max}",
+  "editor.pill_aria.inner": "Add the held note to the cyclops, {n} of {max}",
+  "editor.pill_aria.bottom": "Add the held note to the bottom, {n} of {max}",
+  "editor.full.rim": "The rim is full at {max} notes. Remove one first.",
+  "editor.full.inner": "The cyclops is full at {max} notes. Remove one first.",
+  "editor.full.bottom": "The bottom is full at {max} notes. Remove one first.",
+  "editor.crowded": "Too crowded: labels would print at {pt} pt, under {floor} pt. Remove a note first.",
+  "editor.reset.inner": "Reset cyclops spacing",
+  "editor.reset.bottom": "Reset bottom spacing",
+  "editor.reset_both": "Reset spacing ({n})",
+  "editor.reset_both_aria": "Reset cyclops and bottom spacing"
 }

@@ -1,0 +1,15 @@
+# kills: U2d-9 (D18): Reset is disabled on Neotone
+# suite: node --test --test-name-pattern ^U2d-9. tests/editor_shell.test.js
+# fault: Neotone no longer disables Reset.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15354,7 +15354,7 @@
+ }
+ function editorResetLabel(m, sel, zone) {
+   const rings = editorResetRings(m, sel, zone);
+-  const enabled = !m.options.profile && rings.some((ring) => editorPinnedIn(m, ring));
++  const enabled = rings.some((ring) => editorPinnedIn(m, ring));
+   if (rings.length === 1) {
+     const text = t("editor.reset." + rings[0]);
+     return { text, aria: text, enabled };
