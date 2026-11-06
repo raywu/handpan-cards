@@ -19613,7 +19613,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
 
   test("MV: a set deadline adds the dated line in all 8 locales", async () => {
     const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
-    assert.match(bannerText(app), /On November 22, 2026, old\.example will move to new\.example\. Please click "Move my scales" to migrate your custom scales, so you don't lose them!$/);
+    assert.match(bannerText(app), /On November 22, 2026, old\.example will move to new\.example\. Custom scales left here will be lost\. Click "Move my scales" now to keep them\.$/);
     for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
       app.run(`setLang(${JSON.stringify(lang)})`);
       const date = new Intl.DateTimeFormat(lang, { dateStyle: "long", timeZone: "UTC" }).format(new Date("2026-11-22T00:00:00Z"));
