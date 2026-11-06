@@ -1049,6 +1049,35 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   independently, so a wire bump rewrites no stored deck. Readers for every older
   version stay. Detail: `docs/plans/2026-10-17-share-readable.md`,
   `docs/plans/2026-10-23-free-placement.md`.
+- DECIDED(scale-editor-reinvent, R2-2) Share version 8 adds one option,
+  `ai-<list>`: the cyclops (inner) notes' absolute angles, same grammar as
+  `at-` (ANGLES_RE with the `ai-` prefix): one comma-separated entry per inner
+  note in seat order, each an integer 0-355 on the 5-degree step, an empty
+  entry for a solved angle. It is written only when at least one inner angle is
+  pinned; then the link is version 8 and the record version 6
+  (`recordVersion` returns 6 exactly then, never with a profile; the app's
+  record gates `newestRecordVersion`, `savedCandidate` and `readSavedRecord`
+  accept v6 only with pinned inner angles and no profile, and refuse 7+). With no pinned
+  inner angle the writer emits exactly today's version 6 bytes (`at-` stays a
+  version 6 option and is also valid on version 8, refused on version 7).
+- Option order on version 8: palette-N, parent-<mode>, mirror | mirror-top |
+  mirror-bottom, between, seats-<rim>;<inner>;<bottom>, at-<list>, ai-<list>.
+  `ai-` is always last; out of order, repeated, or on a version below 8 it is
+  refused as a corrupt payload. The check covers `ai-` like every option.
+- `angles` is `{bottom?, inner?}`; each list has the zone's note count; a list
+  whose entries are all null reads as absent and is never written; an object
+  with neither list reads as no angles. Any other key is refused.
+- A pinned inner angle refuses an inner seats list (`seats-` with a non-empty
+  inner part), exactly as `at-` refuses a bottom seats list. Each pinned inner
+  angle must lie inside INNER_SPAN + clearance and pass innerClash; out of
+  bound is refused, never clamped.
+- `ai-` beside `pair-` (a Neotone profile) is PROFILE_CONFLICT; a profiled link
+  stays version 7. A version 8 link must carry `ai-` with at least one pinned
+  entry (no `ai-` is non-canonical and refused), and `pair-` on version 8 is
+  PROFILE_CONFLICT (R4-2). Version 8 decodes whatever PROFILE_ENABLED says; version 9 or
+  above is NEEDS_NEWER_APP. Versions 1-7 decode unchanged.
+- MIRROR TOP reflects pinned inner angles (180 - a), as MIRROR BOTTOM reflects
+  pinned bottom angles; the wire carries the angles as stored (absolute).
 
 ## 15. UI element ids
 
