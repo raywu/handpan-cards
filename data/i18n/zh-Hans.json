@@ -343,7 +343,7 @@
   },
   "move.banner_empty": "Handpan Theory 现已迁至 {host}。",
   "move.banner_overcap": "你保存的 {total} 个音阶中，有 {n} 个可一次移走。其余的会留在这个地址。",
-  "move.deadline": "{date}，{from}将迁移到{host}。请点击“移动我的音阶”来迁移您的自定义音阶，以免丢失！",
+  "move.deadline": "{date}，{from}将迁移到{host}。留在这里的自定义音阶将会丢失。请立即点击“移动我的音阶”来保留它们。",
   "move.deadline_empty": "{date}，{from}将迁移到{host}。",
   "move.go": "移动我的音阶",
   "move.go_plain": "打开 {host}",
