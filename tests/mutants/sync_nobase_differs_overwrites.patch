@@ -1,6 +1,6 @@
 # kills: sync: re-sign-in after the other device edited meanwhile keeps both bodies on both devices with no conflict loop
 # suite: node --test --test-name-pattern re-sign-in.after.the.other.device.edited tests/sync.test.js
-# With no base and different bodies the local copy is marked edited without a conflict copy, so the push overwrites the other device's edit.
+# With no base and different bodies the entry is treated as already in sync: no conflict copy is kept and the local body is never pushed, so one body is lost.
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js

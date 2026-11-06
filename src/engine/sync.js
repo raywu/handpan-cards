@@ -104,9 +104,17 @@ HPE.sync = (function () {
       return op;
     };
 
+    const keepOpaque = (R, L) => {
+      const moved = insert({ scale_id: L.id, record: L.record }, "unreadable-remote", { id: fresh(), remoteId: null, record: clone(L.record) });
+      moved.remoteId = moved.id;
+      ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, record: clone(R.record), opaque: true });
+      baseUpdates.push({ rid: R.scale_id, localId: L.id, rev: R.rev, mode: "committed" });
+    };
+
     for (const R of remote) {
       if (R.rev > cursor) cursor = R.rev;
       const rid = R.scale_id, B = base[rid], L = byRid.get(rid);
+      if (L && localOnly.has(L.id)) continue;
       if (!R.deleted && deferred.has(rid)) deferred.delete(rid);
 
       if (!R.deleted) {
@@ -143,6 +151,7 @@ HPE.sync = (function () {
         }
         if (!B) {
           if (equal(L.record, R.record)) baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
+          else if (!readableIn(ctx, R.record)) keepOpaque(R, L);
           else {
             insert(R, "conflict-copy", { id: fresh(), remoteId: null, record: copyOf(R.record) });
             ops[ops.length - 1].remoteId = ops[ops.length - 1].id;
@@ -160,6 +169,8 @@ HPE.sync = (function () {
           if (opaque) op.opaque = true;
           ops.push(op);
           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
+        } else if (!readableIn(ctx, R.record)) {
+          keepOpaque(R, L);
         } else {
           insert(R, "conflict-copy", { id: fresh(), remoteId: null, record: copyOf(R.record) });
           ops[ops.length - 1].remoteId = ops[ops.length - 1].id;
@@ -184,7 +195,7 @@ HPE.sync = (function () {
       const rid = R.scale_id;
       if (visible - 1 < 1) {
         deferred.add(rid);
-        baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "keep" });
+        baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
         continue;
       }
       visible--;

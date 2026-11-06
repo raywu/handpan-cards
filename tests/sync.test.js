@@ -465,6 +465,77 @@ test("sync: an unreadable remote record is applied opaque and never pushed back 
   assert.deepEqual(sync.planPush({ local, sidecar: sync.emptySidecar(), ctx: makeCtx(dev, { readable }) }).rows, []);
 });
 
+const bump = (dev, id, name, v) => { const e = dev.entries.find(x => x.id === id); e.record = { ...e.record, n: name, v }; e.revision++; };
+const serverNames = server => [...server.rows.values()].filter(r => !r.deleted).map(r => r.record.n).sort();
+
+test("sync: edit-vs-edit with an unreadable remote keeps both bodies on the server and on the newer build, no loop", () => {
+  const server = new Server();
+  const a = new Device(), b = new Device();
+  a.ctxExtra = { readable: record => record.v <= 5 };
+  const x = a.add("Base");
+  a.cycle(server); b.cycle(server);
+  bump(b, x, "B edit", 9);
+  b.cycle(server);
+  a.edit(x, "A edit");
+  a.cycle(server); b.cycle(server); a.cycle(server); b.cycle(server);
+  assert.deepEqual(serverNames(server), ["A edit", "B edit"]);
+  assert.deepEqual(b.names(), ["A edit", "B edit"]);
+  assert.equal(b.find("B edit").id, x);
+  assert.equal(server.rows.get(x).record.v, 9);
+  assert.deepEqual(a.push(server).plan.rows, []);
+  assert.deepEqual(b.push(server).plan.rows, []);
+});
+
+test("sync: no-base same-id divergence with an unreadable remote keeps both bodies on the server and on the newer build, no loop", () => {
+  const server = new Server();
+  const b = new Device(), a = new Device([{ id: "x", record: rec("A edit") }]);
+  a.ctxExtra = { readable: record => record.v <= 5 };
+  server.rows.set("x", { scale_id: "x", rev: 1, deleted: false, record: rec("B edit", 9) });
+  server.rev = 1;
+  b.cycle(server);
+  a.cycle(server); b.cycle(server); a.cycle(server); b.cycle(server);
+  assert.deepEqual(serverNames(server), ["A edit", "B edit"]);
+  assert.deepEqual(b.names(), ["A edit", "B edit"]);
+  assert.equal(server.rows.get("x").record.v, 9);
+  assert.deepEqual(a.push(server).plan.rows, []);
+  assert.deepEqual(b.push(server).plan.rows, []);
+});
+
+test("sync: a deferred delete with no base is kept as committed and is never pushed live", () => {
+  const dev = new Device([{ id: "x", record: rec("Only") }]);
+  const server = new Server();
+  server.rows.set("x", { scale_id: "x", rev: 2, deleted: true, record: rec("Only") });
+  const plan = dev.pull(server);
+  assert.deepEqual(plan.ops, []);
+  assert.deepEqual(dev.sidecar.deferredDeletes, ["x"]);
+  assert.equal(dev.sidecar.base.x.localRevision, dev.entries[0].revision);
+  assert.deepEqual(dev.push(server).plan.rows, []);
+});
+
+test("sync: a localOnly entry is never removed or overwritten by a remote row with its id", () => {
+  const dev = new Device([{ id: "x", record: rec("Mine") }, { id: "y", record: rec("Other") }]);
+  dev.sidecar = { ...sync.emptySidecar(), localOnly: ["x"] };
+  const tomb = [{ scale_id: "x", rev: 1, deleted: true, record: rec("Mine") }];
+  const t = sync.planPull({ remote: tomb, local: dev.entries, sidecar: dev.sidecar, ctx: makeCtx(dev) });
+  assert.deepEqual(t.ops, []);
+  assert.deepEqual(t.baseUpdates, []);
+  const live = [{ scale_id: "x", rev: 1, deleted: false, record: rec("Theirs") }];
+  const l = sync.planPull({ remote: live, local: dev.entries, sidecar: dev.sidecar, ctx: makeCtx(dev) });
+  assert.deepEqual(l.ops, []);
+  assert.deepEqual(l.baseUpdates, []);
+});
+
+test("sync: a local scale with no base whose id is also a remote row is not adopted by another remote row of the same meaning", () => {
+  const dev = new Device([{ id: "x", record: rec("Kurd") }]);
+  const remote = [
+    { scale_id: "r1", rev: 1, deleted: false, record: rec("Kurd") },
+    { scale_id: "x", rev: 2, deleted: false, record: rec("Kurd") }
+  ];
+  const plan = sync.planPull({ remote, local: dev.entries, sidecar: dev.sidecar, ctx: makeCtx(dev) });
+  assert.deepEqual(plan.alias, {});
+  assert.deepEqual(plan.ops.map(o => [o.op, o.id]), [["insert", "r1"]]);
+});
+
 test("sync: replaces is dropped when the seed slot is held or hidden locally", () => {
   const dev = new Device();
   const taken = new Set(["seed-a"]);
