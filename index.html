@@ -11921,10 +11921,20 @@ async function commitSavedDurable(command, options) {
     return publishSavedCommand(result,"durable");
   }
 }
+let persistRequested = false;
+function requestPersistentStorage(){
+  if(persistRequested)return;
+  persistRequested=true;
+  try{Promise.resolve(navigator.storage?.persist?.()).catch(()=>{});}catch(e){}
+}
+const PERSIST_TRIGGERS = ["import","save-as-separate","edit","replace-builtin"];
 function commitSaved(command, options = {}) {
   if(savedMode==="session")return Promise.resolve(commitSavedSession(command,options));
   if(savedMode!=="durable")return Promise.resolve(savedFailure("protected"));
-  return commitSavedDurable(command,options);
+  return commitSavedDurable(command,options).then(result=>{
+    if(result?.ok && PERSIST_TRIGGERS.includes(command.type))requestPersistentStorage();
+    return result;
+  });
 }
 function savedReconciliationFailure(result,raw) {
   savedIssue=result;
