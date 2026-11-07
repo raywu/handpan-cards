@@ -19605,8 +19605,8 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.match(html, /^const MOVE_CAP = 20000;$/m);
   });
 
-  test("MV: the committed bytes ship the deadline off", () => {
-    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = null;$/m);
+  test("MV: the committed bytes ship the deadline 2026-11-21", () => {
+    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = "2026-11-21";$/m);
   });
 
   test("MV: the committed deadline is null or a quoted YYYY-MM-DD literal", () => {
