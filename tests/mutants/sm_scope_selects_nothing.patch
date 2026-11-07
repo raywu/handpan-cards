@@ -1,0 +1,15 @@
+# kills: test_an_app_only_css_change_is_scoped_to_the_index_html_mutants
+# suite: python3 -m unittest -k test_an_app_only_css_change_is_scoped_to_the_index_html_mutants tests.test_ci_scope
+# select() reports a scoped run with no mutants, so a lane would pass the gate having run nothing.
+diff --git a/tools/ci_scope.py b/tools/ci_scope.py
+--- a/tools/ci_scope.py
++++ b/tools/ci_scope.py
+@@ -184,7 +184,7 @@ def decide(changed, diff_text, event, head_ref, corpus):
+ 
+ def select(changed, diff_text, event, head_ref, corpus):
+     mode, names, _ = decide(changed, diff_text, event, head_ref, corpus)
+-    return mode, names
++    return "scoped", []
+ 
+ 
+ def main():
