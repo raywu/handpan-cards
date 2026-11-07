@@ -1,0 +1,15 @@
+# kills: U2d nit N1: holding a note on a Neotone pan draws no cyclops or bottom target rings
+# suite: node --test --test-name-pattern ^U2d.nit.N1 tests/editor_e2e.test.js
+# fault: A Neotone pan draws the cyclops and bottom target rings for a held note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15751,7 +15751,7 @@
+     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
+   }
+   const standard = editorKindOf(m) === "standard";
+-  if (s && s.held && standard) {
++  if (s && s.held) {
+     for (const ring of ["inner", "bottom"]) {
+       if (ringIds(fields, ring).length) continue;
+       const orb = geom[ring] || (ring === "inner" ? 0.38 : 1.15);

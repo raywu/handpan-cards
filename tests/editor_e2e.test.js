@@ -25,6 +25,7 @@ function run() {
   let b = null;
   let base = "";
   let flagOn = true;
+  let dragTouch = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
   const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
 
@@ -37,7 +38,7 @@ function run() {
         if (err) { res.writeHead(404).end(); return; }
         const html = rel === "index.html";
         res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? apply(buf.toString("utf8"), flagOn) : buf);
+        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";") : buf);
       });
     });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -51,8 +52,9 @@ function run() {
   });
   afterEach(() => assertNoUncaught());
 
-  async function fresh(width = 375, height = 667, on = true) {
+  async function fresh(width = 375, height = 667, on = true, touchDrag = true) {
     flagOn = on;
+    dragTouch = touchDrag;
     await b.setViewport(width, height, width < 700);
     await b.send("Storage.clearDataForOrigin", { origin: new URL(base).origin, storageTypes: "indexeddb,local_storage" });
     await b.send("Page.navigate", { url: base });
@@ -398,7 +400,7 @@ function run() {
   describe("U2c the tray and tap placement", () => {
     const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
     const rimNames = () => b.eval(`return editorNames(editorSession.history.present, "rim");`);
-    const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -${y} * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+    const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
     const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     const tapPoint = async (pt, touch = false) => {
       if (touch) {
@@ -645,7 +647,7 @@ function run() {
       test("D16: a full area's pill is aria-disabled and a tap or pill into it is refused with the exact copy", async () => {
         await setup("(D3) " + RIM12 + " | C6");
         assert.deepStrictEqual(await pill("rim"), { text: "+ Rim 12 of 12", aria: "Add the held note to the rim, 12 of 12", disabled: true, full: true });
-        const core = async () => { const m = await model(); delete m.view; return m; };
+        const core = () => b.eval(`const m = editorSession.history.present; return { parts: editorPartsOf(m), ding: editorDingOf(m), options: m.options };`);
         const before = await core();
         await hold("F");
         await b.click("#editor-oct-up");
@@ -838,6 +840,255 @@ function run() {
         assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
         assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "G3");
         assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["C4"]);
+      });
+    });
+
+    describe("U2f drag and drop, trash, touch flag", () => {
+      const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const centreOf = (sel) => b.eval(`const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const orbit = (ring) => b.eval(`return editorSolve(editorSession.history.present).value.geom[${JSON.stringify(ring)}];`);
+      const spotAt = async (r, deg) => clientOf(...polar(typeof r === "string" ? await orbit(r) : r, deg));
+      const trashShown = () => b.eval(`const t = document.getElementById("editor-trash"); return !!t && !t.hasAttribute("hidden") && getComputedStyle(t).display !== "none";`);
+      const pastLen = () => b.eval(`return editorSession.history.past.length;`);
+      const core = () => b.eval(`const m = editorSession.history.present; return { parts: editorPartsOf(m), ding: editorDingOf(m), options: m.options };`);
+      const ghostText = () => b.eval(`const g = document.querySelector(".editor-ghost"); return g ? g.textContent : null;`);
+      // A real pointer gesture through CDP: press, move in steps, optionally stop mid-way for a look, release.
+      const gesture = async (from, to, kind, { mid, release = true } = {}) => {
+        const at = (k) => ({ x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+        const steps = [0.25, 0.5, 0.75, 1];
+        if (kind === "touch") {
+          await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...from, id: 1 }] });
+          for (const k of steps) {
+            await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...at(k), id: 1 }] });
+            if (mid && k === 0.5) await mid();
+          }
+          if (release) await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        } else {
+          await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...from, button: "left", buttons: 1, clickCount: 1 });
+          for (const k of steps) {
+            await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at(k), button: "left", buttons: 1 });
+            if (mid && k === 0.5) await mid();
+          }
+          if (release) await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...to, button: "left", buttons: 0, clickCount: 1 });
+        }
+        if (release) await new Promise((done) => setTimeout(done, 80));
+      };
+      const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
+
+      for (const kind of ["mouse", "touch"]) {
+        describe(kind, () => {
+          test("D3: a tray note dragged to a rim spot, a cyclops spot and a bottom spot is placed there", async () => {
+            await setup(SCALE);
+            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { mid: async () => {
+              assert.strictEqual(await ghostText(), "B4", "the ghost carries the note name");
+              assert.strictEqual(await trashShown(), true, "the trash shows while dragging");
+              assert.strictEqual(await status(), "Dragging B4: drop on a spot, a note, or the trash.");
+            } });
+            assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"]);
+            assert.strictEqual(await trashShown(), false, "the trash is gone after the drop");
+            assert.strictEqual(await ghostText(), null);
+            await b.click("#editor-oct-up");
+            assert.strictEqual(await b.eval(`return document.getElementById("editor-oct").textContent;`), "5");
+            await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
+            assert.strictEqual((await names("inner")).length, 3, await status());
+            assert.ok((await model()).options.angles.inner.includes(90));
+            await b.click("#editor-oct-down");
+            await b.click("#editor-oct-down");
+            await gesture(await chipAt("F"), await spotAt(1.15, 150), kind);
+            assert.deepStrictEqual(await names("bottom"), ["F3"]);
+            assert.ok(await pastLen() >= 3, "each drop is an Undo step");
+          });
+
+          test("D3: a tray note dragged onto the empty cyclops arc and bottom ring (first note) is placed", async () => {
+            await setup("(D3) " + RIM8);
+            await b.click("#editor-oct-up");
+            await gesture(await chipAt("E"), await spotAt(0.38, 90), kind);
+            assert.deepStrictEqual(await names("inner"), ["E5"], await status());
+            await setup("(D3) " + RIM8);
+            await b.click("#editor-oct-down");
+            await gesture(await chipAt("E"), await spotAt(1.15, 150), kind);
+            assert.deepStrictEqual(await names("bottom"), ["E3"], await status());
+          });
+
+          test("D4: a drag swaps two placed notes (Undo restores); a placed bottom note on the ding swaps seats with it; a tray note on the ding replaces it", async () => {
+            await setup("[A2] " + SCALE);
+            const before = await core();
+            await gesture(await noteAt("rim", 0), await noteAt("rim", 1), kind);
+            assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
+            assert.strictEqual(await status(), "A3 and Bb3 traded places.Undo");
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await core(), before);
+            await gesture(await noteAt("bottom", 0), await noteAt("ding", 0), kind);
+            assert.strictEqual(await status(), "A2 is the ding. D3 took its seat.Undo");
+            assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "A2");
+            await b.click("#editor-notice-undo");
+            await b.click("#editor-oct-down");
+            await gesture(await chipAt("C"), await noteAt("ding", 0), kind);
+            assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "C3", await status());
+            assert.match(await status(), /^D3 removed\. C3 is the ding\./);
+          });
+
+          test("D4 / SE-6: dropping a placed note on the trash or on the tray removes it with Undo; any other drop off the pan snaps back with no step", async () => {
+            await setup(SCALE);
+            const before = await core();
+            const len = await pastLen();
+            const trash = { x: 187, y: 667 - 18 - 26 };
+            await gesture(await noteAt("rim", 3), trash, kind);
+            assert.ok(!(await rimNames()).includes("D4"), "removed by the trash");
+            assert.strictEqual(await status(), "D4 removed.Undo");
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await core(), before);
+            await gesture(await noteAt("rim", 3), await centreOf("#editor-notes"), kind);
+            assert.ok(!(await rimNames()).includes("D4"), "removed by the tray");
+            await b.click("#editor-undo");
+            assert.deepStrictEqual(await core(), before);
+            const steps = await pastLen();
+            await gesture(await noteAt("rim", 3), await centreOf("#editor-title"), kind);
+            await gesture(await noteAt("rim", 3), { x: 4, y: 300 }, kind);
+            await gesture(await chipAt("G"), await centreOf("#editor-title"), kind);
+            assert.deepStrictEqual(await core(), before, "snapped back");
+            assert.strictEqual(await pastLen(), steps, "a snap back is not an Undo step");
+            assert.strictEqual(await trashShown(), false);
+            assert.ok(len <= steps);
+          });
+
+          test("D4: the ding dragged to the trash or off the pan stays; a drag of the ding onto a rim note says only a bottom note can swap", async () => {
+            await setup("[A2] " + SCALE);
+            const before = await core();
+            await gesture(await noteAt("ding", 0), { x: 187, y: 667 - 18 - 26 }, kind);
+            assert.deepStrictEqual(await core(), before);
+            await gesture(await noteAt("rim", 0), await noteAt("ding", 0), kind);
+            assert.strictEqual(await status(), "Only a bottom note can swap with the ding.");
+            assert.deepStrictEqual(await core(), before);
+          });
+
+          test("D3: a rim note dragged to an empty bottom spot moves areas in one step; Undo restores", async () => {
+            await setup(SCALE);
+            const before = await core();
+            await gesture(await noteAt("rim", 3), await spotAt(1.15, 150), kind);
+            assert.deepStrictEqual(await names("bottom"), ["D4"], await status());
+            assert.ok(!(await rimNames()).includes("D4"));
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await core(), before);
+          });
+        });
+      }
+
+      test("D3: 8px or less of movement is a tap (selects, places nothing); more is a drag (the ghost shows)", async () => {
+        await setup(SCALE);
+        const from = await noteAt("rim", 3);
+        const before = await core();
+        await gesture(from, { x: from.x + 6, y: from.y }, "mouse");
+        assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: 3 }, "the click still selected the note");
+        assert.strictEqual(await ghostText(), null);
+        assert.deepStrictEqual(await core(), before);
+        await b.click("#editor-pan");
+        await setup(SCALE);
+        const chip = await chipAt("G");
+        let ghost = null;
+        await gesture(chip, { x: chip.x + 20, y: chip.y }, "mouse", { mid: async () => { ghost = await ghostText(); } });
+        assert.strictEqual(ghost, "G4", "20px is a drag");
+        assert.strictEqual(await b.eval(`return editorSession.held === null;`), true, "a drag is not a hold");
+      });
+
+      test("D3: a drag from a tray chip that ends on the chip itself does not also hold it", async () => {
+        await setup(SCALE);
+        const chip = await chipAt("G");
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...chip, button: "left", buttons: 1, clickCount: 1 });
+        await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: chip.x + 30, y: chip.y, button: "left", buttons: 1 });
+        await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...chip, button: "left", buttons: 1 });
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...chip, button: "left", clickCount: 1 });
+        assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
+      });
+
+      test("D8 / SE-7: touch-action is none on the pan SVG and the tray chips only; the tray is pan-y and the rest of the panel scrolls", async () => {
+        await setup(SCALE);
+        const ta = (sel) => b.eval(`return getComputedStyle(document.querySelector(${JSON.stringify(sel)})).touchAction;`);
+        assert.strictEqual(await ta("#editor-pan svg"), "none");
+        assert.strictEqual(await ta(".tray-note"), "none");
+        assert.strictEqual(await ta("#editor-tray"), "pan-y");
+        for (const sel of [".editor-head", "#editor-line", "#editor-status", "#editor-pills", ".editor-toolbar", "#editor"]) {
+          assert.ok(["auto", "manipulation", "pan-y"].includes(await ta(sel)), sel + " keeps scrolling: " + await ta(sel));
+        }
+        const before = await core();
+        const head = await centreOf(".editor-head");
+        await gesture(head, { x: head.x, y: head.y - 60 }, "touch");
+        await gesture(await centreOf("#editor-status"), await centreOf("#editor-line"), "touch");
+        assert.deepStrictEqual(await core(), before, "a swipe that starts outside the pan drags nothing");
+        assert.strictEqual(await ghostText(), null);
+      });
+
+      test("DRAG_ON_TOUCH off: touch drags do nothing and touch taps still place and swap; mouse drag is unaffected; touch-action is not none", async () => {
+        await fresh(375, 667, true, false);
+        await openAdd();
+        await typeLine(SCALE);
+        const ta = (sel) => b.eval(`return getComputedStyle(document.querySelector(${JSON.stringify(sel)})).touchAction;`);
+        assert.notStrictEqual(await ta("#editor-pan svg"), "none");
+        assert.notStrictEqual(await ta(".tray-note"), "none");
+        const before = await core();
+        await gesture(await chipAt("B"), await spotAt(0.722, 22.5), "touch");
+        assert.deepStrictEqual(await core(), before, "a touch drag places nothing");
+        assert.strictEqual(await ghostText(), null);
+        await gesture(await noteAt("rim", 0), await noteAt("rim", 1), "touch");
+        assert.deepStrictEqual(await core(), before, "a touch drag swaps nothing");
+        await tapPoint(await chipAt("B"), true);
+        assert.strictEqual(await status(), "Holding B4: tap a spot, an area, or the ding.Cancel");
+        await tapSpot(...polar(0.722, 22.5), true);
+        assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"], "tap-tap by touch works");
+        await tapNote("rim", 0, true);
+        await tapNote("rim", 1, true);
+        assert.deepStrictEqual((await model()).options.seats.rim.slice(0, 8), [1, 0, 2, 3, 4, 5, 6, 7]);
+        await b.click("#editor-oct-up");
+        await gesture(await chipAt("E"), await spotAt(0.722, -22.5), "mouse");
+        assert.ok((await rimNames()).includes("E5"), "mouse drag still places: " + await status());
+      });
+
+      test("U2d nit N2: at 375x667 the empty bottom ring and its first-note spot (90 degrees, 270 degrees) can be tapped and dropped on", async () => {
+        await setup("(D3) " + RIM8);
+        const inside = (p) => b.eval(`const r = document.querySelector("#editor-pan svg").getBoundingClientRect(); const e = document.elementFromPoint(${p.x}, ${p.y}); return ${p.x} >= r.left && ${p.x} <= r.right && ${p.y} >= r.top && ${p.y} <= r.bottom && !!e && !!e.closest("#editor-pan svg");`);
+        for (const deg of [90, 270]) assert.strictEqual(await inside(await spotAt(1.15, deg)), true, deg + " degrees is on the pan");
+        await b.click("#editor-oct-down");
+        await tapPoint(await chipAt("E"));
+        await tapSpot(...polar(1.15, 90));
+        assert.deepStrictEqual(await names("bottom"), ["E3"], await status());
+        await setup("(D3) " + RIM8);
+        await b.click("#editor-oct-down");
+        await gesture(await chipAt("E"), await spotAt(1.15, 90), "mouse");
+        assert.deepStrictEqual(await names("bottom"), ["E3"], await status());
+        assert.deepStrictEqual((await model()).options.angles.bottom, [90]);
+      });
+
+      test("U2d nit N1: holding a note on a Neotone pan draws no cyclops or bottom target rings", async () => {
+        await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        await b.click("#editor-type-neotone");
+        await hold("B");
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`), 0);
+        await b.click("#editor-type-standard");
+        await hold("C");
+        assert.ok((await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`)) > 0, "a Standard pan still shows them");
+      });
+
+      test("Undo and Redo walk back through drops, a pan-type switch and Reset spacing", async () => {
+        await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        const states = [await core()];
+        const step = async (act) => {
+          const before = await pastLen();
+          await act();
+          assert.strictEqual(await pastLen(), before + 1, "one history step: " + await status());
+          states.push(await core());
+        };
+        await step(async () => gesture(await chipAt("B"), await spotAt(0.722, 22.5), "mouse"));
+        await step(async () => gesture(await noteAt("rim", 3), await spotAt(1.15, 150), "mouse"));
+        await step(() => b.click("#editor-type-neotone"));
+        await step(() => b.click("#editor-type-standard"));
+        for (let k = states.length - 2; k >= 0; k--) {
+          await b.click("#editor-undo");
+          assert.deepStrictEqual(await core(), states[k]);
+        }
+        for (let k = 1; k < states.length; k++) {
+          await b.click("#editor-redo");
+          assert.deepStrictEqual(await core(), states[k]);
+        }
       });
     });
   });

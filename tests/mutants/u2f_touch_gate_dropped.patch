@@ -1,0 +1,14 @@
+# kills: D8: DRAG_ON_TOUCH off: touch drags do nothing and touch taps still place and swap; mouse drag is unaffected; touch-action is not none
+# suite: node --test --test-name-pattern ^DRAG_ON_TOUCH.off tests/editor_e2e.test.js
+# fault: The DRAG_ON_TOUCH flag no longer stops a touch drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16012,7 +16012,6 @@
+ function editorDragDown(e) {
+   const s = editorSession;
+   if (!s || s.dialog || s.editing || editorDrag || e.button > 0) return;
+-  if (e.pointerType === "touch" && !DRAG_ON_TOUCH) return;
+   const src = editorDragSource(e);
+   if (!src) return;
+   editorDrag = { src, id: e.pointerId, x0: e.clientX, y0: e.clientY, live: false, ghost: null };

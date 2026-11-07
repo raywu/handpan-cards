@@ -3,7 +3,7 @@
 // run in the sandbox with ONE_PANEL on. The DOM half is tests/editor_e2e.test.js.
 // Assertions derive from docs/plans/2026-11-06-scale-editor-u2-split.md (U2b),
 // D10, D12, SE-2, SE-15 and D15 in docs/plans/2026-11-05-scale-editor-reinvent.md.
-const { test } = require("node:test");
+const { test, describe } = require("node:test");
 const assert = require("node:assert");
 const { boot } = require("./helpers/sandbox.js");
 
@@ -554,4 +554,89 @@ test("U2d-11 (D18): the reset sets the angles to the engine's count-rule spacing
   assert.deepStrictEqual(res.pins, [{ ring: "inner", i: 2 }]);
   assert.deepStrictEqual(res.angles, { inner: [null, null, 120] });
   assert.deepStrictEqual(plain(a.get(`editorResetSpacing(editorResetSpacing(__m, ["bottom"]).value, ["bottom"]).value.pins`)), [{ ring: "inner", i: 2 }], "nothing to reset is a no-op");
+});
+
+describe("U2f drag classifier and drop plan", () => {
+  const rimOf = (a, x) => plain(a.get(`editorNames(${x}, "rim")`));
+  const plan = (a, src, target) => a.run(`globalThis.__p = editorDropPlan(__m, ${JSON.stringify(src)}, ${JSON.stringify(target)}); true`);
+  const after = (a) => a.run(`globalThis.__r = __p.step ? __p.step(__m) : null; true`);
+
+  test("U2f-1 (D3): more than 8px of movement is a drag, 8px or less is a tap", () => {
+    const a = app();
+    for (const [dx, dy, want] of [[0, 0, "tap"], [8, 0, "tap"], [5, 5, "tap"], [0, 9, "drag"], [6, 6, "drag"], [-9, 0, "drag"]]) {
+      assert.strictEqual(a.get(`editorDragKind(${dx}, ${dy})`), want, `${dx},${dy}`);
+    }
+  });
+
+  test("U2f-2 (SE-6): a tray note on a spot places it, on a placed note replaces it, on the ding replaces the root; off the pan snaps back", () => {
+    const a = app();
+    withModel(a, SCALE);
+    plan(a, { from: "tray", name: "B4" }, { kind: "spot", ring: "rim" });
+    after(a);
+    assert.ok(rimOf(a, "__r.value").includes("B4"));
+    plan(a, { from: "tray", name: "B4" }, { kind: "note", ring: "rim", i: 2 });
+    after(a);
+    assert.deepStrictEqual(rimOf(a, "__r.value"), ["A3", "Bb3", "D4", "E4", "F4", "G4", "A4", "B4"]);
+    assert.strictEqual(a.get("__p.say"), "C4 replaced by B4.");
+    plan(a, { from: "tray", name: "G3" }, { kind: "ding" });
+    after(a);
+    assert.strictEqual(a.get("editorDingOf(__r.value)"), "G3");
+    for (const kind of ["off", "trash", "tray"]) assert.strictEqual(a.get(`(() => { const p = editorDropPlan(__m, { from: "tray", name: "B4" }, { kind: ${JSON.stringify(kind)} }); return p.snap === true && !p.step && !p.trade; })()`), true, kind);
+  });
+
+  test("U2f-3 (D4): a placed note on the trash or the tray is removed; the ding never is; off the pan it snaps back", () => {
+    const a = app();
+    withModel(a, SCALE);
+    for (const kind of ["trash", "tray"]) {
+      plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind });
+      after(a);
+      assert.ok(!rimOf(a, "__r.value").includes("D4"), kind);
+      assert.strictEqual(a.get("__p.say"), "D4 removed.");
+    }
+    plan(a, { from: "pan", ref: { ring: "ding", i: 0 } }, { kind: "trash" });
+    assert.strictEqual(a.get("__p.snap"), true);
+    plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "off" });
+    assert.strictEqual(a.get("__p.snap"), true);
+  });
+
+  test("U2f-4 (D4, D23): a placed note on another note trades; on itself snaps back; the ding trades through the same path", () => {
+    const a = app();
+    withModel(a, "[A2] " + SCALE);
+    plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "note", ring: "rim", i: 1 });
+    assert.deepStrictEqual(plain(a.get("__p.trade")), [{ ring: "rim", i: 0 }, { ring: "rim", i: 1 }]);
+    plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "note", ring: "rim", i: 0 });
+    assert.strictEqual(a.get("__p.snap"), true);
+    plan(a, { from: "pan", ref: { ring: "bottom", i: 0 } }, { kind: "ding" });
+    assert.deepStrictEqual(plain(a.get("__p.trade")), [{ ring: "bottom", i: 0 }, { ring: "ding", i: 0 }]);
+  });
+
+  test("U2f-5: a placed cyclops note dropped on a cyclops spot moves to that angle; a rim note dropped on an empty bottom spot moves areas", () => {
+    const a = app();
+    withModel(a, SCALE);
+    plan(a, { from: "pan", ref: { ring: "inner", i: 0 } }, { kind: "spot", ring: "inner", angle: 110 });
+    after(a);
+    assert.deepStrictEqual(plain(a.get("__r.value.options.angles.inner.filter((x) => x !== null)")), [110]);
+    plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "spot", ring: "bottom", angle: 270 });
+    after(a);
+    assert.strictEqual(a.get("__r.ok"), true);
+    assert.ok(!rimOf(a, "__r.value").includes("D4"));
+    assert.deepStrictEqual(plain(a.get(`editorNames(__r.value, "bottom")`)), ["D4"]);
+    plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "spot", ring: "rim" });
+    assert.strictEqual(a.get("__p.snap"), true, "a rim spot has no angle to move to");
+  });
+
+  test("U2f-6 (D8): DRAG_ON_TOUCH is one constant, on by default", () => {
+    const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+    assert.strictEqual((html.match(/const DRAG_ON_TOUCH = true;/g) || []).length, 1);
+    assert.strictEqual((html.match(/DRAG_ON_TOUCH/g) || []).length >= 2, true, "the flag is read, not only declared");
+  });
+});
+
+test("U2f-7 (U2d nit N3): the area caps do not apply to a model with a profile; a 13th rim note there is not refused as rim full", () => {
+  const a = app();
+  withModel(a, scaleOf("A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5", 0, 0));
+  a.run(`globalThis.__p = editorClone(__m); __p.options.profile = { id: "paired", rev: 2, map: [] }; globalThis.__r = editorPlace(__p, "rim", "F5"); true`);
+  assert.strictEqual(a.get("editorPlace(__m, 'rim', 'F5').code"), "AREA_FULL", "the same add on a Standard pan is refused");
+  assert.notStrictEqual(a.get("__r.code"), "AREA_FULL");
+  assert.notStrictEqual(a.get("__r.code"), "TOO_CROWDED");
 });
