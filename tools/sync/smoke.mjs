@@ -8,10 +8,11 @@
 //   SMOKE_ADMIN_DB_URL                         optional postgres connection string (psql) to backdate rows
 //   SMOKE_PURGER_DB_URL                        optional connection string for role sync_purger (psql)
 // Cases needing an optional variable are reported as SKIP, never as PASS.
-// Connection strings reach psql only through the PGDATABASE environment variable (never argv), and every
+// Connection strings reach psql only through PG* environment variables (see pgenv.mjs) (never argv), and every
 // message printed here is redacted of those strings and of any user:password@ part.
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { pgEnv } from "./pgenv.mjs";
 
 const URL_ = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const ANON = process.env.SUPABASE_ANON_KEY || "";
@@ -20,7 +21,13 @@ if (!URL_ || !ANON) {
   process.exit(2);
 }
 
-const secrets = [process.env.SMOKE_ADMIN_DB_URL, process.env.SMOKE_PURGER_DB_URL, ANON].filter(Boolean);
+const secrets = [
+  process.env.SMOKE_ADMIN_DB_URL,
+  process.env.SMOKE_PURGER_DB_URL,
+  ANON,
+  ...["A", "B", "C"].flatMap((l) => [process.env[`SMOKE_${l}_JWT`], process.env[`SMOKE_${l}_PASSWORD`]]),
+  ...["SMOKE_D_PASSWORD"].map((k) => process.env[k]),
+].filter(Boolean);
 const redact = (text) => {
   let out = String(text);
   for (const s of secrets) out = out.split(s).join("[redacted]");
@@ -76,7 +83,7 @@ const subOf = (jwt) => JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").to
 const psql = (url, sql) => {
   const r = spawnSync("psql", ["-v", "ON_ERROR_STOP=1", "-At", "-c", sql], {
     encoding: "utf8",
-    env: { ...process.env, PGDATABASE: url },
+    env: { ...process.env, ...pgEnv(url) },
   });
   if (r.error || r.status !== 0) {
     throw new Error(`psql failed (exit ${r.status}): ${redact(r.error ? r.error.message : r.stderr).trim().slice(0, 120)}`);

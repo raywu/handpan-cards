@@ -206,7 +206,7 @@ grant  execute on function public.purge_tombstones()  to sync_purger;
 -- Optional scheduled purge when pg_cron is available (V7):
 --   select cron.schedule('sync-purge', '17 3 * * *', 'select public.purge_tombstones()');
 
--- Recovery (plan section 16). Run as one transaction in the SQL editor; replace :u and :s.
+-- Recovery (plan section 16). Run as one transaction in the SQL editor; replace :u, :s and :t.
 -- Mass tombstone, within 30 days:
 --   begin;
 --   with n as (select count(*) c from public.saved_scales
@@ -231,6 +231,6 @@ grant  execute on function public.purge_tombstones()  to sync_purger;
 --          rev = (select last_rev from public.sync_users where user_id = :u), deleted = false, deleted_at = null,
 --          updated_at = now()
 --     from (select record from public.scale_history
---            where user_id = :u and scale_id = :s and replaced_at < :t order by replaced_at desc limit 1) h
+--            where user_id = :u and scale_id = :s and replaced_at < :t order by replaced_at desc, id desc limit 1) h
 --    where user_id = :u and scale_id = :s;
 --   commit;
