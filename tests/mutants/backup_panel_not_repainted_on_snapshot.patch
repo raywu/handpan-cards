@@ -1,0 +1,12 @@
+# kills: an open backup panel on desktop shows the new scale after a save
+# suite: node --test --test-name-pattern an.open.backup.panel.on.desktop.shows.the.new.scale.after.a.save tests/app.test.js
+# The saved-scales snapshot listener no longer repaints an open backup panel, so on desktop (which never calls openPanel) the list stays stale after a save.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15569,5 +15569,4 @@
+   if (chipsChanged) buildChips();
+-  if (chipsChanged && !backupPanel.hasAttribute("hidden")) paintBackup();
+   updateSavedStatus();
+   if(!dirty && !sheetOpen){
+     if(!savedEqual(oldSelection,selection) || beforeRow?.revision!==afterRow?.revision){setOrder();render();}
