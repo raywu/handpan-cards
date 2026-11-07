@@ -1,0 +1,15 @@
+# kills: U2f-7 (U2d nit N3): the area caps do not apply to a model with a profile; a 13th rim note there is not refused as rim full
+# suite: node --test --test-name-pattern ^U2f-7. tests/editor_shell.test.js
+# fault: The caps apply to a Neotone profile too.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15349,7 +15349,7 @@
+ const EDITOR_CAPS = { rim: 12, inner: 6, bottom: 12 };
+ const editorAreaRefusal = (code, reason) => ({ ok: false, code, reason });
+ function editorPlace(m, ring, name, angle) {
+-  const capped = !m.options.profile && EDITOR_CAPS[ring] !== undefined;
++  const capped = EDITOR_CAPS[ring] !== undefined;
+   if (capped && ringIds(m.fields, ring).length >= EDITOR_CAPS[ring]) {
+     return editorAreaRefusal("AREA_FULL", t("editor.full." + ring, { max: EDITOR_CAPS[ring] }));
+   }
