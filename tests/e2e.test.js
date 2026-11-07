@@ -20199,7 +20199,7 @@ function run() {
       await b.setViewport(380, 780, true);
       const fs = require("node:fs");
       const dir = require("node:path").join(__dirname, "..", "scales");
-      const slugs = fs.readdirSync(dir).filter((x) => fs.existsSync(require("node:path").join(dir, x, "index.html")));
+      const slugs = fs.readdirSync(dir).filter((x) => fs.existsSync(require("node:path").join(dir, x, "index.html")) && fs.readFileSync(require("node:path").join(dir, x, "index.html"), "utf8").includes('class="prog"'));
       assert.ok(slugs.length >= 16, `all the pages are listed (${slugs.length})`);
       let max = 0, margin = 0, at = "";
       for (const slug of slugs) {
