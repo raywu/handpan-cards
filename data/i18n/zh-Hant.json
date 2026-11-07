@@ -431,7 +431,7 @@
   "editor.reset.bottom": "Reset bottom spacing",
   "editor.reset_both": "Reset spacing ({n})",
   "editor.reset_both_aria": "Reset cyclops and bottom spacing",
-  "backup.open": "備份已儲存的音階",
+  "backup.open": "備份你的音階",
   "backup.intro": "已儲存的音階只存在於此瀏覽器中，一段時間不造訪後可能被清除。請把這份清單存放在安全的地方，例如備忘錄或寄給自己的郵件。",
   "backup.session": "此瀏覽器目前不會保留已儲存的音階。關閉此分頁後它們會消失，請現在備份。",
   "backup.restore": "要還原，請逐一點按清單中的連結。取代內建音階的音階會作為新的自訂音階出現在內建音階旁邊，被隱藏的內建音階只會顯示為備註。",

@@ -447,7 +447,7 @@
   "editor.reset.bottom": "Reset bottom spacing",
   "editor.reset_both": "Reset spacing ({n})",
   "editor.reset_both_aria": "Reset cyclops and bottom spacing",
-  "backup.open": "SKALEN SICHERN",
+  "backup.open": "DEINE SKALEN SICHERN",
   "backup.intro": "Gespeicherte Skalen liegen nur in diesem Browser, der sie nach einiger Zeit ohne Besuch löschen kann. Bewahre diese Liste sicher auf, zum Beispiel in Notizen oder in einer E-Mail an dich selbst.",
   "backup.session": "Gespeicherte Skalen werden in diesem Browser gerade nicht dauerhaft behalten. Sie verschwinden, wenn du diesen Tab schließt. Sichere sie jetzt.",
   "backup.restore": "Zum Wiederherstellen tippst du in deiner Liste auf jeden Link. Eine wiederhergestellte Ersetzung einer Standardskala kommt als neue eigene Skala neben der Standardskala zurück, und ausgeblendete Standardskalen erscheinen nur als Hinweis.",
