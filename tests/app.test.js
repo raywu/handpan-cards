@@ -641,7 +641,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
+                     "layout", "naming", "select", "share", "sequence", "sync", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -652,7 +652,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence", "swipe"]);
+                                 "share", "sequence", "sync", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -4008,7 +4008,7 @@ test("the touch icon and the preview image exist and are named once", async () =
     "the PNG rel=icon must reuse apple-touch-icon.png");
   assert.ok(fs.existsSync(path.join(ROOT, touch)), `${touch} missing at the repo root`);
   const og = metaContent(html, "property", "og:image");
-  assert.strictEqual(og, "https://handpan.raywu.org/og.png");
+  assert.strictEqual(og, "https://handpantheory.com/og.png");
   assert.ok(fs.existsSync(path.join(ROOT, "og.png")), "og.png missing at the repo root");
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
@@ -9718,7 +9718,7 @@ describe("discoverability: structured data", () => {
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpan.raywu.org"]);
+    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpantheory.com"]);
     const hostEntry = site.alternateName[1];
     assert.strictEqual(hostEntry, hostEntry.toLowerCase());
     assert.strictEqual(hostEntry, new URL(canonical).host);
@@ -9755,7 +9755,7 @@ describe("discoverability: structured data", () => {
     const ld = ldBlock();
     assert.strictEqual(ld["@context"], "https://schema.org");
     const app = node("WebApplication");
-    assert.strictEqual(app.url, "https://handpan.raywu.org/");
+    assert.strictEqual(app.url, "https://handpantheory.com/");
     assert.strictEqual(app.applicationCategory, "MusicApplication");
     assert.strictEqual(app.operatingSystem, "Any");
     assert.strictEqual(app.browserRequirements, "Requires JavaScript");
