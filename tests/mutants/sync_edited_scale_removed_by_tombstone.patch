@@ -1,0 +1,15 @@
+# kills: sync: remote delete vs unedited local removes it; vs edited local keeps and revives it
+# suite: node --test --test-name-pattern remote.delete.vs.unedited.local tests/sync.test.js
+# A remote tombstone removes a locally edited scale instead of keeping and reviving it.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -170,7 +170,7 @@
+         continue;
+       }
+       if (R.rev <= B.rev) continue;
+-      if (L.revision === B.localRevision) pendingRemoves.push({ R, L });
++      if (true) pendingRemoves.push({ R, L });
+       else baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "keep" });
+     }
+ 
