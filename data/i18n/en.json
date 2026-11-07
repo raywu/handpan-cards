@@ -365,7 +365,7 @@
   "move.go_plain": "OPEN {host}",
   "move.dismiss": "Hide for now",
   "move.banner_label": "Handpan Theory has moved",
-  "backup.open": "BACK UP SAVED SCALES",
+  "backup.open": "BACKUP YOUR SCALES",
   "backup.intro": "Saved scales live only in this browser, which can erase them after a while without a visit. Keep this list somewhere safe, such as Notes or an email to yourself.",
   "backup.session": "Saved scales are not being kept in this browser right now. They disappear when you close this tab, so back them up now.",
   "backup.restore": "To restore, tap each link in your saved list. A restored seeded-scale replacement comes back as a new custom scale beside the seeded one, and hidden seeded scales appear only as a note.",
@@ -460,5 +460,7 @@
   "editor.reset_both_aria": "Reset cyclops and bottom spacing",
   "editor.palette": "Card palette",
   "editor.palette_n": "Card palette {n}",
-  "editor.layout.aria": "Mirror and orientation"
+  "editor.layout.aria": "Mirror and orientation",
+  "editor.replace_ding": "Replace ding",
+  "editor.replace_ding_aria": "Make the selected note the ding"
 }

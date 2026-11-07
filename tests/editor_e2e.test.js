@@ -936,6 +936,32 @@ function run() {
             assert.strictEqual(await status(), "F2 moved.Undo");
           });
 
+          test("U2e3: a tray note over the ding lights the ding zone only, a small move lights the cyclops, and a drop on the ding replaces it with an Undo", async () => {
+            await setup("[A2] (D3) " + RIM8 + " | C5 D5");
+            await b.click("#editor-oct-down");
+            const on = async () => { await new Promise((done) => setTimeout(done, 60)); return b.eval(`return [...document.querySelectorAll("#editor-pan .ezone.on")].map((e) => e.dataset.ring);`); };
+            const ding = await noteAt("ding", 0);
+            const reach = await b.eval(`const c = document.querySelector('#editor-pan .ehit[data-ring="ding"]'); return c.getBoundingClientRect().width / 2;`);
+            const seen = [];
+            await gesture(await chipAt("G"), ding, kind, { mid: async () => {}, release: false });
+            seen.push(await on());
+            const move = (pt) => kind === "touch"
+              ? b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...pt, id: 1 }] })
+              : b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...pt, button: "left", buttons: 1 });
+            await move({ x: ding.x, y: ding.y - reach * 1.5 });
+            seen.push(await on());
+            await move(ding);
+            seen.push(await on());
+            assert.deepStrictEqual(seen, [["ding"], ["inner"], ["ding"]]);
+            if (kind === "touch") await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+            else await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...ding, button: "left", buttons: 0, clickCount: 1 });
+            await new Promise((done) => setTimeout(done, 80));
+            assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "G3");
+            assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+            await clickUndo();
+            assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "D3");
+          });
+
           test("v4: while dragging a placed note, the source carries lift and the landing ring sits on the note or ding under it; over empty pan or itself nothing", async () => {
             await setup("(D3) " + RIM8);
             const landing = () => b.eval(`const c = document.querySelector("#editor-pan .editor-landing"); return c ? { x: +c.getAttribute("cx"), y: +c.getAttribute("cy") } : null;`);
@@ -1188,7 +1214,7 @@ function run() {
       const lineBoxes = (sel) => b.eval(`return [...document.querySelectorAll(${JSON.stringify(sel)})].map((e) => ({ text: e.textContent, h: e.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.2 }));`);
       const visibleUndo = () => b.eval(`return [...document.querySelectorAll("#editor button, #editor .mode")].filter((e) => e.textContent.trim() === "Undo" && e.offsetParent !== null && getComputedStyle(e).visibility === "visible").length;`);
 
-      test("OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line one line box (375 and 820)", async () => {
+      test("OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line at most two line boxes (375 and 820)", async () => {
         for (const [w, h] of [[375, 667], [820, 1180]]) {
           await fresh(w, h);
           await openAdd();
@@ -1197,7 +1223,7 @@ function run() {
           assert.deepStrictEqual(rim, { act: "Add to rim", count: "8 of 12", aria: "Add the held note to the rim, 8 of 12 used" });
           assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-inner .pill-act").textContent;`)), "Add to cyclops");
           assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-bottom .pill-count").textContent;`)), "0 of 12");
-          for (const l of await lineBoxes("#editor-pills .pill span")) assert.ok(l.h <= l.lh * 1.3 + 0.5, w + ": '" + l.text + "' is one line box, " + l.h + " vs " + l.lh);
+          for (const l of await lineBoxes("#editor-pills .pill span")) assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": '" + l.text + "' is at most two line boxes, " + l.h + " vs " + l.lh);
           await typeLine("(D3) " + RIM12 + " | C6");
           assert.strictEqual(await b.eval(`return document.getElementById("editor-pill-rim").textContent;`), "Rim full");
           assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pill-rim span").length;`), 1);
@@ -1602,14 +1628,14 @@ function run() {
         assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-notice-undo");
       });
 
-      test("OQA reset one line: Reset spacing is a single line box at 375, 820 and 1440", async () => {
+      test("OQA reset wraps within two lines: Reset spacing is at most two line boxes at 375, 820 and 1440", async () => {
         for (const [w, h] of [[375, 667], [820, 1180], [1440, 960]]) {
           await fresh(w, h);
           await openAdd();
           await typeLine(SCALE);
           const r = await b.eval(`const e = document.getElementById("editor-reset"); const vis = [...e.querySelectorAll("span")].filter((x) => getComputedStyle(x).display !== "none"); return { ws: getComputedStyle(e).whiteSpace, lines: vis.map((x) => Math.round(x.getBoundingClientRect().height / (parseFloat(getComputedStyle(x).lineHeight) || parseFloat(getComputedStyle(x).fontSize) * 1.2))) };`);
-          assert.strictEqual(r.ws, "nowrap", w + "");
-          assert.ok(r.lines.length > 0 && r.lines.every((n) => n === 1), w + ": " + JSON.stringify(r));
+          assert.strictEqual(r.ws, "normal", w + "");
+          assert.ok(r.lines.length > 0 && r.lines.every((n) => n <= 2), w + ": " + JSON.stringify(r));
         }
       });
 
@@ -1904,6 +1930,66 @@ function run() {
       await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
       await b.click("#editor-type-neotone");
       assert.deepStrictEqual(await b.eval(`return ["editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById(id).disabled);`), [true, true, true, true]);
+    });
+  });
+
+  describe("U2e-3 Replace ding and button fit", () => {
+    const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+    const ding = () => b.eval(`return editorDingOf(editorSession.history.present);`);
+    const setup = async (line, width = 390, height = 844) => { await fresh(width, height); await openAdd(); await typeLine(line); };
+
+    test("Replace ding sits beside the area pills, sets the ding to a held tray note, and swaps in a selected bottom note", async () => {
+      await setup("[A2] (D3) " + RIM8 + " | C5 D5");
+      const row = await b.eval(`const p = document.getElementById("editor-pills").getBoundingClientRect(), d = document.getElementById("editor-replace-ding"); const q = d.getBoundingClientRect();
+        return { inside: q.top >= p.top - 1 && q.bottom <= p.bottom + 1, level: Math.abs(q.top - document.getElementById("editor-pill-rim").getBoundingClientRect().top) < 2, text: d.textContent };`);
+      assert.deepStrictEqual(row, { inside: true, level: true, text: "Replace ding" });
+      await b.click("#editor-replace-ding");
+      assert.strictEqual(await status(), "Pick a note below, or on the pan, first.");
+      await b.click("#editor-oct-down");
+      await b.click('.tray-note[data-name="G"]');
+      await b.click("#editor-replace-ding");
+      assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+      assert.strictEqual(await ding(), "G3");
+      assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+      await clickUndo();
+      await b.click("#editor-pan");
+      await b.eval(`editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); return true;`);
+      await b.click("#editor-replace-ding");
+      assert.strictEqual(await ding(), "A2");
+    });
+
+    test("every label in the pills row and the action row fits its button at 390, 375 and 320 wide, in all eight locales, with the real fonts", async () => {
+      const prev = b;
+      b = await launch({ foregroundSettle: true, realFonts: true });
+      try {
+        for (const width of [390, 375, 320]) {
+          await setup("[A2] (D3) " + RIM8 + " | C5 D5", width, 844);
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          const langs = await b.eval(`return [...document.getElementById("lang-select").options].map((o) => o.value).filter((v) => v !== "auto");`);
+          assert.strictEqual(langs.length, 8);
+          for (const lang of langs) {
+            await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
+            const bad = await b.eval(`const out = [];
+              for (const btn of document.querySelectorAll("#editor-pills button, #editor .editor-toolbar button")) {
+                if (!btn.offsetParent) continue;
+                const box = btn.getBoundingClientRect();
+                const range = document.createRange(); range.selectNodeContents(btn);
+                for (const r of range.getClientRects()) {
+                  if (r.width && (r.left < box.left - 0.5 || r.right > box.right + 0.5 || r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5)) out.push(btn.id + ":" + btn.textContent);
+                }
+                const size = parseFloat(getComputedStyle(btn).fontSize);
+                if (size < 10.5) out.push(btn.id + " font " + size);
+              }
+              return out;`);
+            assert.deepStrictEqual(bad, [], width + " " + lang);
+          }
+        }
+      } finally {
+        await b.close();
+        b = prev;
+      }
     });
   });
 

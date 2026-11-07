@@ -365,7 +365,7 @@
   "move.go_plain": "APRI {host}",
   "move.dismiss": "Nascondi per ora",
   "move.banner_label": "Handpan Theory si è spostato",
-  "backup.open": "COPIA DELLE SCALE",
+  "backup.open": "COPIA DELLE TUE SCALE",
   "backup.intro": "Le scale salvate vivono solo in questo browser, che può cancellarle dopo un po’ senza visite. Conserva questo elenco in un posto sicuro, per esempio in Note o in un’e-mail a te stesso.",
   "backup.session": "Le scale salvate non vengono conservate in questo browser al momento. Spariscono quando chiudi questa scheda, quindi salvale ora.",
   "backup.restore": "Per ripristinare, tocca ogni link del tuo elenco. Una sostituzione di una scala predefinita torna come nuova scala personalizzata accanto a quella predefinita, e le scale predefinite nascoste compaiono solo come nota.",
@@ -460,5 +460,7 @@
   "editor.reset_both_aria": "Reset cyclops and bottom spacing",
   "editor.palette": "Card palette",
   "editor.palette_n": "Card palette {n}",
-  "editor.layout.aria": "Mirror and orientation"
+  "editor.layout.aria": "Mirror and orientation",
+  "editor.replace_ding": "Replace ding",
+  "editor.replace_ding_aria": "Make the selected note the ding"
 }

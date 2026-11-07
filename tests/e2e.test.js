@@ -2284,13 +2284,13 @@ function run() {
           onoleo: card("Onoleo") && { np: card("Onoleo").textContent.includes("Layout not published"), note: !!card("Onoleo").querySelector("tr.note"), practice: !!card("Onoleo").querySelector("a[href^='/#s=']") } };`;
       await b.setViewport(375, 812, true);
       await b.send("Page.navigate", { url: page });
-      await b.waitFor(`location.pathname === "/scales/neotone/" && document.querySelectorAll("table tbody").length === 9`, { label: "the Neotone page" });
+      await b.waitFor(`location.pathname === "/scales/neotone/" && document.querySelectorAll("table tbody").length === 10`, { label: "the Neotone page" });
       await b.settle();
       const m = await b.eval(probe);
       assert.ok(m.sw <= 375, `page scrollWidth ${m.sw}`);
       assert.strictEqual(m.over, 0, "no tbody or cell overflows");
       assert.strictEqual(m.out, 0, "every Practice link is inside the viewport");
-      assert.strictEqual(m.tbodies, 9);
+      assert.strictEqual(m.tbodies, 10);
       assert.ok(m.sirena.practice && !m.sirena.np && !m.sirena.note, "La Sirena has a Practice link and no disclaimer: " + JSON.stringify(m.sirena));
       assert.ok(m.onoleo.practice && !m.onoleo.np && !m.onoleo.note, "Onoleo has a Practice link and no disclaimer: " + JSON.stringify(m.onoleo));
       assert.ok(m.sirena.rows.every(Boolean), "La Sirena shows its mutant row");
@@ -10428,7 +10428,7 @@ function run() {
         }
       });
 
-    test("LS2: with the backup panel open its controls are panel Tab stops right after BACK UP SAVED SCALES, in the grid and DOM orders (REAL fonts)",
+    test("LS2: with the backup panel open its controls are panel Tab stops right after BACKUP YOUR SCALES, in the grid and DOM orders (REAL fonts)",
       { timeout: 120000 }, async () => {
         try {
           await rb.setViewport(844, 390, true);
