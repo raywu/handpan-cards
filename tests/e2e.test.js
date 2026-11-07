@@ -10393,6 +10393,7 @@ function run() {
           await rb.setViewport(852, 330, true);
           await rb.goto(URL);
           await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
           await rb.goto(URL);
           await rb.eval(`return document.fonts.ready.then(() => true);`);
           for (const lang of ["en", "de"]) {
@@ -10433,6 +10434,7 @@ function run() {
           await rb.setViewport(844, 390, true);
           await rb.goto(URL);
           await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
           await rb.goto(URL);
           await rb.eval(`return document.fonts.ready.then(() => true);`);
           for (const [w, h] of [[844, 390], [380, 780]]) {
