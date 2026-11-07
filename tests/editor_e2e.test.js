@@ -1783,6 +1783,110 @@ function run() {
     });
   });
 
+  describe("U2e-2 palette chip, mirror and anchor", () => {
+    const BOTTOM = "(D3) " + RIM8 + " [G2]";
+    const setup = async (line, width = 375, height = 667) => { await fresh(width, height); await openAdd(); await typeLine(line); };
+    const pastLen = () => b.eval(`return editorSession.history.past.length;`);
+    const code = () => b.eval(`return editorExport(editorSession.history.present).code;`);
+    const noScroll = (w, h) => b.eval(`const de = document.documentElement, e = document.getElementById("editor");
+      return { page: de.scrollHeight === ${h} && de.scrollWidth === ${w}, panel: e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth };`);
+    const inView = (ids, w, h) => b.eval(`return ${JSON.stringify(ids)}.filter((id) => { const q = document.getElementById(id).getBoundingClientRect();
+      return q.width === 0 || q.height === 0 || q.top < 0 || q.bottom > ${h} || q.left < 0 || q.right > ${w}; });`);
+
+    test("375x667: the octave row holds the flats chip, the octave controls and the palette chip, and the panel does not scroll", async () => {
+      await setup(BOTTOM);
+      assert.deepStrictEqual(await inView(["editor-oct-down", "editor-oct-up", "editor-flats", "editor-palette", "editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
+      const row = await b.eval(`const r = document.querySelector(".editor-octaves"); const q = (id) => document.getElementById(id).getBoundingClientRect();
+        return { ids: ["editor-flats", "editor-palette"].map((id) => q(id).height >= 44 && q(id).width >= 44), after: q("editor-palette").left >= q("editor-flats").right - 1, sameRow: Math.abs(q("editor-palette").top - q("editor-flats").top) < 2 };`);
+      assert.deepStrictEqual(row, { ids: [true, true], after: true, sameRow: true });
+      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true });
+    });
+
+    test("the palette chip swaps the note grid for ten 44px swatches, with no scroll at 375x667, and a pick recolours the chip and closes", async () => {
+      await setup(BOTTOM);
+      const dot = () => b.eval(`return getComputedStyle(document.querySelector("#editor-palette .pal-dot")).backgroundImage;`);
+      const fillBefore = await dot();
+      await b.click("#editor-palette");
+      const open = await b.eval(`const g = document.getElementById("editor-swatches"); const dots = [...g.querySelectorAll("button")];
+        return { n: dots.length, tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), notes: getComputedStyle(document.getElementById("editor-notes")).display,
+          pressed: document.getElementById("editor-palette").getAttribute("aria-expanded"), names: dots.slice(0, 2).map((d) => d.getAttribute("aria-label")) };`);
+      assert.deepStrictEqual(open, { n: 10, tall: true, notes: "none", pressed: "true", names: ["Card palette 1", "Card palette 2"] });
+      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "swatches open");
+      assert.deepStrictEqual(await inView(["editor-swatches", "editor-save", "editor-palette"], 375, 667), []);
+      const past = await pastLen();
+      await b.click('#editor-swatches button[data-palette="9"]');
+      assert.strictEqual((await model()).options.palette, 9);
+      assert.match(await code(), /\/palette-10\//);
+      assert.strictEqual(await pastLen(), past + 1, "one Undo step");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true, "a pick closes the swatches");
+      assert.notStrictEqual(await dot(), fillBefore, "the chip took the new colours");
+      await b.click("#editor-palette");
+      await b.click('#editor-swatches button[data-palette="0"]');
+      assert.strictEqual((await model()).options.palette, 0);
+      assert.strictEqual((await code()).includes("palette-"), false, "palette 0 writes no option");
+      assert.strictEqual(await pastLen(), past + 2);
+      await clickUndo();
+      assert.strictEqual((await model()).options.palette, 9);
+    });
+
+    test("picking the current palette closes the swatches and adds no Undo step; the chip toggles them shut", async () => {
+      await setup(BOTTOM);
+      const past = await pastLen();
+      await b.click("#editor-palette");
+      await b.click('#editor-swatches button[data-palette="0"]');
+      assert.strictEqual(await pastLen(), past);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true);
+      await b.click("#editor-palette");
+      await b.click("#editor-palette");
+      assert.strictEqual(await b.eval(`return [document.getElementById("editor-swatches").hidden, getComputedStyle(document.getElementById("editor-notes")).display];`).then((r) => r[0]), true);
+    });
+
+    test("MIRROR TOP on a scale with a pinned cyclops reflects the cyclops (180 - a), the link version holds, and it is one Undo step", async () => {
+      await setup("(D3) " + RIM8 + " | C5 D5");
+      await pinInner();
+      const before = await model();
+      const version = (await code()).split("/")[0];
+      const past = await pastLen();
+      await b.click("#editor-mirror-top");
+      const after = await model();
+      assert.deepStrictEqual(after.options.angles.inner, before.options.angles.inner.map((a) => (a === null ? null : (180 - a + 360) % 360)));
+      assert.strictEqual(after.options.mirror, true);
+      assert.strictEqual((await code()).split("/")[0], version, "the link stays the same version");
+      assert.strictEqual(await pastLen(), past + 1);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-top").getAttribute("aria-pressed");`), "true");
+      await clickUndo();
+      assert.deepStrictEqual((await model()).options.angles, before.options.angles);
+      assert.strictEqual((await model()).options.mirror, false);
+    });
+
+    test("MIRROR BOTTOM flips the bottom ring only and is disabled with no bottom notes; the anchor splits notes 1 and 2", async () => {
+      await setup("(D3) " + RIM8);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-bottom").disabled;`), true);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-top").disabled;`), false);
+      await typeLine(BOTTOM);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-bottom").disabled;`), false);
+      const rim = () => b.eval(`const s = editorSolve(editorSession.history.present).value.fields; return ringIds(s, "rim").map((id) => s[id][4]);`);
+      const bot = () => b.eval(`const s = editorSolve(editorSession.history.present).value.fields; return ringIds(s, "bottom").map((id) => s[id][4]);`);
+      const [rim0, bot0] = [await rim(), await bot()];
+      await b.click("#editor-mirror-bottom");
+      assert.deepStrictEqual(await rim(), rim0, "the rim did not move");
+      assert.deepStrictEqual(await bot(), bot0.map((a) => (180 - a + 360) % 360));
+      await b.click("#editor-anchor-between");
+      assert.notDeepStrictEqual(await rim(), rim0);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-anchor-between").getAttribute("aria-pressed");`), "true");
+      assert.match(await code(), /between/);
+      const past = await pastLen();
+      await b.click("#editor-anchor-between");
+      assert.strictEqual(await pastLen(), past, "the same anchor adds no step");
+    });
+
+    test("on Neotone the mirror and anchor controls are disabled", async () => {
+      await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+      await b.click("#editor-type-neotone");
+      assert.deepStrictEqual(await b.eval(`return ["editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById(id).disabled);`), [true, true, true, true]);
+    });
+  });
+
   describe("flag off", () => {
     test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
       await fresh(375, 667, false);
