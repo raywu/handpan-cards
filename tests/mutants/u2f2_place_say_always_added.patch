@@ -1,0 +1,15 @@
+# kills: U2f-8 (row 24): a tray note placed on an exact cyclops or bottom angle says where and that it stays; on the rim it says added
+# suite: node --test --test-name-pattern ^U2f-8 tests/editor_shell.test.js
+# fault: A cyclops or bottom placement says only that the note was added.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15796,7 +15796,7 @@ function editorCancelHold() {
+   editorRender();
+ }
+ const editorNameAt = (m, ref) => (ref.ring === "ding" ? editorDingOf(m) : editorNames(m, ref.ring)[ref.i]);
+-const editorPlaceSay = (name, target) => (target.angle !== undefined && EDITOR_PINNABLE.includes(target.ring)
++const editorPlaceSay = (name, target) => (false && EDITOR_PINNABLE.includes(target.ring)
+   ? t("editor.say.placed", { name, zone: t("editor.zone." + target.ring), angle: ((Math.round(target.angle) % 360) + 360) % 360 })
+   : t("editor.say.added", { name, zone: t("editor.zone." + target.ring) }));
+ // What a dropped or tapped note does at a target, as data: a step with its
