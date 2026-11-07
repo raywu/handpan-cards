@@ -1,4 +1,4 @@
-# kills: OQB lift clears rings: once a drag lifts, no selection ring, picked zone ring or held chip is left
+# kills: OQB lift clears rings (
 # suite: node --test --test-name-pattern ^OQB.lift.clears.rings tests/editor_e2e.test.js
 # fault: The lift of a drag leaves the stale selection ring, picked zone ring and held chip in place.
 diff --git a/index.html b/index.html

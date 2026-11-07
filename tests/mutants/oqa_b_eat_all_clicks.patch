@@ -1,4 +1,4 @@
-# kills: OQB click elsewhere after drop fires: a press on another control right after a drop is not eaten
+# kills: OQB click elsewhere after drop fires (
 # suite: node --test --test-name-pattern ^OQB.click.elsewhere.after.drop.fires tests/editor_e2e.test.js
 # fault: The click eater after a drop ignores the next press and swallows every click.
 diff --git a/index.html b/index.html

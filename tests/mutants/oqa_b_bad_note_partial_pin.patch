@@ -1,4 +1,4 @@
-# kills: OQB bad note copy clean: a refused angle or place names the note and the angle in one sentence
+# kills: OQB bad note copy clean: a refused angle or place names the note and the angle in one sentence, in en and de
 # suite: node --test --test-name-pattern ^OQB.bad.note.copy.clean tests/editor_shell.test.js
 # fault: A refused angle falls back to the engine BAD_NOTE copy that prints the raw list.
 diff --git a/index.html b/index.html
