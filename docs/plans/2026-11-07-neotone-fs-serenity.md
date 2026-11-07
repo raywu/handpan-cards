@@ -1,4 +1,4 @@
-# Neotone page: add F# Serenity (Rep Matsumoto)
+# Neotone page: add F# Serenity (Reo Matsumoto)
 
 Status: plan only (2026-11-07), /reviewed-plan plan mode, spawned session (AFK: recommended option taken at every
 decision, logged below). Refs TRI-67. Key: handpan-cards#neotone-fs-serenity. Base: main `26114742`.
@@ -7,7 +7,7 @@ data + its generated page + its tests).
 
 ## Goal (owner 2026-11-07, P1)
 
-Add F# Serenity, a new 19-note Neotone Mutant scale by Rep Matsumoto, to `/scales/neotone/`, with its notes by
+Add F# Serenity, a new 19-note Neotone Mutant scale by Reo Matsumoto, to `/scales/neotone/`, with its notes by
 tonefield and a Practice link that opens the owner's exact hand-placed layout in the app.
 
 ## Evidence (verified 2026-11-07)
@@ -40,9 +40,9 @@ tonefield and a Practice link that opens the owner's exact hand-placed layout in
   touched. Rejected: decks.json deck (much larger, changes the app's scale list).
 - **D2 placement on the page [AFK-recommended].** F# Serenity is not a factory DOME hotkey scale, and the intro says
   "ships with nine scales on the DOME hotkeys". So it goes as one extra `<tbody>` after the nine factory rows, same
-  shape, with the hotkey line replaced by "by Rep Matsumoto". The factory sentence is unchanged. Rejected: a new
+  shape, with the hotkey line replaced by "by Reo Matsumoto". The factory sentence is unchanged. Rejected: a new
   `<section>` with its own heading (costs bytes against 1,166 B headroom); calling it DOME+10 (false).
-  Implementation: the row carries `"credit": "by Rep Matsumoto"` and no `hotkey`; `defaults_html` prints `credit`
+  Implementation: the row carries `"credit": "by Reo Matsumoto"` and no `hotkey`; `defaults_html` prints `credit`
   where it prints `hotkey`, using `d.get("hotkey")` (today `d["hotkey"]` would KeyError).
   Accepted nit: the row sits under the "Neotone factory scales" heading; the credit line marks it (owner sees on DEV). Smallest generator change.
 - **D3 row values.** `name`/`typed` "F# Serenity" (owner's name, no note-count suffix); `ding` "F#3"; `main` and
