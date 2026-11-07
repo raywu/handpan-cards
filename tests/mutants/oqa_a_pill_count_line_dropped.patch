@@ -1,4 +1,4 @@
-# kills: OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line one line box (375 and 820)
+# kills: OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line at most two line boxes (375 and 820)
 # suite: node --test --test-name-pattern ^OQA.pill.copy tests/editor_e2e.test.js
 # fault: The pill loses its count line.
 diff --git a/index.html b/index.html

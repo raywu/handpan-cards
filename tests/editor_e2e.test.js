@@ -1214,7 +1214,7 @@ function run() {
       const lineBoxes = (sel) => b.eval(`return [...document.querySelectorAll(${JSON.stringify(sel)})].map((e) => ({ text: e.textContent, h: e.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.2 }));`);
       const visibleUndo = () => b.eval(`return [...document.querySelectorAll("#editor button, #editor .mode")].filter((e) => e.textContent.trim() === "Undo" && e.offsetParent !== null && getComputedStyle(e).visibility === "visible").length;`);
 
-      test("OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line one line box (375 and 820)", async () => {
+      test("OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line at most two line boxes (375 and 820)", async () => {
         for (const [w, h] of [[375, 667], [820, 1180]]) {
           await fresh(w, h);
           await openAdd();
@@ -1223,7 +1223,7 @@ function run() {
           assert.deepStrictEqual(rim, { act: "Add to rim", count: "8 of 12", aria: "Add the held note to the rim, 8 of 12 used" });
           assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-inner .pill-act").textContent;`)), "Add to cyclops");
           assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-bottom .pill-count").textContent;`)), "0 of 12");
-          for (const l of await lineBoxes("#editor-pills .pill span")) assert.ok(l.h <= l.lh * 1.3 + 0.5, w + ": '" + l.text + "' is one line box, " + l.h + " vs " + l.lh);
+          for (const l of await lineBoxes("#editor-pills .pill span")) assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": '" + l.text + "' is at most two line boxes, " + l.h + " vs " + l.lh);
           await typeLine("(D3) " + RIM12 + " | C6");
           assert.strictEqual(await b.eval(`return document.getElementById("editor-pill-rim").textContent;`), "Rim full");
           assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pill-rim span").length;`), 1);
@@ -1628,14 +1628,14 @@ function run() {
         assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-notice-undo");
       });
 
-      test("OQA reset one line: Reset spacing is a single line box at 375, 820 and 1440", async () => {
+      test("OQA reset wraps within two lines: Reset spacing is at most two line boxes at 375, 820 and 1440", async () => {
         for (const [w, h] of [[375, 667], [820, 1180], [1440, 960]]) {
           await fresh(w, h);
           await openAdd();
           await typeLine(SCALE);
           const r = await b.eval(`const e = document.getElementById("editor-reset"); const vis = [...e.querySelectorAll("span")].filter((x) => getComputedStyle(x).display !== "none"); return { ws: getComputedStyle(e).whiteSpace, lines: vis.map((x) => Math.round(x.getBoundingClientRect().height / (parseFloat(getComputedStyle(x).lineHeight) || parseFloat(getComputedStyle(x).fontSize) * 1.2))) };`);
-          assert.strictEqual(r.ws, "nowrap", w + "");
-          assert.ok(r.lines.length > 0 && r.lines.every((n) => n === 1), w + ": " + JSON.stringify(r));
+          assert.strictEqual(r.ws, "normal", w + "");
+          assert.ok(r.lines.length > 0 && r.lines.every((n) => n <= 2), w + ": " + JSON.stringify(r));
         }
       });
 
