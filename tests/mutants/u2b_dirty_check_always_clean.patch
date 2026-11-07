@@ -1,0 +1,15 @@
+# kills: U2b-12: dirty means the model differs from the one the panel opened with
+# suite: node --test --test-name-pattern ^U2b-12..dirty.means.the.model.differs.from.the.one.the.panel.opened.with$ tests/editor_shell.test.js
+# fault: Back never prompts, so edits are lost silently.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15384,7 +15384,7 @@ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
+ const editorCanSave = (m) => !editorIsEmpty(m);
+ const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
+ const editorBare = (m) => { const { view, ...rest } = m; return rest; };
+-const editorIsDirty = (base, m) => JSON.stringify(editorBare(base)) !== JSON.stringify(editorBare(m));
++const editorIsDirty = (base, m) => false;
+ const editorLineText = (m) => (editorIsEmpty(m) ? "" : HPE.core.formatTyped(m.fields, m.options.seats));
+ const editorProfileFor = (fields) => {
+   const p = HPE.layout.proposeProfile(fields);

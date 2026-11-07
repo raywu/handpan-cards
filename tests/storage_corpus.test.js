@@ -608,7 +608,7 @@ test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport inta
     const url = old.get("window.__assigned");
     assert.ok(url && url.startsWith("https://new.example/"), `${n}: the old host did not forward`);
     const oldEnv = envelopeOf(old);
-    const readable = plain(old.get(`savedState.entries.filter(r=>readSavedRecord(r.record).ok).map(r=>({i:r.instanceId,r:r.record}))`));
+    const readable = plain(old.get(`savedState.entries.filter(r=>r.record&&typeof r.record==='object'&&!Array.isArray(r.record)).map(r=>({i:r.instanceId,r:r.record}))`));
     const dest = await bootAt(createOrigin({}), url, "https://old.example/");
     const arrived = plain(envelopeOf(dest).entries.map((e) => e.record));
     const distinct = (rs) => [...new Set(rs.map((r) => JSON.stringify(r)))].sort();
