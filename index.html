@@ -15808,7 +15808,7 @@ function editorDropPlan(m, src, target) {
   if (target.kind !== "spot" || ref.ring === "ding") return snap;
   if (target.ring === ref.ring) {
     return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
-      ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
+      ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
   }
   const name = editorNameAt(m, ref);
   return { step: (x) => { const gone = editorRemove(x, ref.ring, ref.i); return gone.ok ? editorPlace(gone.value, target.ring, name, target.angle) : gone; }, say: t("editor.say.moved", { name }) };
@@ -16053,7 +16053,7 @@ function editorDropTarget(e, src) {
   if (over.closest("#editor-tray")) return { kind: "tray" };
   const pt = over.closest("#editor-pan") && editorPanPoint(e);
   const solved = pt && editorSolve(editorSession.history.present);
-  return solved && solved.ok ? editorHitAt(solved.value, pt, src.from === "tray") : { kind: "off" };
+  return solved && solved.ok ? editorHitAt(solved.value, pt, true) : { kind: "off" };
 }
 function editorDragEnd(e) {
   const d = editorDrag;

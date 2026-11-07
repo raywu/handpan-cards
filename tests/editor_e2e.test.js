@@ -899,6 +899,36 @@ function run() {
             assert.ok(await pastLen() >= 3, "each drop is an Undo step");
           });
 
+          test("U2f move at 375x667: a placed cyclops note dragged along its arc moves to the drop angle, pinned, in one Undo step", async () => {
+            await fresh(375, 667, true, true);
+            await openAdd();
+            await typeLine(SCALE);
+            await b.click("#editor-oct-up");
+            await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
+            const before = await pastLen();
+            const was = (await names("inner")).slice();
+            await gesture(await noteAt("inner", 2), await spotAt("inner", 120), kind);
+            assert.deepStrictEqual(await names("inner"), was, "the cyclops note keeps its name");
+            assert.deepStrictEqual((await model()).options.angles.inner, [null, null, 120], await status());
+            assert.strictEqual(await pastLen(), before + 1, "one Undo step");
+            assert.strictEqual(await status(), "E5 moved.Undo");
+          });
+
+          test("U2f move at 375x667: a placed bottom note dragged around the bottom ring moves to the drop angle, pinned, in one Undo step", async () => {
+            await fresh(375, 667, true, true);
+            await openAdd();
+            await typeLine(SCALE);
+            await b.click("#editor-oct-down");
+            await b.click("#editor-oct-down");
+            await gesture(await chipAt("F"), await spotAt(1.15, 150), kind);
+            const before = await pastLen();
+            await gesture(await noteAt("bottom", 0), await spotAt(1.15, 200), kind);
+            assert.deepStrictEqual(await names("bottom"), ["F2"]);
+            assert.deepStrictEqual((await model()).options.angles.bottom, [200], await status());
+            assert.strictEqual(await pastLen(), before + 1, "one Undo step");
+            assert.strictEqual(await status(), "F2 moved.Undo");
+          });
+
           test("D3: a tray note dragged onto the empty cyclops arc and bottom ring (first note) is placed", async () => {
             await setup("(D3) " + RIM8);
             await b.click("#editor-oct-up");
