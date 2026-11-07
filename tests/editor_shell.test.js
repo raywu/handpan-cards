@@ -319,7 +319,7 @@ test("U2c-13 (SE-15): note aria labels carry the zone and the seat", () => {
   assert.strictEqual(byName.D3, "D3, ding");
 });
 
-test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; the 43 unit areas catch the rest; holding yields to the zone under the pointer", () => {
+test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; outside it the zone wins, held or not (OQA: the 43 unit areas are gone from the standard pan)", () => {
   const a = app();
   withModel(a, "[E3] " + SCALE);
   a.run(`globalThis.__v = editorSolve(__m).value; globalThis.__g = __v.geom; true`);
@@ -328,7 +328,9 @@ test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; t
   assert.deepStrictEqual(hit(bottomAt[0], bottomAt[1]), { kind: "note", ring: "bottom", i: 0 });
   const turn = bottomAt[2] * Math.PI / 180 + 0.2 / 1.15;
   const off = [1.15 * Math.cos(turn), 1.15 * Math.sin(turn)];
-  assert.deepStrictEqual(hit(off[0], off[1]), { kind: "note", ring: "bottom", i: 0 }, "0.2 R along the ring is outside the drawn circle and inside the 43 unit area");
+  const outside = hit(off[0], off[1]);
+  assert.strictEqual(outside.kind, "spot", "0.2 R along the ring is outside the drawn circle: the zone, not the note");
+  assert.strictEqual(outside.ring, "bottom");
   const held = hit(off[0], off[1], true);
   assert.strictEqual(held.kind, "spot");
   assert.strictEqual(held.ring, "bottom", "holding, the zone under the pointer wins");
@@ -581,23 +583,21 @@ describe("U2f drag classifier and drop plan", () => {
     plan(a, { from: "tray", name: "G3" }, { kind: "ding" });
     after(a);
     assert.strictEqual(a.get("editorDingOf(__r.value)"), "G3");
-    for (const kind of ["off", "trash", "tray"]) assert.strictEqual(a.get(`(() => { const p = editorDropPlan(__m, { from: "tray", name: "B4" }, { kind: ${JSON.stringify(kind)} }); return p.snap === true && !p.step && !p.trade; })()`), true, kind);
+    for (const kind of ["off", "outside"]) assert.strictEqual(a.get(`(() => { const p = editorDropPlan(__m, { from: "tray", name: "B4" }, { kind: ${JSON.stringify(kind)} }); return p.snap === true && !p.step && !p.trade; })()`), true, kind);
   });
 
-  test("U2f-3 (D4): a placed note on the trash or the tray is removed; the ding never is; off the pan it snaps back", () => {
+  test("U2f-3 (D4, OQA): a placed note released outside the pan is removed; the ding never is; a miss inside the pan snaps back", () => {
     const a = app();
     withModel(a, SCALE);
-    for (const kind of ["trash", "tray"]) {
-      plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind });
-      after(a);
-      assert.ok(!rimOf(a, "__r.value").includes("D4"), kind);
-      assert.strictEqual(a.get("__p.say"), "D4 removed.");
-    }
-    plan(a, { from: "pan", ref: { ring: "ding", i: 0 } }, { kind: "trash" });
+    plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "outside" });
+    after(a);
+    assert.ok(!rimOf(a, "__r.value").includes("D4"));
+    assert.strictEqual(a.get("__p.say"), "D4 removed.");
+    plan(a, { from: "pan", ref: { ring: "ding", i: 0 } }, { kind: "outside" });
     assert.strictEqual(a.get("__p.refuse"), "Every scale needs a ding. Drop another note on it to swap.");
     assert.strictEqual(a.get("__p.step"), undefined);
     withModel(a, "(D3) A3");
-    plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "trash" });
+    plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "outside" });
     assert.strictEqual(a.get("__p.refuse"), "The rim needs at least 1 note.");
     withModel(a, SCALE);
     plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "off" });
