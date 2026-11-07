@@ -1,0 +1,15 @@
+# kills: sync: a delete that would empty the device is deferred, never applied alone (R1-7)
+# suite: node --test --test-name-pattern a.delete.that.would.empty.the.device tests/sync.test.js
+# A remote delete is applied even when it would remove the last visible scale.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -193,7 +193,7 @@ HPE.sync = (function () {
+     let visible = (ctx.builtinVisible || 0) + local.length + inserts;
+     for (const { R, L } of pendingRemoves) {
+       const rid = R.scale_id;
+-      if (visible - 1 < 1) {
++      if (false) {
+         deferred.add(rid);
+         baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
+         continue;
