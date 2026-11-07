@@ -82,6 +82,7 @@ FLOORS = {
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 59,
     "tests/swipe.test.js": 21,
+    "tests/pgenv.test.js": 3,
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
 }
