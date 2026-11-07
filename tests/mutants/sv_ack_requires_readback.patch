@@ -5,7 +5,7 @@ diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -10708,6 +10708,7 @@ function commitSaved(command, options = {}) {
-   return commitSavedDurable(command,options);
+   });
  }
  function savedReconciliationFailure(result,raw) {
 +  savedMode="protected";
