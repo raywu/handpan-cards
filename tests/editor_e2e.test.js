@@ -1880,6 +1880,26 @@ function run() {
       assert.strictEqual(await pastLen(), past, "the same anchor adds no step");
     });
 
+    test("the mirror and anchor controls are at least 44px, and the numbers toast shows on MIRROR BOTTOM only", async () => {
+      await setup("(D3) " + RIM8 + " [G2]\n");
+      await typeLine(BOTTOM);
+      const sizes = await b.eval(`return ["editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return q.width >= 44 && q.height >= 44; });`);
+      assert.deepStrictEqual(sizes, [true, true, true, true]);
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 240)).history; editorRender(); return true;`);
+      await b.click("#editor-mirror-top");
+      assert.strictEqual(await b.eval(`return editorSession.say.includes("Numbers stay");`), false, "no toast on MIRROR TOP");
+      await b.click("#editor-mirror-bottom");
+      assert.strictEqual(await b.eval(`return editorSession.say.includes("Numbers stay");`), true, "toast on MIRROR BOTTOM");
+    });
+
+    test("a palette pick closes the swatches while the text line is being edited", async () => {
+      await setup(BOTTOM);
+      await b.click("#editor-palette");
+      await b.eval(`editorSession.editing = true; return true;`);
+      await b.click('#editor-swatches button[data-palette="3"]');
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true);
+    });
+
     test("on Neotone the mirror and anchor controls are disabled", async () => {
       await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
       await b.click("#editor-type-neotone");

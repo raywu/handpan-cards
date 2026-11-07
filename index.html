@@ -15364,7 +15364,7 @@ function editorSetMirror(m, which) {
   const bottom = editorBottomMirror(m);
   if (which === "top") {
     next.options.mirror = !next.options.mirror;
-    if (editorHasBottom(m)) next.options.mirrorBottom = bottom;
+    next.options.mirrorBottom = bottom;
     if (next.options.angles && next.options.angles.inner) next.options.angles = HPE.layout.reflectAngles(next.options.angles, "inner");
   } else {
     next.options.mirrorBottom = !bottom;
@@ -15942,7 +15942,7 @@ function editorRenderPalette(m) {
 }
 function editorPickPalette(i) {
   const s = editorSession;
-  if (!s || s.dialog || s.editing) return;
+  if (!s || s.dialog) return;
   s.swatches = false;
   editorDo((m) => editorSetPalette(m, i));
   editorRender();
@@ -15966,14 +15966,14 @@ function editorRenderLayout(m) {
     el.disabled = dis;
   }
 }
-function editorLayoutTap(step, say) {
+function editorLayoutTap(step, say, keepsNumbers = false) {
   const s = editorSession;
   if (!s || s.dialog || s.editing) return;
   const before = s.history.present;
   const placed = (m) => !!(m.options.angles && m.options.angles.bottom);
   if (editorDo(step, say(before))) {
     const m = s.history.present;
-    if (s.say && placed(m) && m.options.mirrorBottom !== before.options.mirrorBottom && editorBottomMirror(m)) s.say += " " + t("sheet.mirror_keeps_numbers");
+    if (keepsNumbers && s.say && placed(m) && m.options.mirrorBottom !== before.options.mirrorBottom && editorBottomMirror(m)) s.say += " " + t("sheet.mirror_keeps_numbers");
   }
   editorRender();
 }
@@ -16548,7 +16548,7 @@ function editorWire() {
   editorEl("editor-flats").onclick = () => editorTrayView({ flats: !editorView(editorSession.history.present).flats });
   editorEl("editor-palette").onclick = editorPaletteTap;
   editorEl("editor-mirror-top").onclick = () => editorLayoutTap((m) => editorSetMirror(m, "top"), (m) => t(m.options.mirror ? "sheet.mirror_top_off" : "sheet.mirror_top_on"));
-  editorEl("editor-mirror-bottom").onclick = () => editorLayoutTap((m) => editorSetMirror(m, "bottom"), (m) => t(editorBottomMirror(m) ? "sheet.mirror_bottom_off" : "sheet.mirror_bottom_on"));
+  editorEl("editor-mirror-bottom").onclick = () => editorLayoutTap((m) => editorSetMirror(m, "bottom"), (m) => t(editorBottomMirror(m) ? "sheet.mirror_bottom_off" : "sheet.mirror_bottom_on"), true);
   editorEl("editor-anchor-one").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "one"), () => t("sheet.anchor_one_on"));
   editorEl("editor-anchor-between").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "between"), () => t("sheet.anchor_between_on"));
   for (const kind of ["standard", "neotone"]) {

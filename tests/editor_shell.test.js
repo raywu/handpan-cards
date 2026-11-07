@@ -1042,4 +1042,33 @@ describe("U2e-2 palette, mirror and anchor", () => {
       assert.strictEqual(a.get(`${call}.value === __m`), true, call + " changes nothing on Neotone");
     }
   });
+
+  const RIM_ONLY = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+
+  test("U2e2-9: MIRROR TOP on a rim-only scale writes mirrorBottom false, on the code today's tabs build", () => {
+    const a = app();
+    load(a, RIM_ONLY);
+    assert.strictEqual(apply(a, `editorSetMirror(__m, "top")`).ok, true);
+    assert.strictEqual(a.get("__m.options.mirrorBottom"), false);
+    assert.strictEqual(a.get("editorExport(__m).code"), legacyCode(a, RIM_ONLY, { mirror: true, mirrorBottom: false }));
+  });
+
+  test("U2e2-10: a saved rim-only mirror-top scale toggled twice is not dirty and keeps its link", () => {
+    const a = app();
+    load(a, RIM_ONLY, `{ mirror: true, mirrorBottom: false }`);
+    a.run(`globalThis.__base = __m; true`);
+    const code = a.get("editorExport(__m).code");
+    assert.strictEqual(code, legacyCode(a, RIM_ONLY, { mirror: true, mirrorBottom: false }));
+    a.run(`globalThis.__m = editorSetMirror(editorSetMirror(__m, "top").value, "top").value; true`);
+    assert.strictEqual(a.get("editorIsDirty(__base, __m)"), false);
+    assert.strictEqual(a.get("editorExport(__m).code"), code);
+  });
+
+  test("U2e2-11: a bottom note added after MIRROR TOP keeps the bottom unmirrored, as the tabs do", () => {
+    const a = app();
+    load(a, RIM_ONLY);
+    apply(a, `editorSetMirror(__m, "top")`);
+    a.run(`globalThis.__m = editorLoad(${JSON.stringify(WITH_BOTTOM)}, __m.options).value; true`);
+    assert.strictEqual(a.get("editorExport(__m).code"), legacyCode(a, WITH_BOTTOM, { mirror: true, mirrorBottom: false }));
+  });
 });
