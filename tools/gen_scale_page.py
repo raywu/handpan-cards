@@ -548,6 +548,7 @@ def defaults_html(row, shares):
 def render(row, data, rows_by_slug, copy, alt=None):
     frozen = row["kind"] == "frozen"
     neo = "profile" in row
+    single = row.get("single", False)
     updated = row.get("updated", UPDATED)
     name = row["name"]
     url = SITE + "scales/%s/" % row["slug"]
@@ -569,6 +570,9 @@ def render(row, data, rows_by_slug, copy, alt=None):
     if neo:
         description = ("%s handpan chords: three chord cards for a Neotone layout (%s) with the notes to play, "
                        "then practice the full set in the free chord flashcard app.") % (name, ", ".join(names))
+    if single:
+        description = ("%s handpan chords: three chord cards for this Neotone Mutant scale by Reo Matsumoto (%s), "
+                       "then practice it free.") % (name, ", ".join(names))
     og_description = copy["og_description"] if frozen else description
     light, dark = row["accent_light"], row["accent_dark"]
     cta = row["cta"]
@@ -584,11 +588,19 @@ def render(row, data, rows_by_slug, copy, alt=None):
                  "publisher": {"@type": "Organization", "name": "Handpan Theory"},
                  "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": crumbs},
                  "mainEntity": {"@type": "ItemList", "itemListElement": items}}
+        if single:
+            crumbs[1:] = [{"@type": "ListItem", "position": i + 2, "name": n, "item": u} for i, (n, u) in enumerate(
+                [("Scale chord charts", SITE + "scales/"), ("Neotone", SITE + "scales/%s/" % NEOTONE_SLUG), (name, url)])]
+            graph.update(creator={"@type": "Person", "name": "Reo Matsumoto"}, citation=SERENITY_VIDEO,
+                         isBasedOn=SERENITY_VIDEO)
         out.append('<script type="application/ld+json">%s</script>\n' % json.dumps(graph, ensure_ascii=False,
                                                                                  separators=(",", ":")))
     out.append("</head>\n<body>\n<main>\n")
     if frozen:
         out.append('<header><p>%s</p>\n' % SCALE_LOCKUP)
+    elif single:
+        out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; '
+                   '<a href="/scales/%s/">Neotone</a> &rsaquo; %s</p>\n' % (SCALE_LOCKUP, NEOTONE_SLUG, esc(name)))
     else:
         out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; %s chords</p>\n' % (SCALE_LOCKUP, esc(name)))
     out.append("<h1>%s handpan chords</h1>\n" % esc(name))
@@ -641,7 +653,19 @@ def render(row, data, rows_by_slug, copy, alt=None):
     out.append('<div class="ctas"><a class="open" href="%s">PRACTICE %s</a>'
                '<a class="open ghost" href="/#add">ADD YOUR OWN SCALE</a></div>\n'
                % (cta, esc((data["name"] if neo else name).upper())))
-    if neo:
+    if single:
+        out.append("</section>\n")
+        out.append('<section class="plain">\n<h2>%s notes by field</h2>\n'
+                   "<p>Field numbers run from the lowest side note (1) to the highest (9). "
+                   "The Mutant Notes row lists the mutant notes.</p>\n"
+                   '<table>\n<caption class="vh">%s notes by field</caption>\n' % (esc(name), esc(name)))
+        out.append(default_tbody(row["defaults"][0], {name: data["share"]}))
+        out.append("</table>\n</section>\n")
+        out.append('<section class="related">\n<h2>More chord charts</h2>\n'
+                   '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n'
+                   '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n'
+                   % (NEOTONE_SLUG, len(load_rows())))
+    elif neo:
         out.append("</section>\n" + defaults_html(row, data["defaults"]))
         out.append('<section class="plain">\n<h2>Make your own Neotone scale</h2>\n<ol>%s</ol>\n</section>\n'
                    % "".join("<li>%s</li>\n" % step for step in copy["steps_html"]))
@@ -649,6 +673,7 @@ def render(row, data, rows_by_slug, copy, alt=None):
                    '<p><a href="/scales/%s/">More about F# Serenity</a></p>\n'
                    '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n'
                    % (SERENITY_SLUG, len(load_rows())))
+    if neo:
         out.append('<p class="muted">Last updated <time datetime="%s">%s</time></p>\n' % (updated, updated))
         out.append('<p class="muted">%s</p>\n' % copy["disclaimer_html"])
         out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
@@ -703,87 +728,20 @@ def neotone_page(row=None):
     return render(row, data, {row["slug"]: row}, load_copy(row))
 
 
-def serenity_faq(d):
-    notes = "ding %s; top shell fields 1 to 9: %s; mutant notes: %s" % (d["ding"], " ".join(d["main"]), " ".join(d["mutant"]))
-    return [
-        ("What notes does the F# Serenity handpan scale use?",
-         "F# Serenity on a Neotone Mutant uses %s." % notes),
-        ("Who created F# Serenity?",
-         "F# Serenity is a scale by Reo Matsumoto, created by him and shared in his video The Serenity Scale."),
-        ("Which handpan is the F# Serenity layout for?",
-         "It is laid out for a Neotone Mutant: a ding, nine top-shell fields and nine mutant notes."),
-        ("How do I practise F# Serenity?",
-         "Open F# Serenity in Handpan Theory, the free chord flashcard app, and it loads this exact layout "
-         "so you can practise its chords."),
-    ]
+def serenity_row(row=None):
+    row = row or load_neotone_row()
+    d = next(x for x in row["defaults"] if x["name"] == SERENITY_NAME)
+    return {"slug": SERENITY_SLUG, "name": SERENITY_NAME, "kind": "new", "root": "F#", "popularized": False,
+            "seed": d["seed"], "typed": d["typed"], "palette": d["palette"], "profile": d["profile"],
+            "accent_light": row["accent_light"], "accent_dark": row["accent_dark"],
+            "updated": row.get("serenity_updated", UPDATED), "single": True, "defaults": [d]}
 
 
 def serenity_page(row=None):
-    row = row or load_neotone_row()
-    d = next(x for x in row["defaults"] if x["name"] == SERENITY_NAME)
-    res = engine([], [d])["defaults"][0]
-    practice = "/#s=%s" % res["share"]
-    url = SITE + "scales/%s/" % SERENITY_SLUG
-    title = "F# Serenity handpan scale (Neotone Mutant)"
-    description = ("F# Serenity handpan scale for the Neotone Mutant, a scale by Reo Matsumoto: ding %s, nine top notes "
-                   "and nine mutant notes, with a link to practise it free." % d["ding"])
-    faq = serenity_faq(d)
-    light, dark = row["accent_light"], row["accent_dark"]
-    out = head(title, description, description, url, light)
-    out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + NEO_TABLE_CSS
-               + "section.faq h3{font-size:16px;margin:12px 0 2px}\nsection.history p{margin:0 0 12px}\n</style>\n")
-    crumbs = [("Home", SITE), ("Scale chord charts", SITE + "scales/"), ("Neotone", SITE + "scales/%s/" % NEOTONE_SLUG),
-              (SERENITY_NAME, url)]
-    graph = {"@context": "https://schema.org", "@type": "WebPage", "name": title, "url": url,
-             "dateModified": row.get("serenity_updated", UPDATED),
-             "publisher": {"@type": "Organization", "name": "Handpan Theory"},
-             "creator": {"@type": "Person", "name": "Reo Matsumoto"},
-             "citation": SERENITY_VIDEO, "isBasedOn": SERENITY_VIDEO,
-             "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": [
-                 {"@type": "ListItem", "position": i + 1, "name": n, "item": u} for i, (n, u) in enumerate(crumbs)]},
-             "mainEntity": {"@type": "FAQPage", "mainEntity": [
-                 {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in faq]}}
-    out.append('<script type="application/ld+json">%s</script>\n' % json.dumps(graph, ensure_ascii=False,
-                                                                             separators=(",", ":")))
-    out.append("</head>\n<body>\n<main>\n")
-    out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; '
-               '<a href="/scales/%s/">Neotone</a> &rsaquo; %s</p>\n' % (SCALE_LOCKUP, NEOTONE_SLUG, SERENITY_NAME))
-    out.append("<h1>%s</h1>\n" % esc(title))
-    out.append('<p class="answer" style="margin-top:8px">F# Serenity is a scale by Reo Matsumoto for the Neotone Mutant: '
-               "ding %s, then nine top-shell notes (%s) and nine mutant notes, laid out by field below.</p>\n"
-               "</header>\n" % (d["ding"], " ".join(d["main"])))
-    out.append('<section class="history">\n<h2>About the scale</h2>\n'
-               '<p>F# Serenity is a scale by Reo Matsumoto, shown in his video <a href="%s">The Serenity Scale</a>.</p>\n'
-               '<p>Reo Matsumoto is a handpan musician and beatboxer from Japan who teaches handpan workshops '
-               '(<a href="https://masterthehandpan.com/handpan-player/reo-matsumoto">Master the Handpan</a>).</p>\n'
-               "<p>In his own profile, as we read it, he says he believes everything has spirit and plays with love "
-               'and spirit (<a href="https://masterthehandpan.com/handpan-player/reo-matsumoto">Master the Handpan</a>). '
-               '<a href="https://instruments-du-monde.com/en/blogs/handpan/reo-matsumoto">Instruments du Monde</a> '
-               "describes his music as music without borders that mixes genres. "
-               "That is his general approach, not a statement about this scale.</p>\n</section>\n" % SERENITY_VIDEO)
-    out.append('<section class="plain">\n<h2>F# Serenity notes by field</h2>\n'
-               "<p>Field numbers run from the lowest side note (1) to the highest (9). "
-               "The Mutant Notes row lists the mutant notes.</p>\n"
-               '<table>\n<caption class="vh">F# Serenity notes by field</caption>\n')
-    out.append(default_tbody(d, {SERENITY_NAME: res["share"]}))
-    out.append("</table>\n</section>\n")
-    out.append('<section class="plain">\n<h2>Practise F# Serenity</h2>\n'
-               "<p>Open the scale in Handpan Theory to practise its chord cards.</p>\n"
-               '<div class="ctas"><a class="open" href="%s">PRACTICE F# SERENITY</a></div>\n</section>\n' % practice)
-    out.append('<section class="faq">\n<h2>Questions</h2>\n')
-    for q, a in faq:
-        out.append("<h3>%s</h3>\n<p>%s</p>\n" % (esc(q), esc(a)))
-    out.append("</section>\n")
-    out.append('<section class="related">\n<h2>More chord charts</h2>\n'
-               '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n'
-               '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n'
-               % (NEOTONE_SLUG, len(load_rows())))
-    updated = row.get("serenity_updated", UPDATED)
-    out.append('<p class="muted">Last updated <time datetime="%s">%s</time></p>\n' % (updated, updated))
-    out.append('<p class="muted">%s</p>\n' % load_copy(row)["disclaimer_html"])
-    out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
-               "</main>\n</body>\n</html>\n")
-    return "".join(out)
+    row = serenity_row(row)
+    data = engine([row])["rows"][SERENITY_SLUG]
+    row["cta"] = "/#s=%s" % data["share"]
+    return render(row, data, {SERENITY_SLUG: row}, load_copy(row))
 
 
 def neotone_fixture_data(row=None):

@@ -1224,7 +1224,7 @@ def neo_fixture():
 
 
 class NeotoneSizeCutTest(unittest.TestCase):
-    PAGES = ("neotone",)
+    PAGES = ("neotone", "f-sharp-serenity-neotone")
 
     def page(self, slug):
         return read("scales/%s/index.html" % slug)
@@ -1671,9 +1671,13 @@ def ser_row():
     return next(x for x in gen.load_neotone_row()["defaults"] if x["name"] == "F# Serenity")
 
 
-def ser_faq(html):
-    ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
-    return ld, ld["mainEntity"]["mainEntity"]
+def card_names(html):
+    return [re.search(r"Chord \d of \d: (.*?)\"", m).group(0)[:-1].split(": ", 1)[1] for m in
+            re.findall(r'<input type="radio" name="step"[^>]*>', html)]
+
+
+def ser_ld(html):
+    return json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
 
 
 class SerenityPageTest(unittest.TestCase):
@@ -1689,8 +1693,8 @@ class SerenityPageTest(unittest.TestCase):
         self.assertEqual(p.canonical(), SER_URL)
         self.assertEqual(p.meta("og:url", "property"), SER_URL)
         title = re.search(r"<title>(.*?)</title>", html).group(1)
-        self.assertIn("F# Serenity", title)
-        self.assertIn("Neotone Mutant", title)
+        self.assertEqual(title, "F# Serenity handpan chords")
+        self.assertIn("Neotone", p.meta("description"))
         self.assertLessEqual(len(p.meta("description")), 160)
         self.assertLess(len(html.encode("utf-8")), SIZE_CAP)
 
@@ -1711,12 +1715,12 @@ class SerenityPageTest(unittest.TestCase):
         self.assertGreaterEqual(len(page_hrefs), 2)
         self.assertEqual(set(page_hrefs), set(neo_hrefs))
 
-    def test_json_ld_has_faq_breadcrumb_and_the_video_citation(self):
+    def test_json_ld_is_the_template_item_list_with_breadcrumb_and_the_video_citation(self):
         html = ser_page()
-        ld, faq = ser_faq(html)
+        ld = ser_ld(html)
         self.assertEqual(ld["@type"], "WebPage")
-        self.assertEqual(ld["mainEntity"]["@type"], "FAQPage")
-        self.assertEqual(len(faq), 4)
+        self.assertEqual(ld["mainEntity"]["@type"], "ItemList")
+        self.assertEqual([i["name"] for i in ld["mainEntity"]["itemListElement"]], card_names(html))
         self.assertEqual(ld["citation"], SER_VIDEO)
         self.assertEqual(ld["isBasedOn"], SER_VIDEO)
         self.assertEqual(ld["creator"], {"@type": "Person", "name": "Reo Matsumoto"})
@@ -1725,18 +1729,29 @@ class SerenityPageTest(unittest.TestCase):
         self.assertEqual(names, ["Home", "Scale chord charts", "Neotone", "F# Serenity"])
         self.assertEqual(ld["breadcrumb"]["itemListElement"][-1]["item"], SER_URL)
 
-    def test_visible_faq_text_equals_the_json_ld_text_byte_for_byte(self):
-        html = gen.serenity_page()
-        _, faq = ser_faq(html)
-        section = re.search(r'<section class="faq">(.*?)</section>', html, re.S).group(1)
-        got = re.findall(r"<h3>(.*?)</h3>\s*<p>(.*?)</p>", section, re.S)
-        import html as h
-        self.assertEqual([(h.unescape(q), h.unescape(a)) for q, a in got],
-                         [(x["name"], x["acceptedAnswer"]["text"]) for x in faq])
+    def test_it_has_the_standard_chord_stepper_for_its_own_layout(self):
+        html = ser_page()
+        self.assertEqual(html.count('<div class="prog" role="radiogroup" aria-label="Chord steps">'), 1)
+        self.assertEqual(len(re.findall(r'<input type="radio" name="step"', html)), 3)
+        self.assertEqual(len(re.findall(r'<div class="slot">', html)), 3)
+        self.assertEqual(len(re.findall(r'<div class="cardhost">', html)), 3)
+        self.assertIn("Starter progression:", html)
+        row = gen.serenity_row()
+        data = gen.engine([row])["rows"][SER_SLUG]
+        self.assertEqual(card_names(html), gen.chord_names(data))
+        self.assertEqual(card_names(gen.serenity_page()), gen.chord_names(data))
+        self.assertEqual(data["name"], "F# Serenity")
+
+    def test_there_is_no_questions_section_and_no_faq_markup(self):
+        html = ser_page()
+        self.assertNotIn('class="faq"', html)
+        self.assertNotIn("FAQPage", html)
+        self.assertNotIn("<h2>Questions</h2>", html)
+        self.assertFalse(hasattr(gen, "serenity_faq"))
 
     def test_copy_credits_reo_as_a_musician_and_never_says_the_banned_things(self):
         p = Page(ser_page())
-        vis = (p.visible().replace(DISCLAIMER, "") + json.dumps(ser_faq(ser_page())[0], ensure_ascii=False))
+        vis = p.visible().replace(DISCLAIMER, "") + json.dumps(ser_ld(ser_page()), ensure_ascii=False)
         self.assertIn("Reo Matsumoto", vis)
         self.assertIn("a scale by Reo Matsumoto", p.norm())
         self.assertIn("handpan musician and beatboxer", p.norm())
@@ -1751,17 +1766,19 @@ class SerenityPageTest(unittest.TestCase):
         self.assertNotIn("hipsy", ser_page())
         self.assertIn("Instruments du Monde describes his music as music without borders that mixes genres", n)
         self.assertNotIn("and he describes aiming for music without borders", n)
-        self.assertIn("That is his general approach, not a statement about this scale.", n)
+        for gone in ("In his own profile", "as we read it", "general approach", "not a statement about this scale"):
+            self.assertNotIn(gone, n)
+        self.assertIn("his video", n)
+        beat = re.search(r"<p>[^<]*beatboxer.*?</p>", ser_page(), re.S).group(0)
+        self.assertIn("https://instruments-du-monde.com/en/blogs/handpan/reo-matsumoto", beat)
+        self.assertIn("https://masterthehandpan.com/handpan-player/reo-matsumoto", beat)
 
     def test_the_page_has_its_own_date_and_the_trademark_line(self):
         html = ser_page()
         self.assertEqual(re.findall(r'<time datetime="([^"]*)"', html), ["2026-11-07"])
-        self.assertEqual(ser_faq(html)[0]["dateModified"], "2026-11-07")
+        self.assertEqual(ser_ld(html)["dateModified"], "2026-11-07")
         self.assertEqual(neo()["row"]["updated"], "2026-11-05")
         self.assertIn(DISCLAIMER, Page(html).norm())
-
-    def test_about_paragraphs_are_spaced(self):
-        self.assertIn("section.history p{margin:0 0 12px}", ser_page())
 
     def test_the_video_is_a_plain_link_with_no_embed_channel_or_date(self):
         html = ser_page()
@@ -1771,20 +1788,20 @@ class SerenityPageTest(unittest.TestCase):
         self.assertNotIn("uploadDate", html)
         self.assertNotIn("datePublished", html)
 
-    def test_order_is_breadcrumb_in_header_then_h1_answer_then_practice(self):
+    def test_order_is_breadcrumb_in_header_then_h1_then_stepper_then_practice(self):
         html = ser_page()
         crumb = html.index('<a href="/scales/">Scale chord charts</a> &rsaquo; <a href="/scales/neotone/">Neotone</a>')
         self.assertLess(html.index('class="brand"'), crumb)
         self.assertLess(crumb, html.index("<h1>"))
-        self.assertLess(html.index("<h1>"), html.index('<p class="answer"'))
-        self.assertLess(html.index('<p class="answer"'), html.index("PRACTICE F# SERENITY"))
-        self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html), ["F# Serenity handpan scale (Neotone Mutant)"])
+        self.assertLess(html.index("<h1>"), html.index('class="prog"'))
+        self.assertLess(html.index('class="prog"'), html.index("PRACTICE F# SERENITY"))
+        self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html), ["F# Serenity handpan chords"])
 
     def test_only_allowed_hosts_and_no_third_party_script(self):
         html = ser_page()
         hosts = set(re.findall(r"https?://([^/\"'\s)]+)", html))
         self.assertLessEqual(hosts, ALLOWED_HOSTS)
-        self.assertEqual(Page(html).scripts, [["application/ld+json", Page(html).scripts[0][1]]])
+        self.assertEqual([x[0] for x in Page(html).scripts], ["application/ld+json", None])
 
     def test_the_neotone_page_links_it_within_budget_and_stays_under_the_cap(self):
         html = neo()["html"]
