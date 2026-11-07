@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  const shown = standard && !ringIds(fields, "bottom").length
 +  const shown = false && standard && !ringIds(fields, "bottom").length
      ? markup.replace(/viewBox="-([\d.]+) -[\d.]+ [\d.]+ [\d.]+"( data-ext="[\d.]+")?/, (all, v) => {
-       const wide = Math.max(Number(v), 100 * ((geom.bottom || 1.15) + (geom.r_bnote || 0.1)) + 14);
+       const wide = Math.max(Number(v), 100 * (editorOrbit(geom, "bottom") + editorNoteReach(geom, "bottom")) + 14);
        return `viewBox="${-wide} ${-wide} ${2 * wide} ${2 * wide}"` + (all.includes("data-ext") ? ` data-ext="${wide}"` : "");

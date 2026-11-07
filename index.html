@@ -15743,6 +15743,12 @@ function editorRenderAreas(m) {
     if (n >= EDITOR_CAPS[ring]) b.setAttribute("aria-disabled", "true"); else b.removeAttribute("aria-disabled");
   }
 }
+function editorOrbit(geom, ring) {
+  return geom[ring] || (ring === "inner" ? 0.38 : 1.15);
+}
+function editorNoteReach(geom, ring) {
+  return ring === "bottom" ? geom.r_bnote || 0.1 : geom.r_note;
+}
 function editorWithOverlay(markup, m, solved) {
   const { fields, geom } = solved;
   const labels = editorNoteLabels(m);
@@ -15765,14 +15771,14 @@ function editorWithOverlay(markup, m, solved) {
     for (const ring of ["inner", "bottom"]) {
       const picked = s.zone === ring;
       if (ringIds(fields, ring).length && !picked) continue;
-      const orb = geom[ring] || (ring === "inner" ? 0.38 : 1.15);
+      const orb = editorOrbit(geom, ring);
       out += `<circle class="etarget${picked ? " picked" : ""}" data-ring="${ring}" cx="0" cy="0" r="${(orb * 100).toFixed(2)}"/>`;
     }
   }
   out += "</g>";
   const shown = standard && !ringIds(fields, "bottom").length
     ? markup.replace(/viewBox="-([\d.]+) -[\d.]+ [\d.]+ [\d.]+"( data-ext="[\d.]+")?/, (all, v) => {
-      const wide = Math.max(Number(v), 100 * ((geom.bottom || 1.15) + (geom.r_bnote || 0.1)) + 14);
+      const wide = Math.max(Number(v), 100 * (editorOrbit(geom, "bottom") + editorNoteReach(geom, "bottom")) + 14);
       return `viewBox="${-wide} ${-wide} ${2 * wide} ${2 * wide}"` + (all.includes("data-ext") ? ` data-ext="${wide}"` : "");
     })
     : markup;
@@ -16100,10 +16106,11 @@ function editorMarkDrop(target) {
   if (target.kind === "ding") at = [0, geom.ding_dy * 100, geom.r_ding];
   else if (target.kind === "note") {
     const c = svg.querySelector(`.ehit[data-ring="${target.ring}"][data-i="${target.i}"]`);
-    if (c) at = [+c.getAttribute("cx"), +c.getAttribute("cy"), target.ring === "bottom" ? geom.r_bnote : geom.r_note];
+    if (c) at = [+c.getAttribute("cx"), +c.getAttribute("cy"), editorNoteReach(geom, target.ring)];
   } else if (target.kind === "spot" && target.angle !== undefined) {
     const a = target.angle * Math.PI / 180;
-    at = [geom[target.ring] * 100 * Math.cos(a), -geom[target.ring] * 100 * Math.sin(a), target.ring === "bottom" ? geom.r_bnote : geom.r_note];
+    const orb = editorOrbit(geom, target.ring);
+    at = [orb * 100 * Math.cos(a), -orb * 100 * Math.sin(a), editorNoteReach(geom, target.ring)];
   }
   if (!at) return;
   const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");

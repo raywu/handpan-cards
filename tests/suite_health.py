@@ -74,7 +74,7 @@ FLOORS = {
     "tests/link_corpus.test.js": 7,
     "tests/editor_model.test.js": 31,
     "tests/editor_shell.test.js": 51,
-    "tests/editor_e2e.test.js": 90,
+    "tests/editor_e2e.test.js": 92,
     "tests/storage_corpus.test.js": 18,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 16,
