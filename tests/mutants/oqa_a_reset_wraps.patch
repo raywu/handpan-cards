@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1324,7 +1324,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- #editor-oct{flex:1 1 auto; text-align:center; font:700 15px/1 "Nunito Sans"}
- #editor-flats{margin-left:auto; padding-inline:var(--sp-3)}
+@@ -1339,7 +1339,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-layout .mode.on{background:#242424; color:#F6F4ED; border-color:#242424}
+ #editor-layout .mode:disabled{opacity:.45; cursor:default}
  #editor .editor-toolbar{flex:0 0 auto; display:flex; gap:var(--sp-2); align-items:center}
 -#editor .editor-toolbar .mode{flex:1 1 0; min-width:44px; padding-inline:4px; white-space:nowrap}
 +#editor .editor-toolbar .mode{flex:1 1 0; min-width:44px; padding-inline:4px; white-space:normal}

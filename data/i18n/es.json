@@ -457,5 +457,8 @@
   "editor.reset.inner": "Reset cyclops spacing",
   "editor.reset.bottom": "Reset bottom spacing",
   "editor.reset_both": "Reset spacing ({n})",
-  "editor.reset_both_aria": "Reset cyclops and bottom spacing"
+  "editor.reset_both_aria": "Reset cyclops and bottom spacing",
+  "editor.palette": "Card palette",
+  "editor.palette_n": "Card palette {n}",
+  "editor.layout.aria": "Mirror and orientation"
 }
