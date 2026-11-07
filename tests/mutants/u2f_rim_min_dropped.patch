@@ -1,15 +1,15 @@
-# kills: U2f-3 (D4): a placed note on the trash or the tray is removed; the ding never is; off the pan it snaps back
+# kills: U2f-3 (D4, OQA): a placed note released outside the pan is removed; the ding never is; a miss inside the pan snaps back
 # suite: node --test --test-name-pattern ^U2f-3 tests/editor_shell.test.js
 # fault: The last rim note is no longer protected from the trash.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15804,7 +15804,7 @@ function editorDropPlan(m, src, target) {
+@@ -15903,7 +15903,7 @@ function editorDropPlan(m, src, target) {
    const ref = src.ref;
-   if (target.kind === "trash" || target.kind === "tray") {
+   if (target.kind === "outside") {
      if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
 -    if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
 +    if (false) return { refuse: t("editor.say.rim_min") };
-     return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
+     return { step: (x) => editorRemoveNeotone(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
    }
    if (target.kind === "note" || target.kind === "ding") {

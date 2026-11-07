@@ -1,15 +1,15 @@
-# kills: U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; the 43 unit areas catch the rest; holding yields to the zone under the pointer
+# kills: U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; outside it the zone wins, held or not (OQA: the 43 unit areas are gone from the standard pan)
 # suite: node --test --test-name-pattern ^U2c-14. tests/editor_shell.test.js
-# fault: The 43 unit areas are tried before the drawn circle, so a tap on a drawn note picks a neighbour.
+# fault: A tap inside a drawn circle falls through to the zone, so a drawn note is never hit first.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15344,7 +15344,7 @@ function editorHitAt(solved, pt, holding) {
+@@ -15454,7 +15454,7 @@ function editorHitAt(solved, pt, holding) {
+     }
    }
-   const nearest = (list) => list.sort((x, y) => toward(x.c) - toward(y.c))[0];
-   const drawn = nearest(spots.filter((s) => toward(s.c) <= s.r));
+   const drawn = spots.filter((c) => toward(c.c) <= c.r).sort((x, y) => toward(x.c) - toward(y.c))[0];
 -  if (drawn) return drawn.ref;
 +  if (false) return drawn.ref;
-   if (!holding) {
-     const wide = nearest(spots.filter((s) => s.wide && toward(s.c) <= EDITOR_HIT_AREA));
-     if (wide) return wide.ref;
+   const zone = editorZoneAt(geom, pt);
+   if (zone === "off") return { kind: "off" };
+   if (zone === "rim") return { kind: "spot", ring: "rim" };

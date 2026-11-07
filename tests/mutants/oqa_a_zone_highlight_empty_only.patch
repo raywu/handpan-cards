@@ -1,0 +1,15 @@
+# kills: OQA zone highlight occupied; OQA zone full dashed: the hovered zone is .ezone.on although it has notes, a zone at its cap is .full with a Full label
+# suite: node --test --test-name-pattern ^OQA.zone.highlight.occupied tests/editor_e2e.test.js
+# fault: The hovered zone lights only when it has no notes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16185,7 +16185,7 @@ function editorDragMove(e) {
+   const pt = editorPanPoint(e);
+   const solved = pt && editorSolve(editorSession.history.present);
+   const zone = solved && solved.ok && !solved.value.geom.place ? editorZoneAt(solved.value.geom, pt) : null;
+-  for (const z of document.querySelectorAll("#editor-pan .ezone")) z.classList.toggle("on", z.dataset.ring === zone);
++  for (const z of document.querySelectorAll("#editor-pan .ezone")) z.classList.toggle("on", z.dataset.ring === zone && !ringIds(editorSession.history.present.fields, z.dataset.ring).length);
+   editorMarkDrop(target);
+   if (e.cancelable) e.preventDefault();
+ }

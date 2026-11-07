@@ -319,7 +319,7 @@ test("U2c-13 (SE-15): note aria labels carry the zone and the seat", () => {
   assert.strictEqual(byName.D3, "D3, ding");
 });
 
-test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; the 43 unit areas catch the rest; holding yields to the zone under the pointer", () => {
+test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; outside it the zone wins, held or not (OQA: the 43 unit areas are gone from the standard pan)", () => {
   const a = app();
   withModel(a, "[E3] " + SCALE);
   a.run(`globalThis.__v = editorSolve(__m).value; globalThis.__g = __v.geom; true`);
@@ -328,7 +328,9 @@ test("U2c-14 (D22 / SE-4): a point inside a drawn circle hits that note first; t
   assert.deepStrictEqual(hit(bottomAt[0], bottomAt[1]), { kind: "note", ring: "bottom", i: 0 });
   const turn = bottomAt[2] * Math.PI / 180 + 0.2 / 1.15;
   const off = [1.15 * Math.cos(turn), 1.15 * Math.sin(turn)];
-  assert.deepStrictEqual(hit(off[0], off[1]), { kind: "note", ring: "bottom", i: 0 }, "0.2 R along the ring is outside the drawn circle and inside the 43 unit area");
+  const outside = hit(off[0], off[1]);
+  assert.strictEqual(outside.kind, "spot", "0.2 R along the ring is outside the drawn circle: the zone, not the note");
+  assert.strictEqual(outside.ring, "bottom");
   const held = hit(off[0], off[1], true);
   assert.strictEqual(held.kind, "spot");
   assert.strictEqual(held.ring, "bottom", "holding, the zone under the pointer wins");
@@ -581,23 +583,21 @@ describe("U2f drag classifier and drop plan", () => {
     plan(a, { from: "tray", name: "G3" }, { kind: "ding" });
     after(a);
     assert.strictEqual(a.get("editorDingOf(__r.value)"), "G3");
-    for (const kind of ["off", "trash", "tray"]) assert.strictEqual(a.get(`(() => { const p = editorDropPlan(__m, { from: "tray", name: "B4" }, { kind: ${JSON.stringify(kind)} }); return p.snap === true && !p.step && !p.trade; })()`), true, kind);
+    for (const kind of ["off", "outside"]) assert.strictEqual(a.get(`(() => { const p = editorDropPlan(__m, { from: "tray", name: "B4" }, { kind: ${JSON.stringify(kind)} }); return p.snap === true && !p.step && !p.trade; })()`), true, kind);
   });
 
-  test("U2f-3 (D4): a placed note on the trash or the tray is removed; the ding never is; off the pan it snaps back", () => {
+  test("U2f-3 (D4, OQA): a placed note released outside the pan is removed; the ding never is; a miss inside the pan snaps back", () => {
     const a = app();
     withModel(a, SCALE);
-    for (const kind of ["trash", "tray"]) {
-      plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind });
-      after(a);
-      assert.ok(!rimOf(a, "__r.value").includes("D4"), kind);
-      assert.strictEqual(a.get("__p.say"), "D4 removed.");
-    }
-    plan(a, { from: "pan", ref: { ring: "ding", i: 0 } }, { kind: "trash" });
+    plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "outside" });
+    after(a);
+    assert.ok(!rimOf(a, "__r.value").includes("D4"));
+    assert.strictEqual(a.get("__p.say"), "D4 removed.");
+    plan(a, { from: "pan", ref: { ring: "ding", i: 0 } }, { kind: "outside" });
     assert.strictEqual(a.get("__p.refuse"), "Every scale needs a ding. Drop another note on it to swap.");
     assert.strictEqual(a.get("__p.step"), undefined);
     withModel(a, "(D3) A3");
-    plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "trash" });
+    plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "outside" });
     assert.strictEqual(a.get("__p.refuse"), "The rim needs at least 1 note.");
     withModel(a, SCALE);
     plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "off" });
@@ -657,4 +657,64 @@ test("U2f-7 (U2d nit N3): the area caps do not apply to a model with a profile; 
   assert.strictEqual(a.get("editorPlace(__m, 'rim', 'F5').code"), "AREA_FULL", "the same add on a Standard pan is refused");
   assert.notStrictEqual(a.get("__r.code"), "AREA_FULL");
   assert.notStrictEqual(a.get("__r.code"), "TOO_CROWDED");
+});
+
+const openSession = (a, text, extra = "") => a.run(`globalThis.__m = editorLoad(${JSON.stringify(text)}, undefined).value; editorRender = () => {}; editorSession = { history: editorHistoryNew(__m), base: __m, editing: false, error: "", notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", plainSay: "" }; ${extra} true`);
+
+describe("OQA-A zone-first, zone state and copy", () => {
+  test("OQA zone split midpoint: radius picks the zone, an empty cyclops included; past the bottom reach is off", () => {
+    const a = app();
+    withModel(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+    a.run(`globalThis.__g = editorSolve(__m).value.geom; true`);
+    const zone = (r) => a.get(`editorZoneAt(__g, [${r}, 0])`);
+    const mid = a.get(`(editorOrbit(__g, "inner") + __g.rim) / 2`);
+    assert.strictEqual(zone(mid - 0.01), "inner");
+    assert.strictEqual(zone(mid + 0.01), "rim");
+    const mid2 = a.get(`(__g.rim + editorOrbit(__g, "bottom")) / 2`);
+    assert.strictEqual(zone(mid2 - 0.01), "rim");
+    assert.strictEqual(zone(mid2 + 0.01), "bottom");
+    const edge = a.get(`editorOrbit(__g, "bottom") + editorNoteReach(__g, "bottom") + 0.08`);
+    assert.strictEqual(zone(edge - 0.01), "bottom");
+    assert.strictEqual(zone(edge + 0.01), "off");
+    const hit = plain(a.get(`(() => { const v = editorSolve(__m).value; return editorHitAt(v, [${mid - 0.01}, 0], false); })()`));
+    assert.strictEqual(hit.kind, "spot");
+    assert.strictEqual(hit.ring, "inner");
+    assert.strictEqual(plain(a.get(`editorHitAt(editorSolve(__m).value, [${mid + 0.01}, 0], false)`)).ring, "rim");
+  });
+
+  test("OQA zone clear on lift and pan switch: s.zone is null after a pan-type switch (N1; the drag lift is in the e2e suite)", () => {
+    const a = app();
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.zone = "bottom";`);
+    a.run(`editorSetPanType("neotone");`);
+    assert.strictEqual(a.get(`editorSession.zone`), null);
+  });
+
+  test("OQA N3 N4 N5 copy: ding stays, same zone, zone is full, each a status line and no silent deselect", () => {
+    const a = app();
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.sel = { ring: "ding", i: 0 };`);
+    a.run(`editorSelectTap({ kind: "spot", ring: "rim" }, editorSession.history.present);`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.ding_stays")`));
+    assert.deepStrictEqual(plain(a.get(`editorSession.sel`)), { ring: "ding", i: 0 }, "the selection stays");
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.sel = { ring: "rim", i: 1 };`);
+    a.run(`editorPillTap("rim");`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.same_zone", { name: "Bb3", zone: t("editor.zone.rim") })`));
+    openSession(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5");
+    a.run(`editorPillTap("rim");`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.zone_is_full", { zone: t("editor.zone.rim") })`));
+    openSession(a, "(D3) A3 Bb3 C4");
+    a.run(`editorPillTap("rim");`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.pick_first")`));
+  });
+
+  test("OQA neotone untouched: Neotone editorHitAt on a fixture grid equals the recorded base result", () => {
+    const a = app();
+    withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+    a.run(`globalThis.__n = editorPanType(__m, "neotone").value; globalThis.__v = editorSolve(__n).value; true`);
+    assert.strictEqual(a.get(`!!__v.geom.place`), true);
+    const grid = [];
+    for (let x = -1.6; x <= 1.61; x += 0.2) for (let y = -1.6; y <= 1.61; y += 0.2) {
+      for (const h of [false, true]) grid.push([+x.toFixed(2), +y.toFixed(2), h, plain(a.get(`editorHitAt(__v, [${x}, ${y}], ${h})`))]);
+    }
+    assert.strictEqual(require("node:crypto").createHash("sha1").update(JSON.stringify(grid)).digest("hex"), "ba59438677020c7162a6607e66eabb4161d5df89");
+  });
 });

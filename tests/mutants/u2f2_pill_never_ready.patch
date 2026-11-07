@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15739,7 +15739,7 @@ function editorRenderAreas(m) {
-     b.textContent = t("editor.pill." + ring, vars);
+@@ -15822,7 +15822,7 @@ function editorRenderAreas(m) {
+     }
      b.setAttribute("aria-label", t("editor.pill_aria." + ring, vars));
      b.disabled = false;
 -    b.classList.toggle("ready", ready);

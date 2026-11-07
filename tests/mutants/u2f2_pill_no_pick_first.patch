@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15930,7 +15930,7 @@ function editorPillTap(ring) {
-   if (s.held) return editorPlaceHeld(hit, s.history.present);
+@@ -16027,7 +16027,7 @@ function editorPillTap(ring) {
    if (s.sel && s.sel.ring !== "ding") return editorMoveSelected(hit, s.history.present);
    s.error = "";
--  s.say = s.plainSay = t("editor.say.pick_first");
-+  s.say = s.plainSay = "";
+   s.say = s.plainSay = ringIds(s.history.present.fields, ring).length >= EDITOR_CAPS[ring]
+-    ? t("editor.say.zone_is_full", { zone: t("editor.zone." + ring) }) : t("editor.say.pick_first");
++    ? t("editor.say.zone_is_full", { zone: t("editor.zone." + ring) }) : "";
    editorRender();
  }
  function editorResetTap() {
