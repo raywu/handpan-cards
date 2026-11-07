@@ -7,8 +7,8 @@ diff --git a/index.html b/index.html
 @@ -61,7 +61,7 @@
    "@type": "WebSite",
    "name": "Handpan Theory",
-   "alternateName": ["Handpan Chords", "handpan.raywu.org"],
--  "url": "https://handpan.raywu.org/"
+   "alternateName": ["Handpan Chords", "handpantheory.com"],
+-  "url": "https://handpantheory.com/"
 +  "url": "https://raywu.org/"
    }
    ]
