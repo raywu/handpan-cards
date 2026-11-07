@@ -41,7 +41,7 @@ A chord-card system for handpans, two outputs from one data source:
   of the written file (degrees contain U+00B0; a naive `re.sub` silently fails).
 - **The brand lockup region and the favicon URI are GENERATED.** Everything between
   `<!-- brand:lockup begin -->` and `<!-- brand:lockup end -->`, and the SVG favicon data URI, come from
-  `brand/*.svg` via `python3 tools/make_icons.py`, which also renders `apple-touch-icon.png` and `og.png`
+  `brand/*.svg` via `python3 tools/make_icons.py`, which also renders `favicon.ico`, `apple-touch-icon.png` and `og.png`
   (`--check` reports drift; `tools/validate.py` fails on it). Edit the SVG in `brand/`, re-run the tool.
   Same conflict rule as engine regions.
 - **The `const I18N` block is GENERATED** from `data/i18n/*.json` by
