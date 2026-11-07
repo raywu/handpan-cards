@@ -10387,6 +10387,80 @@ function run() {
         }
       });
 
+    test("LS: with the backup panel open (RESET hidden) the short-landscape menu scrolls vertically and never spills sideways, in en and de (REAL fonts)",
+      { timeout: 300000 }, async () => {
+        try {
+          await rb.setViewport(852, 330, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const lang of ["en", "de"]) {
+            for (const [w, h] of [[740, 300], [800, 340], [740, 360], [844, 390], [932, 430], [1000, 480], [1024, 520]]) {
+              await rb.setViewport(w, h, true);
+              await rb.settle();
+              await rb.click("#settings-trigger");
+              await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+              await rb.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+              await rb.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+              if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
+              await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
+              await rb.settle();
+              const label = `${lang} ${w}x${h}`;
+              const m = await rb.eval(`
+                const p = document.getElementById("settings-panel");
+                const s = document.getElementById("lang-select");
+                s.scrollIntoView({ block: "center" });
+                const k = s.getBoundingClientRect();
+                const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
+                return { restore: !document.getElementById("deck-restore").hidden, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+              assert.strictEqual(m.restore, false, `${label}: RESET SEEDED SCALES is hidden`);
+              assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
+              assert.ok(m.hitSelect, `${label}: #lang-select is not reachable by a tap at its centre`);
+              await rb.key("Escape", "Escape", 27);
+              await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+            }
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: with the backup panel open its controls are panel Tab stops right after BACK UP SAVED SCALES, in the grid and DOM orders (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[844, 390], [380, 780]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
+            await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
+            await rb.eval(`for (const id of ["backup-share", "backup-copy", "backup-download"]) document.getElementById(id).disabled = false; return true;`);
+            const m = await rb.eval(`
+              const ids = window.panelStops().map(e => e.id);
+              const want = ["backup-open", ...[...document.getElementById("backup-panel").querySelectorAll("textarea, button")]
+                .filter(e => !e.disabled && e.getClientRects().length > 0).map(e => e.id)];
+              return { ids, want };`);
+            const at = m.ids.indexOf("backup-open");
+            assert.ok(at >= 0, `${w}x${h}: backup-open is a stop: ${JSON.stringify(m.ids)}`);
+            assert.ok(m.want.includes("backup-text") && m.want.includes("backup-copy") && m.want.includes("backup-download"), `${w}x${h}: the backup controls render`);
+            assert.deepStrictEqual(m.ids.slice(at, at + m.want.length), m.want, `${w}x${h}: ${JSON.stringify(m.ids)}`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${w}x${h}` });
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
     test("LS2: with the progression note and RESET SEEDED SCALES showing, the columns balance: Flash cards, Print, Scales left and Resources, Language right, each stacked flush, at 844x390 and 800x340 (REAL fonts)",
       { timeout: 120000 }, async () => {
         try {
