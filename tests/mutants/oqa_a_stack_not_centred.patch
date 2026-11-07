@@ -1,0 +1,15 @@
+# kills: OQA tablet landscape centred: at 1180x820, 1366x1024 and 1440x960 the control stack is centred on the pan and the pan fills its column
+# suite: node --test --test-name-pattern ^OQA.tablet.landscape tests/editor_e2e.test.js
+# fault: The control stack sits at the top of the column instead of centred on the pan.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1344,7 +1344,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+    spans every row under the head. */
+ @media (min-width:900px) and (orientation:landscape){
+   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid;
+-    grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr); grid-template-rows:auto 1fr auto auto auto auto auto 1fr;
++    grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr); grid-template-rows:auto auto auto auto auto auto auto 1fr;
+     grid-template-areas:"head head" "pan ." "pan line" "pan status" "pan areas" "pan bar" "pan tray" "pan ."}
+   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor-status{grid-area:status}
+   #editor .editor-panbox{grid-area:pan} #editor-areas{grid-area:areas} #editor .editor-toolbar{grid-area:bar} #editor-tray{grid-area:tray}

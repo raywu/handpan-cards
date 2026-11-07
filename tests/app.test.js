@@ -641,7 +641,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
+                     "layout", "naming", "select", "share", "sequence", "sync", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -652,7 +652,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence", "swipe"]);
+                                 "share", "sequence", "sync", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -1397,7 +1397,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.INNER_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -15505,8 +15505,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -19689,7 +19689,13 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
     assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
     assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
+    const droppedBranch = `    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
+      const { name, ...bare } = row.r.o;
+      if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+    }`;
+    assert.ok(shipped.includes(droppedBranch.replace("moveCanon(row.r)", "moveCanon(read.record)")) || shipped.includes(droppedBranch), "the shipped region no longer holds the branch lane U replaced");
     const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))")
+      .replace(droppedBranch, () => `    else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });`)
       .replace("const MOVE_FROM = null;\nconst MOVE_TARGET = null;\n", () => 'const MOVE_FROM = "handpan.raywu.org";\nconst MOVE_TARGET = "https://handpantheory.com";\n');
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
@@ -20058,11 +20064,15 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.ok(!/javascript/.test(app.get("location.href")));
   });
 
-  test("a record the app cannot read is skipped and the rest import", async () => {
+  test("a record the app cannot read is carried as opaque bytes and the rest import", async () => {
     const origin = createOrigin({});
-    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`;
+    const future = { v: 99, s: "future", o: {} };
+    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`;
     await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
-    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["GOOD"]);
+    const rows = envelopeAt(origin).entries.map(r => r.record);
+    assert.strictEqual(rows.length, 2, "the unreadable row is carried, never dropped (R4-1)");
+    assert.ok(rows.some(r => r.o.name === "GOOD"));
+    assert.deepStrictEqual(rows.find(r => r.v === 99), future);
   });
 
   test("an older build's edit keeps the top-level importedIds", async () => {
@@ -20411,7 +20421,7 @@ describe("backup: back up saved scales", () => {
 
   test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
     const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACK UP SAVED SCALES<\/button>/,
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACKUP YOUR SCALES<\/button>/,
       "the opener is not right after the reset button, with its label");
     assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
     assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");
@@ -20447,9 +20457,23 @@ describe("backup: back up saved scales", () => {
     assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
     app.run("closePanel()");
     await makeCustom(app);
+    app.els["backup-text"].value = "";
+    app.els["backup-status"].textContent = "No saved scales to back up yet.";
     app.run("openPanel()");
     assert.strictEqual(app.els["backup-panel"].hidden, false);
     assert.ok(linksOf(textOf(app)).length >= 1, "the list is still empty");
+    assert.strictEqual(app.els["backup-copy"].disabled, false);
+    assert.strictEqual(app.els["backup-status"].textContent, "");
+  });
+
+  test("an open backup panel on desktop shows the new scale after a save", async () => {
+    const app = await durableBoot();
+    app.run("desktopMQ.matches = true");
+    open(app);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    await makeCustom(app);
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.ok(linksOf(textOf(app)).length >= 1, "the open list is stale after the save");
     assert.strictEqual(app.els["backup-copy"].disabled, false);
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });

@@ -1,0 +1,15 @@
+# kills: U2e2-7: the anchor picks note 1 centred or notes 1 and 2 split, on the code today's tabs build, one Undo step each
+# suite: node --test --test-name-pattern ^U2e2.7:. tests/editor_shell.test.js
+# fault: Choosing the anchor already in force still adds an Undo step.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15375,7 +15375,7 @@ function editorSetMirror(m, which) {
+ }
+ function editorSetAnchor(m, to) {
+   if (to !== "one" && to !== "between") return editorRefusal(to);
+-  if (m.options.profile || editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
++  if (m.options.profile || editorIsEmpty(m)) return { ok: true, value: m };
+   const next = editorClone(m);
+   next.options.anchor = to;
+   return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();
