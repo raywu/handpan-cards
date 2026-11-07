@@ -4,12 +4,12 @@
 diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
 --- a/tools/gen_scale_page.py
 +++ b/tools/gen_scale_page.py
-@@ -525,7 +525,7 @@ def defaults_html(row, shares):
-                    % (esc(d["name"]), esc(d.get("hotkey") or d["credit"]), heads, cta))
-         out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
-         out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
--                   % (' class="nomut"' if not spread and not d["mutant"] else "", cells(["-"] + mut)))
-+                   % (' class="nomut"' if False else "", cells(["-"] + mut)))
-         if not linked:
-             out.append('<tr class="note"><td colspan="12">%s</td></tr>\n' % SPREAD_NOTE)
-         out.append("</tbody>\n")
+@@ -525,7 +525,7 @@ def default_tbody(d, link):
+                % (esc(d["name"]), esc(d.get("hotkey") or d["credit"]), heads, cta))
+     out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
+     out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
+-               % (' class="nomut"' if not spread and not d["mutant"] else "", cells(["-"] + mut)))
++               % (' class="nomut"' if False else "", cells(["-"] + mut)))
+     if not linked:
+         out.append('<tr class="note"><td colspan="12">%s</td></tr>\n' % SPREAD_NOTE)
+     out.append("</tbody>\n")

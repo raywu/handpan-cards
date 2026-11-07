@@ -16,7 +16,7 @@ import gen_scale_page as gen  # noqa: E402
 
 SITE = "https://handpantheory.com/"
 ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpantheory.com", "www.w3.org",
-                 "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world",
+                 "www.youtube.com", "masterthehandpan.com", "instruments-du-monde.com", "www.sarazhandpans.com", "www.handpan.world",
                  "handpaner.com", "schema.org", "handpanhelpers.klangzeug.de", "svenkirchhofer.de",
                  "yataoshop.com", "isthmusinstruments.com", "www.drumland.com", "maginstruments.com",
                  "www.scan.co.uk", "www.meinlshop.de", "www.dingandtones.com", "sarazhandpans.com",
@@ -1656,6 +1656,158 @@ class NeotonePageTest(unittest.TestCase):
     def test_sitemap_and_llms_list_the_page(self):
         self.assertIn("<loc>%sscales/neotone/</loc>" % SITE, read("sitemap.xml"))
         self.assertIn("(%sscales/neotone/)" % SITE, read("llms.txt"))
+
+
+SER_SLUG = "f-sharp-serenity-neotone"
+SER_URL = SITE + "scales/%s/" % SER_SLUG
+SER_VIDEO = "https://www.youtube.com/shorts/9nxKowdOFwE"
+
+
+def ser_page():
+    return read("scales/%s/index.html" % SER_SLUG)
+
+
+def ser_row():
+    return next(x for x in gen.load_neotone_row()["defaults"] if x["name"] == "F# Serenity")
+
+
+def ser_faq(html):
+    ld = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
+    return ld, ld["mainEntity"]["mainEntity"]
+
+
+class SerenityPageTest(unittest.TestCase):
+    def test_the_file_is_what_the_generator_writes_and_check_passes(self):
+        self.assertEqual(ser_page(), gen.serenity_page())
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"), "--serenity", "--check"],
+                           cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_self_canonical_title_and_description(self):
+        html = gen.serenity_page()
+        p = Page(html)
+        self.assertEqual(p.canonical(), SER_URL)
+        self.assertEqual(p.meta("og:url", "property"), SER_URL)
+        title = re.search(r"<title>(.*?)</title>", html).group(1)
+        self.assertIn("F# Serenity", title)
+        self.assertIn("Neotone Mutant", title)
+        self.assertLessEqual(len(p.meta("description")), 160)
+        self.assertLess(len(html.encode("utf-8")), SIZE_CAP)
+
+    def test_the_notes_table_equals_the_neotone_row(self):
+        d = ser_row()
+        html = ser_page()
+        bodies = re.findall(r"<tbody>.*?</tbody>", html, re.S)
+        self.assertEqual(len(bodies), 1)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", bodies[0], re.S)
+        cells = lambda r: re.findall(r"<td>(.*?)</td>", r)
+        self.assertEqual(cells(rows[1]), [d["ding"]] + d["main"])
+        self.assertEqual(cells(rows[2]), ["-"] + d["mutant"])
+
+    def test_every_practice_href_equals_the_neotone_page_href(self):
+        neo_hrefs = re.findall(r'<a class="open" href="(/#s=[^"]+)">Practice F# Serenity</a>', neo()["html"])
+        self.assertEqual(len(neo_hrefs), 1)
+        page_hrefs = [h for h in Page(ser_page()).hrefs() if h.startswith("/#s=")]
+        self.assertGreaterEqual(len(page_hrefs), 2)
+        self.assertEqual(set(page_hrefs), set(neo_hrefs))
+
+    def test_json_ld_has_faq_breadcrumb_and_the_video_citation(self):
+        html = ser_page()
+        ld, faq = ser_faq(html)
+        self.assertEqual(ld["@type"], "WebPage")
+        self.assertEqual(ld["mainEntity"]["@type"], "FAQPage")
+        self.assertEqual(len(faq), 4)
+        self.assertEqual(ld["citation"], SER_VIDEO)
+        self.assertEqual(ld["isBasedOn"], SER_VIDEO)
+        self.assertEqual(ld["creator"], {"@type": "Person", "name": "Reo Matsumoto"})
+        self.assertNotIn("sameAs", json.dumps(ld["creator"]))
+        names = [i["name"] for i in ld["breadcrumb"]["itemListElement"]]
+        self.assertEqual(names, ["Home", "Scale chord charts", "Neotone", "F# Serenity"])
+        self.assertEqual(ld["breadcrumb"]["itemListElement"][-1]["item"], SER_URL)
+
+    def test_visible_faq_text_equals_the_json_ld_text_byte_for_byte(self):
+        html = gen.serenity_page()
+        _, faq = ser_faq(html)
+        section = re.search(r'<section class="faq">(.*?)</section>', html, re.S).group(1)
+        got = re.findall(r"<h3>(.*?)</h3>\s*<p>(.*?)</p>", section, re.S)
+        import html as h
+        self.assertEqual([(h.unescape(q), h.unescape(a)) for q, a in got],
+                         [(x["name"], x["acceptedAnswer"]["text"]) for x in faq])
+
+    def test_copy_credits_reo_as_a_musician_and_never_says_the_banned_things(self):
+        p = Page(ser_page())
+        vis = (p.visible().replace(DISCLAIMER, "") + json.dumps(ser_faq(ser_page())[0], ensure_ascii=False))
+        self.assertIn("Reo Matsumoto", vis)
+        self.assertIn("a scale by Reo Matsumoto", p.norm())
+        self.assertIn("handpan musician and beatboxer", p.norm())
+        self.assertNotRegex(vis, r"\bRep\b")
+        self.assertIsNone(re.search(r"\bdeck", vis, re.I))
+        for banned in (r"maker", r"builder", r"factory scale", r"natural minor", r"aeolian", r"endorse"):
+            self.assertIsNone(re.search(banned, vis, re.I), banned)
+
+    def test_about_copy_attributes_each_claim_to_its_source(self):
+        n = Page(ser_page()).norm()
+        self.assertNotIn("Amsterdam", n)
+        self.assertNotIn("hipsy", ser_page())
+        self.assertIn("Instruments du Monde describes his music as music without borders that mixes genres", n)
+        self.assertNotIn("and he describes aiming for music without borders", n)
+        self.assertIn("That is his general approach, not a statement about this scale.", n)
+
+    def test_the_page_has_its_own_date_and_the_trademark_line(self):
+        html = ser_page()
+        self.assertEqual(re.findall(r'<time datetime="([^"]*)"', html), ["2026-11-07"])
+        self.assertEqual(ser_faq(html)[0]["dateModified"], "2026-11-07")
+        self.assertEqual(neo()["row"]["updated"], "2026-11-05")
+        self.assertIn(DISCLAIMER, Page(html).norm())
+
+    def test_about_paragraphs_are_spaced(self):
+        self.assertIn("section.history p{margin:0 0 12px}", ser_page())
+
+    def test_the_video_is_a_plain_link_with_no_embed_channel_or_date(self):
+        html = ser_page()
+        self.assertIn('href="%s"' % SER_VIDEO, html)
+        self.assertNotIn("<iframe", html)
+        self.assertNotIn("<video", html)
+        self.assertNotIn("uploadDate", html)
+        self.assertNotIn("datePublished", html)
+
+    def test_order_is_breadcrumb_in_header_then_h1_answer_then_practice(self):
+        html = ser_page()
+        crumb = html.index('<a href="/scales/">Scale chord charts</a> &rsaquo; <a href="/scales/neotone/">Neotone</a>')
+        self.assertLess(html.index('class="brand"'), crumb)
+        self.assertLess(crumb, html.index("<h1>"))
+        self.assertLess(html.index("<h1>"), html.index('<p class="answer"'))
+        self.assertLess(html.index('<p class="answer"'), html.index("PRACTICE F# SERENITY"))
+        self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html), ["F# Serenity handpan scale (Neotone Mutant)"])
+
+    def test_only_allowed_hosts_and_no_third_party_script(self):
+        html = ser_page()
+        hosts = set(re.findall(r"https?://([^/\"'\s)]+)", html))
+        self.assertLessEqual(hosts, ALLOWED_HOSTS)
+        self.assertEqual(Page(html).scripts, [["application/ld+json", Page(html).scripts[0][1]]])
+
+    def test_the_neotone_page_links_it_within_budget_and_stays_under_the_cap(self):
+        html = neo()["html"]
+        link = '<a href="/scales/%s/">More about F# Serenity</a>' % SER_SLUG
+        self.assertEqual(html.count(link), 1)
+        self.assertLess(len(html.encode("utf-8")), NEO_SIZE_CAP)
+        without = html.replace("<p>%s</p>\n" % link, "")
+        self.assertLess(len(html.encode("utf-8")) - len(without.encode("utf-8")), 120)
+
+    def test_the_hub_links_it_once_inside_the_neotone_section(self):
+        html = read("scales/index.html")
+        self.assertEqual(html, gen.hub_page())
+        self.assertEqual(html.count('href="/scales/%s/"' % SER_SLUG), 1)
+        self.assertLess(html.index('href="/scales/neotone/"'), html.index('href="/scales/%s/"' % SER_SLUG))
+
+    def test_sitemap_and_llms_list_it_exactly_once(self):
+        self.assertEqual(read("sitemap.xml").count("<loc>%s</loc>" % SER_URL), 1)
+        self.assertEqual(read("llms.txt").count("(%s)" % SER_URL), 1)
+
+    def test_check_flags_exit_zero_for_hub(self):
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"), "--hub", "--check"],
+                           cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
 
 
 class ReadingSurfaceTest(unittest.TestCase):
