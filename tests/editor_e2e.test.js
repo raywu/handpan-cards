@@ -1026,6 +1026,8 @@ function run() {
         assert.notStrictEqual(await ta("#editor-pan svg"), "none");
         assert.notStrictEqual(await ta(".tray-note"), "none");
         const before = await core();
+        const synthetic = await b.eval(`const c = document.querySelector('.tray-note[data-name="B"]'); const r = c.getBoundingClientRect(); const o = { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, button: 0, buttons: 1, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }; c.dispatchEvent(new PointerEvent("pointerdown", o)); window.dispatchEvent(new PointerEvent("pointermove", { ...o, clientX: o.clientX + 40, clientY: o.clientY - 40 })); const g = document.querySelector(".editor-ghost"); window.dispatchEvent(new PointerEvent("pointerup", { ...o, clientX: o.clientX + 40, clientY: o.clientY - 40 })); return g ? g.textContent : null;`);
+        assert.strictEqual(synthetic, null, "a synthetic touch pointer starts no drag");
         await gesture(await chipAt("B"), await spotAt(0.722, 22.5), "touch");
         assert.deepStrictEqual(await core(), before, "a touch drag places nothing");
         assert.strictEqual(await ghostText(), null);

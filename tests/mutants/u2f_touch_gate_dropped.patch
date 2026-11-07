@@ -1,4 +1,4 @@
-# kills: D8: DRAG_ON_TOUCH off: touch drags do nothing and touch taps still place and swap; mouse drag is unaffected; touch-action is not none
+# kills: DRAG_ON_TOUCH off: touch drags do nothing and touch taps still place and swap; mouse drag is unaffected; touch-action is not none
 # suite: node --test --test-name-pattern ^DRAG_ON_TOUCH.off tests/editor_e2e.test.js
 # fault: The DRAG_ON_TOUCH flag no longer stops a touch drag.
 diff --git a/index.html b/index.html
