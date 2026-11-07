@@ -3534,7 +3534,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
     assert.ok(!/<select/.test(html), "the card header must carry no select");
   }
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 7000);
   for (const label of ["DOWNLOAD PDF"]) {
     assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
   }
@@ -4988,6 +4988,14 @@ describe("panel fit judge", () => {
     assert.strictEqual(judge(b, c(500.5)).rule2.fail.length, 0);
     assert.strictEqual(judge(b, c(500.6)).rule2.fail.length, 1, "deck-add gets no About-row allowance");
     assert.strictEqual(judge(b, c(540)).rule2.fail.length, 1);
+  });
+
+  test("panel fit: the backup-row allowance is 52, owed only for a backup-open control the base lacks", async () => {
+    assert.strictEqual(pf.BACKUP_ALLOWANCE_PX, 52);
+    const keys = (...k) => Object.fromEntries(k.map((x) => [x, ctl(100)]));
+    assert.strictEqual(pf.backupAllowance(keys("res-a"), keys("res-a", "backup-open")), 52, "a new backup-open key");
+    assert.strictEqual(pf.backupAllowance(keys("res-a"), keys("res-a")), 0, "no new key");
+    assert.strictEqual(pf.backupAllowance(keys("backup-open"), keys("backup-open")), 0, "expires once main has the row");
   });
 
   test("panel fit: the Language-group allowance is 88, owed only for a lang-select control the base lacks", async () => {
@@ -15497,8 +15505,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -20389,5 +20397,244 @@ describe("PDF tier menu (lane U)", () => {
     const body = SRC.slice(SRC.indexOf("function downloadDeckPDF"), SRC.indexOf("const ISLAND ="));
     const before = body.slice(body.indexOf("  try {"), body.indexOf("HPE.pdfcards.build("));
     assert.ok(!/setTimeout|requestAnimationFrame|\.focus\(|await /.test(before), "the build runs inside the click's gesture");
+  });
+});
+
+/* ------------------------------------------------- Safari storage lane B: back up saved scales */
+//
+// docs/plans/2026-10-30-safari-storage.md, Lane B. A readable text list of the
+// saved scales' #s= links. Restore is the user tapping each link; there is no
+// paste box, no dedupe, nothing written by the panel itself.
+
+describe("backup: back up saved scales", () => {
+  const BK_KEY = "hpfc.backup.v1";
+  const fsx = require("node:fs");
+  const open = (app) => { app.run("openPanel()"); app.els["backup-open"].click(); };
+  const textOf = (app) => String(app.els["backup-text"].value);
+  const linksOf = (text) => text.split("\n").filter((l) => /#s=/.test(l)).map((l) => l.trim());
+  const clip = (app) => {
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (s) => { written.push(s); } };
+    return written;
+  };
+  const tick = () => new Promise((r) => setImmediate(r));
+
+  test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
+    const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACK UP SAVED SCALES<\/button>/,
+      "the opener is not right after the reset button, with its label");
+    assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
+    assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");
+    const inputs = html.match(/<(input|textarea)\b[^>]*>/g).filter((tag) => /id="backup-/.test(tag));
+    assert.ok(inputs.every((tag) => /\breadonly\b/.test(tag)), "a writable field in the backup panel is a paste box");
+    const app = boot();
+    assert.strictEqual(app.els["backup-panel"].hidden, true);
+  });
+
+  test("opening and closing the panel toggles aria-expanded and writes nothing", async () => {
+    const app = boot();
+    const before = JSON.stringify(app.store);
+    open(app);
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "true");
+    app.els["backup-open"].click();
+    assert.strictEqual(app.els["backup-panel"].hidden, true);
+    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(JSON.stringify(app.store), before);
+  });
+
+  test("with nothing saved the list is empty, the buttons are disabled and the panel says so", async () => {
+    const app = boot();
+    open(app);
+    assert.strictEqual(textOf(app), "");
+    for (const id of ["backup-copy", "backup-download", "backup-share"]) assert.strictEqual(app.els[id].disabled, true, id);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+  });
+
+  test("the panel copy says a restored seed replacement is a new custom scale and hidden seeds are a note", () => {
+    const app = boot();
+    const copy = app.get('t("backup.restore")');
+    assert.match(copy, /new custom scale/);
+    assert.match(copy, /hidden/);
+    assert.match(copy, /note/);
+    assert.doesNotMatch(copy, /\bdeck\b/i, "visible text says scale, never deck");
+  });
+
+  test("session-only mode says the data will not persist; durable mode does not", async () => {
+    const session = boot();
+    open(session);
+    assert.strictEqual(session.els["backup-session"].hidden, false);
+    assert.strictEqual(session.get("savedMode"), "session");
+    const durable = await durableBoot();
+    open(durable);
+    assert.strictEqual(durable.els["backup-session"].hidden, true);
+  });
+
+  test("round trip: every saved scale comes back from its link on a fresh profile", async () => {
+    const app = await durableBoot();
+    const a = await makeCustom(app);
+    const b = await makeCustom(app, OTHER_STRING);
+    const ids = Object.keys(savedViews(app));
+    assert.deepStrictEqual(ids, [a.instanceId, b.instanceId]);
+    open(app);
+    const links = linksOf(textOf(app));
+    assert.strictEqual(links.length, 2, "one link per saved record");
+    const originalIds = Object.values(savedViews(app)).map((d) => d.id).sort();
+
+    const fresh = await durableBoot();
+    for (const link of links) {
+      assert.ok(link.startsWith(fresh.sandbox.location.origin), "a backup link is absolute");
+      await hashChange(fresh, link.slice(link.indexOf("#s=")));
+    }
+    assert.deepStrictEqual(Object.values(savedViews(fresh)).map((d) => d.id).sort(), originalIds);
+  });
+
+  test("two saved scales that share a deck id are both listed (no dedupe)", async () => {
+    const app = boot();
+    const a = await makeCustom(app);
+    await makeCustom(app, OTHER_STRING);
+    await editFields(app, a, OTHER_STRING);
+    const rows = app.get("savedState.entries.length");
+    assert.strictEqual(rows, 2, "precondition: both instances were saved");
+    assert.strictEqual(new Set(Object.values(savedViews(app)).map((d) => d.id)).size, 1, "precondition: they share one deck id");
+    open(app);
+    assert.strictEqual(linksOf(textOf(app)).length, rows);
+  });
+
+  test("a seed replacement is listed without a replaces marker and restores as a custom scale beside the seed", async () => {
+    const app = await durableBoot();
+    await saveKurdRepainted(app);
+    assert.strictEqual(app.get("savedState.entries[0].record.o.replaces"), "kurd", "precondition: the record replaces the Kurd seed");
+    open(app);
+    const links = linksOf(textOf(app));
+    assert.strictEqual(links.length, 1);
+    assert.doesNotMatch(links[0], /replaces/);
+
+    const fresh = await durableBoot();
+    await hashChange(fresh, links[0].slice(links[0].indexOf("#s=")));
+    assert.strictEqual(fresh.get("savedState.entries.length"), 1);
+    assert.strictEqual(fresh.get("savedState.entries[0].record.o.replaces"), undefined, "a restored link is a custom scale");
+    assert.strictEqual(labels(fresh).length, 6, "the restored scale sits beside the five seeds");
+    assert.strictEqual(labels(fresh).filter((l) => l.startsWith("D KURD 10")).length, 2, "the seed and the custom scale both show");
+    assert.strictEqual(fresh.get("savedState.entries[0].instanceId") !== undefined, true);
+  });
+
+  test("hidden seeds appear only as a note, never as a link", async () => {
+    const app = await durableBoot();
+    await hideViaSheet(app, "amara", "D AMARA 9");
+    open(app);
+    const text = textOf(app);
+    assert.strictEqual(linksOf(text).length, 0);
+    assert.match(text, /D AMARA 9/);
+    assert.match(text, /Hidden seeded scales/);
+    assert.strictEqual(app.els["backup-copy"].disabled, true, "nothing to restore by link means nothing to copy");
+  });
+
+  test("COPY writes the list to the clipboard and stores lastBackup in its own key, not in hpfc", async () => {
+    const app = await durableBoot();
+    await makeCustom(app);
+    const hpfc = app.store.hpfc;
+    const records = plain(app.get("savedState.entries.map(row=>row.record)"));
+    const envelope = savedRaw(app);
+    const written = clip(app);
+    open(app);
+    assert.strictEqual(app.store[BK_KEY], undefined, "opening alone is not a backup");
+    app.els["backup-copy"].click();
+    await tick(); await tick();
+    assert.deepStrictEqual(written, [textOf(app)]);
+    const stored = JSON.parse(app.store[BK_KEY]);
+    assert.strictEqual(typeof stored.lastBackup, "number");
+    assert.strictEqual(app.store.hpfc, hpfc, "the hpfc blob is untouched");
+    assert.deepStrictEqual(plain(app.get("savedState.entries.map(row=>row.record)")), records);
+    assert.strictEqual(savedRaw(app), envelope, "the saved envelope did not change");
+    assert.ok(records.every((r) => r.v === records[0].v));
+    assert.ok(app.get("/Last backed up/.test(document.getElementById('backup-last').textContent)"));
+  });
+
+  test("writing lastBackup does not change the migration or recovery state", async () => {
+    const app = await durableBoot();
+    await makeCustom(app);
+    clip(app);
+    const before = plain(app.get("({m: savedState.migration, mode: savedMode, rec: savedRecovery, issue: savedIssue})"));
+    open(app);
+    app.els["backup-copy"].click();
+    await tick(); await tick();
+    assert.deepStrictEqual(plain(app.get("({m: savedState.migration, mode: savedMode, rec: savedRecovery, issue: savedIssue})")), before);
+    const again = await durableBoot({ origin: app.fixtureOrigin });
+    assert.strictEqual(again.get("savedMode"), "durable");
+    assert.strictEqual(again.get("savedState.entries.length"), 1);
+  });
+
+  test("a refused clipboard leaves lastBackup unset and tells the user to select the text", async () => {
+    const app = boot();
+    await makeCustom(app);
+    app.sandbox.navigator.clipboard = { writeText: async () => { throw new Error("denied"); } };
+    open(app);
+    app.els["backup-copy"].click();
+    await tick(); await tick();
+    assert.strictEqual(app.store[BK_KEY], undefined);
+    assert.strictEqual(app.els["backup-status"].textContent, app.get('t("backup.select")'));
+  });
+
+  test("SHARE hands the list to navigator.share and records the backup", async () => {
+    const app = boot();
+    await makeCustom(app);
+    const shared = [];
+    app.sandbox.navigator.share = async (data) => { shared.push(data); };
+    open(app);
+    assert.strictEqual(app.els["backup-share"].hidden, false);
+    app.els["backup-share"].click();
+    await tick(); await tick();
+    assert.strictEqual(shared.length, 1);
+    assert.strictEqual(shared[0].text, textOf(app));
+    assert.strictEqual(typeof JSON.parse(app.store[BK_KEY]).lastBackup, "number");
+  });
+
+  test("SHARE is absent where the platform has no share sheet", () => {
+    const app = boot();
+    open(app);
+    assert.strictEqual(app.els["backup-share"].hidden, true);
+  });
+
+  test("a cancelled share records nothing", async () => {
+    const app = boot();
+    await makeCustom(app);
+    app.sandbox.navigator.share = async () => { const e = new Error("x"); e.name = "AbortError"; throw e; };
+    open(app);
+    app.els["backup-share"].click();
+    await tick(); await tick();
+    assert.strictEqual(app.store[BK_KEY], undefined);
+  });
+
+  test("backing up emits no analytics event", async () => {
+    const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const block = html.slice(html.indexOf("function backupText"), html.indexOf("function backupText") + 6000);
+    assert.doesNotMatch(block, /\btrack\(/, "the backup code calls track()");
+  });
+
+  test("an older share link still decodes through the same route the backup links use", async () => {
+    const app = boot();
+    await hashChange(app, "#s=" + "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c");
+    assert.strictEqual(app.get("savedState.entries.length"), 1);
+  });
+
+  test("the backup keys exist in all eight i18n tables", () => {
+    const dir = path.join(ROOT, "data", "i18n");
+    const en = JSON.parse(fsx.readFileSync(path.join(dir, "en.json"), "utf8"));
+    const keys = Object.keys(en).filter((k) => k.startsWith("backup."));
+    assert.ok(keys.length >= 14);
+    for (const f of fsx.readdirSync(dir).filter((n) => n.endsWith(".json"))) {
+      const table = JSON.parse(fsx.readFileSync(path.join(dir, f), "utf8"));
+      for (const k of keys) assert.ok(typeof table[k] === "string" && table[k].length, f + " lacks " + k);
+    }
+  });
+
+  test("the opener, the list and the buttons join the Tab stops only while the panel is open", () => {
+    const app = boot();
+    app.run("openPanel()");
+    app.run("settingsPanel.querySelectorAll = () => []");
+    const ids = () => app.get("panelStops().map((e) => e.id)");
+    assert.ok(ids().includes("backup-open"));
+    assert.ok(!ids().includes("backup-copy"));
   });
 });
