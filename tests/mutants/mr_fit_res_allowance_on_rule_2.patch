@@ -8,8 +8,8 @@ diff --git a/tools/probe/panel_fit.js b/tools/probe/panel_fit.js
        if (!bc.rendered) continue;
        if (!cc.rendered) {
          out.rule2.fail.push(offender(id, `${key} unrendered (base bottom ${bc.bottom.toFixed(1)})`));
--      } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance), avail) + CTRL_TOL) {
-+      } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance) + resA, avail) + CTRL_TOL) {
+-      } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance + backupA), avail) + CTRL_TOL) {
++      } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance + backupA) + resA, avail) + CTRL_TOL) {
          const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs base ${bc.bottom.toFixed(1)} / avail ${avail.toFixed(1)}`);
          if (baseFits || od8FailBaseOverflow) out.rule2.fail.push(o);
          else out.rule2.reported.push(o);

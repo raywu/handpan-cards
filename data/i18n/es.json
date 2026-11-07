@@ -364,5 +364,21 @@
   "move.go": "MUDAR MIS ESCALAS",
   "move.go_plain": "ABRIR {host}",
   "move.dismiss": "Ocultar por ahora",
-  "move.banner_label": "Handpan Theory se ha mudado"
+  "move.banner_label": "Handpan Theory se ha mudado",
+  "backup.open": "COPIA DE ESCALAS",
+  "backup.intro": "Las escalas guardadas viven solo en este navegador, que puede borrarlas tras un tiempo sin visitas. Guarda esta lista en un lugar seguro, por ejemplo en Notas o en un correo a ti mismo.",
+  "backup.session": "Las escalas guardadas no se conservan ahora en este navegador. Desaparecen al cerrar esta pestaña, así que haz la copia ahora.",
+  "backup.restore": "Para restaurar, toca cada enlace de tu lista. El reemplazo de una escala inicial vuelve como una escala personalizada nueva junto a la inicial, y las escalas iniciales ocultas aparecen solo como una nota.",
+  "backup.text.aria": "Enlaces de escalas guardadas",
+  "backup.share": "COMPARTIR",
+  "backup.copy": "COPIAR",
+  "backup.download": "DESCARGAR .TXT",
+  "backup.empty": "Aún no hay escalas guardadas que copiar.",
+  "backup.copied": "Copiado. Pégalo en Notas o en un correo.",
+  "backup.shared": "Compartido.",
+  "backup.select": "Selecciona el texto de arriba y cópialo.",
+  "backup.downloaded": "Descargado.",
+  "backup.last": "Última copia: {date}",
+  "backup.file_title": "Escalas guardadas de Handpan Theory ({n}). Toca cada enlace para recuperar una escala.",
+  "backup.file_hidden": "Escalas iniciales ocultas (solo nota, sin enlace): {names}"
 }
