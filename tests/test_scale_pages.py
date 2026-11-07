@@ -1326,7 +1326,7 @@ class NeotonePageTest(unittest.TestCase):
         self.assertIs(bodies[9], serenity[0])
         self.assertEqual(len(bodies), 10)
         body = serenity[0]
-        self.assertIn("by Rep Matsumoto", body)
+        self.assertIn("by Reo Matsumoto", body)
         self.assertNotIn("DOME", body)
         self.assertIn("ships with nine scales on the DOME hotkeys", html)
         rows = re.findall(r"<tr[^>]*>(.*?)</tr>", body, re.S)
