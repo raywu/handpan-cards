@@ -9,7 +9,7 @@ if [ -d "$out" ] && [ -n "$(ls -A "$out")" ]; then
   exit 1
 fi
 mkdir -p "$out"
-for f in index.html 404.html sitemap.xml robots.txt llms.txt _headers _redirects og.png apple-touch-icon.png; do
+for f in index.html 404.html sitemap.xml robots.txt llms.txt _headers _redirects og.png apple-touch-icon.png favicon.ico; do
   cp "$f" "$out/$f"
 done
 for d in scales handpan-101 brand; do
