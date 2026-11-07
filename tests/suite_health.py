@@ -52,6 +52,7 @@ FLOORS = {
     "tests/test_scale_pages.py": 130,
     "tests/test_site_files.py": 14,
     "tests/test_ci_scope.py": 5,
+    "tests/test_sync_schema_lint.py": 9,
     # node
     "tests/app.test.js": 1140,
     "tests/seat_sweeps_tap_add.test.js": 3,
