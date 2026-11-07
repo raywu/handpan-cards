@@ -20411,7 +20411,7 @@ describe("backup: back up saved scales", () => {
 
   test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
     const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACK UP SAVED SCALES<\/button>/,
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACKUP YOUR SCALES<\/button>/,
       "the opener is not right after the reset button, with its label");
     assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
     assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");
@@ -20447,9 +20447,23 @@ describe("backup: back up saved scales", () => {
     assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
     app.run("closePanel()");
     await makeCustom(app);
+    app.els["backup-text"].value = "";
+    app.els["backup-status"].textContent = "No saved scales to back up yet.";
     app.run("openPanel()");
     assert.strictEqual(app.els["backup-panel"].hidden, false);
     assert.ok(linksOf(textOf(app)).length >= 1, "the list is still empty");
+    assert.strictEqual(app.els["backup-copy"].disabled, false);
+    assert.strictEqual(app.els["backup-status"].textContent, "");
+  });
+
+  test("an open backup panel on desktop shows the new scale after a save", async () => {
+    const app = await durableBoot();
+    app.run("desktopMQ.matches = true");
+    open(app);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    await makeCustom(app);
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.ok(linksOf(textOf(app)).length >= 1, "the open list is stale after the save");
     assert.strictEqual(app.els["backup-copy"].disabled, false);
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
