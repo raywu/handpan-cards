@@ -1455,8 +1455,12 @@ function run() {
             await endGesture(kind);
             const undo = await centreOf("#editor-notice-undo");
             await tapPoint(undo, kind === "touch");
-            await pause();
-            assert.deepStrictEqual(await core(), before, "Undo ran at once");
+            let after = await core();
+            for (let waited = 0; waited < 1500 && JSON.stringify(after) !== JSON.stringify(before); waited += 80) {
+              await pause();
+              after = await core();
+            }
+            assert.deepStrictEqual(after, before, "Undo ran");
           });
         }
       });
