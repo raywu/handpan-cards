@@ -1,0 +1,15 @@
+# kills: D9 / SE-12: an add that resets a custom rim seat order says so, with Undo
+# suite: node --test --test-name-pattern ^D9...SE-12..an.add.that.resets.a.custom.rim.seat.order.says.so..with.Undo$ tests/editor_e2e.test.js
+# fault: The notice that the custom seat order was reset is never shown.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15608,7 +15608,7 @@ function editorDo(step, say) {
+   s.history = res.history;
+   s.error = "";
+   s.notice = !!(res.notice && res.notice.pinsReset);
+-  s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : say || "";
++  s.say = false ? t("editor.seats_reset") : say || "";
+   return true;
+ }
+ const EDITOR_TRAY = { sharps: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"], flats: ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"] };

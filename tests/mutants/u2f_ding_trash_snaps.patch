@@ -1,0 +1,15 @@
+# kills: U2f-3 (D4): a placed note on the trash or the tray is removed; the ding never is; off the pan it snaps back
+# suite: node --test --test-name-pattern ^U2f-3 tests/editor_shell.test.js
+# fault: The ding on the trash snaps back silently instead of refusing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15803,7 +15803,7 @@ function editorDropPlan(m, src, target) {
+   }
+   const ref = src.ref;
+   if (target.kind === "trash" || target.kind === "tray") {
+-    if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
++    if (ref.ring === "ding") return snap;
+     if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+     return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
+   }

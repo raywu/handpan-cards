@@ -53,7 +53,7 @@ FLOORS = {
     "tests/test_site_files.py": 14,
     "tests/test_ci_scope.py": 5,
     # node
-    "tests/app.test.js": 1140,
+    "tests/app.test.js": 1152,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
@@ -67,11 +67,14 @@ FLOORS = {
     "tests/import.test.js": 131,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
-    "tests/layout.test.js": 144,
+    "tests/layout.test.js": 163,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 55,
-    "tests/share.test.js": 113,
+    "tests/share.test.js": 149,
     "tests/link_corpus.test.js": 7,
+    "tests/editor_model.test.js": 31,
+    "tests/editor_shell.test.js": 50,
+    "tests/editor_e2e.test.js": 81,
     "tests/storage_corpus.test.js": 18,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 16,
@@ -90,7 +93,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js", "tests/editor_e2e.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40
