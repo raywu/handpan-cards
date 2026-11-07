@@ -11,5 +11,5 @@ diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
 -    out = head(title, description, description, url, light)
 +    out = head(title, description, description, SITE + "scales/neotone/", light)
      out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + NEO_TABLE_CSS
-                + "section.faq h3{font-size:16px;margin:12px 0 2px}\n</style>\n")
+                + "section.faq h3{font-size:16px;margin:12px 0 2px}\nsection.history p{margin:0 0 12px}\n</style>\n")
      crumbs = [("Home", SITE), ("Scale chord charts", SITE + "scales/"), ("Neotone", SITE + "scales/%s/" % NEOTONE_SLUG),
