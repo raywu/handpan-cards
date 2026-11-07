@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15807,7 +15807,7 @@ function editorDropPlan(m, src, target) {
+@@ -15823,7 +15823,7 @@ function editorDropPlan(m, src, target) {
    }
    if (target.kind !== "spot" || ref.ring === "ding") return snap;
    if (target.ring === ref.ring) {
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +    return EDITOR_PINNABLE.includes(ref.ring) && ref.ring !== "bottom" && target.angle !== undefined
        ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
    }
-   const name = editorNameAt(m, ref);
+   if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
