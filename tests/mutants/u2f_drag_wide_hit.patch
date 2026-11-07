@@ -1,0 +1,15 @@
+# kills: U2f move at 375x667: a placed cyclops note dragged along its arc moves to the drop angle, pinned, in one Undo step
+# suite: node --test --test-name-pattern ^U2f.move.*cyclops tests/editor_e2e.test.js
+# fault: A pan drag drops with the wide hit areas, so it trades with a nearby cyclops or bottom note instead of moving.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16053,7 +16053,7 @@ function editorDropTarget(e, src) {
+   if (over.closest("#editor-tray")) return { kind: "tray" };
+   const pt = over.closest("#editor-pan") && editorPanPoint(e);
+   const solved = pt && editorSolve(editorSession.history.present);
+-  return solved && solved.ok ? editorHitAt(solved.value, pt, true) : { kind: "off" };
++  return solved && solved.ok ? editorHitAt(solved.value, pt, src.from === "tray") : { kind: "off" };
+ }
+ function editorDragEnd(e) {
+   const d = editorDrag;
