@@ -1,4 +1,4 @@
-# kills: U2e3: a tray note over the ding lights the ding zone only
+# kills: U2e3: a tray note over the ding lights the ding zone only, a small move lights the cyclops, and a drop on the ding replaces it with an Undo
 # suite: node --test --test-name-pattern ^U2e3:.a.tray.note.over.the.ding tests/editor_e2e.test.js
 # fault: No ding zone is drawn while dragging.
 diff --git a/index.html b/index.html

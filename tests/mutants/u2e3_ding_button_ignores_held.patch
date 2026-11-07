@@ -1,4 +1,4 @@
-# kills: U2e3-3: Replace ding with a held note replaces the ding
+# kills: U2e3-3: Replace ding with a held note replaces the ding, with a note selected swaps it in, with neither says to pick first
 # suite: node --test --test-name-pattern ^U2e3.3: tests/editor_shell.test.js
 # fault: Replace ding ignores a held tray note.
 diff --git a/index.html b/index.html
