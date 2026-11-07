@@ -1,0 +1,14 @@
+# kills: OQB lift clears rings: once a drag lifts, no selection ring, picked zone ring or held chip is left
+# suite: node --test --test-name-pattern ^OQB.lift.clears.rings tests/editor_e2e.test.js
+# fault: The lift of a drag leaves the stale selection ring, picked zone ring and held chip in place.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16159,7 +16159,6 @@ function editorDragLift(d) {
+   s.held = null;
+   s.sel = null;
+   s.zone = null;
+-  document.querySelectorAll("#editor-pan .esel").forEach((ring) => ring.remove());
+   document.querySelectorAll("#editor-pan .etarget.picked").forEach((ring) => ring.classList.remove("picked"));
+   document.querySelectorAll("#editor-tray .tray-note.on").forEach((chip) => { chip.classList.remove("on"); chip.setAttribute("aria-pressed", "false"); });
+   d.ghost = editorNode("div", { class: "editor-ghost", text: editorDragName(d.src) });

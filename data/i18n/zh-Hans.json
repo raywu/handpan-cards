@@ -386,6 +386,7 @@
   "editor.say.ding_stays": "Ding 不会移动。点另一个音与它互换。",
   "editor.say.same_zone": "{name} 已经在{zone}了。",
   "editor.say.zone_is_full": "{zone}已满。",
+  "editor.say.no_room": "{name} 在 {angle} 度处放不下，请换个位置。",
   "editor.seats_reset": "Custom seat order reset",
   "editor.tray.aria": "Notes",
   "editor.octave": "Octave {n}",

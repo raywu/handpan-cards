@@ -878,6 +878,11 @@ function run() {
         if (release) await new Promise((done) => setTimeout(done, 80));
       };
       const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
+      const probeSwipe = () => b.eval(`window.__swipe = { ys: [], ghost: false };
+        for (const type of ["touchstart", "touchmove"]) window.addEventListener(type, (e) => window.__swipe.ys.push(e.touches[0].clientY), true);
+        new MutationObserver(() => { if (document.querySelector(".editor-ghost")) window.__swipe.ghost = true; }).observe(document.body, { childList: true, subtree: true });
+        return true;`);
+      const swipeResult = () => b.eval(`return { travel: Math.max(...window.__swipe.ys) - Math.min(...window.__swipe.ys), ghost: window.__swipe.ghost, live: !!(editorDrag && editorDrag.live), top: document.scrollingElement.scrollTop + document.getElementById("editor").scrollTop };`);
 
       for (const kind of ["mouse", "touch"]) {
         describe(kind, () => {
@@ -1088,9 +1093,14 @@ function run() {
           assert.ok(["auto", "manipulation", "pan-y"].includes(await ta(sel)), sel + " keeps scrolling: " + await ta(sel));
         }
         const before = await core();
+        await probeSwipe();
         const head = await centreOf(".editor-head");
-        await gesture(head, { x: head.x, y: head.y - 60 }, "touch");
+        await gesture(head, { x: head.x, y: head.y + 90 }, "touch");
         await gesture(await centreOf("#editor-status"), await centreOf("#editor-line"), "touch");
+        const swipe = await swipeResult();
+        assert.ok(swipe.travel >= 40, "the swipe really travelled: " + swipe.travel);
+        assert.strictEqual(swipe.ghost, false, "no drag ghost ever appeared");
+        assert.strictEqual(swipe.live, false);
         assert.deepStrictEqual(await core(), before, "a swipe that starts outside the pan drags nothing");
         assert.strictEqual(await ghostText(), null);
       });
@@ -1367,6 +1377,89 @@ function run() {
         assert.strictEqual(await ghostText(), null);
       });
 
+      describe("OQB owner QA gap 8", () => {
+        const rings = () => b.eval(`return { esel: document.querySelectorAll("#editor-pan .esel").length, picked: document.querySelectorAll("#editor-pan .etarget.picked").length, on: document.querySelectorAll("#editor-tray .tray-note.on").length, pressed: document.querySelectorAll('#editor-tray .tray-note[aria-pressed="true"]').length };`);
+        const countClicks = () => b.eval(`window.__seen = { capture: 0, bubble: 0 };
+          window.addEventListener("click", () => { window.__seen.capture += 1; }, true);
+          document.addEventListener("click", () => { window.__seen.bubble += 1; });
+          return true;`);
+        const seen = () => b.eval(`return window.__seen;`);
+
+        for (const kind of ["mouse", "touch"]) {
+          test("OQB lift clears rings (" + kind + "): once a drag lifts, no selection ring, picked zone ring or held chip is left on the pan or tray", async () => {
+            await setup(SCALE);
+            await tapNote("rim", 3, kind === "touch");
+            assert.strictEqual((await rings()).esel, 1, "the tap selected a note");
+            await gesture(await noteAt("rim", 5), await spotAt(0.722, 22.5), kind, { release: false });
+            await pause();
+            assert.deepStrictEqual(await rings(), { esel: 0, picked: 0, on: 0, pressed: 0 }, "a selected note, drag lifted");
+            await endGesture(kind);
+            await pause();
+            await setup(SCALE);
+            await tapSpot(...polar(0.38, 90), kind === "touch");
+            assert.strictEqual((await rings()).picked, 1, "the tap picked the cyclops");
+            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { release: false });
+            await pause();
+            assert.deepStrictEqual(await rings(), { esel: 0, picked: 0, on: 0, pressed: 0 }, "a picked zone, drag lifted");
+            await endGesture(kind);
+            await pause();
+            await setup(SCALE);
+            await hold("G");
+            assert.strictEqual((await rings()).on, 1, "the tap held a chip");
+            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { release: false });
+            await pause();
+            assert.deepStrictEqual(await rings(), { esel: 0, picked: 0, on: 0, pressed: 0 }, "a held chip, drag lifted");
+            await endGesture(kind);
+            await pause();
+          });
+        }
+
+        test("OQB scroll measures distance (touch): a 120px vertical swipe starting off the pan travels at least 40px, scrolls nothing and lifts nothing", async () => {
+          await setup(SCALE);
+          await probeSwipe();
+          const before = await core();
+          const head = await centreOf(".editor-head");
+          await gesture(head, { x: head.x, y: head.y + 120 }, "touch");
+          const swipe = await swipeResult();
+          assert.ok(swipe.travel >= 40, "the swipe really travelled: " + swipe.travel);
+          assert.strictEqual(swipe.ghost, false, "no drag ghost ever appeared");
+          assert.strictEqual(swipe.live, false);
+          assert.strictEqual(swipe.top, 0, "the editor has nothing to scroll, so scrollTop stays 0");
+          assert.deepStrictEqual(await core(), before);
+        });
+
+        test("OQB click after drop eaten once (mouse): the click a drop synthesises never reaches the page, and the next click does", async () => {
+          await setup(SCALE);
+          await countClicks();
+          const before = await core();
+          const chip = await chipAt("G");
+          await gesture(chip, { x: chip.x + 30, y: chip.y }, "mouse", { release: false });
+          await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...chip, button: "left", buttons: 1 });
+          await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...chip, button: "left", clickCount: 1 });
+          const first = await seen();
+          assert.strictEqual(first.capture, 1, "the browser did synthesise the click");
+          assert.strictEqual(first.bubble, 0, "and the drop ate it");
+          await pause();
+          await pause();
+          await b.eval(`document.getElementById("editor-line").click(); return true;`);
+          assert.strictEqual((await seen()).bubble, 1, "a later click is not eaten");
+          assert.deepStrictEqual(await core(), before, "the chip drop snapped back and the eaten click held nothing");
+          assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
+        });
+
+        for (const kind of ["mouse", "touch"]) {
+          test("OQB click elsewhere after drop fires (" + kind + "): a press on another control right after a drop is not eaten", async () => {
+            await setup(SCALE);
+            const before = await core();
+            await gesture(await noteAt("rim", 3), await offPan(), kind, { release: false });
+            await endGesture(kind);
+            const undo = await centreOf("#editor-notice-undo");
+            await tapPoint(undo, kind === "touch");
+            await pause();
+            assert.deepStrictEqual(await core(), before, "Undo ran at once");
+          });
+        }
+      });
       test("OQA neotone drag off removes: on a Neotone pan a pan note released off the pan is removed with Undo", async () => {
         await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
         await b.click("#editor-type-neotone");
@@ -1578,6 +1671,7 @@ function run() {
         await tapNote("rim", 2);
         assert.deepStrictEqual(await selectedOf(), { ring: "rim", i: 2 });
       });
+
     });
   });
 

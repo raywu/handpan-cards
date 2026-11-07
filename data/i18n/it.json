@@ -402,6 +402,7 @@
   "editor.say.ding_stays": "Il Ding resta dov’è. Tocca un’altra nota per scambiare.",
   "editor.say.same_zone": "{name} è già su {zone}.",
   "editor.say.zone_is_full": "{zone} è pieno.",
+  "editor.say.no_room": "Non c’è posto per {name} a {angle} gradi. Prova un altro punto.",
   "editor.seats_reset": "Custom seat order reset",
   "editor.tray.aria": "Notes",
   "editor.octave": "Octave {n}",
