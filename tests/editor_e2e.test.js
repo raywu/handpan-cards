@@ -1282,6 +1282,17 @@ function run() {
             }
           });
 
+          test("OQA snap back says went back: a rim note dropped on an empty rim spot changes nothing and the status says it went back", async () => {
+            await setup(SCALE);
+            const before = await core();
+            const p = await noteAt("rim", 0);
+            const q = await noteAt("rim", 1);
+            await gesture(await noteAt("rim", 3), { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, kind);
+            await pause();
+            assert.deepStrictEqual(await core(), before);
+            assert.strictEqual(await status(), "D4 went back.");
+          });
+
           test("OQA tap equals drag model (N7): a tap-tap move and a drag from the same start give deep-equal models", async () => {
             await setup(SCALE);
             await b.click("#editor-oct-up");
