@@ -713,9 +713,9 @@ describe("OQA-A zone-first, zone state and copy", () => {
     assert.strictEqual(a.get(`!!__v.geom.place`), true);
     const grid = [];
     for (let x = -1.6; x <= 1.61; x += 0.2) for (let y = -1.6; y <= 1.61; y += 0.2) {
-      for (const h of [false, true]) grid.push([+x.toFixed(2), +y.toFixed(2), h, plain(a.get(`editorHitAt(__v, [${x}, ${y}], ${h})`))]);
+      for (const h of [false, true]) grid.push([+x.toFixed(2), +y.toFixed(2), h, plain(a.get(`editorHitAt(__v, [${x}, ${y}], ${h}, __n)`))]);
     }
-    assert.strictEqual(require("node:crypto").createHash("sha1").update(JSON.stringify(grid)).digest("hex"), "ba59438677020c7162a6607e66eabb4161d5df89");
+    assert.strictEqual(require("node:crypto").createHash("sha1").update(JSON.stringify(grid)).digest("hex"), "86edb3c2a7ef03a154c10899d3f94dcdc9814937");
   });
 });
 
@@ -739,6 +739,180 @@ describe("OQB owner QA gap 8", () => {
       }
       assert.ok(a.get(`reasonText(${JSON.stringify(place)})`).includes("B4"), "names the note");
       assert.ok(a.get(`reasonText(${JSON.stringify(set)})`).includes("D5"), "names the note");
+    }
+  });
+});
+
+// ---- U2e-1: Neotone in the panel (D19, SE-13) ----
+describe("U2e Neotone panel paths", () => {
+  const NEO = "[A2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4";
+  const neo = (a, text = NEO) => a.run(`globalThis.__m = editorPanType(editorLoad(${JSON.stringify(text)}).value, "neotone").value; true`);
+  const mapOf = (a) => plain(a.get("__m.options.profile.map"));
+  const names = (a, ring) => plain(a.get(`editorNames(__m, ${JSON.stringify(ring)})`));
+  const apply = (a, call) => { const res = plain(a.get(call)); if (res.ok) a.run(`globalThis.__m = ${call}.value; true`); return res; };
+
+  test("U2e-1: insert fills the first empty field, then main compaction; the landing is the post-compaction slot (D9)", () => {
+    const a = app();
+    neo(a);
+    assert.strictEqual(apply(a, `editorRemove(__m, "rim", 2)`).ok, true);
+    assert.deepStrictEqual(mapOf(a).slice(0, 8), ["r57", "r60", null, "r64", "r65", "r67", "r69", null], "mutants exist: the hole stays");
+    const res = apply(a, `editorAdd(__m, "rim", "B4")`);
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(res.notice.landed, 2, "the first empty field takes the insert");
+    assert.strictEqual(mapOf(a)[2], "r71");
+    const bare = app();
+    neo(bare, "(D3) A3 C4 D4 E4 F4");
+    assert.strictEqual(apply(bare, `editorRemove(__m, "rim", 1)`).ok, true);
+    assert.deepStrictEqual(mapOf(bare).slice(0, 6), ["r57", "r65", "r62", "r64", null, null], "no mutants: compactMain fills the hole from the tail");
+    const add = apply(bare, `editorAdd(__m, "rim", "G4")`);
+    assert.strictEqual(add.notice.landed, 4, "the highlight names the slot after compaction");
+    const moved = apply(bare, `editorNeoMove(__m, 0, 7)`);
+    assert.strictEqual(moved.ok, true);
+    assert.strictEqual(moved.notice.landed, 0, "a move to a trailing empty field lands where compaction put it");
+    const first = app();
+    neo(first);
+    assert.strictEqual(apply(first, `editorRemove(__m, "rim", 0)`).ok, true);
+    assert.strictEqual(apply(first, `editorAdd(__m, "rim", "B4")`).notice.landed, 0, "the first empty field is slot 0");
+  });
+
+  test("U2e-2: a mutant into an empty field is refused with the field number, and the model is not touched", () => {
+    const a = app();
+    neo(a);
+    apply(a, `editorRemove(__m, "rim", 2)`);
+    const before = JSON.stringify(plain(a.get("__m")));
+    const res = plain(a.get(`editorNeoPut(__m, 11, "G3")`));
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.code, "FIELD_EMPTY");
+    assert.strictEqual(res.reason, "Field 3 is empty. Fill the field before its mutant.");
+    assert.strictEqual(JSON.stringify(plain(a.get("__m"))), before);
+    assert.strictEqual(plain(a.get(`editorNeoPut(__m, 12, "G3")`)).ok, true, "field 4 is filled, so its mutant is accepted");
+  });
+
+  test("U2e-3: add and remove only fill or empty fields; no field moves", () => {
+    const a = app();
+    neo(a);
+    const base = mapOf(a);
+    apply(a, `editorAdd(__m, "bottom", "D3")`);
+    const after = mapOf(a);
+    assert.deepStrictEqual(after.map((k, i) => (k === base[i] ? null : i)).filter((v) => v !== null), [11], "only the first empty mutant field changed");
+    apply(a, `editorRemove(__m, "bottom", 0)`);
+    assert.strictEqual(mapOf(a)[9], null, "removing empties the field and leaves the rest");
+    assert.strictEqual(mapOf(a)[10], "b48");
+  });
+
+  test("U2e-4: move and swap stay inside one half; a cross-half drop is refused with copy", () => {
+    const a = app();
+    neo(a);
+    assert.strictEqual(apply(a, `editorNeoMove(__m, 0, 8)`).ok, true);
+    assert.strictEqual(mapOf(a)[8], "r57");
+    assert.strictEqual(mapOf(a)[0], null);
+    assert.strictEqual(apply(a, `editorNeoMove(__m, 1, 2)`).ok, true);
+    assert.deepStrictEqual(mapOf(a).slice(1, 3), ["r62", "r60"], "a drop on a filled field swaps");
+    const cross = plain(a.get(`editorNeoMove(__m, 1, 10)`));
+    assert.strictEqual(cross.ok, false);
+    assert.match(cross.reason, /own row/);
+  });
+
+  test("U2e-5: a tray note dropped on a filled field replaces that note and keeps its field", () => {
+    const a = app();
+    neo(a);
+    const res = apply(a, `editorNeoPut(__m, 1, "B4")`);
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(mapOf(a)[1], "r71");
+    assert.deepStrictEqual(names(a, "rim").sort(), ["A3", "A4", "B4", "D4", "E4", "F4", "G4"].sort());
+  });
+
+  test("U2e-6: seat and angle edits on Neotone keep the engine's PROFILE_CONFLICT copy; Reset is disabled; no pin is made", () => {
+    const a = app();
+    neo(a);
+    const res = plain(a.get(`editorSetAngle(__m, "bottom", 0, 60, true)`));
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.code, "PROFILE_CONFLICT");
+    assert.match(a.get(`reasonText(${JSON.stringify(res)})`), /Neotone sets its own placement/);
+    assert.strictEqual(plain(a.get("editorResetLabel(__m, null, null)")).enabled, false);
+    assert.deepStrictEqual(plain(a.get("__m.pins")), []);
+  });
+
+  test("U2e-7: the drop plan on Neotone routes tray, move and remove through the slot primitives", () => {
+    const a = app();
+    neo(a);
+    const plan = (src, target) => a.get(`(() => { const p = editorDropPlan(__m, ${JSON.stringify(src)}, ${JSON.stringify(target)}); const r = p.step ? p.step(__m) : null; return { has: !!p.step, trade: p.trade || null, snap: !!p.snap, refuse: p.refuse || null, ok: r && r.ok, landed: r && r.notice && r.notice.landed }; })()`);
+    const put = plain(plan({ from: "tray", name: "B4" }, { kind: "spot", ring: "rim", slot: 7 }));
+    assert.strictEqual(put.ok, true);
+    assert.strictEqual(put.landed, 7);
+    const move = plain(plan({ from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "spot", ring: "rim", slot: 8 }));
+    assert.strictEqual(move.landed, 8);
+    const refuse = plain(plan({ from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "spot", ring: "bottom", slot: 12 }));
+    assert.strictEqual(refuse.has, false);
+    assert.match(refuse.refuse, /own row/);
+    const gone = plain(plan({ from: "pan", ref: { ring: "bottom", i: 0 } }, { kind: "outside" }));
+    assert.strictEqual(gone.ok, true);
+  });
+
+  test("U2e-11 (D3): on Neotone a tap-swap of two main notes and a tap-move to an empty main field take the drag's path", () => {
+    const a = app();
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+    a.run(`editorSetPanType("neotone"); true`);
+    const at = (slot) => a.get(`(() => { const m = editorSession.history.present; const r = editorNeoRef(m, ${slot}); return r ? editorNameAt(m, r) : null; })()`);
+    const rimIndex = (name) => a.get(`editorNames(editorSession.history.present, "rim").indexOf(${JSON.stringify(name)})`);
+    const tap = (sel, hit) => a.run(`editorSession.sel = ${JSON.stringify(sel)}; editorSelectTap(${JSON.stringify(hit)}, editorSession.history.present); true`);
+    const past = () => a.get(`editorSession.history.past.length`);
+    const slotA3 = [...Array(9).keys()].find((k) => at(k) === "A3");
+    const slotBb3 = [...Array(9).keys()].find((k) => at(k) === "Bb3");
+    const start = past();
+    tap({ ring: "rim", i: rimIndex("A3") }, { kind: "note", ring: "rim", i: rimIndex("Bb3") });
+    assert.strictEqual(a.get(`editorSession.error`), "", "the swap is not refused");
+    assert.deepStrictEqual([at(slotA3), at(slotBb3)], ["Bb3", "A3"], "the two notes traded fields");
+    assert.strictEqual(past(), start + 1, "one Undo step");
+    const empty = [...Array(9).keys()].find((k) => at(k) === null);
+    assert.notStrictEqual(empty, undefined);
+    tap({ ring: "rim", i: rimIndex("A3") }, { kind: "spot", ring: "rim", slot: empty });
+    assert.strictEqual(a.get(`editorSession.error`), "");
+    assert.strictEqual(at(empty), "A3", "A3 moved to the empty field");
+    assert.strictEqual(past(), start + 2, "one Undo step");
+  });
+
+  test("U2e-8: the hit test on Neotone names the field under the pointer through snapTarget", () => {
+    const a = app();
+    neo(a);
+    a.run(`globalThis.__v = editorSolve(__m).value; true`);
+    const hit = (slot) => plain(a.get(`(() => { const ref = editorNeoRef(__m, ${slot}); const pt = neoSlotPoint(${slot}, ref ? __v.geom.place[ringIds(__v.fields, ref.ring)[ref.i]] : null); return editorHitAt(__v, [pt.x / 100, -pt.y / 100], true, __m); })()`));
+    assert.deepStrictEqual(hit(0), { kind: "note", ring: "rim", i: 0 });
+    assert.deepStrictEqual(hit(9), { kind: "note", ring: "bottom", i: 0 });
+    assert.deepStrictEqual(hit(7), { kind: "spot", ring: "rim", slot: 7 }, "an empty main field");
+    assert.deepStrictEqual(hit(12), { kind: "spot", ring: "bottom", slot: 12 }, "an empty mutant field");
+    assert.deepStrictEqual(plain(a.get(`editorHitAt(__v, [0, 0.0], true, __m)`)), { kind: "ding" });
+    assert.deepStrictEqual(plain(a.get(`editorHitAt(__v, [3, 3], true, __m)`)), { kind: "off" });
+  });
+
+  test("U2e-9 (parity 2): Neotone insert, remove, move, swap and replace land on the same record and link as the same Neotone through today's tabs", () => {
+    const a = app();
+    const via = (text, map) => plain(a.get(`(() => { const e = editorExport(editorLoad(${JSON.stringify(text)}, { profile: { id: "paired", rev: 2, map: ${JSON.stringify(map)} } }).value); return { code: e.code, link: e.link, record: e.record }; })()`));
+    const model = (call) => plain(a.get(`(() => { const m0 = editorPanType(editorLoad(${JSON.stringify(NEO)}).value, "neotone").value; const r = ${call}; if (!r.ok) return { refused: r.code }; const e = editorExport(r.value); return { code: e.code, link: e.link, record: e.record }; })()`));
+    const base = ["r57", "r60", "r62", "r64", "r65", "r67", "r69", null, null, "b45", "b48", null, null, null, null, null, null, null];
+    const edit = (f) => { const m = base.slice(); f(m); return m; };
+    const cases = [
+      ["insert rim", `editorAdd(m0, "rim", "B4")`, "[A2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 B4", edit((m) => { m[7] = "r71"; })],
+      ["insert bottom", `editorAdd(m0, "bottom", "D3")`, "[A2] [C3] [D3] (D3) A3 C4 D4 E4 F4 G4 A4", edit((m) => { m[11] = "b50"; })],
+      ["remove bottom", `editorRemove(m0, "bottom", 0)`, "[C3] (D3) A3 C4 D4 E4 F4 G4 A4", edit((m) => { m[9] = null; })],
+      ["move", `editorNeoMove(m0, 0, 8)`, NEO, edit((m) => { m[8] = "r57"; m[0] = null; })],
+      ["swap", `editorNeoMove(m0, 1, 2)`, NEO, edit((m) => { m[1] = "r62"; m[2] = "r60"; })],
+      ["replace", `editorNeoPut(m0, 1, "B4")`, "[A2] [C3] (D3) A3 B4 D4 E4 F4 G4 A4", edit((m) => { m[1] = "r71"; })],
+    ];
+    for (const [label, call, text, map] of cases) {
+      const got = model(call);
+      assert.strictEqual(got.refused, undefined, label + " is accepted");
+      assert.deepStrictEqual(got, via(text, map), label + ": same record and share link as the tabs");
+    }
+  });
+
+  test("U2e-10: v7 Neotone share links decode in the panel and re-export identically", () => {
+    const a = app();
+    for (const text of [NEO, "[A2] (D3) A3 C4 D4 E4 F4", "[A2] [B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 B4 C5"]) {
+      const out = plain(a.get(`(() => { const m = editorPanType(editorLoad(${JSON.stringify(text)}).value, "neotone").value; const e = editorExport(m); const back = editorLoadShare(e.code); const f = editorExport(back.value); return { v: e.code.charAt(0), same: f.code === e.code && JSON.stringify(f.link) === JSON.stringify(e.link) && JSON.stringify(f.record) === JSON.stringify(e.record), ok: back.ok }; })()`));
+      assert.strictEqual(out.ok, true, text);
+      assert.strictEqual(out.v, "7", text + " is a v7 link");
+      assert.strictEqual(out.same, true, text + " re-exports identically");
     }
   });
 });

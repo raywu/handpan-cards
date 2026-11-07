@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15236,7 +15236,7 @@ function editorSetAngle(m, ring, i, angle, pin) {
+@@ -15297,7 +15297,7 @@ function editorSetAngle(m, ring, i, angle, pin) {
    const next = editorWithAngle(base, ring, i, angle === null ? null : stepOf(angle));
    const solved = editorSolve(next);
    if (solved.ok) return { ok: true, value: next };
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  return solved;
  }
  function editorSwapSeats(m, ring, i, j) {
-   if (!EDITOR_RINGS.includes(ring) || !editorInRing(m, ring, i, j)) return editorRefusal(ring + i);
+   if (m.options.profile) return editorProfileConflict();

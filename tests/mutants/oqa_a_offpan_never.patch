@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16241,7 +16241,7 @@ function editorDropTarget(e, src) {
-     return Math.hypot(pt[0], pt[1]) > svg.viewBox.baseVal.width / 200 + EDITOR_OFF_MARGIN ? { kind: "outside" } : editorHitAt(solved.value, pt, true);
+@@ -16353,7 +16353,7 @@ function editorDropTarget(e, src) {
+     return Math.hypot(pt[0], pt[1]) > svg.viewBox.baseVal.width / 200 + EDITOR_OFF_MARGIN ? { kind: "outside" } : editorHitAt(solved.value, pt, true, editorSession.history.present);
    }
-   const hit = editorHitAt(solved.value, pt, true);
+   const hit = editorHitAt(solved.value, pt, true, editorSession.history.present);
 -  return hit.kind === "off" ? { kind: "outside" } : hit;
 +  return hit;
  }

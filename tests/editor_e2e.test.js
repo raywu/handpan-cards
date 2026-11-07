@@ -1477,6 +1477,109 @@ function run() {
         assert.deepStrictEqual(await core(), before);
       });
 
+      for (const kind of ["mouse", "touch"]) {
+        describe(`U2e Neotone ${kind}`, () => {
+          const slotAt = async (slot) => {
+            const q = await b.eval(`const p = neoSlotPoint(${slot}, null);
+              const svg = document.querySelector("#editor-pan svg"); const c = new DOMPoint(p.x, p.y).matrixTransform(svg.getScreenCTM()); return { x: c.x, y: c.y };`);
+            return q;
+          };
+          const keys = () => b.eval(`return editorSession.history.present.options.profile.map.slice();`);
+          const neo = async () => { await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4"); await b.click("#editor-type-neotone"); };
+
+          test("a tray note dragged to an empty main field fills it, shows the landing ring, and is one Undo step", async () => {
+            await neo();
+            const past = await pastLen();
+            const before = await keys();
+            const empty = before.findIndex((k, i) => i < 9 && k == null);
+            assert.ok(empty >= 0);
+            await hold("B");
+            await gesture(await chipAt("B"), await slotAt(empty), kind);
+            const after = await keys();
+            assert.strictEqual(after.filter((k) => k).length, before.filter((k) => k).length + 1, await status());
+            assert.strictEqual(await pastLen(), past + 1);
+            assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .editor-landing").length;`), 1);
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await keys(), before);
+          });
+
+          test("a mutant dragged into an empty field is refused with the field-empty copy and nothing changes", async () => {
+            await neo();
+            const before = await keys();
+            const emptyMain = before.findIndex((k, i) => i < 9 && k == null);
+            assert.ok(emptyMain >= 0);
+            await hold("D");
+            await b.eval(`editorPlaceHeld({ kind: "spot", ring: "mutant", slot: ${9 + emptyMain} }, editorSession.history.present); return true;`);
+            assert.strictEqual(await status(), `Field ${emptyMain + 1} is empty. Fill the field before its mutant.`);
+            assert.deepStrictEqual(await keys(), before);
+          });
+
+          test("a tray note dragged to the mutant of a filled field fills that mutant, and the mutant drags to another free mutant field", async () => {
+            await neo();
+            const before = await keys();
+            const filled = before.findIndex((k, i) => i < 9 && k);
+            await hold("B");
+            await gesture(await chipAt("B"), await slotAt(9 + filled), kind);
+            const mid = await keys();
+            assert.ok(mid[9 + filled], await status());
+            const other = mid.findIndex((k, i) => i < 9 && k && i !== filled);
+            const past = await pastLen();
+            await gesture(await slotAt(9 + filled), await slotAt(9 + other), kind);
+            const after = await keys();
+            assert.strictEqual(after[9 + other], mid[9 + filled], await status());
+            assert.strictEqual(after[9 + filled], null);
+            assert.strictEqual(await pastLen(), past + 1);
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await keys(), mid);
+          });
+
+          const tapAt = async (pt) => {
+            if (kind === "touch") {
+              await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...pt, id: 1 }] });
+              await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+            } else for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, ...pt, button: "left", clickCount: 1 });
+            await new Promise((done) => setTimeout(done, 80));
+          };
+
+          test("D3 tap parity: tapping a main note then another swaps them, and tapping a note then an empty main field moves it, each one Undo step", async () => {
+            await neo();
+            const before = await keys();
+            const [one, two] = before.map((k, i) => (i < 9 && k ? i : -1)).filter((i) => i >= 0);
+            const empty = before.findIndex((k, i) => i < 9 && k == null);
+            assert.ok(two !== undefined && empty >= 0);
+            const past = await pastLen();
+            await tapAt(await slotAt(one));
+            await tapAt(await slotAt(two));
+            const swapped = await keys();
+            assert.strictEqual(swapped[one], before[two], await status());
+            assert.strictEqual(swapped[two], before[one]);
+            assert.strictEqual(await pastLen(), past + 1);
+            await tapAt(await slotAt(one));
+            await tapAt(await slotAt(empty));
+            const moved = await keys();
+            assert.strictEqual(moved[empty], swapped[one], await status());
+            assert.strictEqual(moved[one], null);
+            assert.strictEqual(await pastLen(), past + 2);
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await keys(), swapped);
+          });
+
+          test("a pan note dragged onto a free main field moves there in one Undo step", async () => {
+            await neo();
+            const before = await keys();
+            const from = before.findIndex((k, i) => i < 9 && k);
+            const to = before.findIndex((k, i) => i < 9 && k == null);
+            const past = await pastLen();
+            await gesture(await slotAt(from), await slotAt(to), kind);
+            const after = await keys();
+            assert.strictEqual(after[to], before[from], await status());
+            assert.strictEqual(await pastLen(), past + 1);
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await keys(), before);
+          });
+        });
+      }
+
       test("OQA one visible undo: exactly one visible Undo in idle, holding, said-with-undo, notice and error states", async () => {
         await setup(SCALE);
         assert.strictEqual(await visibleUndo(), 1, "idle");
