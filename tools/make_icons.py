@@ -28,6 +28,7 @@ docs/plans/2026-11-02-field-guide-brand-implementation.md (Phase 1, A7, A12, A15
 """
 import os
 import re
+import struct
 import sys
 import urllib.parse
 
@@ -42,6 +43,8 @@ NUNITO = os.path.join(FONTS, "NunitoSans-Regular.ttf")
 TOUCH_PNG = "apple-touch-icon.png"
 OG_PNG = "og.png"
 TOUCH_SIZE = 180
+ICO_NAME = "favicon.ico"
+ICO_SIZES = (16, 32, 48)
 OG_SIZE = (1200, 630)
 
 GROUND = (0x0F / 255, 0x0E / 255, 0x0B / 255)
@@ -95,6 +98,33 @@ def favicon_href(mark=None):
     for ch, enc in (("%", "%25"), ("#", "%23"), ("<", "%3C"), (">", "%3E"), ('"', "%22")):
         svg = svg.replace(ch, enc)
     return "data:image/svg+xml," + svg
+
+
+def favicon_svg(mark=None):
+    return urllib.parse.unquote(favicon_href(mark)[len("data:image/svg+xml,"):])
+
+
+def render_ico_frames(svg):
+    return [raster(svg, px) for px in ICO_SIZES]
+
+
+def encode_ico(frames):
+    blobs = [f.tobytes("png") for f in frames]
+    out = struct.pack("<HHH", 0, 1, len(frames))
+    offset = 6 + 16 * len(frames)
+    for f, blob in zip(frames, blobs):
+        out += struct.pack("<BBBBHHII", f.width, f.height, 0, 0, 1, 32, len(blob), offset)
+        offset += len(blob)
+    return out + b"".join(blobs)
+
+
+def decode_ico(data):
+    count = struct.unpack_from("<H", data, 4)[0]
+    frames = []
+    for i in range(count):
+        size, offset = struct.unpack_from("<II", data, 6 + 16 * i + 8)
+        frames.append(fitz.Pixmap(data[offset:offset + size]))
+    return frames
 
 
 def _num(v, places=3):
@@ -251,7 +281,25 @@ def check(sources=None, root=ROOT):
             on_disk = fitz.Pixmap(on_disk, 0)
         frac = max(differing_fraction(fresh, on_disk, clip) for clip in REGIONS[name])
         verdicts[name] = (frac <= MAX_DIFFERING_FRACTION, frac)
+    verdicts[ICO_NAME] = check_ico(sources, root)
     return verdicts
+
+
+def check_ico(sources=None, root=ROOT):
+    path = os.path.join(root, ICO_NAME)
+    if not os.path.exists(path):
+        return (False, 1.0)
+    fresh = render_ico_frames((sources or {}).get(ICO_NAME) or favicon_svg())
+    with open(path, "rb") as f:
+        on_disk = decode_ico(f.read())
+    if len(on_disk) != len(fresh):
+        return (False, 1.0)
+    frac = 0.0
+    for a, b in zip(fresh, on_disk):
+        if b.alpha != a.alpha:
+            b = fitz.Pixmap(b, a.alpha)
+        frac = max(frac, differing_fraction(a, b))
+    return (frac <= MAX_DIFFERING_FRACTION, frac)
 
 
 def sync_index():
@@ -286,12 +334,15 @@ def main(argv):
             print(f"make_icons: brand/mark.svg differs from the approved master in {frac:.2%} of pixels")
         if stale:
             return 1
-        print("make_icons: favicon, lockup, reading rasters, apple-touch-icon.png and og.png are current")
+        print("make_icons: favicon, lockup, reading rasters, apple-touch-icon.png, og.png and favicon.ico are current")
         return 0
     sync_index()
     for name, pix in render().items():
         pix.save(os.path.join(ROOT, name))
         print(f"make_icons: wrote {name} ({pix.width}x{pix.height})")
+    with open(os.path.join(ROOT, ICO_NAME), "wb") as f:
+        f.write(encode_ico(render_ico_frames(favicon_svg())))
+    print(f"make_icons: wrote {ICO_NAME} ({', '.join(str(n) for n in ICO_SIZES)})")
     return 0
 
 

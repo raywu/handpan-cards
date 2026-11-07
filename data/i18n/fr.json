@@ -441,5 +441,21 @@
   "editor.reset.inner": "Reset cyclops spacing",
   "editor.reset.bottom": "Reset bottom spacing",
   "editor.reset_both": "Reset spacing ({n})",
-  "editor.reset_both_aria": "Reset cyclops and bottom spacing"
+  "editor.reset_both_aria": "Reset cyclops and bottom spacing",
+  "backup.open": "SAUVEGARDE DES GAMMES",
+  "backup.intro": "Les gammes enregistrées ne vivent que dans ce navigateur, qui peut les effacer après un certain temps sans visite. Gardez cette liste en lieu sûr, par exemple dans Notes ou dans un e-mail à vous-même.",
+  "backup.session": "Les gammes enregistrées ne sont pas conservées dans ce navigateur pour le moment. Elles disparaissent à la fermeture de cet onglet : sauvegardez-les maintenant.",
+  "backup.restore": "Pour restaurer, touchez chaque lien de votre liste. Le remplacement d’une gamme d’origine revient comme une nouvelle gamme personnalisée à côté de la gamme d’origine, et les gammes d’origine masquées n’apparaissent que comme une note.",
+  "backup.text.aria": "Liens des gammes enregistrées",
+  "backup.share": "PARTAGER",
+  "backup.copy": "COPIER",
+  "backup.download": "TÉLÉCHARGER .TXT",
+  "backup.empty": "Aucune gamme enregistrée à sauvegarder.",
+  "backup.copied": "Copié. Collez-le dans Notes ou un e-mail.",
+  "backup.shared": "Partagé.",
+  "backup.select": "Sélectionnez le texte ci-dessus et copiez-le.",
+  "backup.downloaded": "Téléchargé.",
+  "backup.last": "Dernière sauvegarde : {date}",
+  "backup.file_title": "Gammes enregistrées de Handpan Theory ({n}). Touchez chaque lien pour retrouver une gamme.",
+  "backup.file_hidden": "Gammes d’origine masquées (note seulement, sans lien) : {names}"
 }
