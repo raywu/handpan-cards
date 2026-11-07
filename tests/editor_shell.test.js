@@ -718,3 +718,27 @@ describe("OQA-A zone-first, zone state and copy", () => {
     assert.strictEqual(require("node:crypto").createHash("sha1").update(JSON.stringify(grid)).digest("hex"), "ba59438677020c7162a6607e66eabb4161d5df89");
   });
 });
+
+describe("OQB owner QA gap 8", () => {
+  const PINNED = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const clean = (text) => !/,,|^,|,\s/.test(text) && !/\d,\d/.test(text);
+
+  test("OQB bad note copy clean: a refused angle or place names the note and the angle in one sentence, in en and de", () => {
+    for (const lang of [null, "de"]) {
+      const a = app();
+      if (lang) a.run(`setLang(${JSON.stringify(lang)})`);
+      withModel(a, PINNED, `{ angles: { inner: [125, null] } }`);
+      const place = plain(a.get(`editorPlace(__m, "inner", "B4", 90)`));
+      const set = plain(a.get(`editorSetAngle(__m, "inner", 1, 90, true)`));
+      for (const res of [place, set]) {
+        assert.strictEqual(res.ok, false);
+        const text = a.get(`reasonText(${JSON.stringify(res)})`);
+        assert.ok(clean(text), "no stringified angle list in: " + text);
+        assert.ok(text.includes("90"), "names the angle: " + text);
+        assert.ok(!/is not a note|ist keine Note/.test(text), "not the note-name copy: " + text);
+      }
+      assert.ok(a.get(`reasonText(${JSON.stringify(place)})`).includes("B4"), "names the note");
+      assert.ok(a.get(`reasonText(${JSON.stringify(set)})`).includes("D5"), "names the note");
+    }
+  });
+});

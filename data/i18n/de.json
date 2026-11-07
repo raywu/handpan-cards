@@ -418,6 +418,7 @@
   "editor.say.ding_stays": "Das Ding bleibt, wo es ist. Tippe einen anderen Ton, um zu tauschen.",
   "editor.say.same_zone": "{name} ist schon auf {zone}.",
   "editor.say.zone_is_full": "{zone} ist voll.",
+  "editor.say.no_room": "{name} hat bei {angle} Grad keinen Platz. Wähle eine andere Stelle.",
   "editor.seats_reset": "Custom seat order reset",
   "editor.tray.aria": "Notes",
   "editor.octave": "Octave {n}",

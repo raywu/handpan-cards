@@ -402,6 +402,7 @@
   "editor.say.ding_stays": "ディングは動きません。別のノートをタップして入れ替えてください。",
   "editor.say.same_zone": "{name}はすでに{zone}にあります。",
   "editor.say.zone_is_full": "{zone}は満杯です。",
+  "editor.say.no_room": "{name}は{angle}度に置く余地がありません。別の場所を試してください。",
   "editor.seats_reset": "Custom seat order reset",
   "editor.tray.aria": "Notes",
   "editor.octave": "Octave {n}",
