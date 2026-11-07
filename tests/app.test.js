@@ -20447,6 +20447,8 @@ describe("backup: back up saved scales", () => {
     assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
     app.run("closePanel()");
     await makeCustom(app);
+    app.els["backup-text"].value = "";
+    app.els["backup-status"].textContent = "No saved scales to back up yet.";
     app.run("openPanel()");
     assert.strictEqual(app.els["backup-panel"].hidden, false);
     assert.ok(linksOf(textOf(app)).length >= 1, "the list is still empty");
