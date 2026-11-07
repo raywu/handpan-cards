@@ -399,6 +399,8 @@
   "editor.say.ding_required": "Ogni scala ha bisogno di un Ding. Rilascia un’altra nota sopra per scambiare.",
   "editor.say.rim_min": "Il bordo ha bisogno di almeno 1 nota.",
   "editor.say.moved": "{name} spostata.",
+  "editor.neo.field_empty": "Il campo {n} è vuoto. Riempi il campo prima della sua mutante.",
+  "editor.neo.own_row": "Una nota Neotone resta nella sua fila. Spostala su un altro campo della stessa fila.",
   "editor.say.ding_stays": "Il Ding resta dov’è. Tocca un’altra nota per scambiare.",
   "editor.say.same_zone": "{name} è già su {zone}.",
   "editor.say.zone_is_full": "{zone} è pieno.",

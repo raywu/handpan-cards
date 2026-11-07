@@ -399,6 +399,8 @@
   "editor.say.ding_required": "Every scale needs a ding. Drop another note on it to swap.",
   "editor.say.rim_min": "The rim needs at least 1 note.",
   "editor.say.moved": "{name} moved.",
+  "editor.neo.field_empty": "Field {n} is empty. Fill the field before its mutant.",
+  "editor.neo.own_row": "A Neotone note stays in its own row. Move it to another field in the same row.",
   "editor.say.ding_stays": "The ding stays put. Tap another note to swap with it.",
   "editor.say.same_zone": "{name} is already on the {zone}.",
   "editor.say.zone_is_full": "The {zone} is full.",
