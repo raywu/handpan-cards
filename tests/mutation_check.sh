@@ -44,21 +44,61 @@ fi
 # 2026-09-30 quality refactor: this is what the `mutation gate` aggregate job
 # diffs against the full corpus to catch a sharding bug that silently drops a
 # mutant).
-if [ -n "${MUTANT_SHARD:-}" ]; then
+# MUTANT_LIST=<file> restricts the sweep to the patch basenames listed in it
+# (the scoped-mutation selection written by tools/ci_scope.py). The order is
+# fixed: shard the FULL corpus as above, intersect that shard with the list,
+# THEN write MUTANT_REPORT from the intersection, so the aggregate job's union
+# check compares what each shard owned of the selection. With a list, an empty
+# intersection is a pass (a small selection leaves some shards nothing); an
+# empty list file, or a listed name the corpus lacks, is refused.
+if [ -n "${MUTANT_SHARD:-}" ] || [ -n "${MUTANT_LIST:-}" ]; then
   TOTAL_MUTANTS=${#PATCHES[@]}
-  SHARD_I="${MUTANT_SHARD%%/*}"
-  SHARD_N="${MUTANT_SHARD##*/}"
   SHARD_NAMES=()
-  while IFS= read -r line; do [ -n "$line" ] && SHARD_NAMES+=("$line"); done < <(
-    node tests/shard_mutants.js "$SHARD_I" "$SHARD_N" tests/mutants
-  )
+  if [ -n "${MUTANT_SHARD:-}" ]; then
+    SHARD_I="${MUTANT_SHARD%%/*}"
+    SHARD_N="${MUTANT_SHARD##*/}"
+    while IFS= read -r line; do [ -n "$line" ] && SHARD_NAMES+=("$line"); done < <(
+      node tests/shard_mutants.js "$SHARD_I" "$SHARD_N" tests/mutants
+    )
+  else
+    for p in "${PATCHES[@]}"; do SHARD_NAMES+=("${p##*/}"); done
+  fi
+  if [ -n "${MUTANT_LIST:-}" ]; then
+    LISTED=()
+    while IFS= read -r line; do [ -n "$line" ] && LISTED+=("$line"); done <"$MUTANT_LIST"
+    if [ ${#LISTED[@]} -eq 0 ]; then
+      echo "MUTANT_LIST=$MUTANT_LIST names zero mutants."
+      exit 1
+    fi
+    for n in "${LISTED[@]}"; do
+      if [ ! -f "tests/mutants/$n" ]; then
+        echo "MUTANT_LIST names $n, which is not in the mutant corpus."
+        exit 1
+      fi
+    done
+    OWNED=()
+    for n in ${SHARD_NAMES[@]+"${SHARD_NAMES[@]}"}; do
+      for l in "${LISTED[@]}"; do
+        if [ "$n" = "$l" ]; then OWNED+=("$n"); break; fi
+      done
+    done
+    SHARD_NAMES=(${OWNED[@]+"${OWNED[@]}"})
+  fi
   if [ -n "${MUTANT_REPORT:-}" ]; then
     mkdir -p "$(dirname "$MUTANT_REPORT")" 2>/dev/null || true
-    printf '%s\n' "${SHARD_NAMES[@]}" >"$MUTANT_REPORT"
+    if [ ${#SHARD_NAMES[@]} -eq 0 ]; then
+      : >"$MUTANT_REPORT"
+    else
+      printf '%s\n' "${SHARD_NAMES[@]}" >"$MUTANT_REPORT"
+    fi
   fi
   PATCHES=()
-  for n in "${SHARD_NAMES[@]}"; do PATCHES+=("tests/mutants/$n"); done
+  for n in ${SHARD_NAMES[@]+"${SHARD_NAMES[@]}"}; do PATCHES+=("tests/mutants/$n"); done
   if [ ${#PATCHES[@]} -eq 0 ]; then
+    if [ -n "${MUTANT_LIST:-}" ]; then
+      echo "MUTANT_LIST leaves this run none of the $TOTAL_MUTANTS mutants; nothing to evaluate."
+      exit 0
+    fi
     echo "MUTANT_SHARD=$MUTANT_SHARD selects zero of $TOTAL_MUTANTS mutants."
     exit 1
   fi
@@ -73,7 +113,7 @@ if [ -n "${MUTANT_SHARD:-}" ]; then
   # which reds the baseline check and hard-aborts the whole outer shard.
   # Unsetting here, once, fixes every such nested invocation (JS and Python
   # alike) at the source, instead of every call site having to scrub it.
-  unset MUTANT_SHARD MUTANT_REPORT
+  unset MUTANT_SHARD MUTANT_REPORT MUTANT_LIST
 fi
 
 # The paths a patch touches, one per line (both sides, so a patch that adds or
