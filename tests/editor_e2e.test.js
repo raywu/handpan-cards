@@ -1174,6 +1174,295 @@ function run() {
           assert.deepStrictEqual(await core(), states[k]);
         }
       });
+
+    describe("OQA-A owner QA gaps 1-7", () => {
+      const RIM12 = "A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5";
+      const ghostClass = () => b.eval(`const g = document.querySelector(".editor-ghost"); return g ? g.className : null;`);
+      const offPan = async () => {
+        const p = await clientOf(...polar(1.8, 90));
+        return { x: p.x, y: Math.max(p.y, 3) };
+      };
+      const pause = () => new Promise((done) => setTimeout(done, 80));
+      const endGesture = (kind) => kind === "touch" ? b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }) : b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 0, y: 0, button: "left", buttons: 0, clickCount: 1 });
+      const lineBoxes = (sel) => b.eval(`return [...document.querySelectorAll(${JSON.stringify(sel)})].map((e) => ({ text: e.textContent, h: e.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.2 }));`);
+      const visibleUndo = () => b.eval(`return [...document.querySelectorAll("#editor button, #editor .mode")].filter((e) => e.textContent.trim() === "Undo" && e.offsetParent !== null && getComputedStyle(e).visibility === "visible").length;`);
+
+      test("OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line one line box (375 and 820)", async () => {
+        for (const [w, h] of [[375, 667], [820, 1180]]) {
+          await fresh(w, h);
+          await openAdd();
+          await typeLine(SCALE);
+          const rim = await b.eval(`const p = document.getElementById("editor-pill-rim"); return { act: p.querySelector(".pill-act").textContent, count: p.querySelector(".pill-count").textContent, aria: p.getAttribute("aria-label") };`);
+          assert.deepStrictEqual(rim, { act: "Add to rim", count: "8 of 12", aria: "Add the held note to the rim, 8 of 12 used" });
+          assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-inner .pill-act").textContent;`)), "Add to cyclops");
+          assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-bottom .pill-count").textContent;`)), "0 of 12");
+          for (const l of await lineBoxes("#editor-pills .pill span")) assert.ok(l.h <= l.lh * 1.3 + 0.5, w + ": '" + l.text + "' is one line box, " + l.h + " vs " + l.lh);
+          await typeLine("(D3) " + RIM12 + " | C6");
+          assert.strictEqual(await b.eval(`return document.getElementById("editor-pill-rim").textContent;`), "Rim full");
+          assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pill-rim span").length;`), 1);
+        }
+      });
+
+      test("OQA bubbles 0.85 rim 0.75 cyclops: drawn and hit radii on the standard pan", async () => {
+        await setup("[G2] " + SCALE);
+        const r = await b.eval(`const g = editorSolve(editorSession.history.present).value.geom; const out = {};
+          for (const [ring, f, base] of [["rim", 0.85, g.r_note], ["inner", 0.75, g.r_note], ["bottom", 0.85, g.r_bnote]]) {
+            const hit = document.querySelector('#editor-pan .ehit[data-ring="' + ring + '"][data-i="0"]');
+            const drawn = [...document.querySelectorAll("#editor-pan svg > circle")].filter((c) => c.getAttribute("cx") === hit.getAttribute("cx") && c.getAttribute("cy") === hit.getAttribute("cy") && !c.getAttribute("class"));
+            out[ring] = { want: f * base * 100, hit: +hit.getAttribute("r"), drawn: drawn.map((c) => +c.getAttribute("r")) };
+          }
+          return out;`);
+        for (const ring of ["rim", "inner", "bottom"]) {
+          assert.ok(Math.abs(r[ring].hit - r[ring].want) <= 0.5, ring + " hit radius " + JSON.stringify(r[ring]));
+          assert.ok(r[ring].drawn.some((x) => Math.abs(x - r[ring].want) <= 0.5), ring + " drawn radius " + JSON.stringify(r[ring]));
+        }
+      });
+
+      test("OQA no trash node: the trash is not in the DOM, before or during a drag, and no visible string names it", async () => {
+        await setup(SCALE);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-trash");`), null);
+        await gesture(await noteAt("rim", 3), await offPan(), "mouse", { mid: async () => assert.strictEqual(await b.eval(`return document.getElementById("editor-trash");`), null) });
+        assert.ok(!/trash/i.test(await b.eval(`return document.getElementById("editor").textContent + " " + Object.values(I18N.en).join(" ");`)));
+      });
+
+      for (const kind of ["mouse", "touch"]) {
+        describe("OQA " + kind, () => {
+          test("OQA drag off removes with undo toast; OQA release to remove ghost: past the margin the ghost says so, release removes in one step, the chip restores", async () => {
+            await setup(SCALE);
+            const before = await core();
+            const steps = await pastLen();
+            let cls = null, text = null, inside = null;
+            await gesture(await noteAt("rim", 3), await offPan(), kind, { mid: async () => { cls = await ghostClass(); text = await ghostText(); } });
+            assert.match(cls, /remove/, "the ghost has the remove class past the margin");
+            assert.match(text, /Release to remove/);
+            assert.ok(!(await rimNames()).includes("D4"));
+            assert.strictEqual(await pastLen(), steps + 1, "one history step");
+            assert.strictEqual(await status(), "D4 removed.Undo");
+            assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo");`), true);
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await core(), before);
+            await gesture(await noteAt("rim", 3), await noteAt("rim", 4), kind, { mid: async () => { inside = await ghostClass(); } });
+            assert.doesNotMatch(inside, /remove/, "over the pan the ghost is plain");
+          });
+
+          test("OQA tray drag off cancels: no history step and no status message", async () => {
+            await setup(SCALE);
+            const before = await core();
+            const steps = await pastLen();
+            await gesture(await chipAt("G"), await offPan(), kind, { mid: async () => assert.doesNotMatch(await ghostClass(), /remove/) });
+            assert.deepStrictEqual(await core(), before);
+            assert.strictEqual(await pastLen(), steps);
+            assert.strictEqual(await status(), "");
+          });
+
+          test("OQA ding drag off refuses: the ghost is .refuse, release leaves the model and says the ding copy", async () => {
+            await setup("[A2] " + SCALE);
+            const before = await core();
+            let cls = null;
+            await gesture(await noteAt("ding", 0), await offPan(), kind, { mid: async () => { cls = await ghostClass(); } });
+            assert.match(cls, /refuse/);
+            assert.doesNotMatch(cls, /remove/);
+            assert.deepStrictEqual(await core(), before);
+            assert.strictEqual(await status(), "Every scale needs a ding. Drop another note on it to swap.");
+          });
+
+          test("OQA last rim drag off refuses: the ghost is .refuse, release leaves the model and says the rim minimum", async () => {
+            await setup("(D3) A3");
+            const before = await core();
+            let cls = null;
+            await gesture(await noteAt("rim", 0), await offPan(), kind, { mid: async () => { cls = await ghostClass(); } });
+            assert.match(cls, /refuse/);
+            assert.deepStrictEqual(await core(), before);
+            assert.strictEqual(await status(), "The rim needs at least 1 note.");
+          });
+
+          test("OQA pointercancel never removes: a cancel past the margin snaps back with no step; so does losing capture", async () => {
+            await setup(SCALE);
+            const before = await core();
+            const steps = await pastLen();
+            for (const type of ["pointercancel", "lostpointercapture"]) {
+              await gesture(await noteAt("rim", 3), await offPan(), kind, { release: false });
+              await b.eval(`window.dispatchEvent(new PointerEvent(${JSON.stringify(type)}, { pointerId: editorDrag.id, bubbles: true })); return true;`);
+              await endGesture(kind);
+              await pause();
+              assert.deepStrictEqual(await core(), before, type);
+              assert.strictEqual(await pastLen(), steps, type);
+              assert.strictEqual(await ghostText(), null);
+            }
+          });
+
+          test("OQA tap equals drag model (N7): a tap-tap move and a drag from the same start give deep-equal models", async () => {
+            await setup(SCALE);
+            await b.click("#editor-oct-up");
+            await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
+            const start = await model();
+            await gesture(await noteAt("inner", 2), await spotAt("inner", 120), kind);
+            const dragged = await model();
+            await b.eval(`editorSession.history = editorHistoryNew(${JSON.stringify(start)}); editorSession.sel = null; editorRender(); return true;`);
+            await tapPoint(await noteAt("inner", 2), kind === "touch");
+            await tapPoint(await spotAt("inner", 120), kind === "touch");
+            assert.deepStrictEqual(await model(), dragged);
+          });
+
+          test("OQA cyclops drop near midpoint: inside the cyclops/rim midpoint lands on the cyclops (ring on the inner orbit), outside on the rim", async () => {
+            await setup("(D3) " + RIM8);
+            await b.click("#editor-oct-up");
+            const mid = await b.eval(`const g = editorSolve(editorSession.history.present).value.geom; return (editorOrbit(g, "inner") + g.rim) / 2;`);
+            await gesture(await chipAt("E"), await clientOf(...polar(mid - 0.02, 90)), kind, { release: false });
+            const ring = await b.eval(`const c = document.querySelector("#editor-pan .editor-landing"); return c ? Math.hypot(+c.getAttribute("cx"), +c.getAttribute("cy")) : null;`);
+            await endGesture(kind);
+            await pause();
+            assert.ok(ring !== null && Math.abs(ring - (await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, "inner");`)) * 100) < 1.5, "landing ring on the inner orbit, got " + ring);
+            await setup("(D3) " + RIM8);
+            await b.click("#editor-oct-up");
+            await gesture(await chipAt("E"), await clientOf(...polar(mid + 0.02, 270)), kind);
+            assert.deepStrictEqual(await names("inner"), [], "outside the midpoint is the rim");
+            assert.ok((await rimNames()).includes("E5"), await status());
+            await setup("(D3) " + RIM8);
+            await b.click("#editor-oct-up");
+            await gesture(await chipAt("E"), await clientOf(...polar(mid - 0.02, 270)), kind);
+            assert.deepStrictEqual(await names("inner"), ["E5"], "inside the midpoint is the cyclops, even empty and in the lower half: " + await status());
+          });
+
+          test("OQA zone highlight occupied; OQA zone full dashed: the hovered zone is .ezone.on although it has notes, a zone at its cap is .full with a Full label", async () => {
+            await setup(SCALE);
+            const on = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ezone.on")].map((e) => e.dataset.ring);`);
+            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { release: false });
+            assert.deepStrictEqual(await on(), ["rim"], "the rim has notes and still lights");
+            await endGesture(kind);
+            await pause();
+            await setup("(D3) " + RIM12 + " | C6");
+            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { release: false });
+            const full = await b.eval(`const z = document.querySelector('#editor-pan .ezone[data-ring="rim"]'); return { cls: z.getAttribute("class"), dash: getComputedStyle(z).strokeDasharray, label: [...document.querySelectorAll("#editor-pan .ezone-label")].map((e) => e.textContent) };`);
+            await endGesture(kind);
+            await pause();
+            assert.match(full.cls, /full/);
+            assert.notStrictEqual(full.dash, "none");
+            assert.ok(full.label.includes("Full"), JSON.stringify(full));
+          });
+
+          test("OQA zone cleared on drag lift (N1): a picked zone is gone once a drag lifts", async () => {
+            await setup(SCALE);
+            await tapSpot(...polar(0.38, 90), kind === "touch");
+            assert.strictEqual(await b.eval(`return editorSession.zone;`), "inner");
+            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { release: false });
+            assert.strictEqual(await b.eval(`return editorSession.zone;`), null);
+            await endGesture(kind);
+            await pause();
+          });
+        });
+      }
+
+      test("OQA touch scroll does not remove: a vertical touch swipe starting on the pan lifts nothing", async () => {
+        await setup(SCALE);
+        const before = await core();
+        const from = await clientOf(0.1, 0.1);
+        await gesture(from, { x: from.x, y: from.y - 120 }, "touch");
+        assert.deepStrictEqual(await core(), before);
+        assert.strictEqual(await ghostText(), null);
+      });
+
+      test("OQA neotone drag off removes: on a Neotone pan a pan note released off the pan is removed with Undo", async () => {
+        await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        await b.click("#editor-type-neotone");
+        const before = await core();
+        let cls = null;
+        await gesture(await noteAt("rim", 2), await offPan(), "mouse", { mid: async () => { cls = await ghostClass(); } });
+        assert.match(cls, /remove/);
+        assert.strictEqual((await names("rim")).length, 5);
+        await b.click("#editor-notice-undo");
+        assert.deepStrictEqual(await core(), before);
+      });
+
+      test("OQA one visible undo: exactly one visible Undo in idle, holding, said-with-undo, notice and error states", async () => {
+        await setup(SCALE);
+        assert.strictEqual(await visibleUndo(), 1, "idle");
+        await hold("B");
+        assert.strictEqual(await visibleUndo(), 1, "holding");
+        await b.click("#editor-pill-rim");
+        assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo");`), true);
+        assert.strictEqual(await visibleUndo(), 1, "said with the chip");
+        await b.eval(`editorSession.say = ""; editorSession.notice = true; editorRender(); return true;`);
+        assert.strictEqual(await visibleUndo(), 1, "notice");
+        await b.eval(`editorSession.notice = false; editorSession.error = "Nope."; editorRender(); return true;`);
+        assert.strictEqual(await visibleUndo(), 1, "error");
+      });
+
+      test("OQA one visible undo: focus moves to the chip when the focused toolbar Undo is hidden by it (R-OQA-5)", async () => {
+        await setup(SCALE);
+        await hold("B");
+        await b.eval(`document.getElementById("editor-undo").focus(); return true;`);
+        await b.eval(`editorPillTap("rim"); return true;`);
+        assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-notice-undo");
+      });
+
+      test("OQA reset one line: Reset spacing is a single line box at 375, 820 and 1440", async () => {
+        for (const [w, h] of [[375, 667], [820, 1180], [1440, 960]]) {
+          await fresh(w, h);
+          await openAdd();
+          await typeLine(SCALE);
+          const r = await b.eval(`const e = document.getElementById("editor-reset"); const vis = [...e.querySelectorAll("span")].filter((x) => getComputedStyle(x).display !== "none"); return { ws: getComputedStyle(e).whiteSpace, lines: vis.map((x) => Math.round(x.getBoundingClientRect().height / (parseFloat(getComputedStyle(x).lineHeight) || parseFloat(getComputedStyle(x).fontSize) * 1.2))) };`);
+          assert.strictEqual(r.ws, "nowrap", w + "");
+          assert.ok(r.lines.length > 0 && r.lines.every((n) => n === 1), w + ": " + JSON.stringify(r));
+        }
+      });
+
+      test("OQA bottom labels clear pin ring: a pinned bottom note's number label clears its pin ring and the shell outline (375x667, 1440x960)", async () => {
+        for (const [w, h] of [[375, 667], [1440, 960]]) {
+          await fresh(w, h);
+          await openAdd();
+          await typeLine("(D3) " + RIM8 + " [G2]");
+          await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
+          const r = await b.eval(`const svg = document.querySelector("#editor-pan svg"); const pin = svg.querySelector(".epin"); const pr = pin.getBoundingClientRect();
+            const c = { x: pr.left + pr.width / 2, y: pr.top + pr.height / 2, r: pr.width / 2 };
+            const label = [...svg.querySelectorAll("text")].find((t) => t.getAttribute("fill") === "#E27005");
+            const lb = label.getBoundingClientRect();
+            const nx = Math.max(lb.left, Math.min(c.x, lb.right)), ny = Math.max(lb.top, Math.min(c.y, lb.bottom));
+            const sr = svg.getBoundingClientRect();
+            const shell = [...svg.querySelectorAll(":scope > circle")].find((e) => e.getAttribute("r") === "100").getBoundingClientRect();
+            const mid = { x: (lb.left + lb.right) / 2, y: (lb.top + lb.bottom) / 2 }, sc = { x: shell.left + shell.width / 2, y: shell.top + shell.height / 2 };
+            const nearest = Math.hypot(mid.x - sc.x, mid.y - sc.y) - Math.max(lb.width, lb.height) / 2;
+            return { gap: Math.hypot(nx - c.x, ny - c.y) - c.r, inside: lb.left >= sr.left - 0.5 && lb.right <= sr.right + 0.5 && lb.top >= sr.top - 0.5 && lb.bottom <= sr.bottom + 0.5, outsideShell: nearest > shell.width / 2 };`);
+          assert.ok(r.gap >= -0.5, w + ": the label sits inside the pin ring, gap " + r.gap);
+          assert.strictEqual(r.inside, true, w + ": the label is inside the pan svg");
+          assert.strictEqual(r.outsideShell, true, w + ": the label crosses the shell outline");
+        }
+      });
+
+      test("OQA tablet portrait stacks: at 820x1180 and 1024x1366 the controls sit under the pan, the pan fills the column, nothing scrolls sideways", async () => {
+        for (const [w, h] of [[820, 1180], [1024, 1366]]) {
+          await fresh(w, h);
+          await openAdd();
+          await typeLine(SCALE);
+          const r = await b.eval(`const ed = document.getElementById("editor"); const svg = document.querySelector(".editor-panbox svg").getBoundingClientRect();
+            const cs = getComputedStyle(ed); const col = ed.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            const below = [...ed.querySelectorAll("#editor-status, #editor-areas, .editor-toolbar, #editor-tray")].map((e) => e.getBoundingClientRect().top);
+            const panBox = document.querySelector(".editor-panbox").getBoundingClientRect();
+            return { size: Math.min(svg.width, svg.height), top: Math.min(...below), panBottom: svg.bottom, want: Math.min(col, panBox.width, panBox.height), scrollOk: document.documentElement.scrollWidth <= document.documentElement.clientWidth, edw: ed.getBoundingClientRect().width };`);
+          assert.ok(r.top >= r.panBottom - 1, w + ": controls start at " + r.top + " under the pan bottom " + r.panBottom);
+          assert.ok(Math.abs(r.size - r.want) <= 4, w + ": pan " + r.size + " vs " + r.want);
+          assert.ok(r.edw <= 520.5, w + ": stacks at the phone width, got " + r.edw);
+          assert.strictEqual(r.scrollOk, true);
+        }
+      });
+
+      test("OQA tablet landscape centred: at 1180x820, 1366x1024 and 1440x960 the control stack is centred on the pan and the pan fills its column", async () => {
+        for (const [w, h] of [[1180, 820], [1366, 1024], [1440, 960]]) {
+          await fresh(w, h);
+          await openAdd();
+          await typeLine(SCALE);
+          const r = await b.eval(`const svg = document.querySelector(".editor-panbox svg").getBoundingClientRect();
+            const els = ["#editor-line", "#editor-status", "#editor-areas", "#editor .editor-toolbar", "#editor-tray"].map((s) => document.querySelector(s).getBoundingClientRect()).filter((r) => r.height > 0);
+            const top = Math.min(...els.map((r) => r.top)), bottom = Math.max(...els.map((r) => r.bottom));
+            const head = document.querySelector(".editor-head").getBoundingClientRect(); const panBox = document.querySelector(".editor-panbox").getBoundingClientRect();
+            return { dy: (top + bottom) / 2 - (svg.top + svg.height / 2), size: Math.min(svg.width, svg.height), want: Math.min(panBox.width, panBox.height), scrollOk: document.documentElement.scrollWidth <= document.documentElement.clientWidth, headBottom: head.bottom, panBoxH: panBox.height, h };`);
+          assert.ok(Math.abs(r.dy) <= 8, w + ": controls centre off by " + r.dy);
+          assert.ok(Math.abs(r.size - r.want) <= 4, w + ": pan " + r.size + " vs " + r.want);
+          assert.ok(r.panBoxH >= r.h - r.headBottom - 48 - 4, w + ": the pan column spans the viewport under the header, " + JSON.stringify(r));
+          assert.strictEqual(r.scrollOk, true);
+        }
+      });
+    });
     });
 
     describe("U2f-2 tap and pill parity (gap rows 9, 11, 13, 23, 24)", () => {

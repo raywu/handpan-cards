@@ -658,3 +658,63 @@ test("U2f-7 (U2d nit N3): the area caps do not apply to a model with a profile; 
   assert.notStrictEqual(a.get("__r.code"), "AREA_FULL");
   assert.notStrictEqual(a.get("__r.code"), "TOO_CROWDED");
 });
+
+const openSession = (a, text, extra = "") => a.run(`globalThis.__m = editorLoad(${JSON.stringify(text)}, undefined).value; editorRender = () => {}; editorSession = { history: editorHistoryNew(__m), base: __m, editing: false, error: "", notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", plainSay: "" }; ${extra} true`);
+
+describe("OQA-A zone-first, zone state and copy", () => {
+  test("OQA zone split midpoint: radius picks the zone, an empty cyclops included; past the bottom reach is off", () => {
+    const a = app();
+    withModel(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+    a.run(`globalThis.__g = editorSolve(__m).value.geom; true`);
+    const zone = (r) => a.get(`editorZoneAt(__g, [${r}, 0])`);
+    const mid = a.get(`(editorOrbit(__g, "inner") + __g.rim) / 2`);
+    assert.strictEqual(zone(mid - 0.01), "inner");
+    assert.strictEqual(zone(mid + 0.01), "rim");
+    const mid2 = a.get(`(__g.rim + editorOrbit(__g, "bottom")) / 2`);
+    assert.strictEqual(zone(mid2 - 0.01), "rim");
+    assert.strictEqual(zone(mid2 + 0.01), "bottom");
+    const edge = a.get(`editorOrbit(__g, "bottom") + editorNoteReach(__g, "bottom") + 0.08`);
+    assert.strictEqual(zone(edge - 0.01), "bottom");
+    assert.strictEqual(zone(edge + 0.01), "off");
+    const hit = plain(a.get(`(() => { const v = editorSolve(__m).value; return editorHitAt(v, [${mid - 0.01}, 0], false); })()`));
+    assert.strictEqual(hit.kind, "spot");
+    assert.strictEqual(hit.ring, "inner");
+    assert.strictEqual(plain(a.get(`editorHitAt(editorSolve(__m).value, [${mid + 0.01}, 0], false)`)).ring, "rim");
+  });
+
+  test("OQA zone clear on lift and pan switch: s.zone is null after a pan-type switch (N1; the drag lift is in the e2e suite)", () => {
+    const a = app();
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.zone = "bottom";`);
+    a.run(`editorSetPanType("neotone");`);
+    assert.strictEqual(a.get(`editorSession.zone`), null);
+  });
+
+  test("OQA N3 N4 N5 copy: ding stays, same zone, zone is full, each a status line and no silent deselect", () => {
+    const a = app();
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.sel = { ring: "ding", i: 0 };`);
+    a.run(`editorSelectTap({ kind: "spot", ring: "rim" }, editorSession.history.present);`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.ding_stays")`));
+    assert.deepStrictEqual(plain(a.get(`editorSession.sel`)), { ring: "ding", i: 0 }, "the selection stays");
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.sel = { ring: "rim", i: 1 };`);
+    a.run(`editorPillTap("rim");`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.same_zone", { name: "Bb3", zone: t("editor.zone.rim") })`));
+    openSession(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5");
+    a.run(`editorPillTap("rim");`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.zone_is_full", { zone: t("editor.zone.rim") })`));
+    openSession(a, "(D3) A3 Bb3 C4");
+    a.run(`editorPillTap("rim");`);
+    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.pick_first")`));
+  });
+
+  test("OQA neotone untouched: Neotone editorHitAt on a fixture grid equals the recorded base result", () => {
+    const a = app();
+    withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+    a.run(`globalThis.__n = editorPanType(__m, "neotone").value; globalThis.__v = editorSolve(__n).value; true`);
+    assert.strictEqual(a.get(`!!__v.geom.place`), true);
+    const grid = [];
+    for (let x = -1.6; x <= 1.61; x += 0.2) for (let y = -1.6; y <= 1.61; y += 0.2) {
+      for (const h of [false, true]) grid.push([+x.toFixed(2), +y.toFixed(2), h, plain(a.get(`editorHitAt(__v, [${x}, ${y}], ${h})`))]);
+    }
+    assert.strictEqual(require("node:crypto").createHash("sha1").update(JSON.stringify(grid)).digest("hex"), "ba59438677020c7162a6607e66eabb4161d5df89");
+  });
+});
