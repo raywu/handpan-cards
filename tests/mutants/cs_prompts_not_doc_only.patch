@@ -4,11 +4,12 @@
 diff --git a/tools/ci_scope.py b/tools/ci_scope.py
 --- a/tools/ci_scope.py
 +++ b/tools/ci_scope.py
-@@ -1,6 +1,6 @@
+@@ -4,7 +4,7 @@ import os
+ import re
  import sys
  
 -DOC_ONLY = ("docs/plans/", "docs/prompts/")
 +DOC_ONLY = ("docs/plans/",)
  
- 
- def code_changed(paths):
+ DOC_LIKE = ("README.md", "CLAUDE.md", "tests/CONTRACT.md")
+ DOC_LIKE_GLOBS = ("docs/*.md", "docs/testing/*.md")
