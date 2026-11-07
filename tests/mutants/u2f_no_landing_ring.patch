@@ -1,0 +1,15 @@
+# kills: v4: while dragging a placed note, the source carries lift and the landing ring sits on the note or ding under it; over empty pan or itself nothing
+# suite: node --test --test-name-pattern ^v4: tests/editor_e2e.test.js
+# fault: No landing ring is drawn while dragging.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16073,7 +16073,7 @@ function editorMarkDrop(target) {
+     const a = target.angle * Math.PI / 180;
+     at = [geom[target.ring] * 100 * Math.cos(a), -geom[target.ring] * 100 * Math.sin(a), target.ring === "bottom" ? geom.r_bnote : geom.r_note];
+   }
+-  if (!at) return;
++  return;
+   const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+   ring.setAttribute("class", "editor-landing");
+   ring.setAttribute("cx", at[0].toFixed(2));

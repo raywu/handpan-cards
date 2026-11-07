@@ -1,0 +1,15 @@
+# kills: U2d nit N2: at 375x667 the empty bottom ring and its first-note spot (90 degrees, 270 degrees) can be tapped and dropped on
+# suite: node --test --test-name-pattern ^U2d.nit.N2 tests/editor_e2e.test.js
+# fault: The viewBox is not widened for an empty bottom ring, so its spots are clipped.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15759,7 +15759,7 @@
+     }
+   }
+   out += "</g>";
+-  const shown = standard && !ringIds(fields, "bottom").length
++  const shown = false && standard && !ringIds(fields, "bottom").length
+     ? markup.replace(/viewBox="-([\d.]+) -[\d.]+ [\d.]+ [\d.]+"( data-ext="[\d.]+")?/, (all, v) => {
+       const wide = Math.max(Number(v), 100 * ((geom.bottom || 1.15) + (geom.r_bnote || 0.1)) + 14);
+       return `viewBox="${-wide} ${-wide} ${2 * wide} ${2 * wide}"` + (all.includes("data-ext") ? ` data-ext="${wide}"` : "");

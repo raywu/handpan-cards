@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15033,7 +15033,7 @@ function solveNeotonePreview(seed) {
+@@ -15066,7 +15066,7 @@
   * ring's notes by ascending field id, the same address the legacy sheet uses.
   * The model never trims: a scale over a cap loads and exports unchanged. The flag
   * is scaffolding for the editor lanes; with it off the app is the legacy sheet. */
 -const ONE_PANEL = false;
 +const ONE_PANEL = true ;
+ const DRAG_ON_TOUCH = true;
  const EDITOR_RINGS = ["rim", "inner", "bottom"];
  const EDITOR_PINNABLE = ["inner", "bottom"];
- const EDITOR_CARRIED = ["seats", "angles", "replaces"];
