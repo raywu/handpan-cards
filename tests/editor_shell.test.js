@@ -1072,3 +1072,43 @@ describe("U2e-2 palette, mirror and anchor", () => {
     assert.strictEqual(a.get("editorExport(__m).code"), legacyCode(a, WITH_BOTTOM, { mirror: true, mirrorBottom: false }));
   });
 });
+
+describe("U2e3 ding zone and Replace ding", () => {
+  const plan = (a, expr) => plain(a.get(`(() => { const p = ${expr}; return { step: !!p.step, say: p.say, trade: p.trade, refuse: p.refuse, info: p.info }; })()`));
+
+  test("U2e3-1: hovering the ding names the ding zone alone; a small move off it names the cyclops, and back", () => {
+    const a = app();
+    withModel(a, SCALE);
+    const zone = (x, y) => a.get(`(() => { const s = editorSolve(__m).value; return editorHoverZone(s, [${x}, ${y}], __m); })()`);
+    const g = plain(a.get(`(() => { const g = editorSolve(__m).value.geom; return { dy: g.ding_dy, r: g.r_ding }; })()`));
+    assert.strictEqual(zone(0, -g.dy), "ding");
+    assert.strictEqual(zone(g.r * 0.9, -g.dy), "ding");
+    assert.strictEqual(zone(g.r * 1.3, -g.dy), "inner", "a small move leaves the ding for the cyclops");
+    assert.strictEqual(zone(0, -g.dy), "ding", "and back");
+    assert.strictEqual(zone(0, 0.38), "inner");
+  });
+
+  test("U2e3-2: the ding zone shape is the drawn ding circle, and the cyclops zone carries it as a hole", () => {
+    const a = app();
+    withModel(a, SCALE);
+    const g = plain(a.get(`(() => { const g = editorSolve(__m).value.geom; return { dy: g.ding_dy, r: g.r_ding }; })()`));
+    assert.deepStrictEqual(plain(a.get(`editorDingZone(editorSolve(__m).value.geom)`)), { cx: 0, cy: g.dy * 100, r: g.r * 100 });
+    const d = a.get(`editorZonePath(editorSolve(__m).value.geom, "inner")`);
+    assert.ok(d.includes(`M${-(g.r * 100)} ${g.dy * 100}`), "the ding circle is a subpath of the cyclops zone: " + d);
+    assert.strictEqual(a.get(`editorZonePath(editorSolve(__m).value.geom, "rim").split("Z").length`), 3, "the rim ring has no hole");
+  });
+
+  test("U2e3-3: Replace ding with a held note replaces the ding, with a note selected swaps it in, with neither says to pick first", () => {
+    const a = app();
+    withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5");
+    const held = plan(a, `editorDingButtonPlan(__m, "G3", null)`);
+    assert.strictEqual(held.step, true);
+    assert.strictEqual(held.say, "D3 removed. G3 is the ding.");
+    const sel = plan(a, `editorDingButtonPlan(__m, null, { ring: "bottom", i: 0 })`);
+    assert.deepStrictEqual(sel.trade, [{ ring: "bottom", i: 0 }, { ring: "ding", i: 0 }]);
+    const none = plan(a, `editorDingButtonPlan(__m, null, null)`);
+    assert.strictEqual(none.step, false);
+    assert.strictEqual(none.info, "Pick a note below, or on the pan, first.");
+    assert.strictEqual(plan(a, `editorDingButtonPlan(__m, null, { ring: "ding", i: 0 })`).info, "Pick a note below, or on the pan, first.");
+  });
+});

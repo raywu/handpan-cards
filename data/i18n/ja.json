@@ -409,6 +409,8 @@
   "editor.zone.bottom": "ボトム",
   "editor.zone.ding": "ディング",
   "editor.ding_bottom_only": "Only a bottom note can swap with the ding.",
+  "editor.replace_ding": "Replace ding",
+  "editor.replace_ding_aria": "Make the selected note the ding",
   "editor.hint": "Drop a bottom note on the ding to swap it with the root.",
   "editor.areas.aria": "Add the held note to an area",
   "editor.pill.add_rim": "外周に追加",
