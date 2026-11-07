@@ -1533,6 +1533,37 @@ function run() {
             assert.deepStrictEqual(await keys(), mid);
           });
 
+          const tapAt = async (pt) => {
+            if (kind === "touch") {
+              await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...pt, id: 1 }] });
+              await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+            } else for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, ...pt, button: "left", clickCount: 1 });
+            await new Promise((done) => setTimeout(done, 80));
+          };
+
+          test("D3 tap parity: tapping a main note then another swaps them, and tapping a note then an empty main field moves it, each one Undo step", async () => {
+            await neo();
+            const before = await keys();
+            const [one, two] = before.map((k, i) => (i < 9 && k ? i : -1)).filter((i) => i >= 0);
+            const empty = before.findIndex((k, i) => i < 9 && k == null);
+            assert.ok(two !== undefined && empty >= 0);
+            const past = await pastLen();
+            await tapAt(await slotAt(one));
+            await tapAt(await slotAt(two));
+            const swapped = await keys();
+            assert.strictEqual(swapped[one], before[two], await status());
+            assert.strictEqual(swapped[two], before[one]);
+            assert.strictEqual(await pastLen(), past + 1);
+            await tapAt(await slotAt(one));
+            await tapAt(await slotAt(empty));
+            const moved = await keys();
+            assert.strictEqual(moved[empty], swapped[one], await status());
+            assert.strictEqual(moved[one], null);
+            assert.strictEqual(await pastLen(), past + 2);
+            await b.click("#editor-notice-undo");
+            assert.deepStrictEqual(await keys(), swapped);
+          });
+
           test("a pan note dragged onto a free main field moves there in one Undo step", async () => {
             await neo();
             const before = await keys();

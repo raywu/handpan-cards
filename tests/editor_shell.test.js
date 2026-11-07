@@ -849,6 +849,29 @@ describe("U2e Neotone panel paths", () => {
     assert.strictEqual(gone.ok, true);
   });
 
+  test("U2e-11 (D3): on Neotone a tap-swap of two main notes and a tap-move to an empty main field take the drag's path", () => {
+    const a = app();
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+    a.run(`editorSetPanType("neotone"); true`);
+    const at = (slot) => a.get(`(() => { const m = editorSession.history.present; const r = editorNeoRef(m, ${slot}); return r ? editorNameAt(m, r) : null; })()`);
+    const rimIndex = (name) => a.get(`editorNames(editorSession.history.present, "rim").indexOf(${JSON.stringify(name)})`);
+    const tap = (sel, hit) => a.run(`editorSession.sel = ${JSON.stringify(sel)}; editorSelectTap(${JSON.stringify(hit)}, editorSession.history.present); true`);
+    const past = () => a.get(`editorSession.history.past.length`);
+    const slotA3 = [...Array(9).keys()].find((k) => at(k) === "A3");
+    const slotBb3 = [...Array(9).keys()].find((k) => at(k) === "Bb3");
+    const start = past();
+    tap({ ring: "rim", i: rimIndex("A3") }, { kind: "note", ring: "rim", i: rimIndex("Bb3") });
+    assert.strictEqual(a.get(`editorSession.error`), "", "the swap is not refused");
+    assert.deepStrictEqual([at(slotA3), at(slotBb3)], ["Bb3", "A3"], "the two notes traded fields");
+    assert.strictEqual(past(), start + 1, "one Undo step");
+    const empty = [...Array(9).keys()].find((k) => at(k) === null);
+    assert.notStrictEqual(empty, undefined);
+    tap({ ring: "rim", i: rimIndex("A3") }, { kind: "spot", ring: "rim", slot: empty });
+    assert.strictEqual(a.get(`editorSession.error`), "");
+    assert.strictEqual(at(empty), "A3", "A3 moved to the empty field");
+    assert.strictEqual(past(), start + 2, "one Undo step");
+  });
+
   test("U2e-8: the hit test on Neotone names the field under the pointer through snapTarget", () => {
     const a = app();
     neo(a);

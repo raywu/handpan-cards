@@ -16033,6 +16033,13 @@ function editorPlaceHeld(hit, m) {
 function editorTrade(m, a, b) {
   const s = editorSession;
   const names = [editorNameAt(m, a), editorNameAt(m, b)];
+  if (m.options.profile) {
+    const plan = editorDropPlan(m, { from: "pan", ref: a }, b.ring === "ding" ? { kind: "ding" } : { kind: "note", ring: b.ring, i: b.i });
+    if (plan.step) return editorDo(plan.step, plan.say);
+    if (plan.refuse) s.error = plan.refuse;
+    editorRender();
+    return !!plan.snap;
+  }
   if (a.ring === b.ring && a.ring !== "ding") {
     const pinnable = EDITOR_PINNABLE.includes(a.ring);
     const trade = (x) => {
@@ -16077,7 +16084,7 @@ function editorSelectTap(hit, m) {
 }
 function editorMoveSelected(hit, m) {
   const s = editorSession;
-  if (hit.kind === "spot" && (s.sel.ring === "ding" || (s.sel.ring === hit.ring && hit.angle === undefined))) {
+  if (hit.kind === "spot" && (s.sel.ring === "ding" || (!m.options.profile && s.sel.ring === hit.ring && hit.angle === undefined))) {
     const name = editorNameAt(m, s.sel);
     s.error = "";
     s.say = s.plainSay = s.sel.ring === "ding" ? t("editor.say.ding_stays") : t("editor.say.same_zone", { name, zone: t("editor.zone." + hit.ring) });
