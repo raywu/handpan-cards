@@ -348,5 +348,21 @@
   "move.go": "移動我的音階",
   "move.go_plain": "開啟 {host}",
   "move.dismiss": "暫時隱藏",
-  "move.banner_label": "Handpan Theory 已遷移"
+  "move.banner_label": "Handpan Theory 已遷移",
+  "backup.open": "備份已儲存的音階",
+  "backup.intro": "已儲存的音階只存在於此瀏覽器中，一段時間不造訪後可能被清除。請把這份清單存放在安全的地方，例如備忘錄或寄給自己的郵件。",
+  "backup.session": "此瀏覽器目前不會保留已儲存的音階。關閉此分頁後它們會消失，請現在備份。",
+  "backup.restore": "要還原，請逐一點按清單中的連結。取代內建音階的音階會作為新的自訂音階出現在內建音階旁邊，被隱藏的內建音階只會顯示為備註。",
+  "backup.text.aria": "已儲存音階的連結",
+  "backup.share": "分享",
+  "backup.copy": "拷貝",
+  "backup.download": "下載 .TXT",
+  "backup.empty": "還沒有可備份的已儲存音階。",
+  "backup.copied": "已拷貝。請貼到備忘錄或郵件中。",
+  "backup.shared": "已分享。",
+  "backup.select": "請選取上方文字並拷貝。",
+  "backup.downloaded": "已下載。",
+  "backup.last": "上次備份：{date}",
+  "backup.file_title": "Handpan Theory 已儲存的音階（{n}）。點按每個連結即可找回音階。",
+  "backup.file_hidden": "被隱藏的內建音階（僅備註，無連結）：{names}"
 }
