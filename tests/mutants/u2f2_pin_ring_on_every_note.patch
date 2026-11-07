@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15846,7 +15846,7 @@ function editorWithOverlay(markup, m, solved) {
-     const r = geom.place && (zone === "inner" || zone === "bottom") ? EDITOR_HIT_AREA * 100 : drawn * 100;
+@@ -15923,7 +15923,7 @@ function editorWithOverlay(markup, m, solved) {
+     const r = geom.place && !neo && (zone === "inner" || zone === "bottom") ? EDITOR_HIT_AREA * 100 : drawn * 100;
      const i = ring === "ding" ? 0 : ringIds(fields, ring).indexOf(id);
      out += `<circle class="ehit" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="img" aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"/>`;
 -    if (EDITOR_PINNABLE.includes(zone) && m.pins.some((p) => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;

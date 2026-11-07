@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15761,7 +15761,7 @@ function editorWithOverlay(markup, m, solved) {
-     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
+@@ -15928,7 +15928,7 @@ function editorWithOverlay(markup, m, solved) {
    }
    const standard = editorKindOf(m) === "standard";
+   if (!standard && geom.place) out += editorNeoMarks(m, fields, geom);
 -  if (s && standard) {
 +  if (s) {
      for (const ring of ["inner", "bottom"]) {
