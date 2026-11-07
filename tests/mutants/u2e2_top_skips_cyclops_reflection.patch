@@ -7,7 +7,7 @@ diff --git a/index.html b/index.html
 @@ -15365,7 +15365,6 @@ function editorSetMirror(m, which) {
    if (which === "top") {
      next.options.mirror = !next.options.mirror;
-     if (editorHasBottom(m)) next.options.mirrorBottom = bottom;
+     next.options.mirrorBottom = bottom;
 -    if (next.options.angles && next.options.angles.inner) next.options.angles = HPE.layout.reflectAngles(next.options.angles, "inner");
    } else {
      next.options.mirrorBottom = !bottom;
