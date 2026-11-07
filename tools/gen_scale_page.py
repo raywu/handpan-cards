@@ -731,11 +731,11 @@ def serenity_page(row=None):
     light, dark = row["accent_light"], row["accent_dark"]
     out = head(title, description, description, url, light)
     out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + NEO_TABLE_CSS
-               + "section.faq h3{font-size:16px;margin:12px 0 2px}\n</style>\n")
+               + "section.faq h3{font-size:16px;margin:12px 0 2px}\nsection.history p{margin:0 0 12px}\n</style>\n")
     crumbs = [("Home", SITE), ("Scale chord charts", SITE + "scales/"), ("Neotone", SITE + "scales/%s/" % NEOTONE_SLUG),
               (SERENITY_NAME, url)]
     graph = {"@context": "https://schema.org", "@type": "WebPage", "name": title, "url": url,
-             "dateModified": row.get("updated", UPDATED),
+             "dateModified": row.get("serenity_updated", UPDATED),
              "publisher": {"@type": "Organization", "name": "Handpan Theory"},
              "creator": {"@type": "Person", "name": "Reo Matsumoto"},
              "citation": SERENITY_VIDEO, "isBasedOn": SERENITY_VIDEO,
@@ -754,13 +754,12 @@ def serenity_page(row=None):
                "</header>\n" % (d["ding"], " ".join(d["main"])))
     out.append('<section class="history">\n<h2>About the scale</h2>\n'
                '<p>F# Serenity is a scale by Reo Matsumoto, shown in his video <a href="%s">The Serenity Scale</a>.</p>\n'
-               '<p>Reo Matsumoto is a handpan musician and beatboxer from Japan who is now based in Amsterdam and '
-               'teaches handpan workshops (<a href="https://hipsy.eu/reomatsumoto?tab=past">hipsy</a>, '
-               '<a href="https://masterthehandpan.com/handpan-player/reo-matsumoto">Master the Handpan</a>).</p>\n'
-               "<p>In his own profiles, as we read them, he says he believes everything has spirit and plays with love "
-               "and spirit, and he describes aiming for music without borders that mixes genres "
-               '(<a href="https://masterthehandpan.com/handpan-player/reo-matsumoto">Master the Handpan</a>, '
-               '<a href="https://instruments-du-monde.com/en/blogs/handpan/reo-matsumoto">Instruments du Monde</a>). '
+               '<p>Reo Matsumoto is a handpan musician and beatboxer from Japan who teaches handpan workshops '
+               '(<a href="https://masterthehandpan.com/handpan-player/reo-matsumoto">Master the Handpan</a>).</p>\n'
+               "<p>In his own profile, as we read it, he says he believes everything has spirit and plays with love "
+               'and spirit (<a href="https://masterthehandpan.com/handpan-player/reo-matsumoto">Master the Handpan</a>). '
+               '<a href="https://instruments-du-monde.com/en/blogs/handpan/reo-matsumoto">Instruments du Monde</a> '
+               "describes his music as music without borders that mixes genres. "
                "That is his general approach, not a statement about this scale.</p>\n</section>\n" % SERENITY_VIDEO)
     out.append('<section class="plain">\n<h2>F# Serenity notes by field</h2>\n'
                "<p>Field numbers run from the lowest side note (1) to the highest (9). "
@@ -779,8 +778,9 @@ def serenity_page(row=None):
                '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n'
                '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n'
                % (NEOTONE_SLUG, len(load_rows())))
-    updated = row.get("updated", UPDATED)
+    updated = row.get("serenity_updated", UPDATED)
     out.append('<p class="muted">Last updated <time datetime="%s">%s</time></p>\n' % (updated, updated))
+    out.append('<p class="muted">%s</p>\n' % load_copy(row)["disclaimer_html"])
     out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
                "</main>\n</body>\n</html>\n")
     return "".join(out)
