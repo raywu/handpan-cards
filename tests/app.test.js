@@ -20451,6 +20451,19 @@ describe("backup: back up saved scales", () => {
     assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
   });
 
+  test("an open backup panel is repainted when the menu reopens after a save", async () => {
+    const app = await durableBoot();
+    open(app);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    app.run("closePanel()");
+    await makeCustom(app);
+    app.run("openPanel()");
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.ok(linksOf(textOf(app)).length >= 1, "the list is still empty");
+    assert.strictEqual(app.els["backup-copy"].disabled, false);
+    assert.strictEqual(app.els["backup-status"].textContent, "");
+  });
+
   test("the panel copy says a restored seed replacement is a new custom scale and hidden seeds are a note", () => {
     const app = boot();
     const copy = app.get('t("backup.restore")');
