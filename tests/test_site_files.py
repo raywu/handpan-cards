@@ -7,7 +7,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SITE = "https://handpan.raywu.org/"
+SITE = "https://handpantheory.com/"
 NS = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
 
 
@@ -180,7 +180,7 @@ class SiteFilesTest(unittest.TestCase):
 
     def test_publish_script_builds_exactly_the_allowlist_byte_for_byte(self):
         allow_files = ["index.html", "404.html", "sitemap.xml", "robots.txt", "llms.txt",
-                       "_headers", "_redirects", "og.png", "apple-touch-icon.png"]
+                       "_headers", "_redirects", "og.png", "apple-touch-icon.png", "favicon.ico"]
         allow_dirs = ["scales", "handpan-101", "brand"]
         with tempfile.TemporaryDirectory() as out:
             publish(out)
@@ -255,21 +255,17 @@ class SiteFilesTest(unittest.TestCase):
             "localhost": False})
 
 class HandpantheoryHostSetTest(unittest.TestCase):
-    PRINT_MARK_FILES = ["index.html", "src/engine/pdfcards.js", "tools/hifi.py"]
-
-    def test_the_handpantheory_host_string_file_set_is_exactly_the_listed_set(self):
-        out = subprocess.run(["git", "grep", "-l", "handpantheory", "--", ".", ":!docs", ":!tests", ":!*.md"],
+    def test_the_old_host_string_survives_only_in_cname_and_the_move_switch(self):
+        out = subprocess.run(["git", "grep", "-l", "handpan.raywu.org", "--", ".", ":!docs", ":!tests"],
                              cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
-        self.assertEqual(sorted(out), self.PRINT_MARK_FILES)
-        self.assertNotIn("handpantheory", read("README.md"))
+        self.assertEqual(sorted(out), ["CNAME", "index.html"])
+        old = [l.strip() for l in read("index.html").splitlines() if "handpan." + "raywu.org" in l]
+        self.assertEqual(old, ['const MOVE_FROM = "handpan.raywu.org";'])
 
-    def test_canonical_and_og_url_name_the_current_host_and_the_new_host_is_absent_from_index_html(self):
+    def test_canonical_and_og_url_name_the_new_host(self):
         html = read("index.html")
-        self.assertIn('<link rel="canonical" href="https://handpan.raywu.org/">', html)
-        self.assertIn('<meta property="og:url" content="https://handpan.raywu.org/">', html)
-        self.assertEqual([l for l in html.splitlines() if "handpantheory" in l and "URL_MARK" not in l
-                          and l != 'const MOVE_TARGET = "https://handpantheory.com";'
-                          and l.strip() != '<p><a href="mailto:hi@handpantheory.com">hi@handpantheory.com</a></p>'], [])
+        self.assertIn('<link rel="canonical" href="https://handpantheory.com/">', html)
+        self.assertIn('<meta property="og:url" content="https://handpantheory.com/">', html)
         self.assertIn('const MOVE_FROM = "handpan.raywu.org";', html)
         self.assertIn('const MOVE_TARGET = "https://handpantheory.com";', html)
 

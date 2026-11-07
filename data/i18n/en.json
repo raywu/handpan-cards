@@ -364,5 +364,21 @@
   "move.go": "MOVE MY SCALES",
   "move.go_plain": "OPEN {host}",
   "move.dismiss": "Hide for now",
-  "move.banner_label": "Handpan Theory has moved"
+  "move.banner_label": "Handpan Theory has moved",
+  "backup.open": "BACKUP YOUR SCALES",
+  "backup.intro": "Saved scales live only in this browser, which can erase them after a while without a visit. Keep this list somewhere safe, such as Notes or an email to yourself.",
+  "backup.session": "Saved scales are not being kept in this browser right now. They disappear when you close this tab, so back them up now.",
+  "backup.restore": "To restore, tap each link in your saved list. A restored seeded-scale replacement comes back as a new custom scale beside the seeded one, and hidden seeded scales appear only as a note.",
+  "backup.text.aria": "Saved scale links",
+  "backup.share": "SHARE",
+  "backup.copy": "COPY",
+  "backup.download": "DOWNLOAD .TXT",
+  "backup.empty": "No saved scales to back up yet.",
+  "backup.copied": "Copied. Paste it into Notes or an email.",
+  "backup.shared": "Shared.",
+  "backup.select": "Select the text above and copy it.",
+  "backup.downloaded": "Downloaded.",
+  "backup.last": "Last backed up: {date}",
+  "backup.file_title": "Handpan Theory saved scales ({n}). Tap each link to bring a scale back.",
+  "backup.file_hidden": "Hidden seeded scales (note only, no link): {names}"
 }

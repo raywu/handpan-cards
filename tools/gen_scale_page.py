@@ -30,7 +30,7 @@ FIXTURE = os.path.join(ROOT, "tests", "fixtures", "scale_pages_v1.json")
 NEOTONE_ROW = os.path.join(ROOT, "tools", "neotone_page.json")
 NEOTONE_FIXTURE = os.path.join(ROOT, "tests", "fixtures", "neotone_page_v1.json")
 NEOTONE_SLUG = "neotone"
-SITE = "https://handpan.raywu.org/"
+SITE = "https://handpantheory.com/"
 UPDATED = "2026-10-28"
 BG_LIGHT = "#f6f4ed"
 BG_DARK = "#0f0e0b"
@@ -522,7 +522,7 @@ def defaults_html(row, shares):
         cta = ('<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])) if linked else
                "Layout not published")
         out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td rowspan="3">%s</td></tr>\n'
-                   % (esc(d["name"]), esc(d["hotkey"]), heads, cta))
+                   % (esc(d["name"]), esc(d.get("hotkey") or d["credit"]), heads, cta))
         out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
         out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
                    % (' class="nomut"' if not spread and not d["mutant"] else "", cells(["-"] + mut)))

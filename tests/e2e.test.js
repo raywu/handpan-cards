@@ -2284,13 +2284,13 @@ function run() {
           onoleo: card("Onoleo") && { np: card("Onoleo").textContent.includes("Layout not published"), note: !!card("Onoleo").querySelector("tr.note"), practice: !!card("Onoleo").querySelector("a[href^='/#s=']") } };`;
       await b.setViewport(375, 812, true);
       await b.send("Page.navigate", { url: page });
-      await b.waitFor(`location.pathname === "/scales/neotone/" && document.querySelectorAll("table tbody").length === 9`, { label: "the Neotone page" });
+      await b.waitFor(`location.pathname === "/scales/neotone/" && document.querySelectorAll("table tbody").length === 10`, { label: "the Neotone page" });
       await b.settle();
       const m = await b.eval(probe);
       assert.ok(m.sw <= 375, `page scrollWidth ${m.sw}`);
       assert.strictEqual(m.over, 0, "no tbody or cell overflows");
       assert.strictEqual(m.out, 0, "every Practice link is inside the viewport");
-      assert.strictEqual(m.tbodies, 9);
+      assert.strictEqual(m.tbodies, 10);
       assert.ok(m.sirena.practice && !m.sirena.np && !m.sirena.note, "La Sirena has a Practice link and no disclaimer: " + JSON.stringify(m.sirena));
       assert.ok(m.onoleo.practice && !m.onoleo.np && !m.onoleo.note, "Onoleo has a Practice link and no disclaimer: " + JSON.stringify(m.onoleo));
       assert.ok(m.sirena.rows.every(Boolean), "La Sirena shows its mutant row");
@@ -10387,6 +10387,82 @@ function run() {
         }
       });
 
+    test("LS: with the backup panel open (RESET hidden) the short-landscape menu scrolls vertically and never spills sideways, in en and de (REAL fonts)",
+      { timeout: 300000 }, async () => {
+        try {
+          await rb.setViewport(852, 330, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const lang of ["en", "de"]) {
+            for (const [w, h] of [[740, 300], [800, 340], [740, 360], [844, 390], [932, 430], [1000, 480], [1024, 520]]) {
+              await rb.setViewport(w, h, true);
+              await rb.settle();
+              await rb.click("#settings-trigger");
+              await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+              await rb.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
+              await rb.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+              if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
+              await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
+              await rb.settle();
+              const label = `${lang} ${w}x${h}`;
+              const m = await rb.eval(`
+                const p = document.getElementById("settings-panel");
+                const s = document.getElementById("lang-select");
+                s.scrollIntoView({ block: "center" });
+                const k = s.getBoundingClientRect();
+                const top = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);
+                return { restore: !document.getElementById("deck-restore").hidden, scrollW: p.scrollWidth, clientW: p.clientWidth, hitSelect: top === s };`);
+              assert.strictEqual(m.restore, false, `${label}: RESET SEEDED SCALES is hidden`);
+              assert.ok(m.scrollW <= m.clientW + 1, `${label}: overflows horizontally (${m.scrollW} > ${m.clientW})`);
+              assert.ok(m.hitSelect, `${label}: #lang-select is not reachable by a tap at its centre`);
+              await rb.key("Escape", "Escape", 27);
+              await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${label}` });
+            }
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
+    test("LS2: with the backup panel open its controls are panel Tab stops right after BACKUP YOUR SCALES, in the grid and DOM orders (REAL fonts)",
+      { timeout: 120000 }, async () => {
+        try {
+          await rb.setViewport(844, 390, true);
+          await rb.goto(URL);
+          await rb.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ mode: "A" }))}); return true;`);
+          await rb.send("Storage.clearDataForOrigin", { origin: new globalThis.URL(URL).origin, storageTypes: "indexeddb" });
+          await rb.goto(URL);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          for (const [w, h] of [[844, 390], [380, 780]]) {
+            await rb.setViewport(w, h, true);
+            await rb.settle();
+            await rb.click("#settings-trigger");
+            await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+            if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
+            await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
+            await rb.eval(`for (const id of ["backup-share", "backup-copy", "backup-download"]) document.getElementById(id).disabled = false; return true;`);
+            const m = await rb.eval(`
+              const ids = window.panelStops().map(e => e.id);
+              const want = ["backup-open", ...[...document.getElementById("backup-panel").querySelectorAll("textarea, button")]
+                .filter(e => !e.disabled && e.getClientRects().length > 0).map(e => e.id)];
+              return { ids, want };`);
+            const at = m.ids.indexOf("backup-open");
+            assert.ok(at >= 0, `${w}x${h}: backup-open is a stop: ${JSON.stringify(m.ids)}`);
+            assert.ok(m.want.includes("backup-text") && m.want.includes("backup-copy") && m.want.includes("backup-download"), `${w}x${h}: the backup controls render`);
+            assert.deepStrictEqual(m.ids.slice(at, at + m.want.length), m.want, `${w}x${h}: ${JSON.stringify(m.ids)}`);
+            await rb.key("Escape", "Escape", 27);
+            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${w}x${h}` });
+          }
+        } finally {
+          await rb.setViewport(900, 900, false);
+          await rb.goto(URL);
+        }
+      });
+
     test("LS2: with the progression note and RESET SEEDED SCALES showing, the columns balance: Flash cards, Print, Scales left and Resources, Language right, each stacked flush, at 844x390 and 800x340 (REAL fonts)",
       { timeout: 120000 }, async () => {
         try {
@@ -10497,10 +10573,10 @@ function run() {
           const head = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced", "seq-source-link"];
           for (const [w, h] of [[844, 390], [800, 340]]) {
             const ids = await stopsAt(w, h);
-            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper-select", "deck-add", "deck-restore", "res", "about-open", "lang-select"], `${w}x${h}: ${JSON.stringify(ids)}`);
+            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper-select", "deck-add", "deck-restore", "backup-open", "res", "about-open", "lang-select"], `${w}x${h}: ${JSON.stringify(ids)}`);
           }
           const dom = await stopsAt(380, 780);
-          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "print-download", "print-paper-select", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
+          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "backup-open", "print-download", "print-paper-select", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
         } finally {
           await rb.setViewport(900, 900, false);
           await rb.goto(URL);
@@ -10816,7 +10892,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS,
+      "tier-advanced", "deck-add", "backup-open", "print-download", "print-paper-select", ...RES_IDS,
       "about-open", "lang-select"];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];

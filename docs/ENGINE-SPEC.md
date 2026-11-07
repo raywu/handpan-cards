@@ -1380,21 +1380,3 @@ on every call.
 `cards` (shop variant only; non-empty, sorted, distinct, in range, else it throws). Each
 card keeps its app number (`#n` = index + 1), so a filtered sheet has gaps, and the sheet
 is padded to a multiple of 9 with empty slots. `cards` omitted: byte-identical to today.
-
-## 20. Sync merge core (`HPE.sync`)
-
-`HPE.sync` is the pure merge core of optional login sync (`docs/plans/2026-11-05-login-sync-v2.md`
-sections 8, 9 and 15). It does no I/O: no network, no storage, no clock, no random. Ids come from
-`ctx.newId`. Every rule below is asserted in `tests/sync.test.js` against a two-device model with a
-compare-and-set server. A scale's remote id is `sidecar.alias[id] || id`; the sidecar is
-`{ v, cursor, base: { <remoteId>: { rev, localRevision } }, alias, deferredDeletes, localOnly, pending }`.
-
-- DECIDED(plan login-sync-v2 s8) Identity is the scale's `instanceId`, never its content: a `RECORD_VERSION` bump changes no identity, and `base[id].localRevision` is the entry revision after the commit that applied or pushed it, so a pull followed by a push sends 0 rows.
-- DECIDED(plan login-sync-v2 s9) `planPull` matches a remote row to a local entry through the alias map. Live row, no local entry, no base: insert under the remote id (a fresh id plus alias when that id was used on the device). No local entry, base present, remote newer: revive under a fresh local id aliased to the remote id (edit beats delete).
-- DECIDED(plan login-sync-v2 s9) Local entry unchanged since base: overwrite with the remote body. Changed on both sides: keep the local entry, insert the remote body as a separate scale under a fresh id that is pushed as a new row, and set the local entry's base rev to the remote rev so one pull and one push converge both devices to two scales with no conflict loop.
-- DECIDED(plan login-sync-v2 s9) Remote tombstone: an unchanged local entry is removed; a changed one is kept and revived by the next push. Without a base, a tombstone applies only when the bodies are equal, otherwise the local copy is pushed and revives the row.
-- DECIDED(plan login-sync-v2 s9) A removal that would leave nothing visible (`ctx.builtinVisible` plus local entries) is held in `deferredDeletes`, retried by `planDeferred`, never pushed as live while deferred, and dropped when the entry is edited.
-- DECIDED(plan login-sync-v2 s9) First sync: a remote row whose meaning (`ctx.describe`) equals an unmatched local scale adopts the remote id through the alias map, with no duplicate; a deck-id collision with a different identity inserts a renamed copy (`ctx.copyName`) under a fresh id.
-- DECIDED(plan login-sync-v2 s9) `firstSyncAudit` holds every scale with no base in `localOnly` and returns their ids as the "Add N scales" count, so N counts only scales unmatched after matching. `localOnly` scales are never pushed, never matched and never tombstoned; `releaseLocal` frees them.
-- DECIDED(plan login-sync-v2 s9) `planPush` sends new or changed entries with `base_rev` (`null` for a new row) and a tombstone only for a remote id in `base`, in batches of `MAX_ROWS_PER_PUSH` (200). An entry the build cannot read (`ctx.readable`) is never pushed. `settlePush` records refusals, conflicts and `pending` without touching the base of a refused or conflicting row.
-- DECIDED(plan login-sync-v2 s9) A pulled record that `ctx.readable` rejects is applied as an opaque op; `replaces` is dropped from inserted records when the seed slot is taken (`ctx.slotTaken`) or claimed earlier in the same pull.

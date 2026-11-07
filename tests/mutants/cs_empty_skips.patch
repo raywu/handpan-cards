@@ -4,7 +4,7 @@
 diff --git a/tools/ci_scope.py b/tools/ci_scope.py
 --- a/tools/ci_scope.py
 +++ b/tools/ci_scope.py
-@@ -5,7 +5,7 @@ DOC_ONLY = ("docs/plans/", "docs/prompts/")
+@@ -66,7 +66,7 @@ RELEASE_REF = "claude/release-*"
  
  def code_changed(paths):
      paths = [p.strip() for p in paths if p.strip()]
@@ -12,4 +12,4 @@ diff --git a/tools/ci_scope.py b/tools/ci_scope.py
 +    return any(not p.startswith(DOC_ONLY) for p in paths)
  
  
- if __name__ == "__main__":
+ def _matches(path, exact=(), globs=()):

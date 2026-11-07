@@ -1,0 +1,16 @@
+# kills: test_fs_serenity_row_follows_the_nine_factory_scales_with_its_credit_and_cells
+# suite: python3 -m unittest -k test_fs_serenity_row_follows_the_nine_factory_scales_with_its_credit_and_cells tests.test_scale_pages
+# Two mutant cells of the F# Serenity row swap, so the page lists D3 and G#3 on the wrong fields.
+diff --git a/tools/neotone_page.json b/tools/neotone_page.json
+--- a/tools/neotone_page.json
++++ b/tools/neotone_page.json
+@@ -241,8 +241,8 @@
+     "E5"
+    ],
+    "mutant": [
+-    "D3",
+     "G#3",
++    "D3",
+     "E3",
+     "B2",
+     "A5",
