@@ -10428,7 +10428,7 @@ function run() {
         }
       });
 
-    test("LS2: with the backup panel open its controls are panel Tab stops right after BACK UP SAVED SCALES, in the grid and DOM orders (REAL fonts)",
+    test("LS2: with the backup panel open its controls are panel Tab stops right after BACKUP YOUR SCALES, in the grid and DOM orders (REAL fonts)",
       { timeout: 120000 }, async () => {
         try {
           await rb.setViewport(844, 390, true);

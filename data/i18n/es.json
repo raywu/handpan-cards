@@ -365,7 +365,7 @@
   "move.go_plain": "ABRIR {host}",
   "move.dismiss": "Ocultar por ahora",
   "move.banner_label": "Handpan Theory se ha mudado",
-  "backup.open": "COPIA DE ESCALAS",
+  "backup.open": "COPIA DE TUS ESCALAS",
   "backup.intro": "Las escalas guardadas viven solo en este navegador, que puede borrarlas tras un tiempo sin visitas. Guarda esta lista en un lugar seguro, por ejemplo en Notas o en un correo a ti mismo.",
   "backup.session": "Las escalas guardadas no se conservan ahora en este navegador. Desaparecen al cerrar esta pestaña, así que haz la copia ahora.",
   "backup.restore": "Para restaurar, toca cada enlace de tu lista. El reemplazo de una escala inicial vuelve como una escala personalizada nueva junto a la inicial, y las escalas iniciales ocultas aparecen solo como una nota.",
