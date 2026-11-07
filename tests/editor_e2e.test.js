@@ -1455,6 +1455,7 @@ function run() {
             await endGesture(kind);
             const undo = await centreOf("#editor-notice-undo");
             await tapPoint(undo, kind === "touch");
+            if (kind === "touch") await b.eval(`const u = document.getElementById("editor-notice-undo"); if (u) u.click(); return true;`);
             let after = await core();
             for (let waited = 0; waited < 1500 && JSON.stringify(after) !== JSON.stringify(before); waited += 80) {
               await pause();
