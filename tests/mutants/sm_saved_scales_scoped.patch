@@ -1,0 +1,15 @@
+# kills: test_saved_scales_run_full_by_content
+# suite: python3 -m unittest -k test_saved_scales_run_full_by_content tests.test_ci_scope
+# A diff that adds a localStorage or indexedDB line no longer forces the full mutation run.
+diff --git a/tools/ci_scope.py b/tools/ci_scope.py
+--- a/tools/ci_scope.py
++++ b/tools/ci_scope.py
+@@ -146,7 +146,7 @@ def full_trigger(changed, diff_text, head_ref, corpus):
+     if fnmatch.fnmatch(head_ref or "", RELEASE_REF):
+         return "release ref " + head_ref
+     for path, line in changed_lines(diff_text):
+-        if _scans_content(path) and FS_KEYWORDS.search(line):
++        if False:
+             return "saved scales keyword %r in %s" % (FS_KEYWORDS.search(line).group(0), path)
+     return None
+ 

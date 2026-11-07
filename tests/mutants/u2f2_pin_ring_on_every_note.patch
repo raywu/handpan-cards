@@ -1,0 +1,15 @@
+# kills: the pin ring appears only on a pinned note, and a rim note tap still selects first (the drawn circle is hit first)
+# suite: node --test --test-name-pattern ^the.pin.ring.appears tests/editor_e2e.test.js
+# fault: Every cyclops and bottom note carries a pin ring.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15757,7 +15757,7 @@ function editorWithOverlay(markup, m, solved) {
+     const r = zone === "inner" || zone === "bottom" ? EDITOR_HIT_AREA * 100 : drawn * 100;
+     const i = ring === "ding" ? 0 : ringIds(fields, ring).indexOf(id);
+     out += `<circle class="ehit" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="img" aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"/>`;
+-    if (EDITOR_PINNABLE.includes(zone) && m.pins.some((p) => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;
++    if (EDITOR_PINNABLE.includes(zone)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;
+     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
+   }
+   const standard = editorKindOf(m) === "standard";
