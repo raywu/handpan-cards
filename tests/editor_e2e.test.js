@@ -975,6 +975,22 @@ function run() {
             assert.deepStrictEqual(await names("bottom"), ["E3"], await status());
           });
 
+          test("U2f review: the landing ring for a tray note over an empty cyclops arc or bottom ring sits on that orbit with a note-sized radius, not on the pan centre", async () => {
+            await setup("(D3) " + RIM8);
+            const landing = () => b.eval(`const c = document.querySelector("#editor-pan .editor-landing"); return c ? { x: +c.getAttribute("cx"), y: +c.getAttribute("cy"), r: +c.getAttribute("r") } : null;`);
+            const end = () => kind === "touch" ? b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }) : b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 0, y: 0, button: "left", buttons: 0, clickCount: 1 });
+            for (const [orbit, deg] of [[0.38, 90], [1.15, 150]]) {
+              await gesture(await chipAt("B"), await spotAt(orbit, deg), kind, { release: false });
+              await new Promise((done) => setTimeout(done, 60));
+              const at = await landing();
+              await end();
+              await new Promise((done) => setTimeout(done, 80));
+              assert.ok(at, "a landing ring shows over the empty arc");
+              assert.ok(Math.abs(Math.hypot(at.x, at.y) - orbit * 100) < 1.5, "ring centre on the " + orbit + " orbit, got " + JSON.stringify(at));
+              assert.ok(at.r > 8 && at.r < 30, "note-sized radius, got " + at.r);
+            }
+          });
+
           test("D4: a drag swaps two placed notes (Undo restores); a placed bottom note on the ding swaps seats with it; a tray note on the ding replaces it", async () => {
             await setup("[A2] " + SCALE);
             const before = await core();

@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (s && s.held) {
      for (const ring of ["inner", "bottom"]) {
        if (ringIds(fields, ring).length) continue;
-       const orb = geom[ring] || (ring === "inner" ? 0.38 : 1.15);
+       const orb = editorOrbit(geom, ring);
