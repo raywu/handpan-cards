@@ -1019,6 +1019,9 @@ describe("U2e-2 palette, mirror and anchor", () => {
     assert.strictEqual(a.get(`editorApply(__h, (m) => editorSetAnchor(m, "between")).history.past.length`), 0, "already split");
     assert.strictEqual(a.get(`editorApply(__h, (m) => editorSetAnchor(m, "one")).history.past.length`), 1);
     assert.strictEqual(plain(a.get(`editorSetAnchor(__m, "left")`)).ok, false, "only the two named anchors");
+    load(a, WITH_BOTTOM);
+    a.run("globalThis.__h = editorHistoryNew(__m); true");
+    assert.strictEqual(a.get(`editorApply(__h, (m) => editorSetAnchor(m, "one")).history.past.length`), 0, "centred is already the default");
     assert.strictEqual(apply(a, `editorSetAnchor(__m, "one")`).ok, true);
     assert.deepStrictEqual(solvedAngles(a, "rim"), one);
   });
