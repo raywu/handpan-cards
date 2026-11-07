@@ -16,6 +16,7 @@ Plan: docs/plans/2026-10-31-logo-in-app.md (D3, D5, D7).
 import os
 import re
 import sys
+import struct
 import unittest
 
 import fitz
@@ -30,6 +31,7 @@ MASTER_PNG = os.path.join(paths.ROOT, "docs", "plans", "assets", "2026-11-02-fie
                           "approved-logo-master.png")
 TOUCH = os.path.join(paths.ROOT, "apple-touch-icon.png")
 OG = os.path.join(paths.ROOT, "og.png")
+ICO = os.path.join(paths.ROOT, "favicon.ico")
 
 
 def brand(name):
@@ -164,6 +166,44 @@ class IconFilesTest(unittest.TestCase):
         moved = mark.replace("<path ", '<path transform="translate(60 0)" ', 1)
         self.assertNotEqual(moved, mark)
         self.assertGreater(make_icons.master_differing_fraction(moved), 0.02)
+
+
+class FaviconIcoTest(unittest.TestCase):
+    def entries(self):
+        with open(ICO, "rb") as f:
+            data = f.read()
+        reserved, kind, count = struct.unpack_from("<HHH", data, 0)
+        self.assertEqual((reserved, kind), (0, 1))
+        out = []
+        for i in range(count):
+            w, h, _, _, _, bpp, size, offset = struct.unpack_from("<BBBBHHII", data, 6 + 16 * i)
+            out.append((w or 256, h or 256, data[offset:offset + size]))
+        return out
+
+    def test_the_ico_holds_16_32_and_48_png_frames(self):
+        entries = self.entries()
+        self.assertEqual([(w, h) for w, h, _ in entries], [(16, 16), (32, 32), (48, 48)])
+        for w, h, blob in entries:
+            self.assertTrue(blob.startswith(b"\x89PNG\r\n\x1a\n"))
+            pix = fitz.Pixmap(blob)
+            self.assertEqual((pix.width, pix.height), (w, h))
+
+    def test_the_ico_is_checked_by_make_icons(self):
+        self.assertIn("favicon.ico", make_icons.check())
+        self.assertTrue(make_icons.check()["favicon.ico"][0])
+
+    def test_the_ico_is_stale_when_the_favicon_source_changes(self):
+        recoloured = make_icons.favicon_svg().replace(make_icons.FAVICON_TILE, "#FF0000")
+        ok, frac = make_icons.check(sources={"favicon.ico": recoloured})["favicon.ico"]
+        self.assertFalse(ok)
+        self.assertGreater(frac, make_icons.MAX_DIFFERING_FRACTION)
+
+    def test_index_links_the_ico_beside_the_svg_favicon(self):
+        html = open(paths.INDEX_HTML, encoding="utf-8").read()
+        link = '<link rel="icon" href="/favicon.ico" sizes="any">'
+        self.assertEqual(html.count(link), 1)
+        self.assertLess(html.index('<link rel="icon" type="image/svg+xml"'), html.index(link))
+
 
 
 if __name__ == "__main__":
