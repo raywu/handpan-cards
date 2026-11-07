@@ -1187,7 +1187,7 @@ NOT_PUBLISHED = [
     ("Eb La Sirena 16", "DOME+7", "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 F4 F#4 A#4 C5 D#5 F5"),
     ("B2 Onoleo 15", "DOME+8", "B2 E3 F#3 G3 A3 B3 C4 D#4 E4 F#4 G4 A4 B4 C5 D#5"),
 ]
-ORDER = [n for n, *_ in FACTORY] + [n for n, *_ in SPREAD] + [ONOLEO[0]] + [ASTRO[0]]
+ORDER = [n for n, *_ in FACTORY] + [n for n, *_ in SPREAD] + [ONOLEO[0]] + [ASTRO[0]] + ["F# Serenity"]
 LINKED = SPREAD + [ONOLEO]
 SIRENA_SEED = "(D#2) C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 [F4] [F#4] [A#4] [C5] [D#5] [F5]"
 SIRENA_MAP = ["r49", "r51", "r53", "r54", "r56", "r58", "r60", "r61", "r63", "b65", None, "b66", "b70", None, "b72",
@@ -1317,6 +1317,32 @@ class NeotonePageTest(unittest.TestCase):
         self.assertEqual(out["profile"]["map"], EX_MAP)
         self.assertEqual(out["profile"]["rev"], 2)
         self.assertEqual(out["again"], EX_LINK[4:])
+
+    def test_fs_serenity_row_follows_the_nine_factory_scales_with_its_credit_and_cells(self):
+        html = neo()["html"]
+        bodies = re.findall(r"<tbody>.*?</tbody>", html, re.S)
+        serenity = [b for b in bodies if "F# Serenity" in b]
+        self.assertEqual(len(serenity), 1)
+        self.assertIs(bodies[9], serenity[0])
+        self.assertEqual(len(bodies), 10)
+        body = serenity[0]
+        self.assertIn("by Rep Matsumoto", body)
+        self.assertNotIn("DOME", body)
+        self.assertIn("ships with nine scales on the DOME hotkeys", html)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", body, re.S)
+        cells = lambda r: re.findall(r"<td>(.*?)</td>", r)
+        self.assertEqual(cells(rows[1]), "F#3 A3 B3 C#4 E4 F#4 A4 B4 C#5 E5".split())
+        self.assertEqual(cells(rows[2]), "- D3 G#3 E3 B2 A5 F#5 C#6 B5 E6".split())
+
+    def test_fs_serenity_practice_link_is_the_owners_exact_layout(self):
+        owner = ("7/uB2_uD3_uE3_(Fs3)_uGs3_A3_B3_Cs4_E4_Fs4_A4_B4_Cs5_E5_uFs5_uA5_uB5_uCs6_uE6/F%23+Serenity/"
+                 "pair-r57.r59.r61.r64.r66.r69.r71.r73.r76.b50.b56.b52.b47.b81.b78.b85.b83.b88/a1ceea")
+        html = neo()["html"]
+        self.assertIn('<a class="open" href="/#s=%s">Practice F# Serenity</a>' % owner, html)
+        row = next(x for x in gen.load_neotone_row()["defaults"] if x["name"] == "F# Serenity")
+        d = gen.engine([], [row])["defaults"][0]
+        self.assertTrue(d["ok"])
+        self.assertEqual(d["share"], owner)
 
     def test_cards_equal_the_apps_pan_of_build_generated_and_carry_the_lens(self):
         row = neo()["row"]
@@ -1462,14 +1488,14 @@ class NeotonePageTest(unittest.TestCase):
     def test_one_table_nine_tbodies_in_hotkey_order_and_no_second_copy_of_the_notes(self):
         html = neo()["html"]
         self.assertEqual(html.count("<table"), 1)
-        self.assertEqual(html.count("<tbody"), 9)
+        self.assertEqual(html.count("<tbody"), 10)
         self.assertEqual(len(re.findall(r"<caption\b", html)), 1)
         self.assertRegex(html, r"<caption[^>]*>Neotone factory scales</caption>")
         self.assertNotIn('style="overflow-x:auto"', html)
         self.assertNotIn("overflow-x", html)
         hot = re.findall(r'<span class="hk">(DOME\+\d)</span>', factory_section())
         self.assertEqual(hot, ["DOME+%d" % i for i in range(1, 10)])
-        self.assertEqual(html.count("Top Notes"), 9)
+        self.assertEqual(html.count("Top Notes"), 10)
 
     def test_each_published_scale_has_three_rows_header_cells_and_a_rowspan_practice_cell(self):
         blocks = factory_blocks()
@@ -1595,7 +1621,7 @@ class NeotonePageTest(unittest.TestCase):
     def test_the_fixture_carries_the_factory_links_and_the_disclaimer_stays_last_but_one(self):
         fx = neo_fixture()["neotone"]["defaults"]
         blocks = factory_blocks()
-        self.assertEqual([d["name"] for d in fx], [n for n, *_ in FACTORY] + [SPREAD[0][0], ONOLEO[0], ASTRO[0]])
+        self.assertEqual([d["name"] for d in fx], [n for n, *_ in FACTORY] + [SPREAD[0][0], ONOLEO[0], ASTRO[0], "F# Serenity"])
         for d in fx:
             self.assertIn('href="/#s=%s">Practice %s</a>' % (d["share"], d["name"]), blocks[d["name"]])
         ps = re.findall(r"<p[^>]*>(.*?)</p>", neo()["html"], re.S)
