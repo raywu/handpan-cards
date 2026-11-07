@@ -1,0 +1,15 @@
+# kills: test_self_canonical_title_and_description
+# suite: python3 -m unittest -k test_self_canonical_title_and_description tests.test_scale_pages
+# The Serenity page declares the Neotone page as its canonical, so search folds it away.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -729,7 +729,7 @@ def serenity_page(row=None):
+                    "and nine mutant notes, with a link to practise it free." % d["ding"])
+     faq = serenity_faq(d)
+     light, dark = row["accent_light"], row["accent_dark"]
+-    out = head(title, description, description, url, light)
++    out = head(title, description, description, SITE + "scales/neotone/", light)
+     out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + NEO_TABLE_CSS
+                + "section.faq h3{font-size:16px;margin:12px 0 2px}\n</style>\n")
+     crumbs = [("Home", SITE), ("Scale chord charts", SITE + "scales/"), ("Neotone", SITE + "scales/%s/" % NEOTONE_SLUG),
