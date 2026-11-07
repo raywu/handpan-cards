@@ -219,12 +219,18 @@ grant  execute on function public.purge_tombstones()  to sync_purger;
 --          rev = (select base from s) + r.k
 --     from r where t.user_id = :u and t.scale_id = r.scale_id;
 --   commit;
--- Junk overwrite: restore one version from history with a fresh rev.
+-- Junk overwrite: restore one version from history with a fresh rev. First check the select returns a
+-- row (no match would null the live record, so the update is guarded), and copy the current body into
+-- history before replacing it.
 --   begin;
+--   insert into public.scale_history (user_id, scale_id, record, replaced_at)
+--     select user_id, scale_id, record, now() from public.saved_scales
+--      where user_id = :u and scale_id = :s and record is not null;
 --   update public.sync_users set last_rev = last_rev + 1 where user_id = :u;
---   update public.saved_scales set record = (select record from public.scale_history
---            where user_id = :u and scale_id = :s and replaced_at < :t order by replaced_at desc limit 1),
+--   update public.saved_scales set record = h.record,
 --          rev = (select last_rev from public.sync_users where user_id = :u), deleted = false, deleted_at = null,
 --          updated_at = now()
+--     from (select record from public.scale_history
+--            where user_id = :u and scale_id = :s and replaced_at < :t order by replaced_at desc limit 1) h
 --    where user_id = :u and scale_id = :s;
 --   commit;

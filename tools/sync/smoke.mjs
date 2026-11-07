@@ -8,7 +8,9 @@
 //   SMOKE_ADMIN_DB_URL                         optional postgres connection string (psql) to backdate rows
 //   SMOKE_PURGER_DB_URL                        optional connection string for role sync_purger (psql)
 // Cases needing an optional variable are reported as SKIP, never as PASS.
-import { execFileSync } from "node:child_process";
+// Connection strings reach psql only through the PGDATABASE environment variable (never argv), and every
+// message printed here is redacted of those strings and of any user:password@ part.
+import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 
 const URL_ = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -17,6 +19,17 @@ if (!URL_ || !ANON) {
   console.error("SUPABASE_URL and SUPABASE_ANON_KEY are required");
   process.exit(2);
 }
+
+const secrets = [process.env.SMOKE_ADMIN_DB_URL, process.env.SMOKE_PURGER_DB_URL, ANON].filter(Boolean);
+const redact = (text) => {
+  let out = String(text);
+  for (const s of secrets) out = out.split(s).join("[redacted]");
+  return out.replace(/:\/\/[^\s@/]*@/g, "://[redacted]@");
+};
+process.on("uncaughtException", (e) => {
+  console.error(redact(e && e.message ? e.message : e).slice(0, 300));
+  process.exit(1);
+});
 
 const results = { pass: 0, fail: 0, skip: 0 };
 const log = (status, name, note = "") => {
@@ -28,7 +41,7 @@ const check = async (name, fn) => {
     await fn();
     log("PASS", name);
   } catch (e) {
-    log("FAIL", name, String(e.message || e).slice(0, 160));
+    log("FAIL", name, redact(e.message || e).slice(0, 160));
   }
 };
 const skip = (name, why) => log("SKIP", name, why);
@@ -60,15 +73,29 @@ const token = async (letter) => {
 };
 const subOf = (jwt) => JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString()).sub;
 
-const psql = (url, sql) =>
-  execFileSync("psql", [url, "-v", "ON_ERROR_STOP=1", "-At", "-c", sql], { encoding: "utf8" }).trim();
+const psql = (url, sql) => {
+  const r = spawnSync("psql", ["-v", "ON_ERROR_STOP=1", "-At", "-c", sql], {
+    encoding: "utf8",
+    env: { ...process.env, PGDATABASE: url },
+  });
+  if (r.error || r.status !== 0) {
+    throw new Error(`psql failed (exit ${r.status}): ${redact(r.error ? r.error.message : r.stderr).trim().slice(0, 120)}`);
+  }
+  return r.stdout.trim();
+};
 
 const push = (jwt, rows) => api("/rest/v1/rpc/push_scales", { method: "POST", jwt, body: { rows } });
 const row = (id, base, record = { n: 1 }, deleted = false) => ({ scale_id: id, base_rev: base, record, deleted });
+const PAGE = 1000;
 const pull = async (jwt, cursor = 0) => {
-  const r = await api(`/rest/v1/saved_scales?select=scale_id,rev,record,deleted&rev=gt.${cursor}&order=rev&limit=10000`, { jwt });
-  ok(r.status === 200, `pull status ${r.status}`);
-  return r.json;
+  const all = [];
+  for (let at = cursor; ; ) {
+    const r = await api(`/rest/v1/saved_scales?select=scale_id,rev,record,deleted&rev=gt.${at}&order=rev&limit=${PAGE}`, { jwt });
+    ok(r.status === 200, `pull status ${r.status}`);
+    all.push(...r.json);
+    if (r.json.length < PAGE) return all;
+    at = r.json[r.json.length - 1].rev;
+  }
 };
 const one = async (jwt, rows) => {
   const r = await push(jwt, rows);
@@ -88,6 +115,9 @@ if (!A || !B) {
 }
 const admin = process.env.SMOKE_ADMIN_DB_URL;
 const purger = process.env.SMOKE_PURGER_DB_URL;
+const cleanUser = (uid) =>
+  psql(admin, `delete from scale_history where user_id='${uid}'; delete from saved_scales where user_id='${uid}'; update sync_users set last_rev=0 where user_id='${uid}'`);
+if (admin) cleanUser(subOf(A));
 
 await check("A writes and reads its own row", async () => {
   const id = randomUUID();
@@ -173,14 +203,24 @@ await check("base_rev null revives a tombstone (new rev, same id) and conflicts 
   ok(again.conflict === true, "null base on live row was accepted");
 });
 
-await check("two overwrites then restore the original from scale_history", async () => {
-  if (!admin) throw new Error("needs SMOKE_ADMIN_DB_URL to read scale_history (no client grant)");
+if (!admin) skip("two overwrites then restore the original from scale_history", "needs SMOKE_ADMIN_DB_URL to read scale_history");
+else await check("two overwrites then restore the original from scale_history", async () => {
   const id = randomUUID();
   const [a] = await one(A, [row(id, null, { v: "original" })]);
   const [b] = await one(A, [row(id, a.rev, { v: "junk1" })]);
   await one(A, [row(id, b.rev, { v: "junk2" })]);
   const hist = JSON.parse(psql(admin, `select coalesce(json_agg(record order by id),'[]') from scale_history where scale_id='${id}'`));
   eq(hist, [{ v: "original" }, { v: "junk1" }], "history");
+  const u = subOf(A);
+  psql(admin, `begin;
+    update public.sync_users set last_rev = last_rev + 1 where user_id='${u}';
+    update public.saved_scales set record = (select record from public.scale_history where user_id='${u}' and scale_id='${id}' order by id asc limit 1),
+           rev = (select last_rev from public.sync_users where user_id='${u}'), deleted = false, deleted_at = null, updated_at = now()
+     where user_id='${u}' and scale_id='${id}';
+    commit;`);
+  const restored = (await pull(A)).find((x) => x.scale_id === id);
+  eq(restored.record, { v: "original" }, "restored body");
+  ok(restored.rev > b.rev, "restore did not take a fresh rev");
 });
 
 await check("anon-key call refusal (RPC) is repeated with a junk bearer", async () => {
@@ -209,9 +249,7 @@ if (!C) {
   for (const n of ["501st live row refused; 500 tombstones + 1 live accepted", "5001st total row refused", "2001st history row refused with rate, history unchanged"]) skip(n, "no user C");
 } else {
   const uidC = subOf(C);
-  const clean = admin
-    ? () => psql(admin, `delete from scale_history where user_id='${uidC}'; delete from saved_scales where user_id='${uidC}'; update sync_users set last_rev=0 where user_id='${uidC}'`)
-    : null;
+  const clean = admin ? () => cleanUser(uidC) : null;
   let cOk = true;
   if (clean) clean();
   else if ((await pull(C)).length) { cOk = false; for (const n of ["live cap", "total cap", "history cap"]) skip(n, "user C not empty and no SMOKE_ADMIN_DB_URL"); }
@@ -247,8 +285,8 @@ if (!C) {
       eq(r.refused, "cap", "5001st");
       live = (await pull(C)).filter((x) => !x.deleted);
     });
-    await check("2001st history row refused with rate, history unchanged", async () => {
-      if (!admin) throw new Error("needs SMOKE_ADMIN_DB_URL to count scale_history");
+    if (!admin) skip("2001st history row refused with rate, history unchanged", "needs SMOKE_ADMIN_DB_URL to count scale_history");
+    else await check("2001st history row refused with rate, history unchanged", async () => {
       psql(admin, `delete from scale_history where user_id='${uidC}'`);
       const cur = live.slice(0, 200).map((x) => ({ scale_id: x.scale_id, base_rev: x.rev }));
       for (let round = 0; round < 10; round++) {
@@ -289,10 +327,12 @@ if (!admin || !purger) {
   });
 }
 
-await check("delete_my_account removes the auth user and rows", async () => {
-  const email = process.env.SMOKE_D_EMAIL;
-  const password = process.env.SMOKE_D_PASSWORD;
-  if (!email || !password) throw new Error("needs SMOKE_D_EMAIL and SMOKE_D_PASSWORD");
+const dEmail = process.env.SMOKE_D_EMAIL;
+const dPassword = process.env.SMOKE_D_PASSWORD;
+if (!dEmail || !dPassword) skip("delete_my_account removes the auth user and rows", "needs SMOKE_D_EMAIL and SMOKE_D_PASSWORD");
+else await check("delete_my_account removes the auth user and rows", async () => {
+  const email = dEmail;
+  const password = dPassword;
   let t = await api("/auth/v1/token?grant_type=password", { method: "POST", body: { email, password } });
   if (!t.json?.access_token) t = await api("/auth/v1/signup", { method: "POST", body: { email, password } });
   const jwt = t.json?.access_token;
