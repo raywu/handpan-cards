@@ -365,7 +365,7 @@
   "move.go_plain": "OUVRIR {host}",
   "move.dismiss": "Masquer pour l'instant",
   "move.banner_label": "Handpan Theory a déménagé",
-  "backup.open": "SAUVEGARDER MES GAMMES",
+  "backup.open": "SAUVEGARDE DES GAMMES",
   "backup.intro": "Les gammes enregistrées ne vivent que dans ce navigateur, qui peut les effacer après un certain temps sans visite. Gardez cette liste en lieu sûr, par exemple dans Notes ou dans un e-mail à vous-même.",
   "backup.session": "Les gammes enregistrées ne sont pas conservées dans ce navigateur pour le moment. Elles disparaissent à la fermeture de cet onglet : sauvegardez-les maintenant.",
   "backup.restore": "Pour restaurer, touchez chaque lien de votre liste. Le remplacement d’une gamme d’origine revient comme une nouvelle gamme personnalisée à côté de la gamme d’origine, et les gammes d’origine masquées n’apparaissent que comme une note.",

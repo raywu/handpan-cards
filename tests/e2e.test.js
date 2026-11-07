@@ -10497,10 +10497,10 @@ function run() {
           const head = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced", "seq-source-link"];
           for (const [w, h] of [[844, 390], [800, 340]]) {
             const ids = await stopsAt(w, h);
-            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper-select", "deck-add", "deck-restore", "res", "about-open", "lang-select"], `${w}x${h}: ${JSON.stringify(ids)}`);
+            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper-select", "deck-add", "deck-restore", "backup-open", "res", "about-open", "lang-select"], `${w}x${h}: ${JSON.stringify(ids)}`);
           }
           const dom = await stopsAt(380, 780);
-          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "print-download", "print-paper-select", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
+          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "backup-open", "print-download", "print-paper-select", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
         } finally {
           await rb.setViewport(900, 900, false);
           await rb.goto(URL);
@@ -10816,7 +10816,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "print-download", "print-paper-select", ...RES_IDS,
+      "tier-advanced", "deck-add", "backup-open", "print-download", "print-paper-select", ...RES_IDS,
       "about-open", "lang-select"];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
