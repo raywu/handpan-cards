@@ -444,5 +444,7 @@
   "editor.reset_both_aria": "Reset cyclops and bottom spacing",
   "editor.palette": "Card palette",
   "editor.palette_n": "Card palette {n}",
-  "editor.layout.aria": "Mirror and orientation"
+  "editor.layout.aria": "Mirror and orientation",
+  "editor.replace_ding": "Replace ding",
+  "editor.replace_ding_aria": "Make the selected note the ding"
 }
