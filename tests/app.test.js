@@ -20454,6 +20454,18 @@ describe("backup: back up saved scales", () => {
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
 
+  test("an open backup panel on desktop shows the new scale after a save", async () => {
+    const app = await durableBoot();
+    app.run("desktopMQ.matches = true");
+    open(app);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    await makeCustom(app);
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.ok(linksOf(textOf(app)).length >= 1, "the open list is stale after the save");
+    assert.strictEqual(app.els["backup-copy"].disabled, false);
+    assert.strictEqual(app.els["backup-status"].textContent, "");
+  });
+
   test("the panel copy says a restored seed replacement is a new custom scale and hidden seeds are a note", () => {
     const app = boot();
     const copy = app.get('t("backup.restore")');
