@@ -415,6 +415,8 @@
   "editor.say.ding_required": "Jede Skala braucht ein Ding. Zieh einen anderen Ton darauf, um zu tauschen.",
   "editor.say.rim_min": "Der Rand braucht mindestens 1 Ton.",
   "editor.say.moved": "{name} verschoben.",
+  "editor.neo.field_empty": "Feld {n} ist leer. Belege das Feld, bevor du seine Mutante setzt.",
+  "editor.neo.own_row": "Eine Neotone-Note bleibt in ihrer Reihe. Verschiebe sie auf ein anderes Feld derselben Reihe.",
   "editor.say.ding_stays": "Das Ding bleibt, wo es ist. Tippe einen anderen Ton, um zu tauschen.",
   "editor.say.same_zone": "{name} ist schon auf {zone}.",
   "editor.say.zone_is_full": "{zone} ist voll.",

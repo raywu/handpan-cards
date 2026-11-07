@@ -399,6 +399,8 @@
   "editor.say.ding_required": "每个音阶都需要 Ding。把另一个音拖到它上面即可互换。",
   "editor.say.rim_min": "外圈至少要有 1 个音。",
   "editor.say.moved": "{name} 已移动。",
+  "editor.neo.field_empty": "第{n}号音位是空的。请先填入该音位，再放它的变音。",
+  "editor.neo.own_row": "Neotone 的音只能在本排内移动。请移到同一排的其他音位。",
   "editor.say.ding_stays": "Ding 不会移动。点另一个音与它互换。",
   "editor.say.same_zone": "{name} 已经在{zone}了。",
   "editor.say.zone_is_full": "{zone}已满。",

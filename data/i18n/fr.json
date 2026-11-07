@@ -415,6 +415,8 @@
   "editor.say.ding_required": "Toute gamme a besoin d’un Ding. Déposez une autre note dessus pour échanger.",
   "editor.say.rim_min": "Le dessus a besoin d’au moins 1 note.",
   "editor.say.moved": "{name} déplacée.",
+  "editor.neo.field_empty": "Le champ {n} est vide. Remplissez le champ avant sa mutante.",
+  "editor.neo.own_row": "Une note Neotone reste dans sa rangée. Déplacez-la vers un autre champ de la même rangée.",
   "editor.say.ding_stays": "Le Ding ne bouge pas. Touchez une autre note pour échanger.",
   "editor.say.same_zone": "{name} est déjà sur {zone}.",
   "editor.say.zone_is_full": "{zone} est plein.",
