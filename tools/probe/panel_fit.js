@@ -76,6 +76,15 @@ function aboutAllowance(baseControls, candControls) {
   return "about-open" in candControls && !("about-open" in baseControls) ? ABOUT_ALLOWANCE_PX : 0;
 }
 
+// The backup row (Safari storage lane B) is one full-width mode button under the
+// restore row and grows the panel about 47 px (measured). Same shape as the About
+// allowance, for the one `backup-open` control only: rules 1 and 3, and rule 2 for the
+// controls below it, which shift down by the row's height.
+const BACKUP_ALLOWANCE_PX = 52;
+function backupAllowance(baseControls, candControls) {
+  return "backup-open" in candControls && !("backup-open" in baseControls) ? BACKUP_ALLOWANCE_PX : 0;
+}
+
 // The Language group (i18n lane B) is a heading and a 44px select after the About
 // row. Measured on this lane's head, both font modes, as the growth of the panel's
 // needed height. Same shape as the About allowance: rule 1 and rule 3, never rule 2,
@@ -120,9 +129,10 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
   const resA = resAllowance(b.controls, c.controls);
   const aboutA = aboutAllowance(b.controls, c.controls);
   const langA = langAllowance(b.controls, c.controls);
+  const backupA = backupAllowance(b.controls, c.controls);
 
   // 1 fit
-  if (c.needed > Math.max(b.needed + allowance + resA + aboutA + langA, avail) + FIT_TOL) {
+  if (c.needed > Math.max(b.needed + allowance + resA + aboutA + langA + backupA, avail) + FIT_TOL) {
     out.rule1.fail.push(offender(id, `${c.needed.toFixed(1)} / ${b.needed.toFixed(1)} / ${avail.toFixed(1)}`));
   }
 
@@ -135,12 +145,12 @@ function judgeCell({ base: b, cand: c, refRendered, od8FailBaseOverflow = OD8_FA
       if (!bc.rendered) continue;
       if (!cc.rendered) {
         out.rule2.fail.push(offender(id, `${key} unrendered (base bottom ${bc.bottom.toFixed(1)})`));
-      } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance), avail) + CTRL_TOL) {
+      } else if (cc.bottom > Math.max(bc.bottom + (ALLOWANCE_EXEMPT.includes(key) ? 0 : allowance + backupA), avail) + CTRL_TOL) {
         const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs base ${bc.bottom.toFixed(1)} / avail ${avail.toFixed(1)}`);
         if (baseFits || od8FailBaseOverflow) out.rule2.fail.push(o);
         else out.rule2.reported.push(o);
       }
-    } else if (cc.rendered && cc.bottom > Math.max(avail, isRes(key) ? b.needed + resA : key === "about-open" ? b.needed + aboutA : key === "lang-select" ? b.needed + langA : 0) + CTRL_TOL) {
+    } else if (cc.rendered && cc.bottom > Math.max(avail, isRes(key) ? b.needed + resA : key === "about-open" ? b.needed + aboutA : key === "lang-select" ? b.needed + langA : key === "backup-open" ? b.needed + backupA : 0) + CTRL_TOL) {
       // 3 new control
       const o = offender(id, `${key} bottom ${cc.bottom.toFixed(1)} vs avail ${avail.toFixed(1)}`);
       (baseFits ? out.rule3.fail : out.rule3.reported).push(o);
@@ -850,7 +860,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, LS_S_ALLOWANCE_PX, lsAllowance, LANG_ALLOWANCE_PX, langAllowance, parseArgs, thresholdCell,
+  OD8_FAIL_BASE_OVERFLOW, REMOVED_BY_DESIGN, HEADING_ALLOWANCE_PX, ALLOWANCE_EXEMPT, headingAllowance, RES_ALLOWANCE_PX, resAllowance, ABOUT_ALLOWANCE_PX, aboutAllowance, BACKUP_ALLOWANCE_PX, backupAllowance, LS_S_ALLOWANCE_PX, lsAllowance, LANG_ALLOWANCE_PX, langAllowance, parseArgs, thresholdCell,
   overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   tallyJudgement, tallyGutter, invarianceWidths, checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,

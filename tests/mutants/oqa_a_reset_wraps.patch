@@ -1,0 +1,15 @@
+# kills: OQA reset one line: Reset spacing is a single line box at 375, 820 and 1440
+# suite: node --test --test-name-pattern ^OQA.reset.one.line tests/editor_e2e.test.js
+# fault: Reset spacing may wrap to two lines.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1324,7 +1324,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-oct{flex:1 1 auto; text-align:center; font:700 15px/1 "Nunito Sans"}
+ #editor-flats{margin-left:auto; padding-inline:var(--sp-3)}
+ #editor .editor-toolbar{flex:0 0 auto; display:flex; gap:var(--sp-2); align-items:center}
+-#editor .editor-toolbar .mode{flex:1 1 0; min-width:44px; padding-inline:4px; white-space:nowrap}
++#editor .editor-toolbar .mode{flex:1 1 0; min-width:44px; padding-inline:4px; white-space:normal}
+ #editor .editor-toolbar .mode.primary{flex:1.4 1 0; background:#242424; color:#F6F4ED; border-color:#242424}
+ #editor .editor-toolbar .mode:disabled{opacity:.45; cursor:default}
+ #editor-tray{flex:0 0 auto; min-height:var(--sp-4)}

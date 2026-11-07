@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15738,7 +15738,7 @@ function editorRenderAreas(m) {
-     const vars = { n, max: EDITOR_CAPS[ring] };
-     b.textContent = t("editor.pill." + ring, vars);
+@@ -15821,7 +15821,7 @@ function editorRenderAreas(m) {
+       b.appendChild(editorNode("span", { class: "pill-count", text: t("editor.pill.count", vars) }));
+     }
      b.setAttribute("aria-label", t("editor.pill_aria." + ring, vars));
 -    b.disabled = false;
 +    b.disabled = !ready;

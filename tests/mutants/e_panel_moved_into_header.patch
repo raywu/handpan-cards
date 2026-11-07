@@ -79,7 +79,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1581,6 +1581,82 @@ html.about-open{overflow:hidden}
+@@ -1596,6 +1596,100 @@ html.about-open{overflow:hidden}
    <nav class="decks" id="decks"></nav>
    <p id="saved-status" role="status" hidden></p>
    <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
@@ -116,6 +116,24 @@ diff --git a/index.html b/index.html
 +      <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
 +    </div>
 +    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
++    <div class="modebar">
++      <button class="mode" type="button" id="backup-open" aria-expanded="false" aria-controls="backup-panel">BACK UP SAVED SCALES</button>
++    </div>
++    <!-- Safari storage lane B: a read-only text list of the saved scales' #s= links.
++         Restore is the user tapping each link; there is no paste box. -->
++    <div id="backup-panel" hidden>
++      <p class="panel-note" id="backup-intro">Saved scales live only in this browser, which can erase them after a while without a visit. Keep this list somewhere safe, such as Notes or an email to yourself.</p>
++      <p class="panel-note" id="backup-session" hidden>Saved scales are not being kept in this browser right now. They disappear when you close this tab, so back them up now.</p>
++      <p class="panel-note" id="backup-restore">To restore, tap each link in your saved list. A restored seeded-scale replacement comes back as a new custom scale beside the seeded one, and hidden seeded scales appear only as a note.</p>
++      <textarea id="backup-text" readonly rows="6" spellcheck="false" aria-label="Saved scale links"></textarea>
++      <div class="modebar">
++        <button class="mode" type="button" id="backup-share" hidden>SHARE</button>
++        <button class="mode" type="button" id="backup-copy">COPY</button>
++        <button class="mode" type="button" id="backup-download">DOWNLOAD .TXT</button>
++      </div>
++      <p class="panel-note" id="backup-status" role="status"></p>
++      <p class="panel-note" id="backup-last" hidden></p>
++    </div>
 +  </div>
 +  <div class="panel-group">
 +    <h3 class="panel-heading">Print this scale</h3>
@@ -162,7 +180,7 @@ diff --git a/index.html b/index.html
  </header>
  
  <main>
-@@ -1950,82 +2026,6 @@ html.about-open{overflow:hidden}
+@@ -1966,100 +2060,6 @@ html.about-open{overflow:hidden}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -199,6 +217,24 @@ diff --git a/index.html b/index.html
 -      <button class="mode" type="button" id="deck-add" aria-haspopup="dialog">+ ADD A SCALE</button>
 -    </div>
 -    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
+-    <div class="modebar">
+-      <button class="mode" type="button" id="backup-open" aria-expanded="false" aria-controls="backup-panel">BACK UP SAVED SCALES</button>
+-    </div>
+-    <!-- Safari storage lane B: a read-only text list of the saved scales' #s= links.
+-         Restore is the user tapping each link; there is no paste box. -->
+-    <div id="backup-panel" hidden>
+-      <p class="panel-note" id="backup-intro">Saved scales live only in this browser, which can erase them after a while without a visit. Keep this list somewhere safe, such as Notes or an email to yourself.</p>
+-      <p class="panel-note" id="backup-session" hidden>Saved scales are not being kept in this browser right now. They disappear when you close this tab, so back them up now.</p>
+-      <p class="panel-note" id="backup-restore">To restore, tap each link in your saved list. A restored seeded-scale replacement comes back as a new custom scale beside the seeded one, and hidden seeded scales appear only as a note.</p>
+-      <textarea id="backup-text" readonly rows="6" spellcheck="false" aria-label="Saved scale links"></textarea>
+-      <div class="modebar">
+-        <button class="mode" type="button" id="backup-share" hidden>SHARE</button>
+-        <button class="mode" type="button" id="backup-copy">COPY</button>
+-        <button class="mode" type="button" id="backup-download">DOWNLOAD .TXT</button>
+-      </div>
+-      <p class="panel-note" id="backup-status" role="status"></p>
+-      <p class="panel-note" id="backup-last" hidden></p>
+-    </div>
 -  </div>
 -  <div class="panel-group">
 -    <h3 class="panel-heading">Print this scale</h3>

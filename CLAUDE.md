@@ -41,7 +41,7 @@ A chord-card system for handpans, two outputs from one data source:
   of the written file (degrees contain U+00B0; a naive `re.sub` silently fails).
 - **The brand lockup region and the favicon URI are GENERATED.** Everything between
   `<!-- brand:lockup begin -->` and `<!-- brand:lockup end -->`, and the SVG favicon data URI, come from
-  `brand/*.svg` via `python3 tools/make_icons.py`, which also renders `apple-touch-icon.png` and `og.png`
+  `brand/*.svg` via `python3 tools/make_icons.py`, which also renders `favicon.ico`, `apple-touch-icon.png` and `og.png`
   (`--check` reports drift; `tools/validate.py` fails on it). Edit the SVG in `brand/`, re-run the tool.
   Same conflict rule as engine regions.
 - **The `const I18N` block is GENERATED** from `data/i18n/*.json` by
@@ -89,9 +89,7 @@ A chord-card system for handpans, two outputs from one data source:
   (`tools/ci_scope.py` `code_changed`).
 - The merge gate reads only the `validate` run conclusion at the verified head SHA
   (`gh run list --commit <sha> --workflow validate.yml`). Vendor checks never gate.
-- Dev first: a lane opens PR M to `main` and PR D from the same head to `dev`. D merges
-  only on a green full `validate` on M at the exact head, an addressed independent
-  review, and not CONFLICTING; then check served DEV (`docs/testing/browser.md`). M
+- Dev first: a lane opens PR M to `main` and PR D from the same head to `dev`. D merges only on a green `validate` on M at the exact head, an addressed independent review, and not CONFLICTING; then check served DEV (`docs/testing/browser.md`). Lane PRs run mutation scoped to the modules and tests they change; a PR touching deck data, the scale engine or saved scales runs the full mutation suite, as does every release PR into `main`, which also gets an independent RC review and an e2e pass on served DEV, and never merges red. M
   stays open until the owner says merge. After every merge to `main`, sync main to dev;
   `dev` moves only by merge commits. Rejected lanes are reverted on `dev` via
   `claude/dev-revert-<lane>`; if that lane later reaches `main`, revert the revert on a

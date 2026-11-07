@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16073,7 +16073,7 @@ function editorMarkDrop(target) {
-     const a = target.angle * Math.PI / 180;
-     at = [geom[target.ring] * 100 * Math.cos(a), -geom[target.ring] * 100 * Math.sin(a), target.ring === "bottom" ? geom.r_bnote : geom.r_note];
+@@ -16224,7 +16224,7 @@ function editorMarkDrop(target) {
+     const orb = editorOrbit(geom, target.ring);
+     at = [orb * 100 * Math.cos(a), -orb * 100 * Math.sin(a), editorDrawnReach(geom, target.ring)];
    }
 -  if (!at) return;
 +  return;

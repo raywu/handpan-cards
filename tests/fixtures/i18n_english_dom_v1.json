@@ -151,6 +151,80 @@
     "hidden": ""
    }
   },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
   "scale-name-row": {
    "text": "",
    "html": "",
@@ -886,6 +960,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -1632,6 +1780,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -2401,6 +2623,80 @@
     "hidden": ""
    }
   },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
   "scale-name-row": {
    "text": "",
    "html": "",
@@ -3156,6 +3452,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -3925,6 +4295,80 @@
     "hidden": ""
    }
   },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
   "scale-name-row": {
    "text": "",
    "html": "",
@@ -4678,6 +5122,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,

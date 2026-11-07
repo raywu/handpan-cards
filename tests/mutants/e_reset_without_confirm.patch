@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13678,7 +13678,7 @@ function disarmReset() {
-   if (announce.textContent === RESET_WARNING()) say("", "");
- }
+@@ -15800,7 +15800,7 @@ document.getElementById("backup-download").onclick = () => {
+ };
+ 
  restoreBtn.onclick = () => {
 -  if (!resetArmed) {
 +  if (false) {
