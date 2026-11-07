@@ -200,7 +200,7 @@ class FaviconIcoTest(unittest.TestCase):
 
     def test_index_links_the_ico_beside_the_svg_favicon(self):
         html = open(paths.INDEX_HTML, encoding="utf-8").read()
-        link = '<link rel="icon" href="/favicon.ico" sizes="any">'
+        link = '<link rel="icon" href="favicon.ico" sizes="32x32">'
         self.assertEqual(html.count(link), 1)
         self.assertLess(html.index('<link rel="icon" type="image/svg+xml"'), html.index(link))
 
