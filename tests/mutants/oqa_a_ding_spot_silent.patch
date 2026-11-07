@@ -1,0 +1,15 @@
+# kills: OQA N3 N4 N5 copy: ding stays, same zone, zone is full, each a status line and no silent deselect
+# suite: node --test --test-name-pattern ^OQA.N3.N4.N5.copy tests/editor_shell.test.js
+# fault: Tapping a spot with the ding selected says nothing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15976,7 +15976,7 @@ function editorMoveSelected(hit, m) {
+   if (hit.kind === "spot" && (s.sel.ring === "ding" || (s.sel.ring === hit.ring && hit.angle === undefined))) {
+     const name = editorNameAt(m, s.sel);
+     s.error = "";
+-    s.say = s.plainSay = s.sel.ring === "ding" ? t("editor.say.ding_stays") : t("editor.say.same_zone", { name, zone: t("editor.zone." + hit.ring) });
++    s.say = s.plainSay = s.sel.ring === "ding" ? "" : t("editor.say.same_zone", { name, zone: t("editor.zone." + hit.ring) });
+     editorRender();
+     return;
+   }
