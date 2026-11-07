@@ -16,7 +16,7 @@ import gen_scale_page as gen  # noqa: E402
 
 SITE = "https://handpantheory.com/"
 ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpantheory.com", "www.w3.org",
-                 "www.youtube.com", "masterthehandpan.com", "instruments-du-monde.com", "hipsy.eu", "www.sarazhandpans.com", "www.handpan.world",
+                 "www.youtube.com", "masterthehandpan.com", "instruments-du-monde.com", "www.sarazhandpans.com", "www.handpan.world",
                  "handpaner.com", "schema.org", "handpanhelpers.klangzeug.de", "svenkirchhofer.de",
                  "yataoshop.com", "isthmusinstruments.com", "www.drumland.com", "maginstruments.com",
                  "www.scan.co.uk", "www.meinlshop.de", "www.dingandtones.com", "sarazhandpans.com",
@@ -1736,7 +1736,7 @@ class SerenityPageTest(unittest.TestCase):
 
     def test_copy_credits_reo_as_a_musician_and_never_says_the_banned_things(self):
         p = Page(ser_page())
-        vis = p.visible() + json.dumps(ser_faq(ser_page())[0], ensure_ascii=False)
+        vis = (p.visible().replace(DISCLAIMER, "") + json.dumps(ser_faq(ser_page())[0], ensure_ascii=False))
         self.assertIn("Reo Matsumoto", vis)
         self.assertIn("a scale by Reo Matsumoto", p.norm())
         self.assertIn("handpan musician and beatboxer", p.norm())
@@ -1744,6 +1744,24 @@ class SerenityPageTest(unittest.TestCase):
         self.assertIsNone(re.search(r"\bdeck", vis, re.I))
         for banned in (r"maker", r"builder", r"factory scale", r"natural minor", r"aeolian", r"endorse"):
             self.assertIsNone(re.search(banned, vis, re.I), banned)
+
+    def test_about_copy_attributes_each_claim_to_its_source(self):
+        n = Page(ser_page()).norm()
+        self.assertNotIn("Amsterdam", n)
+        self.assertNotIn("hipsy", ser_page())
+        self.assertIn("Instruments du Monde describes his music as music without borders that mixes genres", n)
+        self.assertNotIn("and he describes aiming for music without borders", n)
+        self.assertIn("That is his general approach, not a statement about this scale.", n)
+
+    def test_the_page_has_its_own_date_and_the_trademark_line(self):
+        html = ser_page()
+        self.assertEqual(re.findall(r'<time datetime="([^"]*)"', html), ["2026-11-07"])
+        self.assertEqual(ser_faq(html)[0]["dateModified"], "2026-11-07")
+        self.assertEqual(neo()["row"]["updated"], "2026-11-05")
+        self.assertIn(DISCLAIMER, Page(html).norm())
+
+    def test_about_paragraphs_are_spaced(self):
+        self.assertIn("section.history p{margin:0 0 12px}", ser_page())
 
     def test_the_video_is_a_plain_link_with_no_embed_channel_or_date(self):
         html = ser_page()
