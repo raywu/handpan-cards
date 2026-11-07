@@ -94,6 +94,10 @@ begin
   select count(*) into v_hist from public.scale_history where user_id = v_uid;
 
   for v_item in select value from jsonb_array_elements(rows) loop
+    if coalesce(v_item ->> 'scale_id', '') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      v_out := v_out || jsonb_build_array(jsonb_build_object('scale_id', null, 'refused', 'invalid'));
+      continue;
+    end if;
     v_sid  := (v_item ->> 'scale_id')::uuid;
     v_base := (v_item ->> 'base_rev')::bigint;
     v_del  := coalesce((v_item ->> 'deleted')::boolean, false);
@@ -207,6 +211,8 @@ grant  execute on function public.purge_tombstones()  to sync_purger;
 --   select cron.schedule('sync-purge', '17 3 * * *', 'select public.purge_tombstones()');
 
 -- Recovery (plan section 16). Run as one transaction in the SQL editor; replace :u, :s and :t.
+-- :t is a timestamptz literal in UTC, for example '2026-11-05 14:30:00+00' (always give the +00 offset).
+-- History rows with replaced_at before :t are candidates; the newest of them is restored.
 -- Mass tombstone, within 30 days:
 --   begin;
 --   with n as (select count(*) c from public.saved_scales

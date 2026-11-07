@@ -13,6 +13,7 @@
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { pgEnv } from "./pgenv.mjs";
+import { redact as redactText } from "./redact.mjs";
 
 const URL_ = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const ANON = process.env.SUPABASE_ANON_KEY || "";
@@ -28,11 +29,7 @@ const secrets = [
   ...["A", "B", "C"].flatMap((l) => [process.env[`SMOKE_${l}_JWT`], process.env[`SMOKE_${l}_PASSWORD`]]),
   ...["SMOKE_D_PASSWORD"].map((k) => process.env[k]),
 ].filter(Boolean);
-const redact = (text) => {
-  let out = String(text);
-  for (const s of secrets) out = out.split(s).join("[redacted]");
-  return out.replace(/:\/\/[^\s@/]*@/g, "://[redacted]@");
-};
+const redact = (text) => redactText(text, secrets);
 process.on("uncaughtException", (e) => {
   console.error(redact(e && e.message ? e.message : e).slice(0, 300));
   process.exit(1);
@@ -41,7 +38,7 @@ process.on("uncaughtException", (e) => {
 const results = { pass: 0, fail: 0, skip: 0 };
 const log = (status, name, note = "") => {
   results[status.toLowerCase()]++;
-  console.log(`${status} ${name}${note ? " (" + note + ")" : ""}`);
+  console.log(redact(`${status} ${name}${note ? " (" + note + ")" : ""}`));
 };
 const check = async (name, fn) => {
   try {
@@ -352,5 +349,5 @@ else await check("delete_my_account removes the auth user and rows", async () =>
   if (admin) eq(Number(psql(admin, `select count(*) from saved_scales where user_id='${subOf(jwt)}'`)), 0, "rows remain");
 });
 
-console.log(`pass=${results.pass} fail=${results.fail} skip=${results.skip}`);
+console.log(redact(`pass=${results.pass} fail=${results.fail} skip=${results.skip}`));
 process.exit(results.fail ? 1 : 0);
