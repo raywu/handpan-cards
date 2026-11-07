@@ -114,6 +114,11 @@
     "name": "F2 Astronaut 16",
     "seed": "(F2) [A#2] [C3] C#3 D#3 F3 G3 G#3 C4 D#4 F4 G4 [G#4] [C5] [D#5] [G5]",
     "share": "7/(F2)_uAs2_uC3_Cs3_Ds3_F3_G3_Gs3_C4_Ds4_F4_G4_uGs4_uC5_uDs5_uG5/F2+Astronaut+16/palette-2/pair-r49.r51.r53.r55.r56.r60.r63.r65.r67.b46.b48.-.-.b79.b75.b72.b68.-/c759d7"
+   },
+   {
+    "name": "F# Serenity",
+    "seed": "[B2] [D3] [E3] (F#3) [G#3] A3 B3 C#4 E4 F#4 A4 B4 C#5 E5 [F#5] [A5] [B5] [C#6] [E6]",
+    "share": "7/uB2_uD3_uE3_(Fs3)_uGs3_A3_B3_Cs4_E4_Fs4_A4_B4_Cs5_E5_uFs5_uA5_uB5_uCs6_uE6/F%23+Serenity/pair-r57.r59.r61.r64.r66.r69.r71.r73.r76.b50.b56.b52.b47.b81.b78.b85.b83.b88/a1ceea"
    }
   ],
   "degrees": {
