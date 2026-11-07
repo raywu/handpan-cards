@@ -594,7 +594,12 @@ describe("U2f drag classifier and drop plan", () => {
       assert.strictEqual(a.get("__p.say"), "D4 removed.");
     }
     plan(a, { from: "pan", ref: { ring: "ding", i: 0 } }, { kind: "trash" });
-    assert.strictEqual(a.get("__p.snap"), true);
+    assert.strictEqual(a.get("__p.refuse"), "Every scale needs a ding. Drop another note on it to swap.");
+    assert.strictEqual(a.get("__p.step"), undefined);
+    withModel(a, "(D3) A3");
+    plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "trash" });
+    assert.strictEqual(a.get("__p.refuse"), "The rim needs at least 1 note.");
+    withModel(a, SCALE);
     plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "off" });
     assert.strictEqual(a.get("__p.snap"), true);
   });

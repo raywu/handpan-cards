@@ -1,0 +1,15 @@
+# kills: U2f move at 375x667: a placed cyclops note dragged along its arc moves to the drop angle, pinned, in one Undo step
+# suite: node --test --test-name-pattern ^U2f.move.*cyclops tests/editor_e2e.test.js
+# fault: A cyclops note dropped on its own arc no longer moves.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15807,7 +15807,7 @@ function editorDropPlan(m, src, target) {
+   }
+   if (target.kind !== "spot" || ref.ring === "ding") return snap;
+   if (target.ring === ref.ring) {
+-    return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
++    return EDITOR_PINNABLE.includes(ref.ring) && ref.ring !== "inner" && target.angle !== undefined
+       ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
+   }
+   const name = editorNameAt(m, ref);

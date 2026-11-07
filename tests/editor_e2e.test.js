@@ -881,7 +881,7 @@ function run() {
             await setup(SCALE);
             await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { mid: async () => {
               assert.strictEqual(await ghostText(), "B4", "the ghost carries the note name");
-              assert.strictEqual(await trashShown(), true, "the trash shows while dragging");
+              assert.strictEqual(await trashShown(), false, "the trash stays hidden for a tray drag");
               assert.strictEqual(await status(), "Dragging B4: drop on a spot, a note, or the trash.");
             } });
             assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"]);
@@ -929,6 +929,41 @@ function run() {
             assert.strictEqual(await status(), "F2 moved.Undo");
           });
 
+          test("v4: while dragging a placed note, the source carries lift and the landing ring sits on the note or ding under it; over empty pan or itself nothing", async () => {
+            await setup("(D3) " + RIM8);
+            const landing = () => b.eval(`const c = document.querySelector("#editor-pan .editor-landing"); return c ? { x: +c.getAttribute("cx"), y: +c.getAttribute("cy") } : null;`);
+            const lifted = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.lift")].map((c) => c.dataset.ring + c.dataset.i);`);
+            const hitXY = (ring, i) => b.eval(`const c = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]'); return { x: +c.getAttribute("cx"), y: +c.getAttribute("cy") };`);
+            const end = () => kind === "touch" ? b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }) : b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 0, y: 0, button: "left", buttons: 0, clickCount: 1 });
+            await gesture(await noteAt("rim", 3), await noteAt("rim", 5), kind, { release: false });
+            assert.deepStrictEqual(await landing(), await hitXY("rim", 5));
+            assert.deepStrictEqual(await lifted(), ["rim3"]);
+            await end();
+            await new Promise((done) => setTimeout(done, 80));
+            await gesture(await noteAt("rim", 3), await noteAt("ding", 0), kind, { release: false });
+            const ding = await landing();
+            assert.ok(ding && ding.x === 0, "the ring sits on the ding");
+            await end();
+            await new Promise((done) => setTimeout(done, 80));
+            await gesture(await noteAt("rim", 3), await centreOf("#editor-title"), kind, { release: false });
+            assert.strictEqual(await landing(), null);
+            await end();
+          });
+
+          test("U2f item 4: the ding dropped on the trash is refused with the ding copy; the last rim note on the trash is refused with the rim minimum; the trash shows for placed notes only", async () => {
+            await setup("(D3) A3");
+            const trash = { x: 187, y: 667 - 18 - 26 };
+            const before = await core();
+            const steps = await pastLen();
+            await gesture(await noteAt("ding", 0), trash, kind, { mid: async () => assert.strictEqual(await trashShown(), true) });
+            assert.strictEqual(await status(), "Every scale needs a ding. Drop another note on it to swap.");
+            assert.deepStrictEqual(await core(), before);
+            await gesture(await noteAt("rim", 0), trash, kind);
+            assert.strictEqual(await status(), "The rim needs at least 1 note.");
+            assert.deepStrictEqual(await core(), before);
+            assert.strictEqual(await pastLen(), steps);
+          });
+
           test("D3: a tray note dragged onto the empty cyclops arc and bottom ring (first note) is placed", async () => {
             await setup("(D3) " + RIM8);
             await b.click("#editor-oct-up");
@@ -974,6 +1009,7 @@ function run() {
             assert.deepStrictEqual(await core(), before);
             const steps = await pastLen();
             await gesture(await noteAt("rim", 3), await centreOf("#editor-title"), kind);
+            assert.strictEqual(await status(), "D4 went back. Drop on the trash to remove it.");
             await gesture(await noteAt("rim", 3), { x: 4, y: 300 }, kind);
             await gesture(await chipAt("G"), await centreOf("#editor-title"), kind);
             assert.deepStrictEqual(await core(), before, "snapped back");
