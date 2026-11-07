@@ -1,0 +1,15 @@
+# kills: v4: while dragging a placed note, the source carries lift and the landing ring sits on the note or ding under it; over empty pan or itself nothing
+# suite: node --test --test-name-pattern ^v4: tests/editor_e2e.test.js
+# fault: The dragged placed note is not marked lifted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16161,7 +16161,7 @@ function editorDragLift(d) {
+   editorZoneLayer(d);
+   if (d.src.ref) {
+     const lifted = document.querySelector(`#editor-pan .ehit[data-ring="${d.src.ref.ring}"][data-i="${d.src.ref.i}"]`);
+-    if (lifted) lifted.classList.add("lift");
++    if (lifted) lifted.classList.add("lifted");
+   }
+   if (d.src.chip) d.src.chip.classList.add("dragging");
+   const status = editorEl("editor-status");
