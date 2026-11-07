@@ -16717,6 +16717,7 @@ function openPanel() {
   settingsPanel.removeAttribute("hidden");
   panelOpen = true;
   settingsTrigger.setAttribute("aria-expanded", "true");
+  if (!backupPanel.hasAttribute("hidden")) paintBackup();
   if (desktopMQ.matches) return;
   retireLinkUI();
   settingsScrim.removeAttribute("hidden");
