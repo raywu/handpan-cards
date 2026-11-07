@@ -285,8 +285,8 @@ class GeneratorTest(unittest.TestCase):
         "cta": "/#deck=d-kurd-10",
         "cross": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038",
         "also_try": [
-            "https://handpantheory.com/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
-            "https://handpantheory.com/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
+            "/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
+            "/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
         ],
     }
 
@@ -1045,9 +1045,16 @@ if __name__ == "__main__":
 
 class AlsoTryTest(unittest.TestCase):
     LINKS = [
-        ("C# Annaziska 9", "https://handpantheory.com/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
-        ("C# Annaziska 13", "https://handpantheory.com/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
+        ("C# Annaziska 9", "/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
+        ("C# Annaziska 13", "/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
     ]
+
+    def test_also_try_links_are_relative_like_their_siblings(self):
+        for slug in ("d-kurd-9", "d-kurd-10"):
+            with self.subTest(slug=slug):
+                block = re.search(r'<ul class="rel also">(.*?)</ul>', read("scales/%s/index.html" % slug), re.S).group(1)
+                for h in re.findall(r'href="([^"]*)"', block):
+                    self.assertTrue(h.startswith("/#s="), h)
 
     def anchors(self, slug):
         return re.findall(r'<a href="([^"]*)">([^<]*)</a>', read("scales/%s/index.html" % slug))
