@@ -19575,7 +19575,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
     if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
-    if (deadline) html = html.replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(deadline)};`);
+    html = html.replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(deadline)};`);
     const ss = session === null ? "" : `window.__ss=${JSON.stringify(session)};window.sessionStorage={getItem:k=>k in window.__ss?window.__ss[k]:null,setItem:(k,v)=>{window.__ss[k]=String(v)},removeItem:k=>{delete window.__ss[k]}};`;
     return `<script>location.replace=function(u){window.__replaced=String(u)};location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};${ss}</script>` + html;
   }
