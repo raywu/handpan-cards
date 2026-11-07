@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17104,7 +17104,7 @@ async function moveImport(code) {
-       if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
-     }
+@@ -17611,7 +17611,7 @@ async function moveImport(code) {
+     if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), read });
+     else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
    }
 -  const hidden = (Array.isArray(data.h) ? data.h : []).filter(x => typeof x === "string" && x.length <= 64).slice(0, 50);
 +  const hidden = (Array.isArray(data.h) ? data.h : []).filter(x => typeof x === "string" && x.length <= 64).slice(0, 0);

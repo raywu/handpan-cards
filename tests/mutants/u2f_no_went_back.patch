@@ -1,0 +1,15 @@
+# kills: D4 / SE-6: dropping a placed note on the trash or on the tray removes it with Undo; any other drop off the pan snaps back with no step
+# suite: node --test --test-name-pattern ^D4.*SE-6 tests/editor_e2e.test.js
+# fault: A placed note dropped off the pan snaps back without the went-back copy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16117,7 +16117,7 @@ function editorDragEnd(e) {
+   if (plan.trade) editorTrade(m, plan.trade[0], plan.trade[1]);
+   else if (plan.step) editorDo(plan.step, plan.say);
+   else if (plan.refuse) s.error = plan.refuse;
+-  else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
++  else if (false) s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
+   editorRender();
+ }
+ function editorDragUp(e) {
