@@ -630,6 +630,19 @@ describe("U2f drag classifier and drop plan", () => {
     assert.strictEqual(a.get("__p.snap"), true, "a rim spot has no angle to move to");
   });
 
+  test("U2f-8 (row 24): a tray note placed on an exact cyclops or bottom angle says where and that it stays; on the rim it says added", () => {
+    const a = app();
+    withModel(a, SCALE);
+    plan(a, { from: "tray", name: "G5" }, { kind: "spot", ring: "inner", angle: -40 });
+    assert.strictEqual(a.get("__p.say"), "G5 placed on the cyclops at 320 degrees. It stays there.");
+    plan(a, { from: "tray", name: "G2" }, { kind: "spot", ring: "bottom", angle: 270 });
+    assert.strictEqual(a.get("__p.say"), "G2 placed on the bottom at 270 degrees. It stays there.");
+    plan(a, { from: "tray", name: "B4" }, { kind: "spot", ring: "rim" });
+    assert.strictEqual(a.get("__p.say"), "B4 added to the rim.");
+    plan(a, { from: "tray", name: "G2" }, { kind: "spot", ring: "bottom" });
+    assert.strictEqual(a.get("__p.say"), "G2 added to the bottom.");
+  });
+
   test("U2f-6 (D8): DRAG_ON_TOUCH is one constant, on by default", () => {
     const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
     assert.strictEqual((html.match(/const DRAG_ON_TOUCH = true;/g) || []).length, 1);

@@ -620,7 +620,7 @@ function run() {
 
       test("D17: the pills read '+ Rim n of 12', '+ Cyclops n of 6', '+ Bottom n of 12', wait for a held note, and add it at its auto position", async () => {
         await setup(SCALE);
-        assert.deepStrictEqual(await pill("rim"), { text: "+ Rim 8 of 12", aria: "Add the held note to the rim, 8 of 12", disabled: true, full: false });
+        assert.deepStrictEqual(await pill("rim"), { text: "+ Rim 8 of 12", aria: "Add the held note to the rim, 8 of 12", disabled: false, full: false });
         assert.strictEqual((await pill("inner")).text, "+ Cyclops 2 of 6");
         assert.strictEqual((await pill("bottom")).text, "+ Bottom 0 of 12");
         assert.strictEqual(await b.eval(`return document.getElementById("editor-pills").getAttribute("aria-label");`), "Add the held note to an area");
@@ -646,7 +646,7 @@ function run() {
 
       test("D16: a full area's pill is aria-disabled and a tap or pill into it is refused with the exact copy", async () => {
         await setup("(D3) " + RIM12 + " | C6");
-        assert.deepStrictEqual(await pill("rim"), { text: "+ Rim 12 of 12", aria: "Add the held note to the rim, 12 of 12", disabled: true, full: true });
+        assert.deepStrictEqual(await pill("rim"), { text: "+ Rim 12 of 12", aria: "Add the held note to the rim, 12 of 12", disabled: false, full: true });
         const core = () => b.eval(`const m = editorSession.history.present; return { parts: editorPartsOf(m), ding: editorDingOf(m), options: m.options };`);
         const before = await core();
         await hold("F");
@@ -676,7 +676,7 @@ function run() {
         await b.click("#editor-oct-down");
         await b.click("#editor-pill-bottom");
         assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 12, await status());
-        assert.strictEqual(await status(), "");
+        assert.strictEqual(await status(), "D2 added to the bottom.Undo");
       });
 
       test("parity 9 save: an over-cap scale saves with the same record and share link; only a further add into that area is refused", async () => {
@@ -779,7 +779,7 @@ function run() {
 
       test("an empty cyclops arc and bottom ring show as targets for a held note and take the first note by tap or pill", async () => {
         await setup("(D3) " + RIM8);
-        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`), 0, "no targets without a hold");
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`), 2, "the empty cyclops arc and bottom band are drawn without a hold (v4 zones)");
         await hold("E");
         await b.click("#editor-oct-up");
         assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-pan .etarget")].map((e) => e.dataset.ring);`), ["inner", "bottom"]);
@@ -1157,6 +1157,116 @@ function run() {
           await b.click("#editor-redo");
           assert.deepStrictEqual(await core(), states[k]);
         }
+      });
+    });
+
+    describe("U2f-2 tap and pill parity (gap rows 9, 11, 13, 23, 24)", () => {
+      const pillState = (ring) => b.eval(`const p = document.getElementById("editor-pill-${ring}"); return { disabled: p.disabled, ready: p.classList.contains("ready") };`);
+      const selectedOf = () => b.eval(`return editorSession.sel;`);
+      const pinRings = () => b.eval(`return [...document.querySelectorAll("#editor-pan .epin")].length;`);
+      const orbitOf = (ring) => b.eval(`return editorSolve(editorSession.history.present).value.geom[${JSON.stringify(ring)}] || (${JSON.stringify(ring)} === "bottom" ? 1.15 : 0.38);`);
+      const linkOf = () => b.eval(`return editorExport(editorSession.history.present).link.value;`);
+      const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
+      const pastLen = () => b.eval(`return editorSession.history.past.length;`);
+
+      for (const touch of [false, true]) {
+        describe(touch ? "touch" : "mouse", () => {
+          test("pill without a note asks to pick; pills stay enabled and turn ready for a held or a selected note", async () => {
+            await fresh(375, 667);
+            await openAdd();
+            await typeLine(SCALE);
+            assert.deepStrictEqual(await pillState("bottom"), { disabled: false, ready: false });
+            const past0 = await pastLen();
+            await b.click("#editor-pill-bottom");
+            assert.strictEqual(await status(), "Pick a note below, or on the pan, first.");
+            assert.strictEqual(await pastLen(), past0);
+            await hold("B");
+            assert.deepStrictEqual(await pillState("bottom"), { disabled: false, ready: true });
+            await b.click(".tray-note[data-name=\"B\"]");
+            await tapNote("rim", 3, touch);
+            assert.deepStrictEqual(await pillState("bottom"), { disabled: false, ready: true });
+          });
+
+          test("pill moves a selected note to that area as one Undo step", async () => {
+            await fresh(375, 667);
+            await openAdd();
+            await typeLine(SCALE);
+            const before = await linkOf();
+            await tapNote("rim", 1, touch);
+            assert.strictEqual(await status(), "Bb3 picked. Tap another note to swap, or tap a spot to move it.");
+            const past = await pastLen();
+            await b.click("#editor-pill-bottom");
+            assert.deepStrictEqual(await names("bottom"), ["Bb3"], await status());
+            assert.strictEqual((await names("rim")).length, 7);
+            assert.strictEqual(await selectedOf(), null);
+            assert.strictEqual(await pastLen(), past + 1);
+            await b.click("#editor-undo");
+            assert.strictEqual(await linkOf(), before, "one Undo restores it byte-equal");
+          });
+
+          test("tap select then a cross-zone spot moves the note; the last rim note is refused with the minimum copy", async () => {
+            await fresh(375, 667);
+            await openAdd();
+            await typeLine(SCALE);
+            await tapNote("rim", 3, touch);
+            await tapSpot(...polar(await orbitOf("bottom"), 200), touch);
+            assert.deepStrictEqual(await names("bottom"), ["D4"], await status());
+            assert.ok(!(await names("rim")).includes("D4"));
+            await fresh(375, 667);
+            await openAdd();
+            await typeLine("(D3) A3");
+            const before = await linkOf();
+            await tapNote("rim", 0, touch);
+            await b.click("#editor-pill-bottom");
+            assert.strictEqual(await status(), "The rim needs at least 1 note.");
+            assert.strictEqual(await linkOf(), before);
+          });
+
+          test("empty cyclops arc accepts a first note at the 5 degree angle, says it stays, and draws a pin ring", async () => {
+            await fresh(375, 667);
+            await openAdd();
+            await typeLine("(D3) " + RIM8);
+            assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-pan .etarget")].map((e) => e.dataset.ring);`), ["inner", "bottom"]);
+            assert.strictEqual(await pinRings(), 0);
+            await hold("G");
+            await b.click("#editor-oct-up");
+            await tapSpot(...polar(0.38, 62), touch);
+            assert.deepStrictEqual(await names("inner"), ["G5"], await status());
+            const said = (await status()).match(/^G5 placed on the cyclops at (\d+) degrees\. It stays there\./);
+            assert.ok(said, await status());
+            assert.strictEqual(Number(said[1]) % 5, 0);
+            assert.deepStrictEqual((await model()).options.angles.inner, [Number(said[1])]);
+            assert.strictEqual(await pinRings(), 1, "the pinned cyclops note carries a pin ring");
+            await hold("F");
+            await b.click("#editor-pill-rim");
+            assert.match(await status(), /^F5 added to the rim\./);
+            assert.strictEqual(await pinRings(), 1, "an auto note has no pin ring");
+          });
+
+          test("with nothing held, a tap on the empty cyclops arc or bottom band selects the zone and Reset spacing scopes to it", async () => {
+            await fresh(375, 667);
+            await openAdd();
+            await typeLine("(D3) " + RIM8);
+            await tapSpot(...polar(0.38, 90), touch);
+            assert.strictEqual(await status(), "Cyclops selected.");
+            assert.strictEqual(await b.eval(`return editorSession.zone;`), "inner");
+            assert.strictEqual(await b.eval(`return document.querySelector("#editor-pan .etarget[data-ring=inner]").classList.contains("picked");`), true);
+            await tapSpot(...polar(await orbitOf("bottom"), 200), touch);
+            assert.strictEqual(await status(), "Bottom selected.");
+            assert.strictEqual(await b.eval(`return document.getElementById("editor-reset").getAttribute("aria-label");`), "Reset bottom spacing");
+          });
+        });
+      }
+
+      test("the pin ring appears only on a pinned note, and a rim note tap still selects first (the drawn circle is hit first)", async () => {
+        await fresh(375, 667);
+        await openAdd();
+        await typeLine("(D3) " + RIM8 + " [G2]");
+        assert.strictEqual(await pinRings(), 0);
+        await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
+        assert.strictEqual(await pinRings(), 1);
+        await tapNote("rim", 2);
+        assert.deepStrictEqual(await selectedOf(), { ring: "rim", i: 2 });
       });
     });
   });
