@@ -1,0 +1,14 @@
+# kills: U2e3-3: Replace ding with a held note replaces the ding
+# suite: node --test --test-name-pattern ^U2e3.3: tests/editor_shell.test.js
+# fault: Replace ding ignores a held tray note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16194,7 +16194,6 @@ function editorNeoDropPlan(m, src, target) {
+     : { step: (x) => editorNeoMove(x, from, to), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) };
+ }
+ function editorDingButtonPlan(m, heldName, sel) {
+-  if (heldName) return editorDropPlan(m, { from: "tray", name: heldName }, { kind: "ding" });
+   if (sel && sel.ring !== "ding") return { trade: [sel, { ring: "ding", i: 0 }] };
+   return { info: t("editor.say.pick_first") };
+ }

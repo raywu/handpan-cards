@@ -1,0 +1,15 @@
+# kills: U2e3-2: the cyclops zone carries the ding circle as a hole
+# suite: node --test --test-name-pattern ^U2e3.2: tests/editor_shell.test.js
+# fault: The cyclops zone is a plain disc over the ding.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16502,7 +16502,7 @@ function editorZonePath(geom, ring) {
+   const k = ["inner", "rim", "bottom"].indexOf(ring);
+   const lo = edge[k] * 100, hi = edge[k + 1] * 100;
+   const ding = editorDingZone(geom);
+-  return editorZoneDisc(hi) + (lo > 0 ? editorZoneDisc(lo) : "") + (ring === "inner" ? editorZoneDisc(ding.r, ding.cy) : "");
++  return editorZoneDisc(hi) + (lo > 0 ? editorZoneDisc(lo) : "") + "";
+ }
+ // Which zone a drag over pt lights: the ding when the pointer is on it, else the area under it.
+ function editorHoverZone(solved, pt, model) {
