@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15313,7 +15313,7 @@ function editorSwapNames(m, a, b) {
+@@ -15318,7 +15318,7 @@ function editorSwapNames(m, a, b) {
    const set = (r, name) => { if (r.ring === "ding") entries.ding = name; else entries[r.ring][r.i].name = name; };
    const [na, nb] = [get(a), get(b)];
    set(a, nb);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  
    return editorRebuild(m, entries);
  }
- function editorPlace(m, ring, name, angle) {
+ function editorPlaceAt(m, ring, name, angle) {
