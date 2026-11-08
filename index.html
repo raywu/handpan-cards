@@ -17558,7 +17558,7 @@ function moveReport(result) {
   else if (result.imported > 0) moveNotice(t("move.notice", { n: result.imported }));
 }
 const moveArrivalSearch = location.search, moveArrivalHash = location.hash;
-const MOVE_DEADLINE = null;
+const MOVE_DEADLINE = "2026-11-21";
 function moveDeadlineText() {
   return new Intl.DateTimeFormat(uiLang(), { dateStyle: "long", timeZone: "UTC" }).format(new Date(MOVE_DEADLINE + "T00:00:00Z"));
 }
