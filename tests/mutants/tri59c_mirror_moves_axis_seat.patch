@@ -1,5 +1,5 @@
-# kills: TRI59c-M4 with an even note count the last note sits on the axis and mirror leaves it
-# suite: node --test --test-name-pattern ^TRI59c-M4.with.an.even tests/editor_model.test.js
+# kills: TRI59c-M4: with an even note count the last note sits on the axis and mirror leaves it
+# suite: node --test --test-name-pattern ^TRI59c-M4..with.an.even tests/editor_model.test.js
 # fault: Mirror pairs the last even-count note with an absent seat.
 diff --git a/index.html b/index.html
 --- a/index.html

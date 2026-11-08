@@ -1,5 +1,5 @@
-# kills: TRI59c-M3 mirror sends angle a to 540 - a
-# suite: node --test --test-name-pattern ^TRI59c-M3.mirror.sends tests/editor_model.test.js
+# kills: TRI59c-M3: mirror sends angle a to 540 - a
+# suite: node --test --test-name-pattern ^TRI59c-M3..mirror.sends tests/editor_model.test.js
 # fault: Mirror reflects about the wrong axis.
 diff --git a/index.html b/index.html
 --- a/index.html

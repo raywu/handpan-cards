@@ -1,5 +1,5 @@
-# kills: TRI59c-M1 rotate with no mutant note turns only the filled fields
-# suite: node --test --test-name-pattern ^TRI59c-M1.rotate.moves tests/editor_model.test.js
+# kills: TRI59c-M1: rotate moves every note one fixture step clockwise, and back, on no mutant
+# suite: node --test --test-name-pattern ^TRI59c-M1..rotate.moves tests/editor_model.test.js
 # fault: Rotation turns all nine fields even with no mutant note, so main compaction re-packs.
 diff --git a/index.html b/index.html
 --- a/index.html
