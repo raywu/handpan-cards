@@ -1,4 +1,4 @@
-# kills: TRI59c-M3: mirror sends angle a to 540 - a
+# kills: TRI59c-M3: mirror sends angle a to 540 - a, twice is the identity, labels stay on their tonefields on 
 # suite: node --test --test-name-pattern ^TRI59c-M3..mirror.sends tests/editor_model.test.js
 # fault: Mirror reflects about the wrong axis.
 diff --git a/index.html b/index.html

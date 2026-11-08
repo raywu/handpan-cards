@@ -1,4 +1,4 @@
-# kills: TRI59c each rotate tap moves every Neotone note one fixture step, says which way
+# kills: TRI59c each rotate tap moves every Neotone note one fixture step, says which way, and wraps
 # suite: node --test --test-name-pattern ^TRI59c.each.rotate.tap tests/editor_e2e.test.js
 # fault: The clockwise tap announces anticlockwise.
 diff --git a/index.html b/index.html

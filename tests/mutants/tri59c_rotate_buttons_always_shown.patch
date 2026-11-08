@@ -1,4 +1,4 @@
-# kills: TRI59c the Neotone layout row offers Mirror and two rotate buttons
+# kills: TRI59c the Neotone layout row offers Mirror and two rotate buttons, momentary, in view; Standard keeps its four
 # suite: node --test --test-name-pattern ^TRI59c.the.Neotone.layout.row tests/editor_e2e.test.js
 # fault: The rotate buttons show on a Standard scale.
 diff --git a/index.html b/index.html

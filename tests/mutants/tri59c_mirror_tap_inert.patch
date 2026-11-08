@@ -1,4 +1,4 @@
-# kills: TRI59c Mirror sends each Neotone angle to 540 minus it
+# kills: TRI59c Mirror sends each Neotone angle to 540 minus it, twice is the start, undo restores the exact map
 # suite: node --test --test-name-pattern ^TRI59c.Mirror.sends tests/editor_e2e.test.js
 # fault: The Mirror tap on Neotone calls the inert Standard mirror.
 diff --git a/index.html b/index.html

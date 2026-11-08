@@ -1,4 +1,4 @@
-# kills: TRI59c-M3: mirror sends angle a to 540 - a, twice is the identity, labels stay on their tonefields on no mutant, 6 notes
+# kills: TRI59c-M3: mirror sends angle a to 540 - a, twice is the identity, labels stay on their tonefields on 
 # suite: node --test --test-name-pattern ^TRI59c-M3..mirror.sends tests/editor_model.test.js
 # fault: Mirror moves a note that has no partner seat instead of leaving it.
 diff --git a/index.html b/index.html

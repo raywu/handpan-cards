@@ -1,4 +1,4 @@
-# kills: TRI59c-M5: a partial main row with mutants keeps every mutant under a filled field
+# kills: TRI59c-M5: a partial main row with mutants rotates through empty fields and keeps every mutant under a filled field
 # suite: node --test --test-name-pattern ^TRI59c-M5..a.partial tests/editor_model.test.js
 # fault: The mutant ring does not follow the main ring.
 diff --git a/index.html b/index.html

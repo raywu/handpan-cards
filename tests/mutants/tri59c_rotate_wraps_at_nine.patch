@@ -1,4 +1,4 @@
-# kills: TRI59c-M1: rotate moves every note one fixture step clockwise, and back, on no mutant, 4 notes
+# kills: TRI59c-M1: rotate moves every note one fixture step clockwise, and back, on 
 # suite: node --test --test-name-pattern ^TRI59c-M1..rotate.moves tests/editor_model.test.js
 # fault: Rotation wraps at nine fields even when fewer notes take part.
 diff --git a/index.html b/index.html
