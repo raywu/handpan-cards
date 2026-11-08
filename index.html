@@ -15373,6 +15373,31 @@ function editorNeoMove(m, from, to) {
   [next[from], next[to]] = [next[to], next[from]];
   return editorNeoBuild(m, editorPartsOf(m), next, map[from]);
 }
+/* Mirror and rotate on a profile permute the tonefields of profile.map, main and mutant
+ * rings together, and write nothing else. The ring order and the mirror pairs come from the
+ * fixture angles; with no mutant note only the filled main fields take part. */
+function editorNeoPermute(m, send) {
+  const map = m.options.profile.map;
+  const mutants = map.slice(NEO_MAIN).some((k) => k !== null);
+  const reach = mutants ? NEO_MAIN : map.slice(0, NEO_MAIN).reduce((n, k, i) => (k === null ? n : i + 1), 0);
+  const angles = HPE.layout.PROFILE.angles;
+  const ring = angles.map((a, i) => i).filter((i) => i < reach).sort((a, b) => angles[a] - angles[b]);
+  const next = new Array(NEO_SLOTS).fill(null);
+  map.forEach((key, slot) => {
+    if (key === null) return;
+    const field = slot % NEO_MAIN;
+    next[slot - field + send(field, ring, angles, reach)] = key;
+  });
+  return editorNeoBuild(m, editorPartsOf(m), next);
+}
+const editorNeoRotate = (m, step) => editorNeoPermute(m, (field, ring) => {
+  const at = ring.indexOf(field);
+  return at === -1 ? field : ring[(at + step + ring.length) % ring.length];
+});
+const editorNeoMirror = (m) => editorNeoPermute(m, (field, ring, angles, reach) => {
+  const mate = angles.findIndex((a) => a === (((540 - angles[field]) % 360) + 360) % 360);
+  return mate !== -1 && mate < reach && field < reach ? mate : field;
+});
 function editorRemoveNeotone(m, ring, i) {
   if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= ringIds(m.fields, ring).length) return editorRefusal(ring + i);
   const key = profileKeyOf(m.fields[ringIds(m.fields, ring)[i]]);
