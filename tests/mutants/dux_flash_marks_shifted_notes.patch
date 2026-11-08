@@ -1,0 +1,15 @@
+# kills: drag ux E4b: a removal highlights nothing and a cross-ring move highlights only its destination
+# suite: node --test --test-name-pattern ^drag.ux.E4b tests/editor_e2e.test.js
+# fault: The moved fallback also fires when a ring lost a note, so every shifted note is highlighted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15984,7 +15984,7 @@ function editorFlashOf(a, b) {
+       if (at < 0) added.push(i); else left.splice(at, 1);
+     });
+     const moved = now.map((n, i) => i).filter((i) => now[i] !== was[i] || angle(a, ring, i) !== angle(b, ring, i) || seat(a, ring, i) !== seat(b, ring, i));
+-    for (const i of added.length ? added : now.length === was.length ? moved : []) out.push({ ring, i });
++    for (const i of added.length ? added : moved) out.push({ ring, i });
+   }
+   if (editorDingOf(a) !== editorDingOf(b)) out.push({ ring: "ding", i: 0 });
+   return out;

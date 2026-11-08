@@ -2352,12 +2352,32 @@ function run() {
       assert.strictEqual((await marked()).length, 1, "keyboard placement");
     });
 
+    test("drag ux E4b: a removal highlights nothing and a cross-ring move highlights only its destination", async () => {
+      const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
+      await setup(SCALE_);
+      await liftFrom(await noteAt("rim", 2), { x: 195, y: 5 });
+      await touch("touchMove", { x: 195, y: 5 });
+      await touch("touchEnd");
+      await pause(700);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent;`), "C4 removed.Undo");
+      assert.deepStrictEqual(await marked(), [], "removal marks nothing");
+      await clickUndo();
+      await liftFrom(await noteAt("rim", 1), await spotNow((await geom()).bottom, -90));
+      await touch("touchMove", await spotNow((await geom()).bottom, -90));
+      await touch("touchEnd");
+      await pause(700);
+      assert.deepStrictEqual(await names("bottom"), ["Bb3"], "moved to the bottom");
+      assert.deepStrictEqual(await marked(), ["bottom0"], "move marks the destination only");
+    });
+
     test("drag ux E5: with reduced motion the pan stays at 1x and unscaled, the panel is still out of play, and the highlight is still set", async () => {
       await setup(SCALE_);
       await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
       try {
         const rest = await geometry();
         await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+        const instant = await panelCss();
+        for (const k of Object.keys(instant)) assert.strictEqual(instant[k].vis, "hidden", "hidden at once, no fade: " + k);
         await pause(400);
         const now = await geometry();
         assert.strictEqual(await isDragging(), true);

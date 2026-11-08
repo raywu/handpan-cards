@@ -1337,7 +1337,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @media (prefers-reduced-motion: reduce){
   #editor .editor-panbox, #editor.dragging .editor-panbox{transform:none; transition:none}
   #editor-areas, #editor-layout, #editor .editor-toolbar, #editor-tray{transition:none}
-  #editor.dragging #editor-areas, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:none}
+  #editor.dragging #editor-areas, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:none; transition:none}
   #editor-pan .ehit.editor-new{stroke-width:4; animation:ed-new-fade 900ms linear 1 both}
   #editor-pan .editor-landing.editor-new{animation:none}
 }
@@ -16312,7 +16312,7 @@ function editorFlashOf(a, b) {
       if (at < 0) added.push(i); else left.splice(at, 1);
     });
     const moved = now.map((n, i) => i).filter((i) => now[i] !== was[i] || angle(a, ring, i) !== angle(b, ring, i) || seat(a, ring, i) !== seat(b, ring, i));
-    for (const i of added.length ? added : moved) out.push({ ring, i });
+    for (const i of added.length ? added : now.length === was.length ? moved : []) out.push({ ring, i });
   }
   if (editorDingOf(a) !== editorDingOf(b)) out.push({ ring: "ding", i: 0 });
   return out;
@@ -17098,7 +17098,7 @@ function editorDragEnd(e) {
   else if (plan.refuse) s.error = plan.refuse;
   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
   editorRender();
-  if (e) requestAnimationFrame(() => { if (!editorDrag) editorDragRestore(); });
+  if (e) requestAnimationFrame(() => { if (!editorDrag || !editorDrag.live) editorDragRestore(); });
   else editorDragRestore();
 }
 function editorDragUp(e) {
