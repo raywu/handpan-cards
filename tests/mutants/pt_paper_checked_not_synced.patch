@@ -1,0 +1,14 @@
+# kills: a stored A4 boots with the paper button reading A4
+# suite: node --test --test-name-pattern a.stored.A4.boots.with.the.paper.button.reading.A4 tests/app.test.js
+# Print controls style (2026-11-08): the menu items' aria-checked never follows the paper.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12445,7 +12445,6 @@ function syncPaperControl() {
+   if (!btn) return;
+   btn.textContent = printPaper.toUpperCase();
+   for (const p of Object.keys(PRINT_PAPER)) {
+-    PAPER_ITEMS[p]().setAttribute("aria-checked", p === printPaper ? "true" : "false");
+   }
+ }
+ 

@@ -8,7 +8,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1991,7 +1991,7 @@ html.about-open{overflow:hidden}
+@@ -2031,7 +2031,7 @@ html.about-open{overflow:hidden}
        <div id="print-menu" role="menu" aria-label="PDF download options" hidden>
          <button type="button" role="menuitem" id="print-pdf-easy" onclick="downloadDeckPDF('shop', this, 'easy'); closePanel();">EASY</button>
          <button type="button" role="menuitem" id="print-pdf-easy_medium" onclick="downloadDeckPDF('shop', this, 'easy_medium'); closePanel();">EASY + MEDIUM</button>
@@ -16,4 +16,4 @@ diff --git a/index.html b/index.html
 +        <button type="button" role="menuitem" id="print-pdf-all" onclick="downloadDeckPDF('shop', this, 'all');">ALL</button>
        </div>
        <!-- The paper choice keeps the panel open (design direction, "After an
-            action"): the next tap is a print button, not a new task. -->
+            action"): the next tap is a print button, not a new task. It is a

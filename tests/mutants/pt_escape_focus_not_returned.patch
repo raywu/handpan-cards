@@ -1,15 +1,14 @@
 # kills: closePanel closes an open menu; Escape closes only the menu and returns focus to the trigger
 # suite: node --test --test-name-pattern Escape.closes.only.the.menu.and.returns.focus.to.the.trigger tests/app.test.js
 # Lane U (PDF tier menu). Escape closes the menu but leaves focus off the trigger.
-
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16788,7 +16788,6 @@ document.addEventListener("keydown", e => {
-     if (e.key === "Escape") {
+@@ -16989,7 +16989,6 @@ document.addEventListener("keydown", e => {
        e.preventDefault();
+       const trigger = openPrintMenuPair().trigger();
        setPrintMenu(false);
--      document.getElementById("print-download").focus();
+-      trigger.focus();
        return;
      }
      if (e.key.indexOf("Arrow") === 0) return;
