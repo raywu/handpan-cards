@@ -1097,7 +1097,7 @@ function run() {
      never an <a>) is checked once, then re-checked after a couple of deck
      switches and after generating a deck, to prove nothing about switching
      decks touches the panel's markup. */
-  test("every deck's print row is two buttons and one paper select, and never an <a>", async () => {
+  test("every deck's print row is two menu triggers and no native select, and never an <a>", async () => {
     await freshLoad();
     const meta = await decksMeta();
     const shape = () => b.eval(`
@@ -1115,17 +1115,17 @@ function run() {
       const id = meta[i].id;
       const m = await shape();
       assert.strictEqual(m.anchors, 0, `deck ${id}: .prints still renders an <a>`);
-      assert.strictEqual(m.buttons, 4, `deck ${id}: expected the trigger and 3 menu items, found ${m.buttons}`);
-      assert.strictEqual(m.selects, 1, `deck ${id}: expected exactly 1 paper select, found ${m.selects}`);
-      assert.deepStrictEqual(m.labels, ["DOWNLOAD PDF", "EASY", "EASY + MEDIUM", "ALL"], `deck ${id}`);
+      assert.strictEqual(m.buttons, 7, `deck ${id}: expected two triggers and 5 menu items, found ${m.buttons}`);
+      assert.strictEqual(m.selects, 0, `deck ${id}: expected no native select, found ${m.selects}`);
+      assert.deepStrictEqual(m.labels, ["DOWNLOAD PDF", "EASY", "EASY + MEDIUM", "ALL", "LETTER", "LETTER", "A4"], `deck ${id}`);
     }
 
     // And a generated deck gets the identical row - it is the same element.
     await generate(SIX_SCALES[1]);
     const g = await shape();
     assert.strictEqual(g.anchors, 0, "generated deck: .prints still renders an <a>");
-    assert.strictEqual(g.buttons, 4, "generated deck: expected the trigger and 3 menu items");
-    assert.strictEqual(g.selects, 1, "generated deck: expected exactly 1 paper select");
+    assert.strictEqual(g.buttons, 7, "generated deck: expected two triggers and 5 menu items");
+    assert.strictEqual(g.selects, 0, "generated deck: expected no native select");
   });
 
   /* Lane M1: .prints no longer lives anywhere near .hdr - it moved into the
@@ -1211,7 +1211,7 @@ function run() {
       btn.click(); // the "second tap queued while the first is still running"
       return { built: window.__buildCount, disabled };
     `);
-    assert.strictEqual(count.disabled, 4, "the trigger and all 3 menu items are disabled during the build");
+    assert.strictEqual(count.disabled, 7, "every button in the print row (both triggers and all 5 menu items) is disabled during the build");
     assert.strictEqual(count.built, 1,
       `two taps on a menu item queued in the same task ran HPE.pdfcards.build ${count.built} time(s), not 1`);
   });
@@ -1304,7 +1304,7 @@ function run() {
     await freshLoad();
     await openSettingsPanel();
     await b.eval(`
-      const sel = document.querySelector("#settings-panel .prints select");
+      const sel = document.getElementById("print-paper");
       sel.focus();
       return true;
     `);
@@ -1325,7 +1325,7 @@ function run() {
     await freshLoad();
     await openSettingsPanel();
     await b.eval(`
-      const sel = document.querySelector("#settings-panel .prints select");
+      const sel = document.getElementById("print-paper");
       sel.focus();
       return true;
     `);
@@ -2284,13 +2284,13 @@ function run() {
           onoleo: card("Onoleo") && { np: card("Onoleo").textContent.includes("Layout not published"), note: !!card("Onoleo").querySelector("tr.note"), practice: !!card("Onoleo").querySelector("a[href^='/#s=']") } };`;
       await b.setViewport(375, 812, true);
       await b.send("Page.navigate", { url: page });
-      await b.waitFor(`location.pathname === "/scales/neotone/" && document.querySelectorAll("table tbody").length === 9`, { label: "the Neotone page" });
+      await b.waitFor(`location.pathname === "/scales/neotone/" && document.querySelectorAll("table tbody").length === 10`, { label: "the Neotone page" });
       await b.settle();
       const m = await b.eval(probe);
       assert.ok(m.sw <= 375, `page scrollWidth ${m.sw}`);
       assert.strictEqual(m.over, 0, "no tbody or cell overflows");
       assert.strictEqual(m.out, 0, "every Practice link is inside the viewport");
-      assert.strictEqual(m.tbodies, 9);
+      assert.strictEqual(m.tbodies, 10);
       assert.ok(m.sirena.practice && !m.sirena.np && !m.sirena.note, "La Sirena has a Practice link and no disclaimer: " + JSON.stringify(m.sirena));
       assert.ok(m.onoleo.practice && !m.onoleo.np && !m.onoleo.note, "Onoleo has a Practice link and no disclaimer: " + JSON.stringify(m.onoleo));
       assert.ok(m.sirena.rows.every(Boolean), "La Sirena shows its mutant row");
@@ -2463,8 +2463,83 @@ function run() {
             const after = await b.eval(`return ${MEASURE};`);
             assert.strictEqual(after.open, false, `${label}: Escape left the menu open`);
             assert.strictEqual(after.panelHidden, false, `${label}: Escape on an open menu closed the panel`);
+            const PAPER = `(() => {
+              const trig = document.getElementById("print-paper"), menu = document.getElementById("print-paper-menu");
+              const row = document.querySelector("#settings-panel .prints").getBoundingClientRect();
+              return { open: !!menu.offsetParent, expanded: trig.getAttribute("aria-expanded"), rowH: row.height,
+                other: !!document.getElementById("print-menu").offsetParent, focus: document.activeElement.id,
+                items: [...menu.querySelectorAll("button")].map(i => { const r = i.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                  return { id: i.id, h: r.height, top: r.top, left: r.left, right: r.right, spill: i.scrollWidth - i.clientWidth, hit: hit === i || i.contains(hit) }; }) };
+            })()`;
+            const pClosed = await b.eval(`return ${PAPER};`);
+            assert.strictEqual(pClosed.open, false, `${label}: paper menu starts closed`);
+            await b.click("#print-download");
+            await b.waitFor(`!!document.getElementById("print-menu").offsetParent`, { label: "download menu to open" });
+            await b.click("#print-paper");
+            await b.waitFor(`!!document.getElementById("print-paper-menu").offsetParent`, { label: "paper menu to open" });
+            const pm = await b.eval(`return ${PAPER};`);
+            assert.strictEqual(pm.other, false, `${label}: opening the paper menu left the download menu open`);
+            assert.strictEqual(pm.expanded, "true", `${label}: paper aria-expanded`);
+            assert.strictEqual(pm.rowH, pClosed.rowH, `${label}: opening the paper menu changed the row height`);
+            assert.deepStrictEqual(pm.items.map((i) => i.id), ["print-paper-letter", "print-paper-a4"]);
+            for (const i of pm.items) {
+              assert.ok(i.h >= 44, `${label}: ${i.id} is under the 44px target (${i.h})`);
+              assert.ok(i.spill <= 0, `${label}: ${i.id} clips its text`);
+              assert.ok(i.left >= 0 && i.right <= vw + 0.5, `${label}: ${i.id} leaves the viewport`);
+              assert.ok(i.top >= 0 && i.top + i.h <= vh + 0.5, `${label}: ${i.id} leaves the viewport vertically`);
+              assert.ok(i.hit, `${label}: ${i.id} is covered by something else at its centre`);
+            }
+            await b.click("#print-download");
+            await b.waitFor(`!document.getElementById("print-paper-menu").offsetParent`, { label: "paper menu to close" });
+            assert.strictEqual((await b.eval(`return ${PAPER};`)).expanded, "false", `${label}: paper aria-expanded after the download menu opened`);
+            await b.key("Escape", "Escape", 27);
+            await b.click("#print-paper");
+            await b.key("Escape", "Escape", 27);
+            const pEsc = await b.eval(`return ${PAPER};`);
+            assert.strictEqual(pEsc.open, false, `${label}: Escape left the paper menu open`);
+            assert.strictEqual(pEsc.focus, "print-paper", `${label}: Escape did not return focus to the paper button`);
             await b.key("Escape", "Escape", 27);
           }
+        }
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+  test("the paper button is styled like DOWNLOAD PDF, and its menu picks the paper, closes on choice and outside tap, and keeps the panel open",
+    async () => {
+      await freshLoad();
+      try {
+        for (const [vw, vh, over] of [[380, 700, true], [1280, 800, false]]) {
+          await b.setViewport(vw, vh, over);
+          await b.settle();
+          await openSettingsPanel();
+          const PICK = `const pick = (id) => { const c = getComputedStyle(document.getElementById(id)); return { h: c.height, font: c.font, ls: c.letterSpacing, border: c.border, bg: c.backgroundColor, color: c.color, radius: c.borderRadius, ta: c.textAlign }; };`;
+          const away = () => b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1, y: 1 });
+          await b.click("#print-download");
+          await away();
+          const dlItem = await b.eval(`${PICK} return pick("print-pdf-easy");`);
+          await b.click("#print-paper");
+          await away();
+          const look = await b.eval(`${PICK} return { dl: pick("print-download"), paper: pick("print-paper"), item: pick("print-paper-a4") };`);
+          look.dlItem = dlItem;
+          await b.click("#print-paper");
+          assert.deepStrictEqual(look.paper, look.dl, `${vw}x${vh}: the paper button differs from DOWNLOAD PDF`);
+          assert.deepStrictEqual(look.item, look.dlItem, `${vw}x${vh}: a paper menu item differs from a PDF menu item`);
+          assert.strictEqual(await b.eval(`return document.getElementById("print-paper").textContent;`), "LETTER");
+          await b.click("#print-paper");
+          await b.click("#print-paper-a4");
+          const m = await b.eval(`return { label: document.getElementById("print-paper").textContent,
+            open: !!document.getElementById("print-paper-menu").offsetParent, focus: document.activeElement.id,
+            checked: [...document.querySelectorAll("#print-paper-menu button")].map(i => i.getAttribute("aria-checked")),
+            panel: getComputedStyle(document.getElementById("settings-panel")).display !== "none" };`);
+          assert.deepStrictEqual(m, { label: "A4", open: false, focus: "print-paper", checked: ["false", "true"], panel: true }, `${vw}x${vh}`);
+          await b.click("#print-paper");
+          await b.waitFor(`!!document.getElementById("print-paper-menu").offsetParent`, { label: "paper menu to open" });
+          await b.click("#modeB");
+          assert.strictEqual(await b.eval(`return !!document.getElementById("print-paper-menu").offsetParent;`), false, `${vw}x${vh}: an outside tap left the paper menu open`);
+          await b.eval(`setPrintPaper("letter"); return true;`);
+          await b.key("Escape", "Escape", 27);
         }
       } finally {
         await b.setViewport(900, 900, false);
@@ -2596,7 +2671,7 @@ function run() {
   // node, so no Range can measure it: for the select this asserts only the
   // computed text-align / text-align-last, which proves the CSS asks for a
   // centred value (and Chrome honours it), not the rendered pixel position.
-  test("every button and link in the settings panel centres its label, line by line; the paper select asks for a centred value",
+  test("every button and link in the settings panel centres its label, line by line; the paper control is a centred button",
     async () => {
       await freshLoad();
       try {
@@ -2622,14 +2697,14 @@ function run() {
                 if (Math.abs(d) > 2) bad.push((e.id || e.textContent.trim()) + " off by " + (d / 2).toFixed(2));
               }
             }
-            const sel = getComputedStyle(document.getElementById("print-paper-select"));
-            return { n: ctrls.length, bad, ta: sel.textAlign, tal: sel.textAlignLast };
+            return { n: ctrls.length, bad, paper: ctrls.some(e => e.id === "print-paper"),
+              selects: p.querySelectorAll(".prints select").length };
           `);
           const label = `${vw}x${vh}`;
           assert.ok(m.n >= 10, `${label}: expected the panel's buttons and links to be measured, got ${m.n}`);
           assert.deepStrictEqual(m.bad, [], `${label}: labels not centred in their controls`);
-          assert.strictEqual(m.ta, "center", `${label}: the paper select text-align`);
-          assert.strictEqual(m.tal, "center", `${label}: the paper select text-align-last`);
+          assert.strictEqual(m.paper, true, `${label}: the paper button was not measured for centring`);
+          assert.strictEqual(m.selects, 0, `${label}: the print row holds a native select again`);
           await b.key("Escape", "Escape", 27);
         }
       } finally {
@@ -2641,9 +2716,8 @@ function run() {
     await freshLoad();
     await openSettingsPanel();
     await b.eval(`
-      const sel = document.querySelector("#settings-panel .prints select");
-      sel.value = "a4";
-      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      document.getElementById("print-paper").click();
+      document.getElementById("print-paper-a4").click();
       return true;
     `);
     const before = await stored();
@@ -2654,9 +2728,9 @@ function run() {
       label: "chips after reload",
     });
     const after = await b.eval(`
-      return document.getElementById("print-paper-select").value;
+      return document.getElementById("print-paper").textContent;
     `);
-    assert.strictEqual(after, "a4", "the paper selector did not come back on A4 after a reload");
+    assert.strictEqual(after, "A4", "the paper button did not come back on A4 after a reload");
   });
 
   /* ---------------------------------------------------------------- *
@@ -4033,7 +4107,7 @@ function run() {
         // panel-only controls.
         const inPanel = await probeTargets(
           ["#settings-trigger", "#modeA", "#modeB", "#tier-basic", "#tier-intermediate", "#tier-advanced", "#deck-add",
-           "#settings-panel .prints button", "#settings-panel .prints select"]);
+           "#settings-panel .prints button"]);
         const probe = resting.concat(inPanel);
         const short = probe.filter((p) => !p.missing && p.h < 44);
         const stolen = probe.filter((p) => !p.missing && p.bad.length);
@@ -9796,7 +9870,7 @@ function run() {
         await b.settle();
         const probe = await probeTargets(
           ["#modeA", "#modeB", "#deck-add",
-           "#settings-panel .prints button", "#settings-panel .prints select",
+           "#settings-panel .prints button",
            ...RES_IDS.map((id) => "#" + id)]);
         const short = probe.filter((p) => !p.missing && p.h < 44);
         const stolen = probe.filter((p) => !p.missing && p.bad.length);
@@ -9926,11 +10000,28 @@ function run() {
         const meta = await decksMeta();
         const n = (await bootMeta(meta)).chords;
         await expectCount(`1 / ${n}`, "starts on the first card at desktop");
-        await b.eval(`document.getElementById("print-paper-select").focus(); return true;`);
+        await b.eval(`document.getElementById("lang-select").focus(); return true;`);
         await b.key("ArrowRight", "ArrowRight", 39);
         await b.settle();
         await expectCount(`1 / ${n}`,
-          "ArrowRight typed into the sidebar's paper select must not also step the card");
+          "ArrowRight typed into the sidebar's language select must not also step the card");
+      } finally {
+        await b.setViewport(900, 900, false);
+      }
+    });
+
+    test("arrow keys inside the open paper menu do not step the card", async () => {
+      await freshLoad();
+      try {
+        await b.setViewport(1280, 800, false);
+        await b.settle();
+        const meta = await decksMeta();
+        const n = (await bootMeta(meta)).chords;
+        await b.click("#print-paper");
+        await b.eval(`document.getElementById("print-paper-a4").focus(); return true;`);
+        await b.key("ArrowRight", "ArrowRight", 39);
+        await b.settle();
+        await expectCount(`1 / ${n}`, "ArrowRight inside the open paper menu must not step the card");
       } finally {
         await b.setViewport(900, 900, false);
       }
@@ -10573,10 +10664,10 @@ function run() {
           const head = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate", "tier-advanced", "seq-source-link"];
           for (const [w, h] of [[844, 390], [800, 340]]) {
             const ids = await stopsAt(w, h);
-            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper-select", "deck-add", "deck-restore", "backup-open", "res", "about-open", "lang-select"], `${w}x${h}: ${JSON.stringify(ids)}`);
+            assert.deepStrictEqual(shape(ids), [...head, "print-download", "print-paper", "deck-add", "deck-restore", "backup-open", "res", "about-open", "lang-select"], `${w}x${h}: ${JSON.stringify(ids)}`);
           }
           const dom = await stopsAt(380, 780);
-          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "backup-open", "print-download", "print-paper-select", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
+          assert.deepStrictEqual(shape(dom), [...head, "deck-add", "deck-restore", "backup-open", "print-download", "print-paper", "res", "about-open", "lang-select"], `380x780: ${JSON.stringify(dom)}`);
         } finally {
           await rb.setViewport(900, 900, false);
           await rb.goto(URL);
@@ -10892,7 +10983,7 @@ function run() {
     // D2 re-plan step 4 (owner's five-button design, §4.2a): five mutually
     // exclusive practice buttons. There is no #modeS and no disabled state.
     const FLASH_STOPS = ["settings-trigger", "modeA", "modeB", "tier-basic", "tier-intermediate",
-      "tier-advanced", "deck-add", "backup-open", "print-download", "print-paper-select", ...RES_IDS,
+      "tier-advanced", "deck-add", "backup-open", "print-download", "print-paper", ...RES_IDS,
       "about-open", "lang-select"];
     const PROG_STOPS = [...FLASH_STOPS.slice(0, 6), "seq-source-link", ...FLASH_STOPS.slice(6)];
     const MODAL_VIEWPORTS = [[320, 568, true], [768, 1024, true], [568, 320, true], [683, 330, true], [844, 390, true]];
@@ -15117,16 +15208,16 @@ function run() {
 
     test("I18N: under every present table the panel, sheet and About fit at 320, 380, 844 and 1280", async () => {
       const pseudoUrl = URL.replace(/index\.html$/, "__pseudo_de.html");
-      const SEL = ".mode, .prints button, .prints select, .panel-heading, .panel-note";
+      const SEL = ".mode, .prints button, .panel-heading, .panel-note";
       const measure = (scope) => b.eval(`
         const root = document.querySelector(${JSON.stringify(scope)});
         const lines = (${renderedTextLineCount.toString()});
         const els = Array.from(root.querySelectorAll(${JSON.stringify(SEL)})).filter((e) => e.getClientRects().length);
-        const paper = document.getElementById("print-paper-select");
+        const paper = document.getElementById("print-paper");
         const ctx = document.createElement("canvas").getContext("2d");
         const cs = getComputedStyle(paper);
         ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-        const widest = Math.max(...Array.from(paper.options).map((o) => ctx.measureText(o.text).width + o.text.length * parseFloat(cs.letterSpacing || 0)));
+        const widest = Math.max(...["LETTER", "A4"].map((t) => ctx.measureText(t).width + t.length * parseFloat(cs.letterSpacing || 0)));
         return { rows: els.map((e) => [e.id || e.className + ":" + e.tagName, lines(e), e.scrollWidth <= e.clientWidth + 1]),
                  tops: els.map((e) => Math.round(e.getBoundingClientRect().top)),
                  height: root.scrollHeight,
@@ -15170,7 +15261,7 @@ function run() {
             const where = `${label} ${w}x${h}`;
             check(m.panel.sw <= 0 && m.panel.dsw <= 0, `${where}: the panel scrolls horizontally`);
             for (const [id, , fits] of m.panel.rows) check(fits, `${where}: ${id} overflows its box`);
-            check(m.panel.paperRoom >= -0.5, `${where}: the paper select does not show its full option text (${m.panel.paperRoom}px)`);
+            check(m.panel.paperRoom >= -0.5, `${where}: the paper button does not show its full option text (${m.panel.paperRoom}px)`);
             for (const k of ["sheet", "about"]) check(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
             if (label !== "en") m.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1],
               `${where}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]}`));
