@@ -1276,6 +1276,10 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-title{margin:0; font:600 13px/1.2 "Nunito Sans"; letter-spacing:.09em; text-transform:uppercase; flex:1 1 auto; min-width:0;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 #editor .editor-type{flex:0 0 auto; display:flex; gap:0}
+#editor-delete{flex:0 0 auto; min-width:44px; min-height:44px; padding:0; display:flex; align-items:center; justify-content:center}
+#editor-delete.armed{background:#B3261E; border-color:#B3261E; color:#fff}
+#editor-layout-note{margin:0; font:500 12px/1.3 "Nunito Sans"}
+#editor-layout-note[hidden]{display:none}
 #editor .editor-type .mode{border-radius:0; min-width:44px}
 #editor .editor-type .mode:first-child{border-radius:8px 0 0 8px}
 #editor .editor-type .mode:last-child{border-radius:0 8px 8px 0; border-left-width:0}
@@ -1355,10 +1359,11 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-notes{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:var(--sp-1)}
 #editor .tray-note{min-height:44px; padding-inline:2px}
 #editor .tray-note.on, #editor-flats.on{background:#242424; color:#F6F4ED; border-color:#242424}
-#editor .editor-octaves{display:flex; align-items:center; gap:var(--sp-2)}
+#editor .editor-octaves{display:flex; align-items:center; gap:var(--sp-1)}
 #editor .editor-octaves .mode{min-width:44px; min-height:44px}
-#editor-oct-label{font:600 12px/1 "Nunito Sans"; opacity:.75}
-#editor-oct{flex:1 1 auto; text-align:center; font:700 15px/1 "Nunito Sans"}
+#editor .oct-read{flex:0 0 auto; min-width:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px}
+#editor-oct-label{font:600 11px/1 "Nunito Sans"; opacity:.75; white-space:nowrap}
+#editor-oct{text-align:center; font:700 15px/1 "Nunito Sans"}
 #editor-flats{margin-left:auto; padding-inline:var(--sp-3)}
 #editor-palette.on{background:#242424; border-color:#242424}
 #editor-palette .pal-dot{display:block; width:18px; height:18px; margin:auto; border-radius:50%; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%); box-shadow:0 0 0 1px #242424}
@@ -16162,6 +16167,48 @@ function editorNode(tag, props, ...kids) {
   for (const kid of kids) node.appendChild(kid);
   return node;
 }
+function editorDeleteButton() {
+  const b = editorNode("button", { id: "editor-delete", type: "button", class: "mode", "aria-label": t("sheet.del_idle"), title: t("sheet.del_idle") });
+  b.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  return b;
+}
+function editorDisarmDelete() {
+  const s = editorSession, b = s && editorEl("editor-delete");
+  if (!b || !s.delArmed) return;
+  s.delArmed = false;
+  b.classList.remove("armed");
+  b.setAttribute("aria-label", t("sheet.del_idle"));
+  b.title = t("sheet.del_idle");
+  if (s.say === s.delNote) s.say = s.plainSay = "";
+  s.delNote = "";
+  editorRender();
+}
+function editorDeleteTap() {
+  const s = editorSession;
+  if (!s || s.dialog || s.editing || !editingId) return;
+  const b = editorEl("editor-delete");
+  if (s.delArmed) {
+    s.delArmed = false;
+    if (wouldEmpty(editingId)) {
+      s.say = s.plainSay = t("sheet.del_refusal", { name: editedDeck().name });
+      b.classList.remove("armed");
+      b.setAttribute("aria-label", t("sheet.del_idle"));
+      return editorRender();
+    }
+    deleteDeck(editingId);
+    return;
+  }
+  s.delArmed = true;
+  b.classList.add("armed");
+  b.setAttribute("aria-label", t("sheet.del_armed"));
+  b.title = t("sheet.del_armed");
+  const d = editedDeck();
+  const seat = d && d.options && d.options.replaces;
+  const seated = seeded() || (typeof seat === "string" && savedState.slots[seat] === editingId);
+  s.delNote = t(seated ? "sheet.del_note_seeded" : "sheet.del_note_custom", { name: d ? d.name : t("sheet.this_scale") });
+  s.say = s.plainSay = s.delNote;
+  editorRender();
+}
 function editorOpen(edit) {
   const kind = !edit ? "new" : seeded() ? "builtin" : "saved";
   const model = editorModelFor(edit, kind);
@@ -16176,7 +16223,8 @@ function editorOpen(edit) {
       editorNode("button", { id: "editor-back", type: "button", class: "mode", text: t("sheet.back") }),
       editorNode("h2", { id: "editor-title", text: t(edit ? "sheet.title_edit" : "sheet.title_add") }),
       editorNode("div", { class: "editor-type", role: "group", "aria-label": t("editor.pantype") },
-        button("editor-type-standard", "editor.standard"), button("editor-type-neotone", "editor.neotone"))),
+        button("editor-type-standard", "editor.standard"), button("editor-type-neotone", "editor.neotone")),
+      ...(edit ? [editorDeleteButton()] : [])),
     editorNode("div", { class: "editor-line" },
       editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off", spellcheck: "false",
         "aria-label": t("editor.line.aria") })),
@@ -16189,6 +16237,7 @@ function editorOpen(edit) {
         ...EDITOR_RINGS.map((ring) => editorNode("button", { id: "editor-pill-" + ring, type: "button", class: "mode pill", "data-ring": ring })),
         editorNode("button", { id: "editor-replace-ding", type: "button", class: "mode pill", "aria-label": t("editor.replace_ding_aria") },
           editorNode("span", { class: "pill-act", text: t("editor.replace_ding") }))),
+      editorNode("p", { id: "editor-layout-note", hidden: true, text: t("reason.PROFILE_CONFLICT") }),
       editorNode("p", { id: "editor-hint", text: t("editor.hint") })),
     editorNode("div", { id: "editor-layout", role: "group", "aria-label": t("editor.layout.aria") },
       button("editor-mirror-top", "sheet.mirror_top"), button("editor-mirror-bottom", "sheet.mirror_bottom"),
@@ -16201,8 +16250,9 @@ function editorOpen(edit) {
       editorNode("div", { id: "editor-notes", role: "group", "aria-label": t("editor.tray.aria") }),
       editorNode("div", { class: "editor-octaves" },
         editorNode("button", { id: "editor-oct-down", type: "button", class: "mode", text: "\u2212", "aria-label": t("editor.octave_down") }),
-        editorNode("span", { id: "editor-oct-label", text: t("editor.octave_label") }),
-        editorNode("span", { id: "editor-oct" }),
+        editorNode("span", { class: "oct-read" },
+          editorNode("span", { id: "editor-oct-label", text: t("editor.octave_label") }),
+          editorNode("span", { id: "editor-oct" })),
         editorNode("button", { id: "editor-oct-up", type: "button", class: "mode", text: "+", "aria-label": t("editor.octave_up") }),
         editorNode("button", { id: "editor-flats", type: "button", class: "mode", text: t("editor.flats") }),
         editorNode("button", { id: "editor-palette", type: "button", class: "mode", "aria-label": t("editor.palette"), "aria-expanded": "false", "aria-controls": "editor-swatches" },
@@ -16424,7 +16474,10 @@ function editorRenderLayout(m) {
     el.classList.toggle("on", on);
     el.setAttribute("aria-pressed", String(on));
     el.disabled = dis;
+    if (m.options.profile) el.setAttribute("aria-describedby", "editor-layout-note"); else el.removeAttribute("aria-describedby");
   }
+  const note = editorEl("editor-layout-note");
+  note.hidden = !m.options.profile;
 }
 function editorLayoutTap(step, say, keepsNumbers = false) {
   const s = editorSession;
@@ -17167,6 +17220,11 @@ function editorWire() {
   };
   line.onblur = () => { if (editorSession && editorSession.editing && !editorSession.error) editorCommitLine(); };
   editorEl("editor-back").onclick = editorBack;
+  const del = editorEl("editor-delete");
+  if (del) {
+    del.onclick = editorDeleteTap;
+    editorEl("editor").addEventListener("pointerdown", (e) => { if (e.target !== del && !del.contains(e.target)) editorDisarmDelete(); }, true);
+  }
   editorEl("editor-undo").onclick = editorUndoStep;
   editorEl("editor-redo").onclick = editorRedoStep;
   editorEl("editor-save").onclick = () => editorSave();

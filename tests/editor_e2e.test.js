@@ -2477,6 +2477,142 @@ function run() {
     });
   });
 
+  describe("TRI-59 owner DEV-QA nits 3", () => {
+    const DELETE_LABEL = "DELETE THIS SCALE";
+    const NEO_REASON = "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it.";
+    const saveNew = async (line) => {
+      await openAdd();
+      await typeLine(line);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+    };
+    const reopenSelected = async () => {
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the selected scale" });
+    };
+    const label = () => b.eval(`return document.getElementById("editor-delete").getAttribute("aria-label");`);
+
+    test("TRI59 delete is offered on an edited scale only, as a 44px target in the header", async () => {
+      await fresh();
+      await openAdd();
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-delete");`), false, "no delete on a scale not yet saved");
+      await fresh();
+      await openBuiltin();
+      const r = await b.eval(`const e = document.getElementById("editor-delete"), q = e.getBoundingClientRect(), h = document.querySelector(".editor-head").getBoundingClientRect();
+        return { name: e.getAttribute("aria-label"), w: q.width, h: q.height, inHead: q.left >= h.left && q.right <= h.right + 0.5 && q.top >= h.top - 0.5 && q.bottom <= h.bottom + 0.5 };`);
+      assert.deepStrictEqual(r, { name: DELETE_LABEL, w: r.w, h: r.h, inHead: true });
+      assert.ok(r.w >= 44 && r.h >= 44, JSON.stringify(r));
+    });
+
+    test("TRI59 delete first tap arms and says what will go, the second removes the saved scale and closes the editor", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      const before = await savedCount();
+      await reopenSelected();
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.strictEqual(await savedCount(), before, "one tap deletes nothing");
+      assert.match(await b.eval(`return document.getElementById("editor-status").textContent;`), /^Tap again to remove .+ This cannot be undone\.$/);
+      await b.click("#editor-delete");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the editor to close after delete" });
+      assert.strictEqual(await savedCount(), before - 1);
+    });
+
+    test("TRI59 delete is disarmed by tapping anywhere else in the editor", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      const before = await savedCount();
+      await reopenSelected();
+      await b.click("#editor-delete");
+      await b.click("#editor-pan");
+      assert.strictEqual(await label(), DELETE_LABEL);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent;`), "");
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.strictEqual(await savedCount(), before);
+    });
+
+    test("TRI59 delete leaves the header fitting at 320, 375 and 390", async () => {
+      for (const [w, h] of [[320, 568], [375, 667], [390, 844]]) {
+        await fresh(w, h);
+        await openBuiltin();
+        const r = await b.eval(`const head = document.querySelector(".editor-head"), q = head.getBoundingClientRect();
+          const kids = [...head.querySelectorAll("button")].map((e) => e.getBoundingClientRect());
+          return { fits: head.scrollWidth <= head.clientWidth + 0.5 && kids.every((k) => k.left >= q.left - 0.5 && k.right <= q.right + 0.5 && k.width >= 44 && k.height >= 44),
+            overlap: kids.some((k, i) => kids.some((o, j) => j > i && k.left < o.right - 0.5 && o.left < k.right - 0.5)), n: kids.length };`);
+        assert.deepStrictEqual(r, { fits: true, overlap: false, n: 4 }, w + " " + JSON.stringify(r));
+      }
+    });
+
+    test("TRI59 neotone layout row says why it is disabled, in view, with the existing PROFILE_CONFLICT wording", async () => {
+      for (const [w, h] of [[320, 568], [375, 667], [820, 1180]]) {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        assert.strictEqual(await b.eval(`const n = document.getElementById("editor-layout-note"); return !n || n.hidden || n.offsetParent === null;`), true, "no reason on a standard pan");
+        await b.click("#editor-type-neotone");
+        const r = await b.eval(`const n = document.getElementById("editor-layout-note"), q = n.getBoundingClientRect(), e = document.getElementById("editor");
+          return { text: n.textContent, shown: n.offsetParent !== null, inView: q.top >= 0 && q.bottom <= innerHeight && q.left >= 0 && q.right <= innerWidth,
+            described: ["editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById(id).getAttribute("aria-describedby")),
+            scroll: e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth };`);
+        assert.deepStrictEqual(r, { text: NEO_REASON, shown: true, inView: true, described: Array(4).fill("editor-layout-note"), scroll: true }, w + "x" + h);
+        await b.click("#editor-type-standard");
+        assert.strictEqual(await b.eval(`const n = document.getElementById("editor-layout-note"); return n.offsetParent === null;`), true, "the reason goes with Neotone");
+      }
+    });
+
+    test("TRI59 octave stepper is compact at every phone and tablet size: one row, 44px targets, no overflow", async () => {
+      for (const [w, h] of [[320, 568], [375, 667], [390, 844], [820, 1180], [1180, 820]]) {
+        await fresh(w, h);
+        await openBuiltin();
+        const r = await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect();
+          const down = q("editor-oct-down"), up = q("editor-oct-up"), lab = q("editor-oct-label"), val = q("editor-oct"), flats = q("editor-flats"), pal = q("editor-palette"), notes = q("editor-notes");
+          const e = document.getElementById("editor"), de = document.documentElement;
+          return { group: Math.round(up.right - down.left), targets: [down, up, flats, pal].every((x) => x.width >= 44 && x.height >= 44),
+            oneRow: [up, flats, pal].every((x) => Math.abs(x.top - down.top) < 1), labelBetween: lab.left >= down.right - 0.5 && lab.right <= up.left + 0.5 && val.left >= down.right - 0.5 && val.right <= up.left + 0.5,
+            stacked: val.top >= lab.bottom - 0.5, cols: notes.width / 6, noScroll: e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth && de.scrollWidth === ${w} };`);
+        assert.ok(r.group <= 160, w + ": octave stepper spans " + r.group + "px (was 4+ grid columns)");
+        assert.ok(r.group <= r.cols * 3 + 4, w + ": octave stepper is at most three note columns: " + JSON.stringify(r));
+        assert.deepStrictEqual([r.targets, r.oneRow, r.labelBetween, r.stacked, r.noScroll], [true, true, true, true, true], w + " " + JSON.stringify(r));
+      }
+    });
+
+    test("TRI59 octave label and delete fit in all eight locales at 320, 375 and 390 with the real fonts", async () => {
+      const prev = b;
+      b = await launch({ foregroundSettle: true, realFonts: true });
+      try {
+        for (const width of [390, 375, 320]) {
+          await fresh(width, 844);
+          await openBuiltin();
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          const langs = await b.eval(`return [...document.getElementById("lang-select").options].map((o) => o.value).filter((v) => v !== "auto");`);
+          assert.strictEqual(langs.length, 8);
+          for (const lang of langs) {
+            await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
+            await b.click("#editor-type-neotone");
+            const bad = await b.eval(`const out = [], row = document.querySelector(".editor-octaves").getBoundingClientRect();
+              for (const id of ["editor-oct-label", "editor-oct", "editor-flats", "editor-delete", "editor-layout-note"]) {
+                const e = document.getElementById(id); if (!e || !e.offsetParent) continue;
+                const box = e.getBoundingClientRect();
+                if (e.scrollWidth > e.clientWidth + 0.5 && id !== "editor-layout-note") out.push(id + " scrollWidth");
+                const range = document.createRange(); range.selectNodeContents(e);
+                for (const r of range.getClientRects()) if (r.width && (r.left < box.left - 0.5 || r.right > box.right + 0.5)) out.push(id + ":" + e.textContent);
+              }
+              const q = document.getElementById("editor-palette").getBoundingClientRect(); if (q.right > row.right + 0.5) out.push("row overflow");
+              const ed = document.getElementById("editor"); if (ed.scrollWidth > ed.clientWidth || ed.scrollHeight > ed.clientHeight) out.push("panel scroll");
+              return out;`);
+            assert.deepStrictEqual(bad, [], width + " " + lang);
+          }
+        }
+      } finally {
+        await b.close();
+        b = prev;
+      }
+    });
+  });
+
   describe("flag off", () => {
     test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
       await fresh(375, 667, false);
