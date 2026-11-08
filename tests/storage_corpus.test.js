@@ -13,11 +13,12 @@
 //
 // Known failures on main are `todo: "<fixing PR>"`: node:test reports them
 // without failing, and the fixing PR removes the todo, which is its proof.
-const { test } = require("node:test");
+const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename);
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
-const { boot } = require("./helpers/sandbox.js");
+const { boot: sandboxBoot } = require("./helpers/sandbox.js");
+const boot = (opts = {}) => sandboxBoot({ onePanel: onePanelFor(), ...opts });
 
 const APP_ROOT = process.env.HPFC_APP_ROOT || path.join(__dirname, "..");
 const HTML = fs.readFileSync(path.join(APP_ROOT, "index.html"), "utf8");

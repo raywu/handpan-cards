@@ -179,13 +179,13 @@ test("U2a-F1: the flag helper substitutes the one ONE_PANEL line, length-preserv
   const on = flagHelper.apply(HTML, true);
   assert.strictEqual(on.length, HTML.length);
   assert.ok(on.includes("const ONE_PANEL = true ;"));
-  assert.strictEqual(flagHelper.apply(on, false), HTML);
+  assert.strictEqual(flagHelper.apply(flagHelper.apply(on, false), true), HTML);
   assert.throws(() => flagHelper.apply("no flag here", true), /exactly one/);
   assert.throws(() => flagHelper.apply("const ONE_PANEL = false;\nconst ONE_PANEL = false;", true), /exactly one/);
 });
 
-test("U2a-F2: the flag ships off, and boot({onePanel}) flips it without moving a byte", () => {
-  assert.strictEqual(appBoot().get("ONE_PANEL"), false);
+test("U2a-F2: the flag ships on (U2h), and boot({onePanel}) flips it without moving a byte", () => {
+  assert.strictEqual(appBoot().get("ONE_PANEL"), true);
   assert.strictEqual(appBoot({ onePanel: false }).get("ONE_PANEL"), false);
   assert.strictEqual(appBoot({ onePanel: true }).get("ONE_PANEL"), true);
 });
