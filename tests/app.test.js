@@ -3547,7 +3547,8 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   // set of buttons, used for built-in and custom decks alike.
   assert.ok(!panel.includes("<a href="), "the panel must not link a pre-built PDF");
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this, 'all'\); closePanel\(\);"/);
-  assert.ok(/<select id="print-paper-select"/.test(panel), "D16: the paper picker rides with the buttons");
+  assert.ok(/<button type="button" id="print-paper"/.test(panel), "D16: the paper picker rides with the buttons");
+  assert.ok(!/<select id="print-paper/.test(panel), "the paper picker is a menu, not a native select");
 });
 
 const PM_SHOP_SHA256 = {
@@ -3565,18 +3566,19 @@ function pmPanel() {
   return src.slice(at, src.indexOf("<!-- The scale engine, inlined", at));
 }
 
-test("PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper select, and no full-deck control is rendered", async () => {
+test("PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper menu trigger, and no full-deck control is rendered", async () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = pmPanel();
   const row = panel.slice(panel.indexOf('<div class="prints">'));
-  const rowHtml = row.slice(0, row.indexOf("</select>") + 9);
-  const outsideMenu = rowHtml.replace(/<div id="print-menu"[\s\S]*?<\/div>/, "");
+  const rowHtml = row.slice(0, row.indexOf("</div>", row.indexOf('id="print-paper-menu"')) + 6);
+  const outsideMenu = rowHtml.replace(/<div id="print-menu"[\s\S]*?<\/div>/, "").replace(/<div id="print-paper-menu"[\s\S]*?<\/div>/, "");
   const controls = [...outsideMenu.matchAll(/<(button|select)\b[^>]*>/g)].map((m) => m[0]);
   assert.strictEqual(controls.length, 2, "the print row holds exactly two controls beside the menu");
   assert.match(controls[0], /^<button type="button" id="print-download" aria-haspopup="menu" aria-expanded="false" aria-controls="print-menu" onclick="togglePrintMenu\(\);">$/);
-  assert.match(controls[1], /^<select id="print-paper-select"/);
+  assert.match(controls[1], /^<button type="button" id="print-paper" aria-haspopup="menu" aria-expanded="false" aria-controls="print-paper-menu" onclick="togglePaperMenu\(\);">$/);
+  assert.ok(!/<select\b/.test(rowHtml), "the print row holds no native select");
   assert.match(rowHtml, /<button[^>]*>DOWNLOAD PDF<\/button>/);
-  assert.ok(rowHtml.indexOf("<button") < rowHtml.indexOf("<select"), "the button leads the row");
+  assert.ok(rowHtml.indexOf('id="print-download"') < rowHtml.indexOf('id="print-paper"'), "DOWNLOAD PDF leads the row");
   assert.ok(!src.includes("FULL DECK PDF"), "no element offers a full deck PDF");
   assert.ok(!src.includes("CHORD-ONLY PDF"), "no element is labelled CHORD-ONLY PDF");
   assert.match(panel, /<h3 class="panel-heading">Print this scale<\/h3>/);
@@ -3712,7 +3714,7 @@ test("setPrintPaper refuses a non-string value even when it stringifies to a val
    A4 - and re-picking LETTER fired no `change` event, so the user could not
    get back without round-tripping through A4. The control has to report the
    state it owns (D16). */
-/* Lane M1: the picker is now a static control (`#print-paper-select` inside
+/* Lane M1: the picker is now a static control (`#print-paper` inside
  * `#settings-panel`), not re-rendered per card - so there is no "selected"
  * attribute to drift, and setPrintPaper() pushes into the live element's
  * `.value` itself (index.html's setPrintPaper). Same bug class (D16: the
@@ -3720,14 +3722,14 @@ test("setPrintPaper refuses a non-string value even when it stringifies to a val
 test("print CTA: the paper picker reports the paper that will actually print", async () => {
   const app = boot();
   customDeck(app);
-  const picked = () => String(app.get('document.getElementById("print-paper-select").value'));
+  const picked = () => String(app.get('document.getElementById("print-paper").textContent'));
 
-  assert.strictEqual(picked(), "letter", "the picker must open on the default paper");
+  assert.strictEqual(picked(), "LETTER", "the picker must open on the default paper");
   app.run('setPrintPaper("a4")');
-  assert.strictEqual(picked(), "a4",
-    "setPrintPaper must push the new paper into the picker's own value");
+  assert.strictEqual(picked(), "A4",
+    "setPrintPaper must push the new paper into the picker's own label");
   app.run('setPrintPaper("letter")');
-  assert.strictEqual(picked(), "letter");
+  assert.strictEqual(picked(), "LETTER");
 });
 
 /* ---------------------------------------------------------------------------
@@ -4713,7 +4715,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the ten known ids");
+    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "print-paper-select", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the eleven known ids");
     assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
@@ -4723,7 +4725,7 @@ describe("panel fit judge", () => {
     const noFull = judge(withFull, cell());
     assert.strictEqual(noFull.rule2.fail.length, 0, "the full-deck button is removed by design");
     assert.deepStrictEqual(noFull.removed, ["button:FULL DECK PDF", "button:CHORD-ONLY PDF"]);
-    const withPaper = withControl(cell(), "print-paper-select", ctl(100));
+    const withPaper = withControl(cell(), "print-paper", ctl(100));
     assert.strictEqual(judge(withPaper, cell()).rule2.fail.length, 1, "the paper select is not removed by design");
     assert.deepStrictEqual(judge(cell(), cell()).removed, []);
   });
@@ -13445,7 +13447,7 @@ describe("UX: the footer lip", () => {
         const from = html.indexOf('<div id="scale-sheet"');
         const sheetHtml = html.slice(from, html.indexOf('id="scale-lip"', from));
         assert.ok(!/<select\b/.test(sheetHtml), "the sheet holds no select");
-        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select", "lang-select"]);
+        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["lang-select"]);
       });
 
       const flingFrom = (a, { seed = 10, way = "up", start = 0 } = {}) => {
@@ -15301,7 +15303,7 @@ describe("I18N", () => {
   const bootLang = (langs, languages, extra = {}) => boot({ html: pseudo(langs), languages, ...extra });
   const hasEnglishOnlyId = new Set(["decks", "front", "back", "count", "scale-ding", "scale-top", "scale-inner",
     "scale-bottom", "scale-box", "scale-parse", "scale-name", "about", "scale-preview", "share-url", "seq-style-name",
-    "scale-refusal", "announce"]);
+    "scale-refusal", "announce", "print-paper", "print-paper-letter", "print-paper-a4"]);
 
   /** Every [id, kind, value] the app wrote to a UI element and left non-empty. */
   function uiTexts(app) {
@@ -19580,7 +19582,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
     if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
-    if (deadline) html = html.replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(deadline)};`);
+    html = html.replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(deadline)};`);
     const ss = session === null ? "" : `window.__ss=${JSON.stringify(session)};window.sessionStorage={getItem:k=>k in window.__ss?window.__ss[k]:null,setItem:(k,v)=>{window.__ss[k]=String(v)},removeItem:k=>{delete window.__ss[k]}};`;
     return `<script>location.replace=function(u){window.__replaced=String(u)};location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};${ss}</script>` + html;
   }
@@ -19610,8 +19612,8 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.match(html, /^const MOVE_CAP = 20000;$/m);
   });
 
-  test("MV: the committed bytes ship the deadline off", () => {
-    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = null;$/m);
+  test("MV: the committed bytes ship the deadline 2026-11-21", () => {
+    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = "2026-11-21";$/m);
   });
 
   test("MV: the committed deadline is null or a quoted YYYY-MM-DD literal", () => {
@@ -20275,7 +20277,7 @@ describe("PDF tier menu (lane U)", () => {
       assert.match(m[1], /role="menuitem"/);
       assert.ok(m[1].includes(`onclick="downloadDeckPDF('shop', this, '${OPTIONS[i][0]}'); closePanel();"`), m[1]);
     });
-    const row = SRC.slice(SRC.indexOf('<div class="prints">'), SRC.indexOf("</select>", SRC.indexOf('<div class="prints">')));
+    const row = SRC.slice(SRC.indexOf('<div class="prints">'), SRC.indexOf('id="print-paper-menu"', SRC.indexOf('<div class="prints">')));
     assert.ok(row.includes(html), "the menu is a descendant of .prints");
   });
 
@@ -20312,6 +20314,70 @@ describe("PDF tier menu (lane U)", () => {
     app.keydown("Escape");
     assert.strictEqual(app.els["print-menu"].hidden, true);
     assert.strictEqual(app.activeId(), "print-download");
+  });
+
+  test("the paper menu: two radio items in order, inside .prints, closed by default; the trigger mirrors aria-expanded", () => {
+    const at = SRC.indexOf('<div id="print-paper-menu"');
+    const html = SRC.slice(at, SRC.indexOf("</div>", at) + 6);
+    assert.match(html, /^<div id="print-paper-menu" role="menu" aria-label="Paper size" hidden>/);
+    const items = [...html.matchAll(/<button\b([^>]*)>([^<]*)<\/button>/g)];
+    assert.deepStrictEqual(items.map((m) => m[2]), ["LETTER", "A4"]);
+    items.forEach((m, i) => {
+      assert.match(m[1], /role="menuitemradio"/);
+      assert.ok(m[1].includes(`onclick="choosePaper('${["letter", "a4"][i]}');"`), m[1]);
+    });
+    const app = boot();
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, false);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "true");
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "false");
+  });
+
+  test("only one print-row menu is open at a time", () => {
+    const app = boot();
+    app.run("togglePrintMenu()");
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    assert.strictEqual(app.els["print-download"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, false);
+    app.run("togglePrintMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["print-menu"].hidden, false);
+  });
+
+  test("choosing a paper sets it as setPrintPaper does, closes the menu, returns focus and keeps the panel open", () => {
+    const app = boot();
+    app.run("openPanel(); togglePaperMenu()");
+    app.run("choosePaper('a4')");
+    assert.strictEqual(app.get("printPaper"), "a4");
+    assert.strictEqual(JSON.parse(app.store.hpfc).printPaper, "a4");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].textContent, "A4");
+    assert.deepStrictEqual(["print-paper-letter", "print-paper-a4"].map((id) => app.els[id].getAttribute("aria-checked")), ["false", "true"]);
+    assert.strictEqual(app.activeId(), "print-paper");
+    assert.strictEqual(app.get("panelOpen"), true);
+  });
+
+  test("a stored A4 boots with the paper button reading A4", () => {
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A", printPaper: "a4" }) } });
+    assert.strictEqual(app.els["print-paper"].textContent, "A4");
+    assert.strictEqual(app.els["print-paper-a4"].getAttribute("aria-checked"), "true");
+  });
+
+  test("Escape closes the open paper menu alone and returns focus to the paper button; an outside click closes it", () => {
+    const app = boot();
+    app.run("openPanel(); togglePaperMenu()");
+    app.keydown("Escape");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.get("panelOpen"), true);
+    assert.strictEqual(app.activeId(), "print-paper");
+    app.run("togglePaperMenu()");
+    (app.sandbox.document._l.click || []).forEach((fn) => fn({ type: "click", target: { closest: () => null } }));
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
   });
 
   test("an outside click closes the menu; a click inside .prints does not", () => {

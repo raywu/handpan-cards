@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17404,7 +17404,7 @@
+@@ -17560,7 +17560,7 @@ function moveReport(result) {
  const moveArrivalSearch = location.search, moveArrivalHash = location.hash;
- const MOVE_DEADLINE = null;
+ const MOVE_DEADLINE = "2026-11-21";
  function moveDeadlineText() {
 -  return new Intl.DateTimeFormat(uiLang(), { dateStyle: "long", timeZone: "UTC" }).format(new Date(MOVE_DEADLINE + "T00:00:00Z"));
 +  return new Intl.DateTimeFormat(uiLang(), { dateStyle: "long" }).format(new Date(MOVE_DEADLINE + "T00:00:00Z"));

@@ -253,6 +253,17 @@ bottom`. `chords[].fields` is the canonical voicing in spelling order.
   `<Name>_CHORD_ONLY_EASY_MEDIUM_<paper>.pdf`; ALL keeps the old name and passes no `cards`, so its
   bytes are unchanged. `pdf_download` carries `cards` = `easy` / `easy_medium` / `all`
   (`tests/app.test.js` "PDF tier menu (lane U)").
+- **The paper choice is a menu too** (owner 2026-11-08, from an iPhone screenshot where the native
+  select opened the grey system popup beside our white menu): `#print-paper` (button, label =
+  current paper, LETTER or A4) toggles `#print-paper-menu` with two `menuitemradio` items,
+  `#print-paper-letter` and `#print-paper-a4`, inside `#print-paper-wrap` in `.prints`. It shares
+  the closed-button rules with `#print-download` and the popup rules with `#print-menu`. Choosing
+  an item calls `setPrintPaper` (same storage key, same PDF output), closes the menu, returns
+  focus to `#print-paper` and keeps the panel open. Only one of the two menus is open at a time;
+  outside tap, Escape and a choice close it, and Escape closes only the menu. No chevron.
+  Tests: `tests/app.test.js` "PDF tier menu (lane U)" paper-menu cases, `tests/e2e.test.js` "the
+  paper button is styled like DOWNLOAD PDF" and the per-locale PDF tier menu test. `#lang-select`
+  stays a native select.
 - The sheet guidance slot (`#scale-guidance`) reserves nothing: with no message it
 is out of flow and 0px tall (owner 2026-10-20, superseding the guidance plan's
 36px reserve).
