@@ -39,6 +39,7 @@
  "accent_dark": "#9269C4",
  "cta": "/#s=7/(F2)_uAs2_uC3_Cs3_Ds3_F3_G3_Gs3_C4_Ds4_F4_G4_uGs4_uC5_uDs5_uG5/F2+Astronaut+16/palette-2/pair-r49.r51.r53.r55.r56.r60.r63.r65.r67.b46.b48.-.-.b79.b75.b72.b68.-/c759d7",
  "updated": "2026-11-05",
+ "serenity_updated": "2026-11-07",
  "defaults": [
   {
    "name": "B Amara",
@@ -222,6 +223,60 @@
      "b72",
      "b68",
      null
+    ]
+   }
+  },
+  {
+   "name": "F# Serenity",
+   "credit": "by Reo Matsumoto",
+   "ding": "F#3",
+   "main": [
+    "A3",
+    "B3",
+    "C#4",
+    "E4",
+    "F#4",
+    "A4",
+    "B4",
+    "C#5",
+    "E5"
+   ],
+   "mutant": [
+    "D3",
+    "G#3",
+    "E3",
+    "B2",
+    "A5",
+    "F#5",
+    "C#6",
+    "B5",
+    "E6"
+   ],
+   "seed": "[B2] [D3] [E3] (F#3) [G#3] A3 B3 C#4 E4 F#4 A4 B4 C#5 E5 [F#5] [A5] [B5] [C#6] [E6]",
+   "typed": "F# Serenity",
+   "palette": 0,
+   "profile": {
+    "id": "paired",
+    "rev": 2,
+    "map": [
+     "r57",
+     "r59",
+     "r61",
+     "r64",
+     "r66",
+     "r69",
+     "r71",
+     "r73",
+     "r76",
+     "b50",
+     "b56",
+     "b52",
+     "b47",
+     "b81",
+     "b78",
+     "b85",
+     "b83",
+     "b88"
     ]
    }
   }

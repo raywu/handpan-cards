@@ -1,0 +1,15 @@
+# kills: test_it_has_the_standard_chord_stepper_for_its_own_layout
+# suite: python3 -m unittest -k test_it_has_the_standard_chord_stepper_for_its_own_layout tests.test_scale_pages
+# The Serenity page shows one chord card instead of the three-step stepper.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -552,7 +552,7 @@
+     updated = row.get("updated", UPDATED)
+     name = row["name"]
+     url = SITE + "scales/%s/" % row["slug"]
+-    cards = data["cards"]
++    cards = data["cards"][:1] if single else data["cards"]
+     names = chord_names(data)
+     triad = [c["degree"].lower() for c in cards] == ["i", "iv", "v"] or \
+         all(c["degree"] and not c["sup"] for c in cards) and data["auto_pick"] == [c["n"] for c in cards]

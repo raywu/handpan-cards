@@ -1,0 +1,14 @@
+# kills: only one print-row menu is open at a time
+# suite: node --test --test-name-pattern only.one.print.row.menu.is.open.at.a.time tests/app.test.js
+# Print controls style (2026-11-08): opening one menu leaves the other open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12533,6 +12533,7 @@ function placePrintMenu(menu) {
+ function setPrintMenu(open, id = "print-menu") {
+   for (const m of PRINT_MENUS) {
+     const menu = m.menu(), on = open && menu.id === id;
++    if (open && !on) continue;
+     menu.hidden = !on;
+     if (on) placePrintMenu(menu);
+     m.trigger().setAttribute("aria-expanded", on ? "true" : "false");
