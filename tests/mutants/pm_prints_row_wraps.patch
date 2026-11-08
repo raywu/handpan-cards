@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -654,7 +654,7 @@ main{overflow-x:clip}
+@@ -665,7 +665,7 @@ main{overflow-x:clip}
     panel's own .mode-sized controls, which is also what clears the 44px
     target floor (eng review C4). No new colour: these reuse `.mode`'s own
     surface, border and text tokens. */
@@ -13,12 +13,12 @@ diff --git a/index.html b/index.html
  /* The tier menu (DOWNLOAD PDF): a popup under the row, out of the flex flow, so opening
     it never changes the row height or the trigger width. Its items are .prints buttons,
     so they keep every themed .prints button rule (colours, :lang() fonts, 44px floor,
-@@ -671,7 +671,7 @@ main{overflow-x:clip}
+@@ -683,7 +683,7 @@ main{overflow-x:clip}
    border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
    white-space:nowrap; -webkit-appearance:none; appearance:none}
- .prints button, .prints select, #lang-select{flex:1 1 auto}
+ .prints button, #lang-select{flex:1 1 auto}
 -.prints #print-download{flex:3 1 auto; padding-left:6px; padding-right:6px}
 +.prints #print-download{flex:1 0 100%; padding-left:6px; padding-right:6px}
- .prints button, .prints select, #lang-select{text-align:center; text-align-last:center}
+ .prints button, #lang-select{text-align:center; text-align-last:center}
  .prints button:hover, .prints button:focus-visible,
- .prints select:hover, .prints select:focus-visible, #lang-select:hover, #lang-select:focus-visible{background:#2e281e}
+ #lang-select:hover, #lang-select:focus-visible{background:#2e281e}
