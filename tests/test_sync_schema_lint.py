@@ -108,7 +108,21 @@ class SyncSchemaLintTest(unittest.TestCase):
         with open(os.path.join(ROOT, "tools", "sync", "smoke.mjs"), encoding="utf-8") as f:
             smoke = f.read()
         self.assertIn('from "./redact.mjs"', smoke)
-        self.assertRegex(smoke, r"console\.log\(redact\(")
+        self.assertRegex(smoke, r"const log = [^\n]*\n[^\n]*\n[^\n]*console\.log\(redact\(`\$\{status\}")
+
+    def test_redact_hides_the_whole_connection_credential(self):
+        script = (
+            "import {redact} from './tools/sync/redact.mjs';"
+            "const out=redact('x postgres://postgres.ref:p%40ss!word@db.x:5432/postgres y');"
+            "if(out.includes('ss!word')||out.includes('p%40')||!out.includes('://[redacted]@db.x'))throw new Error(out);"
+        )
+        r = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_restore_recipe_says_how_to_choose_t(self):
+        with open(SCHEMA, encoding="utf-8") as f:
+            text = f.read()
+        self.assertRegex(text, r"(?s):t[^\n]*\n.*just after the bad push.*older version")
 
 
 if __name__ == "__main__":

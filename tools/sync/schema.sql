@@ -213,6 +213,8 @@ grant  execute on function public.purge_tombstones()  to sync_purger;
 -- Recovery (plan section 16). Run as one transaction in the SQL editor; replace :u, :s and :t.
 -- :t is a timestamptz literal in UTC, for example '2026-11-05 14:30:00+00' (always give the +00 offset).
 -- History rows with replaced_at before :t are candidates; the newest of them is restored.
+-- Choose :t just after the bad push: the junk push's history row has replaced_at equal to that push's time,
+-- so a :t before it restores an older version than the one you want.
 -- Mass tombstone, within 30 days:
 --   begin;
 --   with n as (select count(*) c from public.saved_scales
