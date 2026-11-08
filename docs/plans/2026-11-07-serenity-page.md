@@ -1,6 +1,8 @@
 # Dedicated page: F# Serenity (Reo Matsumoto) for Neotone Mutant
 
 Status: plan only (2026-11-07). Key: handpan-cards#serenity-page. Research: docs/plans/2026-11-07-serenity-page-research.md.
+
+Owner decision 2026-11-07: FAQ dropped. The Serenity page has no Questions/FAQ section and no FAQPage JSON-LD; FAQ mentions below are marked dropped.
 Trigger: after the "Reo Matsumoto" credit fix (PR #954, branch `claude/neotone-fs-serenity`) is pushed. Base: the head of
 `claude/neotone-fs-serenity` at dispatch (NOT main; main has no Serenity row).
 
@@ -24,7 +26,7 @@ created it, notes by tonefield, how to practise it in Handpan Theory, linked fro
 - D3b hub [checked: scales/index.html lists every sibling page, incl. /scales/neotone/]: recommend listing the new page
   in the scales/index.html hub (hand edit, one link) so the hub stays complete.
 - D4 JSON-LD [convention; gen_scale_page.py emits ld+json graph]: WebPage + BreadcrumbList (Scales > Neotone > F# Serenity)
-  + FAQPage (4 Q/A from research) + `citation`/`isBasedOn` = the YouTube Short URL; `creator` Person "Reo Matsumoto"
+  + FAQPage (4 Q/A from research; dropped, owner 2026-11-07) + `citation`/`isBasedOn` = the YouTube Short URL; `creator` Person "Reo Matsumoto"
   with `sameAs` only for URLs the owner approves (Q1).
 - D5 copy [requirement: CLAUDE.md]: "scale" never "deck"; product "Handpan Theory"; English only; name spelled "Reo".
   Wording "a scale by Reo Matsumoto" (research: player/teacher, no maker evidence). Bio limited to H/M facts, no
@@ -34,7 +36,7 @@ created it, notes by tonefield, how to practise it in Handpan Theory, linked fro
   scale (no evidence either way).
 - D5c layout [reuse]: reuse the Neotone page notes table and its responsive CSS unchanged. Page order: H1 "F# Serenity
   handpan scale (Neotone Mutant)" pattern; one-sentence answer; breadcrumb; Practice CTA; drawing: no (none exists for
-  the row; no new geometry). Visible FAQ text equals the FAQPage JSON-LD text byte for byte.
+  the row; no new geometry). Visible FAQ text equals the FAQPage JSON-LD text byte for byte (dropped, owner 2026-11-07).
 - D6 analytics [requirement]: page uses the same gated loader as other scale pages; no new event params.
 - D7 size [assumption]: new page cap = existing `SIZE_CAP` (62 KiB-800); Neotone page gains only one link, budget < 120 B (headroom 283 B), asserted in a test.
 - D8 i18n [rule check]: none; no app UI strings change.
@@ -53,7 +55,7 @@ One generator mode reusing existing builders and one JSON row; no new data file,
    Accept: row exists and reads "Reo Matsumoto" at that head; answers and Short channel+date recorded here.
 2. P1 lane `claude/serenity-page` (worktree based on the head of `claude/neotone-fs-serenity`, PR #954):
    tests first, then generator mode, generate page, sitemap/llms/hub hand edits, Neotone link. Deliverable: PR M (main, held) + PR D (dev).
-   Accept: page at slug renders row, FAQ, Practice link; Neotone page links it and stays < NEO_SIZE_CAP; 375px viewport shows no page horizontal scroll.
+   Accept: page at slug renders row, FAQ (dropped, owner 2026-11-07), Practice link; Neotone page links it and stays < NEO_SIZE_CAP; 375px viewport shows no page horizontal scroll.
    Verify: `python3 -m unittest tests.test_scale_pages tests.test_site_files && python3 tools/gen_scale_page.py --serenity --check && python3 tools/gen_scale_page.py --neotone --check && python3 tools/validate.py && git diff --exit-code origin/claude/neotone-fs-serenity -- data/decks.json index.html src data/i18n && python3 -m unittest discover`
 3. P2 DEV check + owner QA, then main stays held for owner.
 
@@ -66,9 +68,9 @@ sitemap.xml, llms.txt, scales/index.html (one hub link), one tests/mutants/sp_se
 - Page exists, self-canonical, title contains "F# Serenity" + "Neotone Mutant", description <= existing limit.
 - Notes table equals the Neotone row (read from neotone_page.json, not restated).
 - Practice href byte-equal to the Neotone row's href.
-- JSON-LD parses; no FAQ section and no FAQPage; citation URL = Short; no "deck" in visible text; "Reo Matsumoto" present, "Rep" absent.
+- JSON-LD parses; no FAQ section and no FAQPage (FAQ dropped, owner 2026-11-07); citation URL = Short; no "deck" in visible text; "Reo Matsumoto" present, "Rep" absent.
 - Neotone page links the new page, the link adds < 120 B, and the page stays < NEO_SIZE_CAP; new page < SIZE_CAP.
-- Visible FAQ text equals the JSON-LD FAQPage text; page order H1 > answer > breadcrumb > Practice CTA.
+- Visible FAQ text equals the JSON-LD FAQPage text; page order H1 > answer > breadcrumb > Practice CTA. (dropped, owner 2026-11-07)
 - Page is caught by the existing one-level `scales/*/index.html` globs (shared head, analytics, sitemap equality).
 - 375px: no page horizontal scroll (e2e or browser check, per docs/testing/browser.md).
 - Sitemap/llms list the URL exactly once; GA loader gating test pattern reused (SeoDeltaTest/SharedBrownHeadTest style).
