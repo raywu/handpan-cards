@@ -1,0 +1,15 @@
+# kills: TRI59c-M5 a partial main row with mutants keeps every mutant under a filled field
+# suite: node --test --test-name-pattern ^TRI59c-M5.a.partial tests/editor_model.test.js
+# fault: The mutant ring does not follow the main ring.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15385,7 +15385,7 @@ function editorNeoPermute(m, send) {
+   map.forEach((key, slot) => {
+     if (key === null) return;
+     const field = slot % NEO_MAIN;
+-    next[slot - field + send(field, ring, angles, reach)] = key;
++    next[slot - field + (slot < NEO_MAIN ? send(field, ring, angles, reach) : field)] = key;
+   });
+   return editorNeoBuild(m, editorPartsOf(m), next);
+ }

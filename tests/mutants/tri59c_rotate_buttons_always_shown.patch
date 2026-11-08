@@ -1,0 +1,15 @@
+# kills: TRI59c the Neotone layout row offers Mirror and two rotate buttons
+# suite: node --test --test-name-pattern ^TRI59c.the.Neotone.layout.row tests/editor_e2e.test.js
+# fault: The rotate buttons show on a Standard scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16195,7 +16195,7 @@ function editorRenderLayout(m) {
+   if (neo) mirror.setAttribute("aria-label", t("editor.neo.mirror.aria")); else mirror.removeAttribute("aria-label");
+   for (const id of ["editor-rotate-ccw", "editor-rotate-cw"]) {
+     const el = editorEl(id);
+-    el.hidden = !neo;
++    el.hidden = false;
+     el.disabled = off;
+   }
+ }

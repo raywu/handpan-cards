@@ -1,0 +1,15 @@
+# kills: TRI59c the Neotone layout row offers Mirror and two rotate buttons
+# suite: node --test --test-name-pattern ^TRI59c.the.Neotone.layout.row tests/editor_e2e.test.js
+# fault: The Neotone Mirror button keeps aria-pressed like a toggle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16187,7 +16187,7 @@ function editorRenderLayout(m) {
+     const el = editorEl(id);
+     el.hidden = hide;
+     el.classList.toggle("on", on && !neo);
+-    if (neo) el.removeAttribute("aria-pressed"); else el.setAttribute("aria-pressed", String(on));
++    if (false) el.removeAttribute("aria-pressed"); else el.setAttribute("aria-pressed", String(on));
+     el.disabled = dis;
+   }
+   const mirror = editorEl("editor-mirror-top");
