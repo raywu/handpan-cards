@@ -1,5 +1,5 @@
-# kills: U2g: Escape cancels a pick and does not leave the panel
-# suite: node --test --test-name-pattern U2g.*Escape tests/editor_e2e.test.js
+# kills: Escape cancels a pick and does not leave the panel; with nothing picked it is Back
+# suite: node --test --test-name-pattern ^Escape.cancels.a.pick tests/editor_e2e.test.js
 # fault: Escape no longer clears a pick or zone selection.
 diff --git a/index.html b/index.html
 --- a/index.html

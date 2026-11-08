@@ -1,5 +1,5 @@
-# kills: U2g: Left and Right nudge a picked note 5 degrees
-# suite: node --test --test-name-pattern U2g.*nudge tests/editor_e2e.test.js
+# kills: Left and Right nudge a picked bottom or cyclops note 5 degrees, announced, one Undo step each, focus kept
+# suite: node --test --test-name-pattern ^Left.and.Right.nudge tests/editor_e2e.test.js
 # fault: The nudge moves 10 degrees instead of 5.
 diff --git a/index.html b/index.html
 --- a/index.html
