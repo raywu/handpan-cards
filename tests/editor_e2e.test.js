@@ -26,6 +26,7 @@ function run() {
   let base = "";
   let flagOn = true;
   let dragTouch = true;
+  let magPinned = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
   const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
 
@@ -38,7 +39,7 @@ function run() {
         if (err) { res.writeHead(404).end(); return; }
         const html = rel === "index.html";
         res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";") : buf);
+        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
       });
     });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -875,7 +876,7 @@ function run() {
           }
           if (release) await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...to, button: "left", buttons: 0, clickCount: 1 });
         }
-        if (release) await new Promise((done) => setTimeout(done, 80));
+        if (release) await new Promise((done) => setTimeout(done, 320));
       };
       const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
       const probeSwipe = () => b.eval(`window.__swipe = { ys: [], ghost: false };
@@ -1016,7 +1017,7 @@ function run() {
               await new Promise((done) => setTimeout(done, 60));
               const at = await landing();
               await end();
-              await new Promise((done) => setTimeout(done, 80));
+              await new Promise((done) => setTimeout(done, 320));
               assert.ok(at, "a landing ring shows over the empty arc");
               assert.ok(Math.abs(Math.hypot(at.x, at.y) - orbit * 100) < 1.5, "ring centre on the " + orbit + " orbit, got " + JSON.stringify(at));
               assert.ok(at.r > 8 && at.r < 30, "note-sized radius, got " + at.r);
@@ -2184,6 +2185,275 @@ function run() {
       await b.eval(`document.getElementById("editor-back").focus(); return true;`);
       await press("Tab", "Tab", 9, 8);
       assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Shift+Tab wraps backward");
+    });
+  });
+
+  describe("drag ux: compact panel, magnify on drag, placed-note highlight", () => {
+    before(() => { magPinned = false; });
+    after(() => { magPinned = true; });
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const ding = () => b.eval(`return editorDingOf(editorSession.history.present);`);
+    const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
+    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const live = () => b.eval(`return !!(editorDrag && editorDrag.live);`);
+    const isDragging = () => b.eval(`return document.getElementById("editor").classList.contains("dragging");`);
+    const panelCss = () => b.eval(`const out = {};
+      for (const id of ["editor-areas", "editor-layout", "editor-tray"]) { const c = getComputedStyle(document.getElementById(id)); out[id] = { opacity: c.opacity, pe: c.pointerEvents, vis: c.visibility }; }
+      const c = getComputedStyle(document.querySelector("#editor .editor-toolbar")); out.toolbar = { opacity: c.opacity, pe: c.pointerEvents, vis: c.visibility };
+      return out;`);
+    // The pan box and the pan svg, read from the layout, never from the transform under test.
+    const geometry = () => b.eval(`const box = document.querySelector("#editor .editor-panbox").getBoundingClientRect();
+      const svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+      return { box: { left: box.left, top: box.top, width: box.width, height: box.height }, svg: { left: r.left, top: r.top, width: r.width, height: r.height }, vb: { x: vb.x, y: vb.y, w: vb.width, h: vb.height },
+        mag: parseFloat(getComputedStyle(document.querySelector("#editor .editor-panbox")).getPropertyValue("--ed-mag")) || 1,
+        transform: getComputedStyle(document.querySelector("#editor .editor-panbox")).transform };`);
+    // A client point for a zone spot, by plain proportion inside the drawn svg rectangle.
+    const spotNow = async (r, deg) => {
+      const g = await geometry();
+      const x = r * Math.cos(deg * Math.PI / 180) * 100, y = -r * Math.sin(deg * Math.PI / 180) * 100;
+      return { x: g.svg.left + (x - g.vb.x) / g.vb.w * g.svg.width, y: g.svg.top + (y - g.vb.y) / g.vb.h * g.svg.height };
+    };
+    const geom = () => b.eval(`const g = editorSolve(editorSession.history.present).value.geom; return { rim: editorOrbit(g, "rim"), inner: editorOrbit(g, "inner"), bottom: editorOrbit(g, "bottom"), ding: g.ding_dy };`);
+    const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+    const liftFrom = async (from, to) => {
+      await touch("touchStart", from);
+      for (const k of [0.15, 0.3]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+    };
+    const setup = async (line, width = 390, height = 844, touchOn = true) => { await fresh(width, height, true, touchOn); await openAdd(); await typeLine(line); };
+    const SCALE_ = SCALE;
+
+    for (const [w, h, minMag] of [[390, 844, 1.1], [390, 664, 1.1], [375, 667, 1]]) {
+      describe(`${w}x${h}`, () => {
+        test("drag ux E1: a live drag sets dragging and takes the panel out of play; a press that does not move does not", async () => {
+          await setup(SCALE_, w, h);
+          const tall = await b.eval(`return [...document.querySelectorAll("#editor button")].filter((x) => x.offsetParent).every((x) => x.getBoundingClientRect().height >= 44 || x.id === "editor-notice-undo" || x.closest("#editor-status"));`);
+          assert.strictEqual(tall, true, "every control keeps a 44px target at rest");
+          const from = await chipAt("B");
+          await touch("touchStart", from);
+          await pause(60);
+          assert.strictEqual(await isDragging(), false, "a press alone does not set dragging");
+          await touch("touchEnd");
+          await pause(60);
+          await setup(SCALE_, w, h);
+          await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+          await pause(320);
+          assert.strictEqual(await live(), true);
+          assert.strictEqual(await isDragging(), true);
+          const css = await panelCss();
+          for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "0", pe: "none", vis: "hidden" }, k);
+          await touch("touchEnd");
+        });
+
+        test("drag ux E2: the panel returns after a drop, a pointercancel, Escape and a drop off the pan, and Undo is then usable", async () => {
+          for (const how of ["drop", "cancel", "escape", "off"]) {
+            await setup(SCALE_, w, h);
+            const before = (await names("rim")).length;
+            const to = how === "off" ? { x: 195, y: 4 } : await noteAt("rim", 2);
+            await liftFrom(await chipAt("B"), to);
+            await pause(300);
+            assert.strictEqual(await isDragging(), true, how);
+            if (how === "cancel") await touch("touchCancel");
+            else if (how === "escape") { await b.key("Escape", "Escape", 27); await touch("touchEnd"); }
+            else {
+              await touch("touchMove", how === "off" ? to : await spotNow((await geom()).rim, 22.5));
+              await touch("touchEnd");
+            }
+            await pause(500);
+            assert.strictEqual(await isDragging(), false, how + ": dragging cleared");
+            assert.strictEqual(await live(), false, how);
+            const css = await panelCss();
+            for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "1", pe: "auto", vis: "visible" }, how + " " + k);
+            const g = await geometry();
+            assert.strictEqual(g.transform === "none" || /^matrix\(1, 0, 0, 1, 0, 0\)$/.test(g.transform), true, how + ": the pan is back at 1x");
+            if (how === "drop") {
+              assert.strictEqual((await names("rim")).length, before + 1);
+              assert.strictEqual(await b.eval(`return !document.getElementById("editor-undo").disabled || !!document.getElementById("editor-notice-undo");`), true);
+            } else assert.strictEqual((await names("rim")).length, before, how + ": nothing placed");
+          }
+        });
+
+        test(`drag ux E3: the pan grows into the freed space, never above its rest top, and drops land in the scaled geometry in every zone`, async () => {
+          const cases = [
+            { zone: "rim", line: SCALE_, chip: "B", prep: [], at: (g) => [g.rim, 22.5], check: async () => assert.deepStrictEqual((await names("rim")).slice(-2), ["A4", "B4"]) },
+            { zone: "inner", line: SCALE_, chip: "E", prep: ["#editor-oct-up"], at: (g) => [g.inner, 90], check: async () => assert.strictEqual((await names("inner")).length, 3) },
+            { zone: "bottom", line: SCALE_, chip: "F", prep: ["#editor-oct-down", "#editor-oct-down"], at: (g) => [g.bottom, 150], check: async () => assert.deepStrictEqual(await names("bottom"), ["F2"]) },
+            { zone: "ding", line: "[A2] (D3) " + RIM8 + " | C5 D5", chip: "G", prep: ["#editor-oct-down"], at: (g) => [g.ding, -90], check: async () => assert.strictEqual(await ding(), "G3") },
+          ];
+          for (const early of [false, true]) {
+            for (const c of cases) {
+              if (early && c.zone === "ding") continue;
+              await setup(c.line, w, h);
+              for (const sel of c.prep) await b.click(sel);
+              const rest = await geometry();
+              const gm = await geom();
+              await liftFrom(await chipAt(c.chip), await noteAt("rim", 0));
+              if (!early) await pause(400);
+              const now = await geometry();
+              if (!early) {
+                assert.ok(now.svg.width / rest.svg.width >= minMag - 0.001, `${c.zone}: svg grew ${now.svg.width / rest.svg.width} (min ${minMag})`);
+                assert.ok(Math.abs(now.svg.width / rest.svg.width - now.mag) < 0.02, `${c.zone}: the rect follows --ed-mag`);
+                const pad = now.svg.width * 14 / now.vb.w;
+                assert.ok(now.svg.left + pad >= -0.5 && now.svg.left + now.svg.width - pad <= w + 0.5, `${c.zone}: the drawing stays on screen`);
+              }
+              assert.ok(now.box.top >= rest.box.top - 0.5, `${c.zone}: the scaled pan box top ${now.box.top} stays at or below its rest top ${rest.box.top}`);
+              assert.ok(now.svg.top >= rest.svg.top - 0.5, `${c.zone}: the scaled svg top stays at or below its rest top`);
+              const pt = await spotNow(...c.at(gm));
+              await touch("touchMove", pt);
+              await touch("touchEnd");
+              await pause(700);
+              await c.check();
+              const back = await geometry();
+              assert.ok(Math.abs(back.svg.width - rest.svg.width) <= 1, `${c.zone}: back to rest width within 1px (${back.svg.width} vs ${rest.svg.width})`);
+            }
+          }
+        });
+      });
+    }
+
+    test("drag ux E4: a placed note is highlighted after a drag, a tap, a pill, Replace ding, a trade and the keyboard, and not after Undo", async () => {
+      const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await touch("touchEnd");
+      await pause(700);
+      assert.deepStrictEqual(await marked(), ["rim8"], "drag add");
+      await clickUndo();
+      assert.deepStrictEqual(await marked(), [], "not after Undo");
+      await b.click('.tray-note[data-name="B"]');
+      await b.click("#editor-pill-rim");
+      assert.deepStrictEqual(await marked(), ["rim8"], "pill tap");
+      await clickUndo();
+      await b.click('.tray-note[data-name="B"]');
+      const gm = await geom();
+      const pt = await b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${gm.rim} * 100 * Math.cos(0.4), -${gm.rim} * 100 * Math.sin(0.4)).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+      for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, ...pt, button: "left", clickCount: 1 });
+      assert.strictEqual((await marked()).length, 1, "tap to place");
+      await clickUndo();
+      await b.click("#editor-oct-down");
+      await b.click('.tray-note[data-name="G"]');
+      await b.click("#editor-replace-ding");
+      assert.deepStrictEqual(await marked(), ["ding0"], "Replace ding");
+      await clickUndo();
+      await b.eval(`editorSession.sel = { ring: "rim", i: 0 }; editorRender(); return true;`);
+      await b.eval(`editorTrade(editorSession.history.present, { ring: "rim", i: 0 }, { ring: "rim", i: 1 }); editorRender(); return true;`);
+      assert.deepStrictEqual(await marked(), ["rim0", "rim1"], "trade, both ends");
+      await clickUndo();
+      await b.eval(`document.querySelector('#editor-pan [data-fk="rim:0"]').focus(); return true;`);
+      await b.key(" ", "Space", 32);
+      await b.key("ArrowRight", "ArrowRight", 39);
+      await b.key(" ", "Space", 32);
+      assert.deepStrictEqual(await marked(), ["rim0", "rim1"], "keyboard trade");
+      await clickUndo();
+      await b.click('.tray-note[data-name="B"]');
+      await b.eval(`document.querySelector('#editor-pan [data-fk="rim:0"]').focus(); return true;`);
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual((await marked()).length, 1, "keyboard placement");
+    });
+
+    test("drag ux E5: with reduced motion the pan stays at 1x and unscaled, the panel is still out of play, and the highlight is still set", async () => {
+      await setup(SCALE_);
+      await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+      try {
+        const rest = await geometry();
+        await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+        await pause(400);
+        const now = await geometry();
+        assert.strictEqual(await isDragging(), true);
+        assert.ok(Math.abs(now.svg.width - rest.svg.width) < 0.5, "rect width unchanged");
+        assert.strictEqual(now.mag, 1);
+        assert.ok(now.transform === "none" || /^matrix\(1, 0, 0, 1, 0, 0\)$/.test(now.transform), "no transform on the pan box: " + now.transform);
+        const css = await panelCss();
+        for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "0", pe: "none", vis: "hidden" }, k);
+        await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+        await touch("touchEnd");
+        await pause(500);
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .ehit.editor-new").length;`), 1);
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { features: [] });
+      }
+    });
+
+    test("drag ux E6: a resize during a live drag cancels it, clears dragging and places nothing", async () => {
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      assert.strictEqual(await live(), true);
+      await b.setViewport(844, 390, true);
+      await pause(400);
+      assert.strictEqual(await live(), false);
+      assert.strictEqual(await isDragging(), false);
+      for (const [k, v] of Object.entries(await panelCss())) assert.deepStrictEqual(v, { opacity: "1", pe: "auto", vis: "visible" }, "panel restored after resize: " + k);
+      assert.strictEqual((await names("rim")).length, 8);
+      await touch("touchEnd");
+    });
+
+    test("drag ux E6b: a page hidden during a live drag cancels it", async () => {
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      await b.eval(`Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+        document.dispatchEvent(new Event("visibilitychange")); return true;`);
+      await pause(300);
+      assert.strictEqual(await live(), false);
+      assert.strictEqual(await isDragging(), false);
+      assert.strictEqual((await names("rim")).length, 8);
+      await touch("touchEnd");
+    });
+
+    test("drag ux E6c: orientationchange cancels a live drag, and every listener a drag adds is removed when it ends", async () => {
+      await setup(SCALE_);
+      await b.eval(`window.__ls = {};
+        for (const target of [window, document]) {
+          const add = target.addEventListener.bind(target), del = target.removeEventListener.bind(target);
+          target.addEventListener = (type, fn, o) => { if (["resize", "orientationchange", "visibilitychange"].includes(type)) window.__ls[type] = (window.__ls[type] || 0) + 1; return add(type, fn, o); };
+          target.removeEventListener = (type, fn, o) => { if (["resize", "orientationchange", "visibilitychange"].includes(type)) window.__ls[type] = (window.__ls[type] || 0) - 1; return del(type, fn, o); };
+        }
+        return true;`);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      assert.deepStrictEqual(await b.eval(`return window.__ls;`), { resize: 1, orientationchange: 1, visibilitychange: 1 });
+      await b.eval(`window.dispatchEvent(new Event("orientationchange")); return true;`);
+      await pause(100);
+      assert.strictEqual(await live(), false, "orientationchange cancels");
+      assert.strictEqual(await isDragging(), false);
+      assert.deepStrictEqual(await b.eval(`return window.__ls;`), { resize: 0, orientationchange: 0, visibilitychange: 0 });
+      await touch("touchEnd");
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await touch("touchEnd");
+      await pause(400);
+      assert.deepStrictEqual(await b.eval(`return window.__ls;`), { resize: 0, orientationchange: 0, visibilitychange: 0 }, "a drop removes them too");
+    });
+
+    test("drag ux E7: a second pointer during a live drag is ignored and the first finger's drop still lands", async () => {
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      await b.eval(`for (const type of ["pointermove", "pointerup", "pointercancel"]) window.dispatchEvent(new PointerEvent(type, { pointerId: 99, clientX: 5, clientY: 5, bubbles: true })); return true;`);
+      assert.strictEqual(await live(), true, "the stray pointer did not end the drag");
+      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await touch("touchEnd");
+      await pause(500);
+      assert.deepStrictEqual((await names("rim")).slice(-1), ["B4"]);
+    });
+
+    test("drag ux iPad landscape: the grid areas are unchanged and a live drag still sets and clears dragging", async () => {
+      for (const [w, h] of [[1180, 820]]) {
+        await setup(SCALE_, w, h);
+        const areas = await b.eval(`return getComputedStyle(document.getElementById("editor")).gridTemplateAreas;`);
+        await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+        await pause(300);
+        assert.strictEqual(await isDragging(), true, `${w}x${h}`);
+        assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor")).gridTemplateAreas;`), areas, "grid areas are the same while dragging");
+        await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+        await touch("touchEnd");
+        await pause(500);
+        assert.strictEqual(await isDragging(), false, `${w}x${h}`);
+        assert.strictEqual((await names("rim")).length, 9, `${w}x${h}: the drop landed`);
+      }
     });
   });
 
