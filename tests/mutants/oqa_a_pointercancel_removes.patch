@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16649,7 +16649,7 @@ function editorDragEnd(e) {
-   editorRender();
+@@ -16774,7 +16774,7 @@ function editorDragEnd(e) {
+   else editorDragRestore();
  }
  function editorDragUp(e) {
 -  if (editorDrag && e.pointerId === editorDrag.id) editorDragEnd(e.type === "pointerup" ? e : null);

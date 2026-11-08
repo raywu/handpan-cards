@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1312,7 +1312,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1349,7 +1349,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  .editor-ghost.refuse{background:#F6F4ED; color:#242424; border:2px dashed #242424}
  #editor-pan .ezone{fill:transparent; stroke:none; fill-rule:evenodd; pointer-events:none}
  #editor-pan .ezone.on{fill:color-mix(in srgb,var(--accent,#c9a25a) 18%,transparent)}
 -#editor-pan .ezone.full{stroke:#242424; stroke-width:2; stroke-dasharray:6 5; vector-effect:non-scaling-stroke}
 +#editor-pan .ezone.full{stroke:#242424; stroke-width:2; vector-effect:non-scaling-stroke}
  #editor-pan .ezone-label{fill:#242424; font:700 9px "Nunito Sans"; text-anchor:middle; pointer-events:none}
- #editor-tray{display:flex; flex-direction:column; gap:var(--sp-2); touch-action:pan-y}
+ #editor-tray{display:flex; flex-direction:column; gap:var(--sp-1); touch-action:pan-y}
  #editor-notes{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:var(--sp-1)}
