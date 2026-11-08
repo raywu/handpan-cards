@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  if (m.options.profile) {
 +  if (false) {
      const plan = editorDropPlan(m, { from: "pan", ref: a }, b.ring === "ding" ? { kind: "ding" } : { kind: "note", ring: b.ring, i: b.i });
-     if (plan.step) return editorDo(plan.step, plan.say);
+     if (plan.step) return editorDo(plan.step, plan.say, true);
      if (plan.refuse) s.error = plan.refuse;

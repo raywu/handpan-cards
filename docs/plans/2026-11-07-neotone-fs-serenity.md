@@ -73,7 +73,7 @@ Owns: `tools/neotone_page.json`, `tools/gen_scale_page.py` (`defaults_html` only
 one new `tests/mutants/sp_neotone_*.patch`, the README.md mutant count; `tests/suite_health.py` FLOORS only if raised.
 
 Steps (TDD):
-1. Tests first in NeotonePageTest, red: (a) a tbody named "F# Serenity" after the nine factory tbodies with "by Rep
+1. Tests first in NeotonePageTest, red: (a) a tbody named "F# Serenity" after the nine factory tbodies with "by Reo
    Matsumoto" and no DOME line; (b) its Top/Mutant cells equal the evidence table; (c) its Practice href equals
    `/#s=` + the owner's link code byte for byte (if the encoder canonicalises differently, assert decode round-trip
    to the same seed and profile map; reviewer confirmed exact equality is expected); (d) the generated default's `ok` is true; (e) the

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16119,7 +16119,7 @@ function editorEscape() {
+@@ -16547,7 +16547,7 @@ function editorEscape() {
  // Drag (D3): one pointer path for the tray chips and the placed notes. More than 8px
  // from the press is a drag; anything less is left to the click, which is the tap.
  const EDITOR_DRAG_PX = 8;
 -const editorDragKind = (dx, dy) => (Math.hypot(dx, dy) > EDITOR_DRAG_PX ? "drag" : "tap");
 +const editorDragKind = (dx, dy) => (Math.hypot(dx, dy) >= EDITOR_DRAG_PX ? "drag" : "tap");
  let editorDrag = null;
- function editorDragName(src) {
-   const m = editorSession.history.present;
+ // Magnify (drag UX D4): the pan grows from its top edge into the room the sliding panel frees below it,
+ // to at most EDITOR_MAG_MAX, never past the viewport width, never shrinking.

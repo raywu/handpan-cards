@@ -26,6 +26,7 @@ function run() {
   let base = "";
   let flagOn = true;
   let dragTouch = true;
+  let magPinned = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
   const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
 
@@ -38,7 +39,7 @@ function run() {
         if (err) { res.writeHead(404).end(); return; }
         const html = rel === "index.html";
         res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";") : buf);
+        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
       });
     });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -875,7 +876,7 @@ function run() {
           }
           if (release) await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...to, button: "left", buttons: 0, clickCount: 1 });
         }
-        if (release) await new Promise((done) => setTimeout(done, 80));
+        if (release) await new Promise((done) => setTimeout(done, 320));
       };
       const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
       const probeSwipe = () => b.eval(`window.__swipe = { ys: [], ghost: false };
@@ -1016,7 +1017,7 @@ function run() {
               await new Promise((done) => setTimeout(done, 60));
               const at = await landing();
               await end();
-              await new Promise((done) => setTimeout(done, 80));
+              await new Promise((done) => setTimeout(done, 320));
               assert.ok(at, "a landing ring shows over the empty arc");
               assert.ok(Math.abs(Math.hypot(at.x, at.y) - orbit * 100) < 1.5, "ring centre on the " + orbit + " orbit, got " + JSON.stringify(at));
               assert.ok(at.r > 8 && at.r < 30, "note-sized radius, got " + at.r);
@@ -1982,6 +1983,701 @@ function run() {
                 const size = parseFloat(getComputedStyle(btn).fontSize);
                 if (size < 10.5) out.push(btn.id + " font " + size);
               }
+              return out;`);
+            assert.deepStrictEqual(bad, [], width + " " + lang);
+          }
+        }
+      } finally {
+        await b.close();
+        b = prev;
+      }
+    });
+  });
+
+  describe("U2g keyboard and accessibility", () => {
+    const FULL = "[A2] [B2] (D3) " + RIM8 + " | C5 D5";
+    const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+    const setup = async (line = FULL) => { await fresh(); await openAdd(); await typeLine(line); };
+    const focusKey = (fk) => b.eval(`const e = document.querySelector('#editor-pan [data-fk="${fk}"]'); e.focus(); return document.activeElement === e;`);
+    const activeKey = () => b.eval(`return document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fk || null : null;`);
+    const press = (key, code, keyCode, modifiers = 0) => b.send("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers, ...(key === "Enter" ? { text: "\r" } : key === " " ? { text: " " } : {}) })
+      .then(() => b.send("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers }));
+    const enter = () => press("Enter", "Enter", 13);
+    const space = () => press(" ", "Space", 32);
+    const arrow = (name) => press("Arrow" + name, "Arrow" + name, { Left: 37, Up: 38, Right: 39, Down: 40 }[name]);
+    const angleOf = (ring, i) => b.eval(`return editorAnglesOf(editorSolve(editorSession.history.present), "${ring}")[${i}];`);
+    const rimNames = () => b.eval(`return editorNames(editorSession.history.present, "rim");`);
+    const sel = () => b.eval(`return editorSession.sel;`);
+
+    test("tray chips hold on Enter and on Space, and the same key again cancels (SE-7, D7)", async () => {
+      await setup();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.held && editorSession.held.k;`), 11);
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.held;`), null);
+      await space();
+      assert.strictEqual(await b.eval(`return editorSession.held && editorSession.held.k;`), 11);
+      await space();
+      assert.strictEqual(await b.eval(`return editorSession.held;`), null);
+    });
+
+    test("every placed note, the cyclops area and the bottom ring are named stops, with one tab stop in the pan", async () => {
+      await setup();
+      const r = await b.eval(`const els = [...document.querySelectorAll("#editor-pan [data-fk]")];
+        return { keys: els.map((e) => e.dataset.fk), names: els.map((e) => e.getAttribute("aria-label")), tabbable: els.filter((e) => e.tabIndex === 0).length, roles: [...new Set(els.map((e) => e.getAttribute("role")))] };`);
+      assert.strictEqual(r.keys.length, 15);
+      assert.ok(r.names.every((n) => n && n.length > 2), r.names.join("|"));
+      assert.ok(r.names.includes("Cyclops area, 2 of 6") && r.names.includes("Bottom area, 2 of 12"), r.names.join("|"));
+      assert.strictEqual(r.tabbable, 1, "roving: one tab stop");
+      assert.deepStrictEqual(r.roles, ["button"]);
+    });
+
+    test("keyboard pick and drop: Enter picks a note, arrows move between seats, Enter on another note swaps them", async () => {
+      await setup();
+      await focusKey("rim:0");
+      await enter();
+      assert.deepStrictEqual(await sel(), { ring: "rim", i: 0 });
+      assert.strictEqual(await b.eval(`return document.querySelector('#editor-pan [data-fk="rim:0"]').getAttribute("aria-pressed");`), "true");
+      assert.match(await status(), /A3 picked/);
+      await arrow("Down");
+      assert.strictEqual(await activeKey(), "rim:1");
+      await arrow("Right");
+      assert.strictEqual(await activeKey(), "rim:2", "a rim pick is not nudged, the arrow moves focus");
+      await arrow("Left");
+      await arrow("Up");
+      assert.strictEqual(await activeKey(), "rim:0");
+      await arrow("Down");
+      await enter();
+      assert.match(await status(), /A3 and Bb3 traded places/);
+      assert.strictEqual(await sel(), null);
+      assert.strictEqual(await b.eval(`return editorSession.history.past.length;`) > 1, true);
+      assert.strictEqual(await activeKey(), "rim:1", "focus stays on the seat it was on after the redraw");
+    });
+
+    test("keyboard drop of a held tray note on the cyclops area and on the ding", async () => {
+      await setup();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
+      await enter();
+      await focusKey("zone:inner");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
+      assert.strictEqual(await b.eval(`return editorSession.held;`), null);
+      await b.click("#editor-oct-down");
+      await b.eval(`document.querySelector('.tray-note[data-name="E"]').focus(); return true;`);
+      await enter();
+      await focusKey("ding:0");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "E3");
+    });
+
+    test("Escape cancels a pick and does not leave the panel; with nothing picked it is Back", async () => {
+      await setup();
+      await focusKey("bottom:0");
+      await enter();
+      assert.notStrictEqual(await sel(), null);
+      await press("Escape", "Escape", 27);
+      assert.strictEqual(await sel(), null);
+      assert.strictEqual(await sheetHidden(), false);
+      await focusKey("zone:inner");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.zone;`), "inner");
+      await press("Escape", "Escape", 27);
+      assert.strictEqual(await b.eval(`return editorSession.zone;`), null);
+      assert.strictEqual(await sheetHidden(), false);
+    });
+
+    test("Left and Right nudge a picked bottom or cyclops note 5 degrees, announced, one Undo step each, focus kept", async () => {
+      await setup();
+      for (const ring of ["bottom", "inner"]) {
+        await focusKey(ring + ":0");
+        await enter();
+        const start = Math.round(await angleOf(ring, 0) / 5) * 5;
+        const steps = await b.eval(`return editorSession.history.past.length;`);
+        await arrow("Left");
+        assert.strictEqual(await angleOf(ring, 0), (start + 5) % 360, ring + " left");
+        assert.match(await status(), new RegExp(` at ${(start + 5) % 360} degrees\\.`));
+        assert.strictEqual(await activeKey(), ring + ":0");
+        await arrow("Right");
+        await arrow("Right");
+        assert.strictEqual(await angleOf(ring, 0), (start + 355) % 360, ring + " right twice");
+        assert.strictEqual(await b.eval(`return editorSession.history.past.length;`), steps + 3);
+        assert.deepStrictEqual(await sel(), { ring, i: 0 }, "the pick survives a nudge");
+        await press("Escape", "Escape", 27);
+      }
+    });
+
+    test("the nudge is scoped to focus in the pan with a nudgeable pick: elsewhere an arrow moves nothing", async () => {
+      await setup();
+      await focusKey("bottom:0");
+      await enter();
+      const before = await model();
+      await b.eval(`document.getElementById("editor-save").focus(); return true;`);
+      await arrow("Left");
+      await arrow("Right");
+      assert.deepStrictEqual(await model(), before, "focus on a toolbar button");
+      await b.click("#editor-line");
+      await arrow("Left");
+      assert.deepStrictEqual(await model(), before, "focus in the text line");
+      await press("Escape", "Escape", 27);
+      await focusKey("bottom:1");
+      await arrow("Left");
+      assert.deepStrictEqual(await model(), before, "another note than the picked one has the focus: arrows move focus");
+      assert.strictEqual(await activeKey(), "bottom:0");
+    });
+
+    test("Cmd/Ctrl+Z is Undo and Shift+Cmd/Ctrl+Z is Redo, but not while the text line is being typed in", async () => {
+      await setup();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
+      await enter();
+      await focusKey("zone:inner");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
+      await press("z", "KeyZ", 90, 2);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2);
+      await press("Z", "KeyZ", 90, 10);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
+      await press("z", "KeyZ", 90, 4);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2, "Meta");
+      await b.click("#editor-line");
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), true);
+      await press("Z", "KeyZ", 90, 10);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2, "typing keeps the field's own undo");
+    });
+
+    test("the text line opens on Enter; the palette chip and its swatches work from the keyboard", async () => {
+      await setup();
+      await b.eval(`document.getElementById("editor-line").focus(); return true;`);
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), true);
+      await press("Escape", "Escape", 27);
+      await b.eval(`document.getElementById("editor-palette").focus(); return true;`);
+      await enter();
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), false);
+      await b.eval(`document.querySelector('#editor-swatches [data-palette="3"]').focus(); return true;`);
+      await space();
+      assert.strictEqual(await b.eval(`return editorSession.history.present.options.palette;`), 3);
+    });
+
+    test("focus order and accessibility of the panel: names, no positive tabindex, unique ids, a live status, Tab stays inside", async () => {
+      await setup();
+      const r = await b.eval(`const root = document.getElementById("editor");
+        const stops = [...root.querySelectorAll("button, input, [tabindex]")].filter((e) => !e.disabled && e.getClientRects().length && !e.closest("[hidden]"));
+        const name = (e) => (e.getAttribute("aria-label") || e.textContent || "").trim();
+        const ids = [...root.querySelectorAll("[id]")].map((e) => e.id);
+        return { unnamed: stops.filter((e) => !name(e)).map((e) => e.id || e.tagName), positive: stops.filter((e) => e.tabIndex > 0).length,
+          dupes: ids.filter((id, k) => ids.indexOf(id) !== k), live: document.getElementById("editor-status").getAttribute("aria-live"),
+          order: stops.filter((e) => e.tabIndex >= 0).map((e) => e.id || e.dataset.fk || e.className).slice(0, 3) };`);
+      assert.deepStrictEqual(r.unnamed, []);
+      assert.strictEqual(r.positive, 0);
+      assert.deepStrictEqual(r.dupes, []);
+      assert.strictEqual(r.live, "polite");
+      assert.deepStrictEqual(r.order, ["editor-back", "editor-type-standard", "editor-type-neotone"]);
+      const stops = await b.eval(`return editorTabStops().length;`);
+      await b.eval(`document.getElementById("editor-back").focus(); return true;`);
+      const seen = new Set();
+      for (let k = 0; k < stops + 2; k += 1) {
+        await press("Tab", "Tab", 9);
+        seen.add(await b.eval(`return document.activeElement.id || document.activeElement.dataset.fk || document.activeElement.className;`));
+        assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Tab never leaves the panel");
+      }
+      assert.ok(seen.has("editor-back"), "the cycle wraps to the first stop");
+      await b.eval(`document.getElementById("editor-back").focus(); return true;`);
+      await press("Tab", "Tab", 9, 8);
+      assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Shift+Tab wraps backward");
+    });
+  });
+
+  describe("drag ux: compact panel, magnify on drag, placed-note highlight", () => {
+    before(() => { magPinned = false; });
+    after(() => { magPinned = true; });
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const ding = () => b.eval(`return editorDingOf(editorSession.history.present);`);
+    const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
+    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const live = () => b.eval(`return !!(editorDrag && editorDrag.live);`);
+    const isDragging = () => b.eval(`return document.getElementById("editor").classList.contains("dragging");`);
+    const panelCss = () => b.eval(`const out = {};
+      for (const id of ["editor-areas", "editor-layout", "editor-tray"]) { const c = getComputedStyle(document.getElementById(id)); out[id] = { opacity: c.opacity, pe: c.pointerEvents, vis: c.visibility }; }
+      const c = getComputedStyle(document.querySelector("#editor .editor-toolbar")); out.toolbar = { opacity: c.opacity, pe: c.pointerEvents, vis: c.visibility };
+      return out;`);
+    // The pan box and the pan svg, read from the layout, never from the transform under test.
+    const geometry = () => b.eval(`const box = document.querySelector("#editor .editor-panbox").getBoundingClientRect();
+      const svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+      return { box: { left: box.left, top: box.top, width: box.width, height: box.height }, svg: { left: r.left, top: r.top, width: r.width, height: r.height }, vb: { x: vb.x, y: vb.y, w: vb.width, h: vb.height },
+        mag: parseFloat(getComputedStyle(document.querySelector("#editor .editor-panbox")).getPropertyValue("--ed-mag")) || 1,
+        transform: getComputedStyle(document.querySelector("#editor .editor-panbox")).transform };`);
+    // A client point for a zone spot, by plain proportion inside the drawn svg rectangle.
+    const spotNow = async (r, deg) => {
+      const g = await geometry();
+      const x = r * Math.cos(deg * Math.PI / 180) * 100, y = -r * Math.sin(deg * Math.PI / 180) * 100;
+      return { x: g.svg.left + (x - g.vb.x) / g.vb.w * g.svg.width, y: g.svg.top + (y - g.vb.y) / g.vb.h * g.svg.height };
+    };
+    const geom = () => b.eval(`const g = editorSolve(editorSession.history.present).value.geom; return { rim: editorOrbit(g, "rim"), inner: editorOrbit(g, "inner"), bottom: editorOrbit(g, "bottom"), ding: g.ding_dy };`);
+    const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+    const liftFrom = async (from, to) => {
+      await touch("touchStart", from);
+      for (const k of [0.15, 0.3]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+    };
+    const setup = async (line, width = 390, height = 844, touchOn = true) => { await fresh(width, height, true, touchOn); await openAdd(); await typeLine(line); };
+    const SCALE_ = SCALE;
+
+    for (const [w, h, minMag] of [[390, 844, 1.1], [390, 664, 1.1], [375, 667, 1]]) {
+      describe(`${w}x${h}`, () => {
+        test("drag ux E1: a live drag sets dragging and takes the panel out of play; a press that does not move does not", async () => {
+          await setup(SCALE_, w, h);
+          const tall = await b.eval(`return [...document.querySelectorAll("#editor button")].filter((x) => x.offsetParent).every((x) => x.getBoundingClientRect().height >= 44 || x.id === "editor-notice-undo" || x.closest("#editor-status"));`);
+          assert.strictEqual(tall, true, "every control keeps a 44px target at rest");
+          const from = await chipAt("B");
+          await touch("touchStart", from);
+          await pause(60);
+          assert.strictEqual(await isDragging(), false, "a press alone does not set dragging");
+          await touch("touchEnd");
+          await pause(60);
+          await setup(SCALE_, w, h);
+          await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+          await pause(320);
+          assert.strictEqual(await live(), true);
+          assert.strictEqual(await isDragging(), true);
+          const css = await panelCss();
+          for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "0", pe: "none", vis: "hidden" }, k);
+          await touch("touchEnd");
+        });
+
+        test("drag ux E2: the panel returns after a drop, a pointercancel, Escape and a drop off the pan, and Undo is then usable", async () => {
+          for (const how of ["drop", "cancel", "escape", "off"]) {
+            await setup(SCALE_, w, h);
+            const before = (await names("rim")).length;
+            const to = how === "off" ? { x: 195, y: 4 } : await noteAt("rim", 2);
+            await liftFrom(await chipAt("B"), to);
+            await pause(300);
+            assert.strictEqual(await isDragging(), true, how);
+            if (how === "cancel") await touch("touchCancel");
+            else if (how === "escape") { await b.key("Escape", "Escape", 27); await touch("touchEnd"); }
+            else {
+              await touch("touchMove", how === "off" ? to : await spotNow((await geom()).rim, 22.5));
+              await touch("touchEnd");
+            }
+            await pause(500);
+            assert.strictEqual(await isDragging(), false, how + ": dragging cleared");
+            assert.strictEqual(await live(), false, how);
+            const css = await panelCss();
+            for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "1", pe: "auto", vis: "visible" }, how + " " + k);
+            const g = await geometry();
+            assert.strictEqual(g.transform === "none" || /^matrix\(1, 0, 0, 1, 0, 0\)$/.test(g.transform), true, how + ": the pan is back at 1x");
+            if (how === "drop") {
+              assert.strictEqual((await names("rim")).length, before + 1);
+              assert.strictEqual(await b.eval(`return !document.getElementById("editor-undo").disabled || !!document.getElementById("editor-notice-undo");`), true);
+            } else assert.strictEqual((await names("rim")).length, before, how + ": nothing placed");
+          }
+        });
+
+        test(`drag ux E3: the pan grows into the freed space, never above its rest top, and drops land in the scaled geometry in every zone`, async () => {
+          const cases = [
+            { zone: "rim", line: SCALE_, chip: "B", prep: [], at: (g) => [g.rim, 22.5], check: async () => assert.deepStrictEqual((await names("rim")).slice(-2), ["A4", "B4"]) },
+            { zone: "inner", line: SCALE_, chip: "E", prep: ["#editor-oct-up"], at: (g) => [g.inner, 90], check: async () => assert.strictEqual((await names("inner")).length, 3) },
+            { zone: "bottom", line: SCALE_, chip: "F", prep: ["#editor-oct-down", "#editor-oct-down"], at: (g) => [g.bottom, 150], check: async () => assert.deepStrictEqual(await names("bottom"), ["F2"]) },
+            { zone: "ding", line: "[A2] (D3) " + RIM8 + " | C5 D5", chip: "G", prep: ["#editor-oct-down"], at: (g) => [g.ding, -90], check: async () => assert.strictEqual(await ding(), "G3") },
+          ];
+          for (const early of [false, true]) {
+            for (const c of cases) {
+              if (early && c.zone === "ding") continue;
+              await setup(c.line, w, h);
+              for (const sel of c.prep) await b.click(sel);
+              const rest = await geometry();
+              const gm = await geom();
+              await liftFrom(await chipAt(c.chip), await noteAt("rim", 0));
+              if (!early) await pause(400);
+              const now = await geometry();
+              if (!early) {
+                assert.ok(now.svg.width / rest.svg.width >= minMag - 0.001, `${c.zone}: svg grew ${now.svg.width / rest.svg.width} (min ${minMag})`);
+                assert.ok(Math.abs(now.svg.width / rest.svg.width - now.mag) < 0.02, `${c.zone}: the rect follows --ed-mag`);
+                const pad = now.svg.width * 14 / now.vb.w;
+                assert.ok(now.svg.left + pad >= -0.5 && now.svg.left + now.svg.width - pad <= w + 0.5, `${c.zone}: the drawing stays on screen`);
+              }
+              assert.ok(now.box.top >= rest.box.top - 0.5, `${c.zone}: the scaled pan box top ${now.box.top} stays at or below its rest top ${rest.box.top}`);
+              assert.ok(now.svg.top >= rest.svg.top - 0.5, `${c.zone}: the scaled svg top stays at or below its rest top`);
+              const pt = await spotNow(...c.at(gm));
+              await touch("touchMove", pt);
+              await touch("touchEnd");
+              await pause(700);
+              await c.check();
+              const back = await geometry();
+              assert.ok(Math.abs(back.svg.width - rest.svg.width) <= 1, `${c.zone}: back to rest width within 1px (${back.svg.width} vs ${rest.svg.width})`);
+            }
+          }
+        });
+      });
+    }
+
+    test("drag ux E4: a placed note is highlighted after a drag, a tap, a pill, Replace ding, a trade and the keyboard, and not after Undo", async () => {
+      const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await touch("touchEnd");
+      await pause(700);
+      assert.deepStrictEqual(await marked(), ["rim8"], "drag add");
+      await clickUndo();
+      assert.deepStrictEqual(await marked(), [], "not after Undo");
+      await b.click('.tray-note[data-name="B"]');
+      await b.click("#editor-pill-rim");
+      assert.deepStrictEqual(await marked(), ["rim8"], "pill tap");
+      await clickUndo();
+      await b.click('.tray-note[data-name="B"]');
+      const gm = await geom();
+      const pt = await b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${gm.rim} * 100 * Math.cos(0.4), -${gm.rim} * 100 * Math.sin(0.4)).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+      for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, ...pt, button: "left", clickCount: 1 });
+      assert.strictEqual((await marked()).length, 1, "tap to place");
+      await clickUndo();
+      await b.click("#editor-oct-down");
+      await b.click('.tray-note[data-name="G"]');
+      await b.click("#editor-replace-ding");
+      assert.deepStrictEqual(await marked(), ["ding0"], "Replace ding");
+      await clickUndo();
+      await b.eval(`editorSession.sel = { ring: "rim", i: 0 }; editorRender(); return true;`);
+      await b.eval(`editorTrade(editorSession.history.present, { ring: "rim", i: 0 }, { ring: "rim", i: 1 }); editorRender(); return true;`);
+      assert.deepStrictEqual(await marked(), ["rim0", "rim1"], "trade, both ends");
+      await clickUndo();
+      await b.eval(`document.querySelector('#editor-pan [data-fk="rim:0"]').focus(); return true;`);
+      await b.key(" ", "Space", 32);
+      await b.key("ArrowRight", "ArrowRight", 39);
+      await b.key(" ", "Space", 32);
+      assert.deepStrictEqual(await marked(), ["rim0", "rim1"], "keyboard trade");
+      await clickUndo();
+      await b.click('.tray-note[data-name="B"]');
+      await b.eval(`document.querySelector('#editor-pan [data-fk="rim:0"]').focus(); return true;`);
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual((await marked()).length, 1, "keyboard placement");
+    });
+
+    test("drag ux X4: a removal highlights nothing and a cross-ring move highlights only its destination", async () => {
+      const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
+      await setup(SCALE_);
+      await liftFrom(await noteAt("rim", 2), { x: 195, y: 5 });
+      await touch("touchMove", { x: 195, y: 5 });
+      await touch("touchEnd");
+      await pause(700);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent;`), "C4 removed.Undo");
+      assert.deepStrictEqual(await marked(), [], "removal marks nothing");
+      await clickUndo();
+      await liftFrom(await noteAt("rim", 1), await spotNow((await geom()).bottom, -90));
+      await touch("touchMove", await spotNow((await geom()).bottom, -90));
+      await touch("touchEnd");
+      await pause(700);
+      assert.deepStrictEqual(await names("bottom"), ["Bb3"], "moved to the bottom");
+      assert.deepStrictEqual(await marked(), ["bottom0"], "move marks the destination only");
+    });
+
+    test("drag ux E5: with reduced motion the pan stays at 1x and unscaled, the panel is still out of play, and the highlight is still set", async () => {
+      await setup(SCALE_);
+      await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+      try {
+        const rest = await geometry();
+        await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+        const instant = await panelCss();
+        for (const k of Object.keys(instant)) assert.strictEqual(instant[k].vis, "hidden", "hidden at once, no fade: " + k);
+        await pause(400);
+        const now = await geometry();
+        assert.strictEqual(await isDragging(), true);
+        assert.ok(Math.abs(now.svg.width - rest.svg.width) < 0.5, "rect width unchanged");
+        assert.strictEqual(now.mag, 1);
+        assert.ok(now.transform === "none" || /^matrix\(1, 0, 0, 1, 0, 0\)$/.test(now.transform), "no transform on the pan box: " + now.transform);
+        const css = await panelCss();
+        for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "0", pe: "none", vis: "hidden" }, k);
+        await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+        await touch("touchEnd");
+        await pause(500);
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .ehit.editor-new").length;`), 1);
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { features: [] });
+      }
+    });
+
+    test("drag ux E6: a resize during a live drag cancels it, clears dragging and places nothing", async () => {
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      assert.strictEqual(await live(), true);
+      await b.setViewport(844, 390, true);
+      await pause(400);
+      assert.strictEqual(await live(), false);
+      assert.strictEqual(await isDragging(), false);
+      for (const [k, v] of Object.entries(await panelCss())) assert.deepStrictEqual(v, { opacity: "1", pe: "auto", vis: "visible" }, "panel restored after resize: " + k);
+      assert.strictEqual((await names("rim")).length, 8);
+      await touch("touchEnd");
+    });
+
+    test("drag ux E6b: a page hidden during a live drag cancels it", async () => {
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      await b.eval(`Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+        document.dispatchEvent(new Event("visibilitychange")); return true;`);
+      await pause(300);
+      assert.strictEqual(await live(), false);
+      assert.strictEqual(await isDragging(), false);
+      assert.strictEqual((await names("rim")).length, 8);
+      await touch("touchEnd");
+    });
+
+    test("drag ux E6c: orientationchange cancels a live drag, and every listener a drag adds is removed when it ends", async () => {
+      await setup(SCALE_);
+      await b.eval(`window.__ls = {};
+        for (const target of [window, document]) {
+          const add = target.addEventListener.bind(target), del = target.removeEventListener.bind(target);
+          target.addEventListener = (type, fn, o) => { if (["resize", "orientationchange", "visibilitychange"].includes(type)) window.__ls[type] = (window.__ls[type] || 0) + 1; return add(type, fn, o); };
+          target.removeEventListener = (type, fn, o) => { if (["resize", "orientationchange", "visibilitychange"].includes(type)) window.__ls[type] = (window.__ls[type] || 0) - 1; return del(type, fn, o); };
+        }
+        return true;`);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      assert.deepStrictEqual(await b.eval(`return window.__ls;`), { resize: 1, orientationchange: 1, visibilitychange: 1 });
+      await b.eval(`window.dispatchEvent(new Event("orientationchange")); return true;`);
+      await pause(100);
+      assert.strictEqual(await live(), false, "orientationchange cancels");
+      assert.strictEqual(await isDragging(), false);
+      assert.deepStrictEqual(await b.eval(`return window.__ls;`), { resize: 0, orientationchange: 0, visibilitychange: 0 });
+      await touch("touchEnd");
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await touch("touchEnd");
+      await pause(400);
+      assert.deepStrictEqual(await b.eval(`return window.__ls;`), { resize: 0, orientationchange: 0, visibilitychange: 0 }, "a drop removes them too");
+    });
+
+    test("drag ux E7: a second pointer during a live drag is ignored and the first finger's drop still lands", async () => {
+      await setup(SCALE_);
+      await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+      await pause(100);
+      await b.eval(`for (const type of ["pointermove", "pointerup", "pointercancel"]) window.dispatchEvent(new PointerEvent(type, { pointerId: 99, clientX: 5, clientY: 5, bubbles: true })); return true;`);
+      assert.strictEqual(await live(), true, "the stray pointer did not end the drag");
+      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await touch("touchEnd");
+      await pause(500);
+      assert.deepStrictEqual((await names("rim")).slice(-1), ["B4"]);
+    });
+
+    test("drag ux iPad landscape: the grid areas are unchanged and a live drag still sets and clears dragging", async () => {
+      for (const [w, h] of [[1180, 820]]) {
+        await setup(SCALE_, w, h);
+        const areas = await b.eval(`return getComputedStyle(document.getElementById("editor")).gridTemplateAreas;`);
+        await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+        await pause(300);
+        assert.strictEqual(await isDragging(), true, `${w}x${h}`);
+        assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor")).gridTemplateAreas;`), areas, "grid areas are the same while dragging");
+        await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+        await touch("touchEnd");
+        await pause(500);
+        assert.strictEqual(await isDragging(), false, `${w}x${h}`);
+        assert.strictEqual((await names("rim")).length, 9, `${w}x${h}: the drop landed`);
+      }
+    });
+  });
+
+  describe("TRI-59 owner DEV-QA nits 3", () => {
+    const DELETE_LABEL = "DELETE THIS SCALE";
+    const NEO_REASON = "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it.";
+    const saveNew = async (line) => {
+      await openAdd();
+      await typeLine(line);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+    };
+    const reopenSelected = async () => {
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the selected scale" });
+    };
+    const label = () => b.eval(`return document.getElementById("editor-delete").getAttribute("aria-label");`);
+
+    test("TRI59 delete is offered on an edited scale only, as a 44px target in the header", async () => {
+      await fresh();
+      await openAdd();
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-delete");`), false, "no delete on a scale not yet saved");
+      await fresh();
+      await openBuiltin();
+      const r = await b.eval(`const e = document.getElementById("editor-delete"), q = e.getBoundingClientRect(), h = document.querySelector(".editor-head").getBoundingClientRect();
+        return { name: e.getAttribute("aria-label"), w: q.width, h: q.height, inHead: q.left >= h.left && q.right <= h.right + 0.5 && q.top >= h.top - 0.5 && q.bottom <= h.bottom + 0.5 };`);
+      assert.deepStrictEqual(r, { name: DELETE_LABEL, w: r.w, h: r.h, inHead: true });
+      assert.ok(r.w >= 44 && r.h >= 44, JSON.stringify(r));
+    });
+
+    test("TRI59 delete first tap arms and says what will go, the second removes the saved scale and closes the editor", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      const before = await savedCount();
+      await reopenSelected();
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.strictEqual(await savedCount(), before, "one tap deletes nothing");
+      assert.match(await b.eval(`return document.getElementById("editor-status").textContent;`), /^Tap again to remove .+ This cannot be undone\.$/);
+      await b.click("#editor-delete");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the editor to close after delete" });
+      assert.strictEqual(await savedCount(), before - 1);
+    });
+
+    test("TRI59 delete is disarmed by tapping anywhere else in the editor", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      const before = await savedCount();
+      await reopenSelected();
+      await b.click("#editor-delete");
+      await b.click("#editor-pan");
+      assert.strictEqual(await label(), DELETE_LABEL);
+      assert.doesNotMatch(await b.eval(`return document.getElementById("editor-status").textContent;`), /Tap again to remove/);
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.strictEqual(await savedCount(), before);
+    });
+
+    test("TRI59 delete leaves the header fitting at 320, 375 and 390", async () => {
+      for (const [w, h] of [[320, 568], [375, 667], [390, 844]]) {
+        await fresh(w, h);
+        await openBuiltin();
+        const r = await b.eval(`const head = document.querySelector(".editor-head"), q = head.getBoundingClientRect();
+          const kids = [...head.querySelectorAll("button")].map((e) => e.getBoundingClientRect());
+          return { fits: head.scrollWidth <= head.clientWidth + 0.5 && kids.every((k) => k.left >= q.left - 0.5 && k.right <= q.right + 0.5 && k.width >= 44 && k.height >= 44),
+            overlap: kids.some((k, i) => kids.some((o, j) => j > i && k.left < o.right - 0.5 && o.left < k.right - 0.5)), n: kids.length };`);
+        assert.deepStrictEqual(r, { fits: true, overlap: false, n: 4 }, w + " " + JSON.stringify(r));
+      }
+    });
+
+    test("TRI59 neotone layout row says why it is disabled, in view, with the existing PROFILE_CONFLICT wording", async () => {
+      for (const [w, h] of [[320, 568], [375, 667], [820, 1180]]) {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        assert.strictEqual(await b.eval(`const n = document.getElementById("editor-layout-note"); return !n || n.hidden || n.offsetParent === null;`), true, "no reason on a standard pan");
+        await b.click("#editor-type-neotone");
+        const r = await b.eval(`const n = document.getElementById("editor-layout-note"), q = n.getBoundingClientRect(), e = document.getElementById("editor");
+          return { text: n.textContent, shown: n.offsetParent !== null, inView: q.top >= 0 && q.bottom <= innerHeight && q.left >= 0 && q.right <= innerWidth,
+            described: ["editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById(id).getAttribute("aria-describedby")),
+            scroll: e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth };`);
+        assert.deepStrictEqual(r, { text: NEO_REASON, shown: true, inView: true, described: Array(4).fill("editor-layout-note"), scroll: true }, w + "x" + h);
+        await b.click("#editor-type-standard");
+        assert.strictEqual(await b.eval(`const n = document.getElementById("editor-layout-note"); return n.offsetParent === null;`), true, "the reason goes with Neotone");
+      }
+    });
+
+    test("TRI59 octave stepper is compact at every phone and tablet size: one row, 44px targets, no overflow", async () => {
+      for (const [w, h] of [[320, 568], [375, 667], [390, 844], [820, 1180], [1180, 820]]) {
+        await fresh(w, h);
+        await openBuiltin();
+        const r = await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect();
+          const down = q("editor-oct-down"), up = q("editor-oct-up"), lab = q("editor-oct-label"), val = q("editor-oct"), flats = q("editor-flats"), pal = q("editor-palette"), notes = q("editor-notes");
+          const e = document.getElementById("editor"), de = document.documentElement;
+          return { group: Math.round(up.right - down.left), targets: [down, up, flats, pal].every((x) => x.width >= 44 && x.height >= 44),
+            oneRow: [up, flats, pal].every((x) => Math.abs(x.top - down.top) < 1), labelBetween: lab.left >= down.right - 0.5 && lab.right <= up.left + 0.5 && val.left >= down.right - 0.5 && val.right <= up.left + 0.5,
+            stacked: val.top >= lab.bottom - 0.5, cols: notes.width / 6, noScroll: e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth && de.scrollWidth === ${w} };`);
+        assert.ok(r.group <= 160, w + ": octave stepper spans " + r.group + "px (was 4+ grid columns)");
+        assert.ok(r.group <= r.cols * 3 + 4, w + ": octave stepper is at most three note columns: " + JSON.stringify(r));
+        assert.deepStrictEqual([r.targets, r.oneRow, r.labelBetween, r.stacked, r.noScroll], [true, true, true, true, true], w + " " + JSON.stringify(r));
+      }
+    });
+
+    const mouse = (type, pt) => b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", buttons: type === "mouseReleased" ? 0 : 1, clickCount: 1 });
+    const panNote = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const statusText = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+
+    test("TRI59b armed delete disarms on the press and the same press still picks and drags a pan note", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      await reopenSelected();
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      const at = await panNote("rim", 1);
+      await mouse("mousePressed", at);
+      await mouse("mouseReleased", at);
+      assert.strictEqual(await label(), DELETE_LABEL, "disarmed");
+      assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: 1 }, "the same click picked the note");
+      assert.doesNotMatch(await statusText(), /Tap again to remove/);
+      await b.eval(`editorSession.sel = null; editorRender(); return true;`);
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      await mouse("mousePressed", at);
+      assert.strictEqual(await label(), DELETE_LABEL, "disarmed on the press");
+      for (const k of [0.3, 0.6, 1]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: at.x + 40 * k, y: at.y + 40 * k, button: "left", buttons: 1 });
+      assert.strictEqual(await b.eval(`return !!(editorDrag && editorDrag.live);`), true, "the same press went on to drag");
+      await mouse("mouseReleased", { x: at.x + 40, y: at.y + 40 });
+    });
+
+    test("TRI59b a delete that fails shows the error in the editor and leaves the button disarmed", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      const before = await savedCount();
+      await reopenSelected();
+      await b.eval(`window.__realCommit = commitSaved; commitSaved = async () => ({ ok: false, kind: "failure" }); return true;`);
+      await b.click("#editor-delete");
+      await b.click("#editor-delete");
+      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the delete error" });
+      assert.match(await statusText(), /^Could not save these changes\./);
+      assert.strictEqual(await label(), DELETE_LABEL);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").classList.contains("armed") || document.getElementById("editor-delete").title !== document.getElementById("editor-delete").getAttribute("aria-label");`), false);
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), false, "the editor stays open");
+      assert.strictEqual(await savedCount(), before);
+      await b.eval(`commitSaved = window.__realCommit; return true;`);
+    });
+
+    test("TRI59b the last-scale refusal resets the button title and leaves no stale arming text", async () => {
+      await fresh();
+      await openBuiltin();
+      await b.eval(`const all = allDeckViews; allDeckViews = () => all().filter((v) => savedEqual(v.selection, selection)); return true;`);
+      await b.click("#editor-delete");
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), DELETE_LABEL);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").title;`), DELETE_LABEL);
+      assert.strictEqual(await b.eval(`return editorSession.delNote;`), "");
+    });
+
+    test("TRI59b a drop restores the panel even when a new press has already begun, but not while that press is a live drag", async () => {
+      await fresh(390, 844, true, true);
+      await openAdd();
+      await typeLine(SCALE);
+      const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const rim = await panNote("rim", 0);
+      for (const live of [false, true]) {
+        await mouse("mousePressed", chip);
+        for (const k of [0.3, 0.6]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: chip.x + (rim.x - chip.x) * k, y: chip.y + (rim.y - chip.y) * k, button: "left", buttons: 1 });
+        assert.strictEqual(await b.eval(`return !!(editorDrag && editorDrag.live);`), true);
+        await b.eval(`const c = document.querySelector('.tray-note[data-name="C"]');
+          editorDragEnd({ type: "pointerup", clientX: 5, clientY: 5 });
+          c.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "mouse", pointerId: 9, button: 0, clientX: 20, clientY: 20, bubbles: true }));
+          ${live ? "editorDrag.live = true;" : ""} return true;`);
+        await new Promise((r) => setTimeout(r, 400));
+        const dragging = await b.eval(`return document.getElementById("editor").classList.contains("dragging");`);
+        assert.strictEqual(dragging, live, live ? "a live drag keeps the panel out" : "a press that has not lifted does not keep the panel hidden");
+        await b.eval(`if (editorDrag) editorDrag.live = false; editorDragEnd(null); document.getElementById("editor").classList.remove("dragging"); return true;`);
+        await mouse("mouseReleased", rim);
+      }
+    });
+
+    test("TRI59 octave label and delete fit in all eight locales at 320, 375 and 390 with the real fonts", async () => {
+      const prev = b;
+      b = await launch({ foregroundSettle: true, realFonts: true });
+      try {
+        for (const width of [390, 375, 320]) {
+          await fresh(width, 844);
+          await openBuiltin();
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          const langs = await b.eval(`return [...document.getElementById("lang-select").options].map((o) => o.value).filter((v) => v !== "auto");`);
+          assert.strictEqual(langs.length, 8);
+          for (const lang of langs) {
+            await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
+            await b.click("#editor-type-neotone");
+            const bad = await b.eval(`const out = [], row = document.querySelector(".editor-octaves").getBoundingClientRect();
+              for (const id of ["editor-oct-label", "editor-oct", "editor-flats", "editor-delete", "editor-layout-note"]) {
+                const e = document.getElementById(id); if (!e || !e.offsetParent) continue;
+                const box = e.getBoundingClientRect();
+                if (e.scrollWidth > e.clientWidth + 0.5 && id !== "editor-layout-note") out.push(id + " scrollWidth");
+                const range = document.createRange(); range.selectNodeContents(e);
+                for (const r of range.getClientRects()) if (r.width && (r.left < box.left - 0.5 || r.right > box.right + 0.5)) out.push(id + ":" + e.textContent);
+              }
+              const q = document.getElementById("editor-palette").getBoundingClientRect(); if (q.right > row.right + 0.5) out.push("row overflow");
+              const ed = document.getElementById("editor"); if (ed.scrollWidth > ed.clientWidth || ed.scrollHeight > ed.clientHeight) out.push("panel scroll");
               return out;`);
             assert.deepStrictEqual(bad, [], width + " " + lang);
           }

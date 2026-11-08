@@ -38,7 +38,7 @@ function run() {
       fs.readFile(path.join(REPO, "index.html"), (err, buf) => {
         if (err) { res.writeHead(404).end(); return; }
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-        res.end(buf);
+        res.end(require("./helpers/editor_flag.js").apply(buf, false));
       });
     });
     await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });

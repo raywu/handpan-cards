@@ -253,11 +253,33 @@ bottom`. `chords[].fields` is the canonical voicing in spelling order.
   `<Name>_CHORD_ONLY_EASY_MEDIUM_<paper>.pdf`; ALL keeps the old name and passes no `cards`, so its
   bytes are unchanged. `pdf_download` carries `cards` = `easy` / `easy_medium` / `all`
   (`tests/app.test.js` "PDF tier menu (lane U)").
+- **The paper choice is a menu too** (owner 2026-11-08, from an iPhone screenshot where the native
+  select opened the grey system popup beside our white menu): `#print-paper` (button, label =
+  current paper, LETTER or A4) toggles `#print-paper-menu` with two `menuitemradio` items,
+  `#print-paper-letter` and `#print-paper-a4`, inside `#print-paper-wrap` in `.prints`. It shares
+  the closed-button rules with `#print-download` and the popup rules with `#print-menu`. Choosing
+  an item calls `setPrintPaper` (same storage key, same PDF output), closes the menu, returns
+  focus to `#print-paper` and keeps the panel open. Only one of the two menus is open at a time;
+  outside tap, Escape and a choice close it, and Escape closes only the menu. No chevron.
+  Tests: `tests/app.test.js` "PDF tier menu (lane U)" paper-menu cases, `tests/e2e.test.js` "the
+  paper button is styled like DOWNLOAD PDF" and the per-locale PDF tier menu test. `#lang-select`
+  stays a native select.
 - The sheet guidance slot (`#scale-guidance`) reserves nothing: with no message it
 is out of flow and 0px tall (owner 2026-10-20, superseding the guidance plan's
 36px reserve).
 - The importer (`HPE.importer`) is engine-only: the paste-text
 import UI and the `scale_import` event were removed; do not rebuild them.
+- Editor drag (ONE_PANEL editor, owner 2026-11-07): while a note is held, from
+`editorDragLift` to `editorDragEnd`, the control panel (areas, layout, toolbar, tray) is
+hidden outright (`#editor.dragging`: slid down, opacity 0, `visibility:hidden`,
+`pointer-events:none`) and the pan magnifies from its top edge into the freed space by
+`--ed-mag` (measured once at the lift, at most 1.35, never past the screen width, never
+below 1). The panel returns after the drop is painted, at once on a cancel (Escape,
+pointercancel, resize, orientationchange, a hidden page), and ignores taps for 250ms
+(`.settling`). With reduced motion the pan stays at 1x, there is no slide, and the new-note
+stroke fades statically. A note placed by drag, tap, pill, Replace ding, trade or keyboard
+carries `.editor-new` once; Undo does not. Tests: `tests/editor_e2e.test.js` "drag ux E1"
+to "E7", `tests/editor_shell.test.js` "drag ux unit 1" to "4".
 
 ## Feature plans
 

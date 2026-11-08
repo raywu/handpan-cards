@@ -1112,3 +1112,120 @@ describe("U2e3 ding zone and Replace ding", () => {
     assert.strictEqual(plan(a, `editorDingButtonPlan(__m, null, { ring: "ding", i: 0 })`).info, "Pick a note below, or on the pan, first.");
   });
 });
+
+describe("U2g keyboard and accessibility", () => {
+  const FULL = "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+
+  test("U2g-1: a nudge is 5 degrees, Left counter-clockwise (+) and Right clockwise (-), through the pin path", () => {
+    const a = app();
+    assert.strictEqual(a.get("EDITOR_NUDGE"), 5);
+    assert.strictEqual(a.get("editorNudgeTarget(180, 1)"), 185);
+    assert.strictEqual(a.get("editorNudgeTarget(180, -1)"), 175);
+    withModel(a, FULL);
+    a.run(`globalThis.__r = editorSetAngle(__m, "bottom", 0, editorNudgeTarget(editorAnglesOf(editorSolve(__m), "bottom")[0], 1), true); true`);
+    assert.strictEqual(a.get("__r.ok"), true);
+    assert.deepStrictEqual(plain(a.get("__r.value.pins")), [{ ring: "bottom", i: 0 }]);
+    const was = a.get(`editorAnglesOf(editorSolve(__m), "bottom")[0]`);
+    assert.strictEqual(a.get(`editorAnglesOf(editorSolve(__r.value), "bottom")[0]`), (was + 5) % 360);
+  });
+
+  test("U2g-2: the focus order is the ding, the rim by seat, the cyclops area then its notes, the bottom ring then its notes", () => {
+    const a = app();
+    withModel(a, FULL);
+    assert.deepStrictEqual(plain(a.get("editorFocusKeys(__m)")), [
+      "ding:0", "rim:0", "rim:1", "rim:2", "rim:3", "rim:4", "rim:5", "rim:6", "rim:7",
+      "zone:inner", "inner:0", "inner:1", "zone:bottom", "bottom:0", "bottom:1"]);
+  });
+
+  test("U2g-3: Neotone has no area stops, only its notes", () => {
+    const a = app();
+    a.run(`globalThis.__m = editorPanType(editorLoad("[A2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4").value, "neotone").value; true`);
+    const keys = plain(a.get("editorFocusKeys(__m)"));
+    assert.ok(keys.length > 0 && keys.every((k) => !k.startsWith("zone:")), keys.join());
+  });
+
+  test("U2g-4: arrows step through the order and wrap at both ends", () => {
+    const a = app();
+    assert.strictEqual(a.get(`editorStepFocus(["a", "b", "c"], "a", 1)`), "b");
+    assert.strictEqual(a.get(`editorStepFocus(["a", "b", "c"], "c", 1)`), "a");
+    assert.strictEqual(a.get(`editorStepFocus(["a", "b", "c"], "a", -1)`), "c");
+    assert.strictEqual(a.get(`editorStepFocus(["a", "b", "c"], "gone", 1)`), "a");
+  });
+
+  test("U2g-5: Cmd or Ctrl+Z is Undo, with Shift it is Redo, and nothing else is", () => {
+    const a = app();
+    const k = (e) => a.get(`editorUndoKey(${JSON.stringify(e)})`);
+    assert.strictEqual(k({ key: "z", ctrlKey: true }), "undo");
+    assert.strictEqual(k({ key: "z", metaKey: true }), "undo");
+    assert.strictEqual(k({ key: "Z", ctrlKey: true, shiftKey: true }), "redo");
+    assert.strictEqual(k({ key: "z", metaKey: true, shiftKey: true }), "redo");
+    assert.strictEqual(k({ key: "z" }), null);
+    assert.strictEqual(k({ key: "y", ctrlKey: true }), null);
+    assert.strictEqual(k({ key: "z", ctrlKey: true, altKey: true }), null);
+  });
+
+  test("U2g-6: a focus key maps to the same hit a tap makes", () => {
+    const a = app();
+    assert.deepStrictEqual(plain(a.get(`editorKeyHit("ding:0")`)), { kind: "ding" });
+    assert.deepStrictEqual(plain(a.get(`editorKeyHit("rim:3")`)), { kind: "note", ring: "rim", i: 3 });
+    assert.deepStrictEqual(plain(a.get(`editorKeyHit("zone:bottom")`)), { kind: "spot", ring: "bottom" });
+  });
+
+  test("U2g-7: an area is named with its count, a nudge says the angle it landed on", () => {
+    const a = app();
+    withModel(a, FULL);
+    assert.strictEqual(a.get(`editorAreaLabel(__m, "inner")`), "Cyclops area, 2 of 6");
+    assert.strictEqual(a.get(`editorAreaLabel(__m, "bottom")`), "Bottom area, 2 of 12");
+    assert.strictEqual(a.get(`t("editor.say.nudged", { name: "A2", angle: 235 })`), "A2 at 235 degrees.");
+  });
+});
+
+describe("U2h: the keyboard shortcut leaves a live drag alone", () => {
+  test("U2h-1: Undo and Redo keys act only when no edit, dialog or live drag holds the panel", () => {
+    const a = app();
+    const ok = (s, drag) => a.get(`editorUndoAllowed(${JSON.stringify(s)}, ${JSON.stringify(drag)})`);
+    assert.strictEqual(ok({ editing: false, dialog: false }, null), true);
+    assert.strictEqual(ok({ editing: false, dialog: false }, { live: false }), true);
+    assert.strictEqual(ok({ editing: false, dialog: false }, { live: true }), false);
+    assert.strictEqual(ok({ editing: true, dialog: false }, null), false);
+    assert.strictEqual(ok({ editing: false, dialog: true }, null), false);
+    assert.strictEqual(ok(null, null), false);
+  });
+});
+
+describe("drag ux: the magnify factor and the placed-note flash", () => {
+  const mag = (a, rect, freed, vw) => a.get(`editorMagnify(${JSON.stringify(rect)}, ${freed}, { width: ${vw} })`);
+  test("drag ux unit 1: the magnify factor grows into the freed space, capped at 1.35, the viewport width, and never below 1", () => {
+    const a = app();
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 60, 390), 1.2);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 400, 1000), 1.35);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 400, 360), 1.2);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 0, 390), 1);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, -20, 390), 1);
+    assert.strictEqual(mag(a, { width: 400, height: 300 }, 100, 390), 1);
+    assert.strictEqual(mag(a, { width: 0, height: 0 }, 100, 390), 1);
+  });
+
+  const flash = (a, before, after) => plain(a.get(`editorFlashOf(editorLoad(${JSON.stringify(before)}).value, editorLoad(${JSON.stringify(after)}).value)`));
+  test("drag ux unit 2: a note added to the rim flashes its rim seat; a replaced ding flashes the ding", () => {
+    const a = app();
+    assert.deepStrictEqual(flash(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 | C5 D5"), [{ ring: "rim", i: 8 }]);
+    assert.deepStrictEqual(flash(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", "[A2] (G3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"), [{ ring: "ding", i: 0 }]);
+  });
+  test("drag ux unit 3: a swap flashes both ends, a cross-ring trade flashes the note in each ring, no change flashes nothing", () => {
+    const a = app();
+    const rim = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+    const swapped = (ring) => plain(a.get(`(() => { const m = editorLoad(${JSON.stringify(rim)}).value; return editorFlashOf(m, editorSwapSeats(m, ${JSON.stringify(ring)}, 0, 1).value); })()`));
+    assert.deepStrictEqual(swapped("rim").map((f) => f.ring + f.i), ["rim0", "rim1"]);
+    assert.deepStrictEqual(swapped("inner").map((f) => f.ring + f.i), ["inner0", "inner1"]);
+    assert.deepStrictEqual(plain(a.get(`(() => { const m = editorLoad(${JSON.stringify(rim)}).value; return editorFlashOf(m, editorSwapNames(m, { ring: "rim", i: 0 }, { ring: "inner", i: 0 }).value); })()`)).map((f) => f.ring + f.i), ["rim7", "inner0"]);
+    assert.deepStrictEqual(flash(a, rim, rim), []);
+  });
+  test("drag ux unit 4: a pinned note moved along its arc flashes at its new place; a Neotone model flashes nothing", () => {
+    const a = app();
+    a.run(`globalThis.__a = editorLoad("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", { angles: { inner: [null, null] } }).value;
+      globalThis.__b = editorLoad("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", { angles: { inner: [null, 120] } }).value; true`);
+    assert.deepStrictEqual(plain(a.get(`editorFlashOf(__a, __b)`)), [{ ring: "inner", i: 1 }]);
+    assert.deepStrictEqual(plain(a.get(`editorFlashOf({ fields: {}, options: { profile: {} }, pins: [] }, __b)`)), []);
+  });
+});

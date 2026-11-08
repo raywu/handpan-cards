@@ -27,6 +27,8 @@ const APP = path.join(__dirname, "..", "index.html");
 // The scale-sheet ids of ENGINE-SPEC section 15 are served from Phase 3 on, so
 // a boot never throws on the sheet markup and e2e and the units target the same
 // names. Serving an id costs nothing when no element in index.html uses it yet.
+// Ids that older shipped clients (the fixture bytes) still look up but the current markup no longer serves.
+const LEGACY_IDS = ["print-paper-select"];
 const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
   "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
   "scale-mirror-bottom", "scale-box-wrap", "scale-swatches", "scale-generate", "deck-add", "deck-restore",
@@ -63,7 +65,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",
-  "print-paper-select", "print-download", "print-menu", "print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all",
+  "print-paper", "print-paper-menu", "print-paper-letter", "print-paper-a4", "print-download", "print-menu", "print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all",
   "lang-select",
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
   "panel-seq-note", "seq-source-link",
@@ -597,7 +599,7 @@ function makeLocation(href) {
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
- *   html           - boot this markup instead of reading index.html
+ *   html           - boot this markup instead of reading index.html (onePanel still applies when it holds the ONE_PANEL line)
  *   onePanel       - boot index.html with the ONE_PANEL constant forced on or off (length-preserving)
  *   sheetBody      - with layout, expose the anonymous sheet body and its markup ancestry;
  *                    event capture/bubble and native focus/selection remain unsimulated
@@ -615,9 +617,9 @@ const JS_TYPES = new Set([
 ]);
 
 function boot(opts = {}) {
-  const html = opts.html !== undefined ? String(opts.html)
-    : opts.onePanel !== undefined ? require("../tests/helpers/editor_flag.js").apply(fs.readFileSync(APP, "utf8"), !!opts.onePanel)
-    : fs.readFileSync(APP, "utf8");
+  const base = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
+  const html = opts.onePanel !== undefined && /const ONE_PANEL = (?:true |false);/.test(base)
+    ? require("../tests/helpers/editor_flag.js").apply(base, !!opts.onePanel) : base;
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
   // A script whose type is not JavaScript (application/ld+json, a template) is data.
@@ -907,7 +909,11 @@ function boot(opts = {}) {
       removeItem(k) { if (opts.throwOnStorage) throw new Error("denied"); delete store[k]; },
     },
     document: {
-      getElementById(id) { if (!els[id]) throw new Error("missing #" + id); return els[id]; },
+      getElementById(id) {
+        if (!els[id] && LEGACY_IDS.includes(id)) els[id] = bindFocus(makeElement(id));
+        if (!els[id]) throw new Error("missing #" + id);
+        return els[id];
+      },
       createElement: (tag) => {
         const e = bindFocus(makeElement("dyn", tag || "div"));
         e.getBoundingClientRect = () => {

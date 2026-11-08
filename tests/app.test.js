@@ -9,14 +9,19 @@
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
-const { test, describe } = require("node:test");
+const { describe } = require("node:test");
+const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename, [
+  // The sandbox has no document for the dynamically built panel, so a boot that opens
+  // the create sheet (empty library) or a chip click that opens Edit needs the legacy sheet.
+  "every rendered face is well-formed markup", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
+]);
 const assert = require("node:assert");
 const { boot: sandboxBoot } = require("./helpers/sandbox.js");
 // Ordinary unit fixtures exercise the real no-Web-Locks session adapter with
 // real host crypto and AbortController. Durable/reload fixtures opt in to the
 // asynchronous shared-origin model below. Explicit negative capabilities win.
 const boot = (options = {}) => sandboxBoot({ crypto: require("node:crypto").webcrypto,
-  abortController: true, ...options });
+  abortController: true, onePanel: onePanelFor(), ...options });
 
 const coarse = (app, on = true) => {
   app.sandbox.matchMedia = (query) => ({
@@ -3542,7 +3547,8 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   // set of buttons, used for built-in and custom decks alike.
   assert.ok(!panel.includes("<a href="), "the panel must not link a pre-built PDF");
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this, 'all'\); closePanel\(\);"/);
-  assert.ok(/<select id="print-paper-select"/.test(panel), "D16: the paper picker rides with the buttons");
+  assert.ok(/<button type="button" id="print-paper"/.test(panel), "D16: the paper picker rides with the buttons");
+  assert.ok(!/<select id="print-paper/.test(panel), "the paper picker is a menu, not a native select");
 });
 
 const PM_SHOP_SHA256 = {
@@ -3560,18 +3566,19 @@ function pmPanel() {
   return src.slice(at, src.indexOf("<!-- The scale engine, inlined", at));
 }
 
-test("PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper select, and no full-deck control is rendered", async () => {
+test("PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper menu trigger, and no full-deck control is rendered", async () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = pmPanel();
   const row = panel.slice(panel.indexOf('<div class="prints">'));
-  const rowHtml = row.slice(0, row.indexOf("</select>") + 9);
-  const outsideMenu = rowHtml.replace(/<div id="print-menu"[\s\S]*?<\/div>/, "");
+  const rowHtml = row.slice(0, row.indexOf("</div>", row.indexOf('id="print-paper-menu"')) + 6);
+  const outsideMenu = rowHtml.replace(/<div id="print-menu"[\s\S]*?<\/div>/, "").replace(/<div id="print-paper-menu"[\s\S]*?<\/div>/, "");
   const controls = [...outsideMenu.matchAll(/<(button|select)\b[^>]*>/g)].map((m) => m[0]);
   assert.strictEqual(controls.length, 2, "the print row holds exactly two controls beside the menu");
   assert.match(controls[0], /^<button type="button" id="print-download" aria-haspopup="menu" aria-expanded="false" aria-controls="print-menu" onclick="togglePrintMenu\(\);">$/);
-  assert.match(controls[1], /^<select id="print-paper-select"/);
+  assert.match(controls[1], /^<button type="button" id="print-paper" aria-haspopup="menu" aria-expanded="false" aria-controls="print-paper-menu" onclick="togglePaperMenu\(\);">$/);
+  assert.ok(!/<select\b/.test(rowHtml), "the print row holds no native select");
   assert.match(rowHtml, /<button[^>]*>DOWNLOAD PDF<\/button>/);
-  assert.ok(rowHtml.indexOf("<button") < rowHtml.indexOf("<select"), "the button leads the row");
+  assert.ok(rowHtml.indexOf('id="print-download"') < rowHtml.indexOf('id="print-paper"'), "DOWNLOAD PDF leads the row");
   assert.ok(!src.includes("FULL DECK PDF"), "no element offers a full deck PDF");
   assert.ok(!src.includes("CHORD-ONLY PDF"), "no element is labelled CHORD-ONLY PDF");
   assert.match(panel, /<h3 class="panel-heading">Print this scale<\/h3>/);
@@ -3707,7 +3714,7 @@ test("setPrintPaper refuses a non-string value even when it stringifies to a val
    A4 - and re-picking LETTER fired no `change` event, so the user could not
    get back without round-tripping through A4. The control has to report the
    state it owns (D16). */
-/* Lane M1: the picker is now a static control (`#print-paper-select` inside
+/* Lane M1: the picker is now a static control (`#print-paper` inside
  * `#settings-panel`), not re-rendered per card - so there is no "selected"
  * attribute to drift, and setPrintPaper() pushes into the live element's
  * `.value` itself (index.html's setPrintPaper). Same bug class (D16: the
@@ -3715,14 +3722,14 @@ test("setPrintPaper refuses a non-string value even when it stringifies to a val
 test("print CTA: the paper picker reports the paper that will actually print", async () => {
   const app = boot();
   customDeck(app);
-  const picked = () => String(app.get('document.getElementById("print-paper-select").value'));
+  const picked = () => String(app.get('document.getElementById("print-paper").textContent'));
 
-  assert.strictEqual(picked(), "letter", "the picker must open on the default paper");
+  assert.strictEqual(picked(), "LETTER", "the picker must open on the default paper");
   app.run('setPrintPaper("a4")');
-  assert.strictEqual(picked(), "a4",
-    "setPrintPaper must push the new paper into the picker's own value");
+  assert.strictEqual(picked(), "A4",
+    "setPrintPaper must push the new paper into the picker's own label");
   app.run('setPrintPaper("letter")');
-  assert.strictEqual(picked(), "letter");
+  assert.strictEqual(picked(), "LETTER");
 });
 
 /* ---------------------------------------------------------------------------
@@ -4708,7 +4715,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the ten known ids");
+    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "print-paper-select", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the eleven known ids");
     assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
@@ -4718,7 +4725,7 @@ describe("panel fit judge", () => {
     const noFull = judge(withFull, cell());
     assert.strictEqual(noFull.rule2.fail.length, 0, "the full-deck button is removed by design");
     assert.deepStrictEqual(noFull.removed, ["button:FULL DECK PDF", "button:CHORD-ONLY PDF"]);
-    const withPaper = withControl(cell(), "print-paper-select", ctl(100));
+    const withPaper = withControl(cell(), "print-paper", ctl(100));
     assert.strictEqual(judge(withPaper, cell()).rule2.fail.length, 1, "the paper select is not removed by design");
     assert.deepStrictEqual(judge(cell(), cell()).removed, []);
   });
@@ -13440,7 +13447,7 @@ describe("UX: the footer lip", () => {
         const from = html.indexOf('<div id="scale-sheet"');
         const sheetHtml = html.slice(from, html.indexOf('id="scale-lip"', from));
         assert.ok(!/<select\b/.test(sheetHtml), "the sheet holds no select");
-        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select", "lang-select"]);
+        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["lang-select"]);
       });
 
       const flingFrom = (a, { seed = 10, way = "up", start = 0 } = {}) => {
@@ -15296,7 +15303,7 @@ describe("I18N", () => {
   const bootLang = (langs, languages, extra = {}) => boot({ html: pseudo(langs), languages, ...extra });
   const hasEnglishOnlyId = new Set(["decks", "front", "back", "count", "scale-ding", "scale-top", "scale-inner",
     "scale-bottom", "scale-box", "scale-parse", "scale-name", "about", "scale-preview", "share-url", "seq-style-name",
-    "scale-refusal", "announce"]);
+    "scale-refusal", "announce", "print-paper", "print-paper-letter", "print-paper-a4"]);
 
   /** Every [id, kind, value] the app wrote to a UI element and left non-empty. */
   function uiTexts(app) {
@@ -15505,7 +15512,7 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
     assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
@@ -19575,7 +19582,7 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
     if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
-    if (deadline) html = html.replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(deadline)};`);
+    html = html.replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(deadline)};`);
     const ss = session === null ? "" : `window.__ss=${JSON.stringify(session)};window.sessionStorage={getItem:k=>k in window.__ss?window.__ss[k]:null,setItem:(k,v)=>{window.__ss[k]=String(v)},removeItem:k=>{delete window.__ss[k]}};`;
     return `<script>location.replace=function(u){window.__replaced=String(u)};location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};${ss}</script>` + html;
   }
@@ -19605,8 +19612,8 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.match(html, /^const MOVE_CAP = 20000;$/m);
   });
 
-  test("MV: the committed bytes ship the deadline off", () => {
-    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = null;$/m);
+  test("MV: the committed bytes ship the deadline 2026-11-21", () => {
+    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = "2026-11-21";$/m);
   });
 
   test("MV: the committed deadline is null or a quoted YYYY-MM-DD literal", () => {
@@ -20270,7 +20277,7 @@ describe("PDF tier menu (lane U)", () => {
       assert.match(m[1], /role="menuitem"/);
       assert.ok(m[1].includes(`onclick="downloadDeckPDF('shop', this, '${OPTIONS[i][0]}'); closePanel();"`), m[1]);
     });
-    const row = SRC.slice(SRC.indexOf('<div class="prints">'), SRC.indexOf("</select>", SRC.indexOf('<div class="prints">')));
+    const row = SRC.slice(SRC.indexOf('<div class="prints">'), SRC.indexOf('id="print-paper-menu"', SRC.indexOf('<div class="prints">')));
     assert.ok(row.includes(html), "the menu is a descendant of .prints");
   });
 
@@ -20307,6 +20314,70 @@ describe("PDF tier menu (lane U)", () => {
     app.keydown("Escape");
     assert.strictEqual(app.els["print-menu"].hidden, true);
     assert.strictEqual(app.activeId(), "print-download");
+  });
+
+  test("the paper menu: two radio items in order, inside .prints, closed by default; the trigger mirrors aria-expanded", () => {
+    const at = SRC.indexOf('<div id="print-paper-menu"');
+    const html = SRC.slice(at, SRC.indexOf("</div>", at) + 6);
+    assert.match(html, /^<div id="print-paper-menu" role="menu" aria-label="Paper size" hidden>/);
+    const items = [...html.matchAll(/<button\b([^>]*)>([^<]*)<\/button>/g)];
+    assert.deepStrictEqual(items.map((m) => m[2]), ["LETTER", "A4"]);
+    items.forEach((m, i) => {
+      assert.match(m[1], /role="menuitemradio"/);
+      assert.ok(m[1].includes(`onclick="choosePaper('${["letter", "a4"][i]}');"`), m[1]);
+    });
+    const app = boot();
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, false);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "true");
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "false");
+  });
+
+  test("only one print-row menu is open at a time", () => {
+    const app = boot();
+    app.run("togglePrintMenu()");
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    assert.strictEqual(app.els["print-download"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, false);
+    app.run("togglePrintMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["print-menu"].hidden, false);
+  });
+
+  test("choosing a paper sets it as setPrintPaper does, closes the menu, returns focus and keeps the panel open", () => {
+    const app = boot();
+    app.run("openPanel(); togglePaperMenu()");
+    app.run("choosePaper('a4')");
+    assert.strictEqual(app.get("printPaper"), "a4");
+    assert.strictEqual(JSON.parse(app.store.hpfc).printPaper, "a4");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].textContent, "A4");
+    assert.deepStrictEqual(["print-paper-letter", "print-paper-a4"].map((id) => app.els[id].getAttribute("aria-checked")), ["false", "true"]);
+    assert.strictEqual(app.activeId(), "print-paper");
+    assert.strictEqual(app.get("panelOpen"), true);
+  });
+
+  test("a stored A4 boots with the paper button reading A4", () => {
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A", printPaper: "a4" }) } });
+    assert.strictEqual(app.els["print-paper"].textContent, "A4");
+    assert.strictEqual(app.els["print-paper-a4"].getAttribute("aria-checked"), "true");
+  });
+
+  test("Escape closes the open paper menu alone and returns focus to the paper button; an outside click closes it", () => {
+    const app = boot();
+    app.run("openPanel(); togglePaperMenu()");
+    app.keydown("Escape");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.get("panelOpen"), true);
+    assert.strictEqual(app.activeId(), "print-paper");
+    app.run("togglePaperMenu()");
+    (app.sandbox.document._l.click || []).forEach((fn) => fn({ type: "click", target: { closest: () => null } }));
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
   });
 
   test("an outside click closes the menu; a click inside .prints does not", () => {

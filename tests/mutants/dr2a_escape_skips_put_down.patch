@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17603,7 +17603,7 @@ document.addEventListener("keydown", e => {
-   if (sheetOpen) {
+@@ -18948,7 +18948,7 @@ document.addEventListener("keydown", e => {
+     if (undoKey) { e.preventDefault(); if (undoKey === "undo") editorUndoStep(); else editorRedoStep(); return; }
      if (e.key === "Escape") {
        e.preventDefault();
 -      if (drawerOpen && pickRef) putDownPick();

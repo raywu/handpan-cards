@@ -1,0 +1,14 @@
+# kills: choosing a paper sets it as setPrintPaper does, closes the menu, returns focus and keeps the panel open
+# suite: node --test --test-name-pattern choosing.a.paper.sets.it.as.setPrintPaper.does tests/app.test.js
+# Print controls style (2026-11-08): choosing a paper leaves the paper menu open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12543,7 +12543,6 @@ function togglePaperMenu() {
+ }
+ function choosePaper(p) {
+   setPrintPaper(p);
+-  setPrintMenu(false);
+   document.getElementById("print-paper").focus();
+ }
+ function togglePrintMenu() {
