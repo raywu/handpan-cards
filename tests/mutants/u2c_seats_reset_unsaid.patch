@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15819,7 +15819,7 @@ function editorDo(step, say) {
-   s.error = "";
+@@ -16008,7 +16008,7 @@ function editorDo(step, say, mark) {
+   s.flash = mark ? editorFlashOf(prev, res.history.present) : null;
    s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
    s.notice = !!(res.notice && res.notice.pinsReset);
 -  s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : say || "";

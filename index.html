@@ -1270,7 +1270,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
    nothing scrolls; from 900px the pan takes the left and the controls the right. */
 #scale-sheet.onepanel .sheetsurf{display:none}
 #scale-sheet.onepanel #editor{width:100%; max-width:520px; height:100dvh; margin:0 auto; box-sizing:border-box;
-  padding:var(--sp-2) var(--sp-3) max(var(--sp-2), env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3) max(var(--sp-2), env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:var(--sp-1);
   background:#F6F4ED; color:#242424; overflow:hidden; position:relative}
 #editor .editor-head{flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); min-width:0}
 #editor-title{margin:0; font:600 13px/1.2 "Nunito Sans"; letter-spacing:.09em; text-transform:uppercase; flex:1 1 auto; min-width:0;
@@ -1287,12 +1287,13 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-status{flex:0 0 auto; min-height:40px; margin:0; font:600 12px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2)}
 #editor-status[data-kind="error"]::before{content:"\26A0"}
 #editor-status .mode{min-height:32px; padding:4px 10px}
-#editor .editor-panbox{flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; position:relative}
+#editor .editor-panbox{flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; position:relative;
+  transform-origin:50% 0; transition:transform 220ms cubic-bezier(.2,.8,.2,1)}
 #editor-pan{height:100%; width:100%; display:flex; align-items:center; justify-content:center}
 #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}
 #editor-empty{position:absolute; inset:0; margin:0; display:flex; align-items:center; justify-content:center; text-align:center;
   font:500 14px/1.4 "Nunito Sans"; padding:var(--sp-3)}
-#editor-areas{flex:0 0 auto; min-height:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-2)}
+#editor-areas{flex:0 0 auto; min-height:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-1)}
 #editor-pills{display:flex; gap:var(--sp-2)}
 #editor-pills[hidden]{display:none}
 #editor-pills .pill{flex:1 1 0; min-width:0; min-height:44px; padding:2px; font-size:12px; line-height:1.15; display:flex; flex-direction:column; align-items:center; justify-content:center}
@@ -1319,6 +1320,27 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-pan .esel{fill:none; stroke:#242424; stroke-width:3; pointer-events:none}
 #editor-pan svg{touch-action:manipulation; cursor:pointer; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
 #editor.dragtouch #editor-pan svg, #editor.dragtouch .tray-note{touch-action:none}
+/* Drag UX: while a note is held the control panel slides away (transform and opacity only, so
+   the layout and the pan's screen matrix stay put) and the pan box grows from its top edge into
+   the freed space, and is then hidden outright (visibility). --ed-mag is measured once at the lift; the pan is hit-tested through its own
+   getScreenCTM, which already includes this transform. */
+#editor-areas, #editor-layout, #editor .editor-toolbar, #editor-tray{transition:transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms, visibility 0s}
+#editor.dragging .editor-panbox{transform:scale(var(--ed-mag,1)); z-index:1}
+#editor.dragging #editor-areas, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:translateY(100%); opacity:0; visibility:hidden; transition:transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms, visibility 0s 180ms}
+#editor.dragging #editor-areas, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray,
+#editor.settling #editor-areas, #editor.settling #editor-layout, #editor.settling .editor-toolbar, #editor.settling #editor-tray{pointer-events:none}
+@keyframes ed-new{from{stroke-opacity:1; stroke-width:3} to{stroke-opacity:0; stroke-width:16}}
+@keyframes ed-new-fade{from{stroke-opacity:1} to{stroke-opacity:0}}
+@keyframes ed-new-pulse{from{stroke-width:10} to{stroke-width:3}}
+#editor-pan .ehit.editor-new{stroke:var(--accent,#c9a25a); animation:ed-new 520ms cubic-bezier(.2,.8,.2,1) 1 both}
+#editor-pan .editor-landing.editor-new{animation:ed-new-pulse 520ms cubic-bezier(.2,.8,.2,1) 1}
+@media (prefers-reduced-motion: reduce){
+  #editor .editor-panbox, #editor.dragging .editor-panbox{transform:none; transition:none}
+  #editor-areas, #editor-layout, #editor .editor-toolbar, #editor-tray{transition:none}
+  #editor.dragging #editor-areas, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:none}
+  #editor-pan .ehit.editor-new{stroke-width:4; animation:ed-new-fade 900ms linear 1 both}
+  #editor-pan .editor-landing.editor-new{animation:none}
+}
 #editor .tray-note{user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
 #editor .tray-note.dragging{opacity:.35}
 .editor-ghost{position:fixed; z-index:70; pointer-events:none; transform:translate(-50%,-130%); background:#242424; color:#F6F4ED;
@@ -1329,7 +1351,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-pan .ezone.on{fill:color-mix(in srgb,var(--accent,#c9a25a) 18%,transparent)}
 #editor-pan .ezone.full{stroke:#242424; stroke-width:2; stroke-dasharray:6 5; vector-effect:non-scaling-stroke}
 #editor-pan .ezone-label{fill:#242424; font:700 9px "Nunito Sans"; text-anchor:middle; pointer-events:none}
-#editor-tray{display:flex; flex-direction:column; gap:var(--sp-2); touch-action:pan-y}
+#editor-tray{display:flex; flex-direction:column; gap:var(--sp-1); touch-action:pan-y}
 #editor-notes{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:var(--sp-1)}
 #editor .tray-note{min-height:44px; padding-inline:2px}
 #editor .tray-note.on, #editor-flats.on{background:#242424; color:#F6F4ED; border-color:#242424}
@@ -16247,6 +16269,7 @@ function editorRender() {
     const drawn = solved.value.geom.place ? null : { scale: EDITOR_SCALE, push: editorPush(m, solved.value.fields) };
     box.innerHTML = editorWithOverlay(pan({ geom: solved.value.geom, fields: solved.value.fields, colors: { root: p.root, tone: p.tone } }, null, drawn), m, solved.value);
   } else box.innerHTML = "";
+  s.flash = null;
   if (had) {
     const back = box.querySelector(`[data-fk="${s.focusKey}"]`) || box.querySelector('[tabindex="0"]');
     if (back) back.focus({ preventScroll: true });
@@ -16273,8 +16296,29 @@ function editorRender() {
     b.disabled = empty;
   }
 }
+// The notes a placement changed, for the highlight: a ring's new names, else the seats whose
+// name, seat or pinned angle differ (a swap, a move), and the ding. Neotone has its own landed ring.
+function editorFlashOf(a, b) {
+  if (a.options.profile || b.options.profile) return [];
+  const out = [];
+  const angle = (m, ring, i) => (((m.options.angles || {})[ring] || [])[i] ?? null);
+  const seat = (m, ring, i) => (((m.options.seats || {})[ring] || [])[i] ?? i);
+  for (const ring of EDITOR_RINGS) {
+    const was = editorNames(a, ring), now = editorNames(b, ring);
+    const left = was.slice();
+    const added = [];
+    now.forEach((n, i) => {
+      const at = left.indexOf(n);
+      if (at < 0) added.push(i); else left.splice(at, 1);
+    });
+    const moved = now.map((n, i) => i).filter((i) => now[i] !== was[i] || angle(a, ring, i) !== angle(b, ring, i) || seat(a, ring, i) !== seat(b, ring, i));
+    for (const i of added.length ? added : moved) out.push({ ring, i });
+  }
+  if (editorDingOf(a) !== editorDingOf(b)) out.push({ ring: "ding", i: 0 });
+  return out;
+}
 // One accepted action: a step in the history, the notice it carries, the error cleared.
-function editorDo(step, say) {
+function editorDo(step, say, mark) {
   const s = editorSession;
   const keepView = (m) => {
     const res = step(m);
@@ -16286,8 +16330,10 @@ function editorDo(step, say) {
     editorRender();
     return false;
   }
+  const prev = s.history.present;
   s.history = res.history;
   s.error = "";
+  s.flash = mark ? editorFlashOf(prev, res.history.present) : null;
   s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
   s.notice = !!(res.notice && res.notice.pinsReset);
   s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : say || "";
@@ -16441,7 +16487,7 @@ function editorNeoMarks(m, fields, geom) {
   if (Number.isInteger(landed) && map[landed]) {
     const id = Object.keys(fields).find((k) => fields[k][3] !== "ding" && profileKeyOf(fields[k]) === map[landed]);
     const at = id && neoSlotPoint(landed, geom.place[id]);
-    if (at) out += `<circle class="editor-landing" data-slot="${landed}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${(at.r + 4).toFixed(2)}"/>`;
+    if (at) out += `<circle class="editor-landing editor-new" data-slot="${landed}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${(at.r + 4).toFixed(2)}"/>`;
   }
   return out;
 }
@@ -16496,7 +16542,8 @@ function editorWithOverlay(markup, m, solved) {
     const drawn = neo ? neo.r / 100 : editorDrawnReach(geom, zone);
     const r = geom.place && !neo && (zone === "inner" || zone === "bottom") ? EDITOR_HIT_AREA * 100 : drawn * 100;
     const i = ring === "ding" ? 0 : ringIds(fields, ring).indexOf(id);
-    out += `<circle class="ehit" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"/>`;
+    const fresh = !!(s && s.flash && s.flash.some((f) => f.ring === ring && f.i === i));
+    out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"/>`;
     if (EDITOR_PINNABLE.includes(zone) && m.pins.some((p) => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;
     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
   }
@@ -16614,7 +16661,7 @@ function editorReplaceDingTap() {
   if (plan.trade) {
     if (editorTrade(m, plan.trade[0], plan.trade[1])) s.sel = null;
   } else if (plan.step) {
-    if (editorDo(plan.step, plan.say)) s.held = null;
+    if (editorDo(plan.step, plan.say, true)) s.held = null;
   } else s.say = s.plainSay = plan.info;
   editorRender();
 }
@@ -16622,7 +16669,7 @@ function editorPlaceHeld(hit, m) {
   const s = editorSession;
   const plan = editorDropPlan(m, { from: "tray", name: editorHeldName() }, hit);
   if (!plan.step) return;
-  if (editorDo(plan.step, plan.say)) s.held = null;
+  if (editorDo(plan.step, plan.say, true)) s.held = null;
   editorRender();
 }
 function editorTrade(m, a, b) {
@@ -16630,7 +16677,7 @@ function editorTrade(m, a, b) {
   const names = [editorNameAt(m, a), editorNameAt(m, b)];
   if (m.options.profile) {
     const plan = editorDropPlan(m, { from: "pan", ref: a }, b.ring === "ding" ? { kind: "ding" } : { kind: "note", ring: b.ring, i: b.i });
-    if (plan.step) return editorDo(plan.step, plan.say);
+    if (plan.step) return editorDo(plan.step, plan.say, true);
     if (plan.refuse) s.error = plan.refuse;
     editorRender();
     return !!plan.snap;
@@ -16641,7 +16688,7 @@ function editorTrade(m, a, b) {
       const res = editorSwapSeats(x, a.ring, a.i, b.i);
       return !res.ok && pinnable ? { ...res, code: "TRADE", reason: t("sheet.cannot_trade", { a: names[0], b: names[1], step: ANGLE_STEP }) } : res;
     };
-    return editorDo(trade, t("editor.say.swapped", { a: names[0], b: names[1] }));
+    return editorDo(trade, t("editor.say.swapped", { a: names[0], b: names[1] }), true);
   }
   const toDing = a.ring === "ding" || b.ring === "ding";
   if (toDing && (a.ring === "ding" ? b : a).ring !== "bottom") {
@@ -16652,7 +16699,7 @@ function editorTrade(m, a, b) {
   const dropped = a.ring === "ding" ? names[1] : names[0];
   const root = a.ring === "ding" ? names[0] : names[1];
   const say = toDing ? t("editor.say.ding_swap", { a: dropped, b: root }) : t("editor.say.swapped", { a: names[0], b: names[1] });
-  return editorDo((x) => editorSwapNames(x, a, b), say);
+  return editorDo((x) => editorSwapNames(x, a, b), say, true);
 }
 function editorSelectTap(hit, m) {
   const s = editorSession;
@@ -16691,7 +16738,7 @@ function editorMoveSelected(hit, m) {
   s.error = "";
   if (plan.refuse) s.error = plan.refuse;
   else if (plan.step) {
-    if (!editorDo(plan.step, plan.say)) return;
+    if (!editorDo(plan.step, plan.say, true)) return;
     s.sel = null;
   } else s.sel = null;
   editorRender();
@@ -16830,6 +16877,39 @@ function editorEscape() {
 const EDITOR_DRAG_PX = 8;
 const editorDragKind = (dx, dy) => (Math.hypot(dx, dy) > EDITOR_DRAG_PX ? "drag" : "tap");
 let editorDrag = null;
+// Magnify (drag UX D4): the pan grows from its top edge into the room the sliding panel frees below it,
+// to at most EDITOR_MAG_MAX, never past the viewport width, never shrinking.
+// The svg keeps EDITOR_MAG_PAD empty units around the drawing; the drawing keeps EDITOR_MAG_EDGE px off the screen edge.
+const EDITOR_MAG_MAX = 1.35, EDITOR_MAG_PAD = 14, EDITOR_MAG_EDGE = 8;
+function editorMagnify(panRect, freedPx, viewport) {
+  if (!(panRect.height > 0) || !(panRect.width > 0)) return 1;
+  return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
+}
+function editorDragMeasure() {
+  const root = editorEl("editor");
+  const box = root.querySelector(".editor-panbox").getBoundingClientRect();
+  const svg = editorEl("editor-pan").querySelector("svg");
+  if (!svg || reducedMotion.matches) return 1;
+  const room = root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - box.bottom;
+  const wide = svg.viewBox.baseVal.width;
+  const drawn = svg.getBoundingClientRect().width * (wide - 2 * EDITOR_MAG_PAD) / wide;
+  return editorMagnify({ width: drawn, height: box.height }, room, { width: window.innerWidth - 2 * EDITOR_MAG_EDGE });
+}
+let editorSettleTimer = 0;
+function editorDragRestore() {
+  const root = editorEl("editor");
+  if (!root) return;
+  root.classList.remove("dragging");
+  root.classList.add("settling");
+  clearTimeout(editorSettleTimer);
+  editorSettleTimer = setTimeout(() => root.classList.remove("settling"), 250);
+}
+function editorDragCancel() {
+  if (editorDrag) editorDragEnd(null);
+}
+function editorDragHidden() {
+  if (document.hidden) editorDragCancel();
+}
 function editorDragName(src) {
   const m = editorSession.history.present;
   if (src.from === "tray") { const view = editorView(m); return editorTrayName(view, src.k) + view.oct; }
@@ -16871,6 +16951,14 @@ function editorDragLift(d) {
   d.ghost = editorNode("div", { class: "editor-ghost", text: editorDragName(d.src) });
   document.body.appendChild(d.ghost);
   editorZoneLayer(d);
+  const root = editorEl("editor");
+  clearTimeout(editorSettleTimer);
+  root.classList.remove("settling");
+  root.style.setProperty("--ed-mag", String(editorDragMeasure()));
+  root.classList.add("dragging");
+  window.addEventListener("resize", editorDragCancel);
+  window.addEventListener("orientationchange", editorDragCancel);
+  document.addEventListener("visibilitychange", editorDragHidden);
   if (d.src.ref) {
     const lifted = document.querySelector(`#editor-pan .ehit[data-ring="${d.src.ref.ring}"][data-i="${d.src.ref.i}"]`);
     if (lifted) lifted.classList.add("lift");
@@ -16982,6 +17070,9 @@ function editorDragEnd(e) {
   window.removeEventListener("pointerup", editorDragUp);
   window.removeEventListener("pointercancel", editorDragUp);
   window.removeEventListener("lostpointercapture", editorDragUp);
+  window.removeEventListener("resize", editorDragCancel);
+  window.removeEventListener("orientationchange", editorDragCancel);
+  document.removeEventListener("visibilitychange", editorDragHidden);
   if (!d || !d.live) return;
   const stopEating = () => {
     window.removeEventListener("click", eat, true);
@@ -17003,10 +17094,12 @@ function editorDragEnd(e) {
   s.error = "";
   s.notice = false;
   if (plan.trade) editorTrade(m, plan.trade[0], plan.trade[1]);
-  else if (plan.step) editorDo(plan.step, plan.say);
+  else if (plan.step) editorDo(plan.step, plan.say, true);
   else if (plan.refuse) s.error = plan.refuse;
   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
   editorRender();
+  if (e) requestAnimationFrame(() => { if (!editorDrag) editorDragRestore(); });
+  else editorDragRestore();
 }
 function editorDragUp(e) {
   if (editorDrag && e.pointerId === editorDrag.id) editorDragEnd(e.type === "pointerup" ? e : null);

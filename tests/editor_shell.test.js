@@ -1192,3 +1192,40 @@ describe("U2h: the keyboard shortcut leaves a live drag alone", () => {
     assert.strictEqual(ok(null, null), false);
   });
 });
+
+describe("drag ux: the magnify factor and the placed-note flash", () => {
+  const mag = (a, rect, freed, vw) => a.get(`editorMagnify(${JSON.stringify(rect)}, ${freed}, { width: ${vw} })`);
+  test("drag ux unit 1: the magnify factor grows into the freed space, capped at 1.35, the viewport width, and never below 1", () => {
+    const a = app();
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 60, 390), 1.2);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 400, 1000), 1.35);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 400, 360), 1.2);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, 0, 390), 1);
+    assert.strictEqual(mag(a, { width: 300, height: 300 }, -20, 390), 1);
+    assert.strictEqual(mag(a, { width: 400, height: 300 }, 100, 390), 1);
+    assert.strictEqual(mag(a, { width: 0, height: 0 }, 100, 390), 1);
+  });
+
+  const flash = (a, before, after) => plain(a.get(`editorFlashOf(editorLoad(${JSON.stringify(before)}).value, editorLoad(${JSON.stringify(after)}).value)`));
+  test("drag ux unit 2: a note added to the rim flashes its rim seat; a replaced ding flashes the ding", () => {
+    const a = app();
+    assert.deepStrictEqual(flash(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 | C5 D5"), [{ ring: "rim", i: 8 }]);
+    assert.deepStrictEqual(flash(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", "[A2] (G3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"), [{ ring: "ding", i: 0 }]);
+  });
+  test("drag ux unit 3: a swap flashes both ends, a cross-ring trade flashes the note in each ring, no change flashes nothing", () => {
+    const a = app();
+    const rim = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+    const swapped = (ring) => plain(a.get(`(() => { const m = editorLoad(${JSON.stringify(rim)}).value; return editorFlashOf(m, editorSwapSeats(m, ${JSON.stringify(ring)}, 0, 1).value); })()`));
+    assert.deepStrictEqual(swapped("rim").map((f) => f.ring + f.i), ["rim0", "rim1"]);
+    assert.deepStrictEqual(swapped("inner").map((f) => f.ring + f.i), ["inner0", "inner1"]);
+    assert.deepStrictEqual(plain(a.get(`(() => { const m = editorLoad(${JSON.stringify(rim)}).value; return editorFlashOf(m, editorSwapNames(m, { ring: "rim", i: 0 }, { ring: "inner", i: 0 }).value); })()`)).map((f) => f.ring + f.i), ["rim7", "inner0"]);
+    assert.deepStrictEqual(flash(a, rim, rim), []);
+  });
+  test("drag ux unit 4: a pinned note moved along its arc flashes at its new place; a Neotone model flashes nothing", () => {
+    const a = app();
+    a.run(`globalThis.__a = editorLoad("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", { angles: { inner: [null, null] } }).value;
+      globalThis.__b = editorLoad("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", { angles: { inner: [null, 120] } }).value; true`);
+    assert.deepStrictEqual(plain(a.get(`editorFlashOf(__a, __b)`)), [{ ring: "inner", i: 1 }]);
+    assert.deepStrictEqual(plain(a.get(`editorFlashOf({ fields: {}, options: { profile: {} }, pins: [] }, __b)`)), []);
+  });
+});

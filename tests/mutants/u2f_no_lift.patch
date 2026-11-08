@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16161,7 +16161,7 @@ function editorDragLift(d) {
-   editorZoneLayer(d);
+@@ -16633,7 +16633,7 @@ function editorDragLift(d) {
+   document.addEventListener("visibilitychange", editorDragHidden);
    if (d.src.ref) {
      const lifted = document.querySelector(`#editor-pan .ehit[data-ring="${d.src.ref.ring}"][data-i="${d.src.ref.i}"]`);
 -    if (lifted) lifted.classList.add("lift");
