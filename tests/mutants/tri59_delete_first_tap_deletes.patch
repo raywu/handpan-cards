@@ -1,0 +1,15 @@
+# kills: TRI59 delete first tap arms and says what will go, the second removes the saved scale and closes the editor
+# suite: node --test --test-name-pattern ^TRI59.delete.first.tap.arms tests/editor_e2e.test.js
+# fault: A single tap on DELETE removes the scale with no confirming second tap.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15859,7 +15859,7 @@ function editorDeleteTap() {
+   const s = editorSession;
+   if (!s || s.dialog || s.editing || !editingId) return;
+   const b = editorEl("editor-delete");
+-  if (s.delArmed) {
++  if (true) {
+     s.delArmed = false;
+     if (wouldEmpty(editingId)) {
+       s.say = s.plainSay = t("sheet.del_refusal", { name: editedDeck().name });
