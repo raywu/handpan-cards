@@ -1,5 +1,5 @@
-# kills: drag ux E4b: a removal highlights nothing and a cross-ring move highlights only its destination
-# suite: node --test --test-name-pattern ^drag.ux.E4b tests/editor_e2e.test.js
+# kills: drag ux X4: a removal highlights nothing and a cross-ring move highlights only its destination
+# suite: node --test --test-name-pattern ^drag.ux.X4 tests/editor_e2e.test.js
 # fault: The moved fallback also fires when a ring lost a note, so every shifted note is highlighted.
 diff --git a/index.html b/index.html
 --- a/index.html

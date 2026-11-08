@@ -2352,7 +2352,7 @@ function run() {
       assert.strictEqual((await marked()).length, 1, "keyboard placement");
     });
 
-    test("drag ux E4b: a removal highlights nothing and a cross-ring move highlights only its destination", async () => {
+    test("drag ux X4: a removal highlights nothing and a cross-ring move highlights only its destination", async () => {
       const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
       await setup(SCALE_);
       await liftFrom(await noteAt("rim", 2), { x: 195, y: 5 });
