@@ -2526,7 +2526,7 @@ function run() {
       await b.click("#editor-delete");
       await b.click("#editor-pan");
       assert.strictEqual(await label(), DELETE_LABEL);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent;`), "");
+      assert.doesNotMatch(await b.eval(`return document.getElementById("editor-status").textContent;`), /Tap again to remove/);
       await b.click("#editor-delete");
       assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
       assert.strictEqual(await savedCount(), before);
@@ -2574,6 +2574,82 @@ function run() {
         assert.ok(r.group <= 160, w + ": octave stepper spans " + r.group + "px (was 4+ grid columns)");
         assert.ok(r.group <= r.cols * 3 + 4, w + ": octave stepper is at most three note columns: " + JSON.stringify(r));
         assert.deepStrictEqual([r.targets, r.oneRow, r.labelBetween, r.stacked, r.noScroll], [true, true, true, true, true], w + " " + JSON.stringify(r));
+      }
+    });
+
+    const mouse = (type, pt) => b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", buttons: type === "mouseReleased" ? 0 : 1, clickCount: 1 });
+    const panNote = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const statusText = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+
+    test("TRI59b armed delete disarms on the press and the same press still picks and drags a pan note", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      await reopenSelected();
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      const at = await panNote("rim", 1);
+      await mouse("mousePressed", at);
+      await mouse("mouseReleased", at);
+      assert.strictEqual(await label(), DELETE_LABEL, "disarmed");
+      assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: 1 }, "the same click picked the note");
+      assert.doesNotMatch(await statusText(), /Tap again to remove/);
+      await b.eval(`editorSession.sel = null; editorRender(); return true;`);
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      await mouse("mousePressed", at);
+      assert.strictEqual(await label(), DELETE_LABEL, "disarmed on the press");
+      for (const k of [0.3, 0.6, 1]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: at.x + 40 * k, y: at.y + 40 * k, button: "left", buttons: 1 });
+      assert.strictEqual(await b.eval(`return !!(editorDrag && editorDrag.live);`), true, "the same press went on to drag");
+      await mouse("mouseReleased", { x: at.x + 40, y: at.y + 40 });
+    });
+
+    test("TRI59b a delete that fails shows the error in the editor and leaves the button disarmed", async () => {
+      await fresh();
+      await saveNew(SCALE);
+      const before = await savedCount();
+      await reopenSelected();
+      await b.eval(`window.__realCommit = commitSaved; commitSaved = async () => ({ ok: false, kind: "failure" }); return true;`);
+      await b.click("#editor-delete");
+      await b.click("#editor-delete");
+      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the delete error" });
+      assert.match(await statusText(), /^Could not save these changes\./);
+      assert.strictEqual(await label(), DELETE_LABEL);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").classList.contains("armed") || document.getElementById("editor-delete").title !== document.getElementById("editor-delete").getAttribute("aria-label");`), false);
+      assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), false, "the editor stays open");
+      assert.strictEqual(await savedCount(), before);
+      await b.eval(`commitSaved = window.__realCommit; return true;`);
+    });
+
+    test("TRI59b the last-scale refusal resets the button title and leaves no stale arming text", async () => {
+      await fresh();
+      await openBuiltin();
+      await b.eval(`const all = allDeckViews; allDeckViews = () => all().filter((v) => savedEqual(v.selection, selection)); return true;`);
+      await b.click("#editor-delete");
+      await b.click("#editor-delete");
+      assert.strictEqual(await label(), DELETE_LABEL);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").title;`), DELETE_LABEL);
+      assert.strictEqual(await b.eval(`return editorSession.delNote;`), "");
+    });
+
+    test("TRI59b a drop restores the panel even when a new press has already begun, but not while that press is a live drag", async () => {
+      await fresh(390, 844, true, true);
+      await openAdd();
+      await typeLine(SCALE);
+      const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const rim = await panNote("rim", 0);
+      for (const live of [false, true]) {
+        await mouse("mousePressed", chip);
+        for (const k of [0.3, 0.6]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: chip.x + (rim.x - chip.x) * k, y: chip.y + (rim.y - chip.y) * k, button: "left", buttons: 1 });
+        assert.strictEqual(await b.eval(`return !!(editorDrag && editorDrag.live);`), true);
+        await b.eval(`const c = document.querySelector('.tray-note[data-name="C"]');
+          editorDragEnd({ type: "pointerup", clientX: 5, clientY: 5 });
+          c.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "mouse", pointerId: 9, button: 0, clientX: 20, clientY: 20, bubbles: true }));
+          ${live ? "editorDrag.live = true;" : ""} return true;`);
+        await new Promise((r) => setTimeout(r, 400));
+        const dragging = await b.eval(`return document.getElementById("editor").classList.contains("dragging");`);
+        assert.strictEqual(dragging, live, live ? "a live drag keeps the panel out" : "a press that has not lifted does not keep the panel hidden");
+        await b.eval(`if (editorDrag) editorDrag.live = false; editorDragEnd(null); document.getElementById("editor").classList.remove("dragging"); return true;`);
+        await mouse("mouseReleased", rim);
       }
     });
 

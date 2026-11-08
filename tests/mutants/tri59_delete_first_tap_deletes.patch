@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15859,7 +15859,7 @@ function editorDeleteTap() {
+@@ -15875,7 +15875,7 @@ function editorDeleteTap() {
    const s = editorSession;
    if (!s || s.dialog || s.editing || !editingId) return;
    const b = editorEl("editor-delete");
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (true) {
      s.delArmed = false;
      if (wouldEmpty(editingId)) {
-       s.say = s.plainSay = t("sheet.del_refusal", { name: editedDeck().name });
+       editorResetDeleteButton(b);
