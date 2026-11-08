@@ -1,0 +1,15 @@
+# kills: TRI59 neotone layout row says why it is disabled, in view, with the existing PROFILE_CONFLICT wording
+# suite: node --test --test-name-pattern ^TRI59.neotone.layout.row.says tests/editor_e2e.test.js
+# fault: The Neotone layout row stays disabled with no visible reason.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16149,7 +16149,7 @@ function editorRenderLayout(m) {
+     if (m.options.profile) el.setAttribute("aria-describedby", "editor-layout-note"); else el.removeAttribute("aria-describedby");
+   }
+   const note = editorEl("editor-layout-note");
+-  note.hidden = !m.options.profile;
++  note.hidden = true;
+ }
+ function editorLayoutTap(step, say, keepsNumbers = false) {
+   const s = editorSession;
