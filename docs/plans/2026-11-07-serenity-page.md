@@ -66,7 +66,7 @@ sitemap.xml, llms.txt, scales/index.html (one hub link), one tests/mutants/sp_se
 - Page exists, self-canonical, title contains "F# Serenity" + "Neotone Mutant", description <= existing limit.
 - Notes table equals the Neotone row (read from neotone_page.json, not restated).
 - Practice href byte-equal to the Neotone row's href.
-- JSON-LD parses; FAQPage present; citation URL = Short; no "deck" in visible text; "Reo Matsumoto" present, "Rep" absent.
+- JSON-LD parses; no FAQ section and no FAQPage; citation URL = Short; no "deck" in visible text; "Reo Matsumoto" present, "Rep" absent.
 - Neotone page links the new page, the link adds < 120 B, and the page stays < NEO_SIZE_CAP; new page < SIZE_CAP.
 - Visible FAQ text equals the JSON-LD FAQPage text; page order H1 > answer > breadcrumb > Practice CTA.
 - Page is caught by the existing one-level `scales/*/index.html` globs (shared head, analytics, sitemap equality).

@@ -1728,6 +1728,13 @@ class SerenityPageTest(unittest.TestCase):
         names = [i["name"] for i in ld["breadcrumb"]["itemListElement"]]
         self.assertEqual(names, ["Home", "Scale chord charts", "Neotone", "F# Serenity"])
         self.assertEqual(ld["breadcrumb"]["itemListElement"][-1]["item"], SER_URL)
+        self.assertEqual([i["position"] for i in ld["breadcrumb"]["itemListElement"]], [1, 2, 3, 4])
+
+    def test_related_section_links_neotone_and_counts_every_scale_chart(self):
+        html = ser_page()
+        related = re.search(r'<section class="related">.*?</section>', html, re.S).group(0)
+        self.assertIn('<a href="/scales/neotone/">Neotone handpan chords</a>', related)
+        self.assertIn('<a href="/scales/">All %d handpan scale chord charts</a>' % len(gen.load_rows()), related)
 
     def test_it_has_the_standard_chord_stepper_for_its_own_layout(self):
         html = ser_page()
