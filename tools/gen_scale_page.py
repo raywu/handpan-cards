@@ -10,6 +10,7 @@
     python3 tools/gen_scale_page.py --fixture --check exit 1 if the fixture drifted
     python3 tools/gen_scale_page.py --neotone         write scales/neotone/ (--check too; --stdout prints it)
     python3 tools/gen_scale_page.py --neotone --fixture   write tests/fixtures/neotone_page_v1.json (--check too)
+    python3 tools/gen_scale_page.py --serenity        write scales/f-sharp-serenity-neotone/ (--check too; --stdout prints it)
 
 Card diagrams are the app's own pan() (index.html, run in tools/sandbox.js), so a
 card sits on exactly the angles, radii and colours the app draws. Decks come from
@@ -30,6 +31,9 @@ FIXTURE = os.path.join(ROOT, "tests", "fixtures", "scale_pages_v1.json")
 NEOTONE_ROW = os.path.join(ROOT, "tools", "neotone_page.json")
 NEOTONE_FIXTURE = os.path.join(ROOT, "tests", "fixtures", "neotone_page_v1.json")
 NEOTONE_SLUG = "neotone"
+SERENITY_SLUG = "f-sharp-serenity-neotone"
+SERENITY_NAME = "F# Serenity"
+SERENITY_VIDEO = "https://www.youtube.com/shorts/9nxKowdOFwE"
 SITE = "https://handpantheory.com/"
 UPDATED = "2026-10-28"
 BG_LIGHT = "#f6f4ed"
@@ -245,7 +249,9 @@ def hub_page(rows=None):
         out.append("\n".join(link_item(r) for r in rows if r["group"] == name))
         out.append("\n</ul>\n</section>\n")
     out.append('<section class="group">\n<h2>Neotone</h2><p class="muted">Chord cards for any Neotone layout.</p>\n'
-               '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n</section>\n' % NEOTONE_SLUG)
+               '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n'
+               '<p><a href="/scales/%s/">F# Serenity handpan scale (Neotone Mutant)</a></p>\n</section>\n'
+               % (NEOTONE_SLUG, SERENITY_SLUG))
     out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
                "</main>\n</body>\n</html>\n")
     return "".join(out)
@@ -506,6 +512,26 @@ def spread_default(d):
     return dict(d, seed=seed, typed=d["name"], palette=1, profile={"id": "paired", "rev": 2, "map": amap})
 
 
+def default_tbody(d, link):
+    cells = lambda vals: "".join("<td>%s</td>" % esc(c) for c in vals)
+    heads = "".join('<th scope="col">%s</th>' % h for h in ["Ding"] + [str(i) for i in range(1, 10)])
+    out = []
+    spread = "notes" in d
+    ding, top, mut = spread_cells(d["name"], d["notes"], d.get("ding")) if spread else (d["ding"], d["main"], d["mutant"] or ["-"] * 9)
+    linked = d["name"] in link
+    cta = ('<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])) if linked else
+           "Layout not published")
+    out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td rowspan="3">%s</td></tr>\n'
+               % (esc(d["name"]), esc(d.get("hotkey") or d["credit"]), heads, cta))
+    out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
+    out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
+               % (' class="nomut"' if not spread and not d["mutant"] else "", cells(["-"] + mut)))
+    if not linked:
+        out.append('<tr class="note"><td colspan="12">%s</td></tr>\n' % SPREAD_NOTE)
+    out.append("</tbody>\n")
+    return "".join(out)
+
+
 def defaults_html(row, shares):
     link = {d["name"]: d["share"] for d in shares}
     out = ['<section class="plain">\n<h2>Neotone factory scales</h2>\n'
@@ -513,22 +539,8 @@ def defaults_html(row, shares):
            "your own layouts can differ. Field numbers run from the lowest side note (1) to the highest (9). "
            "The Mutant Notes row lists each scale's mutant notes.</p>\n"
            '<table>\n<caption class="vh">Neotone factory scales</caption>\n']
-    cells = lambda vals: "".join("<td>%s</td>" % esc(c) for c in vals)
-    heads = "".join('<th scope="col">%s</th>' % h for h in ["Ding"] + [str(i) for i in range(1, 10)])
     for d in row["defaults"]:
-        spread = "notes" in d
-        ding, top, mut = spread_cells(d["name"], d["notes"], d.get("ding")) if spread else (d["ding"], d["main"], d["mutant"] or ["-"] * 9)
-        linked = d["name"] in link
-        cta = ('<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])) if linked else
-               "Layout not published")
-        out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td rowspan="3">%s</td></tr>\n'
-                   % (esc(d["name"]), esc(d.get("hotkey") or d["credit"]), heads, cta))
-        out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
-        out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
-                   % (' class="nomut"' if not spread and not d["mutant"] else "", cells(["-"] + mut)))
-        if not linked:
-            out.append('<tr class="note"><td colspan="12">%s</td></tr>\n' % SPREAD_NOTE)
-        out.append("</tbody>\n")
+        out.append(default_tbody(d, link))
     out.append("</table>\n</section>\n")
     return "".join(out)
 
@@ -536,6 +548,7 @@ def defaults_html(row, shares):
 def render(row, data, rows_by_slug, copy, alt=None):
     frozen = row["kind"] == "frozen"
     neo = "profile" in row
+    single = row.get("single", False)
     updated = row.get("updated", UPDATED)
     name = row["name"]
     url = SITE + "scales/%s/" % row["slug"]
@@ -557,6 +570,9 @@ def render(row, data, rows_by_slug, copy, alt=None):
     if neo:
         description = ("%s handpan chords: three chord cards for a Neotone layout (%s) with the notes to play, "
                        "then practice the full set in the free chord flashcard app.") % (name, ", ".join(names))
+    if single:
+        description = ("%s handpan chords: three chord cards for this Neotone Mutant scale by Reo Matsumoto (%s), "
+                       "then practice it free.") % (name, ", ".join(names))
     og_description = copy["og_description"] if frozen else description
     light, dark = row["accent_light"], row["accent_dark"]
     cta = row["cta"]
@@ -572,11 +588,19 @@ def render(row, data, rows_by_slug, copy, alt=None):
                  "publisher": {"@type": "Organization", "name": "Handpan Theory"},
                  "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": crumbs},
                  "mainEntity": {"@type": "ItemList", "itemListElement": items}}
+        if single:
+            crumbs[1:] = [{"@type": "ListItem", "position": i + 2, "name": n, "item": u} for i, (n, u) in enumerate(
+                [("Scale chord charts", SITE + "scales/"), ("Neotone", SITE + "scales/%s/" % NEOTONE_SLUG), (name, url)])]
+            graph.update(creator={"@type": "Person", "name": "Reo Matsumoto"}, citation=SERENITY_VIDEO,
+                         isBasedOn=SERENITY_VIDEO)
         out.append('<script type="application/ld+json">%s</script>\n' % json.dumps(graph, ensure_ascii=False,
                                                                                  separators=(",", ":")))
     out.append("</head>\n<body>\n<main>\n")
     if frozen:
         out.append('<header><p>%s</p>\n' % SCALE_LOCKUP)
+    elif single:
+        out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; '
+                   '<a href="/scales/%s/">Neotone</a> &rsaquo; %s</p>\n' % (SCALE_LOCKUP, NEOTONE_SLUG, esc(name)))
     else:
         out.append('<header><p>%s</p>\n<p><a href="/scales/">Scale chord charts</a> &rsaquo; %s chords</p>\n' % (SCALE_LOCKUP, esc(name)))
     out.append("<h1>%s handpan chords</h1>\n" % esc(name))
@@ -629,12 +653,27 @@ def render(row, data, rows_by_slug, copy, alt=None):
     out.append('<div class="ctas"><a class="open" href="%s">PRACTICE %s</a>'
                '<a class="open ghost" href="/#add">ADD YOUR OWN SCALE</a></div>\n'
                % (cta, esc((data["name"] if neo else name).upper())))
-    if neo:
+    if single:
+        out.append("</section>\n")
+        out.append('<section class="plain">\n<h2>%s notes by field</h2>\n'
+                   "<p>Field numbers run from the lowest side note (1) to the highest (9). "
+                   "The Mutant Notes row lists the mutant notes.</p>\n"
+                   '<table>\n<caption class="vh">%s notes by field</caption>\n' % (esc(name), esc(name)))
+        out.append(default_tbody(row["defaults"][0], {name: data["share"]}))
+        out.append("</table>\n</section>\n")
+        out.append('<section class="related">\n<h2>More chord charts</h2>\n'
+                   '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n'
+                   '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n'
+                   % (NEOTONE_SLUG, len(load_rows())))
+    elif neo:
         out.append("</section>\n" + defaults_html(row, data["defaults"]))
         out.append('<section class="plain">\n<h2>Make your own Neotone scale</h2>\n<ol>%s</ol>\n</section>\n'
                    % "".join("<li>%s</li>\n" % step for step in copy["steps_html"]))
         out.append('<section class="related">\n<h2>More chord charts</h2>\n'
-                   '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n' % len(load_rows()))
+                   '<p><a href="/scales/%s/">More about F# Serenity</a></p>\n'
+                   '<p><a href="/scales/">All %d handpan scale chord charts</a></p>\n</section>\n'
+                   % (SERENITY_SLUG, len(load_rows())))
+    if neo:
         out.append('<p class="muted">Last updated <time datetime="%s">%s</time></p>\n' % (updated, updated))
         out.append('<p class="muted">%s</p>\n' % copy["disclaimer_html"])
         out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
@@ -689,6 +728,22 @@ def neotone_page(row=None):
     return render(row, data, {row["slug"]: row}, load_copy(row))
 
 
+def serenity_row(row=None):
+    row = row or load_neotone_row()
+    d = next(x for x in row["defaults"] if x["name"] == SERENITY_NAME)
+    return {"slug": SERENITY_SLUG, "name": SERENITY_NAME, "kind": "new", "root": "F#", "popularized": False,
+            "seed": d["seed"], "typed": d["typed"], "palette": d["palette"], "profile": d["profile"],
+            "accent_light": row["accent_light"], "accent_dark": row["accent_dark"],
+            "updated": row.get("serenity_updated", UPDATED), "single": True, "defaults": [d]}
+
+
+def serenity_page(row=None):
+    row = serenity_row(row)
+    data = engine([row])["rows"][SERENITY_SLUG]
+    row["cta"] = "/#s=%s" % data["share"]
+    return render(row, data, {SERENITY_SLUG: row}, load_copy(row))
+
+
 def neotone_fixture_data(row=None):
     row = row or load_neotone_row()
     out = json.loads(fixture_data([row]))
@@ -733,6 +788,8 @@ def main(argv):
     check = "--check" in argv
     stdout = "--stdout" in argv
     args = [a for a in argv if not a.startswith("--")]
+    if "--serenity" in argv:
+        return emit(os.path.join(ROOT, "scales", SERENITY_SLUG, "index.html"), serenity_page(), check, stdout)
     if "--neotone" in argv:
         if "--fixture" in argv:
             return emit(NEOTONE_FIXTURE, neotone_fixture_data(), check, False)

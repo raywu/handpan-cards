@@ -4,12 +4,12 @@
 diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
 --- a/tools/gen_scale_page.py
 +++ b/tools/gen_scale_page.py
-@@ -521,7 +521,7 @@ def defaults_html(row, shares):
-         linked = d["name"] in link
-         cta = ('<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])) if linked else
-                "Layout not published")
--        out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td rowspan="3">%s</td></tr>\n'
-+        out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td>%s</td></tr>\n'
-                    % (esc(d["name"]), esc(d.get("hotkey") or d["credit"]), heads, cta))
-         out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
-         out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
+@@ -521,7 +521,7 @@ def default_tbody(d, link):
+     linked = d["name"] in link
+     cta = ('<a class="open" href="/#s=%s">Practice %s</a>' % (link[d["name"]], esc(d["name"])) if linked else
+            "Layout not published")
+-    out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td rowspan="3">%s</td></tr>\n'
++    out.append('<tbody>\n<tr><th scope="rowgroup">%s<span class="hk">%s</span></th>%s<td>%s</td></tr>\n'
+                % (esc(d["name"]), esc(d.get("hotkey") or d["credit"]), heads, cta))
+     out.append('<tr><th scope="row">Top Notes</th>%s</tr>\n' % cells([ding] + top))
+     out.append('<tr%s><th scope="row">Mutant Notes</th>%s</tr>\n'
