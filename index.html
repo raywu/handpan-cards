@@ -15844,15 +15844,31 @@ function editorDeleteButton() {
   b.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   return b;
 }
+function editorResetDeleteButton(b) {
+  b.classList.remove("armed");
+  b.setAttribute("aria-label", t("sheet.del_idle"));
+  b.title = t("sheet.del_idle");
+}
 function editorDisarmDelete() {
   const s = editorSession, b = s && editorEl("editor-delete");
   if (!b || !s.delArmed) return;
   s.delArmed = false;
-  b.classList.remove("armed");
-  b.setAttribute("aria-label", t("sheet.del_idle"));
-  b.title = t("sheet.del_idle");
+  editorResetDeleteButton(b);
+  const status = editorEl("editor-status");
+  if (s.say === s.delNote) {
+    s.say = s.plainSay = "";
+    if (!s.error && status.textContent === s.delNote) status.textContent = "";
+  }
+  s.delNote = "";
+}
+function editorDeleteFailed(text) {
+  const s = editorSession, b = s && editorEl("editor-delete");
+  if (!b) return;
+  s.delArmed = false;
+  editorResetDeleteButton(b);
   if (s.say === s.delNote) s.say = s.plainSay = "";
   s.delNote = "";
+  if (text) s.error = text;
   editorRender();
 }
 function editorDeleteTap() {
@@ -15862,9 +15878,9 @@ function editorDeleteTap() {
   if (s.delArmed) {
     s.delArmed = false;
     if (wouldEmpty(editingId)) {
+      editorResetDeleteButton(b);
+      s.delNote = "";
       s.say = s.plainSay = t("sheet.del_refusal", { name: editedDeck().name });
-      b.classList.remove("armed");
-      b.setAttribute("aria-label", t("sheet.del_idle"));
       return editorRender();
     }
     deleteDeck(editingId);
@@ -17662,15 +17678,22 @@ function showSavedConflict(reveal = false) {
   if(reveal)document.getElementById("scale-conflict").scrollIntoView?.({block:"nearest",inline:"nearest"});
 }
 async function deleteDeck(id) {
-  if(!editingBase || savePending)return;
+  if(!editingBase)return;
+  if(savePending){if(editorSession)editorDeleteFailed("");return;}
   const base=editingBase, target=base.selection, generation=sheetGeneration;
   if(wouldEmpty(target.id)){say(t("sheet.del_refusal",{name:base.deck.name}),"warn");msgLine.classList.add("refusal");syncMsgYield();return;}
   const command=target.kind === "saved" ? {type:"delete",instanceId:target.id,expectedRevision:base.revision,...base.scope} :
     {type:"hide-builtin",seedId:target.id,expectedSlotStateRevision:base.slotStateRevision,expectedOwnerId:base.ownerId};
   const result=await commitSaved({...command,collectionId:base.collectionId});
   if(generation!==sheetGeneration)return;
-  if(!result.ok){if(result.kind==="conflict"){await reconcileSavedCollection();if(generation===sheetGeneration)showSavedConflict(true);}else say(savedErrorText(result),"warn");return;}
-  if(result.published===false)return;
+  if(!result.ok){
+    if(result.kind==="conflict")await reconcileSavedCollection();
+    if(generation!==sheetGeneration)return;
+    if(editorSession){editorDeleteFailed(savedErrorText(result));return;}
+    if(result.kind==="conflict")showSavedConflict(true);else say(savedErrorText(result),"warn");
+    return;
+  }
+  if(result.published===false){if(editorSession)editorDeleteFailed(savedPublicationText(result));return;}
   const gone=base.deck.name;
   closeScaleSheet();selectDeck(fallbackSelection(),false);
   say(t("boot.removed",{a:gone,b:deck().name}),"warn");
