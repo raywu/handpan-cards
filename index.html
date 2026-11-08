@@ -671,33 +671,32 @@ main{overflow-x:clip}
    so they keep every themed .prints button rule (colours, :lang() fonts, 44px floor,
    disabled look); only flex and width are overridden here. The container paints nothing,
    so it needs no per-theme colour. */
-.prints #print-menu{position:absolute; top:calc(100% + var(--sp-1)); left:0; right:0; z-index:5;
+.prints #print-menu, .prints #print-paper-menu{position:absolute; top:calc(100% + var(--sp-1)); left:0; right:0; z-index:5;
   display:flex; flex-direction:column; gap:var(--sp-1); filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
-.prints #print-menu.up{top:auto; bottom:calc(100% + var(--sp-1))}
-.prints #print-menu[hidden]{display:none}
-.prints #print-menu button{flex:0 0 auto; width:100%}
-.prints button, .prints select, #lang-select{min-width:0}
-.prints button, .prints select, #lang-select{font:600 10.5px/1 "Nunito Sans";
+.prints #print-menu.up, .prints #print-paper-menu.up{top:auto; bottom:calc(100% + var(--sp-1))}
+.prints #print-menu[hidden], .prints #print-paper-menu[hidden]{display:none}
+.prints #print-menu button, .prints #print-paper-menu button{flex:0 0 auto; width:100%}
+.prints #print-paper-wrap{position:relative; display:flex; flex:1 1 auto; min-width:0}
+.prints button, #lang-select{min-width:0}
+.prints button, #lang-select{font:600 10.5px/1 "Nunito Sans";
   letter-spacing:.08em; color:#a9a39a; background:#1a1814; border:1px solid #3a352d;
   border-radius:8px; padding:7px 11px 6px; min-height:44px; cursor:pointer;
   white-space:nowrap; -webkit-appearance:none; appearance:none}
-.prints button, .prints select, #lang-select{flex:1 1 auto}
+.prints button, #lang-select{flex:1 1 auto}
 .prints #print-download{flex:3 1 auto; padding-left:6px; padding-right:6px}
-.prints button, .prints select, #lang-select{text-align:center; text-align-last:center}
+.prints button, #lang-select{text-align:center; text-align-last:center}
 .prints button:hover, .prints button:focus-visible,
-.prints select:hover, .prints select:focus-visible, #lang-select:hover, #lang-select:focus-visible{background:#2e281e}
-.prints button:active, .prints select:active, #lang-select:active{color:#f6f4ed}
-#settings-panel .prints button, #settings-panel .prints select, #settings-panel #lang-select,
+#lang-select:hover, #lang-select:focus-visible{background:#2e281e}
+.prints button:active, #lang-select:active{color:#f6f4ed}
+#settings-panel .prints button, #settings-panel #lang-select,
 #settings-panel .mode:not(.on){background:#0f0e0b}
 #settings-panel .prints button:hover, #settings-panel .prints button:focus-visible,
-#settings-panel .prints select:hover, #settings-panel .prints select:focus-visible,
 #settings-panel #lang-select:hover, #settings-panel #lang-select:focus-visible,
 #settings-panel .mode:not(.on):active{background:#2e281e}
 @media (min-width:1024px) and (min-height:700px){
-  #settings-panel .prints button, #settings-panel .prints select, #settings-panel #lang-select,
+  #settings-panel .prints button, #settings-panel #lang-select,
   #settings-panel .mode:not(.on){background:#1a1814}
   #settings-panel .prints button:hover, #settings-panel .prints button:focus-visible,
-  #settings-panel .prints select:hover, #settings-panel .prints select:focus-visible,
   #settings-panel #lang-select:hover, #settings-panel #lang-select:focus-visible,
   #settings-panel .mode:not(.on):active{background:#2e281e}
 }
@@ -1448,16 +1447,16 @@ html.about-open{overflow:hidden}
 #about h2, #about h3{color:#242424}
 
 #settings-panel .mode, #scale-sheet .mode, #about .mode,
-#settings-panel .prints button, #settings-panel .prints select, #settings-panel #lang-select{
+#settings-panel .prints button, #settings-panel #lang-select{
   background:#FFFFFF; color:#242424; border-color:#8A847B}
 #settings-panel .mode:not(.on), #scale-sheet .mode:not(.on), #about .mode:not(.on){background:#FFFFFF}
 #settings-panel .mode:hover, #scale-sheet .mode:hover, #about .mode:hover,
-#settings-panel .prints button:hover, #settings-panel .prints select:hover, #settings-panel #lang-select:hover{
+#settings-panel .prints button:hover, #settings-panel #lang-select:hover{
   background:#F6F4ED; border-color:#242424}
-#settings-panel .prints button:focus-visible, #settings-panel .prints select:focus-visible, #settings-panel #lang-select:focus-visible{
+#settings-panel .prints button:focus-visible, #settings-panel #lang-select:focus-visible{
   background:#FFFFFF}
 #settings-panel .mode:not(.on):active, #scale-sheet .mode:not(.on):active, #about .mode:not(.on):active,
-#settings-panel .prints button:active, #settings-panel .prints select:active, #settings-panel #lang-select:active{
+#settings-panel .prints button:active, #settings-panel #lang-select:active{
   background:#F6F4ED; color:#242424}
 #settings-panel .mode.on, #scale-sheet .mode.on, #about .mode.on{
   background:#6756B5; color:#FFFFFF; border-color:#6756B5}
@@ -1517,13 +1516,13 @@ html.about-open{overflow:hidden}
 /* field-guide:end */
 
 /* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */
-:lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) .prints select, :lang(ja) #lang-select, :lang(ja) .panel-note, :lang(ja) .chip{
+:lang(ja) body, :lang(ja) .mode, :lang(ja) .prints button, :lang(ja) #lang-select, :lang(ja) .panel-note, :lang(ja) .chip{
   font-family:"Nunito Sans", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", "Noto Sans JP", sans-serif}
 :lang(ja) .panel-heading{font-family:Marcellus, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif}
-:lang(zh-Hant) body, :lang(zh-Hant) .mode, :lang(zh-Hant) .prints button, :lang(zh-Hant) .prints select, :lang(zh-Hant) #lang-select, :lang(zh-Hant) .panel-note, :lang(zh-Hant) .chip{
+:lang(zh-Hant) body, :lang(zh-Hant) .mode, :lang(zh-Hant) .prints button, :lang(zh-Hant) #lang-select, :lang(zh-Hant) .panel-note, :lang(zh-Hant) .chip{
   font-family:"Nunito Sans", "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", sans-serif}
 :lang(zh-Hant) .panel-heading{font-family:Marcellus, "PingFang TC", "Microsoft JhengHei", "Noto Serif CJK TC", serif}
-:lang(zh-Hans) body, :lang(zh-Hans) .mode, :lang(zh-Hans) .prints button, :lang(zh-Hans) .prints select, :lang(zh-Hans) #lang-select, :lang(zh-Hans) .panel-note, :lang(zh-Hans) .chip{
+:lang(zh-Hans) body, :lang(zh-Hans) .mode, :lang(zh-Hans) .prints button, :lang(zh-Hans) #lang-select, :lang(zh-Hans) .panel-note, :lang(zh-Hans) .chip{
   font-family:"Nunito Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif}
 :lang(zh-Hans) .panel-heading{font-family:Marcellus, "PingFang SC", "Microsoft YaHei", "Noto Serif CJK SC", serif}
 :lang(ja) .panel-heading, :lang(zh) .panel-heading{line-height:17px}
@@ -2035,11 +2034,16 @@ html.about-open{overflow:hidden}
         <button type="button" role="menuitem" id="print-pdf-all" onclick="downloadDeckPDF('shop', this, 'all'); closePanel();">ALL</button>
       </div>
       <!-- The paper choice keeps the panel open (design direction, "After an
-           action"): the next tap is a print button, not a new task. -->
-      <select id="print-paper-select" aria-label="Paper size" onchange="setPrintPaper(this.value)">
-        <option value="letter">LETTER</option>
-        <option value="a4">A4</option>
-      </select>
+           action"): the next tap is a print button, not a new task. It is a
+           menu like DOWNLOAD PDF (owner 2026-11-08), not a native select, so
+           both popups look alike on iOS. -->
+      <div id="print-paper-wrap">
+        <button type="button" id="print-paper" aria-haspopup="menu" aria-expanded="false" aria-controls="print-paper-menu" onclick="togglePaperMenu();">LETTER</button>
+        <div id="print-paper-menu" role="menu" aria-label="Paper size" hidden>
+          <button type="button" role="menuitemradio" aria-checked="true" id="print-paper-letter" onclick="choosePaper('letter');">LETTER</button>
+          <button type="button" role="menuitemradio" aria-checked="false" id="print-paper-a4" onclick="choosePaper('a4');">A4</button>
+        </div>
+      </div>
     </div>
   </div>
   <!-- Resources (docs/plans/2026-10-29-menu-explore-scales-subplan.md): three
@@ -10865,7 +10869,7 @@ const STATIC_STRINGS = [
   [".panel-heading", null, "panel.print"], ["#print-download", null, "panel.download"],
   ["#print-menu", "aria-label", "panel.pdf_menu"], ["#print-pdf-easy", null, "panel.pdf_easy"],
   ["#print-pdf-easy_medium", null, "panel.pdf_easy_medium"], ["#print-pdf-all", null, "panel.pdf_all"],
-  ["#print-paper-select", "aria-label", "panel.paper"], [".panel-heading", null, "panel.resources"],
+  ["#print-paper-menu", "aria-label", "panel.paper"], [".panel-heading", null, "panel.resources"],
   ["#res-explore", null, "panel.explore"], ["#res-handpan-101", "aria-label", "panel.res_101.aria"], ["#about-open", null, "panel.about"], ["#panel-lang-heading", null, "sel.language"],
   ["#scale-back", null, "sheet.back"], ["#scale-tabs", "aria-label", "sheet.tablist"],
   ["#scale-tab-scale", null, "sheet.tab_scale"], ["#scale-tab-layout", null, "sheet.tab_layout"],
@@ -12431,12 +12435,18 @@ let printPaper = isPaper(store.printPaper) ? store.printPaper : "letter";
 function setPrintPaper(p) {
   if (!isPaper(p)) return;
   printPaper = p; save();
-  // D16: the picker is a static control now (it lives in the settings panel,
-  // not re-rendered per card), so it only reflects state that WE push into
-  // it - sync it here so a call from anywhere (not just its own onchange)
-  // keeps it truthful.
-  const sel = document.getElementById("print-paper-select");
-  if (sel) sel.value = p;
+  syncPaperControl();
+}
+// D16: the paper control is static (it lives in the settings panel, not
+// re-rendered per card), so it only reflects state that WE push into it - sync it
+// from setPrintPaper so a call from anywhere keeps it truthful.
+function syncPaperControl() {
+  const btn = document.getElementById("print-paper");
+  if (!btn) return;
+  btn.textContent = printPaper.toUpperCase();
+  for (const p of Object.keys(PRINT_PAPER)) {
+    PAPER_ITEMS[p]().setAttribute("aria-checked", p === printPaper ? "true" : "false");
+  }
 }
 
 /* The print CTA for every deck - built-in and generated alike: the browser is
@@ -12495,28 +12505,49 @@ function printMenuState() {
   const sets = pdfTierSets(deck());
   return { easy: !sets.easy.length, easy_medium: !sets.easyMedium.length, all: false };
 }
+const PRINT_MENUS = [
+  { menu: () => document.getElementById("print-menu"), trigger: () => document.getElementById("print-download") },
+  { menu: () => document.getElementById("print-paper-menu"), trigger: () => document.getElementById("print-paper") },
+];
+const PAPER_ITEMS = {
+  letter: () => document.getElementById("print-paper-letter"),
+  a4: () => document.getElementById("print-paper-a4"),
+};
+function openPrintMenuPair() {
+  return PRINT_MENUS.find((m) => !m.menu().hidden);
+}
 function printMenuOpen() {
-  const menu = document.getElementById("print-menu");
-  return !!menu && !menu.hidden;
+  return !!openPrintMenuPair();
 }
 // The menu opens under the row. When it would run past the panel's bottom and there is
 // room above, it opens upward instead: inside the landscape two-column panel an absolute
 // box that crosses the column end is fragmented into the next column, far from its row.
-function placePrintMenu() {
-  const menu = document.getElementById("print-menu");
+function placePrintMenu(menu) {
   menu.classList.remove("up");
   if (!menu.getBoundingClientRect || !settingsPanel.getBoundingClientRect) return;
   const row = menu.parentElement.getBoundingClientRect(), panel = settingsPanel.getBoundingClientRect();
   const need = menu.offsetHeight + 4;
   if (row.bottom + need > panel.bottom && row.top - need >= panel.top) menu.classList.add("up");
 }
-function setPrintMenu(open) {
-  document.getElementById("print-menu").hidden = !open;
-  if (open) placePrintMenu();
-  document.getElementById("print-download").setAttribute("aria-expanded", open ? "true" : "false");
+// Only one of the two print-row menus is open at a time: opening one closes the other.
+function setPrintMenu(open, id = "print-menu") {
+  for (const m of PRINT_MENUS) {
+    const menu = m.menu(), on = open && menu.id === id;
+    menu.hidden = !on;
+    if (on) placePrintMenu(menu);
+    m.trigger().setAttribute("aria-expanded", on ? "true" : "false");
+  }
+}
+function togglePaperMenu() {
+  setPrintMenu(document.getElementById("print-paper-menu").hidden, "print-paper-menu");
+}
+function choosePaper(p) {
+  setPrintPaper(p);
+  setPrintMenu(false);
+  document.getElementById("print-paper").focus();
 }
 function togglePrintMenu() {
-  if (printMenuOpen()) { setPrintMenu(false); return; }
+  if (!document.getElementById("print-menu").hidden) { setPrintMenu(false); return; }
   const off = printMenuState();
   for (const k of Object.keys(off)) PDF_MENU_ITEMS[k]().disabled = off[k];
   setPrintMenu(true);
@@ -16695,7 +16726,7 @@ let panelOpen = false;
 // simply always visible as a static sidebar (CSS only).
 const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)");
 function panelStops() {
-  const prints = [...settingsPanel.querySelectorAll(".prints button, .prints select")];
+  const prints = [...settingsPanel.querySelectorAll(".prints button")];
   const backup = backupPanel.hasAttribute("hidden") ? [] :
     ["backup-text", "backup-share", "backup-copy", "backup-download"].map(id => document.getElementById(id));
   const scales = [document.getElementById("deck-add"), restoreBtn, document.getElementById("backup-open"), ...backup];
@@ -16846,7 +16877,7 @@ desktopMQ.addEventListener("change", (e) => {
 });
 settingsTrigger.addEventListener("click", () => { if (panelOpen) closePanel(); else openPanel(); });
 settingsScrim.addEventListener("click", closePanel);
-document.getElementById("print-paper-select").value = printPaper;
+syncPaperControl();
 
 const langSelect = document.getElementById("lang-select");
 function paintLangSelect() {
@@ -16956,8 +16987,9 @@ document.addEventListener("keydown", e => {
   if (printMenuOpen()) {
     if (e.key === "Escape") {
       e.preventDefault();
+      const trigger = openPrintMenuPair().trigger();
       setPrintMenu(false);
-      document.getElementById("print-download").focus();
+      trigger.focus();
       return;
     }
     if (e.key.indexOf("Arrow") === 0) return;
@@ -16973,8 +17005,8 @@ document.addEventListener("keydown", e => {
     return;
   }
   // Reviewer finding N3: on desktop the sidebar is never "opened"
-  // (panelOpen never goes true there), so a native form control inside it -
-  // #print-paper-select - had its own ArrowLeft/ArrowRight behaviour
+  // (panelOpen never goes true there), so a native form control inside it
+  // (once the paper select, now a menu) had its own ArrowLeft/ArrowRight behaviour
   // doubled by this handler stepping the card underneath. Ignore arrow keys
   // that land on a form control.
   // Reviewer finding Q18 (round-2, 2026-09-29): the guard above used to also

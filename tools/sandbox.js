@@ -63,7 +63,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Lane M1: the settings panel that now hosts the mode toggle and print
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",
-  "print-paper-select", "print-download", "print-menu", "print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all",
+  "print-paper", "print-paper-menu", "print-paper-letter", "print-paper-a4", "print-download", "print-menu", "print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all",
   "lang-select",
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
   "panel-seq-note", "seq-source-link",
