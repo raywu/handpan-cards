@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  #editor .tray-note.on, #editor-flats.on{background:#242424; color:#F6F4ED; border-color:#242424}
  #editor .editor-octaves{display:flex; align-items:center; gap:var(--sp-1)}
  #editor .editor-octaves .mode{min-width:44px; min-height:44px}
--#editor .oct-read{flex:0 0 auto; min-width:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px}
-+#editor .oct-read{flex:0 0 auto; min-width:96px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px}
+-#editor .oct-read{flex:0 0 auto; min-width:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--sp-1)}
++#editor .oct-read{flex:0 0 auto; min-width:96px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--sp-1)}
  #editor-oct-label{font:600 11px/1 "Nunito Sans"; opacity:.75; white-space:nowrap}
  #editor-oct{text-align:center; font:700 15px/1 "Nunito Sans"}
  #editor-flats{margin-left:auto; padding-inline:var(--sp-3)}
