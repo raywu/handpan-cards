@@ -1,0 +1,15 @@
+# kills: U2g: Left and Right nudge a picked note 5 degrees
+# suite: node --test --test-name-pattern U2g.*nudge tests/editor_e2e.test.js
+# fault: The nudge moves 10 degrees instead of 5.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16089,7 +16089,7 @@
+ // Keyboard (D7, SE-5). The pan is one roving tab stop: every placed note and, on a
+ // standard pan, the cyclops area and the bottom ring is a button keyed "ring:i" or
+ // "zone:ring", in the order the arrows walk (ding, rim by seat, each area then its notes).
+-const EDITOR_NUDGE = 5;
++const EDITOR_NUDGE = 10;
+ const editorNudgeTarget = (current, dir) => current + dir * EDITOR_NUDGE;
+ const editorSeatDigits = (m, id) => parseInt(String(m.fields[id][5]).replace(/\D/g, ""), 10);
+ function editorFocusKeys(m) {

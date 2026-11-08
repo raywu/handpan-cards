@@ -1993,6 +1993,200 @@ function run() {
     });
   });
 
+  describe("U2g keyboard and accessibility", () => {
+    const FULL = "[A2] [B2] (D3) " + RIM8 + " | C5 D5";
+    const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+    const setup = async (line = FULL) => { await fresh(); await openAdd(); await typeLine(line); };
+    const focusKey = (fk) => b.eval(`const e = document.querySelector('#editor-pan [data-fk="${fk}"]'); e.focus(); return document.activeElement === e;`);
+    const activeKey = () => b.eval(`return document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fk || null : null;`);
+    const press = (key, code, keyCode, modifiers = 0) => b.send("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers, ...(key === "Enter" ? { text: "\r" } : key === " " ? { text: " " } : {}) })
+      .then(() => b.send("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers }));
+    const enter = () => press("Enter", "Enter", 13);
+    const space = () => press(" ", "Space", 32);
+    const arrow = (name) => press("Arrow" + name, "Arrow" + name, { Left: 37, Up: 38, Right: 39, Down: 40 }[name]);
+    const angleOf = (ring, i) => b.eval(`return editorAnglesOf(editorSolve(editorSession.history.present), "${ring}")[${i}];`);
+    const rimNames = () => b.eval(`return editorNames(editorSession.history.present, "rim");`);
+    const sel = () => b.eval(`return editorSession.sel;`);
+
+    test("tray chips hold on Enter and on Space, and the same key again cancels (SE-7, D7)", async () => {
+      await setup();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.held && editorSession.held.k;`), 11);
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.held;`), null);
+      await space();
+      assert.strictEqual(await b.eval(`return editorSession.held && editorSession.held.k;`), 11);
+      await space();
+      assert.strictEqual(await b.eval(`return editorSession.held;`), null);
+    });
+
+    test("every placed note, the cyclops area and the bottom ring are named stops, with one tab stop in the pan", async () => {
+      await setup();
+      const r = await b.eval(`const els = [...document.querySelectorAll("#editor-pan [data-fk]")];
+        return { keys: els.map((e) => e.dataset.fk), names: els.map((e) => e.getAttribute("aria-label")), tabbable: els.filter((e) => e.tabIndex === 0).length, roles: [...new Set(els.map((e) => e.getAttribute("role")))] };`);
+      assert.strictEqual(r.keys.length, 15);
+      assert.ok(r.names.every((n) => n && n.length > 2), r.names.join("|"));
+      assert.ok(r.names.includes("Cyclops area, 2 of 6") && r.names.includes("Bottom area, 2 of 12"), r.names.join("|"));
+      assert.strictEqual(r.tabbable, 1, "roving: one tab stop");
+      assert.deepStrictEqual(r.roles, ["button"]);
+    });
+
+    test("keyboard pick and drop: Enter picks a note, arrows move between seats, Enter on another note swaps them", async () => {
+      await setup();
+      await focusKey("rim:0");
+      await enter();
+      assert.deepStrictEqual(await sel(), { ring: "rim", i: 0 });
+      assert.strictEqual(await b.eval(`return document.querySelector('#editor-pan [data-fk="rim:0"]').getAttribute("aria-pressed");`), "true");
+      assert.match(await status(), /A3 picked/);
+      await arrow("Down");
+      assert.strictEqual(await activeKey(), "rim:1");
+      await arrow("Right");
+      assert.strictEqual(await activeKey(), "rim:2", "a rim pick is not nudged, the arrow moves focus");
+      await arrow("Left");
+      await arrow("Up");
+      assert.strictEqual(await activeKey(), "rim:0");
+      await arrow("Down");
+      await enter();
+      assert.match(await status(), /A3 and Bb3 traded places/);
+      assert.strictEqual(await sel(), null);
+      assert.strictEqual(await b.eval(`return editorSession.history.past.length;`) > 1, true);
+      assert.strictEqual(await activeKey(), "rim:1", "focus stays on the seat it was on after the redraw");
+    });
+
+    test("keyboard drop of a held tray note on the cyclops area and on the ding", async () => {
+      await setup();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
+      await enter();
+      await focusKey("zone:inner");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
+      assert.strictEqual(await b.eval(`return editorSession.held;`), null);
+      await b.click("#editor-oct-down");
+      await b.eval(`document.querySelector('.tray-note[data-name="E"]').focus(); return true;`);
+      await enter();
+      await focusKey("ding:0");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "E3");
+    });
+
+    test("Escape cancels a pick and does not leave the panel; with nothing picked it is Back", async () => {
+      await setup();
+      await focusKey("bottom:0");
+      await enter();
+      assert.notStrictEqual(await sel(), null);
+      await press("Escape", "Escape", 27);
+      assert.strictEqual(await sel(), null);
+      assert.strictEqual(await sheetHidden(), false);
+      await focusKey("zone:inner");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.zone;`), "inner");
+      await press("Escape", "Escape", 27);
+      assert.strictEqual(await b.eval(`return editorSession.zone;`), null);
+      assert.strictEqual(await sheetHidden(), false);
+    });
+
+    test("Left and Right nudge a picked bottom or cyclops note 5 degrees, announced, one Undo step each, focus kept", async () => {
+      await setup();
+      for (const ring of ["bottom", "inner"]) {
+        await focusKey(ring + ":0");
+        await enter();
+        const start = Math.round(await angleOf(ring, 0) / 5) * 5;
+        const steps = await b.eval(`return editorSession.history.past.length;`);
+        await arrow("Left");
+        assert.strictEqual(await angleOf(ring, 0), (start + 5) % 360, ring + " left");
+        assert.match(await status(), new RegExp(` at ${(start + 5) % 360} degrees\\.`));
+        assert.strictEqual(await activeKey(), ring + ":0");
+        await arrow("Right");
+        await arrow("Right");
+        assert.strictEqual(await angleOf(ring, 0), (start + 355) % 360, ring + " right twice");
+        assert.strictEqual(await b.eval(`return editorSession.history.past.length;`), steps + 3);
+        assert.deepStrictEqual(await sel(), { ring, i: 0 }, "the pick survives a nudge");
+        await press("Escape", "Escape", 27);
+      }
+    });
+
+    test("the nudge is scoped to focus in the pan with a nudgeable pick: elsewhere an arrow moves nothing", async () => {
+      await setup();
+      await focusKey("bottom:0");
+      await enter();
+      const before = await model();
+      await b.eval(`document.getElementById("editor-save").focus(); return true;`);
+      await arrow("Left");
+      await arrow("Right");
+      assert.deepStrictEqual(await model(), before, "focus on a toolbar button");
+      await b.click("#editor-line");
+      await arrow("Left");
+      assert.deepStrictEqual(await model(), before, "focus in the text line");
+      await press("Escape", "Escape", 27);
+      await focusKey("bottom:1");
+      await arrow("Left");
+      assert.deepStrictEqual(await model(), before, "another note than the picked one has the focus: arrows move focus");
+      assert.strictEqual(await activeKey(), "bottom:0");
+    });
+
+    test("Cmd/Ctrl+Z is Undo and Shift+Cmd/Ctrl+Z is Redo, but not while the text line is being typed in", async () => {
+      await setup();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
+      await enter();
+      await focusKey("zone:inner");
+      await enter();
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
+      await press("z", "KeyZ", 90, 2);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2);
+      await press("Z", "KeyZ", 90, 10);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
+      await press("z", "KeyZ", 90, 4);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2, "Meta");
+      await b.click("#editor-line");
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), true);
+      await press("Z", "KeyZ", 90, 10);
+      assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2, "typing keeps the field's own undo");
+    });
+
+    test("the text line opens on Enter; the palette chip and its swatches work from the keyboard", async () => {
+      await setup();
+      await b.eval(`document.getElementById("editor-line").focus(); return true;`);
+      await enter();
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), true);
+      await press("Escape", "Escape", 27);
+      await b.eval(`document.getElementById("editor-palette").focus(); return true;`);
+      await enter();
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), false);
+      await b.eval(`document.querySelector('#editor-swatches [data-palette="3"]').focus(); return true;`);
+      await space();
+      assert.strictEqual(await b.eval(`return editorSession.history.present.options.palette;`), 3);
+    });
+
+    test("focus order and accessibility of the panel: names, no positive tabindex, unique ids, a live status, Tab stays inside", async () => {
+      await setup();
+      const r = await b.eval(`const root = document.getElementById("editor");
+        const stops = [...root.querySelectorAll("button, input, [tabindex]")].filter((e) => !e.disabled && e.getClientRects().length && !e.closest("[hidden]"));
+        const name = (e) => (e.getAttribute("aria-label") || e.textContent || "").trim();
+        const ids = [...root.querySelectorAll("[id]")].map((e) => e.id);
+        return { unnamed: stops.filter((e) => !name(e)).map((e) => e.id || e.tagName), positive: stops.filter((e) => e.tabIndex > 0).length,
+          dupes: ids.filter((id, k) => ids.indexOf(id) !== k), live: document.getElementById("editor-status").getAttribute("aria-live"),
+          order: stops.filter((e) => e.tabIndex >= 0).map((e) => e.id || e.dataset.fk || e.className).slice(0, 3) };`);
+      assert.deepStrictEqual(r.unnamed, []);
+      assert.strictEqual(r.positive, 0);
+      assert.deepStrictEqual(r.dupes, []);
+      assert.strictEqual(r.live, "polite");
+      assert.deepStrictEqual(r.order, ["editor-back", "editor-type-standard", "editor-type-neotone"]);
+      const stops = await b.eval(`return editorTabStops().length;`);
+      await b.eval(`document.getElementById("editor-back").focus(); return true;`);
+      const seen = new Set();
+      for (let k = 0; k < stops + 2; k += 1) {
+        await press("Tab", "Tab", 9);
+        seen.add(await b.eval(`return document.activeElement.id || document.activeElement.dataset.fk || document.activeElement.className;`));
+        assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Tab never leaves the panel");
+      }
+      assert.ok(seen.has("editor-back"), "the cycle wraps to the first stop");
+      await b.eval(`document.getElementById("editor-back").focus(); return true;`);
+      await press("Tab", "Tab", 9, 8);
+      assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Shift+Tab wraps backward");
+    });
+  });
+
   describe("flag off", () => {
     test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
       await fresh(375, 667, false);
