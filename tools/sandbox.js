@@ -27,6 +27,8 @@ const APP = path.join(__dirname, "..", "index.html");
 // The scale-sheet ids of ENGINE-SPEC section 15 are served from Phase 3 on, so
 // a boot never throws on the sheet markup and e2e and the units target the same
 // names. Serving an id costs nothing when no element in index.html uses it yet.
+// Ids that older shipped clients (the fixture bytes) still look up but the current markup no longer serves.
+const LEGACY_IDS = ["print-paper-select"];
 const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
   "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
   "scale-mirror-bottom", "scale-box-wrap", "scale-swatches", "scale-generate", "deck-add", "deck-restore",
@@ -904,7 +906,11 @@ function boot(opts = {}) {
       removeItem(k) { if (opts.throwOnStorage) throw new Error("denied"); delete store[k]; },
     },
     document: {
-      getElementById(id) { if (!els[id]) throw new Error("missing #" + id); return els[id]; },
+      getElementById(id) {
+        if (!els[id] && LEGACY_IDS.includes(id)) els[id] = bindFocus(makeElement(id));
+        if (!els[id]) throw new Error("missing #" + id);
+        return els[id];
+      },
       createElement: (tag) => {
         const e = bindFocus(makeElement("dyn", tag || "div"));
         e.getBoundingClientRect = () => {

@@ -1211,7 +1211,7 @@ function run() {
       btn.click(); // the "second tap queued while the first is still running"
       return { built: window.__buildCount, disabled };
     `);
-    assert.strictEqual(count.disabled, 4, "the trigger and all 3 menu items are disabled during the build");
+    assert.strictEqual(count.disabled, 7, "every button in the print row (both triggers and all 5 menu items) is disabled during the build");
     assert.strictEqual(count.built, 1,
       `two taps on a menu item queued in the same task ran HPE.pdfcards.build ${count.built} time(s), not 1`);
   });
@@ -2671,7 +2671,7 @@ function run() {
   // node, so no Range can measure it: for the select this asserts only the
   // computed text-align / text-align-last, which proves the CSS asks for a
   // centred value (and Chrome honours it), not the rendered pixel position.
-  test("every button and link in the settings panel centres its label, line by line; the paper select asks for a centred value",
+  test("every button and link in the settings panel centres its label, line by line; the paper control is a centred button",
     async () => {
       await freshLoad();
       try {
