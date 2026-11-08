@@ -1,6 +1,6 @@
-# kills: TRI59c-M4: with an even note count the last note sits on the axis and mirror leaves it
+# kills: TRI59c-M4: with an even note count and no mutant the last note sits on the axis and mirror leaves it
 # suite: node --test --test-name-pattern ^TRI59c-M4..with.an.even tests/editor_model.test.js
-# fault: Mirror pairs the last even-count note with an absent seat.
+# fault: Mirror moves a note that has no partner seat instead of leaving it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -9,7 +9,7 @@ diff --git a/index.html b/index.html
  const editorNeoMirror = (m) => editorNeoPermute(m, (field, ring, angles, reach) => {
    const mate = angles.findIndex((a) => a === (((540 - angles[field]) % 360) + 360) % 360);
 -  return mate !== -1 && mate < reach && field < reach ? mate : field;
-+  return mate !== -1 ? mate : field;
++  return mate !== -1 && mate < reach && field < reach ? mate : (field + reach - 1) % reach;
  });
  function editorRemoveNeotone(m, ring, i) {
    if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= ringIds(m.fields, ring).length) return editorRefusal(ring + i);

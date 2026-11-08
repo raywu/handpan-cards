@@ -1,0 +1,15 @@
+# kills: TRI59c-M1: rotate moves every note one fixture step clockwise, and back, on no mutant, 4 notes
+# suite: node --test --test-name-pattern ^TRI59c-M1..rotate.moves tests/editor_model.test.js
+# fault: Rotation wraps at nine fields even when fewer notes take part.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15391,7 +15391,7 @@ function editorNeoPermute(m, send) {
+ }
+ const editorNeoRotate = (m, step) => editorNeoPermute(m, (field, ring) => {
+   const at = ring.indexOf(field);
+-  return at === -1 ? field : ring[(at + step + ring.length) % ring.length];
++  return at === -1 ? field : ring[(at + step + ring.length) % NEO_MAIN];
+ });
+ const editorNeoMirror = (m) => editorNeoPermute(m, (field, ring, angles, reach) => {
+   const mate = angles.findIndex((a) => a === (((540 - angles[field]) % 360) + 360) % 360);
