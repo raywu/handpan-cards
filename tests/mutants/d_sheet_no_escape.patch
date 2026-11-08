@@ -15,10 +15,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17601,7 +17601,7 @@ document.addEventListener("keydown", e => {
-   // While the sheet is open it owns the keyboard: Escape closes it, and an
-   // arrow key is cursor movement inside the box, never a card step.
+@@ -18946,7 +18946,7 @@
    if (sheetOpen) {
+     const undoKey = editorSession && !editorSession.editing && !editorSession.dialog ? editorUndoKey(e) : null;
+     if (undoKey) { e.preventDefault(); if (undoKey === "undo") editorUndoStep(); else editorRedoStep(); return; }
 -    if (e.key === "Escape") {
 +    if (e.key === "Escape" && false) {
        e.preventDefault();
