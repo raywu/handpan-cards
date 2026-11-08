@@ -1179,3 +1179,16 @@ describe("U2g keyboard and accessibility", () => {
     assert.strictEqual(a.get(`t("editor.say.nudged", { name: "A2", angle: 235 })`), "A2 at 235 degrees.");
   });
 });
+
+describe("U2h: the keyboard shortcut leaves a live drag alone", () => {
+  test("U2h-1: Undo and Redo keys act only when no edit, dialog or live drag holds the panel", () => {
+    const a = app();
+    const ok = (s, drag) => a.get(`editorUndoAllowed(${JSON.stringify(s)}, ${JSON.stringify(drag)})`);
+    assert.strictEqual(ok({ editing: false, dialog: false }, null), true);
+    assert.strictEqual(ok({ editing: false, dialog: false }, { live: false }), true);
+    assert.strictEqual(ok({ editing: false, dialog: false }, { live: true }), false);
+    assert.strictEqual(ok({ editing: true, dialog: false }, null), false);
+    assert.strictEqual(ok({ editing: false, dialog: true }, null), false);
+    assert.strictEqual(ok(null, null), false);
+  });
+});

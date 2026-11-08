@@ -17,7 +17,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -18946,7 +18946,7 @@
    if (sheetOpen) {
-     const undoKey = editorSession && !editorSession.editing && !editorSession.dialog ? editorUndoKey(e) : null;
+     const undoKey = editorUndoAllowed(editorSession, editorDrag) ? editorUndoKey(e) : null;
      if (undoKey) { e.preventDefault(); if (undoKey === "undo") editorUndoStep(); else editorRedoStep(); return; }
 -    if (e.key === "Escape") {
 +    if (e.key === "Escape" && false) {

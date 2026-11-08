@@ -9,14 +9,19 @@
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
-const { test, describe } = require("node:test");
+const { describe } = require("node:test");
+const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename, [
+  // The sandbox has no document for the dynamically built panel, so a boot that opens
+  // the create sheet (empty library) or a chip click that opens Edit needs the legacy sheet.
+  "every rendered face is well-formed markup", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
+]);
 const assert = require("node:assert");
 const { boot: sandboxBoot } = require("./helpers/sandbox.js");
 // Ordinary unit fixtures exercise the real no-Web-Locks session adapter with
 // real host crypto and AbortController. Durable/reload fixtures opt in to the
 // asynchronous shared-origin model below. Explicit negative capabilities win.
 const boot = (options = {}) => sandboxBoot({ crypto: require("node:crypto").webcrypto,
-  abortController: true, ...options });
+  abortController: true, onePanel: onePanelFor(), ...options });
 
 const coarse = (app, on = true) => {
   app.sandbox.matchMedia = (query) => ({
