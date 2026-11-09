@@ -11123,7 +11123,7 @@ HPE.sync = (function () {
     const byRid = index(local, alias);
     const fresh = makeFresh(ctx, local);
     const claimed = new Set();
-    const ops = [], baseUpdates = [], baseDrops = [], pendingRemoves = [];
+    const ops = [], baseUpdates = [], baseDrops = [], pendingRemoves = [], sources = {};
     const remoteIds = new Set(remote.map(r => r.scale_id));
     const candidates = local.filter(e => !base[alias[e.id] || e.id] && !localOnly.has(e.id) && !remoteIds.has(alias[e.id] || e.id));
     const deckIdentity = new Map();
@@ -11141,13 +11141,15 @@ HPE.sync = (function () {
       const op = { op: "insert", id, remoteId: extra.remoteId || rid, record, reason };
       if (!readable) op.opaque = true;
       ops.push(op); inserts++;
+      sources[id] = { rid, rev: R.rev };
       return op;
     };
 
     const keepOpaque = (R, L) => {
       const moved = insert({ scale_id: L.id, record: L.record }, "unreadable-remote", { id: fresh(), remoteId: null, record: clone(L.record) });
       moved.remoteId = moved.id;
-      ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, expectedRevision: L.revision, record: clone(R.record), opaque: true });
+      ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, expectedRevision: L.revision, record: clone(R.record), opaque: true, requires: moved.id });
+      sources[L.id] = { rid: R.scale_id, rev: R.rev };
       baseUpdates.push({ rid: R.scale_id, localId: L.id, rev: R.rev, mode: "committed" });
     };
 
@@ -11209,6 +11211,7 @@ HPE.sync = (function () {
           const op = { op: "overwrite", id: L.id, remoteId: rid, expectedRevision: L.revision, record: clone(R.record) };
           if (opaque) op.opaque = true;
           ops.push(op);
+          sources[L.id] = { rid, rev: R.rev };
           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
         } else if (!readableIn(ctx, R.record)) {
           keepOpaque(R, L);
@@ -11241,16 +11244,17 @@ HPE.sync = (function () {
       }
       visible--;
       ops.push({ op: "remove", id: L.id, remoteId: rid, expectedRevision: L.revision });
+      sources[L.id] = { rid, rev: R.rev };
       delete alias[L.id];
       baseDrops.push(rid);
     }
-    return { ops, baseUpdates, baseDrops, alias, deferredDeletes: [...deferred], cursor };
+    return { ops, baseUpdates, baseDrops, alias, deferredDeletes: [...deferred], cursor, sources };
   }
 
   function planDeferred(input) {
     const ctx = input.ctx || {}, local = input.local || [], sc = normalized(input.sidecar);
     const byRid = index(local, sc.alias);
-    const ops = [], baseDrops = [], keep = [];
+    const ops = [], baseDrops = [], keep = [], sources = {};
     let visible = (ctx.builtinVisible || 0) + local.length;
     const alias = sc.alias;
     for (const rid of sc.deferredDeletes) {
@@ -11260,16 +11264,41 @@ HPE.sync = (function () {
       if (visible - 1 < 1) { keep.push(rid); continue; }
       visible--;
       ops.push({ op: "remove", id: L.id, remoteId: rid, expectedRevision: L.revision });
+      sources[L.id] = { rid, rev: null };
       delete alias[L.id];
       baseDrops.push(rid);
     }
-    return { ops, baseUpdates: [], baseDrops, alias, deferredDeletes: keep, cursor: sc.cursor };
+    return { ops, baseUpdates: [], baseDrops, alias, deferredDeletes: keep, cursor: sc.cursor, sources };
   }
 
-  function settlePull(sidecar, plan, committed) {
+  /* skipped = result.sync.skipped of the sync-apply that applied `plan`; ALWAYS pass it.
+     A skipped op leaves its row's base alone, keeps its alias and holds the cursor below
+     the remote rev, so the next pull replans it against the local copy as it is now. A
+     skipped "last-visible" remove is instead deferred, as the plan would have deferred it. */
+  function settlePull(sidecar, plan, committed, skipped) {
     const next = normalized(sidecar), rev = new Map((committed || []).map(c => [c.id, c.revision]));
-    for (const rid of plan.baseDrops) delete next.base[rid];
+    const sources = plan.sources || {}, ops = new Map(plan.ops.map(o => [o.id, o]));
+    const heldRids = new Set(), keptRids = new Set(), deferNow = [];
+    const alias = clone(plan.alias);
+    let hold = Infinity;
+    for (const s of skipped || []) {
+      const op = ops.get(s.id), src = sources[s.id];
+      if (!op || !src || (op.op === "remove" && s.reason === "missing")) continue;
+      if (op.op === "insert") delete alias[s.id];
+      if (op.op === "remove") {
+        keptRids.add(src.rid);
+        if (own(next.alias, s.id)) alias[s.id] = next.alias[s.id];
+      }
+      if (op.op === "remove" && s.reason === "last-visible") {
+        deferNow.push({ rid: src.rid, rev: src.rev, expectedRevision: op.expectedRevision });
+        continue;
+      }
+      heldRids.add(src.rid);
+      if (src.rev !== null) hold = Math.min(hold, src.rev - 1);
+    }
+    for (const rid of plan.baseDrops) if (!keptRids.has(rid)) delete next.base[rid];
     for (const u of plan.baseUpdates) {
+      if (heldRids.has(u.rid)) continue;
       const before = next.base[u.rid];
       let localRevision;
       if (u.mode === "committed") {
@@ -11279,9 +11308,13 @@ HPE.sync = (function () {
       else localRevision = before ? before.localRevision : null;
       next.base[u.rid] = { rev: u.rev, localRevision };
     }
-    next.alias = clone(plan.alias);
-    next.deferredDeletes = [...plan.deferredDeletes];
-    next.cursor = Math.max(next.cursor, plan.cursor);
+    for (const d of deferNow) {
+      const before = next.base[d.rid];
+      if (before) next.base[d.rid] = { rev: d.rev === null ? before.rev : d.rev, localRevision: d.expectedRevision };
+    }
+    next.alias = alias;
+    next.deferredDeletes = [...new Set([...plan.deferredDeletes, ...deferNow.map(d => d.rid)])];
+    next.cursor = Math.max(next.cursor, Math.min(plan.cursor, hold));
     return next;
   }
 
@@ -12641,6 +12674,7 @@ function applySavedCommand(staged, command, candidate) {
         if (!settle(added, record, read)) return savedFailure("invalid", "revision-overflow");
       } else if (op.op === "overwrite") {
         if (!row) return conflict();
+        if (op.requires && skipped.some(entry => entry.id === op.requires)) { skipped.push({ id: op.id, reason: "dependency" }); continue; }
         if (row.revision !== op.expectedRevision) { skipped.push({ id: op.id, reason: "revision" }); continue; }
         if (read && clash(op.id, read)) read = null;
         if (!settle(row, savedClone(op.record), read)) return savedFailure("invalid", "revision-overflow");
