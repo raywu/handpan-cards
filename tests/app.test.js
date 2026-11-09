@@ -21588,7 +21588,7 @@ describe("sync store safety", () => {
   }
   for(const timing of ["during","before"]) {
     test(`T-APP-OS-get-reset: ${timing} empty gt10 GET preserves first pull and recovers R via visibility`, async () => {
-      const app=await fixture({clock:true});
+      const app=await fixture({clock:true}); app.run("document.hidden=false");
       const r=await makeCustom(app); await app.getAsync("syncKick(false)");
       const remote=pushes(app)[0].body.rows[0];
       const q=await makeCustom(app,OTHER_STRING);
@@ -21726,7 +21726,7 @@ describe("sync store safety", () => {
     assert.strictEqual(app.get("syncLoad().pending"),false);
   });
   test("T-APP-OS-liveness: ordinary sidecar write aborts and real delayed visibility resumes", async () => {
-    const app=await fixture({clock:true}), body=await record(), id=uuid(); reset(app);
+    const app=await fixture({clock:true}), body=await record(), id=uuid(); app.run("document.hidden=false"); reset(app);
     const next=sidecar({pending:true});
     app.run(`__rows=[{scale_id:${JSON.stringify(id)},rev:7,record:${JSON.stringify(body)},deleted:false}];
       __hook=async path=>{if(path.startsWith('/rest/v1/saved_scales')){__hook=()=>{};localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});syncSay('sync.err.offline');}};`);
@@ -21841,10 +21841,11 @@ describe("sync store safety", () => {
     assert.strictEqual((region.match(/\bsyncApply\(/g)||[]).length,3);
     assert.strictEqual((region.match(/\bsyncKick\(/g)||[]).length,8);
     assert.strictEqual((region.match(/\bsyncCycle\(/g)||[]).length,2);
-    assert.match(region,/async function syncCycle\(pull\)[\s\S]*?syncStoreToken\(/);
-    assert.match(region,/await syncPull\(storeToken\);\s*if \(!syncStill\(storeToken\)\) return;\s*sc = syncLoad\(\);/);
-    assert.match(region,/await syncPush\(storeToken\);\s*if \(!syncStill\(storeToken\)\) return;\s*sc = syncLoad\(\);/);
-    assert.match(region,/await syncApply\(sc\.userId, plan, storeToken\)\) continue;\s*if \(!syncStill\(storeToken\)\) return false;\s*sc = syncLoad\(\);/);
+    assert.match(region,/async function syncCycle\(pull\)[\s\S]*?syncScope\(/);
+    assert.match(region,/function syncScope\(\)[\s\S]*?syncStoreToken\(/);
+    assert.match(region,/await syncPull\(scope\);\s*if \(!syncStill\(scope\)\) return;/);
+    assert.match(region,/await syncPush\(scope\);\s*if \(!syncStill\(scope\)\) return;/);
+    assert.match(region,/await syncApply\(scope, plan\);\s*if \(!syncStill\(scope\)\) return false;\s*if \(!applied\) continue;/);
     assert.match(region,/async function syncPull\([^)]*\)[\s\S]*?syncStill\(/);
     assert.match(region,/async function syncPush\([^)]*\)[\s\S]*?syncStill\(/);
   });

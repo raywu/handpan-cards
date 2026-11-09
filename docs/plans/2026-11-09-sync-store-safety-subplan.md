@@ -7,6 +7,12 @@ Parent plan: `docs/plans/2026-11-05-login-sync-v2.md` (s8-s12). Prior regroup:
 Status: plan only, NOT yet reviewed by `/plan-eng-review` (required before dispatch). The self-score in
 section 11 is not independent review.
 
+
+Current pickup (2026-11-09): section21 supersedes older client pickup/status text. Source1356ac84
+FAILED independent review despite passing earlier local proofs. The operation-authority continuation
+is independently READY_WITH_NITS, both nits addressed; execution proofs remain pending. Owner approved
+one held CI-only main-target PR at the exact rebuilt DEV head; neither main-target PR may merge.
+
 Hard rule (CLAUDE.md): a release must never lose a user's saved scales.
 
 ## 0. Goal and non-goals
@@ -821,3 +827,229 @@ another local id. The fresh first state aborts the current push (return false), 
 sync completion; the existing ordinary pull/choice flow resumes it. Runtime proof remains the fix lane's
 work. Prompt critique and plan review were separate fresh non-author contexts using installed contracts;
 no native Claude invocation, numerical perfection score or unexecuted runtime success is claimed.
+
+
+## 21. Operation authority regroup — raw sidecar witness (2026-11-09)
+
+Mode: plan; stop at proposed plan pending independent engineering review; AFK authorization does not
+start implementation. This section replaces section20's isolated push fix and conflicting operative
+client instructions in4.2/5/6/8/10; prior findings, history and dirty plans remain intact.
+Recommended readiness: READY for independent review, not yet independently READY for execution.
+
+### 21.1 Goal, evidence, scope
+
+Requirement: one operation may use or settle only the sidecar state and durable-store authority it
+witnessed, advanced solely by its own successful conditional sidecar writes. The operation must stop
+before further planning, request dispatch, settlement, audit or status publication when that witness
+fails. Preserve saved scales, first-pull/Add N choices and intentional synced deletion.
+
+Verified source: immutable `/private/tmp/handpan-sync-regroup-review-20261109`, HEAD
+`1356ac84bf7fc489c4ff9a64ee342536772341fa`. Read the whole sync region, ENGINE-SPEC20,
+tests/CONTRACT.md and docs/testing/browser.md before execution. Root's fresh runtime FAIL is evidence
+supplied to this planner, not a runtime run by this writer: same-UID first:true/cursor0/base{} reset
+DURING GET gt10 is overwritten by old cursor10 settlement and first:false; live server R rev10 stays
+absent. Reset BEFORE GET is the positive control and restores R. Section20 already reloads push state;
+that does not protect zero-op pull settlement. UID equality identifies the account, not its state.
+
+Source audit: refresh success/transient/terminal paths, every GET page, ops and zero-op pull settlement,
+deferred/base-only cleanup, push final response/refusal/conflict, first audit/final status, and delayed
+account-delete completion can publish obsolete work. Local saved-entry revisions are a different axis:
+retain engine witnesses and committed/skipped arguments; do not invalidate on every ordinary local edit.
+
+Non-goals: persisted fields, migrations, engine/planner changes, auth UX/copy/layout, production enablement,
+new browser/sandbox/framework, frame timing/profiling/retry infrastructure, generic CI e2e diagnosis,
+CLAUDE.md changes, credentials, main merges, deploys. Existing generation/collection guards remain.
+Refresh changes guard completion authority only: endpoint, credential format, expiry, retry policy and
+error classification stay unchanged. A need to change refresh policy is an owner fork, not this fix.
+
+### 21.2 Smallest design and honest guarantee
+
+Use a short-lived operation object, not a persisted sign-in generation: captured existing saved-store
+ token, captured collectionId, exact raw SYNC_KEY string, and invalid flag. Capture raw and parse the
+same bytes once; invalid/missing/unreadable sidecar or ineligible durable store cannot start sync.
+Use one central current-operation predicate: not invalid, existing store token unchanged, and
+`localStorage.getItem(SYNC_KEY) === expectedRaw`; read failure/mismatch permanently invalidates it.
+Do not recapture a new expected raw on mismatch, even for the same UID or when later bytes match again.
+The durable signed-out UI still uses syncActive/store eligibility; absence blocks operations, not sign-in.
+
+All operation writes use ONE conditional helper, replacing UID-only asynchronous syncPatch uses:
+check current; compute change from the witnessed parsed sidecar; serialize; recheck immediately before
+setItem; on success advance expectedRaw centrally to exactly those written bytes and retain next parsed
+state. Failed reads/writes/computation abort; never advance expectedRaw optimistically. A current check
+before request/planning uses witnessed data, not a stale pre-await sidecar and not a newly adopted one.
+Keep synchronous syncPatch(userId, change) compatible as a current-action wrapper that captures a
+fresh scope immediately; asynchronous paths must use the captured-scope writer, never that wrapper.
+Conditional removal uses the same scope rule; after success scope is invalid and only that authorized
+completion may paint signed-out state. No async fallback may call unconditional syncDrop.
+
+Compare alternative: a per-sign-in persisted ID distinguishes re-sign-ins but misses ordinary sidecar
+replacement/cursor/base writes unless all writers maintain another revision. That expands schema and
+writer lifecycle. In-memory sign-in IDs miss other tabs. Exact raw comparison covers existing fields
+without changing engine/persistence and is the smaller choice for the observed histories. If implementer
+finds extra coordination necessary, stop NOT READY with the concrete history/tradeoff; do not add it.
+
+Guarantee is observational, not atomic cross-tab CAS: another tab can write between final getItem and
+setItem; an unobserved byte-identical A→B→A is indistinguishable. Do not claim detection of all histories,
+rollback, or absolute exclusion. An already-dispatched server request or store transaction can finish;
+reject its obsolete ACK's sidecar/status effects and dispatch nothing further. Existing transaction
+collectionId/revision checks still apply. Persistent generation/transaction protocols would be a separate
+scope decision if stronger guarantees become required. This finite proof must not be advertised as them.
+
+### 21.3 Propagation and action inventory
+
+Pass the SAME scope through cycle→token/pages/pull/apply/push, including conflict pulls and attempts.
+Direct test callers may capture a scope at entry; nested helpers never silently replace an invalid one.
+Keep request bearer token separate from operation authority. Central successful writes advance the
+same scope so refresh→pull→settle→audit→multi-batch push→final status remains live.
+
+| Boundary | Required behavior |
+|---|---|
+| token | check before refresh dispatch and after response JSON; success conditional credentials, transient conditional pending/status, terminal conditional drop; stale branches do nothing |
+| pages | check before every GET and after every awaited response; abandon accumulated rows on mismatch, including empty/final page; no later GET |
+| pull | check before local/context reads and planPull, before each apply, after apply ACK and before planDeferred; an invalid apply result cannot be retried as a normal commit refusal |
+| apply | check even for zero ops or baseDrops-only; captured collectionId in dispatched command; after commit ACK check before settlePull; preserve committed/skipped and do not rewrite current sidecar |
+| push | current state and first barrier after token await; check before planPush, no-row pending clear, every batch dispatch and each ACK including final/failing ACK; check before settlePush/refusal messages/conflict pull |
+| cycle | check before syncing publication, first audit/first:false, final pending/syncedAt and all cycle-owned status/paint; invalidation returns without final publication |
+| delete-account | capture authority before dispatched deletion; success AND failure completion guarded; stale success cannot drop newer sign-in, stale failure cannot show its error; server deletion may already have completed |
+
+Current synchronous sign-out remains intentional and immediately drops current session. Current Add N
+still changes current sidecar and invokes existing syncKick(false); it invalidates older scopes, and the
+queued new operation captures the updated state. Do not forbid explicit user choices because old work
+is running. New sign-in intentionally replaces sidecar; old operations then fail their next check.
+
+Liveness: no periodic retry exists. Storage events kick only when current first:true; ordinary sidecar
+writes may abort without immediate replacement. Existing next triggers are visible-after60s pull,
+sign-in/lock grant, queued kick, Add N or saved-change debounce. Preserve these, do not broaden them.
+Prove ordinary-write abort then resume by dispatching the ACTUAL visibilitychange listener after advancing
+the fixture clock beyond60s with holder/visible true; no direct syncKick substitute. Until that trigger,
+pending work may wait. Continuous competing writes can starve an operation; do not promise otherwise.
+
+### 21.4 File ownership, prerequisites and TDD handoff
+
+Prerequisites for every lane: independent plan READY; integrator confirms exact starting head and dirty
+paths, preserves unrelated work, creates separate git worktrees; no edits in immutable review checkout.
+No parallel shared-file editors. Design review: not applicable, no UX/interaction change. Engineering
+review uses installed plan-eng-review dimensions in a fresh read/report context; disclose contract-based
+Codex fallback and never claim a native Claude skill invocation. Reviewer did not author prompt/plan/code.
+
+1. Test lane owns ONLY tests/app.test.js in isolated WT based on1356. Extend existing durable-IDB
+   `sync store safety` fixture using its hooks/real commitSaved and existing origin adapter; no helper
+   file changes. Deliver additive named regressions, red output, test count and scenario→assertion map.
+   Source interface-dependent structural pin may be adapted after agreed handoff: keep enumerated modes,
+   destructive paths and all observable negative cases; replace literal storeToken-pattern assertions
+   with the new scope boundary inventory, not a weaker count-only substitute. Preserve prior assertions.
+2. Serial client lane owns ONLY index.html app sync region in its own WT after test handoff. Integrate
+   test delta by ordinary commits when authorized, then implement central scope/write/drop and propagation.
+   Deliver GREEN selected tests, finite-race residuals, and call-site inventory. Do not edit generated regions.
+3. Root, after exclusive handoff, owns app floor, tests/mutants patches and operative plan documentation;
+   may coordinate test-author pin adaptation, never edit app.test.js concurrently. Raise only measured app
+   floor; generate mutant diffs from committed code (no blob index lines), retain old regression assertions.
+   Root owns independent review/final gates and all integration. Commits/pushes use existing authorization.
+
+Bounded scenario set (subcases in named tests, not a Cartesian product/new model):
+
+| Named group | Failing-first/positive observations |
+|---|---|
+| T-APP-OS-refresh | sameUID reset, UID switch, removal injected at success/408-or429/terminal401 refresh completion; replacement raw bytes unchanged, no stale credentials/pending/drop/status; current controls refresh/pend/drop normally |
+| T-APP-OS-get-reset | exact gt10 empty response reset-during repro; first/base/cursor unchanged, R server alive; same-app real next trigger GETgt0 restores R, audit holds distinct unmatched Q, Add N permits Q push; reset-before control restores R |
+| T-APP-OS-pages | nonempty final response and 200-row intermediate page invalidations; no plan/commit/next page, replacement bytes/status untouched; ordinary unchanged paged pull settles every row |
+| T-APP-OS-apply | invalidate during real primary and deferred commit ACK, plus zero-op and baseDrops-only settlement; store ACK may finish, no stale sidecar update/audit; collection/mode generation flip blocks subsequent work |
+| T-APP-OS-push | invalidate at intermediate and final batch ACK, plus failed/refused response; no subsequent request/settlement/refusal/status; unchanged multi-batch control settles all ACKs |
+| T-APP-OS-own-writes | refresh, pull settlement, first audit, push and status complete sequentially despite own changed bytes; ordinary local scale edit uses existing revision-skip reconciliation safely |
+| T-APP-OS-liveness | ordinary other-tab sidecar write aborts; real delayed visibility event resumes; in-flight Add N still releases and existing queued/debounce flow pushes; no manufactured retry |
+| T-APP-OS-delete | delayed success/failure after reset/switch/removal leaves newer sidecar/status; current delete success drops only session and keeps scales; synchronous signout remains effective |
+
+Use reset/switch/removal across refresh branches; elsewhere select reset for sameUID vulnerability,
+switch/removal for entry/exit coverage, avoiding redundant matrix growth. State precise required selected
+counts after writing tests. Hooks must observe response/json/ACK boundaries and restore in finally.
+Model server retains R and real ACKs; assert persisted origin state where store outcome matters, not
+only savedState. Include intentional synced local deletion→server tombstone control (existing held-delete
+engine test and app deletion test); temporary-mode controls remain intact.
+
+### 21.5 Verification, mutants and stop/recovery
+
+At test handoff and client completion run (record selected/executed/pass/fail/skip/cancel counts/logs):
+`node --test --test-name-pattern='T-APP-OS-' tests/app.test.js` (RED1356 then GREEN).
+`node --test --test-name-pattern='sync store safety|sync client|sync-apply' tests/app.test.js`.
+`node --test tests/sync.test.js` (existing engine contract unchanged).
+`node --test --test-reporter=tap tests/app.test.js` (measure actual floor, never predicted count).
+
+Root names one mutant per independent protection: raw witness→UID-only; own-write expectedRaw not
+advanced; refresh success/transient/terminal guards; per-page guard; pre-plan guard on empty GET;
+post-commit settlement guard; zero-op/base-only settlement guard; intermediate/final push ACK guards;
+first-audit/final-status guard; async-delete success/failure guards. For EACH, freeze named killing test
+and exact assertion, inject change after earlier checks, show CLEAN header command green and mutant
+assertion failure while OTHER guards remain. A later central guard masking an omission is not proof of
+that omitted check: redesign the discriminating observation or consolidate genuinely redundant checks;
+report the actual protected boundary. No syntax errors/timeouts/skips counted as kills.
+Generate patches by git diff in disposable committed WT; `# kills:` and `# suite:` with dot-for-space
+patterns. Preserve all applicable51 existing a2_/sync_ patches and15 prior C safety kills (recount actual
+inventory; history counts are not current evidence); reanchor only with same named behavioral kills.
+`git apply --check <patch>` for each; `MUTANT_LIST=<absolute-list> ./tests/mutation_check.sh` for targeted
+proof. Full mutation coverage is authoritative in exact-head Linux CI; inspect all shard results
+and executed inventories. Do not duplicate the full local browser/mutation workload. Reserve a
+browser lease for any targeted mutant command that actually needs a browser.
+Run `python3 -m unittest tests.test_suite_health` and `python3 tools/validate.py`.
+
+M: verify local H equals PR1001 head; require successful FULL Linux validate at exact H
+(`gh run list --commit H --workflow validate.yml`) plus fresh independent exact-H PASS, addressed
+findings and final diff. Inspect required jobs/tests actually ran; skipped doc-only workflow is insufficient.
+D: rebuild by ordinary merge of H FROM existing1003 head7e3b356f, never from origin/dev; retain dev-only
+DIRECT_READERS correction, measure D floors, pass app/sync/editor_model tests, suite-health unit,
+validate.py and every applicable mutant apply check. Root reconciles obsolete8/10 instructions in D copy.
+Push ordinarily only after authorized checks. Owner approved ONE held main-target CI-only PR from
+EXACT SAME D branch/head: require full exact-D validate and fresh D-head PASS before DEV PR merge,
+not conflicting; no main-target PR merges. Any follow-up change resets exact-head CI/review gates.
+Earlier generic e2e900s timeout cause remains UNKNOWN;58cd full validate42629450423 subsequently
+passed all jobs.1356 CI pending cannot overrule its fresh review FAIL. No harness prerequisite, budget
+waiver, new infrastructure or inferred PASS; any new exact-head failure must be classified honestly.
+After DEV merge, serialize host browser access; run runbook-selected affected journeys with real selected
+counts and verify actual served revision/content against merged source. Owner login QA remains required
+human evidence; never fabricate it. Do not run duplicate full Mac browser jobs to replace Linux CI.
+
+Frozen review rubric, each PASS/FAIL: correct cause; all async sinks; real-trigger liveness; smallest
+change; durable-fixture RED/GREEN with discriminating mutants; honest finite residuals; precise file
+handoffs; exact-head delivery gates/recovery. Recommended PASS for plan structure, runtime proof pending.
+Open high/blocker from independent review means NOT READY and bounded amendment, not implementation.
+Recovery: retain logs/failed scenario/head; adjust only owned code, rerun affected proof, fresh review.
+Third same-approach review failure triggers regroup. Scoped ordinary revert commits only; no reset,
+force/amend/no-verify/history deletion, no automatic data repair. Already accepted server/store work cannot
+be rolled back by this client; any data repair is owner-gated. Preserve below-cursor eviction exclusion.
+Continuation: independent reviewer checks this section against1356/source and supplied fresh FAIL;
+only READY plus existing execution authorization unlocks test lane. Writer stops at scratch plan.
+pending-linear-writes: [].
+
+
+Independent engineering review: READY_WITH_NITS, contract-based read/report at exact1356ac84.
+No blockers/high findings. N1 fixed: current baseline51applicable patches/15prior client kills,
+recount and prove actual inventory. N2 fixed: targeted local kills plus mandatory full exact-head
+CI mutation coverage, without a duplicate full local sweep. Explicit synchronous patch compatibility
+retains current-action semantics; async paths retain their original scope. No native Claude invocation,
+runtime proof, CI success or design review is claimed by this plan review.
+AFK routine decision: use the recommended bounded contract review and existing-state witness baseline;
+no persisted field, stronger atomicity promise or new owner product decision is introduced.
+
+
+Section21 mutation consolidation clarification — independent engineering READY:
+The51applicable patches/15prior client kills describe the starting1356 inventory, not an immutable
+number after an architectural consolidation. Preserve EVERY prior behavioral regression and negative
+assertion. Replace/retire an owned guard-omission mutant only with recorded evidence that the shared
+witness subsumes that protection, a generated replacement mutant tied to the same behavior/assertion,
+a clean passing baseline and actual assertion kill with all other protections intact. Several obsolete
+guards protecting the same behavior may map to one central-witness mutant. No redundant guards or
+artificial timing hooks just to retain a numerical count. All remaining applicable patches must apply
+and kill; unrelated mutants stay unchanged. Syntax errors/timeouts/skips do not count. Full exact-head
+CI and fresh independent review remain required. Root owns the explicit old→replacement evidence map.
+
+
+Section21 execution checkpoint (source391db225, 2026-11-09):36new tests first produced25 assertion
+RED/11controls GREEN, all1244prior app tests passed. Source uses syncScope/syncStill(scope),
+syncWrite/syncRemove, synchronous current-action syncPatch wrapper. Store token now covers generation
+and collection; the captured raw sidecar supplies account/state identity without a duplicate UID check.
+After explicit visible-document initialization in two new clock fixtures and structural scope-pin
+adaptation (every behavioral assertion retained), local fullapp1280/1280, scoped101/101, engine178/178,
+zero skips/cancellations. App floor measured and raised1244→1280. Client173-line diff stays in app sync
+region, no generated block/engine/schema/UI/key changes. Local Node25.8.1/Python3.9.6 is not CI parity.
+No browser/native/served DEV proof claimed. Baseline1356 validate42634146666 completed success but
+reviewFAIL still blocks it. Next: generated mutant consolidation/proof map, final candidate commit/push,
+full exact-head Linux validate and fresh independent review; only then rebuilt DEV gates.

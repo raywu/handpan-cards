@@ -104,3 +104,30 @@ new field or framework. Next fix lane is serial C scope, RED at58cd first, then 
 two independent named mutants, preserved prior proofs and full final-head CI/fresh review. Current58cd
 remains blocked regardless of CI. Owner-held D-head CI approval remains; editor implementation stays
 behind login/editor manual QA. No DEV/main merge or production operation occurred.
+
+
+## Operation-authority regroup: current pickup
+
+Source1356ac84bf7fc489c4ff9a64ee342536772341fa FAILED fresh independent review: same-user
+reset during incremental GET consumed first-sync barrier and omitted live R from ordinary later pulls.
+Read-only whole-client audit found the common asynchronous authority gap. Prompt
+docs/prompts/2026-11-09-sync-operation-authority.md passed fresh independent critique; separate writer
+generated section21; separate engineering reviewer READY_WITH_NITS, both nits now fixed.
+Use existing-state raw witness plus durable-store token, own conditional-write advancement, no new
+persisted field/engine/schema/harness. Preserve synchronous current-action patch compatibility.
+AFK recommended conservative choice recorded; no new owner product fork. Next: tests-first T lane
+(app.test only, isolated worktree) then serial client C (index sync region only), root floor/mutants/docs
+after exclusive handoff. No concurrent shared-file editors. No runtime proof of section21 yet.
+Prior58cd full validate42629450423 succeeded, so old generic900stimeout is not a demonstrated ongoing
+blocker. Current1356 validate42634146666 pending at checkpoint, cannot override failed review.
+No DEV/main integration occurred. Owner-approved exact-D-head held CI-only PR and all fresh review/CI/
+served DEV/owner QA gates remain. Editor remains behind login/editor owner manual QA;994 stays OPEN.
+This checkpoint is deliberately uncommitted until implementation can carry it in one final candidate,
+avoiding a redundant full-CI run for documentation alone.
+
+
+Client operation-scope handoff: local source391db225, T handoff6b21126e integrated as e986ccee.
+App1280/1280, scoped101/101, engine178/178 locally pass. Root owns exclusive tests/pin/floor/mutants
+now; test/source lanes finished. Mutant generation may run in its own disposable WT with only
+tests/mutants ownership and return its proof map to root; no shared source edits or duplicatefullCI.
+Current1001remote1356 has fullCI success but independentFAIL. Neither1003 norDEV/main changed.
