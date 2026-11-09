@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18409,7 +18409,7 @@ function syncKick(pull) {
+@@ -18411,7 +18411,7 @@ function syncKick(pull) {
  function syncChanged() {
    if (!syncActive() || !syncHolder || !syncLoad()) return;
    clearTimeout(syncTimer);

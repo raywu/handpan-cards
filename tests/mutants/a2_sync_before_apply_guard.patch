@@ -10,5 +10,5 @@ diff --git a/index.html b/index.html
      const plan = HPE.sync.planPull({ remote: rows, local: syncLocal(), sidecar: sc, ctx: syncCtx() });
 -    if (plan.ops.length && !syncStill(storeToken)) return false;
      if (!await syncApply(sc.userId, plan, storeToken)) continue;
+     if (!syncStill(storeToken)) return false;
      sc = syncLoad();
-     if (!sc) return false;

@@ -1,0 +1,14 @@
+# kills: T-APP-S7-switch-empty-pull: old cycle leaves the new account first-sync state untouched
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-S7-switch-empty-pull tests/app.test.js
+# Refs TRI-28: client store authority boundary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18385,7 +18385,6 @@ async function syncCycle(pull) {
+   syncStatus("syncing");
+   let ok = true;
+   if (pull || sc.first) ok = await syncPull(storeToken);
+-  if (!syncStill(storeToken)) return;
+   sc = syncLoad();
+   if (!sc) return;
+   if (ok && sc.first) {

@@ -1,0 +1,14 @@
+# kills: T-APP-S7-switch-last-push: old cycle leaves the replacement account status untouched
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-S7-switch-last-push tests/app.test.js
+# Refs TRI-28: client store authority boundary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18393,7 +18393,6 @@ async function syncCycle(pull) {
+     syncPatch(sc.userId, cur => { const audit = HPE.sync.firstSyncAudit({ local, sidecar: cur }); return { ...audit.sidecar, first: false }; });
+   }
+   if (ok) ok = await syncPush(storeToken);
+-  if (!syncStill(storeToken)) return;
+   sc = syncLoad();
+   if (!sc) return;
+   if (ok && !sc.pending) { syncPatch(sc.userId, cur => ({ ...cur, syncedAt: Date.now() })); syncStatus("synced"); }
