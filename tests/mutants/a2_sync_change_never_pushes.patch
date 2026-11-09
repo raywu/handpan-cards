@@ -1,5 +1,6 @@
-# kills: sync: a save is pushed after the debounce
+# kills: a save is pushed after the debounce, with the bearer token
 # suite: node --test --test-name-pattern a.save.is.pushed.after.the.debounce tests/app.test.js
+# Previously: sync: a save is pushed after the debounce
 # Lane A2 (login sync client).
 diff --git a/index.html b/index.html
 --- a/index.html

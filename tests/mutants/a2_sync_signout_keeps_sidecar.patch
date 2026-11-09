@@ -1,5 +1,6 @@
-# kills: sync: sign-out removes the sidecar
+# kills: sign-out keeps every saved scale and removes the sidecar
 # suite: node --test --test-name-pattern sign-out.keeps.every.saved.scale tests/app.test.js
+# Previously: sync: sign-out removes the sidecar
 # Lane A2 (login sync client).
 diff --git a/index.html b/index.html
 --- a/index.html
