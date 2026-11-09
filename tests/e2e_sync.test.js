@@ -160,18 +160,51 @@ function run() {
     assert.ok((await log()).some(l => l.path === "/rest/v1/saved_scales"));
   });
 
-  async function addScale(text) {
-    const hidden = await b.eval(`return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
-    if (!hidden && await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`)) await b.click("#settings-trigger");
-    await b.click("#deck-add");
-    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the scale sheet" });
-    await type("scale-box", text);
-    if (await b.eval(`return !document.getElementById("scale-next").hidden;`)) {
-      await b.click("#scale-next");
-      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+  async function addScale(text, frame = false) {
+    // Visibility is local to the document: tab B's transparent parent is intentional.
+    const inPage = expr => {
+      const scoped = `(() => {
+        const visible = id => {
+          const el = document.getElementById(id);
+          if (!el) return false;
+          const rect = el.getBoundingClientRect(), style = getComputedStyle(el);
+          return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility === "visible";
+        };
+        return (${expr});
+      })()`;
+      return frame ? `document.getElementById("tabB").contentWindow.eval(${JSON.stringify(scoped)})` : scoped;
+    };
+    const read = expr => b.eval(`return ${inPage(expr)};`);
+    const wait = (expr, label) => b.waitFor(inPage(expr), { label });
+    const click = id => frame ? read(`document.getElementById(${JSON.stringify(id)}).click()`) : b.click("#" + id);
+
+    if (await read(`visible("settings-trigger") && !visible("settings-panel")`)) await click("settings-trigger");
+    await click("deck-add");
+    await wait(`visible("scale-sheet") && !document.getElementById("scale-sheet").hasAttribute("hidden")`, "the scale sheet");
+    const [editor, legacy] = await read(`[visible("editor-line"), visible("scale-box")]`);
+    if (editor === legacy) throw new Error("Expected exactly one visible scale editor profile");
+    const line = editor ? "editor-line" : "scale-box";
+    if (editor) await click(line);
+    await read(`(() => {
+      const el = document.getElementById(${JSON.stringify(line)});
+      el.value = ${JSON.stringify(text)};
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    })()`);
+    if (editor) {
+      if (frame) {
+        await read(`document.getElementById("editor-line").dispatchEvent(new KeyboardEvent("keydown",
+          { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true }))`);
+      } else {
+        await b.key("Enter", "Enter", 13);
+      }
+    } else if (await read(`visible("scale-next")`)) {
+      await click("scale-next");
+      await wait(`visible("scale-panel-layout")`, "the Layout tab");
     }
-    await b.click("#scale-generate");
-    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet closing" });
+    const save = editor ? "editor-save" : "scale-generate";
+    await wait(`visible(${JSON.stringify(save)}) && !document.getElementById(${JSON.stringify(save)}).disabled`, "the scale save control");
+    await click(save);
+    await wait(`document.getElementById("scale-sheet").hasAttribute("hidden")`, "the sheet closing");
   }
 
   test("a saved scale is pushed after sign-in, and sign-out keeps it", async () => {
@@ -206,13 +239,7 @@ function run() {
     await frameJs("syncKick(true)");
     await sleep(200);
     assert.deepStrictEqual((await log()).filter(l => l.path.startsWith("/auth/v1/token")), [], "the other tab makes no token call");
-    await frameJs(`(async () => {
-      document.getElementById("settings-trigger").click();
-      document.getElementById("deck-add").click();
-      const box = document.getElementById("scale-box"); box.value = "(D3) A3 C4 D4 E4 F4 G4 A4 C5"; box.dispatchEvent(new Event("input", { bubbles: true }));
-      const next = document.getElementById("scale-next"); if (!next.hidden) next.click();
-      document.getElementById("scale-generate").click();
-    })()`);
+    await addScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5", true);
     await b.waitFor(`JSON.parse(localStorage.getItem("__sblog") || "[]").some(l => l.path === "/rest/v1/rpc/push_scales")`, { timeout: 10000, label: "the lock tab pushing" });
     const calls = (await log()).filter(l => l.path.startsWith("/auth/v1/token") || l.path === "/rest/v1/rpc/push_scales");
     assert.ok(calls.length >= 1);
