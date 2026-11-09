@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18248,7 +18248,7 @@ const syncSession = (sc, body) => ({ ...sc, refresh: body.refresh_token, access:
+@@ -18243,7 +18243,7 @@ const syncSession = (sc, body) => ({ ...sc, refresh: body.refresh_token, access:
    accessExp: Date.now() + (Number(body.expires_in) > 0 ? Number(body.expires_in) : 3600) * 1000 });
  function syncStoreToken() {
    if (!SYNC_CFG || !savedState || savedMode !== "durable" || savedState.migration?.temporary) return null;
--  return savedAuthorityGeneration + ":" + savedState.collectionId + ":" + (syncLoad()?.userId || "");
-+  return savedAuthorityGeneration + ":" + (syncLoad()?.userId || "");
+-  return savedAuthorityGeneration + ":" + savedState.collectionId;
++  return savedAuthorityGeneration;
  }
  const syncActive = () => syncStoreToken() !== null;
- const syncStill = storeToken => storeToken !== null && !!syncLoad() && storeToken === syncStoreToken();
+ function syncScope() {

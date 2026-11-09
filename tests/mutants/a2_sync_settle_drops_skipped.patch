@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18324,7 +18324,7 @@ async function syncApply(userId, plan, storeToken) {
-     result = await commitSaved({ type: "sync-apply", collectionId: storeToken.split(":")[1], ops: plan.ops });
-     if (!result.ok) return false;
+@@ -18359,7 +18359,7 @@ async function syncApply(scope, plan) {
+     result = await commitSaved({ type: "sync-apply", collectionId: scope.collectionId, ops: plan.ops });
+     if (!syncStill(scope) || !result.ok) return false;
    }
--  syncPatch(userId, cur => HPE.sync.settlePull(cur, plan, result.sync.committed, result.sync.skipped));
-+  syncPatch(userId, cur => HPE.sync.settlePull(cur, plan, result.sync.committed));
-   return true;
+-  return !!syncWrite(scope, cur => HPE.sync.settlePull(cur, plan, result.sync.committed, result.sync.skipped));
++  return !!syncWrite(scope, cur => HPE.sync.settlePull(cur, plan, result.sync.committed));
  }
- async function syncPull(storeToken = syncStoreToken()) {
+ async function syncPull(scope = syncScope()) {
+   if (!syncStill(scope)) return false;

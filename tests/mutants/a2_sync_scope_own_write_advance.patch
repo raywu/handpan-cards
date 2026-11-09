@@ -1,0 +1,14 @@
+# kills: T-APP-OS-own-writes: refresh pull audit release multi-batch push and intentional deletion stay live
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-OS-own-writes tests/app.test.js
+# Own successful writes must advance expected raw; all guards remain.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18270,7 +18270,6 @@ function syncWrite(scope, change) {
+     const next = change(scope.sidecar), raw = JSON.stringify(next);
+     if (!syncStill(scope)) return null;
+     localStorage.setItem(SYNC_KEY, raw);
+-    scope.expectedRaw = raw;
+     scope.sidecar = next;
+     return next;
+   } catch (e) { scope.invalid = true; return null; }
