@@ -1,0 +1,15 @@
+# kills: T-APP-M8-flip-before-push/flip-before-apply/flip-between-batches and T-APP-OS durable authority assertions
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M8-flip|T-APP-OS- tests/app.test.js
+# Durable-store equality disabled; raw witness and all boundary checks remain.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18259,7 +18259,7 @@ function syncScope() {
+ function syncStill(scope) {
+   if (!scope || scope.invalid) return false;
+   try {
+-    if (scope.storeToken === syncStoreToken() && localStorage.getItem(SYNC_KEY) === scope.expectedRaw) return true;
++    if (true && localStorage.getItem(SYNC_KEY) === scope.expectedRaw) return true;
+   } catch (e) {}
+   scope.invalid = true;
+   return false;

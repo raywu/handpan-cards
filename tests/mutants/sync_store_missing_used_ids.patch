@@ -1,0 +1,14 @@
+# kills: T-ENG-S5-no-usedIds: missing history fails closed in every planner
+# suite: node --test --test-name-pattern T-ENG-S5-no-usedIds tests/sync.test.js
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -42,7 +42,7 @@ HPE.sync = (function () {
+     return s;
+   }
+   function trustedBase(sidecar, local, ctx) {
+-    const sc = normalized(sidecar), used = new Set(ctx.usedIds || []);
++    const sc = normalized(sidecar), used = new Set(ctx.usedIds || Object.keys(sc.base));
+     const live = new Set(local.map(e => sc.alias[e.id] || e.id));
+     const aliases = new Map();
+     for (const [id, rid] of Object.entries(sc.alias)) {
