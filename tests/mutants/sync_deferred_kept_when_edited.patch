@@ -4,11 +4,11 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -199,7 +199,6 @@
+@@ -216,7 +216,6 @@ HPE.sync = (function () {
      for (const rid of sc.deferredDeletes) {
        const L = byRid.get(rid), B = sc.base[rid];
        if (!L || !B) { if (!L && B) baseDrops.push(rid); continue; }
 -      if (L.revision !== B.localRevision) continue;
        if (visible - 1 < 1) { keep.push(rid); continue; }
        visible--;
-       ops.push({ op: "remove", id: L.id, remoteId: rid });
+       ops.push({ op: "remove", id: L.id, remoteId: rid, expectedRevision: L.revision });
