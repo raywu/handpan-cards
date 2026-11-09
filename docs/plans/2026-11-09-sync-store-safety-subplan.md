@@ -266,7 +266,7 @@ Mutants (new, `tests/mutants/sync_*.patch`; every patch has `# kills:` naming th
 word-split patterns with spaces written as `.`, no `index a..b` lines, each killed by its named test): drop the `usedIds` filter in `planPush`; drop it in
 `planPull`; ignore the alias lookup; leave `planDeferred` unfiltered; default a missing `usedIds` to "everything held".
 
-App, `tests/app.test.js` (describe "sync store safety"; harness `boot({href: DEV, locks: true, storage})`,
+App, `tests/app.test.js` (describe "sync store safety"; positive durable fixtures use `boot({href: DEV, locks: true, indexedDB: true, storage})`,
 sidecar with base of N=3 synced ids, fetch stub from the existing `install()`):
 - T-APP-M7-zero-tombstones: boot protected (corrupt envelope fixture used by existing protected tests),
   sidecar base r1..r3, click `#saved-temporary-use`, make a save, advance 2100 ms, await
@@ -323,7 +323,7 @@ Lane E then lane C. Mirror to dev per procedure s8.
 | Lane | Owns (exclusive) | Not owned | Acceptance | Verify (prefix every call `OPENCLAW_SESSION=1`) |
 |---|---|---|---|---|
 | E engine | `src/engine/sync.js`; engine region of `index.html` via `python3 tools/inline_engine.py` only; `tests/sync.test.js`; `tests/sync_model.js`; `tests/mutants/sync_*.patch`; `docs/ENGINE-SPEC.md` s20 (two rows, one stating that a voided base is a planning view only and is NOT dropped from the stored sidecar by `planPull`: the stale base lingers harmlessly, N4); the `tests/suite_health.py` row for `tests/sync.test.js` | all other `index.html`; `tools/sync/*`; schema | AC-E1 new S3-S5 tests fail at 6c960269 and pass after; AC-E2 no assertion in `tests/sync.test.js` changed and all pass; the only edits to existing tests are setup lines adding ids to `used`/`usedIds` (10 tests measured, N4); AC-E3 the five new engine mutants (usedIds filter in push, in pull, missing-usedIds default, alias lookup, planDeferred) killed by the named tests | `node --test tests/sync.test.js`; `python3 tools/inline_engine.py && python3 tools/validate.py` |
-| C client | `index.html` sync region (app JS only, from `// Optional email-code sign-in` to `syncBoot`); `tests/app.test.js` (new describe, additive); `tools/sandbox.js` (additive `throwOnKeys` option only, N3); `tests/mutants/a2_sync_*.patch`; `tests/suite_health.py` row for `tests/app.test.js` (set from measured count) | engine region; e2e files; i18n; About copy | AC-C1 new S1/S2/S6/S7/S8 tests (including T-APP-M8-collection-swap) fail at E's head and pass after; AC-C2 whole `sync client` and `sync-apply` describes still pass; AC-C3 the app mutants (gate, three syncStill sites, token without userId, token without collectionId, ungated syncStartLock) killed; AC-C4 reviewer repro (T-APP-M7-zero-tombstones) passes | `node --test --test-name-pattern "sync store safety|sync client|sync-apply" tests/app.test.js`; `python3 tools/validate.py` |
+| C client | `index.html` sync region (app JS only, from `// Optional email-code sign-in` to `syncBoot`); `tests/app.test.js` (new describe plus section18 fixture/setup-only corrections; all existing assertions unchanged); `tools/sandbox.js` (additive `throwOnKeys` option only, N3); `tests/mutants/a2_sync_*.patch`; `tests/suite_health.py` row for `tests/app.test.js` (set from measured count) | engine region; e2e files; i18n; About copy | AC-C1 new S1/S2/S6/S7/S8 tests (including T-APP-M8-collection-swap) fail at E's head and pass after; AC-C2 whole `sync client` and `sync-apply` describes still pass; AC-C3 the app mutants (gate, three syncStill sites, token without userId, token without collectionId, ungated syncStartLock) killed; AC-C4 reviewer repro (T-APP-M7-zero-tombstones) passes | `node --test --test-name-pattern "sync store safety|sync client|sync-apply" tests/app.test.js`; `python3 tools/validate.py` |
 
 Standing gates for both: tests written first and shown failing; CI `validate` at the exact pushed head is
 the evidence (local runs are smoke); `tests/mutation_check.sh` not run in a background that anyone edits
@@ -644,3 +644,31 @@ Reviewer independently read validate42578699994 success at 6c960269. This was a 
 of installed plan-eng-review instructions; no actual Claude slash-command or Opus invocation is claimed.
 No implementation or mutant result is claimed by this plan review. Execution is now E then C under the
 existing AFK grant; all final code/CI/review/dev gates remain required.
+
+
+## 18. Client fixture amendment — small-task reviewed-plan (2026-11-09)
+
+Finding: the pre-existing sync-client success fixtures call `boot({locks:true})` without IndexedDB,
+so they run session mode. S1 now correctly blocks them, making their existing holder waits and success
+assertions impossible. This is a fixture mismatch, not permission to weaken S1 or change assertions.
+
+Bounded plan: C may add `indexedDB:true` ONLY to pre-existing sync-client success setups intended to
+exercise active sync. Use synchronous `boot({...existingOptions,indexedDB:true})`, install the fetch stub
+IMMEDIATELY, then await existing readiness/holder/cycle. Do not call `await durableBoot()` then install:
+that helper waits for booted and can permit initial sync before the stub exists. No live Supabase calls,
+new helper framework, global boot defaults or negative fixture changes. The existing synced-delete
+setup calls `commitSavedSession`, which rejects durable mode: use awaited `commitSaved` there, preserving
+the same command and every following assertion. Keep all intentional session/protected/no-lock tests
+unchanged; new M4/M5/M7 tests still prove those states refuse sync.
+
+C owns these setup-only hunks in its already-owned app test file. Existing assertion lines must remain
+unchanged and will be checked independently. AC-C2, targeted sync/sync-apply tests, full app measurement,
+generated mutant proofs, exact-head full CI, fresh code review and later DEV rebuild gates all remain.
+
+Independent small-task engineering review: READY with the stub-before-startup ordering constraint above.
+Source inspection confirmed crypto remains provided, IndexedDB plus locks enables durable initialization,
+and commitSavedSession rejects durable stores. No product decision, UI change or new infrastructure.
+Root accepted the recommended reversible setup correction under AFK; no extra owner approval is needed.
+If a setup cannot be corrected without changing an assertion or its intentional negative mode, stop and
+return that specific case to root instead of broadening this permission. Recovery uses a new scoped
+commit; original fixture/assertion evidence remains in the E head.
