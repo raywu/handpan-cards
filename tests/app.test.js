@@ -21394,6 +21394,54 @@ describe("sync store safety", () => {
     await app.getAsync("syncKick(true)");
     assert.strictEqual(app.get("__commits.length"),0);assert.strictEqual(pushes(app).length,0);
   });
+  test("T-APP-S7-switch-after-apply: old cycle preserves the new account deferred cleanup state", async () => {
+    const app=await fixture(); await makeCustom(app);
+    const held=app.get("savedState.entries[0].instanceId");
+    await app.getAsync(`commitSaved({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(held)},expectedRevision:1})`);
+    const next=JSON.parse(sidecar({userId:uuid(),first:true,base:{[held]:{rev:5,localRevision:1}},deferredDeletes:[held]}));
+    reset(app);
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:6,record:${JSON.stringify(await record())},deleted:false}];
+      globalThis.__beforeSwitchCommit=commitSaved;
+      commitSaved=async function(command,...args){
+        const result=await __beforeSwitchCommit(command,...args);
+        if(command.type==="sync-apply" && result.ok)localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+        return result;
+      };`);
+    try {
+      await app.getAsync("syncKick(true)");
+      assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"old apply must not clean up the new account base or deferred deletes");
+      assert.strictEqual(app.get("__commits.length"),1,"only the already-dispatched old apply may finish");
+      assert.strictEqual(pushes(app).length,0); assert.strictEqual(app.get("__requests.length"),1);
+      assert.strictEqual(app.get("savedState.entries.length"),1,"acknowledged old pull commit is retained");
+    } finally { app.run("commitSaved=__beforeSwitchCommit"); }
+  });
+  test("T-APP-S7-switch-empty-pull: old cycle leaves the new account first-sync state untouched", async () => {
+    const app=await fixture(); await makeCustom(app); reset(app);
+    const next=JSON.parse(sidecar({userId:uuid(),first:true}));
+    app.run(`__rows=[]; __hook=async path=>{
+      if(path.startsWith("/rest/v1/saved_scales"))localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+    };`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("syncLoad().first"),true,"old zero-row pull must not complete the new account's first sync");
+    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"old cycle must not classify local scales for the new account");
+    assert.strictEqual(app.get("syncLoad().pending"),false,"old cycle must not mark the new account pending");
+    assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"new account sidecar stays unchanged");
+    assert.strictEqual(app.get("__requests.length"),1,"only the old account pull was dispatched");
+    assert.strictEqual(pushes(app).length,0); assert.strictEqual(app.get("__commits.length"),0);
+    assert.strictEqual(app.get("savedState.entries.length"),1);
+  });
+  test("T-APP-S7-switch-last-push: old cycle leaves the replacement account status untouched", async () => {
+    const app=await fixture(); await makeCustom(app); reset(app);
+    const next=JSON.parse(sidecar({userId:uuid(),first:true}));
+    app.run(`__hook=async path=>{
+      if(path.endsWith("push_scales"))localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+    };`);
+    await app.getAsync("syncKick(false)");
+    assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"old final push must not stamp the replacement account status");
+    assert.strictEqual(pushes(app).length,1,"only the already-dispatched old account batch was sent");
+    assert.strictEqual(app.get("__requests.length"),1); assert.strictEqual(app.get("__commits.length"),0);
+    assert.strictEqual(app.get("savedState.entries.length"),1);
+  });
   test("T-APP-S7-switch-mid-push: user change prevents later batches", async () => {
     const app=await fixture(); const r=await record();
     app.run(`{const e=savedClone(savedState);for(let i=0;i<201;i++){const id=crypto.randomUUID();e.entries.push({instanceId:id,revision:1,displayOrdinal:e.nextDisplayOrdinal++,record:${JSON.stringify(r)}});e.usedInstanceIds.push(id)}e.revision++;if(!applySavedSnapshot(e).ok)throw Error("fixture")}
@@ -21431,6 +21479,9 @@ describe("sync store safety", () => {
     assert.strictEqual((region.match(/\bsyncKick\(/g)||[]).length,8);
     assert.strictEqual((region.match(/\bsyncCycle\(/g)||[]).length,2);
     assert.match(region,/async function syncCycle\(pull\)[\s\S]*?syncStoreToken\(/);
+    assert.match(region,/await syncPull\(storeToken\);\s*if \(!syncStill\(storeToken\)\) return;\s*sc = syncLoad\(\);/);
+    assert.match(region,/await syncPush\(storeToken\);\s*if \(!syncStill\(storeToken\)\) return;\s*sc = syncLoad\(\);/);
+    assert.match(region,/await syncApply\(sc\.userId, plan, storeToken\)\) continue;\s*if \(!syncStill\(storeToken\)\) return false;\s*sc = syncLoad\(\);/);
     assert.match(region,/async function syncPull\([^)]*\)[\s\S]*?syncStill\(/);
     assert.match(region,/async function syncPush\([^)]*\)[\s\S]*?syncStill\(/);
   });

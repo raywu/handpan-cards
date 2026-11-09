@@ -18339,10 +18339,10 @@ async function syncPull(storeToken = syncStoreToken()) {
     const plan = HPE.sync.planPull({ remote: rows, local: syncLocal(), sidecar: sc, ctx: syncCtx() });
     if (plan.ops.length && !syncStill(storeToken)) return false;
     if (!await syncApply(sc.userId, plan, storeToken)) continue;
+    if (!syncStill(storeToken)) return false;
     sc = syncLoad();
     if (!sc) return false;
     const deferred = HPE.sync.planDeferred({ local: syncLocal(), sidecar: sc, ctx: syncCtx() });
-    if (deferred.ops.length && !syncStill(storeToken)) return false;
     if (deferred.ops.length || deferred.baseDrops.length) await syncApply(sc.userId, deferred, storeToken);
     return true;
   }
@@ -18385,6 +18385,7 @@ async function syncCycle(pull) {
   syncStatus("syncing");
   let ok = true;
   if (pull || sc.first) ok = await syncPull(storeToken);
+  if (!syncStill(storeToken)) return;
   sc = syncLoad();
   if (!sc) return;
   if (ok && sc.first) {
@@ -18392,6 +18393,7 @@ async function syncCycle(pull) {
     syncPatch(sc.userId, cur => { const audit = HPE.sync.firstSyncAudit({ local, sidecar: cur }); return { ...audit.sidecar, first: false }; });
   }
   if (ok) ok = await syncPush(storeToken);
+  if (!syncStill(storeToken)) return;
   sc = syncLoad();
   if (!sc) return;
   if (ok && !sc.pending) { syncPatch(sc.userId, cur => ({ ...cur, syncedAt: Date.now() })); syncStatus("synced"); }
