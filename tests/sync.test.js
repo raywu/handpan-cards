@@ -935,3 +935,160 @@ test("sync: bounded two-device model holds no-loss, convergence and no endless c
     sync.settlePull(sc, plan, committedOf(local), deepFreeze([{ id: "a", reason: "revision" }]));
   });
 }
+
+{
+  const ctx = (extra = {}) => ({ newId: uid, usedIds: [], describe, copyName, ...extra });
+  const row = (id, rev, n, deleted = false) => ({ scale_id: id, rev, deleted, record: deleted ? null : rec(n) });
+  const ent = (id, n, revision = 1) => ({ id, revision, record: rec(n) });
+  const bs = (rev, localRevision) => ({ rev, localRevision });
+  const unreadable = { readable: r => r.n !== "Theirs" };
+
+  const fixtures = [
+    { site: "keepOpaque", local: [ent("a", "Mine")], remote: [row("a", 1, "Theirs")], ctx: unreadable },
+    { site: "revive-base", local: [ent("b", "B")], remote: [row("ra", 2, "R")], sc: { cursor: 1, base: { ra: bs(1, 1), b: bs(1, 1) } } },
+    { site: "first-sync-match", local: [ent("x", "A")], remote: [row("ra", 3, "A")] },
+    { site: "new-or-collision", local: [ent("b", "B")], remote: [row("rn", 2, "New")], sc: { cursor: 1, base: { b: bs(1, 1) } } },
+    { site: "nobase-equal", local: [ent("a", "A")], remote: [row("a", 3, "A")] },
+    { site: "nobase-conflict", local: [ent("a", "A")], remote: [row("a", 3, "Other")] },
+    { site: "based-equal", local: [ent("a", "A"), ent("b", "B")], remote: [row("a", 5, "A")], sc: { cursor: 1, base: { a: bs(1, 1), b: bs(1, 1) } } },
+    { site: "based-overwrite", local: [ent("a", "A"), ent("b", "B")], remote: [row("a", 2, "A2")], sc: { cursor: 1, base: { a: bs(1, 1), b: bs(1, 1) } } },
+    { site: "based-conflict", local: [ent("a", "A-edit", 2), ent("b", "B")], remote: [row("a", 3, "A3")], sc: { cursor: 1, base: { a: bs(1, 1), b: bs(1, 1) } } },
+    { site: "tomb-nobase", local: [ent("a", "A"), ent("b", "B")], remote: [row("a", 1, null, true)] },
+    { site: "tomb-keep", local: [ent("a", "A-edit", 2), ent("b", "B")], remote: [row("a", 2, null, true)], sc: { cursor: 1, base: { a: bs(1, 1), b: bs(1, 1) } } },
+    { site: "defer-lastvisible", local: [ent("a", "A")], remote: [row("a", 2, null, true)], sc: { cursor: 1, base: { a: bs(1, 1) } } },
+    { site: "remove-op", local: [ent("a", "A"), ent("b", "B")], remote: [row("a", 2, null, true)], sc: { cursor: 1, base: { a: bs(1, 1), b: bs(1, 1) } } }
+  ];
+
+  const planOf = fx => sync.planPull({ remote: fx.remote, local: fx.local, sidecar: { ...sync.emptySidecar(), ...(fx.sc || {}) }, ctx: ctx(fx.ctx) });
+  const scOf = fx => ({ ...sync.emptySidecar(), ...(fx.sc || {}) });
+
+  function applyCAS(entries, plan) {
+    const live = clone(entries), skipped = [];
+    let conflict = false;
+    for (const op of plan.ops) {
+      const at = live.findIndex(e => e.id === op.id);
+      if (op.op === "insert") live.push({ id: op.id, revision: 1, record: clone(op.record) });
+      else if (at < 0) { if (op.op === "overwrite") conflict = true; else skipped.push({ id: op.id, reason: "missing" }); }
+      else if (live[at].revision !== op.expectedRevision) skipped.push({ id: op.id, reason: "revision" });
+      else if (op.op === "overwrite") { live[at].record = clone(op.record); live[at].revision++; }
+      else live.splice(at, 1);
+    }
+    return { live, skipped, conflict };
+  }
+
+  const races = {
+    none: (entries, id) => entries,
+    edit: (entries, id) => entries.map(e => e.id === id ? { ...e, revision: e.revision + 1, record: { ...e.record, n: e.record.n + "-race" } } : e),
+    delete: (entries, id) => entries.filter(e => e.id !== id)
+  };
+
+  test("race matrix: every baseUpdates site is tagged and exercised", () => {
+    const planFn = SRC.slice(SRC.indexOf("function planPull"), SRC.indexOf("function planDeferred"));
+    const pushes = (planFn.match(/baseUpdates\.push\(/g) || []).length;
+    const tags = new Set([...planFn.matchAll(/site: "([a-z-]+)"/gi)].map(m => m[1]));
+    assert.equal(pushes, tags.size, "every baseUpdates.push in planPull needs a unique site tag; add a fixture for a new one");
+    const seen = new Set();
+    for (const fx of fixtures) for (const u of planOf(fx).baseUpdates) seen.add(u.site);
+    for (const t of tags) assert.ok(seen.has(t), "no race-matrix fixture exercises site " + t);
+    assert.equal((SRC.match(/baseDrops\.push\(/g) || []).length, 4, "baseDrops writers changed; add a fixture and update this pin");
+    assert.equal((SRC.match(/deferred\.add\(/g) || []).length, 1, "deferred.add writers changed; add a fixture and update this pin");
+    assert.equal((SRC.match(/\bops\.push\(/g) || []).length, 5, "op emitters changed; add a fixture and update this pin");
+    assert.equal((SRC.match(/\binsert\(/g) || []).length, 7, "insert emitters changed; add a fixture and update this pin");
+  });
+
+  test("race matrix: observed updates carry the plan-read revision", () => {
+    for (const fx of fixtures) {
+      const plan = planOf(fx);
+      for (const u of plan.baseUpdates) {
+        if (u.mode === "observed") assert.equal(typeof u.localRevision, "number", u.site);
+        if (u.mode === "committed") assert.ok(plan.ops.some(o => o.id === u.localId), u.site + " has a committed update with no op");
+      }
+    }
+  });
+
+  for (const fx of fixtures) for (const race of Object.keys(races)) {
+    test("race matrix: " + fx.site + " / " + race, () => {
+      const plan = planOf(fx), sc = scOf(fx);
+      const target = (plan.baseUpdates[0] && plan.baseUpdates[0].localId) || (plan.ops[0] && plan.ops[0].id) || fx.local[0].id;
+      const raced = races[race](fx.local, target);
+      const { live, skipped, conflict } = applyCAS(raced, plan);
+      if (conflict) return;
+      const next = sync.settlePull(sc, plan, live.map(e => ({ id: e.id, revision: e.revision })), skipped);
+      assert.ok(Number.isFinite(next.cursor), "cursor finite");
+      for (const [rid, b] of Object.entries(next.base)) {
+        const e = live.find(x => (next.alias[x.id] || x.id) === rid);
+        const r = fx.remote.find(x => x.scale_id === rid);
+        if (!e || !r || r.deleted || b.localRevision === null || b.rev !== r.rev) continue;
+        if (e.revision === b.localRevision) assert.deepEqual(e.record, r.record, "base claim for " + rid + " must be true");
+      }
+      if (race === "edit" && next.base[target] && next.base[target].rev === (fx.remote.find(x => x.scale_id === target) || {}).rev) {
+        const entry = live.find(e => e.id === target);
+        if (entry && entry.record.n.endsWith("-race")) {
+          const push = sync.planPush({ local: live, sidecar: next, ctx: ctx() });
+          assert.ok(push.rows.some(r => r.scale_id === target && !r.deleted), "the raced edit still pushes");
+        }
+      }
+    });
+  }
+
+  test("settle R3a: an equal-body pull with a concurrent edit stamps the plan-read revision", () => {
+    const fx = fixtures.find(f => f.site === "based-equal");
+    const plan = planOf(fx), sc = scOf(fx);
+    const edited = [{ id: "a", revision: 2, record: rec("A-edit") }, fx.local[1]];
+    const next = sync.settlePull(sc, plan, edited.map(e => ({ id: e.id, revision: e.revision })), []);
+    assert.deepEqual(next.base.a, { rev: 5, localRevision: 1 });
+    const push = sync.planPush({ local: edited, sidecar: next, ctx: ctx() });
+    assert.deepEqual(push.rows.map(r => [r.scale_id, r.base_rev]), [["a", 5]]);
+  });
+
+  test("settle R3b: a deferred last-visible delete is not removed after a concurrent edit", () => {
+    const fx = fixtures.find(f => f.site === "defer-lastvisible");
+    const plan = planOf(fx), sc = scOf(fx);
+    const edited = [{ id: "a", revision: 2, record: rec("A-edit") }];
+    const next = sync.settlePull(sc, plan, edited.map(e => ({ id: e.id, revision: e.revision })), []);
+    assert.deepEqual(next.deferredDeletes, ["a"]);
+    const later = sync.planDeferred({ local: edited, sidecar: next, ctx: { ...ctx(), builtinVisible: 1 } });
+    assert.deepEqual(later.ops, [], "the edited scale survives");
+  });
+
+  test("settle R3c: a first-sync equal-body match with a concurrent edit pushes the edit", () => {
+    const fx = fixtures.find(f => f.site === "first-sync-match");
+    const plan = planOf(fx), sc = scOf(fx);
+    const edited = [{ id: "x", revision: 2, record: rec("A-edit") }];
+    const next = sync.settlePull(sc, plan, edited.map(e => ({ id: e.id, revision: e.revision })), []);
+    assert.equal(next.base.ra.localRevision, 1);
+    const push = sync.planPush({ local: edited, sidecar: next, ctx: ctx() });
+    assert.deepEqual(push.rows.map(r => r.scale_id), ["ra"]);
+  });
+
+  test("settle N1: a skipped moved-copy insert keeps a finite cursor and names the remote id", () => {
+    const local = [ent("x", "Mine")];
+    const sc = { ...sync.emptySidecar(), alias: { x: "ra" } };
+    const plan = sync.planPull({ remote: [row("ra", 4, "Theirs")], local, sidecar: sc, ctx: ctx(unreadable) });
+    const moved = plan.ops.find(o => o.op === "insert");
+    assert.deepEqual(plan.sources[moved.id], { rid: "ra", rev: 4 });
+    const next = sync.settlePull(sc, plan, [{ id: "x", revision: 1 }], [{ id: moved.id, reason: "id" }, { id: "x", reason: "dependency" }]);
+    assert.equal(next.cursor, 3);
+    assert.equal(next.base.ra, undefined);
+  });
+
+  test("settle N2: a committed update whose entry is gone is held, not thrown", () => {
+    const fx = fixtures.find(f => f.site === "based-overwrite");
+    const plan = planOf(fx), sc = scOf(fx);
+    const next = sync.settlePull(sc, plan, [{ id: "b", revision: 1 }], []);
+    assert.deepEqual(next.base.a, { rev: 1, localRevision: 1 });
+    assert.equal(next.cursor, 1);
+  });
+
+  test("race matrix: a concurrent add changes nothing planned", () => {
+    for (const fx of fixtures) {
+      const plan = planOf(fx), sc = scOf(fx);
+      const withAdd = [...fx.local, ent("zz-new", "Z")];
+      const { live, skipped, conflict } = applyCAS(withAdd, plan);
+      if (conflict) continue;
+      const a = sync.settlePull(sc, plan, live.map(e => ({ id: e.id, revision: e.revision })), skipped);
+      const b = sync.settlePull(sc, plan, applyCAS(fx.local, plan).live.map(e => ({ id: e.id, revision: e.revision })), []);
+      assert.deepEqual(a, b, fx.site);
+    }
+  });
+}
