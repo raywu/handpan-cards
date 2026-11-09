@@ -18246,7 +18246,12 @@ async function syncFetch(path, options = {}) {
 }
 const syncSession = (sc, body) => ({ ...sc, refresh: body.refresh_token, access: body.access_token,
   accessExp: Date.now() + (Number(body.expires_in) > 0 ? Number(body.expires_in) : 3600) * 1000 });
-const syncActive = () => !!SYNC_CFG && !!savedState && savedMode !== "protected";
+function syncStoreToken() {
+  if (!SYNC_CFG || !savedState || savedMode !== "durable" || savedState.migration?.temporary) return null;
+  return savedAuthorityGeneration + ":" + savedState.collectionId + ":" + (syncLoad()?.userId || "");
+}
+const syncActive = () => syncStoreToken() !== null;
+const syncStill = storeToken => storeToken !== null && !!syncLoad() && storeToken === syncStoreToken();
 const syncLocal = () => savedState.entries.map(e => ({ id: e.instanceId, revision: e.revision, record: e.record }));
 function syncCtx() {
   const used = new Set(savedState.usedInstanceIds);
@@ -18313,16 +18318,16 @@ async function syncRemotePages(cursor, token) {
   }
   return null;
 }
-async function syncApply(userId, plan) {
+async function syncApply(userId, plan, storeToken) {
   let result = { ok: true, sync: { committed: [], skipped: [] } };
   if (plan.ops.length) {
-    result = await commitSaved({ type: "sync-apply", collectionId: savedState.collectionId, ops: plan.ops });
+    result = await commitSaved({ type: "sync-apply", collectionId: storeToken.split(":")[1], ops: plan.ops });
     if (!result.ok) return false;
   }
   syncPatch(userId, cur => HPE.sync.settlePull(cur, plan, result.sync.committed, result.sync.skipped));
   return true;
 }
-async function syncPull() {
+async function syncPull(storeToken = syncStoreToken()) {
   syncLastPull = Date.now();
   for (let attempt = 0; attempt < 3; attempt++) {
     const token = await syncToken();
@@ -18332,30 +18337,32 @@ async function syncPull() {
     const rows = await syncRemotePages(sc.cursor, token);
     if (!rows) return false;
     const plan = HPE.sync.planPull({ remote: rows, local: syncLocal(), sidecar: sc, ctx: syncCtx() });
-    if (!await syncApply(sc.userId, plan)) continue;
+    if (plan.ops.length && !syncStill(storeToken)) return false;
+    if (!await syncApply(sc.userId, plan, storeToken)) continue;
     sc = syncLoad();
     if (!sc) return false;
     const deferred = HPE.sync.planDeferred({ local: syncLocal(), sidecar: sc, ctx: syncCtx() });
-    if (deferred.ops.length || deferred.baseDrops.length) await syncApply(sc.userId, deferred);
+    if (deferred.ops.length && !syncStill(storeToken)) return false;
+    if (deferred.ops.length || deferred.baseDrops.length) await syncApply(sc.userId, deferred, storeToken);
     return true;
   }
   return false;
 }
-async function syncPush() {
+async function syncPush(storeToken = syncStoreToken()) {
   for (let loop = 0; loop < 3; loop++) {
     let sc = syncLoad();
     if (!sc || sc.first) return true;
+    const token = await syncToken();
+    if (!token || !syncStill(storeToken)) return false;
     const plan = HPE.sync.planPush({ local: syncLocal(), sidecar: sc, ctx: syncCtx() });
     if (!plan.rows.length) {
       if (sc.pending) syncPatch(sc.userId, cur => ({ ...cur, pending: false }));
       return true;
     }
-    const token = await syncToken();
-    if (!token) return false;
     const results = [];
     let reached = true;
     for (const batch of plan.batches) {
-      if (!syncLoad()) { reached = false; break; }
+      if (!syncStill(storeToken)) return false;
       const r = await syncFetch("/rest/v1/rpc/push_scales", { method: "POST", token, body: { rows: batch } });
       if (!r.ok || !Array.isArray(r.json)) { reached = false; break; }
       results.push(...r.json);
@@ -18365,32 +18372,33 @@ async function syncPush() {
     const refused = outcome.refused.map(x => x.refused);
     if (refused.includes("cap")) syncSay("sync.err.cap");
     else if (refused.includes("rate")) syncSay("sync.err.rate");
-    if (outcome.conflict) { if (!await syncPull()) return false; continue; }
+    if (outcome.conflict) { if (!await syncPull(storeToken)) return false; continue; }
     return reached;
   }
   return false;
 }
 async function syncCycle(pull) {
-  if (!syncActive()) return;
+  const storeToken = syncStoreToken();
+  if (storeToken === null) return;
   let sc = syncLoad();
   if (!sc) return;
   syncStatus("syncing");
   let ok = true;
-  if (pull || sc.first) ok = await syncPull();
+  if (pull || sc.first) ok = await syncPull(storeToken);
   sc = syncLoad();
   if (!sc) return;
   if (ok && sc.first) {
     const local = syncLocal();
     syncPatch(sc.userId, cur => { const audit = HPE.sync.firstSyncAudit({ local, sidecar: cur }); return { ...audit.sidecar, first: false }; });
   }
-  if (ok) ok = await syncPush();
+  if (ok) ok = await syncPush(storeToken);
   sc = syncLoad();
   if (!sc) return;
   if (ok && !sc.pending) { syncPatch(sc.userId, cur => ({ ...cur, syncedAt: Date.now() })); syncStatus("synced"); }
   else { syncPatch(sc.userId, cur => ({ ...cur, pending: true })); if (!syncMsg || syncMsg.key.indexOf("sync.err.") !== 0) syncStatus("pending"); else syncPaint(); }
 }
 function syncKick(pull) {
-  if (!SYNC_CFG || !syncHolder || !syncLoad()) return Promise.resolve();
+  if (!syncActive() || !syncHolder || !syncLoad()) return Promise.resolve();
   if (syncRunning) { syncQueued = !!syncQueued || !!pull; return syncRunning; }
   syncRunning = syncCycle(pull).catch(() => {}).then(() => {
     syncRunning = null;
@@ -18399,12 +18407,12 @@ function syncKick(pull) {
   return syncRunning;
 }
 function syncChanged() {
-  if (!SYNC_CFG || !syncHolder || !syncLoad()) return;
+  if (!syncActive() || !syncHolder || !syncLoad()) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => { syncKick(false); }, 2000);
 }
 function syncStartLock() {
-  if (!SYNC_CFG || syncLockAsked || !syncLoad()) return;
+  if (!syncActive() || syncLockAsked || !syncLoad()) return;
   let locks = null;
   try { locks = navigator.locks; } catch (e) {}
   if (!locks || typeof locks.request !== "function") return;

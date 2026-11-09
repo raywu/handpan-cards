@@ -593,6 +593,7 @@ function makeLocation(href) {
  * @param {object} opts
  *   storage        - seed object for localStorage (default empty)
  *   throwOnStorage - make localStorage throw, exercising the private-mode guard
+ *   throwOnKeys    - make reads of only the listed localStorage keys throw
  *   random         - deterministic replacement for Math.random
  *   href           - initial location (default "https://example.test/index.html")
  *   userAgent      - navigator.userAgent (default a desktop Chrome string)
@@ -901,7 +902,7 @@ function boot(opts = {}) {
 
   const sandbox = {
     localStorage: {
-      getItem(k) { if (opts.throwOnStorage) throw new Error("denied"); return k in store ? store[k] : null; },
+      getItem(k) { if (opts.throwOnStorage || opts.throwOnKeys?.includes(String(k))) throw new Error("denied"); return k in store ? store[k] : null; },
       setItem(k, v) { if (opts.throwOnStorage) throw new Error("denied"); store[k] = String(v); },
       removeItem(k) { if (opts.throwOnStorage) throw new Error("denied"); delete store[k]; },
     },
@@ -1027,7 +1028,7 @@ function boot(opts = {}) {
       if (opts.origin.events === "auto") setTimeout(() => opts.origin.flushStorageEvents(), 0);
     };
     const check = (operation, key, value) => {
-      if (opts.throwOnStorage) throw new Error("denied");
+      if (opts.throwOnStorage || (operation === "getItem" && opts.throwOnKeys?.includes(key))) throw new Error("denied");
       const failure = opts.storageFault && opts.storageFault({ operation, key, value });
       if (failure) throw failure;
     };

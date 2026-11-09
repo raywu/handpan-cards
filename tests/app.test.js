@@ -21077,7 +21077,7 @@ describe("sync client", () => {
   const sc = app => JSON.parse(app.get("localStorage.getItem('hpfc.sync.v1')"));
   const calls = (app, p) => plain(app.get("__log")).filter(c => c.path.startsWith(p));
   const start = async (extra, rows) => {
-    const app = boot({ href: DEV, locks: true, storage: { "hpfc.sync.v1": sidecar(extra) } });
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true, storage: { "hpfc.sync.v1": sidecar(extra) } });
     install(app, rows);
     await app.waitFor("syncHolder === true", { timeout: 2000 });
     await app.getAsync("syncRunning");
@@ -21087,7 +21087,7 @@ describe("sync client", () => {
 
   test("a first sync pulls remote scales, inserting them locally, and never pushes before the pull", async () => {
     const id = newId(), record = await remoteRecord(AMARA_STRING);
-    const app = boot({ href: DEV, locks: true, storage: { "hpfc.sync.v1": sidecar({ first: true }) } });
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true, storage: { "hpfc.sync.v1": sidecar({ first: true }) } });
     install(app, [{ scale_id: id, rev: 1, record, deleted: false }]);
     await app.waitFor("syncHolder === true", { timeout: 2000 });
     await app.getAsync("syncRunning");
@@ -21115,7 +21115,7 @@ describe("sync client", () => {
     const a = await makeCustom(app);
     app.advance(2100); await app.getAsync("syncRunning");
     app.run("__pushed.length = 0");
-    app.run(`commitSavedSession({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(a.instanceId)}).revision})`);
+    await app.getAsync(`commitSaved({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(a.instanceId)}).revision})`);
     await settle(app);
     const tomb = plain(app.get("__pushed"));
     assert.ok(tomb.some(r => r.deleted === true), JSON.stringify(tomb));
@@ -21146,8 +21146,8 @@ describe("sync client", () => {
   });
 
   test("a 429 from the auth endpoint shows the rate-limited copy and no retry", async () => {
-    const app = boot({ href: DEV, locks: true });
-    install(app); app.run('__mode = "429"');
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true });
+    install(app); await app.waitFor("booted === true", {timeout:2000}); app.run('__mode = "429"');
     assert.strictEqual(await app.getAsync("syncSendCode('a@b.test')"), "sync.err.rateLimited");
     assert.strictEqual(plain(app.get("__log")).length, 1);
   });
@@ -21161,8 +21161,9 @@ describe("sync client", () => {
   });
 
   test("Not now pushes nothing for the held local scales", async () => {
-    const app = boot({ href: DEV, locks: true });
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true });
     install(app);
+    await app.waitFor("booted === true", {timeout:2000});
     await makeCustom(app);
     app.run(`localStorage.setItem("hpfc.sync.v1", ${JSON.stringify(sidecar({ first: true }))}); syncStartLock();`);
     await app.waitFor("syncHolder === true", { timeout: 2000 });
@@ -21224,5 +21225,213 @@ describe("sync client", () => {
       assert.ok(keys.length >= 30, f);
       for (const k of keys) assert.ok(!/\bdecks?\b/i.test(JSON.stringify(t[k])), f + " " + k);
     }
+  });
+});
+
+/* Store/mode matrix and await boundaries: sync-store-safety subplan sections 2–6. */
+describe("sync store safety", () => {
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const KEY = "hpfc.sync.v1", SAVED = "hpfc.saved-scales.v1";
+  const uuid = () => require("node:crypto").randomUUID();
+  const sidecar = extra => JSON.stringify({v:1, project:PROJECT, userId:"11111111-1111-4111-8111-111111111111",
+    email:"a@b.test", refresh:"r0", access:"a0", accessExp:Date.now()+3600e3, cursor:0,
+    base:{},alias:{},deferredDeletes:[],localOnly:[],pending:false,first:false,...extra});
+  const fixture = async (opts = {}, extra = {}, rows = []) => {
+    const origin=require("./helpers/sandbox.js").createOrigin();
+    const app = boot({origin, href:DEV, locks:true, indexedDB:true, isSecureContext:true,
+      ...opts, storage:{[KEY]:sidecar(extra),...opts.storage}});
+    app.fixtureOrigin=origin;
+    for(const id of [...require("node:fs").readFileSync("index.html","utf8").matchAll(/id="(sync-[^"]+)"/g)].map(m=>m[1])) {
+      app.els[id]=app.sandbox.document.createElement("div"); app.els[id].id=id;
+    }
+    app.run(`globalThis.__requests=[]; globalThis.__rows=${JSON.stringify(rows)};
+      globalThis.__hook=()=>{}; globalThis.__commits=[]; globalThis.__commitSaved=commitSaved;
+      commitSaved=function(c,...args){if(c.type==="sync-apply")__commits.push(c);return __commitSaved(c,...args)};
+      globalThis.fetch=async function(url,opt){
+        const path=String(url).replace(${JSON.stringify(PROJECT)},"");
+        __requests.push({path,body:opt.body?JSON.parse(opt.body):null});
+        const response=path.startsWith("/auth/v1/token")?{access_token:"a1",refresh_token:"r1",expires_in:3600}:
+          path.startsWith("/rest/v1/saved_scales")?__rows.filter(r=>r.rev>Number(/rev=gt\\.(\\d+)/.exec(path)[1])):
+          path.endsWith("push_scales")?JSON.parse(opt.body).rows.map((r,i)=>({scale_id:r.scale_id,rev:i+10})):{};
+        await __hook(path);
+        return {status:200,ok:true,json:async()=>response};
+      };`);
+    await app.waitFor("booted === true",{timeout:2000});
+    await app.getAsync("syncRunning");
+    return app;
+  };
+  const pushes = app => plain(app.get('__requests.filter(r=>r.path.endsWith("push_scales"))'));
+  const reset = app => app.run("__requests=[]; __commits=[];");
+  const record = async () => { const a=boot(); await makeCustom(a); return plain(a.get("savedState.entries[0].record")); };
+  const base3 = () => Object.fromEntries([uuid(),uuid(),uuid()].map(id=>[id,{rev:1,body:"old",localRevision:1}]));
+  const flip = 'retireSavedAuthority(); savedMode="session";';
+  const blocked = async app => {
+    assert.strictEqual(app.get("__requests.length"),0,"blocked boot made zero network calls");
+    assert.strictEqual(pushes(app).length,0,"blocked boot made zero push requests");
+    assert.strictEqual(app.get("__commits.length"),0,"blocked boot made zero sync-apply commits");
+    reset(app); await app.getAsync("syncKick(true)");
+    app.run("syncChanged()"); app.advance(2100); await app.getAsync("syncRunning");
+    assert.strictEqual(pushes(app).length,0,"blocked store makes zero push requests");
+    assert.strictEqual(app.get("__commits.length"),0,"blocked store makes zero sync-apply commits");
+    app.run("syncPaint()"); assert.strictEqual(app.els["sync-open"].hidden,true);
+  };
+
+  test("T-APP-M7-zero-tombstones and T-APP-M7-pull: temporary use stays local", async () => {
+    const app=await fixture({indexedDB:false,storage:{[SAVED]:"{"}}, {base:base3()});
+    assert.strictEqual(app.get("savedMode"),"protected");
+    app.els["saved-temporary-use"].onclick();
+    assert.strictEqual(app.get("savedMode"),"session");
+    await makeCustom(app); await blocked(app);
+    app.run("syncLastPull=Date.now()-61000; document.dispatchEvent({type:'visibilitychange'})");
+    await app.getAsync("syncRunning");
+    assert.strictEqual(pushes(app).length,0);
+    assert.ok(pushes(app).every(c=>c.body.rows.every(r=>!r.deleted)));
+  });
+  test("T-APP-M5-push and T-APP-M5-pull: denied saved keys reach migration-temporary only", async () => {
+    const keys=["hpfc","hpfc.scales","hpfc.scales.v3",SAVED];
+    const app=await fixture({indexedDB:false,throwOnKeys:keys}, {base:base3()},[{scale_id:uuid(),rev:3,record:await record(),deleted:false}]);
+    assert.strictEqual(app.get("savedMode"),"session");
+    assert.strictEqual(app.get("savedState.migration.temporary"),true,"migration-temporary branch actually ran");
+    assert.ok(app.get("syncLoad()"),"sidecar remains readable");
+    for(const key of keys) assert.throws(()=>app.get(`localStorage.getItem(${JSON.stringify(key)})`),/denied/);
+    await blocked(app); assert.strictEqual(app.get("savedState.entries.length"),0);
+  });
+  test("T-APP-M4-push and T-APP-M4-pull: session snapshot cannot advance the cursor", async () => {
+    const donor=boot(); await makeCustom(donor);
+    const app=await fixture({indexedDB:false,storage:{[SAVED]:JSON.stringify(plain(donor.get("savedState")))}}, {},
+      [{scale_id:uuid(),rev:3,record:await record(),deleted:false}]);
+    assert.strictEqual(app.get("savedMode"),"session");
+    const before=JSON.stringify(plain(app.get("savedState")));
+    await blocked(app);
+    assert.strictEqual(JSON.stringify(plain(app.get("savedState"))),before);
+    assert.strictEqual(app.get("syncLoad().cursor"),0);
+  });
+  test("T-APP-M6-holder: protected boot never takes the sync lock", async () => {
+    const app=await fixture({indexedDB:false,storage:{[SAVED]:"{"}});
+    assert.strictEqual(app.get("savedMode"),"protected");
+    assert.strictEqual(app.get("syncHolder"),false,"protected store must not acquire sync lock");
+    await blocked(app);
+  });
+  test("T-APP-M9: starting with a partial state is blocked", async () => {
+    const app=await fixture(); reset(app); app.run('savedMode="starting"'); await blocked(app);
+  });
+  test("T-APP-M10-no-locks: never holder and sign-in hidden", async () => {
+    const app=await fixture({locks:false});
+    assert.strictEqual(app.get("savedMode"),"session"); assert.strictEqual(app.get("syncHolder"),false); await blocked(app);
+  });
+  test("T-APP-M2-push and T-APP-M2-pull: replaced store inserts above-cursor rows only", async () => {
+    const r=await record(), ids=[uuid(),uuid(),uuid()];
+    const app=await fixture({}, {base:Object.fromEntries(ids.map(id=>[id,{rev:1,body:r,localRevision:1}])),cursor:2});
+    assert.strictEqual(app.get("savedMode"),"durable");
+    const oldCollection=app.get("savedState.collectionId"), replacement=plain(app.get("savedState"));
+    replacement.collectionId=uuid();
+    await idbRecord(app,{write:true,value:JSON.stringify(replacement)});
+    await app.getAsync("reconcileSavedCollection()");
+    assert.notStrictEqual(app.get("savedState.collectionId"),oldCollection);
+    assert.strictEqual(app.get("savedState.usedInstanceIds.length"),0);
+    assert.strictEqual(Object.keys(app.get("syncLoad().base")).length,3,"replacement retains sidecar history");
+    reset(app); await app.getAsync("syncKick(false)"); assert.strictEqual(pushes(app).length,0);
+    app.run(`__rows=${JSON.stringify(ids.map((id,i)=>({scale_id:id,record:r,rev:i+2,deleted:false})))};`);
+    await app.getAsync("syncKick(true)");
+    assert.deepStrictEqual(plain(app.get("savedState.entries.map(e=>e.instanceId).sort()")),ids.slice(1).sort());
+    assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)));
+  });
+  test("T-APP-M3-no-mass: reconcile failure keeps held present and unheld ids safe", async () => {
+    const app=await fixture(); await makeCustom(app); await app.getAsync("syncKick(false)");
+    const id=app.get("savedState.entries[0].instanceId"), unheld=uuid();
+    app.run(`syncPatch(syncLoad().userId,s=>({...s,base:{...s.base,[${JSON.stringify(unheld)}]:{rev:1,body:"old"}}}));
+      savedReconciliationFailure(savedFailure("storage","fixture"));`);
+    assert.ok(app.get("savedRecovery")); reset(app); await app.getAsync("syncKick(false)");
+    assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(id)})`));
+    assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)));
+  });
+  test("T-APP-M8-flip-before-push: no planner call after refresh changes authority", async () => {
+    for(const change of [false,true]) {
+      const app=await fixture(); await makeCustom(app); reset(app);
+      app.run(`globalThis.__plans=0;globalThis.__planPush=HPE.sync.planPush;
+        HPE.sync.planPush=function(...args){__plans++;return __planPush.apply(this,args)};
+        syncPatch(syncLoad().userId,s=>({...s,accessExp:0}));
+        __hook=async path=>{if(path.startsWith("/auth/v1/token")){${change?flip:""}}};`);
+      try {
+        await app.getAsync("syncKick(false)");
+        if(change) {
+          assert.strictEqual(app.get("__plans"),0,"no planner invocations after authority flip");
+          assert.strictEqual(pushes(app).length,0); assert.strictEqual(app.get("__commits.length"),0);
+        } else assert.ok(app.get("__plans")>0,"durable positive control observes real planner");
+      } finally {app.run("HPE.sync.planPush=__planPush; __hook=()=>{}");}
+      assert.strictEqual(app.get("HPE.sync.planPush===__planPush"),true);
+    }
+  });
+  test("T-APP-M8-flip-before-apply: ops-bearing pull aborts on authority change", async () => {
+    const app=await fixture(); reset(app);
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:5,record:${JSON.stringify(await record())},deleted:false}];
+      __hook=async path=>{if(path.startsWith("/rest/v1/saved_scales")){${flip}}};`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("__commits.length"),0,"no sync-apply after authority flip");
+    assert.strictEqual(app.get("savedState.entries.length"),0); assert.strictEqual(pushes(app).length,0);
+  });
+  test("T-APP-M8-flip-between-batches: no second batch after authority changes", async () => {
+    const app=await fixture(); const r=await record();
+    app.run(`{const e=savedClone(savedState);for(let i=0;i<201;i++){const id=crypto.randomUUID();e.entries.push({instanceId:id,revision:1,displayOrdinal:e.nextDisplayOrdinal++,record:${JSON.stringify(r)}});e.usedInstanceIds.push(id)}e.revision++;if(!applySavedSnapshot(e).ok)throw Error("fixture")}
+      __hook=async path=>{if(path.endsWith("push_scales")){${flip}}};`);
+    reset(app); await app.getAsync("syncKick(false)");
+    assert.strictEqual(pushes(app).length,1,"only the first batch was dispatched"); assert.strictEqual(app.get("__commits.length"),0);
+  });
+  test("T-APP-M8-collection-swap: same generation and mode still abort the old cycle", async () => {
+    const app=await fixture(), r=await record(); reset(app);
+    const generation=app.get("savedAuthorityGeneration");
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:4,record:${JSON.stringify(r)},deleted:false}];
+      __hook=async path=>{if(path.startsWith("/rest/v1/saved_scales")){const e=savedClone(savedState);e.collectionId=crypto.randomUUID();if(!applySavedSnapshot(e).ok)throw Error("fixture")}};`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("savedAuthorityGeneration"),generation); assert.strictEqual(app.get("savedMode"),"durable");
+    assert.strictEqual(app.get("__commits.length"),0,"collection swap aborts before commit"); assert.strictEqual(pushes(app).length,0);
+  });
+  test("T-APP-S7-signout-mid-pull: a dropped sidecar prevents apply", async () => {
+    const app=await fixture(); reset(app);
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:5,record:${JSON.stringify(await record())},deleted:false}];
+      __hook=async path=>{if(path.startsWith("/rest/v1/saved_scales"))syncDrop()};`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("__commits.length"),0);assert.strictEqual(pushes(app).length,0);
+  });
+  test("T-APP-S7-switch-mid-push: user change prevents later batches", async () => {
+    const app=await fixture(); const r=await record();
+    app.run(`{const e=savedClone(savedState);for(let i=0;i<201;i++){const id=crypto.randomUUID();e.entries.push({instanceId:id,revision:1,displayOrdinal:e.nextDisplayOrdinal++,record:${JSON.stringify(r)}});e.usedInstanceIds.push(id)}e.revision++;if(!applySavedSnapshot(e).ok)throw Error("fixture")}
+      __hook=async path=>{if(path.endsWith("push_scales"))syncPatch(syncLoad().userId,s=>({...s,userId:crypto.randomUUID()}))};`);
+    reset(app); await app.getAsync("syncKick(false)");
+    assert.strictEqual(pushes(app).length,1,"old user must not dispatch a later batch");
+  });
+  test("T-APP-M1-remote-delete: legitimate remote tombstone removes an unedited local scale", async () => {
+    const app=await fixture(); await makeCustom(app); await app.getAsync("syncKick(false)");
+    const id=app.get("savedState.entries[0].instanceId");
+    app.run(`__rows=[{scale_id:${JSON.stringify(id)},rev:30,deleted:true,record:null}];`);
+    await app.getAsync("syncKick(true)"); assert.strictEqual(app.get("savedState.entries.length"),0);
+  });
+  test("T-APP-M1-delete-keeps-local: account deletion leaves durable saved scales", async () => {
+    const app=await fixture(); await makeCustom(app);const before=savedRaw(app);
+    await app.getAsync("syncDeleteAccount()");await app.getAsync("syncDeleteAccount()");
+    assert.strictEqual(app.get("syncLoad()"),null);assert.strictEqual(savedRaw(app),before);
+  });
+  test("T-APP-M4-dropped: blocked tab accepts sidecar removal from another tab", async () => {
+    const app=await fixture({indexedDB:false});
+    const peer=boot({origin:app.fixtureOrigin,href:DEV,html:"<script></script>"});
+    peer.run(`localStorage.removeItem(${JSON.stringify(KEY)});`);app.fixtureOrigin.flushStorageEvents();
+    assert.strictEqual(app.get("syncLoad()"),null);await blocked(app);
+  });
+  test("T-APP-M1-signed-out: durable sign-in stays available without a sidecar", async () => {
+    const app=await fixture();app.run("syncDrop();syncPaint()");
+    assert.strictEqual(app.els["sync-open"].hidden,false);assert.notStrictEqual(app.get("syncStoreToken()"),null);
+  });
+  test("T-PIN-matrix: modes and destructive call sites stay enumerated", () => {
+    const source=require("node:fs").readFileSync("index.html","utf8");
+    const region=source.slice(source.indexOf("// Optional email-code sign-in"),source.indexOf("/* ---------------- go ---------------- */"));
+    assert.deepStrictEqual([...new Set([...source.matchAll(/\bsavedMode\s*=\s*["']([^"']+)["']/g)].map(m=>m[1]))].sort(),["durable","protected","session","starting"]);
+    assert.strictEqual((region.match(/syncFetch\("\/rest\/v1\/rpc\/push_scales"/g)||[]).length,1);
+    assert.strictEqual((region.match(/\bsyncApply\(/g)||[]).length,3);
+    assert.strictEqual((region.match(/\bsyncKick\(/g)||[]).length,8);
+    assert.strictEqual((region.match(/\bsyncCycle\(/g)||[]).length,2);
+    assert.match(region,/async function syncCycle\(pull\)[\s\S]*?syncStoreToken\(/);
+    assert.match(region,/async function syncPull\([^)]*\)[\s\S]*?syncStill\(/);
+    assert.match(region,/async function syncPush\([^)]*\)[\s\S]*?syncStill\(/);
   });
 });
