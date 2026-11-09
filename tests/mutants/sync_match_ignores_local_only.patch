@@ -4,9 +4,9 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -85,7 +85,7 @@
+@@ -85,7 +85,7 @@ HPE.sync = (function () {
      const claimed = new Set();
-     const ops = [], baseUpdates = [], baseDrops = [], pendingRemoves = [];
+     const ops = [], baseUpdates = [], baseDrops = [], pendingRemoves = [], sources = {};
      const remoteIds = new Set(remote.map(r => r.scale_id));
 -    const candidates = local.filter(e => !base[alias[e.id] || e.id] && !localOnly.has(e.id) && !remoteIds.has(alias[e.id] || e.id));
 +    const candidates = local.filter(e => !base[alias[e.id] || e.id] && !remoteIds.has(alias[e.id] || e.id));

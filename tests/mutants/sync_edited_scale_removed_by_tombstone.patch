@@ -4,12 +4,12 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -170,7 +170,7 @@
+@@ -193,7 +193,7 @@ HPE.sync = (function () {
          continue;
        }
        if (R.rev <= B.rev) continue;
 -      if (L.revision === B.localRevision) pendingRemoves.push({ R, L });
 +      if (true) pendingRemoves.push({ R, L });
-       else baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "keep" });
+       else baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "keep", site: "tomb-keep" });
      }
  

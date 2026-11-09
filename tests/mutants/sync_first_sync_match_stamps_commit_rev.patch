@@ -1,0 +1,15 @@
+# kills: settle R3c: a first-sync equal-body match with a concurrent edit pushes the edit
+# suite: node --test --test-name-pattern settle.R3c tests/sync.test.js
+# The first-sync match stamps a later revision than the plan read, so a concurrent edit is not pushed.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -142,7 +142,7 @@ HPE.sync = (function () {
+             if (match.id !== rid) alias[match.id] = rid;
+             byRid.set(rid, match);
+             const same = equal(match.record, R.record);
+-            baseUpdates.push({ rid, localId: match.id, rev: R.rev, mode: same ? "observed" : "edited", localRevision: same ? match.revision : null, site: "first-sync-match" });
++            baseUpdates.push({ rid, localId: match.id, rev: R.rev, mode: same ? "observed" : "edited", localRevision: same ? match.revision + 1 : null, site: "first-sync-match" });
+             continue;
+           }
+           const collides = d && d.deckId !== undefined && deckIdentity.has(d.deckId) && deckIdentity.get(d.deckId) !== d.identity;

@@ -4,12 +4,12 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -165,7 +165,7 @@
+@@ -188,7 +188,7 @@ HPE.sync = (function () {
  
        if (!L) { if (B) baseDrops.push(rid); continue; }
        if (!B) {
 -        if (R.record && equal(L.record, R.record)) pendingRemoves.push({ R, L });
 +        if (true) pendingRemoves.push({ R, L });
-         else baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "edited" });
+         else baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "edited", site: "tomb-nobase" });
          continue;
        }
