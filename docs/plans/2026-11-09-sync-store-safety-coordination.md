@@ -51,8 +51,8 @@ C: waiting; do not start until E CI and fresh review pass. Use section5's correc
 | Role | Branch | State | Last update UTC |
 |---|---|---|---|
 | Root | claude/login-sync-a2 | plan correction READY; original clean lane fast-forwarded215ad5a7→6c960269 | 2026-11-09T12:38Z |
-| E | claude/login-sync-a2 | queued; base application6c960269 | 2026-11-09T12:38Z |
-| C | claude/login-sync-a2 | blocked on E gates | 2026-11-09T12:38Z |
+| E | claude/login-sync-a2 | PASS at fb0b2974; validate42619061715 success/all12, five new mutants killed | 2026-11-09T13:16Z |
+| C | claude/login-sync-a2 | unlocked after verified E CI/fresh review; tests first | 2026-11-09T13:16Z |
 
 ## Handoff queue (append-only)
 
@@ -65,3 +65,20 @@ C: waiting; do not start until E CI and fresh review pass. Use section5's correc
 This harness supplies independent Codex subagents, not Claude's named Sonnet/Opus agent types.
 Installed workflow contracts are applied as read-only instructions; no claim of native Claude slash-command
 execution or model-tier parity. No new installs/global setup. Root owns shared browser runtime; E runs none.
+
+
+## Engine completion and client handoff
+
+Engine E at `fb0b29748ad0d5f483b6ed721c05ff3498b90891`: fresh independent reviewer PASS, no findings.
+Root verified actual PR1001 head equals clean author local tip. Validate42619061715 completed success
+with all12jobs; CI logs and local proofs show the five new mutants killed. Independent review reproduced
+six failing new cases with original6c960269 source and178/178 green at E. All39existing sync/a2 patches
+apply. This is ENGINE-only PASS: the unsafe client is still present until C is complete.
+
+Owner reiterated minimum scope and /reviewed-plan plus interviews for material doubt. No new infrastructure.
+The optional local-overlap scheduling question received no answer and became moot when E passed; the
+original serial order was retained. Client C now executes the committed section6 row. The existing local
+app/CI/runtime and reviewer model qualifications remain; C must get its own exact-head CI and fresh review.
+No DEV/main merge, deploy, migration or production action occurred. #1003 stays at7e3b356f for the later
+reviewed fast-forward rebuild. Root may add this handoff documentation as a LOCAL commit before C, but
+does not push it separately: C's final ordinary push carries it with the code to avoid a redundant CI run.
