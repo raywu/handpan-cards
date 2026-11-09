@@ -4,12 +4,12 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -217,7 +217,7 @@
-       let localRevision;
-       if (u.mode === "committed") {
-         if (!rev.has(u.localId)) throw new Error("sync: no committed revision for " + u.localId);
+@@ -271,7 +271,7 @@ HPE.sync = (function () {
+           if (src && src.rev !== null && src.rev !== undefined) hold = Math.min(hold, src.rev - 1);
+           continue;
+         }
 -        localRevision = rev.get(u.localId);
 +        localRevision = rev.get(u.localId) - 1;
-       } else if (u.mode === "edited") localRevision = null;
+       } else if (u.mode === "observed") localRevision = u.localRevision;
+       else if (u.mode === "edited") localRevision = null;
        else localRevision = before ? before.localRevision : null;
-       next.base[u.rid] = { rev: u.rev, localRevision };

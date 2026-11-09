@@ -4,11 +4,11 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -114,7 +114,6 @@
+@@ -126,7 +126,6 @@ HPE.sync = (function () {
            if (B) {
              if (R.rev > B.rev) {
                const op = insert(R, "revive", { id: fresh() });
 -              alias[op.id] = rid;
-               baseUpdates.push({ rid, localId: op.id, rev: R.rev, mode: "committed" });
+               baseUpdates.push({ rid, localId: op.id, rev: R.rev, mode: "committed", site: "revive-base" });
              }
              continue;

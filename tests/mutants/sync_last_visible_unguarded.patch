@@ -4,12 +4,12 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -193,7 +193,7 @@ HPE.sync = (function () {
+@@ -200,7 +200,7 @@ HPE.sync = (function () {
      let visible = (ctx.builtinVisible || 0) + local.length + inserts;
      for (const { R, L } of pendingRemoves) {
        const rid = R.scale_id;
 -      if (visible - 1 < 1) {
 +      if (false) {
          deferred.add(rid);
-         baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
+         baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "observed", localRevision: L.revision, site: "defer-lastvisible" });
          continue;
