@@ -21429,6 +21429,28 @@ describe("sync store safety", () => {
     assert.strictEqual(app.get("__requests.length"),1,"only the old account pull was dispatched");
     assert.strictEqual(pushes(app).length,0); assert.strictEqual(app.get("__commits.length"),0);
     assert.strictEqual(app.get("savedState.entries.length"),1);
+    {
+      const app=await fixture(); await makeCustom(app); reset(app);
+      const held=app.get("savedState.entries[0].instanceId"), next=JSON.parse(sidecar({userId:uuid(),first:true}));
+      app.run(`__rows=[];
+        syncPatch(syncLoad().userId,s=>({...s,base:{[${JSON.stringify(held)}]:{rev:5,localRevision:1}},deferredDeletes:[${JSON.stringify(held)}]}));
+        globalThis.__beforeDeferredCommit=commitSaved;
+        commitSaved=async function(command,...args){
+          const result=await __beforeDeferredCommit(command,...args);
+          if(command.type==="sync-apply" && result.ok)localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+          return result;
+        };`);
+      try {
+        await app.getAsync("syncKick(true)");
+        assert.strictEqual(app.get("syncLoad().first"),true,"deferred apply completion must not finish the new account's first sync");
+        assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"deferred apply completion must not classify new account local scales");
+        assert.strictEqual(app.get("syncLoad().pending"),false);
+        assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"new account sidecar stays unchanged after the old deferred commit");
+        assert.strictEqual(app.get("__commits.length"),1,"one already-dispatched deferred removal may finish");
+        assert.strictEqual(app.get("__requests.length"),1); assert.strictEqual(pushes(app).length,0);
+        assert.strictEqual(app.get("savedState.entries.length"),0,"acknowledged old deferred removal is retained");
+      } finally { app.run("commitSaved=__beforeDeferredCommit"); }
+    }
   });
   test("T-APP-S7-switch-last-push: old cycle leaves the replacement account status untouched", async () => {
     const app=await fixture(); await makeCustom(app); reset(app);
