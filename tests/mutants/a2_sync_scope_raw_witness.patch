@@ -1,5 +1,6 @@
-# kills: T-APP-S2-refresh-first-barrier; T-APP-S7-switch-after-apply/switch-empty-pull/switch-last-push/switch-mid-push and T-APP-OS replacement-sidecar assertions
-# suite: node --test --test-reporter=tap --test-name-pattern T-APP-S2-refresh-first-barrier|T-APP-S7-switch|T-APP-OS- tests/app.test.js
+# kills: T-APP-OS-get-reset: during empty gt10 GET preserves first pull and recovers R via visibility
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-OS-get-reset:.during.empty.gt10.GET.preserves.first.pull.and.recovers.R.via.visibility tests/app.test.js
+# Broader manual proof: T-APP-S2-refresh-first-barrier; T-APP-S7-switch-after-apply/switch-empty-pull/switch-last-push/switch-mid-push and T-APP-OS replacement-sidecar assertions
 # Raw witness disabled; durable-store and all boundary checks remain.
 diff --git a/index.html b/index.html
 --- a/index.html
