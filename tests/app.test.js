@@ -20487,6 +20487,24 @@ describe("sync-apply", () => {
     assert.strictEqual(shapeOk(app), true);
   });
 
+  test("an overwrite that requires a skipped insert is skipped too, the row untouched", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+    const before = rowOf(app, a.instanceId);
+    const result = applySync(app, [insertOp("not-a-uuid", record),
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record, opaque: true, requires: "not-a-uuid" }]);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.sync.skipped, [{ id: "not-a-uuid", reason: "id" }, { id: a.instanceId, reason: "dependency" }]);
+    assert.deepStrictEqual(rowOf(app, a.instanceId), before);
+  });
+
+  test("an overwrite that requires an applied insert goes ahead", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING), moved = syncId();
+    const result = applySync(app, [insertOp(moved, record),
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record, opaque: true, requires: moved }]);
+    assert.deepStrictEqual(result.sync.skipped, []);
+    assert.deepStrictEqual(rowOf(app, a.instanceId).record, record);
+  });
+
   test("a remove of an unknown id is reported as missing", async () => {
     const app = boot(), id = syncId();
     await makeCustom(app);

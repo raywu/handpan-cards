@@ -833,3 +833,105 @@ test("sync: bounded two-device model holds no-loss, convergence and no endless c
   assert.ok(runs > 5000);
   assert.deepEqual(failures.slice(0, 3), []);
 });
+
+/* ------------------------------------------------------- settle with skipped ops */
+/* docs/ENGINE-SPEC.md section 20 (settle contract): the caller passes sync-apply's
+   `skipped` list to settlePull; a skipped op leaves its base, alias and cursor alone. */
+{
+  const ctx = () => ({ newId: uid, usedIds: [], describe, copyName });
+  const row = (id, rev, n, deleted = false) => ({ scale_id: id, rev, deleted, record: deleted ? null : rec(n) });
+  const committedOf = local => local.map(e => ({ id: e.id, revision: e.revision }));
+
+  test("settle: a skipped stale overwrite keeps the base and the cursor so the local edit pushes", () => {
+    let local = [{ id: "a", revision: 1, record: rec("A") }, { id: "b", revision: 1, record: rec("B") }];
+    let sc = { ...sync.emptySidecar(), cursor: 1, base: { a: { rev: 1, localRevision: 1 }, b: { rev: 1, localRevision: 1 } } };
+    const plan = sync.planPull({ remote: [row("a", 2, "A-remote")], local, sidecar: sc, ctx: ctx() });
+    assert.deepEqual(plan.ops.map(o => [o.op, o.id, o.expectedRevision]), [["overwrite", "a", 1]]);
+    local = [{ id: "a", revision: 2, record: rec("A-local-edit") }, local[1]];
+    sc = sync.settlePull(sc, plan, committedOf(local), [{ id: "a", reason: "revision" }]);
+    assert.deepEqual(sc.base.a, { rev: 1, localRevision: 1 });
+    assert.equal(sc.cursor, 1);
+    const push = sync.planPush({ local, sidecar: sc, ctx: ctx() });
+    assert.deepEqual(push.rows.map(r => [r.scale_id, r.base_rev, r.record.n]), [["a", 1, "A-local-edit"]]);
+    const again = sync.planPull({ remote: [row("a", 3, "A-remote-2")], local, sidecar: sc, ctx: ctx() });
+    assert.deepEqual(again.ops.map(o => o.op), ["insert"], "a conflict copy, never an overwrite of the edit");
+    assert.equal(again.ops[0].reason, "conflict-copy");
+  });
+
+  test("settle: without the skipped list the old stranding is what the contract forbids", () => {
+    const local = [{ id: "a", revision: 2, record: rec("A-local-edit") }];
+    const sc = { ...sync.emptySidecar(), cursor: 1, base: { a: { rev: 1, localRevision: 1 } } };
+    const plan = sync.planPull({ remote: [row("a", 2, "A-remote")], local: [{ id: "a", revision: 1, record: rec("A") }], sidecar: sc, ctx: ctx() });
+    const sloppy = sync.settlePull(sc, plan, committedOf(local));
+    assert.deepEqual(sloppy.base.a, { rev: 2, localRevision: 2 });
+    const careful = sync.settlePull(sc, plan, committedOf(local), [{ id: "a", reason: "revision" }]);
+    assert.deepEqual(careful.base.a, { rev: 1, localRevision: 1 });
+  });
+
+  test("settle: a skipped last-visible remove is deferred, keeping base and alias", () => {
+    const local = [{ id: "a", revision: 1, record: rec("A") }, { id: "b", revision: 1, record: rec("B") }];
+    const sc = { ...sync.emptySidecar(), cursor: 1, alias: { a: "ra" }, base: { ra: { rev: 1, localRevision: 1 }, b: { rev: 1, localRevision: 1 } } };
+    const plan = sync.planPull({ remote: [row("ra", 2, null, true)], local, sidecar: sc, ctx: ctx() });
+    assert.deepEqual(plan.ops.map(o => [o.op, o.id]), [["remove", "a"]]);
+    assert.deepEqual(plan.alias, {});
+    const next = sync.settlePull(sc, plan, committedOf(local), [{ id: "a", reason: "last-visible" }]);
+    assert.deepEqual(next.base.ra, { rev: 2, localRevision: 1 });
+    assert.deepEqual(next.alias, { a: "ra" });
+    assert.deepEqual(next.deferredDeletes, ["ra"]);
+    assert.equal(next.cursor, 2);
+    assert.deepEqual(sync.planPush({ local, sidecar: next, ctx: ctx() }).rows, [], "the remote delete is not reversed");
+    const later = sync.planDeferred({ local, sidecar: next, ctx: { ...ctx(), builtinVisible: 1 } });
+    assert.deepEqual(later.ops.map(o => [o.op, o.id, o.expectedRevision]), [["remove", "a", 1]]);
+  });
+
+  test("settle: a skipped stale remove keeps base, alias and holds the cursor", () => {
+    let local = [{ id: "a", revision: 1, record: rec("A") }, { id: "b", revision: 1, record: rec("B") }];
+    const sc = { ...sync.emptySidecar(), cursor: 1, alias: { a: "ra" }, base: { ra: { rev: 1, localRevision: 1 }, b: { rev: 1, localRevision: 1 } } };
+    const plan = sync.planPull({ remote: [row("ra", 2, null, true)], local, sidecar: sc, ctx: ctx() });
+    local = [{ id: "a", revision: 2, record: rec("A-edit") }, local[1]];
+    const next = sync.settlePull(sc, plan, committedOf(local), [{ id: "a", reason: "revision" }]);
+    assert.deepEqual(next.base.ra, { rev: 1, localRevision: 1 });
+    assert.deepEqual(next.alias, { a: "ra" });
+    assert.equal(next.cursor, 1);
+    const replay = sync.planPull({ remote: [row("ra", 2, null, true)], local, sidecar: next, ctx: ctx() });
+    assert.deepEqual(replay.ops, [], "the edited scale is kept, not removed");
+    assert.equal(replay.baseUpdates[0].mode, "keep");
+  });
+
+  test("settle: a remove that is already missing settles as a normal remove", () => {
+    const local = [{ id: "b", revision: 1, record: rec("B") }];
+    const sc = { ...sync.emptySidecar(), cursor: 1, alias: { a: "ra" }, base: { ra: { rev: 1, localRevision: 1 }, b: { rev: 1, localRevision: 1 } } };
+    const plan = sync.planPull({ remote: [row("ra", 2, null, true)], local: [{ id: "a", revision: 1, record: rec("A") }, ...local], sidecar: sc, ctx: ctx() });
+    const next = sync.settlePull(sc, plan, committedOf(local), [{ id: "a", reason: "missing" }]);
+    assert.equal(next.base.ra, undefined);
+    assert.equal(next.cursor, 2);
+  });
+
+  test("settle: a skipped insert leaves no base, no alias and holds the cursor", () => {
+    const local = [{ id: "b", revision: 1, record: rec("B") }];
+    const sc = { ...sync.emptySidecar(), cursor: 1, base: { b: { rev: 1, localRevision: 1 } } };
+    const plan = sync.planPull({ remote: [row("rn", 2, "New")], local, sidecar: sc, ctx: ctx() });
+    assert.equal(plan.ops[0].op, "insert");
+    const next = sync.settlePull(sc, plan, committedOf(local), [{ id: plan.ops[0].id, reason: "id" }]);
+    assert.equal(next.base.rn, undefined);
+    assert.equal(next.cursor, 1);
+  });
+
+  test("settle: the opaque overwrite requires its paired moved copy", () => {
+    const local = [{ id: "a", revision: 1, record: rec("Mine") }];
+    const sc = { ...sync.emptySidecar() };
+    const plan = sync.planPull({ remote: [{ scale_id: "a", rev: 1, deleted: false, record: rec("Theirs") }], local, sidecar: sc, ctx: { ...ctx(), readable: r => r.n !== "Theirs" } });
+    const [moved, over] = plan.ops;
+    assert.equal(moved.op, "insert");
+    assert.equal(over.op, "overwrite");
+    assert.equal(over.requires, moved.id);
+  });
+
+  test("settle: skipped ops never mutate their inputs", () => {
+    const local = [{ id: "a", revision: 2, record: rec("E") }];
+    const sc = { ...sync.emptySidecar(), cursor: 1, base: { a: { rev: 1, localRevision: 1 } } };
+    const plan = sync.planPull({ remote: [row("a", 2, "R")], local: [{ id: "a", revision: 1, record: rec("A") }], sidecar: sc, ctx: ctx() });
+    deepFreeze(sc); deepFreeze(plan);
+    sync.settlePull(sc, plan, committedOf(local), deepFreeze([{ id: "a", reason: "revision" }]));
+  });
+}
