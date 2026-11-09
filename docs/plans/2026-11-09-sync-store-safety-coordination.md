@@ -139,3 +139,10 @@ kills. Every retired old assertion actually fails under a mapped replacement (ma
 no negative test removed. Browserresend/fullmutation left to authoritative exact-headCI.
 Local source stays391db225, app1280/1280/scoped101/101/engine178/178, validatorPASS.
 Next: ordinary finalcandidatepush, exact-headfullCI andfreshreview; both main-targetPRsheld.
+
+
+M a064 fullCI failure was ONLY3central-mutant #kills/#suite metadata, notapp/browser behavior:
+app1280,e2e643,syncbrowser10 and4mutationshardspassed. Header-onlyfix8f0340cc preservesallbodies,
+3canonicalclean1/kill1 proofs, fullmutation_harness54/54,45apply. Existingfull54harnessnowmandatory
+localprepublication; rootmissedheaderlintfirsttime. NewexactMheadCI/freshreview required.
+Dprep3be45204 clean/local, publicationheld; ordinarymergecorrectedverifiedM beforelaterDgates.
