@@ -92,3 +92,15 @@ subplan is independently READY for three explicit completion checks (one dominat
 RED regressions and named mutants. This is the current C continuation point; no DEV rebuild before the
 corrected final-head CI and fresh review pass. Owner explicitly approved a held CI-only PR for the eventual
 D head; root will amend D section8/10 before its final push. No main merge authorization exists.
+
+
+## First-barrier regroup: current pickup
+
+Third #1001 review FAIL at58cd reproduced old-base tombstone before GET after same-user first:true
+replacement during token refresh. Code changes stopped. The new regroup prompt passed independent
+critique; a fresh writer produced subplan20 and a separate fresh engineering reviewer returned READY.
+The minimal reviewed direction is reloading sc after the await and honoring its first flag; no nonce,
+new field or framework. Next fix lane is serial C scope, RED at58cd first, then same-fixture recovery,
+two independent named mutants, preserved prior proofs and full final-head CI/fresh review. Current58cd
+remains blocked regardless of CI. Owner-held D-head CI approval remains; editor implementation stays
+behind login/editor manual QA. No DEV/main merge or production operation occurred.

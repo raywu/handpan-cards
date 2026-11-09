@@ -220,7 +220,8 @@ In the `index.html` sync region (app JS, outside engine regions):
   that awaited apply succeeds, before reloading the sidecar or planning deferred cleanup (including
   zero-op applies). This completion check dominates the former pre-deferred-ops check with no intervening
   await, so remove that redundant check; (b) in `syncPush`, the token-refresh await moves BEFORE
-  `syncLocal()`/`planPush`, with `syncStill` between that await and planning; (c) immediately before each
+  `syncLocal()`/`planPush`, with `syncStill` between that await and planning; then reload `sc` via
+  `syncLoad()` and return false without planning if absent or `sc.first` (section20); (c) immediately before each
   batch fetch; (d) in `syncCycle`, unconditionally after optional awaited `syncPull` and before sidecar
   reload/first-sync audit, and after awaited `syncPush` before the final sidecar reload/status settlement.
   Invalid identity aborts the old cycle without changing the replacement account's sidecar. These checks
@@ -321,6 +322,8 @@ sidecar with base of N=3 synced ids, fetch stub from the existing `install()`):
   sidecar cleanup, audit or push is allowed. Use existing fixture/temporary wrapper facilities, restored
   in finally. Each of these three boundary checks gets its own generated removal mutant and named
   assertion kill; retain all other guards during each kill proof.
+- T-APP-S2-refresh-first-barrier: section20 specifies same-user replacement safety, same-fixture
+  GET/audit/Add N recovery and two independent removal mutants.
 - T-APP-M1-remote-delete: remote tombstone for an unedited synced scale is applied locally (closes the
   reviewer's gap and guards the happy path against over-blocking).
 - T-APP-M1-delete-keeps-local: delete-account leaves every local scale.
@@ -346,7 +349,7 @@ Lane E then lane C. Mirror to dev per procedure s8.
 | Lane | Owns (exclusive) | Not owned | Acceptance | Verify (prefix every call `OPENCLAW_SESSION=1`) |
 |---|---|---|---|---|
 | E engine | `src/engine/sync.js`; engine region of `index.html` via `python3 tools/inline_engine.py` only; `tests/sync.test.js`; `tests/sync_model.js`; `tests/mutants/sync_*.patch`; `docs/ENGINE-SPEC.md` s20 (two rows, one stating that a voided base is a planning view only and is NOT dropped from the stored sidecar by `planPull`: the stale base lingers harmlessly, N4); the `tests/suite_health.py` row for `tests/sync.test.js` | all other `index.html`; `tools/sync/*`; schema | AC-E1 new S3-S5 tests fail at 6c960269 and pass after; AC-E2 no assertion in `tests/sync.test.js` changed and all pass; the only edits to existing tests are setup lines adding ids to `used`/`usedIds` (10 tests measured, N4); AC-E3 the five new engine mutants (usedIds filter in push, in pull, missing-usedIds default, alias lookup, planDeferred) killed by the named tests | `node --test tests/sync.test.js`; `python3 tools/inline_engine.py && python3 tools/validate.py` |
-| C client | `index.html` sync region (app JS only, from `// Optional email-code sign-in` to `syncBoot`); `tests/app.test.js` (new describe plus section18 fixture/setup-only corrections; all existing assertions unchanged); `tools/sandbox.js` (additive `throwOnKeys` option only, N3); `tests/mutants/a2_sync_*.patch`; `tests/suite_health.py` row for `tests/app.test.js` (set from measured count) | engine region; e2e files; i18n; About copy | AC-C1 new S1/S2/S6/S7/S8 tests fail at their pre-fix source and pass after (section19 adds three regressions against 8833; happy-path controls may already pass E); AC-C2 whole `sync client` and `sync-apply` describes still pass; AC-C3 app mutants killed: gate, primary pre-apply/pre-plan/pre-batch guards, post-apply/post-pull/post-push identity checks, token userId/collectionId and ungated syncStartLock; AC-C4 reviewer repro (T-APP-M7-zero-tombstones) passes | `node --test --test-name-pattern "sync store safety|sync client|sync-apply" tests/app.test.js`; `python3 tools/validate.py` |
+| C client | `index.html` sync region (app JS only, from `// Optional email-code sign-in` to `syncBoot`); `tests/app.test.js` (new describe plus section18 fixture/setup-only corrections; all existing assertions unchanged); `tools/sandbox.js` (additive `throwOnKeys` option only, N3); `tests/mutants/a2_sync_*.patch`; `tests/suite_health.py` row for `tests/app.test.js` (set from measured count) | engine region; e2e files; i18n; About copy | AC-C1 new S1/S2/S6/S7/S8 tests fail at their pre-fix source and pass after (section19 adds three regressions against 8833; happy-path controls may already pass E); AC-C2 whole `sync client` and `sync-apply` describes still pass; AC-C3 app mutants killed: gate, primary pre-apply/pre-plan/pre-batch guards, post-apply/post-pull/post-push identity checks, token userId/collectionId and ungated syncStartLock; AC-C4 reviewer repro (T-APP-M7-zero-tombstones) passes; AC-C5 section20 safety/recovery and both distinct named mutants pass | `node --test --test-name-pattern "sync store safety|sync client|sync-apply" tests/app.test.js`; `python3 tools/validate.py` |
 
 Standing gates for both: tests written first and shown failing; CI `validate` at the exact pushed head is
 the evidence (local runs are smoke); `tests/mutation_check.sh` not run in a background that anyone edits
@@ -728,3 +731,93 @@ caught by the earlier post-apply guard once all fixes are present, so it cannot 
 post-pull check. The added real-deferred-ACK timing variant above reaches the later boundary without
 weakening any guard or assertion. This is an existing-fixture test correction only; production bytes
 and plan scope are unchanged. Clean baseline and the exact named removal-mutant kill remain required.
+
+
+## 20. Third client-review regroup — first-pull barrier (2026-11-09)
+
+Mode: plan; AFK armed; implementation held pending fresh independent engineering review.
+Verified source HEAD `58cd45f0173c7c7b1ffcb0303508e619e59faf19`: root reports validate still in
+progress and third code-review FAIL; this head is NOT ready even if its CI later passes. Nothing
+has landed on DEV. This section supersedes old pickup/status text without discarding history.
+
+Cause/evidence: `syncPush` checks first BEFORE awaiting `syncToken`, then uses pre-await sc.
+`syncSubmit` creates first:true/empty-base even for the same user; `syncToken` calls
+`syncPatch(userId, cur => syncSession(cur,...))`, preserving the replacement first flag. User/store
+token equality therefore cannot establish current sc. Root's fresh runtime review reproduced old-base
+R tombstone before GET and verified a reload/first-check control; source inspection here confirms
+that mechanism, not a new runtime run. Existing app first-sync test requires GET before push;
+engine `firstSyncAudit` holds unmatched locals until `releaseLocal`; `T-ENG-S3-held-delete` preserves
+intentional post-sync deletion. Prior tests missed the same-user first-state axis across refresh.
+
+Smallest fix: C reloads sc AFTER token await/existing `syncStill`, then repeats `!sc || sc.first`
+early return false BEFORE `syncLocal`/`planPush`; keep initial cheap first check and all other guards.
+Forced GET on every push adds unnecessary network/behavior; a nonce adds persisted lifecycle work.
+Neither is needed. Do not address the separately deferred refresh-credential overwrite.
+
+Frozen rubric (evidence-qualified pass/fail, no numerical score): correct cause; no old-base tombstone;
+no unmatched push before replacement pull/choice; SAME fixture completes GET -> audit -> Add N -> Q
+push while R survives; ordinary sync/delete preserved; minimal C-only runtime change; RED/GREEN and
+discriminating mutants; no infrastructure; exact-head CI/fresh review; practical D continuation; honest
+residuals. Source feasibility passes self-check; runtime proof and independent review PENDING.
+
+1. **C prerequisites/ownership:** independent plan review READY, verified starting head, existing isolated
+   lane tree. Existing C row only: app sync region, additive app test, measured app floor and a2_sync
+   mutants; no sandbox change needed. No engine/schema/server/UI/copy/browser/script/global-config changes.
+   Design review unnecessary: no interaction change. Preserve all old assertions/negative fixtures.
+2. **TDD:** add one `T-APP-S2-refresh-first-barrier` in existing durable IDB fixture, stub installed before
+   startup. Normally sync R (stub retains live server row); create DISTINCT unmatched local Q without
+   firing debounce, delete local R with awaited `commitSaved` (R remains used), expire access token and
+   reset observations. Invoke push-only `syncKick(false)`; refresh hook replaces sidecar with SAME user,
+   first:true, cursor:0, empty base/alias/localOnly; store authority unchanged. Assert zero GET and zero
+   push requests, replacement first/base unaudited, remote R live and durable Q retained. Continue THIS
+   app with `syncKick(true)`: GET restores R, first audit holds Q in localOnly, no Q push. Exercise existing
+   `syncAskAnswer(true)`/Add N and await running cycle: permitted Q push follows GET/choice, R remains
+   locally and remotely live. Model stub acknowledgments/remote rows using existing fixture conventions;
+   no real Supabase/new harness. Restore hooks/wrappers in finally. Aborted push may await next ordinary
+   pull trigger; no new automatic retry contract. Existing first-sync/save/synced-delete and engine
+   held-delete tests remain unchanged controls.
+3. **Exact commands** (prefix C calls `OPENCLAW_SESSION=1`, record actual selections/failures):
+   `node --test --test-name-pattern='T-APP-S2-refresh-first-barrier' tests/app.test.js` executes ONE new
+   regression RED at58cd before source change, GREEN after. Then
+   `node --test --test-name-pattern='sync store safety|sync client|sync-apply' tests/app.test.js` and
+   `node --test --test-name-pattern='T-ENG-S3-held-delete' tests/sync.test.js` pass with nonzero selection.
+   Measure `node --test --test-reporter=tap tests/app.test.js`; raise ONLY its floor from actual output
+   (current1243; one addition predicts1244, prediction is not evidence). Generate
+   `a2_sync_after_refresh_reload.patch` omitting ONLY new reload, first guard intact: named regression
+   fails on old-base R tombstone. Generate `a2_sync_after_refresh_first.patch` removing ONLY new first
+   guard, reload intact: same regression fails on premature live Q push. Generated git diff/no index
+   lines, exact `# kills:` title and existing header word-split pattern rules apply. Run
+   `MUTANT_LIST=<scratch>/first-barrier-mutants.txt ./tests/mutation_check.sh` with these two basenames;
+   clean baseline passes and each named assertion kills with every other guard intact. Preserve all13
+   prior C safety mutant kills and all49 existing a2_/sync_ patch applications. Check each with
+   `git apply --check <patch>`; C reanchors only owned context drift via generated diff without weakening
+   kills; engine-owned drift returns to root. Full final-head mutation/CI remains required. Never run
+   mutation beneath concurrent edits.
+4. **Delivery:** root verifies actual1001 head equals clean local H; full Linux validate success and fresh
+   report-only exact-H review address this scenario/all acceptance rows. D rebuild follows section8,
+   ordinary commits from existing1003 head. Owner approved ONE held main-target CI-only PR from EXACT
+   rebuilt D branch/head: full validate at D SHA plus fresh D-head review before DEV integration; neither
+   main-target PR merges. Latest independently reviewed D verification placement under AFK: local `node --test tests/app.test.js`,
+   `node --test tests/sync.test.js` measured counts; retain `node --test tests/editor_model.test.js`
+   (U2a-F3), `python3 -m unittest tests.test_suite_health`, `python3 tools/validate.py` and ALL applicable
+   a2/sync patch apply checks before final D push. Replace local ALLFILES/emit-js with authoritative FULL
+   D-head CI (full JS/e2e/suite-health/mutation), inspect required counts/skips/artifacts without waivers.
+   Root amends8/10 in D copy before push. No duplicate full Mac browser run/new harness. After integration,
+   root verifies actual served DEV revision/affected behavior using runbook-selected titles/counts and
+   serialized host lease; owner login QA remains human evidence.
+
+Recovery/pickup: ordinary scoped revert commit; no reset/amend/force/main merge/deploy/migration/prod.
+Retain already-dispatched transaction residual and below-cursor recovery exclusion (4.1/4.2), neither
+newly proved here. Fixture is not native/served-browser evidence. Next: fresh independent engineering
+review of20 and operative4.2/5/6; only READY unlocks C's RED at58cd. Material new product fork returns to
+owner interview; first-sync/Add N contract is settled. Writer stops at plan, no source/tests/commits/push
+or Linear writes. pending-linear-writes: [].
+
+
+Section20 independent engineering review: READY (2026-11-09), no blocking findings. Reviewer verified
+source cause, existing helpers/commands, minimal ownership, independent reload/first-barrier mutants,
+same-fixture recovery and M/D exact-head gates. Q must be genuinely unmatched by meaning, not merely
+another local id. The fresh first state aborts the current push (return false), rather than claiming
+sync completion; the existing ordinary pull/choice flow resumes it. Runtime proof remains the fix lane's
+work. Prompt critique and plan review were separate fresh non-author contexts using installed contracts;
+no native Claude invocation, numerical perfection score or unexecuted runtime success is claimed.
