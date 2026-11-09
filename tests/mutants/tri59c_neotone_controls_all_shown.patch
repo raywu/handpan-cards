@@ -1,0 +1,17 @@
+# kills: TRI59c the Neotone layout row offers Mirror and two rotate buttons, momentary, in view; Standard keeps its four
+# suite: node --test --test-name-pattern ^TRI59c.the.Neotone.layout.row tests/editor_e2e.test.js
+# fault: Mirror Bottom and the two #1 buttons stay visible on Neotone.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16181,8 +16181,8 @@ function editorRenderLayout(m) {
+   const off = editorIsEmpty(m);
+   const bottom = editorBottomMirror(m);
+   const anchor = m.options.anchor || "one";
+-  const rows = [["editor-mirror-top", !!m.options.mirror, off, false], ["editor-mirror-bottom", bottom, off || !editorHasBottom(m), neo],
+-    ["editor-anchor-one", anchor === "one", off, neo], ["editor-anchor-between", anchor === "between", off, neo]];
++  const rows = [["editor-mirror-top", !!m.options.mirror, off, false], ["editor-mirror-bottom", bottom, off || !editorHasBottom(m), false],
++    ["editor-anchor-one", anchor === "one", off, false], ["editor-anchor-between", anchor === "between", off, false]];
+   for (const [id, on, dis, hide] of rows) {
+     const el = editorEl(id);
+     el.hidden = hide;

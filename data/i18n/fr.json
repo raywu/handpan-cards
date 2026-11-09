@@ -464,6 +464,15 @@
   "editor.palette": "Card palette",
   "editor.palette_n": "Card palette {n}",
   "editor.layout.aria": "Mirror and orientation",
+  "editor.neo.mirror": "MIROIR",
+  "editor.neo.mirror.aria": "Inverser la disposition en miroir",
+  "editor.neo.rotate_ccw": "TOURNER ↺",
+  "editor.neo.rotate_ccw.aria": "Tourner d’un cran dans le sens antihoraire",
+  "editor.neo.rotate_cw": "TOURNER ↻",
+  "editor.neo.rotate_cw.aria": "Tourner d’un cran dans le sens horaire",
+  "editor.neo.say_mirror": "Miroir appliqué.",
+  "editor.neo.say_rotate_cw": "Tourné dans le sens horaire.",
+  "editor.neo.say_rotate_ccw": "Tourné dans le sens antihoraire.",
   "editor.replace_ding": "Replace ding",
   "editor.replace_ding_aria": "Make the selected note the ding"
 }

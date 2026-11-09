@@ -464,6 +464,15 @@
   "editor.palette": "Card palette",
   "editor.palette_n": "Card palette {n}",
   "editor.layout.aria": "Mirror and orientation",
+  "editor.neo.mirror": "MIRROR",
+  "editor.neo.mirror.aria": "Mirror the layout left to right",
+  "editor.neo.rotate_ccw": "ROTATE ↺",
+  "editor.neo.rotate_ccw.aria": "Rotate one step anticlockwise",
+  "editor.neo.rotate_cw": "ROTATE ↻",
+  "editor.neo.rotate_cw.aria": "Rotate one step clockwise",
+  "editor.neo.say_mirror": "Mirrored.",
+  "editor.neo.say_rotate_cw": "Rotated clockwise.",
+  "editor.neo.say_rotate_ccw": "Rotated anticlockwise.",
   "editor.replace_ding": "Replace ding",
   "editor.replace_ding_aria": "Make the selected note the ding"
 }

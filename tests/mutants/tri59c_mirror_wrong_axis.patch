@@ -1,0 +1,15 @@
+# kills: TRI59c-M3: mirror sends angle a to 540 - a, twice is the identity, labels stay on their tonefields on 
+# suite: node --test --test-name-pattern ^TRI59c-M3..mirror.sends tests/editor_model.test.js
+# fault: Mirror reflects about the wrong axis.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15394,7 +15394,7 @@ const editorNeoRotate = (m, step) => editorNeoPermute(m, (field, ring) => {
+   return at === -1 ? field : ring[(at + step + ring.length) % ring.length];
+ });
+ const editorNeoMirror = (m) => editorNeoPermute(m, (field, ring, angles, reach) => {
+-  const mate = angles.findIndex((a) => a === (((540 - angles[field]) % 360) + 360) % 360);
++  const mate = angles.findIndex((a) => a === (((360 - angles[field]) % 360) + 360) % 360);
+   return mate !== -1 && mate < reach && field < reach ? mate : field;
+ });
+ function editorRemoveNeotone(m, ring, i) {
