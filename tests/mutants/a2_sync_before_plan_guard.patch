@@ -1,0 +1,15 @@
+# kills: T-APP-M8-flip-before-push: no planner call after refresh changes authority
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M8-flip-before-push tests/app.test.js
+# Refs TRI-28: client store authority boundary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18353,7 +18353,7 @@ async function syncPush(storeToken = syncStoreToken()) {
+     let sc = syncLoad();
+     if (!sc || sc.first) return true;
+     const token = await syncToken();
+-    if (!token || !syncStill(storeToken)) return false;
++    if (!token) return false;
+     const plan = HPE.sync.planPush({ local: syncLocal(), sidecar: sc, ctx: syncCtx() });
+     if (!plan.rows.length) {
+       if (sc.pending) syncPatch(sc.userId, cur => ({ ...cur, pending: false }));

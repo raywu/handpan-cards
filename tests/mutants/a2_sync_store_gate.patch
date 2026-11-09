@@ -1,0 +1,15 @@
+# kills: T-APP-M7-zero-tombstones and T-APP-M7-pull: temporary use stays local
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M7-zero-tombstones tests/app.test.js
+# Refs TRI-28: client store authority boundary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18247,7 +18247,7 @@ async function syncFetch(path, options = {}) {
+ const syncSession = (sc, body) => ({ ...sc, refresh: body.refresh_token, access: body.access_token,
+   accessExp: Date.now() + (Number(body.expires_in) > 0 ? Number(body.expires_in) : 3600) * 1000 });
+ function syncStoreToken() {
+-  if (!SYNC_CFG || !savedState || savedMode !== "durable" || savedState.migration?.temporary) return null;
++  if (!SYNC_CFG || !savedState || savedMode === "protected" || savedState.migration?.temporary) return null;
+   return savedAuthorityGeneration + ":" + savedState.collectionId + ":" + (syncLoad()?.userId || "");
+ }
+ const syncActive = () => syncStoreToken() !== null;

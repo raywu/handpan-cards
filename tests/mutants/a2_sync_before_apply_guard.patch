@@ -1,0 +1,14 @@
+# kills: T-APP-M8-flip-before-apply: ops-bearing pull aborts on authority change
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M8-flip-before-apply tests/app.test.js
+# Refs TRI-28: client store authority boundary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18337,7 +18337,6 @@ async function syncPull(storeToken = syncStoreToken()) {
+     const rows = await syncRemotePages(sc.cursor, token);
+     if (!rows) return false;
+     const plan = HPE.sync.planPull({ remote: rows, local: syncLocal(), sidecar: sc, ctx: syncCtx() });
+-    if (plan.ops.length && !syncStill(storeToken)) return false;
+     if (!await syncApply(sc.userId, plan, storeToken)) continue;
+     sc = syncLoad();
+     if (!sc) return false;

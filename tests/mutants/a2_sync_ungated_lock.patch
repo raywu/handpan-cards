@@ -1,0 +1,15 @@
+# kills: T-APP-M6-holder: protected boot never takes the sync lock
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M6-holder tests/app.test.js
+# Refs TRI-28: client store authority boundary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18412,7 +18412,7 @@ function syncChanged() {
+   syncTimer = setTimeout(() => { syncKick(false); }, 2000);
+ }
+ function syncStartLock() {
+-  if (!syncActive() || syncLockAsked || !syncLoad()) return;
++  if (syncLockAsked || !syncLoad()) return;
+   let locks = null;
+   try { locks = navigator.locks; } catch (e) {}
+   if (!locks || typeof locks.request !== "function") return;
