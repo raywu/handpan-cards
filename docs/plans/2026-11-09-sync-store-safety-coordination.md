@@ -131,3 +131,11 @@ App1280/1280, scoped101/101, engine178/178 locally pass. Root owns exclusive tes
 now; test/source lanes finished. Mutant generation may run in its own disposable WT with only
 tests/mutants ownership and return its proof map to root; no shared source edits or duplicatefullCI.
 Current1001remote1356 has fullCI success but independentFAIL. Neither1003 norDEV/main changed.
+
+
+Mutant handoff ddafa976 integrated:9subsumed guard mutants replaced by3central witness proofs;
+4survivors reanchored,33enginepatches unchanged.45/45remainingapply;11/11unit headerclean+assertion
+kills. Every retired old assertion actually fails under a mapped replacement (map in subplan21),
+no negative test removed. Browserresend/fullmutation left to authoritative exact-headCI.
+Local source stays391db225, app1280/1280/scoped101/101/engine178/178, validatorPASS.
+Next: ordinary finalcandidatepush, exact-headfullCI andfreshreview; both main-targetPRsheld.

@@ -1053,3 +1053,70 @@ region, no generated block/engine/schema/UI/key changes. Local Node25.8.1/Python
 No browser/native/served DEV proof claimed. Baseline1356 validate42634146666 completed success but
 reviewFAIL still blocks it. Next: generated mutant consolidation/proof map, final candidate commit/push,
 full exact-head Linux validate and fresh independent review; only then rebuilt DEV gates.
+
+
+### Section21 generated mutant proof and current pickup
+
+# TRI-28 operation-scope mutant proof
+
+Source baseline: 4982bdb72a6a2cd537d296802254f362fb07d499 (source391db225 plus root pins/floor/docs). Dedicated WT /private/tmp/handpan-sync-scope-mutants-20261109; branch claude/sync-scope-mutants-20261109. No application/test/floor/harness/engine changes. No browser run, remote write or Linear write. Node local v25.8.1; Linux exact-head full validate/review remain integrator gates.
+
+Inventory: starting51 =18a2 +33sync engine. Retire9 obsolete a2 guard/token-user mutants; add3 shared-protection mutants; retain9 other a2 (4 reanchored,5 byte unchanged). Result45 =12a2 +33sync; all45 `git apply --check` pass. The33 unrelated sync engine patches stay byte unchanged. Browser resend patch stays byte unchanged and applies, but is intentionally not executed locally; its kill requires full Linux CI.
+
+Generated all new/reanchored bodies by transient exact string mutation of committed index.html and git diff, removing only blob index line; finally restored baseline source bytes. Generation script: /private/tmp/tri28-generate-mutants.py. No handwritten hunks. Every behavioral test and negative assertion is preserved byte-for-byte in tests/app.test.js.
+
+Shared protection mutations: raw exact comparison -> true with store equality/invalid/boundary checks intact; store equality -> true with raw/invalid/boundary checks intact; remove only successful own-write expectedRaw advancement. No redundant source guards or timing hooks.
+
+## Retired old -> replacement -> actual old named assertion failure
+
+All old named tests below ACTUALLY FAIL in retained TAP under the corresponding replacement. These are not inferred from failure of a different new test. Several-to-one mapping follows independent READY clarification.
+
+| Retired | Replacement | Actual failing old named test | Actual failed assertion |
+|---|---|---|---|
+| `a2_sync_after_apply_guard.patch` | `a2_sync_scope_raw_witness.patch` | `T-APP-S7-switch-after-apply` | old apply must not clean up the new account base or deferred deletes |
+| `a2_sync_after_pull_guard.patch` | `a2_sync_scope_raw_witness.patch` | `T-APP-S7-switch-empty-pull` | old zero-row pull must not complete the new account's first sync |
+| `a2_sync_after_push_guard.patch` | `a2_sync_scope_raw_witness.patch` | `T-APP-S7-switch-last-push` | old final push must not stamp the replacement account status |
+| `a2_sync_after_refresh_first.patch` | `a2_sync_scope_raw_witness.patch` | `T-APP-S2-refresh-first-barrier` | refresh must not push an old-base R tombstone |
+| `a2_sync_after_refresh_reload.patch` | `a2_sync_scope_raw_witness.patch` | `T-APP-S2-refresh-first-barrier` | refresh must not push an old-base R tombstone |
+| `a2_sync_before_apply_guard.patch` | `a2_sync_scope_store_witness.patch` | `T-APP-M8-flip-before-apply` | no sync-apply after authority flip |
+| `a2_sync_before_batch_guard.patch` | `a2_sync_scope_store_witness.patch` | `T-APP-M8-flip-between-batches` | only the first batch was dispatched |
+| `a2_sync_before_plan_guard.patch` | `a2_sync_scope_store_witness.patch` | `T-APP-M8-flip-before-push` | no planner invocations after authority flip |
+| `a2_sync_token_user.patch` | `a2_sync_scope_raw_witness.patch` | `T-APP-S7-switch-mid-push` | old user must not dispatch a later batch |
+
+## Owned unit headers, clean then mutation
+
+Counts are executed tests/pass/fail, excluding suite containers. Every run has required-skipped=0, cancelled=0. Every mutation has an ERR_ASSERTION; no syntax error/timeouts credited. Clean nonzero count verified before each mutation. Harness independently reports11/11 killed, rc0.
+
+| Patch | Clean tests/pass/fail | Mutation tests/pass/fail |
+|---|---|---|
+| `a2_sync_429_not_mapped.patch` | 1/1/0 | 1/0/1 |
+| `a2_sync_apply_failure_still_settles.patch` | 1/1/0 | 1/0/1 |
+| `a2_sync_change_never_pushes.patch` | 1/1/0 | 1/0/1 |
+| `a2_sync_scope_own_write_advance.patch` | 2/2/0 | 2/0/2 |
+| `a2_sync_scope_raw_witness.patch` | 41/41/0 | 41/8/33 |
+| `a2_sync_scope_store_witness.patch` | 39/39/0 | 39/36/3 |
+| `a2_sync_settle_drops_skipped.patch` | 1/1/0 | 1/0/1 |
+| `a2_sync_signout_keeps_sidecar.patch` | 1/1/0 | 1/0/1 |
+| `a2_sync_store_gate.patch` | 1/1/0 | 1/0/1 |
+| `a2_sync_token_collection.patch` | 1/1/0 | 1/0/1 |
+| `a2_sync_ungated_lock.patch` | 1/1/0 | 1/0/1 |
+
+Raw witness header selects5 old named tests plus36 new OS tests:41 clean pass;33 actual assertion failures including all5 old named tests,8 positive controls pass. Store witness header selects3 old named tests plus36 OS tests:39 clean pass;3 old named tests fail,36 OS tests pass. These passing OS tests do not prove the store equality protection; the three old named assertions do. Own-write header selects2 OS controls:2 clean pass, both fail when advancement is removed.
+
+New OS coverage under raw mutant includes refresh200/408/429/401 reset/switch/removal, during gt10 reset, final and intermediate pages, primary/deferred ACK, final/intermediate/failed/refused push ACK, real visibility liveness, async delete success/failure reset/switch/removal, zero-op/baseDrops-only settlement and Add N queued operation. Current refresh branches, reset-before GET, unchanged pages, own-writes/current-delete controls remain green.
+
+Reanchored apply-failure preserves scope check while converting only result.ok failure into empty-success settlement. Reanchored skipped removes only fourth settlePull argument. Storegate changes only temporary eligibility as before. Token-collection removes only collection identity from generation+collection token; account identity remains raw witness. All4 retain old header selectors and old named assertion kills.
+
+Raw evidence:
+- /private/tmp/tri28-mutant-harness.log (MUTANT_LIST absolute11-name list;11/11 kills; clean baselines)
+- /private/tmp/tri28-owned-unit-list.txt
+- /private/tmp/tri28-proof-mutants.py (full TAP capture, strict source restore in finally)
+- /private/tmp/tri28-proof-progress.log
+- /private/tmp/tri28-mutant-tap/report.json (each command, exit/counts/failing titles/log)
+- /private/tmp/tri28-mutant-tap/<patch>.clean.tap and <patch>.mutant.tap
+
+Old behaviors unmapped: none. Pending full CI: browser resend kill plus authoritative full corpus at final exact head; independent final review and DEV checks owned by integrator. pending-linear-writes: [].
+
+Local mutant-only commit: ddafa976 (no push). Exact final head apply45/45, working tree clean; index.html exact baseline byte equality verified. Blob-header format test selected1/executed1/pass1, zero skips/cancel.
+
+Next: final local validator/apply checks, ordinary final candidate push; full exact-head validate and fresh independent code review. No DEV rebuild until both pass.
