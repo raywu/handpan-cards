@@ -216,9 +216,15 @@ In the `index.html` sync region (app JS, outside engine regions):
 - `syncActive` becomes `() => syncStoreToken() !== null` (so UI hiding and the guard share one source).
 - `syncCycle` captures the token once; a helper `syncStill(token)` re-reads it and returns false on any
   difference or on a dropped sidecar. Placement (N2, so each check has its own killer):
-  (a) in `syncPull`, immediately before each `syncApply` whose plan has `ops.length > 0` (a zero-op plan
-  commits nothing); (b) in `syncPush`, the token-refresh await moves BEFORE `syncLocal()`/`planPush` and
-  `syncStill` runs between that await and `planPush`; (c) in `syncPush`, immediately before each batch fetch. On false the function returns false without a store write or push.
+  (a) in `syncPull`, before the primary `syncApply` when its plan has ops, then UNCONDITIONALLY after
+  that awaited apply succeeds, before reloading the sidecar or planning deferred cleanup (including
+  zero-op applies). This completion check dominates the former pre-deferred-ops check with no intervening
+  await, so remove that redundant check; (b) in `syncPush`, the token-refresh await moves BEFORE
+  `syncLocal()`/`planPush`, with `syncStill` between that await and planning; (c) immediately before each
+  batch fetch; (d) in `syncCycle`, unconditionally after optional awaited `syncPull` and before sidecar
+  reload/first-sync audit, and after awaited `syncPush` before the final sidecar reload/status settlement.
+  Invalid identity aborts the old cycle without changing the replacement account's sidecar. These checks
+  supplement, not waive, the accepted one already-dispatched pull-commit residual below.
 - `syncKick`/`syncChanged` early-out on `!syncActive()` (cheap; the cycle check remains authoritative).
 - `syncApply` passes the `collectionId` CAPTURED in the cycle token (not `savedState.collectionId` read at
   call time) in the `sync-apply` command, so the existing epoch check inside the transaction runs against
@@ -298,6 +304,17 @@ sidecar with base of N=3 synced ids, fetch stub from the existing `install()`):
   Each mutant changes only its own guard; an unrelated guard must remain intact in the kill proof.
 - T-APP-S7-signout-mid-pull, T-APP-S7-switch-mid-push: sidecar dropped, or replaced by another userId,
   while a pull or push is in flight: no `sync-apply` commit, no later `push_scales`.
+- T-APP-S7-switch-empty-pull: switch to a new first:true sidecar during the old user's empty GET.
+  After the old cycle returns, the complete new sidecar (including first/localOnly/pending) is unchanged,
+  only the old GET occurred, no push/commit, and the local scale is retained.
+- T-APP-S7-switch-last-push: switch during the only/final batch response. The old request may finish,
+  but the new sidecar stays byte-equivalent in meaning, without an old-cycle syncedAt/pending stamp.
+- T-APP-S7-switch-after-apply: switch immediately after an already-dispatched pull commit completes.
+  A new sidecar with a held base/deferred-delete id must remain unchanged; the old cycle must not reload
+  it and settle deferred baseDrops. The one legitimate old commit is allowed; no later new-user apply,
+  sidecar cleanup, audit or push is allowed. Use existing fixture/temporary wrapper facilities, restored
+  in finally. Each of these three boundary checks gets its own generated removal mutant and named
+  assertion kill; retain all other guards during each kill proof.
 - T-APP-M1-remote-delete: remote tombstone for an unedited synced scale is applied locally (closes the
   reviewer's gap and guards the happy path against over-blocking).
 - T-APP-M1-delete-keeps-local: delete-account leaves every local scale.
@@ -323,7 +340,7 @@ Lane E then lane C. Mirror to dev per procedure s8.
 | Lane | Owns (exclusive) | Not owned | Acceptance | Verify (prefix every call `OPENCLAW_SESSION=1`) |
 |---|---|---|---|---|
 | E engine | `src/engine/sync.js`; engine region of `index.html` via `python3 tools/inline_engine.py` only; `tests/sync.test.js`; `tests/sync_model.js`; `tests/mutants/sync_*.patch`; `docs/ENGINE-SPEC.md` s20 (two rows, one stating that a voided base is a planning view only and is NOT dropped from the stored sidecar by `planPull`: the stale base lingers harmlessly, N4); the `tests/suite_health.py` row for `tests/sync.test.js` | all other `index.html`; `tools/sync/*`; schema | AC-E1 new S3-S5 tests fail at 6c960269 and pass after; AC-E2 no assertion in `tests/sync.test.js` changed and all pass; the only edits to existing tests are setup lines adding ids to `used`/`usedIds` (10 tests measured, N4); AC-E3 the five new engine mutants (usedIds filter in push, in pull, missing-usedIds default, alias lookup, planDeferred) killed by the named tests | `node --test tests/sync.test.js`; `python3 tools/inline_engine.py && python3 tools/validate.py` |
-| C client | `index.html` sync region (app JS only, from `// Optional email-code sign-in` to `syncBoot`); `tests/app.test.js` (new describe plus section18 fixture/setup-only corrections; all existing assertions unchanged); `tools/sandbox.js` (additive `throwOnKeys` option only, N3); `tests/mutants/a2_sync_*.patch`; `tests/suite_health.py` row for `tests/app.test.js` (set from measured count) | engine region; e2e files; i18n; About copy | AC-C1 new S1/S2/S6/S7/S8 tests (including T-APP-M8-collection-swap) fail at E's head and pass after; AC-C2 whole `sync client` and `sync-apply` describes still pass; AC-C3 the app mutants (gate, three syncStill sites, token without userId, token without collectionId, ungated syncStartLock) killed; AC-C4 reviewer repro (T-APP-M7-zero-tombstones) passes | `node --test --test-name-pattern "sync store safety|sync client|sync-apply" tests/app.test.js`; `python3 tools/validate.py` |
+| C client | `index.html` sync region (app JS only, from `// Optional email-code sign-in` to `syncBoot`); `tests/app.test.js` (new describe plus section18 fixture/setup-only corrections; all existing assertions unchanged); `tools/sandbox.js` (additive `throwOnKeys` option only, N3); `tests/mutants/a2_sync_*.patch`; `tests/suite_health.py` row for `tests/app.test.js` (set from measured count) | engine region; e2e files; i18n; About copy | AC-C1 new S1/S2/S6/S7/S8 tests fail at their pre-fix source and pass after (section19 adds three regressions against 8833; happy-path controls may already pass E); AC-C2 whole `sync client` and `sync-apply` describes still pass; AC-C3 app mutants killed: gate, primary pre-apply/pre-plan/pre-batch guards, post-apply/post-pull/post-push identity checks, token userId/collectionId and ungated syncStartLock; AC-C4 reviewer repro (T-APP-M7-zero-tombstones) passes | `node --test --test-name-pattern "sync store safety|sync client|sync-apply" tests/app.test.js`; `python3 tools/validate.py` |
 
 Standing gates for both: tests written first and shown failing; CI `validate` at the exact pushed head is
 the evidence (local runs are smoke); `tests/mutation_check.sh` not run in a background that anyone edits
@@ -672,3 +689,29 @@ Root accepted the recommended reversible setup correction under AFK; no extra ow
 If a setup cannot be corrected without changing an assertion or its intentional negative mode, stop and
 return that specific case to root instead of broadening this permission. Recovery uses a new scoped
 commit; original fixture/assertion evidence remains in the E head.
+
+
+## 19. Completed-phase identity correction — small-task reviewed-plan (2026-11-09)
+
+Fresh client review at8833ff0cf7adb156c0468987624a8f69bb1242c3 returned FAIL on a concrete S2/S7
+metadata violation: an old-user empty pull changed a replacement account's first-sync audit without
+fetching that account. Its new first flag became false and localOnly was populated. No scale loss was
+reproduced. The author wrote the new named regression first and observed the expected RED.
+
+Bounded existing-fixture probes found two analogous completion boundaries: the last push response could
+stamp syncedAt on the replacement account, and a user switch after an already-dispatched pull commit
+could let deferred cleanup remove the replacement sidecar's base/deferred entries. These are the same
+old-cycle authority contract, not new auth features. No broader account redesign is included.
+
+Reviewed minimal plan: add the three unconditional completion checks specified in4.2; remove the dominated
+pre-deferred check; add the three named failing-first cases in5 and three generated named-kill mutants.
+Only C's existing source/test/floor/mutant ownership is used. Existing pre-apply/pre-plan/pre-batch guards
+remain. Existing assertion lines remain unchanged; update only C's new caller pin to account for the
+changed guarded boundaries and measure the app floor rather than guessing it. Source rollback remains
+ordinary new commits, never reset or amend.
+
+Independent small-task plan review: READY for these three checks with distinct regression/mutant proofs.
+No design review or owner decision is needed: no UI, product trade-off or infrastructure changes. All
+scope, exact-final-head full CI and fresh code-review gates remain. Do not claim8833 is ready merely if
+its older CI later passes; its code review failed. Push the corrected candidate ordinarily, then obtain
+new CI/review evidence for that new SHA before the DEV rebuild. No main merge, deploy or migration.

@@ -82,3 +82,13 @@ app/CI/runtime and reviewer model qualifications remain; C must get its own exac
 No DEV/main merge, deploy, migration or production action occurred. #1003 stays at7e3b356f for the later
 reviewed fast-forward rebuild. Root may add this handoff documentation as a LOCAL commit before C, but
 does not push it separately: C's final ordinary push carries it with the code to avoid a redundant CI run.
+
+
+## Client review correction checkpoint
+
+C8833 smoke1240/1240 and61/61 passed, but fresh review FAIL found empty-pull account-switch audit mutation.
+Existing-fixture probes confirmed two other completion tails of the same S7 contract. Section19 of the
+subplan is independently READY for three explicit completion checks (one dominated check removed), three
+RED regressions and named mutants. This is the current C continuation point; no DEV rebuild before the
+corrected final-head CI and fresh review pass. Owner explicitly approved a held CI-only PR for the eventual
+D head; root will amend D section8/10 before its final push. No main merge authorization exists.
