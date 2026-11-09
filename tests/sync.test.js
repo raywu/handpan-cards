@@ -6,7 +6,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { loadEngine } = require("./helpers/engine.js");
-const { applyOps } = require("./sync_model.js");
+const { applyOps, replaceStore } = require("./sync_model.js");
 
 const HPE = loadEngine(["sync"]);
 // The engine runs in its own node:vm realm, so returned objects carry that realm's
@@ -625,6 +625,7 @@ test("sync: rows pushed in batches of at most 200", () => {
 test("sync: settlePush records refusals and conflicts without touching base, and a refused unknown tombstone drops its base", () => {
   const dev = new Device([{ id: "a", record: rec("A") }]);
   dev.sidecar = { ...sync.emptySidecar(), base: { a: { rev: 1, localRevision: 0 }, gone: { rev: 2, localRevision: 1 } } };
+  dev.used.add("gone");
   const plan = sync.planPush({ local: dev.entries, sidecar: dev.sidecar, ctx: makeCtx(dev) });
   assert.deepEqual(plan.rows.map(r => r.scale_id).sort(), ["a", "gone"]);
   const out = sync.settlePush(dev.sidecar, plan, [{ scale_id: "a", refused: "cap" }, { scale_id: "gone", refused: "unknown" }]);
@@ -649,6 +650,7 @@ test("sync: the cursor advances to the highest rev seen and never goes back", ()
 test("sync: a remote tombstone with no local copy changes nothing and drops a stale base", () => {
   const dev = new Device();
   dev.sidecar = { ...sync.emptySidecar(), base: { r: { rev: 1, localRevision: 1 } } };
+  dev.used.add("r");
   const plan = sync.planPull({ remote: [{ scale_id: "r", rev: 2, deleted: true, record: null }], local: [], sidecar: dev.sidecar, ctx: makeCtx(dev) });
   assert.deepEqual(plan.ops, []);
   assert.equal(sync.settlePull(dev.sidecar, plan, []).base.r, undefined);
@@ -657,6 +659,7 @@ test("sync: a remote tombstone with no local copy changes nothing and drops a st
 test("sync: a local delete not yet pushed is kept deleted when the remote row has not moved", () => {
   const dev = new Device();
   dev.sidecar = { ...sync.emptySidecar(), base: { r: { rev: 3, localRevision: 1 } } };
+  dev.used.add("r");
   const plan = sync.planPull({ remote: [{ scale_id: "r", rev: 3, deleted: false, record: rec("R") }], local: [], sidecar: dev.sidecar, ctx: makeCtx(dev) });
   assert.deepEqual(plan.ops, []);
   assert.deepEqual(sync.planPush({ local: [], sidecar: dev.sidecar, ctx: makeCtx(dev) }).rows, [{ scale_id: "r", base_rev: 3, record: null, deleted: true }]);
@@ -849,7 +852,7 @@ test("sync: bounded two-device model holds no-loss, convergence and no endless c
 /* docs/ENGINE-SPEC.md section 20 (settle contract): the caller passes sync-apply's
    `skipped` list to settlePull; a skipped op leaves its base, alias and cursor alone. */
 {
-  const ctx = () => ({ newId: uid, usedIds: [], describe, copyName });
+  const ctx = () => ({ newId: uid, usedIds: ["a", "b", "ra", "x"], describe, copyName });
   const row = (id, rev, n, deleted = false) => ({ scale_id: id, rev, deleted, record: deleted ? null : rec(n) });
   const committedOf = local => local.map(e => ({ id: e.id, revision: e.revision }));
 
@@ -948,7 +951,7 @@ test("sync: bounded two-device model holds no-loss, convergence and no endless c
 }
 
 {
-  const ctx = (extra = {}) => ({ newId: uid, usedIds: [], describe, copyName, ...extra });
+  const ctx = (extra = {}) => ({ newId: uid, usedIds: ["a", "b", "ra", "x"], describe, copyName, ...extra });
   const row = (id, rev, n, deleted = false) => ({ scale_id: id, rev, deleted, record: deleted ? null : rec(n) });
   const ent = (id, n, revision = 1) => ({ id, revision, record: rec(n) });
   const bs = (rev, localRevision) => ({ rev, localRevision });
@@ -1076,7 +1079,7 @@ test("sync: bounded two-device model holds no-loss, convergence and no endless c
         if (e.revision === b.localRevision) assert.deepEqual(stripReplaces(e.record), stripReplaces(row.record), "base claim for " + rid + " must be true");
       }
       const dev = new Device();
-      dev.entries = r.live; dev.used = new Set(r.live.map(e => e.id)); dev.sidecar = next;
+      dev.entries = r.live; dev.used = new Set([...fx.local.map(e => e.id), ...Object.keys(sc.base), ...Object.keys(sc.alias), ...r.live.map(e => e.id)]); dev.sidecar = next;
       if (quiet.has(fx.site) && raceName === "none") assert.equal(sync.planPush({ local: dev.entries, sidecar: dev.sidecar, ctx: makeCtx(dev) }).rows.length, 0, "a quiet pull pushes nothing");
       const server = seedServer(fx), other = new Device();
       const cycles = () => { for (let i = 0; i < 3; i++) for (const d of [dev, other]) d.cycle(server); };
@@ -1154,3 +1157,70 @@ test("sync: bounded two-device model holds no-loss, convergence and no endless c
     }
   });
 }
+
+
+test.describe("store safety", () => {
+  const base = { r1: { rev: 1, localRevision: 1 }, r2: { rev: 2, localRevision: 1 } };
+  const sidecar = () => ({ ...sync.emptySidecar(), base: clone(base) });
+  test("T-ENG-S3-fresh-store: unheld base cannot infer deletion", () => {
+    const sc = deepFreeze(sidecar());
+    assert.deepEqual(sync.planPush({ local: [], sidecar: sc, ctx: { usedIds: [] } }).rows, []);
+  });
+  test("T-ENG-S3-held-delete: held deleted ids still tombstone after reset", () => {
+    const dev = new Device([{ id: "r1", record: rec("A") }, { id: "r2", record: rec("B") }]);
+    dev.sidecar = sidecar();
+    dev.del("r1"); dev.del("r2");
+    assert.deepEqual(sync.planPush({ local: dev.entries, sidecar: dev.sidecar, ctx: makeCtx(dev) }).rows.map(r => [r.scale_id, r.deleted]), [["r1", true], ["r2", true]]);
+  });
+  test("T-ENG-S3-alias: aliased base needs the local alias key", () => {
+    const sc = { ...sidecar(), base: { r1: base.r1 }, alias: { l1: "r1" } };
+    assert.deepEqual(sync.planPush({ local: [], sidecar: sc, ctx: { usedIds: ["l1"] } }).rows.map(r => [r.scale_id, r.deleted]), [["r1", true]]);
+    assert.deepEqual(sync.planPush({ local: [], sidecar: sc, ctx: { usedIds: ["r1"] } }).rows, []);
+  });
+  test("T-ENG-S4-void-base: live remote inserts and stale stored base stays untouched", () => {
+    const sc = deepFreeze(sidecar());
+    const plan = sync.planPull({ local: [], sidecar: sc, remote: [{ scale_id: "r1", rev: 1, record: rec("A"), deleted: false }], ctx: { usedIds: [], newId: uid } });
+    assert.deepEqual(plan.ops.map(o => [o.op, o.id, o.reason]), [["insert", "r1", "new"]]);
+    assert.deepEqual(plan.baseDrops, []);
+    assert.deepEqual(sync.settlePull(sc, plan, [{ id: "r1", revision: 1 }], []).base.r2, base.r2);
+  });
+  test("T-ENG-S4-deferred: unheld deferred deletion has no base drop or alias", () => {
+    const sc = deepFreeze({ ...sidecar(), deferredDeletes: ["r1"], alias: { old: "r1" } });
+    const plan = sync.planDeferred({ local: [], sidecar: sc, ctx: { usedIds: [] } });
+    assert.deepEqual(plan.ops, []);
+    assert.deepEqual(plan.baseDrops, []);
+    assert.deepEqual(plan.deferredDeletes, []);
+    assert.deepEqual(plan.alias, {});
+  });
+  test("T-ENG-S5-no-usedIds: missing history fails closed in every planner", () => {
+    const sc = { ...sidecar(), deferredDeletes: ["r1"] };
+    assert.deepEqual(sync.planPush({ local: [], sidecar: sc }).rows, []);
+    const remote = [{ scale_id: "r1", rev: 3, record: null, deleted: true }];
+    const pull = sync.planPull({ local: [], sidecar: sc, remote });
+    assert.deepEqual(pull.ops, []);
+    assert.deepEqual(pull.baseDrops, []);
+    assert.deepEqual(sync.planDeferred({ local: [], sidecar: sc }).baseDrops, []);
+  });
+  test("T-ENG-S8-two-alias: either alias and live entries prove the base", () => {
+    const sc = { ...sidecar(), base: { r1: base.r1 }, alias: { l1: "r1", l2: "r1" } };
+    assert.deepEqual(sync.planPush({ local: [], sidecar: sc, ctx: { usedIds: ["l2"] } }).rows.map(r => r.scale_id), ["r1"]);
+    const local = [{ id: "l1", revision: 1, record: rec("A") }];
+    assert.deepEqual(sync.planPush({ local, sidecar: sc, ctx: { usedIds: [] } }).rows, []);
+    const pull = sync.planPull({ local, sidecar: sc, ctx: { usedIds: [] }, remote: [{ scale_id: "r1", rev: 2, record: rec("B"), deleted: false }] });
+    assert.deepEqual(pull.ops.map(o => [o.op, o.id]), [["overwrite", "l1"]]);
+  });
+  test("T-ENG-model: bounded store replacement never deletes another device's scales", () => {
+    for (const order of ["push", "pull"]) for (const edited of [false, true]) {
+      const a = new Device(), b = new Device(), server = new Server();
+      const id = a.add("Shared"); a.add("Keep"); a.cycle(server); b.cycle(server);
+      const sc = clone(b.sidecar);
+      replaceStore(b, "replacement");
+      assert.equal(b.collectionId, "replacement");
+      assert.deepEqual(b.sidecar, sc);
+      if (edited) { a.edit(id, "Edited"); a.push(server); }
+      b[order](server); b.cycle(server); a.cycle(server);
+      assert.deepEqual(a.names(), edited ? ["Edited", "Keep"] : ["Keep", "Shared"]);
+      assert.deepEqual(serverNames(server), a.names());
+    }
+  });
+});

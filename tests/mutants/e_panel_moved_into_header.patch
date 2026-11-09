@@ -77,10 +77,11 @@
 # Re-cut 2026-10-17 (share icon, lane I): #share-copy left the Scales row for the header and #share-url left the panel; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 # Refreshed from committed compact-sites source; ancestry fault unchanged.
 # Re-cut 2026-11-08 (print controls style): the paper select became a menu button; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
+# Re-cut 2026-11-08 (login sync A2): the Scales group gained the sync opener and panel; the moved copy was regenerated from the current panel. The mutation itself is unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1602,6 +1602,104 @@ html.about-open{overflow:hidden}
+@@ -1612,6 +1612,136 @@ html.about-open{overflow:hidden}
    <nav class="decks" id="decks"></nav>
    <p id="saved-status" role="status" hidden></p>
    <button type="button" id="saved-temporary-use" class="mode" hidden>USE THIS TAB TEMPORARILY</button>
@@ -119,6 +120,38 @@ diff --git a/index.html b/index.html
 +    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
 +    <div class="modebar">
 +      <button class="mode" type="button" id="backup-open" aria-expanded="false" aria-controls="backup-panel">BACKUP YOUR SCALES</button>
++    </div>
++    <div class="modebar">
++      <button class="mode" type="button" id="sync-open" aria-expanded="false" aria-controls="sync-panel" hidden>SYNC SAVED SCALES</button>
++    </div>
++    <div id="sync-panel" role="group" aria-labelledby="sync-open" hidden>
++      <form id="sync-form" novalidate>
++        <p class="panel-note" id="sync-domain">Check the address bar: handpantheory.com.</p>
++        <div id="sync-step-email">
++          <label for="sync-email" id="sync-email-label">Email address</label>
++          <input id="sync-email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required aria-describedby="sync-msg">
++          <button class="mode" type="submit" id="sync-send">SEND CODE</button>
++        </div>
++        <div id="sync-step-code" hidden>
++          <label for="sync-code" id="sync-code-label">6-digit code</label>
++          <input id="sync-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="sync-msg">
++          <button class="mode" type="submit" id="sync-verify">SIGN IN</button>
++          <button class="mode" type="button" id="sync-other">USE A DIFFERENT EMAIL</button>
++          <button class="mode" type="button" id="sync-resend">SEND A NEW CODE</button>
++        </div>
++      </form>
++      <div id="sync-signed" hidden>
++        <h4 id="sync-heading" tabindex="-1"></h4>
++        <p class="panel-note" id="sync-last"></p>
++        <div id="sync-ask" hidden>
++          <p class="panel-note" id="sync-ask-text"></p>
++          <button class="mode" type="button" id="sync-ask-yes">ADD THEM</button>
++          <button class="mode" type="button" id="sync-ask-no">NOT NOW</button>
++        </div>
++        <button class="mode" type="button" id="sync-out">SIGN OUT</button>
++        <button class="mode" type="button" id="sync-delete">DELETE ACCOUNT</button>
++      </div>
++      <p class="panel-note" id="sync-msg" role="status" aria-live="polite"></p>
 +    </div>
 +    <!-- Safari storage lane B: a read-only text list of the saved scales' #s= links.
 +         Restore is the user tapping each link; there is no paste box. -->
@@ -185,7 +218,7 @@ diff --git a/index.html b/index.html
  </header>
  
  <main>
-@@ -1972,105 +2070,6 @@ html.about-open{overflow:hidden}
+@@ -1982,137 +2112,6 @@ html.about-open{overflow:hidden}
       below-breakpoint, modal presentation. At >=1024x700 the trigger that
       calls openPanel() is display:none, so the panel never gains them and
       the static sidebar is correctly plain, non-modal markup. -->
@@ -224,6 +257,38 @@ diff --git a/index.html b/index.html
 -    <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
 -    <div class="modebar">
 -      <button class="mode" type="button" id="backup-open" aria-expanded="false" aria-controls="backup-panel">BACKUP YOUR SCALES</button>
+-    </div>
+-    <div class="modebar">
+-      <button class="mode" type="button" id="sync-open" aria-expanded="false" aria-controls="sync-panel" hidden>SYNC SAVED SCALES</button>
+-    </div>
+-    <div id="sync-panel" role="group" aria-labelledby="sync-open" hidden>
+-      <form id="sync-form" novalidate>
+-        <p class="panel-note" id="sync-domain">Check the address bar: handpantheory.com.</p>
+-        <div id="sync-step-email">
+-          <label for="sync-email" id="sync-email-label">Email address</label>
+-          <input id="sync-email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required aria-describedby="sync-msg">
+-          <button class="mode" type="submit" id="sync-send">SEND CODE</button>
+-        </div>
+-        <div id="sync-step-code" hidden>
+-          <label for="sync-code" id="sync-code-label">6-digit code</label>
+-          <input id="sync-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="sync-msg">
+-          <button class="mode" type="submit" id="sync-verify">SIGN IN</button>
+-          <button class="mode" type="button" id="sync-other">USE A DIFFERENT EMAIL</button>
+-          <button class="mode" type="button" id="sync-resend">SEND A NEW CODE</button>
+-        </div>
+-      </form>
+-      <div id="sync-signed" hidden>
+-        <h4 id="sync-heading" tabindex="-1"></h4>
+-        <p class="panel-note" id="sync-last"></p>
+-        <div id="sync-ask" hidden>
+-          <p class="panel-note" id="sync-ask-text"></p>
+-          <button class="mode" type="button" id="sync-ask-yes">ADD THEM</button>
+-          <button class="mode" type="button" id="sync-ask-no">NOT NOW</button>
+-        </div>
+-        <button class="mode" type="button" id="sync-out">SIGN OUT</button>
+-        <button class="mode" type="button" id="sync-delete">DELETE ACCOUNT</button>
+-      </div>
+-      <p class="panel-note" id="sync-msg" role="status" aria-live="polite"></p>
 -    </div>
 -    <!-- Safari storage lane B: a read-only text list of the saved scales' #s= links.
 -         Restore is the user tapping each link; there is no paste box. -->
