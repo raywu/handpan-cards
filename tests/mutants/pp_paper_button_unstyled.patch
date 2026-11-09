@@ -1,0 +1,14 @@
+# kills: the paper button is styled like DOWNLOAD PDF, and its menu picks the paper, closes on choice and outside tap, and keeps the panel open
+# suite: node --test --test-name-pattern the.paper.button.is.styled.like.DOWNLOAD.PDF tests/e2e.test.js
+# Print controls style (2026-11-08): the paper button drifts from the DOWNLOAD PDF look.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -676,6 +676,7 @@ main{overflow-x:clip}
+ .prints #print-menu.up, .prints #print-paper-menu.up{top:auto; bottom:calc(100% + var(--sp-1))}
+ .prints #print-menu[hidden], .prints #print-paper-menu[hidden]{display:none}
+ .prints #print-menu button, .prints #print-paper-menu button{flex:0 0 auto; width:100%}
++.prints #print-paper{border-radius:0}
+ .prints #print-paper-wrap{position:relative; display:flex; flex:1 1 auto; min-width:0}
+ .prints button, #lang-select{min-width:0}
+ .prints button, #lang-select{font:600 10.5px/1 "Nunito Sans";

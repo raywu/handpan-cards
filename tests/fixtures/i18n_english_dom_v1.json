@@ -151,6 +151,80 @@
     "hidden": ""
    }
   },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
   "scale-name-row": {
    "text": "",
    "html": "",
@@ -524,11 +598,35 @@
     "hidden": ""
    }
   },
-  "print-paper-select": {
-   "text": "",
+  "print-paper": {
+   "text": "LETTER",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "print-paper-menu": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "print-paper-letter": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "true"
+   }
+  },
+  "print-paper-a4": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "false"
+   }
   },
   "print-download": {
    "text": "",
@@ -886,6 +984,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -1267,11 +1439,35 @@
     "role": "dialog"
    }
   },
-  "print-paper-select": {
-   "text": "",
+  "print-paper": {
+   "text": "LETTER",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "print-paper-menu": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "print-paper-letter": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "true"
+   }
+  },
+  "print-paper-a4": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "false"
+   }
   },
   "print-download": {
    "text": "",
@@ -1632,6 +1828,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -2021,11 +2291,37 @@
     "hidden": ""
    }
   },
-  "print-paper-select": {
+  "print-paper": {
+   "text": "LETTER",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-expanded": "false"
+   }
+  },
+  "print-paper-menu": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "print-paper-letter": {
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-checked": "true"
+   }
+  },
+  "print-paper-a4": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "false"
+   }
   },
   "print-download": {
    "text": "",
@@ -2394,6 +2690,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -2785,11 +3155,37 @@
     "hidden": ""
    }
   },
-  "print-paper-select": {
+  "print-paper": {
+   "text": "LETTER",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-expanded": "false"
+   }
+  },
+  "print-paper-menu": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "print-paper-letter": {
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-checked": "true"
+   }
+  },
+  "print-paper-a4": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "false"
+   }
   },
   "print-download": {
    "text": "",
@@ -3156,6 +3552,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -3543,11 +4013,37 @@
     "hidden": ""
    }
   },
-  "print-paper-select": {
+  "print-paper": {
+   "text": "LETTER",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-expanded": "false"
+   }
+  },
+  "print-paper-menu": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "print-paper-letter": {
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-checked": "true"
+   }
+  },
+  "print-paper-a4": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "false"
+   }
   },
   "print-download": {
    "text": "",
@@ -3918,6 +4414,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -4307,11 +4877,37 @@
     "hidden": ""
    }
   },
-  "print-paper-select": {
+  "print-paper": {
+   "text": "LETTER",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-expanded": "false"
+   }
+  },
+  "print-paper-menu": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "print-paper-letter": {
    "text": "",
    "html": "",
    "hidden": false,
-   "attrs": {}
+   "attrs": {
+    "aria-checked": "true"
+   }
+  },
+  "print-paper-a4": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "false"
+   }
   },
   "print-download": {
    "text": "",
@@ -4678,6 +5274,80 @@
    "attrs": {}
   },
   "deck-restore": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-open": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-panel": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-intro": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-session": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-restore": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-text": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-share": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "backup-copy": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-download": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-status": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "backup-last": {
    "text": "",
    "html": "",
    "hidden": true,
@@ -5067,11 +5737,35 @@
     "hidden": ""
    }
   },
-  "print-paper-select": {
-   "text": "",
+  "print-paper": {
+   "text": "LETTER",
    "html": "",
    "hidden": false,
    "attrs": {}
+  },
+  "print-paper-menu": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "print-paper-letter": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "true"
+   }
+  },
+  "print-paper-a4": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {
+    "aria-checked": "false"
+   }
   },
   "print-download": {
    "text": "",

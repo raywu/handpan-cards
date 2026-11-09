@@ -51,7 +51,7 @@ FLOORS = {
     "tests/test_icons.py": 6,
     "tests/test_scale_pages.py": 130,
     "tests/test_site_files.py": 14,
-    "tests/test_ci_scope.py": 5,
+    "tests/test_ci_scope.py": 36,
     # node
     "tests/app.test.js": 1140,
     "tests/seat_sweeps_tap_add.test.js": 3,
@@ -84,6 +84,7 @@ FLOORS = {
     "tests/sync.test.js": 48,
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
+    "tests/persist.test.js": 7,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
