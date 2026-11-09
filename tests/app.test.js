@@ -15507,8 +15507,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
+    const syncKeys=["menu","menuSignedIn","title","email","send","code","signIn","otherEmail","resend","resendIn","sent","domainWarn","status.syncing","status.synced","status.pending","addLocal","addLocalYes","addLocalNo","signOut","delete","deleteConfirm","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.addLocal"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2) and the thirty sync.* keys (login sync lane A2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -21033,5 +21033,196 @@ describe("backup: back up saved scales", () => {
     const ids = () => app.get("panelStops().map((e) => e.id)");
     assert.ok(ids().includes("backup-open"));
     assert.ok(!ids().includes("backup-copy"));
+  });
+});
+
+/* ------------------------------------------------------------ sync client */
+/* docs/plans/2026-11-05-login-sync-v2.md sections 9, 10 and 12 lane A2. The
+   client talks to Supabase only on the dev host; every call here goes to a
+   fetch stub that models the three endpoints the client uses. */
+describe("sync client", () => {
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const UID = "11111111-1111-4111-8111-111111111111";
+  const newId = () => require("node:crypto").randomUUID();
+  const sidecar = extra => JSON.stringify({ v: 1, project: PROJECT, userId: UID, email: "a@b.test", refresh: "r0", access: "a0",
+    accessExp: Date.now() + 3600e3, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, ...extra });
+  const remoteRecord = async text => {
+    const donor = boot();
+    await makeCustom(donor, text);
+    return plain(donor.get("savedState.entries[0].record"));
+  };
+  const install = (app, rows = []) => {
+    app.run(`globalThis.__log = []; globalThis.__rows = ${JSON.stringify(rows)}; globalThis.__rev = ${rows.reduce((m, r) => Math.max(m, r.rev), 0)};
+      globalThis.__mode = "ok"; globalThis.__pushed = [];
+      globalThis.fetch = async function (url, opt) {
+        const path = String(url).replace(${JSON.stringify(PROJECT)}, "");
+        __log.push({ path, method: opt.method, auth: opt.headers.authorization || null, body: opt.body || null });
+        const reply = (status, json) => ({ status, ok: status >= 200 && status < 300, json: async () => json });
+        if (__mode === "offline") throw new TypeError("network");
+        if (__mode === "429") return reply(429, { message: "rate" });
+        if (path.startsWith("/auth/v1/token")) return reply(200, { access_token: "a1", refresh_token: "r1", expires_in: 3600 });
+        if (path.startsWith("/rest/v1/saved_scales")) {
+          const gt = Number(/rev=gt\\.(\\d+)/.exec(path)[1]);
+          return reply(200, __rows.filter(r => r.rev > gt));
+        }
+        if (path === "/rest/v1/rpc/push_scales") {
+          const rows = JSON.parse(opt.body).rows;
+          return reply(200, rows.map(r => { __pushed.push(r); const rev = ++__rev;
+            __rows.push({ scale_id: r.scale_id, rev, record: r.record, deleted: r.deleted }); return { scale_id: r.scale_id, rev }; }));
+        }
+        return reply(404, null);
+      };`);
+  };
+  const sc = app => JSON.parse(app.get("localStorage.getItem('hpfc.sync.v1')"));
+  const calls = (app, p) => plain(app.get("__log")).filter(c => c.path.startsWith(p));
+  const start = async (extra, rows) => {
+    const app = boot({ href: DEV, locks: true, storage: { "hpfc.sync.v1": sidecar(extra) } });
+    install(app, rows);
+    await app.waitFor("syncHolder === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    return app;
+  };
+  const settle = async app => { await app.getAsync("syncKick(false)"); };
+
+  test("a first sync pulls remote scales, inserting them locally, and never pushes before the pull", async () => {
+    const id = newId(), record = await remoteRecord(AMARA_STRING);
+    const app = boot({ href: DEV, locks: true, storage: { "hpfc.sync.v1": sidecar({ first: true }) } });
+    install(app, [{ scale_id: id, rev: 1, record, deleted: false }]);
+    await app.waitFor("syncHolder === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(id)})`));
+    assert.strictEqual(sc(app).first, false);
+    const order = plain(app.get("__log")).map(c => c.path.split("?")[0]);
+    assert.ok(order.indexOf("/rest/v1/saved_scales") >= 0);
+    assert.ok(order.indexOf("/rest/v1/rpc/push_scales") < 0 || order.indexOf("/rest/v1/rpc/push_scales") > order.indexOf("/rest/v1/saved_scales"));
+  });
+
+  test("a save is pushed after the debounce, with the bearer token", async () => {
+    const app = await start();
+    await makeCustom(app);
+    app.advance(2100);
+    await app.getAsync("syncRunning");
+    const pushes = calls(app, "/rest/v1/rpc/push_scales");
+    assert.strictEqual(pushes.length, 1);
+    assert.match(pushes[0].auth, /^Bearer /);
+    assert.strictEqual(JSON.parse(pushes[0].body).rows.length, 1);
+    assert.strictEqual(sc(app).pending, false);
+  });
+
+  test("deleting a synced scale pushes a tombstone", async () => {
+    const app = await start();
+    const a = await makeCustom(app);
+    app.advance(2100); await app.getAsync("syncRunning");
+    app.run("__pushed.length = 0");
+    app.run(`commitSavedSession({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(a.instanceId)}).revision})`);
+    await settle(app);
+    const tomb = plain(app.get("__pushed"));
+    assert.ok(tomb.some(r => r.deleted === true), JSON.stringify(tomb));
+  });
+
+  test("offline: the save stays local, the sidecar goes pending, and nothing is lost", async () => {
+    const app = await start();
+    app.run('__mode = "offline"');
+    await makeCustom(app);
+    await settle(app);
+    assert.strictEqual(sc(app).pending, true);
+    assert.strictEqual(app.get("savedState.entries.length"), 1);
+    app.run('__mode = "ok"');
+    await settle(app);
+    assert.strictEqual(sc(app).pending, false);
+    assert.strictEqual(calls(app, "/rest/v1/rpc/push_scales").filter(c => c.body).length >= 1, true);
+  });
+
+  test("a 429 sets the sidecar pending and does not loop", async () => {
+    const app = await start();
+    app.run('__mode = "429"');
+    await makeCustom(app);
+    await settle(app);
+    const n = plain(app.get("__log")).length;
+    assert.strictEqual(sc(app).pending, true);
+    assert.ok(n <= 3, "no retry storm: " + n);
+    assert.strictEqual(app.get("syncMsg === null || syncMsg.key.indexOf('sync.') === 0"), true);
+  });
+
+  test("a 429 from the auth endpoint shows the rate-limited copy and no retry", async () => {
+    const app = boot({ href: DEV, locks: true });
+    install(app); app.run('__mode = "429"');
+    assert.strictEqual(await app.getAsync("syncSendCode('a@b.test')"), "sync.err.rateLimited");
+    assert.strictEqual(plain(app.get("__log")).length, 1);
+  });
+
+  test("sign-out keeps every saved scale and removes the sidecar", async () => {
+    const app = await start();
+    await makeCustom(app);
+    await app.getAsync("syncSignOut()");
+    assert.strictEqual(app.get("localStorage.getItem('hpfc.sync.v1')"), null);
+    assert.strictEqual(app.get("savedState.entries.length"), 1);
+  });
+
+  test("Not now pushes nothing for the held local scales", async () => {
+    const app = boot({ href: DEV, locks: true });
+    install(app);
+    await makeCustom(app);
+    app.run(`localStorage.setItem("hpfc.sync.v1", ${JSON.stringify(sidecar({ first: true }))}); syncStartLock();`);
+    await app.waitFor("syncHolder === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    const s = sc(app);
+    assert.strictEqual(s.localOnly.length, 1);
+    assert.strictEqual(calls(app, "/rest/v1/rpc/push_scales").length, 0);
+  });
+
+  test("no analytics call carries an email or a token", async () => {
+    const app = await start({ email: "secret@mail.test" });
+    await makeCustom(app);
+    app.advance(2100); await app.getAsync("syncRunning");
+    const dump = JSON.stringify(plain(app.get("window.dataLayer || []")));
+    for (const secret of ["a0", "r0", "a1", "r1"]) assert.ok(!dump.includes('"' + secret + '"'), secret);
+    assert.ok(!dump.includes("secret@mail.test"));
+    assert.ok(!dump.includes("Bearer"));
+  });
+
+  test("a conflicted sync-apply replans without settlePull", async () => {
+    const app = await start();
+    const id = newId(), record = await remoteRecord(AMARA_STRING);
+    install(app, [{ scale_id: id, rev: 1, record, deleted: false }]);
+    app.run(`globalThis.__settle = 0; const sp = HPE.sync.settlePull; HPE.sync.settlePull = function () { __settle++; return sp.apply(this, arguments); };
+      globalThis.__commit = commitSaved; globalThis.__fail = 1; commitSaved = async function (c) { if (c.type === "sync-apply" && __fail-- > 0) return { ok: false, kind: "conflict" }; return __commit(c); };`);
+    assert.strictEqual(await app.getAsync("syncPull()"), true);
+    assert.strictEqual(app.get("__settle"), 1, "only the successful attempt settles");
+    assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(id)})`));
+  });
+
+  test("settlePull receives the skipped list as its fourth argument", () => {
+    assert.match(require("node:fs").readFileSync("index.html", "utf8"), /settlePull\(cur, plan, result\.sync\.committed, result\.sync\.skipped\)/);
+  });
+
+  test("a pull merges every page of a long remote list", async () => {
+    const rows = [];
+    const record = await remoteRecord(AMARA_STRING);
+    for (let i = 1; i <= 201; i++) rows.push({ scale_id: newId(), rev: i, record, deleted: false });
+    const app = await start({ first: true }, rows);
+    assert.strictEqual(calls(app, "/rest/v1/saved_scales").length >= 2, true);
+  });
+
+  test("the prod host and the old host make no calls and show no sign-in", async () => {
+    for (const href of ["https://handpantheory.com/", "https://handpan.raywu.org/", "https://example.test/"]) {
+      const app = boot({ href, locks: true, storage: { "hpfc.sync.v1": sidecar() } });
+      install(app);
+      await makeCustom(app);
+      app.advance(3000);
+      assert.strictEqual(app.get("SYNC_CFG"), null, href);
+      assert.strictEqual(plain(app.get("__log")).length, 0, href);
+    }
+  });
+
+  test("the sync keys exist in all eight tables and no visible sync string says deck", () => {
+    const fs = require("node:fs");
+    for (const f of fs.readdirSync("data/i18n")) {
+      const t = JSON.parse(fs.readFileSync("data/i18n/" + f, "utf8"));
+      const keys = Object.keys(t).filter(k => k.startsWith("sync."));
+      assert.ok(keys.length >= 30, f);
+      for (const k of keys) assert.ok(!/\bdecks?\b/i.test(JSON.stringify(t[k])), f + " " + k);
+    }
   });
 });

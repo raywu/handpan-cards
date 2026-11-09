@@ -1,0 +1,15 @@
+# kills: sync: a failed sync-apply replans without settling
+# suite: node --test --test-name-pattern conflicted.sync-apply.replans.without.settlePull tests/app.test.js
+# Lane A2 (login sync client).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18299,7 +18299,7 @@ async function syncApply(userId, plan) {
+   let result = { ok: true, sync: { committed: [], skipped: [] } };
+   if (plan.ops.length) {
+     result = await commitSaved({ type: "sync-apply", collectionId: savedState.collectionId, ops: plan.ops });
+-    if (!result.ok) return false;
++    if (!result.ok) result = { ok: true, sync: { committed: [], skipped: [] } };
+   }
+   syncPatch(userId, cur => HPE.sync.settlePull(cur, plan, result.sync.committed, result.sync.skipped));
+   return true;

@@ -1,0 +1,15 @@
+# kills: sync: a save is pushed after the debounce
+# suite: node --test --test-name-pattern a.save.is.pushed.after.the.debounce tests/app.test.js
+# Lane A2 (login sync client).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18383,7 +18383,7 @@ function syncKick(pull) {
+ function syncChanged() {
+   if (!SYNC_CFG || !syncHolder || !syncLoad()) return;
+   clearTimeout(syncTimer);
+-  syncTimer = setTimeout(() => { syncKick(false); }, 2000);
++  syncTimer = setTimeout(() => { }, 2000);
+ }
+ function syncStartLock() {
+   if (!SYNC_CFG || syncLockAsked || !syncLoad()) return;
