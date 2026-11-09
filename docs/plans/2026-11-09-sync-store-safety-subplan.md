@@ -306,7 +306,13 @@ sidecar with base of N=3 synced ids, fetch stub from the existing `install()`):
   while a pull or push is in flight: no `sync-apply` commit, no later `push_scales`.
 - T-APP-S7-switch-empty-pull: switch to a new first:true sidecar during the old user's empty GET.
   After the old cycle returns, the complete new sidecar (including first/localOnly/pending) is unchanged,
-  only the old GET occurred, no push/commit, and the local scale is retained.
+  only the old GET occurred, no push/commit, and the local scale is retained. Keep those assertions.
+  The SAME named test adds a second timing variant to distinguish the post-pull guard: an empty pull
+  passes its primary zero-op apply and post-apply guard, then awaits a REAL deferred removal commit.
+  Switch accounts immediately after that commit ACK. The new sidecar remains untouched with the guard;
+  removing ONLY the post-pull guard must corrupt its first-sync audit and fail the named assertion.
+  Permit exactly that already-acknowledged old deferred removal in this variant, assert it actually
+  committed, and restore the test-local wrapper in finally. No new production helper or floor increase.
 - T-APP-S7-switch-last-push: switch during the only/final batch response. The old request may finish,
   but the new sidecar stays byte-equivalent in meaning, without an old-cycle syncedAt/pending stamp.
 - T-APP-S7-switch-after-apply: switch immediately after an already-dispatched pull commit completes.
@@ -715,3 +721,10 @@ No design review or owner decision is needed: no UI, product trade-off or infras
 scope, exact-final-head full CI and fresh code-review gates remain. Do not claim8833 is ready merely if
 its older CI later passes; its code review failed. Push the corrected candidate ordinarily, then obtain
 new CI/review evidence for that new SHA before the DEV rebuild. No main merge, deploy or migration.
+
+
+Section19 proof refinement, independently READY: the original empty-GET switch is preserved, but is
+caught by the earlier post-apply guard once all fixes are present, so it cannot alone kill a removed
+post-pull check. The added real-deferred-ACK timing variant above reaches the later boundary without
+weakening any guard or assertion. This is an existing-fixture test correction only; production bytes
+and plan scope are unchanged. Clean baseline and the exact named removal-mutant kill remain required.
