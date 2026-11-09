@@ -1,5 +1,6 @@
-# kills: sync: settlePull is given the skipped list
+# kills: settlePull receives the skipped list as its fourth argument
 # suite: node --test --test-name-pattern settlePull.receives.the.skipped.list tests/app.test.js
+# Previously: sync: settlePull is given the skipped list
 # Lane A2 (login sync client).
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,6 @@
-# kills: sync: a failed sync-apply replans without settling
+# kills: a conflicted sync-apply replans without settlePull
 # suite: node --test --test-name-pattern conflicted.sync-apply.replans.without.settlePull tests/app.test.js
+# Previously: sync: a failed sync-apply replans without settling
 # Lane A2 (login sync client).
 diff --git a/index.html b/index.html
 --- a/index.html
