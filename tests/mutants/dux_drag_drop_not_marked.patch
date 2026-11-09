@@ -1,0 +1,15 @@
+# kills: drag ux E4: a placed note is highlighted after a drag, a tap, a pill, Replace ding, a trade and the keyboard, and not after Undo
+# suite: node --test --test-name-pattern ^drag.ux.E4 tests/editor_e2e.test.js
+# fault: A drag drop is not highlighted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16735,7 +16735,7 @@
+   s.error = "";
+   s.notice = false;
+   if (plan.trade) editorTrade(m, plan.trade[0], plan.trade[1]);
+-  else if (plan.step) editorDo(plan.step, plan.say, true);
++  else if (plan.step) editorDo(plan.step, plan.say, false);
+   else if (plan.refuse) s.error = plan.refuse;
+   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
+   editorRender();

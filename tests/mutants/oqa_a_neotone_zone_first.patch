@@ -1,0 +1,14 @@
+# kills: OQA neotone untouched: Neotone editorHitAt on a fixture grid equals the recorded base result
+# suite: node --test --test-name-pattern ^OQA.neotone.untouched tests/editor_shell.test.js
+# fault: Neotone takes the standard zone-first hit instead of its own.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15442,7 +15442,6 @@ function editorPush(m, fields) {
+ }
+ function editorHitAt(solved, pt, holding, model) {
+   const { fields, geom } = solved;
+-  if (geom.place) return editorHitAtPlaced(solved, pt, model);
+   const toward = (c) => Math.hypot(pt[0] - c[0], pt[1] - c[1]);
+   const spots = [];
+   for (const id of Object.keys(fields)) {
