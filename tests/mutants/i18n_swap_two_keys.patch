@@ -1,3 +1,6 @@
+# kills: I18N: the English DOM of the app equals the base
+# suite: node --test --test-name-pattern ^I18N:.the.English.DOM tests/app.test.js
+# Two table values are swapped, so a key renders another key's text.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

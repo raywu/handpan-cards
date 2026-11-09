@@ -1,3 +1,6 @@
+# kills: LS2: with the progression note and RESET SEEDED SCALES showing, the columns balance: Flash cards, Print, Scales left and Resources, Language right, each stacked flush, at 844x390 and 800x340 (REAL fonts)
+# suite: node --test --test-name-pattern ^LS2:.with.the.progression.note.and.RESET tests/e2e.test.js
+# LS2: the right column drops its row-gap, so its groups sit closer than the left column's.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
