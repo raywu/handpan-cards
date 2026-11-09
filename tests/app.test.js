@@ -21346,6 +21346,57 @@ describe("sync store safety", () => {
     assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(id)})`));
     assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)));
   });
+  test("T-APP-S2-refresh-first-barrier: same-user replacement waits for GET and Add N", async () => {
+    const app=await fixture();
+    const r=await makeCustom(app);
+    await app.getAsync("syncKick(false)");
+    const remote=pushes(app)[0].body.rows[0];
+    app.run(`__rows=[{scale_id:${JSON.stringify(remote.scale_id)},rev:10,record:${JSON.stringify(remote.record)},deleted:false}];
+      __hook=async path=>{if(path.endsWith("push_scales")){
+        for(const row of __requests[__requests.length-1].body.rows){
+          const old=__rows.findIndex(r=>r.scale_id===row.scale_id);
+          const next={...row,rev:__rows.length+20};
+          if(old<0)__rows.push(next);else __rows[old]=next;
+        }
+      }};`);
+    const q=await makeCustom(app,OTHER_STRING);
+    assert.notDeepStrictEqual(plain(app.get(`savedState.entries.find(e=>e.instanceId===${JSON.stringify(q.instanceId)}).record`)),remote.record,"Q has distinct scale meaning");
+    await app.getAsync(`commitSaved({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(r.instanceId)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(r.instanceId)}).revision})`);
+    const identity=app.get("syncStoreToken()");
+    const next=JSON.parse(sidecar({userId:app.get("syncLoad().userId"),first:true}));
+    app.run(`syncPatch(syncLoad().userId,s=>({...s,accessExp:0}));
+      globalThis.__remoteHook=__hook;
+      __hook=async path=>{
+        if(path.startsWith("/auth/v1/token"))localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+        await __remoteHook(path);
+      };`);
+    try {
+      reset(app); await app.getAsync("syncKick(false)");
+      assert.strictEqual(app.get("syncStoreToken()"),identity,"same user and durable authority survive refresh");
+      assert.ok(!pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===remote.scale_id && row.deleted)),"refresh must not push an old-base R tombstone");
+      assert.ok(!pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId && !row.deleted)),"refresh must not push unmatched Q before GET and Add N");
+      assert.strictEqual(pushes(app).length,0);
+      assert.strictEqual(app.get('__requests.filter(r=>r.path.startsWith("/rest/v1/saved_scales")).length'),0);
+      assert.strictEqual(app.get("syncLoad().first"),true,"refresh does not consume the replacement first barrier");
+      assert.deepStrictEqual(plain(app.get("syncLoad().base")),{});
+      assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[]);
+      assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(remote.scale_id)}).deleted`),false);
+      assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(q.instanceId)})`));
+      reset(app); await app.getAsync("syncKick(true)");
+      assert.ok(app.get('__requests.some(r=>r.path.startsWith("/rest/v1/saved_scales"))'),"replacement GET runs");
+      assert.strictEqual(app.get("syncLoad().first"),false);
+      assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[q.instanceId],"first audit holds unmatched Q");
+      assert.strictEqual(pushes(app).length,0,"Q stays held before Add N");
+      assert.ok(app.get(`syncLocal().some(e=>(syncLoad().alias[e.id]||e.id)===${JSON.stringify(remote.scale_id)})`),"GET restores R locally");
+      app.run("syncAskAnswer(true)"); await app.getAsync("syncRunning");
+      assert.ok(pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId && !row.deleted)),"Add N permits Q push");
+      assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)),"recovery never deletes R");
+      assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(remote.scale_id)}).deleted`),false);
+      assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(q.instanceId)}).deleted`),false);
+      assert.ok(app.get(`syncLocal().some(e=>(syncLoad().alias[e.id]||e.id)===${JSON.stringify(remote.scale_id)})`));
+      assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(q.instanceId)})`));
+    } finally { app.run("__hook=()=>{}"); }
+  });
   test("T-APP-M8-flip-before-push: no planner call after refresh changes authority", async () => {
     for(const change of [false,true]) {
       const app=await fixture(); await makeCustom(app); reset(app);

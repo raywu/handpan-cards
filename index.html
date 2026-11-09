@@ -18354,6 +18354,8 @@ async function syncPush(storeToken = syncStoreToken()) {
     if (!sc || sc.first) return true;
     const token = await syncToken();
     if (!token || !syncStill(storeToken)) return false;
+    sc = syncLoad();
+    if (!sc || sc.first) return false;
     const plan = HPE.sync.planPush({ local: syncLocal(), sidecar: sc, ctx: syncCtx() });
     if (!plan.rows.length) {
       if (sc.pending) syncPatch(sc.userId, cur => ({ ...cur, pending: false }));
