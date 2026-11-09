@@ -4,12 +4,12 @@
 diff --git a/src/engine/sync.js b/src/engine/sync.js
 --- a/src/engine/sync.js
 +++ b/src/engine/sync.js
-@@ -149,7 +149,7 @@
+@@ -164,7 +164,7 @@ HPE.sync = (function () {
          const unchanged = L.revision === B.localRevision;
          if (equal(L.record, R.record)) {
            baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
 -        } else if (unchanged) {
 +        } else if (true) {
            const opaque = !readableIn(ctx, R.record);
-           const op = { op: "overwrite", id: L.id, remoteId: rid, record: clone(R.record) };
+           const op = { op: "overwrite", id: L.id, remoteId: rid, expectedRevision: L.revision, record: clone(R.record) };
            if (opaque) op.opaque = true;
