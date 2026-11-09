@@ -41,6 +41,23 @@ HPE.sync = (function () {
     const s = Object.assign(emptySidecar(), clone(sidecar || {}));
     return s;
   }
+  function trustedBase(sidecar, local, ctx) {
+    const sc = normalized(sidecar), used = new Set(ctx.usedIds || []);
+    const live = new Set(local.map(e => sc.alias[e.id] || e.id));
+    const aliases = new Map();
+    for (const [id, rid] of Object.entries(sc.alias)) {
+      if (!aliases.has(rid)) aliases.set(rid, []);
+      aliases.get(rid).push(id);
+    }
+    const held = rid => live.has(rid) || (aliases.has(rid)
+      ? aliases.get(rid).some(id => used.has(id)) : used.has(rid));
+    return {
+      ...sc,
+      base: Object.fromEntries(Object.entries(sc.base).filter(([rid]) => held(rid))),
+      alias: Object.fromEntries(Object.entries(sc.alias).filter(([, rid]) => held(rid))),
+      deferredDeletes: sc.deferredDeletes.filter(held)
+    };
+  }
   function remoteOf(sidecar, localId) {
     return (sidecar && sidecar.alias && sidecar.alias[localId]) || localId;
   }
@@ -77,7 +94,7 @@ HPE.sync = (function () {
   const describeIn = (ctx, record) => (ctx.describe ? ctx.describe(record) : null) || null;
 
   function planPull(input) {
-    const ctx = input.ctx || {}, local = input.local || [], sc = normalized(input.sidecar);
+    const ctx = input.ctx || {}, local = input.local || [], sc = trustedBase(input.sidecar, local, ctx);
     const alias = sc.alias, base = sc.base, localOnly = new Set(sc.localOnly);
     const deferred = new Set(sc.deferredDeletes);
     const remote = (input.remote || []).slice().sort((a, b) => a.rev - b.rev);
@@ -215,7 +232,7 @@ HPE.sync = (function () {
   }
 
   function planDeferred(input) {
-    const ctx = input.ctx || {}, local = input.local || [], sc = normalized(input.sidecar);
+    const ctx = input.ctx || {}, local = input.local || [], sc = trustedBase(input.sidecar, local, ctx);
     const byRid = index(local, sc.alias);
     const ops = [], baseDrops = [], keep = [], sources = {};
     let visible = (ctx.builtinVisible || 0) + local.length;
@@ -288,7 +305,7 @@ HPE.sync = (function () {
   }
 
   function planPush(input) {
-    const ctx = input.ctx || {}, local = input.local || [], sc = normalized(input.sidecar);
+    const ctx = input.ctx || {}, local = input.local || [], sc = trustedBase(input.sidecar, local, ctx);
     const localOnly = new Set(sc.localOnly), rows = [], meta = {};
     const live = new Set();
     for (const e of local) {

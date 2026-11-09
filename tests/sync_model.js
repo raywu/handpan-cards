@@ -40,4 +40,10 @@ function applyOps(entries, ops, opts = {}) {
   return { conflict: false, live, committed: live.map(e => ({ id: e.id, revision: e.revision })), skipped, inserted, removed };
 }
 
-module.exports = { applyOps, UUID };
+function replaceStore(device, collectionId) {
+  device.entries = [];
+  device.used = new Set();
+  device.collectionId = collectionId;
+}
+
+module.exports = { applyOps, UUID, replaceStore };
