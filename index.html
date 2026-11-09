@@ -18221,13 +18221,8 @@ function syncLoad() {
   } catch (e) { return null; }
 }
 function syncPatch(userId, change) {
-  const sc = syncLoad();
-  if (!sc || sc.userId !== userId) return null;
-  try {
-    const next = change(sc);
-    localStorage.setItem(SYNC_KEY, JSON.stringify(next));
-    return next;
-  } catch (e) { return null; }
+  const scope = syncScope();
+  return scope && scope.sidecar.userId === userId ? syncWrite(scope, change) : null;
 }
 async function syncFetch(path, options = {}) {
   const ctl = typeof AbortController === "function" ? new AbortController() : null;
@@ -18248,10 +18243,48 @@ const syncSession = (sc, body) => ({ ...sc, refresh: body.refresh_token, access:
   accessExp: Date.now() + (Number(body.expires_in) > 0 ? Number(body.expires_in) : 3600) * 1000 });
 function syncStoreToken() {
   if (!SYNC_CFG || !savedState || savedMode !== "durable" || savedState.migration?.temporary) return null;
-  return savedAuthorityGeneration + ":" + savedState.collectionId + ":" + (syncLoad()?.userId || "");
+  return savedAuthorityGeneration + ":" + savedState.collectionId;
 }
 const syncActive = () => syncStoreToken() !== null;
-const syncStill = storeToken => storeToken !== null && !!syncLoad() && storeToken === syncStoreToken();
+function syncScope() {
+  const storeToken = syncStoreToken();
+  if (storeToken === null) return null;
+  try {
+    const expectedRaw = localStorage.getItem(SYNC_KEY);
+    const sidecar = JSON.parse(expectedRaw);
+    if (!sidecar || sidecar.v !== 1 || typeof sidecar.userId !== "string" || typeof sidecar.refresh !== "string" || sidecar.project !== SYNC_CFG.url) return null;
+    return { storeToken, collectionId: savedState.collectionId, expectedRaw, sidecar, invalid: false };
+  } catch (e) { return null; }
+}
+function syncStill(scope) {
+  if (!scope || scope.invalid) return false;
+  try {
+    if (scope.storeToken === syncStoreToken() && localStorage.getItem(SYNC_KEY) === scope.expectedRaw) return true;
+  } catch (e) {}
+  scope.invalid = true;
+  return false;
+}
+function syncWrite(scope, change) {
+  if (!syncStill(scope)) return null;
+  try {
+    const next = change(scope.sidecar), raw = JSON.stringify(next);
+    if (!syncStill(scope)) return null;
+    localStorage.setItem(SYNC_KEY, raw);
+    scope.expectedRaw = raw;
+    scope.sidecar = next;
+    return next;
+  } catch (e) { scope.invalid = true; return null; }
+}
+function syncRemove(scope, note) {
+  if (!syncStill(scope)) return false;
+  try { localStorage.removeItem(SYNC_KEY); }
+  catch (e) { scope.invalid = true; return false; }
+  scope.invalid = true;
+  syncStep = "email";
+  syncPaint();
+  syncSay(note || null);
+  return true;
+}
 const syncLocal = () => savedState.entries.map(e => ({ id: e.instanceId, revision: e.revision, record: e.record }));
 function syncCtx() {
   const used = new Set(savedState.usedInstanceIds);
@@ -18293,113 +18326,110 @@ function syncDrop(note) {
   syncPaint();
   syncSay(note || null);
 }
-async function syncToken() {
-  const sc = syncLoad();
-  if (!sc) return null;
+async function syncToken(scope = syncScope()) {
+  if (!syncStill(scope)) return null;
+  const sc = scope.sidecar;
   if (sc.accessExp > Date.now() + 30000) return sc.access;
   const r = await syncFetch("/auth/v1/token?grant_type=refresh_token", { method: "POST", body: { refresh_token: sc.refresh } });
+  if (!syncStill(scope)) return null;
   if (r.ok && r.json && r.json.access_token) {
-    const next = syncPatch(sc.userId, cur => syncSession(cur, r.json));
+    const next = syncWrite(scope, cur => syncSession(cur, r.json));
     return next ? next.access : null;
   }
-  if (r.status >= 400 && r.status < 500 && r.status !== 429 && r.status !== 408) syncDrop("sync.err.signedOut");
-  else { syncPatch(sc.userId, cur => ({ ...cur, pending: true })); syncStatus("pending"); }
+  if (r.status >= 400 && r.status < 500 && r.status !== 429 && r.status !== 408) syncRemove(scope, "sync.err.signedOut");
+  else if (syncWrite(scope, cur => ({ ...cur, pending: true })) && syncStill(scope)) syncStatus("pending");
   return null;
 }
-async function syncRemotePages(cursor, token) {
+async function syncRemotePages(cursor, token, scope = syncScope()) {
   const rows = [];
   for (let page = 0; page < 200; page++) {
-    if (!syncLoad()) return null;
+    if (!syncStill(scope)) return null;
     const r = await syncFetch("/rest/v1/saved_scales?select=scale_id,rev,record,deleted&rev=gt." + cursor + "&order=rev&limit=200", { token });
-    if (!r.ok || !Array.isArray(r.json)) return null;
+    if (!syncStill(scope) || !r.ok || !Array.isArray(r.json)) return null;
     rows.push(...r.json);
     if (r.json.length < 200) return rows;
     cursor = r.json[r.json.length - 1].rev;
   }
   return null;
 }
-async function syncApply(userId, plan, storeToken) {
+async function syncApply(scope, plan) {
+  if (!syncStill(scope)) return false;
   let result = { ok: true, sync: { committed: [], skipped: [] } };
   if (plan.ops.length) {
-    result = await commitSaved({ type: "sync-apply", collectionId: storeToken.split(":")[1], ops: plan.ops });
-    if (!result.ok) return false;
+    result = await commitSaved({ type: "sync-apply", collectionId: scope.collectionId, ops: plan.ops });
+    if (!syncStill(scope) || !result.ok) return false;
   }
-  syncPatch(userId, cur => HPE.sync.settlePull(cur, plan, result.sync.committed, result.sync.skipped));
-  return true;
+  return !!syncWrite(scope, cur => HPE.sync.settlePull(cur, plan, result.sync.committed, result.sync.skipped));
 }
-async function syncPull(storeToken = syncStoreToken()) {
+async function syncPull(scope = syncScope()) {
+  if (!syncStill(scope)) return false;
   syncLastPull = Date.now();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const token = await syncToken();
-    if (!token) return false;
-    let sc = syncLoad();
-    if (!sc) return false;
-    const rows = await syncRemotePages(sc.cursor, token);
-    if (!rows) return false;
-    const plan = HPE.sync.planPull({ remote: rows, local: syncLocal(), sidecar: sc, ctx: syncCtx() });
-    if (plan.ops.length && !syncStill(storeToken)) return false;
-    if (!await syncApply(sc.userId, plan, storeToken)) continue;
-    if (!syncStill(storeToken)) return false;
-    sc = syncLoad();
-    if (!sc) return false;
-    const deferred = HPE.sync.planDeferred({ local: syncLocal(), sidecar: sc, ctx: syncCtx() });
-    if (deferred.ops.length || deferred.baseDrops.length) await syncApply(sc.userId, deferred, storeToken);
-    return true;
+    const token = await syncToken(scope);
+    if (!token || !syncStill(scope)) return false;
+    const rows = await syncRemotePages(scope.sidecar.cursor, token, scope);
+    if (!rows || !syncStill(scope)) return false;
+    const plan = HPE.sync.planPull({ remote: rows, local: syncLocal(), sidecar: scope.sidecar, ctx: syncCtx() });
+    const applied = await syncApply(scope, plan);
+    if (!syncStill(scope)) return false;
+    if (!applied) continue;
+    const deferred = HPE.sync.planDeferred({ local: syncLocal(), sidecar: scope.sidecar, ctx: syncCtx() });
+    if (deferred.ops.length || deferred.baseDrops.length) {
+      if (!await syncApply(scope, deferred)) return false;
+    }
+    return syncStill(scope);
   }
   return false;
 }
-async function syncPush(storeToken = syncStoreToken()) {
+async function syncPush(scope = syncScope()) {
   for (let loop = 0; loop < 3; loop++) {
-    let sc = syncLoad();
-    if (!sc || sc.first) return true;
-    const token = await syncToken();
-    if (!token || !syncStill(storeToken)) return false;
-    sc = syncLoad();
-    if (!sc || sc.first) return false;
+    if (!syncStill(scope)) return false;
+    if (scope.sidecar.first) return true;
+    const token = await syncToken(scope);
+    if (!token || !syncStill(scope)) return false;
+    const sc = scope.sidecar;
+    if (sc.first) return false;
     const plan = HPE.sync.planPush({ local: syncLocal(), sidecar: sc, ctx: syncCtx() });
     if (!plan.rows.length) {
-      if (sc.pending) syncPatch(sc.userId, cur => ({ ...cur, pending: false }));
-      return true;
+      return !sc.pending || !!syncWrite(scope, cur => ({ ...cur, pending: false }));
     }
     const results = [];
     let reached = true;
     for (const batch of plan.batches) {
-      if (!syncStill(storeToken)) return false;
+      if (!syncStill(scope)) return false;
       const r = await syncFetch("/rest/v1/rpc/push_scales", { method: "POST", token, body: { rows: batch } });
+      if (!syncStill(scope)) return false;
       if (!r.ok || !Array.isArray(r.json)) { reached = false; break; }
       results.push(...r.json);
     }
     const outcome = HPE.sync.settlePush(sc, plan, results);
-    syncPatch(sc.userId, cur => HPE.sync.settlePush(cur, plan, results).sidecar);
+    if (!syncWrite(scope, () => outcome.sidecar) || !syncStill(scope)) return false;
     const refused = outcome.refused.map(x => x.refused);
     if (refused.includes("cap")) syncSay("sync.err.cap");
     else if (refused.includes("rate")) syncSay("sync.err.rate");
-    if (outcome.conflict) { if (!await syncPull(storeToken)) return false; continue; }
+    if (outcome.conflict) { if (!await syncPull(scope)) return false; continue; }
     return reached;
   }
   return false;
 }
 async function syncCycle(pull) {
-  const storeToken = syncStoreToken();
-  if (storeToken === null) return;
-  let sc = syncLoad();
-  if (!sc) return;
+  const scope = syncScope();
+  if (!syncStill(scope)) return;
   syncStatus("syncing");
   let ok = true;
-  if (pull || sc.first) ok = await syncPull(storeToken);
-  if (!syncStill(storeToken)) return;
-  sc = syncLoad();
-  if (!sc) return;
-  if (ok && sc.first) {
+  if (pull || scope.sidecar.first) ok = await syncPull(scope);
+  if (!syncStill(scope)) return;
+  if (ok && scope.sidecar.first) {
     const local = syncLocal();
-    syncPatch(sc.userId, cur => { const audit = HPE.sync.firstSyncAudit({ local, sidecar: cur }); return { ...audit.sidecar, first: false }; });
+    if (!syncWrite(scope, cur => { const audit = HPE.sync.firstSyncAudit({ local, sidecar: cur }); return { ...audit.sidecar, first: false }; })) return;
   }
-  if (ok) ok = await syncPush(storeToken);
-  if (!syncStill(storeToken)) return;
-  sc = syncLoad();
-  if (!sc) return;
-  if (ok && !sc.pending) { syncPatch(sc.userId, cur => ({ ...cur, syncedAt: Date.now() })); syncStatus("synced"); }
-  else { syncPatch(sc.userId, cur => ({ ...cur, pending: true })); if (!syncMsg || syncMsg.key.indexOf("sync.err.") !== 0) syncStatus("pending"); else syncPaint(); }
+  if (ok) ok = await syncPush(scope);
+  if (!syncStill(scope)) return;
+  if (ok && !scope.sidecar.pending) {
+    if (syncWrite(scope, cur => ({ ...cur, syncedAt: Date.now() })) && syncStill(scope)) syncStatus("synced");
+  } else if (syncWrite(scope, cur => ({ ...cur, pending: true })) && syncStill(scope)) {
+    if (!syncMsg || syncMsg.key.indexOf("sync.err.") !== 0) syncStatus("pending"); else syncPaint();
+  }
 }
 function syncKick(pull) {
   if (!syncActive() || !syncHolder || !syncLoad()) return Promise.resolve();
@@ -18545,8 +18575,9 @@ async function syncSignOut() {
   syncFocusFor(null);
 }
 async function syncDeleteAccount() {
-  const sc = syncLoad();
-  if (!sc) return;
+  const scope = syncScope();
+  if (!syncStill(scope)) return;
+  const sc = scope.sidecar;
   if (!syncDeleteArmed) {
     syncDeleteArmed = setTimeout(() => { syncDeleteArmed = null; syncPaint(); }, 6000);
     syncPaint();
@@ -18555,9 +18586,9 @@ async function syncDeleteAccount() {
   clearTimeout(syncDeleteArmed); syncDeleteArmed = null;
   const token = sc.accessExp > Date.now() + 5000 ? sc.access : null;
   const r = token ? await syncFetch("/rest/v1/rpc/delete_my_account", { method: "POST", token, body: {} }) : { ok: false };
+  if (!syncStill(scope)) return;
   if (!r.ok) { syncPaint(); syncSay("sync.err.offline"); return; }
-  syncDrop(null);
-  syncFocusFor(null);
+  if (syncRemove(scope, null)) syncFocusFor(null);
 }
 function syncAskAnswer(yes) {
   const sc = syncLoad();
