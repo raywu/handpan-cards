@@ -383,7 +383,7 @@ beneath it; the PR is touched by the integrator only after the lane returns `pen
 
 ## 8. DEV rebuild and exact-head CI procedure (owner-approved vehicle)
 
-Current M candidate H is a0641cd0a3dc6949fb9fdb34d70f82372383cff0. Owner explicitly approved
+Current M candidate H is 555bac651869df7ecfbd280b958132b241e10ab4. Owner explicitly approved
 ONE held main-target CI-only PR for exact D head; this grants no main merge. Current DEV8d08667a
 is an ancestor of existing D7e3b356f, verified read-only. Never start D from origin/dev or reset
 an existing worktree/branch: preserve ordinary fast-forward history from existing D.
@@ -398,7 +398,8 @@ an existing worktree/branch: preserve ordinary fast-forward history from existin
    raise owned app/sync rows from actual output, retain every unrelated D floor. Do not copy M1280.
 3. Add tests/e2e_sync.test.js to DIRECT_READERS in tests/editor_model.test.js, retain U2a-F3's assertion.
    In D WT run node --test tests/app.test.js; node --test tests/sync.test.js;
-   node --test tests/editor_model.test.js; python3 -m unittest tests.test_suite_health;
+   node --test tests/editor_model.test.js; node --test tests/mutation_harness.test.js (full54);
+   python3 -m unittest tests.test_suite_health;
    python3 tools/validate.py; git apply --check on EVERY remaining a2_/sync_ patch.
    Record actual executed/pass/fail/skip/cancel counts. No duplicate local ALLFILES/emit-js/full-Mac job.
 4. Once M gates pass, commit/push ordinarily to existing claude/login-sync-a2-dev; verify local tip,
@@ -998,7 +999,8 @@ inventory; history counts are not current evidence); reanchor only with same nam
 proof. Full mutation coverage is authoritative in exact-head Linux CI; inspect all shard results
 and executed inventories. Do not duplicate the full local browser/mutation workload. Reserve a
 browser lease for any targeted mutant command that actually needs a browser.
-Run `python3 -m unittest tests.test_suite_health` and `python3 tools/validate.py`.
+Run `node --test tests/mutation_harness.test.js` in full whenever mutant metadata changes,
+then `python3 -m unittest tests.test_suite_health` and `python3 tools/validate.py`.
 
 M: verify local H equals PR1001 head; require successful FULL Linux validate at exact H
 (`gh run list --commit H --workflow validate.yml`) plus fresh independent exact-H PASS, addressed
@@ -1110,7 +1112,7 @@ Counts are executed tests/pass/fail, excluding suite containers. Every run has r
 | `a2_sync_token_collection.patch` | 1/1/0 | 1/0/1 |
 | `a2_sync_ungated_lock.patch` | 1/1/0 | 1/0/1 |
 
-Raw witness header selects5 old named tests plus36 new OS tests:41 clean pass;33 actual assertion failures including all5 old named tests,8 positive controls pass. Store witness header selects3 old named tests plus36 OS tests:39 clean pass;3 old named tests fail,36 OS tests pass. These passing OS tests do not prove the store equality protection; the three old named assertions do. Own-write header selects2 OS controls:2 clean pass, both fail when advancement is removed.
+Original broad manual proof selects5 old named tests plus36 new OS tests:41 clean pass;33 actual assertion failures including all5 old named tests,8 positive controls pass. Original broad store proof selects3 old named tests plus36 OS tests:39 clean pass;3 old named tests fail,36 OS tests pass. These passing OS tests do not prove the store equality protection; the three old named assertions do. Original broad own-write proof selects2 OS controls:2 clean pass, both fail when advancement is removed.
 
 New OS coverage under raw mutant includes refresh200/408/429/401 reset/switch/removal, during gt10 reset, final and intermediate pages, primary/deferred ACK, final/intermediate/failed/refused push ACK, real visibility liveness, async delete success/failure reset/switch/removal, zero-op/baseDrops-only settlement and Add N queued operation. Current refresh branches, reset-before GET, unchanged pages, own-writes/current-delete controls remain green.
 
@@ -1129,3 +1131,21 @@ Old behaviors unmapped: none. Pending full CI: browser resend kill plus authorit
 Local mutant-only commit: ddafa976 (no push). Exact final head apply45/45, working tree clean; index.html exact baseline byte equality verified. Blob-header format test selected1/executed1/pass1, zero skips/cancel.
 
 Next: final local validator/apply checks, ordinary final candidate push; full exact-head validate and fresh independent code review. No DEV rebuild until both pass.
+
+
+### Section21 metadata repair receipt (after a064 full-CI failure)
+
+Validate42641567851 failed ONLY header-selection lint in mutation_harness53/54. App1280/1280,
+full genericbrowser643/643, syncbrowser10/10 andall4mutation shards passed. The three new central
+mutant headers selected multiple tests/prose while the existing contract requires ONE exact test name.
+Root had checked kills and patch format but missed full header lint locally.
+
+Header-only fix8f0340cc (integrated ordinarily): unchanged SHA256 diff bodies; each canonical header
+now selects ONE actual named test, clean1/1 and mutant1/1 assertion failure, zero skips/cancels.
+Raw representative is the during-GET first-barrier test; store representative is old before-push
+authority test; own-write representative is the full refresh/pull/audit/release/deletion control.
+Broad manual41/39/2-test TAP and every old-assertion mapping remain valid unchanged-body evidence,
+not the canonical CI-header selection. Complete local mutation_harness54/54 now PASS;45/45patches
+apply. Add that existing full54-test check before publication, no test/harness/threshold changes.
+Application, engine andapp-test bytes unchanged from independently reviewed a064. New exact-head
+fullCI and fresh review still required; Dprep3be remains unpublished until correctedM gates pass.

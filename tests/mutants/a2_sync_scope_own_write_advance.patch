@@ -1,5 +1,6 @@
 # kills: T-APP-OS-own-writes: refresh pull audit release multi-batch push and intentional deletion stay live
-# suite: node --test --test-reporter=tap --test-name-pattern T-APP-OS-own-writes tests/app.test.js
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-OS-own-writes:.refresh.pull.audit.release.multi-batch.push.and.intentional.deletion.stay.live tests/app.test.js
+# Broader manual proof: T-APP-OS-own-writes: refresh pull audit release multi-batch push and intentional deletion stay live
 # Own successful writes must advance expected raw; all guards remain.
 diff --git a/index.html b/index.html
 --- a/index.html

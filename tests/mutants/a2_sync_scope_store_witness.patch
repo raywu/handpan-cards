@@ -1,5 +1,6 @@
-# kills: T-APP-M8-flip-before-push/flip-before-apply/flip-between-batches and T-APP-OS durable authority assertions
-# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M8-flip|T-APP-OS- tests/app.test.js
+# kills: T-APP-M8-flip-before-push: no planner call after refresh changes authority
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M8-flip-before-push tests/app.test.js
+# Broader manual proof: T-APP-M8-flip-before-push/flip-before-apply/flip-between-batches and T-APP-OS durable authority assertions
 # Durable-store equality disabled; raw witness and all boundary checks remain.
 diff --git a/index.html b/index.html
 --- a/index.html

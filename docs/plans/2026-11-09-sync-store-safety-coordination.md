@@ -154,3 +154,16 @@ zero skips/cancels. Owned app/sync floor rows raised from D1152/48 to measured12
 pgenv3 andeveryunrelatedrowretained. Full client region andpure syncengine byte-identical
 to independentlyreviewedM a064; existingDeditor/data preserved. Remaininglocalvalidator/
 unithealth/patchchecks runbeforemergecommit. StillnoDpublicationbeforeMfinalCI/reviewerread.
+
+
+M a064 fullCI failure was ONLY3central-mutant #kills/#suite metadata, notapp/browser behavior:
+app1280,e2e643,syncbrowser10 and4mutationshardspassed. Header-onlyfix8f0340cc preservesallbodies,
+3canonicalclean1/kill1 proofs, fullmutation_harness54/54,45apply. Existingfull54harnessnowmandatory
+localprepublication; rootmissedheaderlintfirsttime. NewexactMheadCI/freshreview required.
+Dprep3be45204 clean/local, publicationheld; ordinarymergecorrectedverifiedM beforelaterDgates.
+
+
+Current D preparation incorporates independently code-PASS M555bac65 (validate42648100530 pending)
+by ordinary merge into preserved3be prep. Only simultaneous coordination-note appends conflicted;
+both retained. No application/engine/app-test delta versus3be. Full54 mutation-harness check now
+required locally before publication; no headerbody/threshold/test weakening. RemoteD remains7e3.
