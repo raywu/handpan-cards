@@ -167,3 +167,17 @@ Current D preparation incorporates independently code-PASS M555bac65 (validate42
 by ordinary merge into preserved3be prep. Only simultaneous coordination-note appends conflicted;
 both retained. No application/engine/app-test delta versus3be. Full54 mutation-harness check now
 required locally before publication; no headerbody/threshold/test weakening. RemoteD remains7e3.
+
+
+Corrected D16281fb full mutation_harness54/54 PASS, no skips/cancels; app/engine/test bytes
+unchanged versus locallygreen3be. Parent2026-11-05-login-sync-v2 was canonical-local/untracked:
+archivecopy independentlyprivacy-reviewed SAFE; originalunchanged, private inbox/accountdetail
+andkeyvaluesredacted. Banner points to currentLinear+section21, no historicalsetup authorization.
+Boundedserved probe /private/tmp/tri28-served-sync-probe.test.js independentlyREADY: aftergates
+andexclusivehostlease, existingCDPhelper+existingrun_node_file runner; exactly3requiredtests:
+actualbrowser-deliveredHTMLhash+unsignedinvalidemail/noOTP; fullystubbedUIlogin/firstpull;
+same-userresetduringGETgt10preservesfirst/cursor0 followedbyvalidGET0. Allappfetchesstubbed
+beforedocscript, cleanownedprofile/PIDreaped, fallbackfonts380x800. Thisisnotrealbackend/native
+Safari/deviceQA. Sourceandrawreceiptlocalartifacts, notavailableinafreshclone; permanentCI
+tests/e2e_sync.test.js andappOSregressionsremainreproduciblecoreevidence. DoNOTexecuteprobe
+beforebothCI/reviewgates+DEVintegration+servedbyteidentity. Mainandproductionactionstayheld.

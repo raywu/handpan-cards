@@ -1149,3 +1149,13 @@ not the canonical CI-header selection. Complete local mutation_harness54/54 now 
 apply. Add that existing full54-test check before publication, no test/harness/threshold changes.
 Application, engine andapp-test bytes unchanged from independently reviewed a064. New exact-head
 fullCI and fresh review still required; Dprep3be remains unpublished until correctedM gates pass.
+
+
+D recovery/served-check supplement: privacy-reviewed historical parent plan is archived at
+2026-11-05-login-sync-v2.md withsourcehash/redactionbanner; owner original remains untouched.
+Owner DEV QA retains parent14's two-device save/reload/delete, offline-conflict preservation,
+local-data-kept-on-signout andAddN/Notnow checks. Test only disposable scales; an empty spare
+browserprofile can exercise full restoration without clearing personal Safari history. No agent
+performs realaccount deletion, bulkdata removal orproductionsetup. Actualbackend/phone/VoiceOver/
+keyboardownerQA is distinct from the fullystubbedthree-case served probe; no success is inferred.
+CorrectedlocalDmetadataharness54/54 passes. Publication stillwaitsM555 fullCIandreviewerfinalread.
