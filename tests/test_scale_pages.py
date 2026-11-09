@@ -14,9 +14,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import gen_scale_page as gen  # noqa: E402
 
-SITE = "https://handpan.raywu.org/"
-ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpan.raywu.org", "www.w3.org",
-                 "www.youtube.com", "www.sarazhandpans.com", "www.handpan.world",
+SITE = "https://handpantheory.com/"
+ALLOWED_HOSTS = {"fonts.googleapis.com", "fonts.gstatic.com", "handpantheory.com", "www.w3.org",
+                 "www.youtube.com", "masterthehandpan.com", "instruments-du-monde.com", "www.sarazhandpans.com", "www.handpan.world",
                  "handpaner.com", "schema.org", "handpanhelpers.klangzeug.de", "svenkirchhofer.de",
                  "yataoshop.com", "isthmusinstruments.com", "www.drumland.com", "maginstruments.com",
                  "www.scan.co.uk", "www.meinlshop.de", "www.dingandtones.com", "sarazhandpans.com",
@@ -281,12 +281,12 @@ class TableOracleTest(unittest.TestCase):
 
 class GeneratorTest(unittest.TestCase):
     KURD_10_LINKS = {
-        "canonical": "https://handpan.raywu.org/scales/d-kurd-10/",
+        "canonical": "https://handpantheory.com/scales/d-kurd-10/",
         "cta": "/#deck=d-kurd-10",
         "cross": "/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038",
         "also_try": [
-            "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
-            "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
+            "/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b",
+            "/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803",
         ],
     }
 
@@ -1045,9 +1045,16 @@ if __name__ == "__main__":
 
 class AlsoTryTest(unittest.TestCase):
     LINKS = [
-        ("C# Annaziska 9", "https://handpan.raywu.org/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
-        ("C# Annaziska 13", "https://handpan.raywu.org/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
+        ("C# Annaziska 9", "/#s=6/(Cs3)_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4/C%23+Annaziska+9/24f03b"),
+        ("C# Annaziska 13", "/#s=6/(Cs3)_uE3_uFs3_Gs3_A3_B3_Cs4_Ds4_E4_Fs4_Gs4_uB4_uCs5/C%23+Annaziska+13/palette-2/402803"),
     ]
+
+    def test_also_try_links_are_relative_like_their_siblings(self):
+        for slug in ("d-kurd-9", "d-kurd-10"):
+            with self.subTest(slug=slug):
+                block = re.search(r'<ul class="rel also">(.*?)</ul>', read("scales/%s/index.html" % slug), re.S).group(1)
+                for h in re.findall(r'href="([^"]*)"', block):
+                    self.assertTrue(h.startswith("/#s="), h)
 
     def anchors(self, slug):
         return re.findall(r'<a href="([^"]*)">([^<]*)</a>', read("scales/%s/index.html" % slug))
@@ -1180,7 +1187,7 @@ NOT_PUBLISHED = [
     ("Eb La Sirena 16", "DOME+7", "C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 F4 F#4 A#4 C5 D#5 F5"),
     ("B2 Onoleo 15", "DOME+8", "B2 E3 F#3 G3 A3 B3 C4 D#4 E4 F#4 G4 A4 B4 C5 D#5"),
 ]
-ORDER = [n for n, *_ in FACTORY] + [n for n, *_ in SPREAD] + [ONOLEO[0]] + [ASTRO[0]]
+ORDER = [n for n, *_ in FACTORY] + [n for n, *_ in SPREAD] + [ONOLEO[0]] + [ASTRO[0]] + ["F# Serenity"]
 LINKED = SPREAD + [ONOLEO]
 SIRENA_SEED = "(D#2) C#3 D#3 F3 F#3 G#3 A#3 C4 C#4 D#4 [F4] [F#4] [A#4] [C5] [D#5] [F5]"
 SIRENA_MAP = ["r49", "r51", "r53", "r54", "r56", "r58", "r60", "r61", "r63", "b65", None, "b66", "b70", None, "b72",
@@ -1217,7 +1224,7 @@ def neo_fixture():
 
 
 class NeotoneSizeCutTest(unittest.TestCase):
-    PAGES = ("neotone",)
+    PAGES = ("neotone", "f-sharp-serenity-neotone")
 
     def page(self, slug):
         return read("scales/%s/index.html" % slug)
@@ -1310,6 +1317,32 @@ class NeotonePageTest(unittest.TestCase):
         self.assertEqual(out["profile"]["map"], EX_MAP)
         self.assertEqual(out["profile"]["rev"], 2)
         self.assertEqual(out["again"], EX_LINK[4:])
+
+    def test_fs_serenity_row_follows_the_nine_factory_scales_with_its_credit_and_cells(self):
+        html = neo()["html"]
+        bodies = re.findall(r"<tbody>.*?</tbody>", html, re.S)
+        serenity = [b for b in bodies if "F# Serenity" in b]
+        self.assertEqual(len(serenity), 1)
+        self.assertIs(bodies[9], serenity[0])
+        self.assertEqual(len(bodies), 10)
+        body = serenity[0]
+        self.assertIn("by Reo Matsumoto", body)
+        self.assertNotIn("DOME", body)
+        self.assertIn("ships with nine scales on the DOME hotkeys", html)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", body, re.S)
+        cells = lambda r: re.findall(r"<td>(.*?)</td>", r)
+        self.assertEqual(cells(rows[1]), "F#3 A3 B3 C#4 E4 F#4 A4 B4 C#5 E5".split())
+        self.assertEqual(cells(rows[2]), "- D3 G#3 E3 B2 A5 F#5 C#6 B5 E6".split())
+
+    def test_fs_serenity_practice_link_is_the_owners_exact_layout(self):
+        owner = ("7/uB2_uD3_uE3_(Fs3)_uGs3_A3_B3_Cs4_E4_Fs4_A4_B4_Cs5_E5_uFs5_uA5_uB5_uCs6_uE6/F%23+Serenity/"
+                 "pair-r57.r59.r61.r64.r66.r69.r71.r73.r76.b50.b56.b52.b47.b81.b78.b85.b83.b88/a1ceea")
+        html = neo()["html"]
+        self.assertIn('<a class="open" href="/#s=%s">Practice F# Serenity</a>' % owner, html)
+        row = next(x for x in gen.load_neotone_row()["defaults"] if x["name"] == "F# Serenity")
+        d = gen.engine([], [row])["defaults"][0]
+        self.assertTrue(d["ok"])
+        self.assertEqual(d["share"], owner)
 
     def test_cards_equal_the_apps_pan_of_build_generated_and_carry_the_lens(self):
         row = neo()["row"]
@@ -1455,14 +1488,14 @@ class NeotonePageTest(unittest.TestCase):
     def test_one_table_nine_tbodies_in_hotkey_order_and_no_second_copy_of_the_notes(self):
         html = neo()["html"]
         self.assertEqual(html.count("<table"), 1)
-        self.assertEqual(html.count("<tbody"), 9)
+        self.assertEqual(html.count("<tbody"), 10)
         self.assertEqual(len(re.findall(r"<caption\b", html)), 1)
         self.assertRegex(html, r"<caption[^>]*>Neotone factory scales</caption>")
         self.assertNotIn('style="overflow-x:auto"', html)
         self.assertNotIn("overflow-x", html)
         hot = re.findall(r'<span class="hk">(DOME\+\d)</span>', factory_section())
         self.assertEqual(hot, ["DOME+%d" % i for i in range(1, 10)])
-        self.assertEqual(html.count("Top Notes"), 9)
+        self.assertEqual(html.count("Top Notes"), 10)
 
     def test_each_published_scale_has_three_rows_header_cells_and_a_rowspan_practice_cell(self):
         blocks = factory_blocks()
@@ -1588,7 +1621,7 @@ class NeotonePageTest(unittest.TestCase):
     def test_the_fixture_carries_the_factory_links_and_the_disclaimer_stays_last_but_one(self):
         fx = neo_fixture()["neotone"]["defaults"]
         blocks = factory_blocks()
-        self.assertEqual([d["name"] for d in fx], [n for n, *_ in FACTORY] + [SPREAD[0][0], ONOLEO[0], ASTRO[0]])
+        self.assertEqual([d["name"] for d in fx], [n for n, *_ in FACTORY] + [SPREAD[0][0], ONOLEO[0], ASTRO[0], "F# Serenity"])
         for d in fx:
             self.assertIn('href="/#s=%s">Practice %s</a>' % (d["share"], d["name"]), blocks[d["name"]])
         ps = re.findall(r"<p[^>]*>(.*?)</p>", neo()["html"], re.S)
@@ -1623,6 +1656,182 @@ class NeotonePageTest(unittest.TestCase):
     def test_sitemap_and_llms_list_the_page(self):
         self.assertIn("<loc>%sscales/neotone/</loc>" % SITE, read("sitemap.xml"))
         self.assertIn("(%sscales/neotone/)" % SITE, read("llms.txt"))
+
+
+SER_SLUG = "f-sharp-serenity-neotone"
+SER_URL = SITE + "scales/%s/" % SER_SLUG
+SER_VIDEO = "https://www.youtube.com/shorts/9nxKowdOFwE"
+
+
+def ser_page():
+    return read("scales/%s/index.html" % SER_SLUG)
+
+
+def ser_row():
+    return next(x for x in gen.load_neotone_row()["defaults"] if x["name"] == "F# Serenity")
+
+
+def card_names(html):
+    return [re.search(r"Chord \d of \d: (.*?)\"", m).group(0)[:-1].split(": ", 1)[1] for m in
+            re.findall(r'<input type="radio" name="step"[^>]*>', html)]
+
+
+def ser_ld(html):
+    return json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.S).group(1))
+
+
+class SerenityPageTest(unittest.TestCase):
+    def test_the_file_is_what_the_generator_writes_and_check_passes(self):
+        self.assertEqual(ser_page(), gen.serenity_page())
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"), "--serenity", "--check"],
+                           cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_self_canonical_title_and_description(self):
+        html = gen.serenity_page()
+        p = Page(html)
+        self.assertEqual(p.canonical(), SER_URL)
+        self.assertEqual(p.meta("og:url", "property"), SER_URL)
+        title = re.search(r"<title>(.*?)</title>", html).group(1)
+        self.assertEqual(title, "F# Serenity handpan chords")
+        self.assertIn("Neotone", p.meta("description"))
+        self.assertLessEqual(len(p.meta("description")), 160)
+        self.assertLess(len(html.encode("utf-8")), SIZE_CAP)
+
+    def test_the_notes_table_equals_the_neotone_row(self):
+        d = ser_row()
+        html = ser_page()
+        bodies = re.findall(r"<tbody>.*?</tbody>", html, re.S)
+        self.assertEqual(len(bodies), 1)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", bodies[0], re.S)
+        cells = lambda r: re.findall(r"<td>(.*?)</td>", r)
+        self.assertEqual(cells(rows[1]), [d["ding"]] + d["main"])
+        self.assertEqual(cells(rows[2]), ["-"] + d["mutant"])
+
+    def test_every_practice_href_equals_the_neotone_page_href(self):
+        neo_hrefs = re.findall(r'<a class="open" href="(/#s=[^"]+)">Practice F# Serenity</a>', neo()["html"])
+        self.assertEqual(len(neo_hrefs), 1)
+        page_hrefs = [h for h in Page(ser_page()).hrefs() if h.startswith("/#s=")]
+        self.assertGreaterEqual(len(page_hrefs), 2)
+        self.assertEqual(set(page_hrefs), set(neo_hrefs))
+
+    def test_json_ld_is_the_template_item_list_with_breadcrumb_and_the_video_citation(self):
+        html = ser_page()
+        ld = ser_ld(html)
+        self.assertEqual(ld["@type"], "WebPage")
+        self.assertEqual(ld["mainEntity"]["@type"], "ItemList")
+        self.assertEqual([i["name"] for i in ld["mainEntity"]["itemListElement"]], card_names(html))
+        self.assertEqual(ld["citation"], SER_VIDEO)
+        self.assertEqual(ld["isBasedOn"], SER_VIDEO)
+        self.assertEqual(ld["creator"], {"@type": "Person", "name": "Reo Matsumoto"})
+        self.assertNotIn("sameAs", json.dumps(ld["creator"]))
+        names = [i["name"] for i in ld["breadcrumb"]["itemListElement"]]
+        self.assertEqual(names, ["Home", "Scale chord charts", "Neotone", "F# Serenity"])
+        self.assertEqual(ld["breadcrumb"]["itemListElement"][-1]["item"], SER_URL)
+        self.assertEqual([i["position"] for i in ld["breadcrumb"]["itemListElement"]], [1, 2, 3, 4])
+
+    def test_related_section_links_neotone_and_counts_every_scale_chart(self):
+        html = ser_page()
+        related = re.search(r'<section class="related">.*?</section>', html, re.S).group(0)
+        self.assertIn('<a href="/scales/neotone/">Neotone handpan chords</a>', related)
+        self.assertIn('<a href="/scales/">All %d handpan scale chord charts</a>' % len(gen.load_rows()), related)
+
+    def test_it_has_the_standard_chord_stepper_for_its_own_layout(self):
+        html = ser_page()
+        self.assertEqual(html.count('<div class="prog" role="radiogroup" aria-label="Chord steps">'), 1)
+        self.assertEqual(len(re.findall(r'<input type="radio" name="step"', html)), 3)
+        self.assertEqual(len(re.findall(r'<div class="slot">', html)), 3)
+        self.assertEqual(len(re.findall(r'<div class="cardhost">', html)), 3)
+        self.assertIn("Starter progression:", html)
+        row = gen.serenity_row()
+        data = gen.engine([row])["rows"][SER_SLUG]
+        self.assertEqual(card_names(html), gen.chord_names(data))
+        self.assertEqual(card_names(gen.serenity_page()), gen.chord_names(data))
+        self.assertEqual(data["name"], "F# Serenity")
+
+    def test_there_is_no_questions_section_and_no_faq_markup(self):
+        html = ser_page()
+        self.assertNotIn('class="faq"', html)
+        self.assertNotIn("FAQPage", html)
+        self.assertNotIn("<h2>Questions</h2>", html)
+        self.assertFalse(hasattr(gen, "serenity_faq"))
+
+    def test_copy_credits_reo_as_a_musician_and_never_says_the_banned_things(self):
+        p = Page(ser_page())
+        vis = p.visible().replace(DISCLAIMER, "") + json.dumps(ser_ld(ser_page()), ensure_ascii=False)
+        self.assertIn("Reo Matsumoto", vis)
+        self.assertIn("a scale by Reo Matsumoto", p.norm())
+        self.assertIn("handpan musician and beatboxer", p.norm())
+        self.assertNotRegex(vis, r"\bRep\b")
+        self.assertIsNone(re.search(r"\bdeck", vis, re.I))
+        for banned in (r"maker", r"builder", r"factory scale", r"natural minor", r"aeolian", r"endorse"):
+            self.assertIsNone(re.search(banned, vis, re.I), banned)
+
+    def test_about_copy_attributes_each_claim_to_its_source(self):
+        n = Page(ser_page()).norm()
+        self.assertNotIn("Amsterdam", n)
+        self.assertNotIn("hipsy", ser_page())
+        self.assertIn("Instruments du Monde describes his music as music without borders that mixes genres", n)
+        self.assertNotIn("and he describes aiming for music without borders", n)
+        for gone in ("In his own profile", "as we read it", "general approach", "not a statement about this scale"):
+            self.assertNotIn(gone, n)
+        self.assertIn("his video", n)
+        beat = re.search(r"<p>[^<]*beatboxer.*?</p>", ser_page(), re.S).group(0)
+        self.assertIn("https://instruments-du-monde.com/en/blogs/handpan/reo-matsumoto", beat)
+        self.assertIn("https://masterthehandpan.com/handpan-player/reo-matsumoto", beat)
+
+    def test_the_page_has_its_own_date_and_the_trademark_line(self):
+        html = ser_page()
+        self.assertEqual(re.findall(r'<time datetime="([^"]*)"', html), ["2026-11-07"])
+        self.assertEqual(ser_ld(html)["dateModified"], "2026-11-07")
+        self.assertEqual(neo()["row"]["updated"], "2026-11-05")
+        self.assertIn(DISCLAIMER, Page(html).norm())
+
+    def test_the_video_is_a_plain_link_with_no_embed_channel_or_date(self):
+        html = ser_page()
+        self.assertIn('href="%s"' % SER_VIDEO, html)
+        self.assertNotIn("<iframe", html)
+        self.assertNotIn("<video", html)
+        self.assertNotIn("uploadDate", html)
+        self.assertNotIn("datePublished", html)
+
+    def test_order_is_breadcrumb_in_header_then_h1_then_stepper_then_practice(self):
+        html = ser_page()
+        crumb = html.index('<a href="/scales/">Scale chord charts</a> &rsaquo; <a href="/scales/neotone/">Neotone</a>')
+        self.assertLess(html.index('class="brand"'), crumb)
+        self.assertLess(crumb, html.index("<h1>"))
+        self.assertLess(html.index("<h1>"), html.index('class="prog"'))
+        self.assertLess(html.index('class="prog"'), html.index("PRACTICE F# SERENITY"))
+        self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html), ["F# Serenity handpan chords"])
+
+    def test_only_allowed_hosts_and_no_third_party_script(self):
+        html = ser_page()
+        hosts = set(re.findall(r"https?://([^/\"'\s)]+)", html))
+        self.assertLessEqual(hosts, ALLOWED_HOSTS)
+        self.assertEqual([x[0] for x in Page(html).scripts], ["application/ld+json", None])
+
+    def test_the_neotone_page_links_it_within_budget_and_stays_under_the_cap(self):
+        html = neo()["html"]
+        link = '<a href="/scales/%s/">More about F# Serenity</a>' % SER_SLUG
+        self.assertEqual(html.count(link), 1)
+        self.assertLess(len(html.encode("utf-8")), NEO_SIZE_CAP)
+        without = html.replace("<p>%s</p>\n" % link, "")
+        self.assertLess(len(html.encode("utf-8")) - len(without.encode("utf-8")), 120)
+
+    def test_the_hub_links_it_once_inside_the_neotone_section(self):
+        html = read("scales/index.html")
+        self.assertEqual(html, gen.hub_page())
+        self.assertEqual(html.count('href="/scales/%s/"' % SER_SLUG), 1)
+        self.assertLess(html.index('href="/scales/neotone/"'), html.index('href="/scales/%s/"' % SER_SLUG))
+
+    def test_sitemap_and_llms_list_it_exactly_once(self):
+        self.assertEqual(read("sitemap.xml").count("<loc>%s</loc>" % SER_URL), 1)
+        self.assertEqual(read("llms.txt").count("(%s)" % SER_URL), 1)
+
+    def test_check_flags_exit_zero_for_hub(self):
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "gen_scale_page.py"), "--hub", "--check"],
+                           cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
 
 
 class ReadingSurfaceTest(unittest.TestCase):

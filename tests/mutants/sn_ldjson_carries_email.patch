@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
    "applicationCategory": "MusicApplication",
    "operatingSystem": "Any",
    "browserRequirements": "Requires JavaScript",
-+  "email": "handpan@raywu.org",
++  "email": "hi@handpantheory.com",
    "isAccessibleForFree": true,
    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
    "featureList": "Chord flashcards; chord progressions; custom scale input; printable PDF"

@@ -641,7 +641,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence", "sync", "swipe"]) {
+                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -652,7 +652,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence", "sync", "swipe"]);
+                                 "share", "sequence", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -3534,7 +3534,7 @@ test("print CTA: the header carries no print controls; the settings panel carrie
     assert.ok(!/<select/.test(html), "the card header must carry no select");
   }
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 4000);
+  const panel = src.slice(src.indexOf('id="settings-panel"'), src.indexOf('id="settings-panel"') + 7000);
   for (const label of ["DOWNLOAD PDF"]) {
     assert.ok(panel.includes(label), `the settings panel is missing "${label}"`);
   }
@@ -3542,7 +3542,8 @@ test("print CTA: the header carries no print controls; the settings panel carrie
   // set of buttons, used for built-in and custom decks alike.
   assert.ok(!panel.includes("<a href="), "the panel must not link a pre-built PDF");
   assert.match(panel, /onclick="downloadDeckPDF\('shop', this, 'all'\); closePanel\(\);"/);
-  assert.ok(/<select id="print-paper-select"/.test(panel), "D16: the paper picker rides with the buttons");
+  assert.ok(/<button type="button" id="print-paper"/.test(panel), "D16: the paper picker rides with the buttons");
+  assert.ok(!/<select id="print-paper/.test(panel), "the paper picker is a menu, not a native select");
 });
 
 const PM_SHOP_SHA256 = {
@@ -3560,18 +3561,19 @@ function pmPanel() {
   return src.slice(at, src.indexOf("<!-- The scale engine, inlined", at));
 }
 
-test("PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper select, and no full-deck control is rendered", async () => {
+test("PM rule 1: the print row is the DOWNLOAD PDF menu trigger then the paper menu trigger, and no full-deck control is rendered", async () => {
   const src = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const panel = pmPanel();
   const row = panel.slice(panel.indexOf('<div class="prints">'));
-  const rowHtml = row.slice(0, row.indexOf("</select>") + 9);
-  const outsideMenu = rowHtml.replace(/<div id="print-menu"[\s\S]*?<\/div>/, "");
+  const rowHtml = row.slice(0, row.indexOf("</div>", row.indexOf('id="print-paper-menu"')) + 6);
+  const outsideMenu = rowHtml.replace(/<div id="print-menu"[\s\S]*?<\/div>/, "").replace(/<div id="print-paper-menu"[\s\S]*?<\/div>/, "");
   const controls = [...outsideMenu.matchAll(/<(button|select)\b[^>]*>/g)].map((m) => m[0]);
   assert.strictEqual(controls.length, 2, "the print row holds exactly two controls beside the menu");
   assert.match(controls[0], /^<button type="button" id="print-download" aria-haspopup="menu" aria-expanded="false" aria-controls="print-menu" onclick="togglePrintMenu\(\);">$/);
-  assert.match(controls[1], /^<select id="print-paper-select"/);
+  assert.match(controls[1], /^<button type="button" id="print-paper" aria-haspopup="menu" aria-expanded="false" aria-controls="print-paper-menu" onclick="togglePaperMenu\(\);">$/);
+  assert.ok(!/<select\b/.test(rowHtml), "the print row holds no native select");
   assert.match(rowHtml, /<button[^>]*>DOWNLOAD PDF<\/button>/);
-  assert.ok(rowHtml.indexOf("<button") < rowHtml.indexOf("<select"), "the button leads the row");
+  assert.ok(rowHtml.indexOf('id="print-download"') < rowHtml.indexOf('id="print-paper"'), "DOWNLOAD PDF leads the row");
   assert.ok(!src.includes("FULL DECK PDF"), "no element offers a full deck PDF");
   assert.ok(!src.includes("CHORD-ONLY PDF"), "no element is labelled CHORD-ONLY PDF");
   assert.match(panel, /<h3 class="panel-heading">Print this scale<\/h3>/);
@@ -3707,7 +3709,7 @@ test("setPrintPaper refuses a non-string value even when it stringifies to a val
    A4 - and re-picking LETTER fired no `change` event, so the user could not
    get back without round-tripping through A4. The control has to report the
    state it owns (D16). */
-/* Lane M1: the picker is now a static control (`#print-paper-select` inside
+/* Lane M1: the picker is now a static control (`#print-paper` inside
  * `#settings-panel`), not re-rendered per card - so there is no "selected"
  * attribute to drift, and setPrintPaper() pushes into the live element's
  * `.value` itself (index.html's setPrintPaper). Same bug class (D16: the
@@ -3715,14 +3717,14 @@ test("setPrintPaper refuses a non-string value even when it stringifies to a val
 test("print CTA: the paper picker reports the paper that will actually print", async () => {
   const app = boot();
   customDeck(app);
-  const picked = () => String(app.get('document.getElementById("print-paper-select").value'));
+  const picked = () => String(app.get('document.getElementById("print-paper").textContent'));
 
-  assert.strictEqual(picked(), "letter", "the picker must open on the default paper");
+  assert.strictEqual(picked(), "LETTER", "the picker must open on the default paper");
   app.run('setPrintPaper("a4")');
-  assert.strictEqual(picked(), "a4",
-    "setPrintPaper must push the new paper into the picker's own value");
+  assert.strictEqual(picked(), "A4",
+    "setPrintPaper must push the new paper into the picker's own label");
   app.run('setPrintPaper("letter")');
-  assert.strictEqual(picked(), "letter");
+  assert.strictEqual(picked(), "LETTER");
 });
 
 /* ---------------------------------------------------------------------------
@@ -4008,7 +4010,7 @@ test("the touch icon and the preview image exist and are named once", async () =
     "the PNG rel=icon must reuse apple-touch-icon.png");
   assert.ok(fs.existsSync(path.join(ROOT, touch)), `${touch} missing at the repo root`);
   const og = metaContent(html, "property", "og:image");
-  assert.strictEqual(og, "https://handpan.raywu.org/og.png");
+  assert.strictEqual(og, "https://handpantheory.com/og.png");
   assert.ok(fs.existsSync(path.join(ROOT, "og.png")), "og.png missing at the repo root");
   assert.strictEqual(metaContent(html, "name", "twitter:image"), og);
   assert.strictEqual(metaContent(html, "property", "og:image:width"), "1200");
@@ -4708,7 +4710,7 @@ describe("panel fit judge", () => {
     delete candOver.controls["deck-add"];
     assert.strictEqual(judge(baseOver, candOver).rule2.fail.length, 1, "a base that overflows does not excuse it");
     assert.strictEqual(judge(cell(), withControl(cell(), "deck-add", { exists: false, rendered: false, disabled: false, bottom: 0 })).rule2.fail.length, 1, "exists:false counts as lacking");
-    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the ten known ids");
+    assert.deepStrictEqual([...pf.REMOVED_BY_DESIGN].sort(), ["button:CHORD-ONLY PDF", "button:FULL DECK PDF", "modeS", "print-paper-select", "res-amy-bottom", "res-amy-progressions", "res-dingandtones", "res-handpan-helpers", "res-handpaner", "res-trainingcards", "share-copy"], "the removed-by-design list is exactly the eleven known ids");
     assert.ok(!pf.REMOVED_BY_DESIGN.includes("button:DOWNLOAD PDF"), "a lost DOWNLOAD PDF is not removed by design");
     const noS = judge(cell(), lacks("modeS"));
     assert.strictEqual(noS.rule2.fail.length, 0, "modeS is removed by design");
@@ -4718,7 +4720,7 @@ describe("panel fit judge", () => {
     const noFull = judge(withFull, cell());
     assert.strictEqual(noFull.rule2.fail.length, 0, "the full-deck button is removed by design");
     assert.deepStrictEqual(noFull.removed, ["button:FULL DECK PDF", "button:CHORD-ONLY PDF"]);
-    const withPaper = withControl(cell(), "print-paper-select", ctl(100));
+    const withPaper = withControl(cell(), "print-paper", ctl(100));
     assert.strictEqual(judge(withPaper, cell()).rule2.fail.length, 1, "the paper select is not removed by design");
     assert.deepStrictEqual(judge(cell(), cell()).removed, []);
   });
@@ -4988,6 +4990,14 @@ describe("panel fit judge", () => {
     assert.strictEqual(judge(b, c(500.5)).rule2.fail.length, 0);
     assert.strictEqual(judge(b, c(500.6)).rule2.fail.length, 1, "deck-add gets no About-row allowance");
     assert.strictEqual(judge(b, c(540)).rule2.fail.length, 1);
+  });
+
+  test("panel fit: the backup-row allowance is 52, owed only for a backup-open control the base lacks", async () => {
+    assert.strictEqual(pf.BACKUP_ALLOWANCE_PX, 52);
+    const keys = (...k) => Object.fromEntries(k.map((x) => [x, ctl(100)]));
+    assert.strictEqual(pf.backupAllowance(keys("res-a"), keys("res-a", "backup-open")), 52, "a new backup-open key");
+    assert.strictEqual(pf.backupAllowance(keys("res-a"), keys("res-a")), 0, "no new key");
+    assert.strictEqual(pf.backupAllowance(keys("backup-open"), keys("backup-open")), 0, "expires once main has the row");
   });
 
   test("panel fit: the Language-group allowance is 88, owed only for a lang-select control the base lacks", async () => {
@@ -9718,7 +9728,7 @@ describe("discoverability: structured data", () => {
     const canonical = /<link rel="canonical" href="([^"]*)">/.exec(html)[1];
     assert.strictEqual(site.url, canonical);
     assert.strictEqual(site.url, metaContent(html, "property", "og:url"));
-    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpan.raywu.org"]);
+    assert.deepStrictEqual(site.alternateName, ["Handpan Chords", "handpantheory.com"]);
     const hostEntry = site.alternateName[1];
     assert.strictEqual(hostEntry, hostEntry.toLowerCase());
     assert.strictEqual(hostEntry, new URL(canonical).host);
@@ -9755,7 +9765,7 @@ describe("discoverability: structured data", () => {
     const ld = ldBlock();
     assert.strictEqual(ld["@context"], "https://schema.org");
     const app = node("WebApplication");
-    assert.strictEqual(app.url, "https://handpan.raywu.org/");
+    assert.strictEqual(app.url, "https://handpantheory.com/");
     assert.strictEqual(app.applicationCategory, "MusicApplication");
     assert.strictEqual(app.operatingSystem, "Any");
     assert.strictEqual(app.browserRequirements, "Requires JavaScript");
@@ -9764,7 +9774,7 @@ describe("discoverability: structured data", () => {
     assert.strictEqual(app.featureList, "Chord flashcards; chord progressions; custom scale input; printable PDF");
     assert.ok(!("aggregateRating" in app) && !("review" in app), "a rating or review is marked up but never shown");
     const block = (html.match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/) || [""])[0];
-    assert.ok(!/"email"|@raywu\.org|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
+    assert.ok(!/"email"|@raywu\.org|@handpantheory\.com|mailto:/i.test(block), "the JSON-LD block carries an email address (G7)");
     assert.ok(!/aggregateRating|"review"/.test(html), "a rating or review appears in the page");
     assert.strictEqual(app.name, SITE_NAME, "name differs from the site name");
     assert.strictEqual(app.description, metaContent(html, "name", "description"), "description differs from the meta description");
@@ -11423,9 +11433,9 @@ describe("about overlay", () => {
     assert.deepStrictEqual(app.history.calls.slice(n).map((c) => c.type), ["replace"]);
   });
 
-  test("AO: About ends with a Contact heading and a mailto link to handpan@raywu.org", async () => {
+  test("AO: About ends with a Contact heading and a mailto link to hi@handpantheory.com", async () => {
     const inner = aboutHtml();
-    assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:handpan@raywu\.org">handpan@raywu\.org<\/a><\/p>\s*$/);
+    assert.match(inner, /<h3>Privacy<\/h3>\s*<p>[^<]*<\/p>\s*<h3>Contact<\/h3>\s*<p><a href="mailto:hi@handpantheory\.com">hi@handpantheory\.com<\/a><\/p>\s*$/);
   });
 
   test("AO: ABOUT is a full-width button alone in the last Resources row, and the last Resources stop before Language", async () => {
@@ -13432,7 +13442,7 @@ describe("UX: the footer lip", () => {
         const from = html.indexOf('<div id="scale-sheet"');
         const sheetHtml = html.slice(from, html.indexOf('id="scale-lip"', from));
         assert.ok(!/<select\b/.test(sheetHtml), "the sheet holds no select");
-        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["print-paper-select", "lang-select"]);
+        assert.deepStrictEqual([...html.matchAll(/<select\b[^>]*id="([^"]+)"/g)].map((m) => m[1]), ["lang-select"]);
       });
 
       const flingFrom = (a, { seed = 10, way = "up", start = 0 } = {}) => {
@@ -15288,7 +15298,7 @@ describe("I18N", () => {
   const bootLang = (langs, languages, extra = {}) => boot({ html: pseudo(langs), languages, ...extra });
   const hasEnglishOnlyId = new Set(["decks", "front", "back", "count", "scale-ding", "scale-top", "scale-inner",
     "scale-bottom", "scale-box", "scale-parse", "scale-name", "about", "scale-preview", "share-url", "seq-style-name",
-    "scale-refusal", "announce"]);
+    "scale-refusal", "announce", "print-paper", "print-paper-letter", "print-paper-a4"]);
 
   /** Every [id, kind, value] the app wrote to a UI element and left non-empty. */
   function uiTexts(app) {
@@ -15497,8 +15507,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -19562,24 +19572,25 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     slots: {}, hidden: [],
     migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] }, ...extra });
   const payloadOf = (rows, hidden = []) => Buffer.from(JSON.stringify({ r: rows.map(([i, r]) => ({ i, r })), h: hidden })).toString("base64url");
-  function movePage({ on = true, cap = 20000, referrer = "", session = null } = {}) {
+  function movePage({ on = true, cap = 20000, referrer = "", session = null, deadline = null } = {}) {
     let html = INDEX_HTML();
     html = html.replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${on ? `"${OLD_HOST}"` : "null"};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${on ? `"${TARGET}"` : "null"};`);
     if (on) html = html.replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${cap};`);
+    html = html.replace(/^const MOVE_DEADLINE = .*;$/m, () => `const MOVE_DEADLINE = ${JSON.stringify(deadline)};`);
     const ss = session === null ? "" : `window.__ss=${JSON.stringify(session)};window.sessionStorage={getItem:k=>k in window.__ss?window.__ss[k]:null,setItem:(k,v)=>{window.__ss[k]=String(v)},removeItem:k=>{delete window.__ss[k]}};`;
     return `<script>location.replace=function(u){window.__replaced=String(u)};location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};${ss}</script>` + html;
   }
   const settle = async app => { for (let i = 0; i < 40 && !app.get("typeof booted!=='undefined'&&booted"); i++) await new Promise(r => setTimeout(r, 25)); await new Promise(r => setTimeout(r, 50)); };
   const clickMove = app => { app.click(app.get("moveBannerGo")); return app.get("window.__assigned"); };
   const bannerText = app => app.get("moveBannerMsg.textContent");
-  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage, session }) {
+  async function boot2({ host, hash = "", records, extra, referrer, on = true, cap, origin = createOrigin({}), storage, session, deadline }) {
     if (records) {
       const realm = realmAt(origin, host);
       await idbRecord(realm, { write: true, value: JSON.stringify(envelopeOf(records, extra)) });
     }
     const app = boot({ origin, storage, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true, crypto: webcrypto,
-      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer, session }) });
+      webdriver: false, href: `https://${host}/index.html${hash}`, html: movePage({ on, cap, referrer, session, deadline }) });
     await settle(app);
     app.fixtureOrigin = origin;
     return app;
@@ -19594,6 +19605,78 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.match(html, /^const MOVE_FROM = "handpan\.raywu\.org";$/m);
     assert.match(html, /^const MOVE_TARGET = "https:\/\/handpantheory\.com";$/m);
     assert.match(html, /^const MOVE_CAP = 20000;$/m);
+  });
+
+  test("MV: the committed bytes ship the deadline 2026-11-21", () => {
+    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = "2026-11-21";$/m);
+  });
+
+  test("MV: the committed deadline is null or a quoted YYYY-MM-DD literal", () => {
+    assert.match(INDEX_HTML(), /^const MOVE_DEADLINE = (null|"\d{4}-\d{2}-\d{2}");$/m);
+  });
+
+  test("MV: with no deadline the banner has no deadline line", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")] });
+    assert.strictEqual(bannerText(app), "Handpan Theory now lives at new.example. Your saved scale can come with you.");
+    assert.doesNotMatch(bannerText(app), /start opening/);
+  });
+
+  test("MV: a set deadline adds the dated line in all 8 locales", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
+    assert.strictEqual(bannerText(app), 'On November 22, 2026, old.example will move to new.example. Custom scales left here will be lost. Click "Move my scales" now to keep them.');
+    for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
+      app.run(`setLang(${JSON.stringify(lang)})`);
+      const date = new Intl.DateTimeFormat(lang, { dateStyle: "long", timeZone: "UTC" }).format(new Date("2026-11-22T00:00:00Z"));
+      const line = app.get('t("move.deadline", { date: moveDeadlineText(), from: "old.example", host: "new.example" })');
+      assert.ok(line.includes(date), `${lang}: ${line}`);
+      assert.ok(bannerText(app).endsWith(line), `${lang}: the deadline line closes the banner`);
+    }
+  });
+
+  test("MV: with no saved scales the deadline line is the short one, in all 8 locales", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [], deadline: "2026-11-22" });
+    assert.ok(bannerText(app).endsWith("On November 22, 2026, old.example will move to new.example."), bannerText(app));
+    assert.match(bannerText(app), /now lives at/);
+    for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
+      app.run(`setLang(${JSON.stringify(lang)})`);
+      const short = app.get('t("move.deadline_empty", { date: moveDeadlineText(), from: "old.example", host: "new.example" })');
+      assert.ok(bannerText(app).endsWith(short), `${lang}: short deadline line`);
+      assert.notStrictEqual(short, app.get('t("move.deadline", { date: moveDeadlineText(), from: "old.example", host: "new.example" })'), lang);
+    }
+  });
+
+  test("MV: with saved scales the deadline line names the Move my scales button, in all 8 locales", async () => {
+    const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
+    for (const lang of JSON.parse(app.get("JSON.stringify(LANGS)"))) {
+      app.run(`setLang(${JSON.stringify(lang)})`);
+      const long = app.get('t("move.deadline", { date: moveDeadlineText(), from: "old.example", host: "new.example" })');
+      assert.ok(bannerText(app).endsWith(long), `${lang}: long deadline line`);
+    }
+  });
+
+  test("MV: the deadline date is pinned to UTC, not the viewer zone", async () => {
+    const was = process.env.TZ;
+    process.env.TZ = "America/Los_Angeles";
+    try {
+      const app = await boot2({ host: OLD_HOST, records: [rec("A")], deadline: "2026-11-22" });
+      assert.match(bannerText(app), /On November 22, 2026, /);
+      assert.doesNotMatch(bannerText(app), /November 21/);
+    } finally {
+      if (was === undefined) delete process.env.TZ; else process.env.TZ = was;
+    }
+  });
+
+  test("MV: over-cap with a deadline shows the over-cap line, then the deadline line", async () => {
+    const app = await boot2({ host: OLD_HOST, records: manyRecs(116), deadline: "2026-11-22" });
+    const text = bannerText(app);
+    const over = text.indexOf("saved scales fit in one move"), due = text.indexOf("will move to new.example");
+    assert.ok(over >= 0 && due > over, text);
+    assert.doesNotMatch(text, /now lives at/);
+  });
+
+  test("MV: the deadline adds no navigation call", () => {
+    const html = INDEX_HTML();
+    assert.strictEqual((html.match(/location\.(replace|assign)\(/g) || []).length, 1);
   });
 
   test("the move region equals c6ef6b58's with only #790's dedupe-key line applied", () => {
@@ -20179,7 +20262,7 @@ describe("PDF tier menu (lane U)", () => {
       assert.match(m[1], /role="menuitem"/);
       assert.ok(m[1].includes(`onclick="downloadDeckPDF('shop', this, '${OPTIONS[i][0]}'); closePanel();"`), m[1]);
     });
-    const row = SRC.slice(SRC.indexOf('<div class="prints">'), SRC.indexOf("</select>", SRC.indexOf('<div class="prints">')));
+    const row = SRC.slice(SRC.indexOf('<div class="prints">'), SRC.indexOf('id="print-paper-menu"', SRC.indexOf('<div class="prints">')));
     assert.ok(row.includes(html), "the menu is a descendant of .prints");
   });
 
@@ -20216,6 +20299,70 @@ describe("PDF tier menu (lane U)", () => {
     app.keydown("Escape");
     assert.strictEqual(app.els["print-menu"].hidden, true);
     assert.strictEqual(app.activeId(), "print-download");
+  });
+
+  test("the paper menu: two radio items in order, inside .prints, closed by default; the trigger mirrors aria-expanded", () => {
+    const at = SRC.indexOf('<div id="print-paper-menu"');
+    const html = SRC.slice(at, SRC.indexOf("</div>", at) + 6);
+    assert.match(html, /^<div id="print-paper-menu" role="menu" aria-label="Paper size" hidden>/);
+    const items = [...html.matchAll(/<button\b([^>]*)>([^<]*)<\/button>/g)];
+    assert.deepStrictEqual(items.map((m) => m[2]), ["LETTER", "A4"]);
+    items.forEach((m, i) => {
+      assert.match(m[1], /role="menuitemradio"/);
+      assert.ok(m[1].includes(`onclick="choosePaper('${["letter", "a4"][i]}');"`), m[1]);
+    });
+    const app = boot();
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, false);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "true");
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "false");
+  });
+
+  test("only one print-row menu is open at a time", () => {
+    const app = boot();
+    app.run("togglePrintMenu()");
+    app.run("togglePaperMenu()");
+    assert.strictEqual(app.els["print-menu"].hidden, true);
+    assert.strictEqual(app.els["print-download"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, false);
+    app.run("togglePrintMenu()");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["print-menu"].hidden, false);
+  });
+
+  test("choosing a paper sets it as setPrintPaper does, closes the menu, returns focus and keeps the panel open", () => {
+    const app = boot();
+    app.run("openPanel(); togglePaperMenu()");
+    app.run("choosePaper('a4')");
+    assert.strictEqual(app.get("printPaper"), "a4");
+    assert.strictEqual(JSON.parse(app.store.hpfc).printPaper, "a4");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.els["print-paper"].textContent, "A4");
+    assert.deepStrictEqual(["print-paper-letter", "print-paper-a4"].map((id) => app.els[id].getAttribute("aria-checked")), ["false", "true"]);
+    assert.strictEqual(app.activeId(), "print-paper");
+    assert.strictEqual(app.get("panelOpen"), true);
+  });
+
+  test("a stored A4 boots with the paper button reading A4", () => {
+    const app = boot({ storage: { hpfc: JSON.stringify({ deck: "amara", mode: "A", printPaper: "a4" }) } });
+    assert.strictEqual(app.els["print-paper"].textContent, "A4");
+    assert.strictEqual(app.els["print-paper-a4"].getAttribute("aria-checked"), "true");
+  });
+
+  test("Escape closes the open paper menu alone and returns focus to the paper button; an outside click closes it", () => {
+    const app = boot();
+    app.run("openPanel(); togglePaperMenu()");
+    app.keydown("Escape");
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
+    assert.strictEqual(app.get("panelOpen"), true);
+    assert.strictEqual(app.activeId(), "print-paper");
+    app.run("togglePaperMenu()");
+    (app.sandbox.document._l.click || []).forEach((fn) => fn({ type: "click", target: { closest: () => null } }));
+    assert.strictEqual(app.els["print-paper-menu"].hidden, true);
   });
 
   test("an outside click closes the menu; a click inside .prints does not", () => {
@@ -20306,6 +20453,272 @@ describe("PDF tier menu (lane U)", () => {
     const body = SRC.slice(SRC.indexOf("function downloadDeckPDF"), SRC.indexOf("const ISLAND ="));
     const before = body.slice(body.indexOf("  try {"), body.indexOf("HPE.pdfcards.build("));
     assert.ok(!/setTimeout|requestAnimationFrame|\.focus\(|await /.test(before), "the build runs inside the click's gesture");
+  });
+});
+
+/* ------------------------------------------------- Safari storage lane B: back up saved scales */
+//
+// docs/plans/2026-10-30-safari-storage.md, Lane B. A readable text list of the
+// saved scales' #s= links. Restore is the user tapping each link; there is no
+// paste box, no dedupe, nothing written by the panel itself.
+
+describe("backup: back up saved scales", () => {
+  const BK_KEY = "hpfc.backup.v1";
+  const fsx = require("node:fs");
+  const open = (app) => { app.run("openPanel()"); app.els["backup-open"].click(); };
+  const textOf = (app) => String(app.els["backup-text"].value);
+  const linksOf = (text) => text.split("\n").filter((l) => /#s=/.test(l)).map((l) => l.trim());
+  const clip = (app) => {
+    const written = [];
+    app.sandbox.navigator.clipboard = { writeText: async (s) => { written.push(s); } };
+    return written;
+  };
+  const tick = () => new Promise((r) => setImmediate(r));
+
+  test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
+    const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACKUP YOUR SCALES<\/button>/,
+      "the opener is not right after the reset button, with its label");
+    assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
+    assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");
+    const inputs = html.match(/<(input|textarea)\b[^>]*>/g).filter((tag) => /id="backup-/.test(tag));
+    assert.ok(inputs.every((tag) => /\breadonly\b/.test(tag)), "a writable field in the backup panel is a paste box");
+    const app = boot();
+    assert.strictEqual(app.els["backup-panel"].hidden, true);
+  });
+
+  test("opening and closing the panel toggles aria-expanded and writes nothing", async () => {
+    const app = boot();
+    const before = JSON.stringify(app.store);
+    open(app);
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "true");
+    app.els["backup-open"].click();
+    assert.strictEqual(app.els["backup-panel"].hidden, true);
+    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(JSON.stringify(app.store), before);
+  });
+
+  test("with nothing saved the list is empty, the buttons are disabled and the panel says so", async () => {
+    const app = boot();
+    open(app);
+    assert.strictEqual(textOf(app), "");
+    for (const id of ["backup-copy", "backup-download", "backup-share"]) assert.strictEqual(app.els[id].disabled, true, id);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+  });
+
+  test("an open backup panel is repainted when the menu reopens after a save", async () => {
+    const app = await durableBoot();
+    open(app);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    app.run("closePanel()");
+    await makeCustom(app);
+    app.els["backup-text"].value = "";
+    app.els["backup-status"].textContent = "No saved scales to back up yet.";
+    app.run("openPanel()");
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.ok(linksOf(textOf(app)).length >= 1, "the list is still empty");
+    assert.strictEqual(app.els["backup-copy"].disabled, false);
+    assert.strictEqual(app.els["backup-status"].textContent, "");
+  });
+
+  test("an open backup panel on desktop shows the new scale after a save", async () => {
+    const app = await durableBoot();
+    app.run("desktopMQ.matches = true");
+    open(app);
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    await makeCustom(app);
+    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    assert.ok(linksOf(textOf(app)).length >= 1, "the open list is stale after the save");
+    assert.strictEqual(app.els["backup-copy"].disabled, false);
+    assert.strictEqual(app.els["backup-status"].textContent, "");
+  });
+
+  test("the panel copy says a restored seed replacement is a new custom scale and hidden seeds are a note", () => {
+    const app = boot();
+    const copy = app.get('t("backup.restore")');
+    assert.match(copy, /new custom scale/);
+    assert.match(copy, /hidden/);
+    assert.match(copy, /note/);
+    assert.doesNotMatch(copy, /\bdeck\b/i, "visible text says scale, never deck");
+  });
+
+  test("session-only mode says the data will not persist; durable mode does not", async () => {
+    const session = boot();
+    open(session);
+    assert.strictEqual(session.els["backup-session"].hidden, false);
+    assert.strictEqual(session.get("savedMode"), "session");
+    const durable = await durableBoot();
+    open(durable);
+    assert.strictEqual(durable.els["backup-session"].hidden, true);
+  });
+
+  test("round trip: every saved scale comes back from its link on a fresh profile", async () => {
+    const app = await durableBoot();
+    const a = await makeCustom(app);
+    const b = await makeCustom(app, OTHER_STRING);
+    const ids = Object.keys(savedViews(app));
+    assert.deepStrictEqual(ids, [a.instanceId, b.instanceId]);
+    open(app);
+    const links = linksOf(textOf(app));
+    assert.strictEqual(links.length, 2, "one link per saved record");
+    const originalIds = Object.values(savedViews(app)).map((d) => d.id).sort();
+
+    const fresh = await durableBoot();
+    for (const link of links) {
+      assert.ok(link.startsWith(fresh.sandbox.location.origin), "a backup link is absolute");
+      await hashChange(fresh, link.slice(link.indexOf("#s=")));
+    }
+    assert.deepStrictEqual(Object.values(savedViews(fresh)).map((d) => d.id).sort(), originalIds);
+  });
+
+  test("two saved scales that share a deck id are both listed (no dedupe)", async () => {
+    const app = boot();
+    const a = await makeCustom(app);
+    await makeCustom(app, OTHER_STRING);
+    await editFields(app, a, OTHER_STRING);
+    const rows = app.get("savedState.entries.length");
+    assert.strictEqual(rows, 2, "precondition: both instances were saved");
+    assert.strictEqual(new Set(Object.values(savedViews(app)).map((d) => d.id)).size, 1, "precondition: they share one deck id");
+    open(app);
+    assert.strictEqual(linksOf(textOf(app)).length, rows);
+  });
+
+  test("a seed replacement is listed without a replaces marker and restores as a custom scale beside the seed", async () => {
+    const app = await durableBoot();
+    await saveKurdRepainted(app);
+    assert.strictEqual(app.get("savedState.entries[0].record.o.replaces"), "kurd", "precondition: the record replaces the Kurd seed");
+    open(app);
+    const links = linksOf(textOf(app));
+    assert.strictEqual(links.length, 1);
+    assert.doesNotMatch(links[0], /replaces/);
+
+    const fresh = await durableBoot();
+    await hashChange(fresh, links[0].slice(links[0].indexOf("#s=")));
+    assert.strictEqual(fresh.get("savedState.entries.length"), 1);
+    assert.strictEqual(fresh.get("savedState.entries[0].record.o.replaces"), undefined, "a restored link is a custom scale");
+    assert.strictEqual(labels(fresh).length, 6, "the restored scale sits beside the five seeds");
+    assert.strictEqual(labels(fresh).filter((l) => l.startsWith("D KURD 10")).length, 2, "the seed and the custom scale both show");
+    assert.strictEqual(fresh.get("savedState.entries[0].instanceId") !== undefined, true);
+  });
+
+  test("hidden seeds appear only as a note, never as a link", async () => {
+    const app = await durableBoot();
+    await hideViaSheet(app, "amara", "D AMARA 9");
+    open(app);
+    const text = textOf(app);
+    assert.strictEqual(linksOf(text).length, 0);
+    assert.match(text, /D AMARA 9/);
+    assert.match(text, /Hidden seeded scales/);
+    assert.strictEqual(app.els["backup-copy"].disabled, true, "nothing to restore by link means nothing to copy");
+  });
+
+  test("COPY writes the list to the clipboard and stores lastBackup in its own key, not in hpfc", async () => {
+    const app = await durableBoot();
+    await makeCustom(app);
+    const hpfc = app.store.hpfc;
+    const records = plain(app.get("savedState.entries.map(row=>row.record)"));
+    const envelope = savedRaw(app);
+    const written = clip(app);
+    open(app);
+    assert.strictEqual(app.store[BK_KEY], undefined, "opening alone is not a backup");
+    app.els["backup-copy"].click();
+    await tick(); await tick();
+    assert.deepStrictEqual(written, [textOf(app)]);
+    const stored = JSON.parse(app.store[BK_KEY]);
+    assert.strictEqual(typeof stored.lastBackup, "number");
+    assert.strictEqual(app.store.hpfc, hpfc, "the hpfc blob is untouched");
+    assert.deepStrictEqual(plain(app.get("savedState.entries.map(row=>row.record)")), records);
+    assert.strictEqual(savedRaw(app), envelope, "the saved envelope did not change");
+    assert.ok(records.every((r) => r.v === records[0].v));
+    assert.ok(app.get("/Last backed up/.test(document.getElementById('backup-last').textContent)"));
+  });
+
+  test("writing lastBackup does not change the migration or recovery state", async () => {
+    const app = await durableBoot();
+    await makeCustom(app);
+    clip(app);
+    const before = plain(app.get("({m: savedState.migration, mode: savedMode, rec: savedRecovery, issue: savedIssue})"));
+    open(app);
+    app.els["backup-copy"].click();
+    await tick(); await tick();
+    assert.deepStrictEqual(plain(app.get("({m: savedState.migration, mode: savedMode, rec: savedRecovery, issue: savedIssue})")), before);
+    const again = await durableBoot({ origin: app.fixtureOrigin });
+    assert.strictEqual(again.get("savedMode"), "durable");
+    assert.strictEqual(again.get("savedState.entries.length"), 1);
+  });
+
+  test("a refused clipboard leaves lastBackup unset and tells the user to select the text", async () => {
+    const app = boot();
+    await makeCustom(app);
+    app.sandbox.navigator.clipboard = { writeText: async () => { throw new Error("denied"); } };
+    open(app);
+    app.els["backup-copy"].click();
+    await tick(); await tick();
+    assert.strictEqual(app.store[BK_KEY], undefined);
+    assert.strictEqual(app.els["backup-status"].textContent, app.get('t("backup.select")'));
+  });
+
+  test("SHARE hands the list to navigator.share and records the backup", async () => {
+    const app = boot();
+    await makeCustom(app);
+    const shared = [];
+    app.sandbox.navigator.share = async (data) => { shared.push(data); };
+    open(app);
+    assert.strictEqual(app.els["backup-share"].hidden, false);
+    app.els["backup-share"].click();
+    await tick(); await tick();
+    assert.strictEqual(shared.length, 1);
+    assert.strictEqual(shared[0].text, textOf(app));
+    assert.strictEqual(typeof JSON.parse(app.store[BK_KEY]).lastBackup, "number");
+  });
+
+  test("SHARE is absent where the platform has no share sheet", () => {
+    const app = boot();
+    open(app);
+    assert.strictEqual(app.els["backup-share"].hidden, true);
+  });
+
+  test("a cancelled share records nothing", async () => {
+    const app = boot();
+    await makeCustom(app);
+    app.sandbox.navigator.share = async () => { const e = new Error("x"); e.name = "AbortError"; throw e; };
+    open(app);
+    app.els["backup-share"].click();
+    await tick(); await tick();
+    assert.strictEqual(app.store[BK_KEY], undefined);
+  });
+
+  test("backing up emits no analytics event", async () => {
+    const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    const block = html.slice(html.indexOf("function backupText"), html.indexOf("function backupText") + 6000);
+    assert.doesNotMatch(block, /\btrack\(/, "the backup code calls track()");
+  });
+
+  test("an older share link still decodes through the same route the backup links use", async () => {
+    const app = boot();
+    await hashChange(app, "#s=" + "5/(D3)_A3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+9/parent-aeolian/mirror/between/seats-1,0,2,3,4,5,6,7;;/975b6c");
+    assert.strictEqual(app.get("savedState.entries.length"), 1);
+  });
+
+  test("the backup keys exist in all eight i18n tables", () => {
+    const dir = path.join(ROOT, "data", "i18n");
+    const en = JSON.parse(fsx.readFileSync(path.join(dir, "en.json"), "utf8"));
+    const keys = Object.keys(en).filter((k) => k.startsWith("backup."));
+    assert.ok(keys.length >= 14);
+    for (const f of fsx.readdirSync(dir).filter((n) => n.endsWith(".json"))) {
+      const table = JSON.parse(fsx.readFileSync(path.join(dir, f), "utf8"));
+      for (const k of keys) assert.ok(typeof table[k] === "string" && table[k].length, f + " lacks " + k);
+    }
+  });
+
+  test("the opener, the list and the buttons join the Tab stops only while the panel is open", () => {
+    const app = boot();
+    app.run("openPanel()");
+    app.run("settingsPanel.querySelectorAll = () => []");
+    const ids = () => app.get("panelStops().map((e) => e.id)");
+    assert.ok(ids().includes("backup-open"));
+    assert.ok(!ids().includes("backup-copy"));
   });
 });
 

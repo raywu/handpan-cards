@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.scope.outputs.code }}
+      mode: ${{ steps.scope.outputs.mode }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,14 +21,35 @@ jobs:
         with:
           python-version: "3.12"
       # A push that is not a merge commit always runs everything (fail closed).
+      # mode=scoped narrows only the mutation gate (tools/ci_scope.py); a push,
+      # a release ref and anything touching deck data, the engine, saved scales
+      # or this harness stays mode=full. The event and ref arrive through env,
+      # never interpolated into the script.
       - id: scope
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ] && ! git rev-parse -q --verify HEAD^2 >/dev/null; then
+          mkdir -p artifacts
+          if [ "$EVENT_NAME" = "push" ] && ! git rev-parse -q --verify HEAD^2 >/dev/null; then
             echo "code=true"
+            echo "mode=full"
           else
-            git diff --no-renames --name-only HEAD^1 HEAD | python3 tools/ci_scope.py
+            git diff --no-renames HEAD^1 HEAD >artifacts/pr.diff
+            git diff --no-renames --name-only HEAD^1 HEAD | python3 tools/ci_scope.py --diff artifacts/pr.diff --selection artifacts/mutant-selection.txt
           fi >> "$GITHUB_OUTPUT"
+      - name: Report the mutation mode
+        env:
+          MODE: ${{ steps.scope.outputs.mode }}
+        run: |
+          echo "mode=${MODE:-full}"
+          if [ "$MODE" = "scoped" ]; then echo "selected $(wc -l <artifacts/mutant-selection.txt) mutants"; fi
+      - uses: actions/upload-artifact@v4
+        if: steps.scope.outputs.mode == 'scoped'
+        with:
+          name: mutant-selection
+          path: artifacts/mutant-selection.txt
 
   data:
     name: data integrity
@@ -173,6 +195,11 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-ci.txt
       - run: pip install -r requirements-ci.txt
+      - uses: actions/download-artifact@v4
+        if: needs.changes.outputs.mode == 'scoped'
+        with:
+          name: mutant-selection
+          path: selection
       # Every test group must have a mutant that kills it; a test nothing can
       # kill is not a test. Sharded 4 ways (finding 4, 2026-09-30 quality
       # refactor): MUTANT_SHARD restricts this run to one partition of the
@@ -180,7 +207,11 @@ jobs:
       # reshards itself; MUTANT_REPORT records this shard's mutant list before
       # the sweep runs, so a shard that fails partway still uploads proof of
       # what it owned, for the aggregate job below to check completeness.
-      - run: |
+      # MUTANT_LIST narrows the shard to the lane's selection in scoped mode
+      # and is empty otherwise.
+      - env:
+          MUTANT_LIST: ${{ needs.changes.outputs.mode == 'scoped' && 'selection/mutant-selection.txt' || '' }}
+        run: |
           mkdir -p artifacts
           MUTANT_SHARD="${{ matrix.shard }}/4" MUTANT_REPORT="artifacts/mutant-shard-${{ matrix.shard }}.txt" ./tests/mutation_check.sh
       - uses: actions/upload-artifact@v4
@@ -201,16 +232,27 @@ jobs:
           pattern: mutant-shard-report-*
           path: artifacts
           merge-multiple: true
+      - uses: actions/download-artifact@v4
+        if: needs.changes.outputs.mode == 'scoped'
+        with:
+          name: mutant-selection
+          path: selection
       - name: All 4 shards must have passed
         run: |
           if [ "${{ needs.mutation-gate-shard.result }}" != "success" ]; then
             echo "one or more mutation-gate shards did not succeed: ${{ needs.mutation-gate-shard.result }}"
             exit 1
           fi
-      - name: The union of all shard reports must equal the full mutant corpus
+      - name: The union of all shard reports must equal the full mutant corpus, or the scoped selection
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
         run: |
           set -euo pipefail
-          (cd tests/mutants && ls *.patch) | sort >expected.txt
+          if [ "$MODE" = "scoped" ]; then
+            sort selection/mutant-selection.txt >expected.txt
+          else
+            (cd tests/mutants && ls *.patch) | sort >expected.txt
+          fi
           cat artifacts/mutant-shard-*.txt | sort >actual.txt
           if ! diff -u expected.txt actual.txt; then
             echo "shard reports do not cover the mutant corpus exactly once - see diff above"
