@@ -10746,7 +10746,7 @@ HPE.sync = (function () {
     const keepOpaque = (R, L) => {
       const moved = insert({ scale_id: L.id, record: L.record }, "unreadable-remote", { id: fresh(), remoteId: null, record: clone(L.record) });
       moved.remoteId = moved.id;
-      ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, record: clone(R.record), opaque: true });
+      ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, expectedRevision: L.revision, record: clone(R.record), opaque: true });
       baseUpdates.push({ rid: R.scale_id, localId: L.id, rev: R.rev, mode: "committed" });
     };
 
@@ -10805,7 +10805,7 @@ HPE.sync = (function () {
           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
         } else if (unchanged) {
           const opaque = !readableIn(ctx, R.record);
-          const op = { op: "overwrite", id: L.id, remoteId: rid, record: clone(R.record) };
+          const op = { op: "overwrite", id: L.id, remoteId: rid, expectedRevision: L.revision, record: clone(R.record) };
           if (opaque) op.opaque = true;
           ops.push(op);
           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
@@ -10839,7 +10839,7 @@ HPE.sync = (function () {
         continue;
       }
       visible--;
-      ops.push({ op: "remove", id: L.id, remoteId: rid });
+      ops.push({ op: "remove", id: L.id, remoteId: rid, expectedRevision: L.revision });
       delete alias[L.id];
       baseDrops.push(rid);
     }
@@ -10858,7 +10858,7 @@ HPE.sync = (function () {
       if (L.revision !== B.localRevision) continue;
       if (visible - 1 < 1) { keep.push(rid); continue; }
       visible--;
-      ops.push({ op: "remove", id: L.id, remoteId: rid });
+      ops.push({ op: "remove", id: L.id, remoteId: rid, expectedRevision: L.revision });
       delete alias[L.id];
       baseDrops.push(rid);
     }
@@ -12043,7 +12043,8 @@ function savedCandidate(command) {
 const SYNC_OPS = ["insert", "overwrite", "remove"];
 function savedSyncCandidate(command) {
   if (!Array.isArray(command.ops) || command.ops.some(op => !savedObject(op) || !SYNC_OPS.includes(op.op) ||
-      typeof op.id !== "string" || (op.op !== "remove" && !savedObject(op.record)))) return savedFailure("invalid", "sync-ops");
+      typeof op.id !== "string" || (op.op !== "remove" && !savedObject(op.record)) ||
+      (op.op !== "insert" && !(Number.isSafeInteger(op.expectedRevision) && op.expectedRevision >= 0)))) return savedFailure("invalid", "sync-ops");
   return { ok: true, reads: command.ops.map(op => {
     if (op.op === "remove" || op.opaque) return null;
     const read = readSavedRecord(op.record);
@@ -12226,9 +12227,14 @@ function applySavedCommand(staged, command, candidate) {
         if (!settle(added, record, read)) return savedFailure("invalid", "revision-overflow");
       } else if (op.op === "overwrite") {
         if (!row) return conflict();
+        if (row.revision !== op.expectedRevision) { skipped.push({ id: op.id, reason: "revision" }); continue; }
         if (read && clash(op.id, read)) read = null;
         if (!settle(row, savedClone(op.record), read)) return savedFailure("invalid", "revision-overflow");
-      } else if (row) {
+      } else if (!row) {
+        skipped.push({ id: op.id, reason: "missing" });
+      } else if (row.revision !== op.expectedRevision) {
+        skipped.push({ id: op.id, reason: "revision" });
+      } else {
         const before = { entries: next.entries, slots: savedClone(next.slots), hidden: [...next.hidden], view: views.get(op.id) };
         const heldSlot = holder(op.id);
         next.entries = next.entries.filter(entry => entry.instanceId !== op.id); views.delete(op.id);

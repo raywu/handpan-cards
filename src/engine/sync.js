@@ -107,7 +107,7 @@ HPE.sync = (function () {
     const keepOpaque = (R, L) => {
       const moved = insert({ scale_id: L.id, record: L.record }, "unreadable-remote", { id: fresh(), remoteId: null, record: clone(L.record) });
       moved.remoteId = moved.id;
-      ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, record: clone(R.record), opaque: true });
+      ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, expectedRevision: L.revision, record: clone(R.record), opaque: true });
       baseUpdates.push({ rid: R.scale_id, localId: L.id, rev: R.rev, mode: "committed" });
     };
 
@@ -166,7 +166,7 @@ HPE.sync = (function () {
           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
         } else if (unchanged) {
           const opaque = !readableIn(ctx, R.record);
-          const op = { op: "overwrite", id: L.id, remoteId: rid, record: clone(R.record) };
+          const op = { op: "overwrite", id: L.id, remoteId: rid, expectedRevision: L.revision, record: clone(R.record) };
           if (opaque) op.opaque = true;
           ops.push(op);
           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "committed" });
@@ -200,7 +200,7 @@ HPE.sync = (function () {
         continue;
       }
       visible--;
-      ops.push({ op: "remove", id: L.id, remoteId: rid });
+      ops.push({ op: "remove", id: L.id, remoteId: rid, expectedRevision: L.revision });
       delete alias[L.id];
       baseDrops.push(rid);
     }
@@ -219,7 +219,7 @@ HPE.sync = (function () {
       if (L.revision !== B.localRevision) continue;
       if (visible - 1 < 1) { keep.push(rid); continue; }
       visible--;
-      ops.push({ op: "remove", id: L.id, remoteId: rid });
+      ops.push({ op: "remove", id: L.id, remoteId: rid, expectedRevision: L.revision });
       delete alias[L.id];
       baseDrops.push(rid);
     }

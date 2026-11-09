@@ -265,6 +265,7 @@ test("sync: remote delete vs unedited local removes it; vs edited local keeps an
   b.edit(y, "Y edited");
   const plan = b.pull(server);
   assert.deepEqual(plan.ops.map(o => [o.op, o.id]), [["remove", x]]);
+  assert.equal(plan.ops[0].expectedRevision, 1);
   b.push(server);
   assert.deepEqual(b.names(), ["Keep", "Y edited"]);
   a.cycle(server);
@@ -356,6 +357,7 @@ test("sync: a delete that would empty the device is deferred, never applied alon
   const withOther = [...dev.entries, { id: "y", revision: 1, record: rec("Other") }];
   const applied = sync.planDeferred({ local: withOther, sidecar: sc, ctx: makeCtx(dev) });
   assert.deepEqual(applied.ops.map(o => [o.op, o.id]), [["remove", "x"]]);
+  assert.equal(applied.ops[0].expectedRevision, 1);
   const sc2 = sync.settlePull(sc, applied, [{ id: "y", revision: 1 }]);
   assert.deepEqual(sc2.deferredDeletes, []);
   assert.equal(sc2.base.x, undefined);
@@ -384,6 +386,7 @@ test("sync: builtin scales count as visible for the last-visible guard", () => {
   const remote = [{ scale_id: "x", rev: 2, deleted: true, record: rec("Only") }];
   const plan = sync.planPull({ remote, local: dev.entries, sidecar: dev.sidecar, ctx: makeCtx(dev, { builtinVisible: 1 }) });
   assert.deepEqual(plan.ops.map(o => o.op), ["remove"]);
+  assert.equal(plan.ops[0].expectedRevision, 1);
 });
 
 test("sync: localOnly entries are never in a push plan or a delete (R1-8)", () => {
@@ -446,8 +449,10 @@ test("sync: a RECORD_VERSION bump keeps identity (id-keyed, never content-keyed)
   server.rows.set("r1", { scale_id: "r1", rev: 1, deleted: false, record: rec("Beta", 5) });
   dev.pull(server);
   server.rows.set("r1", { scale_id: "r1", rev: 2, deleted: false, record: { ...rec("Beta", 6), extra: true } });
+  const planned = dev.entries[0].revision;
   const plan = dev.pull(server);
   assert.deepEqual(plan.ops.map(o => [o.op, o.id]), [["overwrite", "r1"]]);
+  assert.equal(plan.ops[0].expectedRevision, planned);
   assert.equal(dev.entries.length, 1);
   assert.deepEqual(dev.push(server).plan.rows, []);
 });
