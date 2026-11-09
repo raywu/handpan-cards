@@ -12040,6 +12040,20 @@ function savedCandidate(command) {
   }
   return { ok: true, record, deck: deckValue, meaning: savedMeaning(deckValue), identity: HPE.core.identitySeed(deckValue.fields) };
 }
+const SYNC_OPS = ["insert", "overwrite", "remove"];
+function savedSyncCandidate(command) {
+  if (!Array.isArray(command.ops) || command.ops.some(op => !savedObject(op) || !SYNC_OPS.includes(op.op) ||
+      typeof op.id !== "string" || (op.op !== "remove" && !savedObject(op.record)))) return savedFailure("invalid", "sync-ops");
+  return { ok: true, reads: command.ops.map(op => {
+    if (op.op === "remove" || op.opaque) return null;
+    const read = readSavedRecord(op.record);
+    return read.ok ? read : null;
+  }) };
+}
+function savedCandidateFor(command) {
+  return ["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type) ? savedCandidate(command) :
+    command.type === "sync-apply" ? savedSyncCandidate(command) : null;
+}
 const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles", "profile"];
 function savedEditedRecord(target, candidate) {
   const out = { ...savedClone(target), v: candidate.record.v, s: candidate.record.s };
@@ -12053,12 +12067,12 @@ function applySavedCommand(staged, command, candidate) {
   const current = staged.envelope;
   if (!command || command.collectionId !== current.collectionId) return savedFailure("conflict", "collection-epoch");
   const next = savedClone(current), views = new Map(staged.views);
-  let targetId = null, created = false, desired = null, imported = 0;
+  let targetId = null, created = false, desired = null, imported = 0, syncReport = null;
   const existing = () => next.entries.find(row => row.instanceId === command.instanceId);
   const conflict = () => savedFailure("conflict", "target-or-scope");
-  const allocate = record => {
+  const allocate = (record, wanted) => {
     const used = new Set([next.collectionId, ...next.usedInstanceIds]);
-    const id = savedCryptoId(used);
+    const id = wanted || savedCryptoId(used);
     if (!id || !savedPositive(next.nextDisplayOrdinal) || next.nextDisplayOrdinal >= Number.MAX_SAFE_INTEGER) return null;
     const row = { instanceId: id, revision: 1, displayOrdinal: next.nextDisplayOrdinal++, record };
     next.usedInstanceIds.push(id); next.entries.push(row); created = true;
@@ -12170,6 +12184,66 @@ function applySavedCommand(staged, command, candidate) {
       if (!savedViewsFor(next, views).length) next.hidden.pop();
     }
     if (known.size !== knownBefore) next.importedIds = [...known];
+  } else if (command.type === "sync-apply") {
+    if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "sync-ops");
+    const inserted = [], removed = [], skipped = [];
+    const holder = id => Object.keys(next.slots).find(seed => next.slots[seed] === id);
+    const clash = (id, read) => [...views].some(([other, view]) => other !== id && view.deck.id === read.value.id && view.identity !== read.identity);
+    const releaseSlot = (seed, id) => {
+      const survivors = next.entries.filter(row => row.instanceId !== id && views.has(row.instanceId) && row.record && row.record.o && row.record.o.replaces === seed);
+      if (survivors.length) next.slots[seed] = survivors[survivors.length - 1].instanceId;
+      else delete next.slots[seed];
+    };
+    const settle = (row, record, read) => {
+      const id = row.instanceId, held = holder(id);
+      const wanted = read && record.o ? record.o.replaces : undefined;
+      if (held && held !== wanted) releaseSlot(held, id);
+      let seed;
+      if (wanted !== undefined) {
+        if (isBuiltIn(wanted) && (next.slots[wanted] === id || (!next.slots[wanted] && !next.hidden.includes(wanted)))) { next.slots[wanted] = id; seed = wanted; }
+        else delete record.o.replaces;
+      }
+      if (!savedEqual(record, row.record)) {
+        if (row.revision >= Number.MAX_SAFE_INTEGER) return false;
+        row.record = record; if (!inserted.includes(id)) row.revision++;
+      }
+      if (!read) { views.delete(id); return true; }
+      const deckValue = { ...read.value, options: { ...read.value.options } };
+      if (seed) deckValue.options.replaces = seed; else delete deckValue.options.replaces;
+      views.set(id, { ...row, deck: deckValue, meaning: read.meaning, identity: read.identity });
+      return true;
+    };
+    for (const [i, op] of command.ops.entries()) {
+      let read = candidate.reads[i];
+      const row = next.entries.find(entry => entry.instanceId === op.id);
+      if (op.op === "insert") {
+        if (!isSavedUUID(op.id) || op.id === next.collectionId || next.usedInstanceIds.includes(op.id)) { skipped.push({ id: op.id, reason: "id" }); continue; }
+        if (read && clash(op.id, read)) read = null;
+        const added = allocate(savedClone(op.record), op.id);
+        if (!added) return savedFailure("allocation", "instance-id");
+        inserted.push(op.id);
+        const record = savedClone(op.record);
+        if (!settle(added, record, read)) return savedFailure("invalid", "revision-overflow");
+      } else if (op.op === "overwrite") {
+        if (!row) return conflict();
+        if (read && clash(op.id, read)) read = null;
+        if (!settle(row, savedClone(op.record), read)) return savedFailure("invalid", "revision-overflow");
+      } else if (row) {
+        const before = { entries: next.entries, slots: savedClone(next.slots), hidden: [...next.hidden], view: views.get(op.id) };
+        const heldSlot = holder(op.id);
+        next.entries = next.entries.filter(entry => entry.instanceId !== op.id); views.delete(op.id);
+        if (heldSlot) {
+          if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
+          releaseSlot(heldSlot, op.id);
+        }
+        if (!savedViewsFor(next, views).length) {
+          next.entries = before.entries; next.slots = before.slots; next.hidden = before.hidden;
+          if (before.view) views.set(op.id, before.view);
+          skipped.push({ id: op.id, reason: "last-visible" });
+        } else removed.push(op.id);
+      }
+    }
+    syncReport = { committed: next.entries.map(row => ({ id: row.instanceId, revision: row.revision })), inserted, removed, skipped };
   } else return savedFailure("invalid", "command-type");
   if (desired) next.preferredSelection = desired;
   else next.preferredSelection = savedResolve(next.preferredSelection, next, views);
@@ -12183,7 +12257,7 @@ function applySavedCommand(staged, command, candidate) {
     if (next.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
     next.revision++;
   }
-  return { ok: true, changed, created, ...(command.type === "move-import" ? { imported } : {}), ...(targetId ? { instanceId: targetId } : {}),
+  return { ok: true, changed, created, ...(command.type === "move-import" ? { imported } : {}), ...(syncReport ? { sync: syncReport } : {}), ...(targetId ? { instanceId: targetId } : {}),
     ...(desired ? { selection: desired } : {}), envelope: next, views };
 }
 function publishSavedCommand(result, persistence) {
@@ -12213,13 +12287,13 @@ function commitSavedSession(command, options = {}) {
   try {
     const staged = stageSavedEnvelope(savedState);
     if (!staged.ok) return staged;
-    const candidate = ["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type) ? savedCandidate(command) : null;
+    const candidate = savedCandidateFor(command);
     return publishSavedCommand(applySavedCommand(staged, command, candidate), "session");
   } catch (e) { return savedFailure("storage", "session-command"); }
 }
 async function commitSavedDurable(command, options) {
   let candidate;
-  try{candidate=["import","save-as-separate","edit","replace-builtin"].includes(command.type)?savedCandidate(command):null;}
+  try{candidate=savedCandidateFor(command);}
   catch(e){return savedFailure("invalid","candidate");}
   for(;;){
     if(options.signal?.aborted)return savedFailure("cancelled");
