@@ -13,7 +13,7 @@ const { describe } = require("node:test");
 const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename, [
   // The sandbox has no document for the dynamically built panel, so a boot that opens
   // the create sheet (empty library) or a chip click that opens Edit needs the legacy sheet.
-  "every rendered face is well-formed markup", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
+  "every rendered face is well-formed markup", "model matches the command:", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
 ]);
 const assert = require("node:assert");
 const { boot: sandboxBoot } = require("./helpers/sandbox.js");
@@ -20977,5 +20977,76 @@ describe("sync-apply", () => {
     applySync(app, [insertOp(syncId(), await remoteRecord(OTHER_STRING))]);
     assert.strictEqual(app.get("__fetchCalls"), 0);
     assert.strictEqual(app.get("typeof HPE.sync.planPull"), "function");
+  });
+
+  describe("conformance with the sync-apply model (tests/sync_model.js)", () => {
+    const { applyOps } = require("./sync_model.js");
+    const op = (kind, id, extra) => ({ op: kind, id, remoteId: id, ...extra });
+    const modelState = app => {
+      const st = plain(app.get("savedState"));
+      return {
+        entries: st.entries.map(e => ({ id: e.instanceId, revision: e.revision, record: e.record })),
+        used: st.usedInstanceIds,
+        slotTaken: (seed, id) => (st.slots[seed] !== undefined && st.slots[seed] !== id) || st.hidden.includes(seed),
+        builtinVisible: plain(app.get("DECKS.map(d=>d.id)")).filter(s => !st.hidden.includes(s) && st.slots[s] === undefined).length
+      };
+    };
+    const scenarios = {
+      "clean insert": async app => [insertOp(syncId(), await remoteRecord(AMARA_STRING))],
+      "overwrite with an identical record": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 1, record: plain(app.get("savedState.entries[0].record")) })];
+      },
+      "overwrite with a changed record": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 1, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "stale overwrite": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 7, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "overwrite requiring a skipped insert": async app => {
+        const a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+        return [insertOp("not-a-uuid", record), op("overwrite", a.instanceId, { expectedRevision: 1, record, opaque: true, requires: "not-a-uuid" })];
+      },
+      "stale remove": async app => {
+        const a = await makeCustom(app);
+        return [op("remove", a.instanceId, { expectedRevision: 7 })];
+      },
+      "remove of a missing row": async app => {
+        await makeCustom(app);
+        return [op("remove", syncId(), { expectedRevision: 1 })];
+      },
+      "remove of the last visible scale": async app => {
+        const a = await makeCustom(app);
+        for (const seed of seeds(app)) assert.strictEqual(hide(app, seed).ok, true);
+        return [op("remove", a.instanceId, { expectedRevision: 1 })];
+      },
+      "overwrite of a missing row": async app => {
+        await makeCustom(app);
+        return [op("overwrite", syncId(), { expectedRevision: 1, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "replaces stripped by a taken slot": async app => {
+        const [seed] = seeds(app), a = await makeCustom(app), b = await makeCustom(app, OTHER_STRING);
+        assert.strictEqual(applySync(app, [op("overwrite", a.instanceId, { expectedRevision: 1, record: await remoteRecord(AMARA_STRING, seed) })]).ok, true);
+        return [op("overwrite", b.instanceId, { expectedRevision: 1, record: await remoteRecord(OTHER_STRING, seed) }),
+          insertOp(syncId(), await remoteRecord(THIRD_STRING, seed))];
+      }
+    };
+    for (const [name, build] of Object.entries(scenarios)) {
+      test("model matches the command: " + name, async () => {
+        const app = boot(), ops = await build(app), state = modelState(app);
+        const model = applyOps(state.entries, ops, { used: state.used, slotTaken: state.slotTaken, builtinVisible: state.builtinVisible });
+        const real = applySync(app, ops);
+        if (model.conflict) return assert.strictEqual(real.ok, false);
+        assert.strictEqual(real.ok, true);
+        assert.deepStrictEqual(real.sync.committed, model.committed);
+        assert.deepStrictEqual(real.sync.skipped, model.skipped);
+        assert.deepStrictEqual(real.sync.inserted, model.inserted);
+        assert.deepStrictEqual(real.sync.removed, model.removed);
+        const after = plain(app.get("savedState.entries")).map(e => e.record);
+        assert.deepStrictEqual(after, model.live.map(e => e.record), "records, including a stripped replaces");
+      });
+    }
   });
 });
