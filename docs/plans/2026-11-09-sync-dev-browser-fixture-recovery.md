@@ -98,3 +98,25 @@ Independent engineering review: READY for bounded fixture implementation andseri
 NOTREADYforDEVintegrationuntilnewexact-headfullCI/finalreview/servedchecks. No blocker found;
 no product/design change orownerinputrequired. AFKroutinechoice: realUIprofileadaptation,
 no forcinglegacy/skip/privateAPI/budgetchange. Generic900 causeunknown, ifrecursSTOPregroup.
+
+## Executed fixture evidence (2026-11-09)
+
+- D baseline at plan-only 5254da62 (application ca29a953): 10 executed,
+  9 passed, one expected case-6 Layout-tab assertion failure; no skips/cancels.
+- Candidate fixture f49ace22: D 10/10 and unchanged M555 legacy application
+  10/10 passed, zero skips/cancels, approximately 13 seconds per green run.
+  All ten names and 33 assertions retained. Both creation sites use the actual
+  rendered editor. Root serialized all browser jobs; no new profiles remained.
+- Raw receipts: /private/tmp/tri28-fixture-D-red.tap and matching .json,
+  /private/tmp/tri28-fixture-D-green.tap/.json, and
+  /private/tmp/tri28-fixture-M-green.tap/.json. These are local artifacts;
+  repository tests and CI remain the reproducible proof for a fresh clone.
+- Full mutation-harness metadata check: 54/54 passed, zero skips/cancels,
+  /private/tmp/tri28-d-fixture-full-harness.tap. Validator and JS syntax passed.
+- This proves the fixture repair only. Generic 900-second timeout remains
+  unexplained. Next: one full CI at the corrected published D head plus fresh
+  independent final review. If the generic timeout recurs, STOP and regroup
+  into a reviewed logging/diagnosis subplan before another run or harness edit.
+  No timeout increase, floor reduction, forced legacy mode or skipped check.
+- No DEV integration or owner-QA-ready claim until those gates and served
+  revision/affected-behavior checks pass. Main remains held.
