@@ -1,0 +1,14 @@
+# kills: polish arming deletion must retain the prior error for restoration
+# suite: node --test --test-name-pattern arming.Delete.account.announces tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20826,6 +20826,7 @@ async function syncDeleteAccount() {
+   if (!syncStill(scope)) return;
+   const sc = scope.sidecar;
+   if (!syncDeleteArmed) {
++    syncMsg = null;
+     syncDeleteArmed = setTimeout(() => { syncDeleteArmed = null; syncPaint(); }, 6000);
+     syncPaint();
+     return;
