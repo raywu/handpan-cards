@@ -239,6 +239,18 @@ function run() {
     assert.strictEqual(holders.length, 1, "exactly one tab holds the lock");
   });
 
+  test("two tabs: a signed-out tab drops its signed-out message once the other tab signs it in", async () => {
+    await fresh();
+    await openFrame();
+    await b.eval(`syncSay("sync.signedOutDone");`);
+    assert.match(await q("#sync-msg", `$$.textContent`), /Signed out/);
+    await frameJs(`localStorage.setItem("hpfc.sync.v1", JSON.stringify({ v: 1, project: ${JSON.stringify(PROJECT)}, userId: "11111111-1111-4111-8111-111111111111", email: "me@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: true })); syncStartLock();`);
+    await b.waitFor(`JSON.parse(localStorage.getItem("hpfc.sync.v1")).first === false`, { timeout: 8000, label: "first sync" });
+    await b.eval(`syncPaint();`);
+    await b.waitFor(`/^(Account s|S)ynced at /.test(document.getElementById("sync-msg").textContent)`, { timeout: 8000, label: "synced status replaces the signed-out text" });
+    assert.doesNotMatch(await q("#sync-msg", `$$.textContent`), /Signed out/);
+  });
+
   test("380px: the open panel fits, no horizontal scroll, and visible sync text says scale not deck", async () => {
     await b.setViewport(380, 800, true);
     await fresh();
