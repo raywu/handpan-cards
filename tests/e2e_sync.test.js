@@ -639,13 +639,20 @@ function run() {
   // ---- state-bound messages and flags across a sign-in flip (regroup subplan, TRI-28) ----
   const B_USER = "22222222-2222-4222-8222-222222222222";
   const bSidecar = over => JSON.stringify({ v: 1, project: PROJECT, userId: B_USER, email: "b@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, syncedAt: Date.now(), ...over });
-  // The tab named by `lock` asks for the sync lock in the same task as the write, so it asks first.
-  const bSignIn = (lock, over = {}) => b.eval(`const w = document.getElementById("tabB").contentWindow; w.eval(${JSON.stringify(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar(over))});`)}); ${lock === "B" ? `w.eval("syncStartLock()");` : lock === "A" ? "syncStartLock();" : ""}`);
+  // lock "B": tab B takes the sync lock and holds it before signing in, so this tab can never get it.
+  // lock "A": this tab asks for the lock in the same task as tab B's write.
+  const bSignIn = async (lock, over = {}) => {
+    if (lock === "B") {
+      await frameJs(`window.__held = false; navigator.locks.request(${JSON.stringify("hpfc.sync")}, () => { window.__held = true; return new Promise(() => {}); }); 0`);
+      await b.waitFor(`document.getElementById("tabB").contentWindow.__held === true`, { label: "tab B holding the lock" });
+    }
+    await b.eval(`const w = document.getElementById("tabB").contentWindow; w.eval(${JSON.stringify(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar(over))});`)}); ${lock === "A" ? "syncStartLock();" : ""}`);
+  };
   const bSignOut = () => frameJs(`localStorage.removeItem(${JSON.stringify(KEY)});`);
   const waitSigned = on => b.waitFor(`document.getElementById("sync-signed").hidden === ${!on} && document.getElementById("sync-form").hidden === ${on}`, { label: on ? "the account view" : "the sign-in form" });
   const holderIs = async holder => {
-    await b.waitFor(`syncHolder === true || document.getElementById("tabB").contentWindow.eval("syncHolder") === true`, { label: "a lock holder" });
-    assert.strictEqual(await b.eval(`return syncHolder;`), holder, holder ? "this tab holds the lock" : "the other tab holds the lock");
+    if (holder) await b.waitFor(`syncHolder === true`, { label: "this tab holding the lock" });
+    else { await sleep(200); assert.strictEqual(await b.eval(`return syncHolder;`), false, "the other tab holds the lock"); }
   };
 
   test("two tabs: a state flip in the other tab drops this tab's state-bound message and flags", async () => {
