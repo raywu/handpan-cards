@@ -20791,7 +20791,7 @@ describe("backup: back up saved scales", () => {
 
   test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
     const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACKUP YOUR SCALES<\/button>/,
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>Back up scales<\/button>/,
       "the opener is not right after the reset button, with its label");
     assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
     assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");

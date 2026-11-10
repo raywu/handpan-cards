@@ -141,7 +141,7 @@ function run() {
     assert.strictEqual(await q("#sync-code", `$$.inputMode + "|" + $$.autocomplete + "|" + $$.getAttribute("pattern") + "|" + $$.maxLength`), "numeric|one-time-code|[0-9]{6}|6");
     assert.strictEqual(await active(), "sync-code");
     assert.strictEqual(await q("#sync-resend", `$$.disabled`), true);
-    assert.match(await q("#sync-resend", `$$.textContent`), /\b(5[89]|60)\b/);
+    assert.match(await q("#sync-resend", `$$.textContent`), /^Resend in (5[89]|60)s$/);
     assert.match(await q("#sync-msg", `$$.textContent`), /me@example\.test/);
     await b.eval(`syncResendAt = Date.now() - 1; syncPaintResend();`);
     assert.strictEqual(await q("#sync-resend", `$$.disabled`), false);
