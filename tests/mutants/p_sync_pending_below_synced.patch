@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20543,8 +20543,7 @@ function syncLiveMessage(sc) {
-   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0 && !(sc && (syncMsg.key === "sync.sent" || syncMsg.key === "sync.signedOutDone"))) return syncMsg;
+@@ -20544,8 +20544,7 @@ function syncLiveMessage(sc) {
+   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
    if (!sc) return null;
    if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
 -  if (sc.pending) return { key: "sync.status.pending" };

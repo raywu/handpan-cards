@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20539,9 +20539,9 @@ function syncStatus(kind) {
- }
+@@ -20541,9 +20541,9 @@ function syncStatus(kind) {
+ const syncMsgFits = (msg, sc) => !msg || msg.signedIn == null || msg.signedIn === !!sc;
  function syncLiveMessage(sc) {
    if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
 -  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
