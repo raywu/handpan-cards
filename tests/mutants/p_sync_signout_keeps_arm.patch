@@ -1,4 +1,5 @@
-# kills: polish signing out while Delete account is armed says signed out, and a bad address then shows its own error
+# kills: polish: signing out while Delete account is armed says signed out, and a bad address then shows its own error
+# Previously: polish signing out while Delete account is armed says signed out, and a bad address then shows its own error
 # suite: node --test --test-name-pattern signing.out.while.Delete.account.is.armed tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish. syncDrop leaves the deletion arm set, so the armed text masks the sign-out and later errors.
 diff --git a/index.html b/index.html

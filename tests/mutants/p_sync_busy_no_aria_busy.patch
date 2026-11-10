@@ -1,4 +1,5 @@
-# kills: polish busy panel sets aria-busy
+# kills: polish: sending, signing in and resending disable competing controls, keep values and focus, and set aria-busy
+# Previously: polish busy panel sets aria-busy
 # suite: node --test --test-name-pattern sending.+signing.+resending tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish.
 diff --git a/index.html b/index.html
