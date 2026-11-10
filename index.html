@@ -299,6 +299,18 @@ h1 svg{display:block; width:223.3px; max-width:100%; height:auto; margin:0 auto}
 .modebar:has(> #sync-open[hidden]){display:none}
 #sync-heading{margin:0; font:600 14px/1.4 "Nunito Sans"; color:#242424; overflow-wrap:anywhere}
 #sync-heading:focus-visible{outline:2px solid #242424; outline-offset:2px}
+#sync-account-email{margin:0; font:400 14px/1.4 "Nunito Sans"; color:#242424; overflow-wrap:anywhere; word-break:break-all}
+#sync-open, #sync-panel .mode{text-transform:none; letter-spacing:0; font:600 14px/1.3 "Nunito Sans"; text-align:center}
+#sync-panel .mode{width:100%; overflow-wrap:anywhere}
+#sync-panel #sync-send, #sync-panel #sync-verify, #sync-panel #sync-ask-yes{background:#6756B5; color:#FFFFFF; border-color:#6756B5}
+#sync-panel #sync-send:hover, #sync-panel #sync-verify:hover, #sync-panel #sync-ask-yes:hover{background:#5A49A6; border-color:#5A49A6}
+#sync-panel .mode:focus-visible{outline:2px solid #242424; outline-offset:2px}
+#sync-panel .panel-note{font-size:13px; text-align:start; overflow-wrap:anywhere}
+#sync-ask-text{color:#242424}
+#sync-danger{margin-top:var(--sp-4); padding-top:var(--sp-3); border-top:1px solid #8A847B}
+#sync-panel #sync-delete{background:transparent; border-color:transparent; color:#5E5850; text-decoration:underline; text-underline-offset:3px}
+#sync-panel #sync-delete:hover{background:transparent; border-color:#242424; color:#242424}
+#sync-panel #sync-delete:not(.on):active{background:transparent}
 .panel-note a{color:#f6f4ed; text-decoration-color:#f5c78e}
 /* The three tier buttons (EASY / MEDIUM / HARD) sit under the "Chord
    progression" heading, the second half of the Practice group, where #modeS
@@ -2155,44 +2167,47 @@ html.about-open{overflow:hidden}
     </div>
     <button class="mode" type="button" id="deck-restore" hidden>RESET SEEDED SCALES</button>
     <div class="modebar">
-      <button class="mode" type="button" id="backup-open" aria-expanded="false" aria-controls="backup-panel">BACKUP YOUR SCALES</button>
+      <button class="mode" type="button" id="backup-open" aria-expanded="false" aria-controls="backup-panel">Back up scales</button>
     </div>
     <div class="modebar">
-      <button class="mode" type="button" id="sync-open" aria-expanded="false" aria-controls="sync-panel" hidden>SYNC SAVED SCALES</button>
+      <button class="mode" type="button" id="sync-open" aria-expanded="false" aria-controls="sync-panel" hidden>Sign in to sync</button>
     </div>
     <div id="sync-panel" role="group" aria-labelledby="sync-open" hidden>
       <form id="sync-form" novalidate>
         <p class="panel-note" id="sync-domain">Check the address bar: handpantheory.com.</p>
         <div id="sync-step-email">
+          <p class="panel-note" id="sync-intro">Sync saved scales across devices.</p>
           <label for="sync-email" id="sync-email-label">Email address</label>
           <input id="sync-email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required aria-describedby="sync-msg">
-          <button class="mode" type="submit" id="sync-send">SEND CODE</button>
+          <button class="mode" type="submit" id="sync-send">Send code</button>
         </div>
         <div id="sync-step-code" hidden>
           <label for="sync-code" id="sync-code-label">6-digit code</label>
           <input id="sync-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="sync-msg">
-          <button class="mode" type="submit" id="sync-verify">SIGN IN</button>
-          <button class="mode" type="button" id="sync-other">USE A DIFFERENT EMAIL</button>
-          <button class="mode" type="button" id="sync-resend">SEND A NEW CODE</button>
+          <button class="mode" type="submit" id="sync-verify">Sign in</button>
+          <button class="mode" type="button" id="sync-other">Change email</button>
+          <button class="mode" type="button" id="sync-resend">Resend code</button>
         </div>
       </form>
       <div id="sync-signed" hidden>
-        <h4 id="sync-heading" tabindex="-1"></h4>
-        <p class="panel-note" id="sync-last"></p>
+        <h4 id="sync-heading" tabindex="-1" aria-labelledby="sync-heading sync-account-email">Signed in</h4>
+        <p id="sync-account-email"></p>
         <div id="sync-ask" hidden>
           <p class="panel-note" id="sync-ask-text"></p>
-          <button class="mode" type="button" id="sync-ask-yes">ADD THEM</button>
-          <button class="mode" type="button" id="sync-ask-no">NOT NOW</button>
+          <button class="mode" type="button" id="sync-ask-yes">Add scales</button>
+          <button class="mode" type="button" id="sync-ask-no">Not now</button>
         </div>
-        <button class="mode" type="button" id="sync-out">SIGN OUT</button>
-        <button class="mode" type="button" id="sync-delete">DELETE ACCOUNT</button>
+        <button class="mode" type="button" id="sync-out">Sign out</button>
+        <div id="sync-danger">
+          <button class="mode" type="button" id="sync-delete">Delete account</button>
+        </div>
       </div>
       <p class="panel-note" id="sync-msg" role="status" aria-live="polite"></p>
     </div>
     <!-- Safari storage lane B: a read-only text list of the saved scales' #s= links.
          Restore is the user tapping each link; there is no paste box. -->
     <div id="backup-panel" hidden>
-      <p class="panel-note" id="backup-intro">Saved scales live only in this browser, which can erase them after a while without a visit. Keep this list somewhere safe, such as Notes or an email to yourself.</p>
+      <p class="panel-note" id="backup-intro">Keep a separate copy of your saved scale links, such as in Notes or an email to yourself.</p>
       <p class="panel-note" id="backup-session" hidden>Saved scales are not being kept in this browser right now. They disappear when you close this tab, so back them up now.</p>
       <p class="panel-note" id="backup-restore">To restore, tap each link in your saved list. A restored seeded-scale replacement comes back as a new custom scale beside the seeded one, and hidden seeded scales appear only as a note.</p>
       <textarea id="backup-text" readonly rows="6" spellcheck="false" aria-label="Saved scale links"></textarea>
@@ -20420,7 +20435,7 @@ const SYNC_CFG = !MOVE_ON_OLD && Object.prototype.hasOwnProperty.call(SYNC_ORIGI
 const SYNC_RESEND_MS = 60000;
 let syncHolder = false, syncLockAsked = false, syncRunning = null, syncQueued = null, syncTimer = null, syncLastPull = 0;
 let syncStep = "email", syncEmail = "", syncResendAt = 0, syncResendTimer = null, syncAskDismissed = false, syncDeleteArmed = null;
-let syncMsg = null, syncBusy = false;
+let syncMsg = null, syncBusy = false, syncBusyKind = null, syncField = null, syncSyncing = false;
 const syncEl = id => { try { return document.getElementById(id); } catch (e) { return null; } };
 function syncLoad() {
   if (!SYNC_CFG) return null;
@@ -20491,8 +20506,7 @@ function syncRemove(scope, note) {
   try { localStorage.removeItem(SYNC_KEY); }
   catch (e) { scope.invalid = true; return false; }
   scope.invalid = true;
-  syncStep = "email";
-  syncPaint();
+  syncStep = "email"; syncSyncing = false;
   syncSay(note || null);
   return true;
 }
@@ -20515,26 +20529,26 @@ function syncCtx() {
 }
 function syncSay(key, vars, field) {
   syncMsg = key ? { key, vars } : null;
-  const el = syncEl("sync-msg");
-  if (el) el.textContent = key ? t(key, vars) : "";
-  for (const id of ["sync-email", "sync-code"]) {
-    const input = syncEl(id);
-    if (input) { if (field === id) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid"); }
-  }
+  syncField = key && field ? field : null;
+  syncPaint();
 }
 function syncStatus(kind) {
-  if (kind === "syncing") syncSay("sync.status.syncing");
-  else if (kind === "pending") syncSay("sync.status.pending");
-  else if (kind === "synced") {
-    const sc = syncLoad();
-    syncSay("sync.status.synced", { time: sc && sc.syncedAt ? new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) : "" });
-  }
+  syncSyncing = kind === "syncing";
+  if (kind === "synced" && syncMsg && syncMsg.key.indexOf("sync.err.") === 0) { syncMsg = null; syncField = null; }
   syncPaint();
+}
+function syncLiveMessage(sc) {
+  if (syncDeleteArmed) return { key: "sync.deleteArmed" };
+  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
+  if (!sc) return null;
+  if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
+  if (sc.pending) return { key: "sync.status.pending" };
+  if (sc.syncedAt) return { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
+  return null;
 }
 function syncDrop(note) {
   try { localStorage.removeItem(SYNC_KEY); } catch (e) {}
-  syncStep = "email";
-  syncPaint();
+  syncStep = "email"; syncSyncing = false;
   syncSay(note || null);
 }
 async function syncToken(scope = syncScope()) {
@@ -20648,6 +20662,7 @@ function syncKick(pull) {
   syncRunning = syncCycle(pull).catch(() => {}).then(() => {
     syncRunning = null;
     if (syncQueued !== null) { const again = syncQueued; syncQueued = null; return syncKick(again); }
+    if (syncSyncing) { syncSyncing = false; syncPaint(); }
   });
   return syncRunning;
 }
@@ -20676,37 +20691,57 @@ function syncPaint() {
   const sc = syncLoad();
   const show = syncActive();
   open.hidden = !show;
-  open.textContent = sc ? t("sync.menuSignedIn", { email: sc.email }) : t("sync.menu");
+  open.textContent = t(sc ? "sync.menuAccount" : "sync.menu");
   const panel = syncEl("sync-panel");
   if (!show) { if (panel) panel.hidden = true; return; }
   const set = (id, key, vars) => { const el = syncEl(id); if (el) el.textContent = t(key, vars); };
-  set("sync-domain", "sync.domainWarn"); set("sync-email-label", "sync.email"); set("sync-send", "sync.send");
-  set("sync-code-label", "sync.code"); set("sync-verify", "sync.signIn"); set("sync-other", "sync.otherEmail");
+  const kind = syncBusy ? syncBusyKind : null;
+  set("sync-domain", "sync.domainWarn"); set("sync-intro", "sync.intro"); set("sync-email-label", "sync.email");
+  set("sync-send", kind === "send" ? "sync.sending" : "sync.send");
+  set("sync-code-label", "sync.code");
+  set("sync-verify", kind === "verify" ? "sync.signingIn" : "sync.signIn");
+  set("sync-other", "sync.otherEmail");
   set("sync-ask-yes", "sync.addLocalYes"); set("sync-ask-no", "sync.addLocalNo");
   set("sync-out", "sync.signOut"); set("sync-delete", syncDeleteArmed ? "sync.deleteConfirm" : "sync.delete");
-  if (panel) panel.setAttribute("aria-label", t("sync.title"));
-  syncPaintResend();
+  if (panel) {
+    panel.setAttribute("aria-label", t("sync.title"));
+    if (syncBusy) panel.setAttribute("aria-busy", "true"); else panel.removeAttribute("aria-busy");
+  }
   syncEl("sync-form").hidden = !!sc;
   syncEl("sync-signed").hidden = !sc;
   syncEl("sync-step-email").hidden = syncStep !== "email";
   syncEl("sync-step-code").hidden = syncStep !== "code";
+  const field = syncEl(syncStep === "code" ? "sync-code" : "sync-email");
+  if (syncBusy && field && !sc) {
+    const held = document.activeElement;
+    if (held && held !== field && panel && panel.contains(held) && held.tagName === "BUTTON") field.focus();
+  }
+  for (const id of ["sync-send", "sync-verify", "sync-other"]) { const el = syncEl(id); if (el) el.disabled = syncBusy; }
+  for (const id of ["sync-email", "sync-code"]) { const el = syncEl(id); if (el) el.readOnly = syncBusy && el === field; }
+  syncPaintResend();
+  const msg = syncLiveMessage(sc);
+  const err = !!msg && msg.key.indexOf("sync.err.") === 0 && !syncDeleteArmed;
+  for (const id of ["sync-email", "sync-code"]) {
+    const input = syncEl(id);
+    if (input) { if (err && syncField === id) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid"); }
+  }
   if (sc) {
-    set("sync-heading", "sync.menuSignedIn", { email: sc.email });
-    const last = syncEl("sync-last");
-    last.textContent = sc.pending ? t("sync.status.pending") : sc.syncedAt ? t("sync.status.synced", { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) }) : "";
+    set("sync-heading", "sync.signedIn");
+    const who = syncEl("sync-account-email"); if (who) who.textContent = sc.email;
     const ids = syncAskIds();
     syncEl("sync-ask").hidden = !ids.length || syncAskDismissed;
     set("sync-ask-text", "sync.addLocal", { n: ids.length });
   }
-  const msg = syncEl("sync-msg");
-  if (msg && syncMsg) msg.textContent = t(syncMsg.key, syncMsg.vars);
+  const el = syncEl("sync-msg");
+  if (el) el.textContent = msg ? t(msg.key, msg.vars) : "";
 }
 function syncPaintResend() {
   const btn = syncEl("sync-resend");
   if (!btn) return;
   const left = Math.max(0, Math.ceil((syncResendAt - Date.now()) / 1000));
-  btn.disabled = left > 0;
-  btn.textContent = left > 0 ? t("sync.resendIn", { s: left }) : t("sync.resend");
+  const resending = syncBusy && syncBusyKind === "resend";
+  btn.disabled = left > 0 || syncBusy;
+  btn.textContent = resending ? t("sync.resending") : left > 0 ? t("sync.resendIn", { s: left }) : t("sync.resend");
   clearTimeout(syncResendTimer);
   if (left > 0) syncResendTimer = setTimeout(syncPaintResend, 1000);
 }
@@ -20720,8 +20755,9 @@ function syncTogglePanel(force) {
   const want = force === undefined ? panel.hidden : force;
   panel.hidden = !want;
   open.setAttribute("aria-expanded", String(want));
-  syncDeleteArmed = null;
-  if (want) { syncPaint(); syncFocusFor(syncLoad()); }
+  clearTimeout(syncDeleteArmed); syncDeleteArmed = null;
+  syncPaint();
+  if (want) syncFocusFor(syncLoad());
 }
 const syncAuthError = (r, bad) => {
   if (r.status === 429) return "sync.err.rateLimited";
@@ -20738,19 +20774,19 @@ async function syncSubmit() {
   if (syncStep === "email") {
     const input = syncEl("sync-email"), email = String(input.value || "").trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) { syncSay("sync.err.badEmail", undefined, "sync-email"); input.focus(); return; }
-    syncBusy = true;
+    syncBusy = true; syncBusyKind = "send"; syncPaint();
     const failure = await syncSendCode(email);
-    syncBusy = false;
+    syncBusy = false; syncBusyKind = null;
     if (failure) { syncSay(failure, undefined, "sync-email"); input.focus(); return; }
     syncEmail = email; syncStep = "code"; syncResendAt = Date.now() + SYNC_RESEND_MS;
-    syncPaint(); syncSay("sync.sent", { email }); syncFocusFor(null);
+    syncSay("sync.sent", { email }); syncFocusFor(null);
     return;
   }
   const input = syncEl("sync-code"), token = String(input.value || "").trim();
   if (!/^[0-9]{6}$/.test(token)) { syncSay("sync.err.badCode", undefined, "sync-code"); input.focus(); return; }
-  syncBusy = true;
+  syncBusy = true; syncBusyKind = "verify"; syncPaint();
   const r = await syncFetch("/auth/v1/verify", { method: "POST", body: { email: syncEmail, token, type: "email" } });
-  syncBusy = false;
+  syncBusy = false; syncBusyKind = null;
   if (!r.ok || !r.json || !r.json.access_token || !r.json.user) {
     const expired = r.json && (r.json.error_code === "otp_expired" || r.json.msg_code === "otp_expired");
     syncSay(expired ? "sync.err.expired" : syncAuthError(r, "sync.err.badCode"), undefined, "sync-code");
@@ -20760,28 +20796,28 @@ async function syncSubmit() {
   const fresh = { ...HPE.sync.emptySidecar(), project: SYNC_CFG.url, userId: String(r.json.user.id), email: String(r.json.user.email || syncEmail), first: true };
   try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncSession(fresh, r.json))); } catch (e) { syncSay("sync.err.offline"); return; }
   syncStep = "email"; syncAskDismissed = false; input.value = "";
-  syncPaint(); syncSay(null); syncFocusFor(syncLoad());
+  syncSay(null); syncFocusFor(syncLoad());
   syncStartLock(); syncKick(true);
 }
 async function syncResend() {
   if (syncBusy || Date.now() < syncResendAt) return;
-  syncBusy = true;
+  syncBusy = true; syncBusyKind = "resend"; syncPaint();
   const failure = await syncSendCode(syncEmail);
-  syncBusy = false;
-  if (failure) { syncSay(failure, undefined, "sync-code"); return; }
+  syncBusy = false; syncBusyKind = null;
+  if (failure) { syncSay(failure, undefined, "sync-code"); const code = syncEl("sync-code"); if (code) code.focus(); return; }
   syncResendAt = Date.now() + SYNC_RESEND_MS;
-  syncPaintResend(); syncSay("sync.sent", { email: syncEmail });
+  syncSay("sync.sent", { email: syncEmail });
 }
 function syncOtherEmail() {
   syncStep = "email"; syncEmail = "";
   const code = syncEl("sync-code");
   if (code) code.value = "";
-  syncPaint(); syncSay(null); syncFocusFor(null);
+  syncSay(null); syncFocusFor(null);
 }
 async function syncSignOut() {
   const sc = syncLoad();
   if (!sc) return;
-  syncDrop(null);
+  syncDrop("sync.signedOutDone");
   if (sc.access) syncFetch("/auth/v1/logout", { method: "POST", token: sc.access });
   syncFocusFor(null);
 }
@@ -20798,7 +20834,7 @@ async function syncDeleteAccount() {
   const token = sc.accessExp > Date.now() + 5000 ? sc.access : null;
   const r = token ? await syncFetch("/rest/v1/rpc/delete_my_account", { method: "POST", token, body: {} }) : { ok: false };
   if (!syncStill(scope)) return;
-  if (!r.ok) { syncPaint(); syncSay("sync.err.offline"); return; }
+  if (!r.ok) { syncSay("sync.err.deleteFailed"); return; }
   if (syncRemove(scope, null)) syncFocusFor(null);
 }
 function syncAskAnswer(yes) {
