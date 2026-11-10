@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18510,7 +18510,6 @@ function syncOtherEmail() {
+@@ -20819,7 +20819,6 @@ function syncOtherEmail() {
  async function syncSignOut() {
    const sc = syncLoad();
    if (!sc) return;
--  syncDrop(null);
+-  syncDrop("sync.signedOutDone");
    if (sc.access) syncFetch("/auth/v1/logout", { method: "POST", token: sc.access });
    syncFocusFor(null);
  }

@@ -1,0 +1,18 @@
+# kills: polish: an error outranks routine repaint and pending; clearing it restores the live status
+# Previously: polish status precedence (an error must outrank a running sync)
+# suite: node --test --test-name-pattern error.outranks.routine.repaint tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20541,9 +20541,9 @@ function syncStatus(kind) {
+ const syncMsgFits = (msg, sc) => !msg || msg.signedIn == null || msg.signedIn === !!sc;
+ function syncLiveMessage(sc) {
+   if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
+-  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
+   if (!sc) return null;
+   if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
++  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
+   if (sc.pending) return { key: "sync.status.pending" };
+   if (sc.syncedAt) return { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
+   return null;

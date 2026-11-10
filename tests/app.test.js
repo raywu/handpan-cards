@@ -15512,8 +15512,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const syncKeys=["menu","menuSignedIn","title","email","send","code","signIn","otherEmail","resend","resendIn","sent","domainWarn","status.syncing","status.synced","status.pending","addLocal","addLocalYes","addLocalNo","signOut","delete","deleteConfirm","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.neo.mirror","editor.neo.mirror.aria","editor.neo.rotate_ccw","editor.neo.rotate_ccw.aria","editor.neo.rotate_cw","editor.neo.rotate_cw.aria","editor.neo.say_mirror","editor.neo.say_rotate_cw","editor.neo.say_rotate_ccw","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.addLocal"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2) and the thirty sync.* keys (login sync lane A2)");
+    const syncKeys=["menu","menuAccount","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","resendIn","sent","domainWarn","status.syncing","status.synced","status.pending","addLocal","addLocalYes","addLocalNo","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.neo.mirror","editor.neo.mirror.aria","editor.neo.rotate_ccw","editor.neo.rotate_ccw.aria","editor.neo.rotate_cw","editor.neo.rotate_cw.aria","editor.neo.say_mirror","editor.neo.say_rotate_cw","editor.neo.say_rotate_ccw","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.addLocal"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2) and the thirty-eight sync.* keys (login sync lane A2, polished by TRI-28)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -20806,7 +20806,7 @@ describe("backup: back up saved scales", () => {
 
   test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
     const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACKUP YOUR SCALES<\/button>/,
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>Back up scales<\/button>/,
       "the opener is not right after the reset button, with its label");
     assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
     assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");
@@ -21863,5 +21863,138 @@ describe("sync store safety", () => {
     assert.match(region,/await syncApply\(scope, plan\);\s*if \(!syncStill\(scope\)\) return false;\s*if \(!applied\) continue;/);
     assert.match(region,/async function syncPull\([^)]*\)[\s\S]*?syncStill\(/);
     assert.match(region,/async function syncPush\([^)]*\)[\s\S]*?syncStill\(/);
+  });
+});
+
+describe("login sync UI polish (TRI-28): copy and status contract", () => {
+  const en = JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "data", "i18n", "en.json"), "utf8"));
+  const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const KEY = "hpfc.sync.v1";
+  const sidecar = extra => JSON.stringify({ v: 1, project: PROJECT, userId: "11111111-1111-4111-8111-111111111111",
+    email: "a@b.test", refresh: "r0", access: "a0", accessExp: Date.now() + 3600e3, cursor: 0,
+    base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, ...extra });
+  const fixture = async (extra = {}) => {
+    const app = boot({ origin: require("./helpers/sandbox.js").createOrigin(), href: DEV, locks: true, indexedDB: true, isSecureContext: true,
+      storage: { [KEY]: sidecar(extra) } });
+    for (const id of [...html.matchAll(/id="(sync-[^"]+)"/g)].map(m => m[1])) {
+      app.els[id] = app.sandbox.document.createElement("div"); app.els[id].id = id;
+    }
+    app.run(`globalThis.fetch = async function (url, opt) {
+      const path = String(url).replace(${JSON.stringify(PROJECT)}, "");
+      const response = path.startsWith("/auth/v1/token") ? { access_token: "a1", refresh_token: "r1", expires_in: 3600 }
+        : path.startsWith("/rest/v1/saved_scales") ? [] : path.endsWith("push_scales") ? [] : {};
+      return { status: 200, ok: true, json: async () => response };
+    };`);
+    await app.waitFor("booted === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    return app;
+  };
+  const setSidecar = (app, patch) => app.run(`{ const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); Object.assign(s, ${JSON.stringify(patch)}); localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s)); }`);
+
+  test("the English sync and backup copy is the plan's exact wording", () => {
+    const expected = {
+      "sync.menu": "Sign in to sync",
+      "sync.menuAccount": "Account & sync",
+      "sync.signedIn": "Signed in",
+      "sync.intro": "Sync saved scales across devices.",
+      "sync.send": "Send code",
+      "sync.sending": "Sending code\u2026",
+      "sync.signIn": "Sign in",
+      "sync.signingIn": "Signing in\u2026",
+      "sync.otherEmail": "Change email",
+      "sync.resend": "Resend code",
+      "sync.resending": "Resending code\u2026",
+      "sync.resendIn": "Resend in {s}s",
+      "sync.sent": "Enter the code sent to {email}. Check spam too.",
+      "sync.status.syncing": "Syncing\u2026",
+      "sync.status.pending": "Changes waiting to sync",
+      "sync.status.synced": "Account synced at {time}",
+      "sync.addLocalYes": "Add scales",
+      "sync.addLocalNo": "Not now",
+      "sync.signOut": "Sign out",
+      "sync.signedOutDone": "Signed out. Your scales remain on this device.",
+      "sync.delete": "Delete account",
+      "sync.deleteArmed": "Permanently deletes your account and synced scales. Copies on this device stay.",
+      "sync.deleteConfirm": "Confirm account deletion",
+      "sync.err.deleteFailed": "Could not delete your account. Try again.",
+      "backup.open": "Back up scales",
+      "backup.intro": "Keep a separate copy of your saved scale links, such as in Notes or an email to yourself.",
+    };
+    for (const [key, value] of Object.entries(expected)) assert.strictEqual(en[key], value, key);
+    assert.deepStrictEqual(en["sync.addLocal"], {
+      one: "Add {n} scale from this device to your account?",
+      other: "Add {n} scales from this device to your account?",
+    });
+    assert.strictEqual(en["sync.menuSignedIn"], undefined, "the repeated SYNCED AS {email} message is retired");
+  });
+
+  test("the backup copy no longer claims scales live only in this browser", () => {
+    for (const key of Object.keys(en).filter(k => k.startsWith("backup."))) {
+      const text = typeof en[key] === "string" ? en[key] : "";
+      assert.ok(!/only in this browser/i.test(text), key);
+    }
+    assert.match(en["backup.session"], /disappear when you close this tab/, "the session-only warning is preserved");
+    assert.match(en["backup.restore"], /To restore, tap each link/, "the restore instructions are preserved");
+  });
+
+  test("the markup keeps #sync-msg as the sole status region and drops #sync-last", () => {
+    assert.ok(!/id="sync-last"/.test(html), "#sync-last is removed, not hidden");
+    const panel = html.slice(html.indexOf('id="sync-open"'), html.indexOf('id="backup-panel"'));
+    assert.strictEqual((panel.match(/role="status"/g) || []).length, 1);
+    assert.strictEqual((panel.match(/aria-live=/g) || []).length, 1);
+    assert.match(panel, /<p[^>]*id="sync-msg"[^>]*>/);
+    assert.match(panel.match(/<p[^>]*id="sync-msg"[^>]*>/)[0], /role="status"[\s\S]*aria-live="polite"|aria-live="polite"[\s\S]*role="status"/);
+    assert.match(panel, /id="sync-account-email"/, "the account email has its own node, shown once under the heading");
+  });
+
+  test("a retained synced message never masks pending work, and clearing a message restores the live status", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    assert.match(app.els["sync-msg"].textContent, /^(Account s|S)ynced at /, "precondition: a routine success is cached");
+    setSidecar(app, { pending: true });
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Changes waiting to sync");
+    setSidecar(app, { pending: false, first: true });
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Syncing\u2026");
+    app.run("syncSay('sync.err.offline')");
+    app.run("syncPaint()");
+    assert.match(app.els["sync-msg"].textContent, /offline/, "a repaint keeps an error");
+    app.run("syncSay(null)");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Syncing\u2026", "clearing the error restores the live status");
+  });
+
+  test("syncMsgFits: a message shows only in the sign-in state it was set in; untagged fits both", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    for (const [msg, sc, fits] of [["null", "null", true], ["null", "{}", true], ["{key:'k',signedIn:true}", "{}", true], ["{key:'k',signedIn:true}", "null", false], ["{key:'k',signedIn:false}", "null", true], ["{key:'k',signedIn:false}", "{}", false], ["{key:'k',signedIn:null}", "null", true], ["{key:'k',signedIn:null}", "{}", true]]) {
+      assert.strictEqual(app.get(`syncMsgFits(${msg}, ${sc})`), fits, msg + " / " + sc);
+    }
+    app.run("syncSay('sync.err.offline')");
+    assert.strictEqual(app.get("syncMsg.signedIn"), true, "syncSay tags the message with the current sign-in state");
+  });
+
+  test("an account with no successful sync yet shows no timestamp", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    setSidecar(app, { syncedAt: null, pending: false, first: false });
+    app.run("syncMsg = null; syncPaint()");
+    assert.ok(!/synced|\d:\d/i.test(app.els["sync-msg"].textContent), app.els["sync-msg"].textContent);
+  });
+
+  test("sync-msg stays the single place for the timestamp: nothing else carries it", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    const time = /^Account synced at (.+)$/.exec(app.els["sync-msg"].textContent);
+    assert.ok(time, app.els["sync-msg"].textContent);
+    assert.ok(app.els["sync-account-email"], "the markup has #sync-account-email");
+    for (const id of ["sync-open", "sync-heading", "sync-account-email", "sync-ask-text"]) {
+      assert.ok(!app.els[id].textContent.includes(time[1]), id + " repeats the timestamp");
+    }
+    assert.strictEqual(app.els["sync-open"].textContent, "Account & sync");
+    assert.strictEqual(app.els["sync-heading"].textContent, "Signed in");
+    assert.strictEqual(app.els["sync-account-email"].textContent, "a@b.test");
   });
 });

@@ -1,0 +1,15 @@
+# kills: two tabs: a send, verify or resend that completes after a state flip changes nothing
+# Previously: none (new guard)
+# suite: node --test --test-name-pattern completes.after.a.state.flip tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish. Mutation: a resend that completes after another tab signed in still says a code was sent.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20815,7 +20815,6 @@ async function syncResend() {
+   syncBusy = true; syncBusyKind = "resend"; syncPaint();
+   const failure = await syncSendCode(syncEmail);
+   syncBusy = false; syncBusyKind = null;
+-  if (!!syncLoad() !== was) { syncPaint(); return; }
+   if (failure) { syncSay(failure, undefined, "sync-code"); const code = syncEl("sync-code"); if (code) code.focus(); return; }
+   syncResendAt = Date.now() + SYNC_RESEND_MS;
+   syncSay("sync.sent", { email: syncEmail });

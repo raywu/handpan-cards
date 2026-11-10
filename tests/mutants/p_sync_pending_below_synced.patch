@@ -1,0 +1,17 @@
+# kills: a retained synced message never masks pending work, and clearing a message restores the live status
+# Previously: polish status precedence (pending work must outrank the synced timestamp)
+# suite: node --test --test-reporter=tap --test-name-pattern retained.synced.message.never.masks tests/app.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20544,8 +20544,7 @@ function syncLiveMessage(sc) {
+   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
+   if (!sc) return null;
+   if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
+-  if (sc.pending) return { key: "sync.status.pending" };
+-  if (sc.syncedAt) return { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
++  if (sc.syncedAt && !sc.pending) return { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
+   return null;
+ }
+ function syncDrop(note) {

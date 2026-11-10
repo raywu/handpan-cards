@@ -1,0 +1,15 @@
+# kills: two tabs: a state flip in the other tab drops this tab's state-bound message and flags
+# Previously: none (new guard)
+# suite: node --test --test-name-pattern state.flip.in.the.other tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish. Mutation: a sign-in in another tab keeps the code step for the old address.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20694,7 +20694,6 @@ function syncPaint() {
+   const sc = syncLoad();
+   if (!syncMsgFits(syncMsg, sc)) { syncMsg = null; syncField = null; }
+   if (!sc && syncDeleteArmed) { clearTimeout(syncDeleteArmed); syncDeleteArmed = null; }
+-  if (sc && syncStep !== "email") { syncStep = "email"; syncEmail = ""; }
+   const show = syncActive();
+   open.hidden = !show;
+   open.textContent = t(sc ? "sync.menuAccount" : "sync.menu");
