@@ -1,4 +1,5 @@
-# kills: polish deletion expiry must repaint and restore the status
+# kills: polish: arming Delete account announces the consequence in the polite region, keeps focus, and disarms with the retained error restored
+# Previously: polish deletion expiry must repaint and restore the status
 # suite: node --test --test-name-pattern arming.Delete.account.announces tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish.
 diff --git a/index.html b/index.html

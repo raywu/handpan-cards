@@ -1,4 +1,5 @@
-# kills: polish clearing a message must repaint the live status
+# kills: polish: an error outranks routine repaint and pending; clearing it restores the live status
+# Previously: polish clearing a message must repaint the live status
 # suite: node --test --test-name-pattern an.error.outranks.routine.repaint tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish.
 diff --git a/index.html b/index.html

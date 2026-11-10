@@ -1,4 +1,5 @@
-# kills: polish arming deletion must retain the prior error for restoration
+# kills: polish: arming Delete account announces the consequence in the polite region, keeps focus, and disarms with the retained error restored
+# Previously: polish arming deletion must retain the prior error for restoration
 # suite: node --test --test-name-pattern arming.Delete.account.announces tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish.
 diff --git a/index.html b/index.html

@@ -1,4 +1,5 @@
-# kills: polish a failed account deletion says so
+# kills: polish: a failed account deletion says so, keeps the session and local scales
+# Previously: polish a failed account deletion says so
 # suite: node --test --test-name-pattern a.failed.account.deletion.says.so tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish.
 diff --git a/index.html b/index.html
