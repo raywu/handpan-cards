@@ -639,7 +639,8 @@ function run() {
   // ---- state-bound messages and flags across a sign-in flip (regroup subplan, TRI-28) ----
   const B_USER = "22222222-2222-4222-8222-222222222222";
   const bSidecar = over => JSON.stringify({ v: 1, project: PROJECT, userId: B_USER, email: "b@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, syncedAt: Date.now(), ...over });
-  const bSignIn = (lock, over = {}) => frameJs(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar(over))});${lock ? " syncStartLock();" : ""}`);
+  // The tab named by `lock` asks for the sync lock in the same task as the write, so it asks first.
+  const bSignIn = (lock, over = {}) => b.eval(`const w = document.getElementById("tabB").contentWindow; w.eval(${JSON.stringify(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar(over))});`)}); ${lock === "B" ? `w.eval("syncStartLock()");` : lock === "A" ? "syncStartLock();" : ""}`);
   const bSignOut = () => frameJs(`localStorage.removeItem(${JSON.stringify(KEY)});`);
   const waitSigned = on => b.waitFor(`document.getElementById("sync-signed").hidden === ${!on} && document.getElementById("sync-form").hidden === ${on}`, { label: on ? "the account view" : "the sign-in form" });
   const holderIs = async holder => {
@@ -657,7 +658,7 @@ function run() {
         await b.eval(`syncEmail = "old@example.test"; syncStep = "code"; syncSay(${JSON.stringify(key)}, { email: "old@example.test" });`);
         const old = await msg();
         assert.ok(old.length > 0, row);
-        await bSignIn(!holder);
+        await bSignIn(holder ? "A" : "B");
         await waitSigned(true);
         await holderIs(holder);
         await b.waitFor(`/^Account synced at /.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
@@ -671,7 +672,7 @@ function run() {
         const row = (holder ? "holder " : "non-holder ") + key;
         await fresh();
         await openFrame();
-        await bSignIn(!holder);
+        await bSignIn(holder ? "A" : "B");
         await waitSigned(true);
         await holderIs(holder);
         await openSync();
@@ -683,7 +684,7 @@ function run() {
         await bSignOut();
         await waitSigned(false);
         assert.notStrictEqual(await msg(), old, row + ": not shown signed out");
-        await bSignIn(false);
+        await bSignIn(null);
         await waitSigned(true);
         assert.notStrictEqual(await msg(), old, row + ": not shown after signing in again");
         assert.strictEqual(await q("#sync-delete", `$$.textContent`), "Delete account", row + ": not armed after signing in again");
@@ -698,7 +699,7 @@ function run() {
     await b.eval(`syncSay("sync.err.signedOut");`);
     const old = await msg();
     await failFetch("/rest/v1/saved_scales", 500);
-    await bSignIn(false, { first: true, syncedAt: null });
+    await bSignIn("A", { first: true, syncedAt: null });
     await waitSigned(true);
     await holderIs(true);
     await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).pending === true || document.getElementById("sync-msg").textContent === "Changes waiting to sync"`, { timeout: 8000, label: "the failed first sync" });
@@ -731,7 +732,7 @@ function run() {
         await b.click("#sync-verify");
       }
       await b.waitFor(`window.__gated === 1`, { label: kind + " held" });
-      await bSignIn(true);
+      await bSignIn("B");
       await waitSigned(true);
       await releaseGate();
       await b.waitFor(`!syncBusy`, { label: kind + " completed" });
