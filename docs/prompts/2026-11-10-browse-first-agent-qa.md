@@ -1,17 +1,58 @@
-Draft a queued, independently reviewable plan and exact proposed global-rule text for replacing custom agent-driven browser probes with Claude's installed /browse workflow. Do not invoke /reviewed-plan; produce the plan directly. Planning/queue ONLY: do not activate/edit global rules, CLAUDE.md, agent config, scripts, app, tests, hooks or CI; no installs/browser launches, commits/push by subagents, credentials, deploys, main merges. Root may publish plan docs and queue it in the existing Handpan Linear team TRI; do not create a new global team.
+# Codex follows unchanged Claude browser QA — reviewed-plan prompt
 
-Owner settled scope (2026-11-10): 'Replace agent probes; preserve CI coverage (Recommended)'. Use /browse for agent-driven UI inspection, screenshots, DEV smoke/visual QA; remove reliance on custom agent probes. Existing CI browser regressions remain unchanged until each has a verified coverage-preserving replacement; retiring the whole CI suite is NOT scope. No weakening saved-scale/share-link safety, exact-head validate/freshreview/served verification/owner-deviceQA. Do not claim /browse assertions and unit tests reproduce a deterministic sync race or native Safari behavior without proof. A missing-tool gap is visible, not license to fall back to custom CDP or waive a check.
+Produce or refine docs/plans/2026-11-10-browse-first-agent-qa.md directly.
+Do not invoke /reviewed-plan. Mode QUEUE; no activation, app/tests/CI/global edits,
+browser launches, installs, credentials, deployments or main merges.
 
-Evidence/source paths: baseline planningbranch /private/tmp/handpan-browse-first-plan-20261110 from c04290764292b8bcebc49ca33cc2dd216d75ebb9 (polish plan READY, no app implementation). Read repoCLAUDE.md, AGENTS.md, docs/testing/browser.md, tests/CONTRACT.md, .github/workflows/validate.yml, tests/helpers/cdp.js and docs/plans/2026-11-09-login-sync-ux-polish.md only as needed. Root/globalinstructions /Users/ray/.claude/CLAUDE.md already says usegstack/browse for allwebbrowsing; it resolves to /Users/ray/Projects/dotfiles/claude/CLAUDE.md. DOTFILESISDIRTY: claude/CLAUDE.md, claude/settings.json, codex/config.toml already modified byothers. Do NOTwrite/stash/reset/copysettingsorprintsecrets. Onlyinspect targetinstructionsection; refresh exactdiffapprovalagainst currentownedbase at futureexecution. /Users/ray/.codex/AGENTS.md and ~/.agents/AGENTS.md absent. Any new Codex-global adapter path/discovery is unverified until official/local documentation confirms; don'tclaim automaticloading or writeconfig now. Prefer onecanonical existingdotfilesrule withthin verifiedadapters; avoida newpolicylibrary/skillframework.
+Owner clarification 2026-11-10: this is a Codex-specific rule following Claude's
+existing /browse paradigm. Claude's instructions, configuration, skills and
+behavior must remain unchanged. Replace Codex-created agent probes, preserve
+existing CI coverage until replacements are separately verified. Prior Claude
+rule replacement proposal is withdrawn; historical prompt remains in git ed3bcaba.
 
-Read installed /Users/ray/.claude/skills/gstack/browse/SKILL.md and commandreference onlyasneeded, DON'Trunpreamble/setup/telemetry. It uses Aside first (realcookies/accounts) and supportedgstackheadlessfallback $B; saying 'noCDPanywhere' is incorrect. Aside executable not found onPATH in rootreadonlydiagnostic; browse/dist/browse fileexists. Installed/configured/authenticated/authorized/operational are separate: no browser invocation validated. Skill's actual contracts: own tabs/namedorigins; lookvsnonlocalmutationconsent perrun; credentials/OTP handledbyhuman notagent; no reading/printingtokens,cookies,localStorage; no broadlogout/deleteactions; artifact/screenshotsreview; Asideexit0notproof, requires GSTACK_STEP_OK/noerror; fallbackdifferent persistenttab lifecycle/noinheritedcookies. No session/cookieimport underAFK alone. Describe browser scheduling based on actual sharedsession/resource, not an assumption that alltoolscontend identically; do not circumvent repo's currenthostlease before reviewedrulechange.
+Read AGENTS.md, CLAUDE.md, tests/CONTRACT.md, docs/testing/browser.md, installed
+~/.claude/skills/gstack/browse/SKILL.md and required references. Use one thin
+Codex-only adapter referring to that canonical skill; no copied/forked skill or
+custom CDP/Playwright/Puppeteer/profiling framework. Installed definitions and
+binary existence are not operational proof. Do not run gstack setup/telemetry
+while merely inspecting definitions for this plan.
 
-Session evidence: two stalled ad-hoc editor-mutation commands in wt-u2g used BSDsed \S toextractselector; actualNodefilterwaswhole '# suite:' header, not intendedtest; rawforloop bypassed existing outertimeout (timeout170onlypriorharness); summarygrep hidoutput. ExactNode/CDPawaitUNPROVEN. This is NOT proven frameworkfailure or appregression. Ownerauthorizedstops; currentworktreeclean afterownmutantcleanup. Root's temporary servedDEV3 script reusedexistingCDPhelper+suitehealthrunner and actuallypassed3/3 in1.52s oncebrowserfree, matchingservedbytes; no realbackend/phoneproof. Prioroverengineeringpromptperformanceinfrastructure ishistorical and banned byAGENTS. Durable receipts on PR1003 comment6753288695 and TRI28 lifecycle; tempfilesnonportable. Distinguish original existingrepository infrastructure from Codex-authored additions using read-only gitlog/blame ifattribution matters; don't call allCDP 'builtbyCodex'. No newrootcauserepro/browserrun needed for thisplan.
+Use official OpenAI guidance on Codex AGENTS.md discovery, fetched before making
+path/precedence claims: https://learn.chatgpt.com/docs/agent-configuration/agents-md .
+Verify effective CODEX_HOME and overrides locally without exposing environment
+secrets. Proposed canonical source ~/Projects/dotfiles/codex/AGENTS.md and safe
+link $CODEX_HOME/AGENTS.md; fresh-session loading still needs proof.
 
-Deliver ONLY docs/plans/2026-11-10-browse-first-agent-qa.md in suppliedplanningWT. Keep ~150-200lines executable. Include:
-- Goal/knownfacts vsunknowns/ownerdecision; exactshort PROPOSED global rule, notcurrentlyactive. /browse-first agentQA; no customCDP/Playwright/Puppeteer drivers, ad-hoc probes, timing/profilerinfrastructure bydefault; preserve CI unless reviewed replacement; supported /browse toolingevidence/humanboundaries and no silentfallback; report missingtools/blockers.
-- Inventory/mapping categories: tempservedprobe retiredasworkflowdependency butretain historicalevidence; existingtests/helpers, suites, CI andprotectedperformancegates retained; repo browser runbook andAGENTS routing needfutureexactapproved amendment; loginpolishplan references needtargeted futureupdate, no cosmetic allplans rewrite; globaldotfilescanonicalrule+minimalharnessadapterpendingverifieddiscovery. Do notdeletefiles withoutusage/coverageaudit.
-- Proposal locations exactpaths, currentpurpose, sourceauthority, proposedminimaldiff/text, scope, approval, tests androllback. EveryCLAUDE.md editneeds exactownerapproval; queuedrequestisnotthatapproval. Dotfilesdirtycollision stop, no automaticstash.
-- Capability acceptance cases forsupported /browse: realpageopen/screenshot/console, dialog/keyboard/viewport asverifiedsupported, servingrevision verification supplementedread-onlyGit/HTTP butnot replacingbrowsercheck, missingtool/buildneeded, brokenstep despiteexit0, staleelementrefs, multiagenttab ownership, user session privacy, realOTP/mutationrequiresconsent, backgroundjob/timeouts/cleanup, fallbackheadlesslimitations. No runtimecapabilityclaim fromdefinition/binaryexists. Protected deterministicrace/fault tests remain CI, no /browse duplicationorunsafe eval ofrealstorage.
-- File-owned stages/swarmshapewheremultipleboundaries actuallyindependent: localdefinition/readiness+coverageaudit -> exactpatchapproval -> global/reporoutingadaptation -> safe localfixture validation+freshharnessdiscovery -> owner-approved realDEVsmoke -> optional auditretirement. Do NOTimplement any stage now. Crossrepo globalpilot scopedHandpan, noexpanded fleet rollout withoutevidence/approval. Risks/failurefallback/rollback and handofftrigger. Minimal acceptancecriteria withpass/fail, no numeric near10claim, no newbenchmarkframework. One independentengineering/workflowreviewrequired, appdesignreviewnotneededbecause noappUIchange; doesnotwaive futureUIreview.
-- TrackasnewqueuedTRIworkstream with stableKey handpan-cards#browse-first-validation, relationTRI28/TRI23 (do notunpauseTRI23), no duplicationexistingissues. Trigger: afterClaudehandoff+explicitexecutionapproval, notautomaticblocker toauthorizedloginpolish. Planningstop, no newglobal rule inforce, noapp/test edits.
+Dotfiles contains unrelated dirty Claude/config changes. Its installer and
+post-merge hook can rewrite Claude config/install tools; do not run them, or
+pull/merge as an activation shortcut. Exclude all Claude/shared setup files.
+Any later need to touch CLAUDE.md requires separate exact owner approval.
+
+Evaluate actual supported Codex host invocation of Claude's skill without
+impersonation, invented flags or dropped preamble/consent/evidence requirements.
+Aside real-session and supported headless fallback have different lifecycle,
+auth and evidence contracts. Preserve human OTP, nonlocal mutation consent,
+owned tabs, privacy, sentinel/raw evidence, inspected screenshots and cleanup.
+Unsupported host/runtime capability blocks dependent QA; no custom fallback.
+Keep deterministic race/CI/browser regression, locale/fit and phone gates intact.
+
+Record verified command defects (BSD sed selector + unbounded ad-hoc loop) without
+claiming the unknown Node/CDP wait or framework root cause was solved. No extra
+root-cause/browser reproduction is needed for this queued policy proposal.
+
+Plan shape: exact inactive Codex-only rule; source-backed evidence; minimum file
+map and exclusions; independent inventory/coverage lanes; scoped Handpan pilot
+using explicit session brief before global changes; fresh Codex vs unchanged
+Claude compatibility/discovery checks; global Codex-only rollout after pilot and
+exact approval; owner-approved DEV actions; rollback of owned Codex files only.
+No shared AGENTS/runbook/polish-plan behavioral changes; report conflicts.
+
+Frozen pass/fail rubric: Codex-only scope, unchanged Claude, DRY canonical skill,
+verified instruction-discovery facts, supported invocation/evidence boundaries,
+retained safety/CI/device coverage, scoped pilot before rollout, reversible
+ownership and fresh-session pickup. Fresh independent engineering/workflow
+review after revision; no numeric quality claim or self-review as independence.
+
+Track existing TRI-72, stable Key handpan-cards#browse-first-validation; do not
+create another issue or unpause TRI-23. Root/integrator alone writes Linear.
+Stop at independently reviewed queued plan, with runtime readiness unvalidated.
