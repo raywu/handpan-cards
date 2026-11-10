@@ -1,0 +1,15 @@
+# kills: polish clearing a message must repaint the live status
+# suite: node --test --test-name-pattern an.error.outranks.routine.repaint tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20530,7 +20530,7 @@ function syncCtx() {
+ function syncSay(key, vars, field) {
+   syncMsg = key ? { key, vars } : null;
+   syncField = key && field ? field : null;
+-  syncPaint();
++  if (key) syncPaint();
+ }
+ function syncStatus(kind) {
+   syncSyncing = kind === "syncing";

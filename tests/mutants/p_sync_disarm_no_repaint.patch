@@ -1,0 +1,15 @@
+# kills: polish deletion expiry must repaint and restore the status
+# suite: node --test --test-name-pattern arming.Delete.account.announces tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20826,7 +20826,7 @@ async function syncDeleteAccount() {
+   if (!syncStill(scope)) return;
+   const sc = scope.sidecar;
+   if (!syncDeleteArmed) {
+-    syncDeleteArmed = setTimeout(() => { syncDeleteArmed = null; syncPaint(); }, 6000);
++    syncDeleteArmed = setTimeout(() => { syncDeleteArmed = null; }, 6000);
+     syncPaint();
+     return;
+   }

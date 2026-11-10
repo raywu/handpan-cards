@@ -1,0 +1,15 @@
+# kills: polish busy panel sets aria-busy
+# suite: node --test --test-name-pattern sending.+signing.+resending tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20705,7 +20705,7 @@ function syncPaint() {
+   set("sync-out", "sync.signOut"); set("sync-delete", syncDeleteArmed ? "sync.deleteConfirm" : "sync.delete");
+   if (panel) {
+     panel.setAttribute("aria-label", t("sync.title"));
+-    if (syncBusy) panel.setAttribute("aria-busy", "true"); else panel.removeAttribute("aria-busy");
++    panel.removeAttribute("aria-busy");
+   }
+   syncEl("sync-form").hidden = !!sc;
+   syncEl("sync-signed").hidden = !sc;
