@@ -8,11 +8,11 @@ diff --git a/index.html b/index.html
 @@ -20539,9 +20539,9 @@ function syncStatus(kind) {
  }
  function syncLiveMessage(sc) {
-   if (syncDeleteArmed) return { key: "sync.deleteArmed" };
--  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
+   if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
+-  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0 && !(sc && (syncMsg.key === "sync.sent" || syncMsg.key === "sync.signedOutDone"))) return syncMsg;
    if (!sc) return null;
    if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
-+  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
++  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0 && !(sc && (syncMsg.key === "sync.sent" || syncMsg.key === "sync.signedOutDone"))) return syncMsg;
    if (sc.pending) return { key: "sync.status.pending" };
    if (sc.syncedAt) return { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
    return null;
