@@ -7,7 +7,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -20530,7 +20530,7 @@ function syncCtx() {
  function syncSay(key, vars, field) {
-   syncMsg = key ? { key, vars } : null;
+   syncMsg = key ? { key, vars, signedIn: !!syncLoad() } : null;
    syncField = key && field ? field : null;
 -  syncPaint();
 +  if (key) syncPaint();

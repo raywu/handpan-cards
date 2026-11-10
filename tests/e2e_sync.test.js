@@ -635,4 +635,114 @@ function run() {
     assert.strictEqual(await q("#backup-intro", `$$.textContent`), "Keep a separate copy of your saved scale links, such as in Notes or an email to yourself.");
     assert.ok(!/only in this browser/i.test(await q("#backup-panel", `$$.textContent`)));
   });
+
+  // ---- state-bound messages and flags across a sign-in flip (regroup subplan, TRI-28) ----
+  const B_USER = "22222222-2222-4222-8222-222222222222";
+  const bSidecar = over => JSON.stringify({ v: 1, project: PROJECT, userId: B_USER, email: "b@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, syncedAt: Date.now(), ...over });
+  const bSignIn = (lock, over = {}) => frameJs(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar(over))});${lock ? " syncStartLock();" : ""}`);
+  const bSignOut = () => frameJs(`localStorage.removeItem(${JSON.stringify(KEY)});`);
+  const waitSigned = on => b.waitFor(`document.getElementById("sync-signed").hidden === ${!on} && document.getElementById("sync-form").hidden === ${on}`, { label: on ? "the account view" : "the sign-in form" });
+  const holderIs = async holder => {
+    await b.waitFor(`syncHolder === true || document.getElementById("tabB").contentWindow.eval("syncHolder") === true`, { label: "a lock holder" });
+    assert.strictEqual(await b.eval(`return syncHolder;`), holder, holder ? "this tab holds the lock" : "the other tab holds the lock");
+  };
+
+  test("two tabs: a state flip in the other tab drops this tab's state-bound message and flags", async () => {
+    for (const holder of [true, false]) {
+      for (const key of ["sync.err.badCode", "sync.err.expired", "sync.err.badEmail", "sync.err.sendFailed", "sync.err.rateLimited", "sync.err.offline", "sync.sent", "sync.signedOutDone"]) {
+        const row = (holder ? "holder " : "non-holder ") + key;
+        await fresh();
+        await openFrame();
+        await openSync();
+        await b.eval(`syncEmail = "old@example.test"; syncStep = "code"; syncSay(${JSON.stringify(key)}, { email: "old@example.test" });`);
+        const old = await msg();
+        assert.ok(old.length > 0, row);
+        await bSignIn(!holder);
+        await waitSigned(true);
+        await holderIs(holder);
+        await b.waitFor(`/^Account synced at /.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
+        await bSignOut();
+        await waitSigned(false);
+        assert.notStrictEqual(await msg(), old, row + ": the message does not come back after the flip back");
+        assert.strictEqual(await q("#sync-step-code", `$$.hidden`), true, row + ": no code step for the old address");
+        assert.strictEqual(await q("#sync-step-email", `$$.hidden`), false, row);
+      }
+      for (const key of ["sync.err.deleteFailed", "arm"].concat(holder ? ["sync.err.cap", "sync.err.rate"] : [])) {
+        const row = (holder ? "holder " : "non-holder ") + key;
+        await fresh();
+        await openFrame();
+        await bSignIn(!holder);
+        await waitSigned(true);
+        await holderIs(holder);
+        await openSync();
+        if (key === "arm") {
+          await b.click("#sync-delete");
+          await b.waitFor(`!!syncDeleteArmed`, { label: row + " armed" });
+        } else await b.eval(`syncSay(${JSON.stringify(key)});`);
+        const old = await msg();
+        await bSignOut();
+        await waitSigned(false);
+        assert.notStrictEqual(await msg(), old, row + ": not shown signed out");
+        await bSignIn(false);
+        await waitSigned(true);
+        assert.notStrictEqual(await msg(), old, row + ": not shown after signing in again");
+        assert.strictEqual(await q("#sync-delete", `$$.textContent`), "Delete account", row + ": not armed after signing in again");
+      }
+    }
+  });
+
+  test("two tabs: a holder's failed first sync after a state flip shows pending, not the old signed-out error", async () => {
+    await fresh();
+    await openFrame();
+    await openSync();
+    await b.eval(`syncSay("sync.err.signedOut");`);
+    const old = await msg();
+    await failFetch("/rest/v1/saved_scales", 500);
+    await bSignIn(false, { first: true, syncedAt: null });
+    await waitSigned(true);
+    await holderIs(true);
+    await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).pending === true || document.getElementById("sync-msg").textContent === "Changes waiting to sync"`, { timeout: 8000, label: "the failed first sync" });
+    await sleep(200);
+    await restoreFetch();
+    assert.notStrictEqual(await msg(), old);
+    assert.match(await msg(), /^(Changes waiting to sync|Syncing…)$/);
+  });
+
+  const gateFail = async (frag, status) => {
+    await b.eval(`window.__orig = window.__orig || window.fetch; window.__gated = 0; window.fetch = function (u, o) { if (String(u).indexOf(${JSON.stringify(frag)}) >= 0) return new Promise(function (res) { window.__gate = function () { res({ status: ${status}, ok: false, json: function () { return Promise.resolve(null); } }); }; window.__gated++; }); return window.__orig(u, o); };`);
+  };
+
+  test("two tabs: a send, verify or resend that completes after a state flip changes nothing", async () => {
+    for (const kind of ["send", "verify-fail", "verify-ok", "resend"]) {
+      await fresh();
+      await openFrame();
+      await openSync();
+      await type("sync-email", EMAIL);
+      if (kind !== "send") {
+        await b.click("#sync-send");
+        await b.waitFor(`!document.getElementById("sync-step-code").hidden`, { label: kind + " code step" });
+      }
+      const sent = await b.eval(`return t("sync.sent", { email: ${JSON.stringify(EMAIL)} });`);
+      if (kind === "send") { await gateFetch("/auth/v1/otp"); await b.click("#sync-send"); }
+      else if (kind === "resend") { await b.eval(`syncResendAt = Date.now() - 1; syncPaintResend();`); await gateFetch("/auth/v1/otp"); await b.click("#sync-resend"); }
+      else {
+        await type("sync-code", "123456");
+        if (kind === "verify-fail") await gateFail("/auth/v1/verify", 400); else await gateFetch("/auth/v1/verify");
+        await b.click("#sync-verify");
+      }
+      await b.waitFor(`window.__gated === 1`, { label: kind + " held" });
+      await bSignIn(true);
+      await waitSigned(true);
+      await releaseGate();
+      await b.waitFor(`!syncBusy`, { label: kind + " completed" });
+      await sleep(200);
+      assert.notStrictEqual(await q("#sync-panel", `$$.getAttribute("aria-busy")`), "true", kind);
+      assert.ok(!/code|sent to/i.test(await msg()), kind + ": " + await msg());
+      assert.notStrictEqual(await msg(), sent, kind);
+      assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).userId;`), B_USER, kind + ": the other tab's session stands");
+      await bSignOut();
+      await waitSigned(false);
+      assert.notStrictEqual(await msg(), sent, kind);
+    }
+  });
 }

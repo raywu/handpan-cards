@@ -20529,7 +20529,7 @@ function syncCtx() {
   };
 }
 function syncSay(key, vars, field) {
-  syncMsg = key ? { key, vars } : null;
+  syncMsg = key ? { key, vars, signedIn: !!syncLoad() } : null;
   syncField = key && field ? field : null;
   syncPaint();
 }
@@ -20538,9 +20538,10 @@ function syncStatus(kind) {
   if (kind === "synced" && syncMsg && syncMsg.key.indexOf("sync.err.") === 0) { syncMsg = null; syncField = null; }
   syncPaint();
 }
+const syncMsgFits = (msg, sc) => !msg || msg.signedIn == null || msg.signedIn === !!sc;
 function syncLiveMessage(sc) {
   if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
-  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0 && !(sc && (syncMsg.key === "sync.sent" || syncMsg.key === "sync.signedOutDone"))) return syncMsg;
+  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
   if (!sc) return null;
   if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
   if (sc.pending) return { key: "sync.status.pending" };
@@ -20691,6 +20692,9 @@ function syncPaint() {
   const open = syncEl("sync-open");
   if (!open) return;
   const sc = syncLoad();
+  if (!syncMsgFits(syncMsg, sc)) { syncMsg = null; syncField = null; }
+  if (!sc && syncDeleteArmed) { clearTimeout(syncDeleteArmed); syncDeleteArmed = null; }
+  if (sc && syncStep !== "email") { syncStep = "email"; syncEmail = ""; }
   const show = syncActive();
   open.hidden = !show;
   open.textContent = t(sc ? "sync.menuAccount" : "sync.menu");
@@ -20776,9 +20780,11 @@ async function syncSubmit() {
   if (syncStep === "email") {
     const input = syncEl("sync-email"), email = String(input.value || "").trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) { syncSay("sync.err.badEmail", undefined, "sync-email"); input.focus(); return; }
+    const was = !!syncLoad();
     syncBusy = true; syncBusyKind = "send"; syncPaint();
     const failure = await syncSendCode(email);
     syncBusy = false; syncBusyKind = null;
+    if (!!syncLoad() !== was) { syncPaint(); return; }
     if (failure) { syncSay(failure, undefined, "sync-email"); input.focus(); return; }
     syncEmail = email; syncStep = "code"; syncResendAt = Date.now() + SYNC_RESEND_MS;
     syncSay("sync.sent", { email }); syncFocusFor(null);
@@ -20786,9 +20792,11 @@ async function syncSubmit() {
   }
   const input = syncEl("sync-code"), token = String(input.value || "").trim();
   if (!/^[0-9]{6}$/.test(token)) { syncSay("sync.err.badCode", undefined, "sync-code"); input.focus(); return; }
+  const was = !!syncLoad();
   syncBusy = true; syncBusyKind = "verify"; syncPaint();
   const r = await syncFetch("/auth/v1/verify", { method: "POST", body: { email: syncEmail, token, type: "email" } });
   syncBusy = false; syncBusyKind = null;
+  if (!!syncLoad() !== was) { syncPaint(); return; }
   if (!r.ok || !r.json || !r.json.access_token || !r.json.user) {
     const expired = r.json && (r.json.error_code === "otp_expired" || r.json.msg_code === "otp_expired");
     syncSay(expired ? "sync.err.expired" : syncAuthError(r, "sync.err.badCode"), undefined, "sync-code");
@@ -20803,9 +20811,11 @@ async function syncSubmit() {
 }
 async function syncResend() {
   if (syncBusy || Date.now() < syncResendAt) return;
+  const was = !!syncLoad();
   syncBusy = true; syncBusyKind = "resend"; syncPaint();
   const failure = await syncSendCode(syncEmail);
   syncBusy = false; syncBusyKind = null;
+  if (!!syncLoad() !== was) { syncPaint(); return; }
   if (failure) { syncSay(failure, undefined, "sync-code"); const code = syncEl("sync-code"); if (code) code.focus(); return; }
   syncResendAt = Date.now() + SYNC_RESEND_MS;
   syncSay("sync.sent", { email: syncEmail });

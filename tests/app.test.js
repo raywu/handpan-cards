@@ -21966,6 +21966,16 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
     assert.strictEqual(app.els["sync-msg"].textContent, "Syncing\u2026", "clearing the error restores the live status");
   });
 
+  test("syncMsgFits: a message shows only in the sign-in state it was set in; untagged fits both", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    for (const [msg, sc, fits] of [["null", "null", true], ["null", "{}", true], ["{key:'k',signedIn:true}", "{}", true], ["{key:'k',signedIn:true}", "null", false], ["{key:'k',signedIn:false}", "null", true], ["{key:'k',signedIn:false}", "{}", false], ["{key:'k',signedIn:null}", "null", true], ["{key:'k',signedIn:null}", "{}", true]]) {
+      assert.strictEqual(app.get(`syncMsgFits(${msg}, ${sc})`), fits, msg + " / " + sc);
+    }
+    app.run("syncSay('sync.err.offline')");
+    assert.strictEqual(app.get("syncMsg.signedIn"), true, "syncSay tags the message with the current sign-in state");
+  });
+
   test("an account with no successful sync yet shows no timestamp", async () => {
     const app = await fixture();
     await app.getAsync("syncKick(false)");
