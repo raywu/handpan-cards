@@ -581,6 +581,20 @@ function run() {
     assert.strictEqual(await q("#sync-open", `$$.textContent`), "Sign in to sync");
   });
 
+  test("polish: signing out while Delete account is armed says signed out, and a bad address then shows its own error", async () => {
+    await signedSynced();
+    await b.click("#sync-delete");
+    await b.waitFor(`!!syncDeleteArmed`, { label: "armed" });
+    await b.click("#sync-out");
+    await b.waitFor(`localStorage.getItem(${JSON.stringify(KEY)}) === null`, { label: "the sidecar removed" });
+    assert.strictEqual(await msg(), "Signed out. Your scales remain on this device.");
+    assert.strictEqual(await b.eval(`return syncDeleteArmed;`), null, "the arm is cleared with the session");
+    await type("sync-email", "nope");
+    await b.click("#sync-send");
+    assert.strictEqual(await msg(), "Enter a valid email address.");
+    assert.strictEqual(await q("#sync-email", `$$.getAttribute("aria-invalid")`), "true");
+  });
+
   test("polish: a 254-character address wraps without clipping at 320px and 380px, with the consent buttons inside", async () => {
     const long = "a".repeat(64) + "@" + ["b".repeat(63), "c".repeat(63), "d".repeat(58), "te"].join(".");
     assert.strictEqual(long.length, 254);

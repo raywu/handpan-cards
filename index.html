@@ -20506,6 +20506,7 @@ function syncRemove(scope, note) {
   try { localStorage.removeItem(SYNC_KEY); }
   catch (e) { scope.invalid = true; return false; }
   scope.invalid = true;
+  clearTimeout(syncDeleteArmed); syncDeleteArmed = null;
   syncStep = "email"; syncSyncing = false;
   syncSay(note || null);
   return true;
@@ -20548,6 +20549,7 @@ function syncLiveMessage(sc) {
 }
 function syncDrop(note) {
   try { localStorage.removeItem(SYNC_KEY); } catch (e) {}
+  clearTimeout(syncDeleteArmed); syncDeleteArmed = null;
   syncStep = "email"; syncSyncing = false;
   syncSay(note || null);
 }
