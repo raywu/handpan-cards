@@ -360,6 +360,9 @@ function run() {
     assert.strictEqual(await msg(), "Changes waiting to sync", "a cached Account synced message must not mask pending work");
     await setSidecar({ pending: false, first: true });
     assert.strictEqual(await msg(), "Syncing\u2026");
+    await setSidecar({ pending: true, first: true });
+    assert.strictEqual(await msg(), "Syncing\u2026", "a live first pull outranks pending");
+    await setSidecar({ pending: false, first: true });
     assert.ok(!/Account synced/.test(await accountText()), "signed in is not synced");
     await b.eval(`const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); s.first = false; s.pending = false; delete s.syncedAt; localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s)); syncMsg = null; syncPaint();`);
     assert.ok(!/synced|\d:\d\d/i.test(await msg()), "no timestamp before a successful sync: " + await msg());
