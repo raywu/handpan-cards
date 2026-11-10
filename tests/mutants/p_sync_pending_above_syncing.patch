@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20541,8 +20541,8 @@ function syncLiveMessage(sc) {
-   if (syncDeleteArmed) return { key: "sync.deleteArmed" };
-   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
+@@ -20542,8 +20542,8 @@ function syncLiveMessage(sc) {
+   if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
+   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0 && !(sc && (syncMsg.key === "sync.sent" || syncMsg.key === "sync.signedOutDone"))) return syncMsg;
    if (!sc) return null;
 -  if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
    if (sc.pending) return { key: "sync.status.pending" };
