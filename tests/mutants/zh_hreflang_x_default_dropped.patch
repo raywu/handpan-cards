@@ -1,0 +1,15 @@
+# kills: test_hreflang_cluster_is_reciprocal_on_every_member
+# suite: python3 -m unittest -k test_hreflang_cluster_is_reciprocal_on_every_member tests.test_zh_scale_pages
+# A hreflang cluster loses its x-default member, so a searcher with no matching language has no fallback page.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -242,7 +242,7 @@
+ def hreflang(rel, scripts):
+     if not scripts:
+         return ""
+-    pairs = [("en", SITE + rel)] + [(sc, SITE + prefix(sc) + rel) for sc in scripts] + [("x-default", SITE + rel)]
++    pairs = [("en", SITE + rel)] + [(sc, SITE + prefix(sc) + rel) for sc in scripts] + []
+     return "".join('<link rel="alternate" hreflang="%s" href="%s">\n' % pair for pair in pairs)
+ 
+ 
