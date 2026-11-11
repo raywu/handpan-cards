@@ -664,6 +664,17 @@ function run() {
     else { await sleep(200); assert.strictEqual(await b.eval(`return syncHolder;`), false, "the other tab holds the lock"); }
   };
 
+  test("E-export-hint: with the export page open, another tab signing in hides the hint and signing out shows it", async () => {
+    await fresh();
+    await openFrame();
+    await b.eval(`openSubpage("export");`);
+    assert.strictEqual(await q("#backup-signin", `$$.hidden`), false);
+    await bSignIn("B");
+    await b.waitFor(`document.getElementById("backup-signin").hidden === true`, { label: "hint hidden once signed in" });
+    await bSignOut();
+    await b.waitFor(`document.getElementById("backup-signin").hidden === false`, { label: "hint shown once signed out" });
+  });
+
   test("two tabs: a state flip in the other tab drops this tab's state-bound message and flags", async () => {
     for (const holder of [true, false]) {
       for (const key of ["sync.err.badCode", "sync.err.expired", "sync.err.badEmail", "sync.err.sendFailed", "sync.err.rateLimited", "sync.err.offline", "sync.sent", "sync.signedOutDone"]) {
