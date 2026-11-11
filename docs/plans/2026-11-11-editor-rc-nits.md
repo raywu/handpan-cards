@@ -3,7 +3,8 @@
 Plan: `docs/plans/2026-11-11-editor-rc.md` section 6, P0 step 4. Every row has an owner or lane; a row without one blocks P0 acceptance.
 Status key: CLOSED = landed in the RC base, evidence cited; OPEN = still to do, lane named; MOOT = disappears when the named lane deletes the code; OWNER = needs the owner's eyes.
 Sources: `docs/plans/2026-11-06-scale-editor-u2-split.md` review logs, `docs/plans/2026-11-07-editor-v4-gap.md`, `docs/plans/2026-11-08-editor-panel-simplify.md`, PR bodies #904-#994. PR comments and reviews on all 19 PRs hold no text.
-Lanes: U2i, U2j-1, U2j-2, PL-a, P1, N1, I1, PL-b, D1 are the plan's lanes; "nit lane" is the W5 lane.
+Owner update 2026-11-11: PL-b (unified #1 toggle) is PAUSED and out of this RC; its nits are marked PAUSED, not assigned; phone QA uses the PL-b-deferred variant (item 8b).
+Lanes: U2i, U2j-1, U2j-2, PL-a, P1, N1, I1, D1 are the plan's lanes; "nit lane" is the W5 lane.
 
 | # | Source | Nit | Status | Owner / lane |
 |---|---|---|---|---|
@@ -55,7 +56,7 @@ Lanes: U2i, U2j-1, U2j-2, PL-a, P1, N1, I1, PL-b, D1 are the plan's lanes; "nit 
 | 46 | #988 | Octave buttons at 375px for a wide range | OPEN, fit check | I1 (real-font fit, 375/820) |
 | 47 | #982 U2g nit | Undo/redo during live drag | CLOSED (U2h-1 `editorUndoAllowed`) | none |
 | 48 | #992 | Delete nits N1-N3 and drag-restore guard | CLOSED in #992 (merged into base) | none |
-| 49 | Panel plan D1a | "#1" hidden on profile | MOOT (superseded by Q8 + PL-a/PL-b) | PL-a, PL-b |
+| 49 | Panel plan D1a | "#1" hidden on profile | PAUSED (PL-b paused by owner and out of this RC; Q8 same-controls part goes to PL-a) | PL-a for Q8; the PL-b part is paused, not assigned |
 | 50 | Panel plan Q6 | Neotone wording check, 8 languages | OPEN | before P1 (W3); owner of the check: P1 |
 | 51 | #994 (Mirror/Rotate) | Content to be removed (Q9/Q10: Rotate and Mirror dropped) | OPEN | PL-a (removal); #994 stays open |
 | 52 | #982 | `ONE_PANEL` toggle and legacy UI must not ship | OPEN | U2j-1 / U2j-2; U2i migrates tests first |
