@@ -11328,7 +11328,7 @@ describe("about overlay", () => {
       "window.addEventListener = function (t, f) { (window.__w[t] = window.__w[t] || []).push(f); return __a.apply(this, arguments); };</script>");
     const app = boot({ html });
     openAboutFrom(app);
-    app.run("const __q = document.querySelector.bind(document); document.querySelector = (s) => (s === '.abouthead' ? { offsetHeight: 91 } : __q(s));");
+    app.run("const __q = document.querySelector.bind(document); document.querySelector = (s) => (s === '#about .abouthead' ? { offsetHeight: 91 } : __q(s));");
     assert.notStrictEqual(headVar(app), "91px", "the head height was already 91px, so a resize proves nothing");
     assert.strictEqual(app.get("(window.__w.resize || []).length"), 1, "no resize listener registered");
     app.run("window.__w.resize.forEach((f) => f({ type: 'resize' }))");
@@ -15512,7 +15512,7 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const syncKeys=["menu","menuAccount","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","resendIn","sent","domainWarn","status.syncing","status.synced","status.pending","addLocal","addLocalYes","addLocalNo","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.neo.mirror","editor.neo.mirror.aria","editor.neo.rotate_ccw","editor.neo.rotate_ccw.aria","editor.neo.rotate_cw","editor.neo.rotate_cw.aria","editor.neo.say_mirror","editor.neo.say_rotate_cw","editor.neo.say_rotate_ccw","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.addLocal"];
+    const syncKeys=["entryErr","entrySignIn","entrySub","pageSignIn","pageAccount","pageBack","resendAt","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","sent","domainWarn","status.syncing","status.synced","status.pending","addLocal","addLocalYes","addLocalNo","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.neo.mirror","editor.neo.mirror.aria","editor.neo.rotate_ccw","editor.neo.rotate_ccw.aria","editor.neo.rotate_cw","editor.neo.rotate_cw.aria","editor.neo.say_mirror","editor.neo.say_rotate_cw","editor.neo.say_rotate_ccw","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","signIn"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.addLocal"];
     assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2) and the thirty-eight sync.* keys (login sync lane A2, polished by TRI-28)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
@@ -18738,11 +18738,11 @@ describe("SHC asynchronous LINK ownership", () => {
 
 test("NS1: About links underline at 1.5px and 2.5px on hover, like the scale pages", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const rest = /#about a\{([^}]*)\}/.exec(html);
+  const rest = /#about a,#account a,#export a\{([^}]*)\}/.exec(html);
   assert.ok(rest, "no #about a rule");
   assert.match(rest[1], /text-decoration-thickness:\s*1\.5px/);
   assert.match(rest[1], /text-underline-offset:\s*3px/);
-  assert.match(html, /#about a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
+  assert.match(html, /#about a:hover,#account a:hover,#export a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
 });
 
 describe("NS: native share", () => {
@@ -20132,7 +20132,7 @@ describe("FG: field guide light ground for the menu, forms and About (phase 2)",
 
   test("FG: every selector is scoped to the panel, sheet or About", () => {
     for (const r of rules()) for (const s of r.sel)
-      assert.match(s, /^(#settings-panel|#scale-sheet|\.sheetsurf|#about|\.abouthead|@)/, `unscoped: ${s}`);
+      assert.match(s, /^(#settings-panel|#scale-sheet|\.sheetsurf|#about|#account|#export|\.abouthead|@)/, `unscoped: ${s}`);
   });
 
   test("FG: protected card, progression, badge and diagram selectors are never touched", () => {
@@ -20794,7 +20794,8 @@ describe("sync-apply", () => {
 describe("backup: back up saved scales", () => {
   const BK_KEY = "hpfc.backup.v1";
   const fsx = require("node:fs");
-  const open = (app) => { app.run("openPanel()"); app.els["backup-open"].click(); };
+  const open = (app) => { app.run("openPanel()"); app.els["backup-open"].click(); assert.strictEqual(app.get("subpage"), "export"); };
+  const closePage = (app) => app.els["export-close"].click();
   const textOf = (app) => String(app.els["backup-text"].value);
   const linksOf = (text) => text.split("\n").filter((l) => /#s=/.test(l)).map((l) => l.trim());
   const clip = (app) => {
@@ -20806,25 +20807,26 @@ describe("backup: back up saved scales", () => {
 
   test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
     const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>Back up scales<\/button>/,
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*aria-haspopup="dialog"[^>]*>Export scale links<\/button>/,
       "the opener is not right after the reset button, with its label");
-    assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
+    assert.match(html, /<section id="export"[^>]*\bhidden\b[\s\S]*?<div[^>]*id="backup-panel"(?![^>]*\bhidden\b)[^>]*>/, "the panel sits inside the hidden export page and is not hidden itself");
     assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");
     const inputs = html.match(/<(input|textarea)\b[^>]*>/g).filter((tag) => /id="backup-/.test(tag));
     assert.ok(inputs.every((tag) => /\breadonly\b/.test(tag)), "a writable field in the backup panel is a paste box");
     const app = boot();
-    assert.strictEqual(app.els["backup-panel"].hidden, true);
+    assert.strictEqual(app.els["export"].hidden, true);
   });
 
-  test("opening and closing the panel toggles aria-expanded and writes nothing", async () => {
+  test("opening the export page pushes one #export entry and closing it pops it; nothing is written", async () => {
     const app = boot();
     const before = JSON.stringify(app.store);
     open(app);
-    assert.strictEqual(app.els["backup-panel"].hidden, false);
-    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "true");
-    app.els["backup-open"].click();
-    assert.strictEqual(app.els["backup-panel"].hidden, true);
-    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["export"].hidden, false);
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push").map((c) => c.url), ["#export"]);
+    closePage(app);
+    assert.strictEqual(app.els["export"].hidden, true);
+    assert.strictEqual(app.get("subpage"), null);
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "back").length, 1);
     assert.strictEqual(JSON.stringify(app.store), before);
   });
 
@@ -20833,32 +20835,32 @@ describe("backup: back up saved scales", () => {
     open(app);
     assert.strictEqual(textOf(app), "");
     for (const id of ["backup-copy", "backup-download", "backup-share"]) assert.strictEqual(app.els[id].disabled, true, id);
-    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to export yet.");
   });
 
-  test("an open backup panel is repainted when the menu reopens after a save", async () => {
+  test("the export page is repainted when it reopens after a save", async () => {
     const app = await durableBoot();
     open(app);
-    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
-    app.run("closePanel()");
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to export yet.");
+    closePage(app);
     await makeCustom(app);
     app.els["backup-text"].value = "";
-    app.els["backup-status"].textContent = "No saved scales to back up yet.";
-    app.run("openPanel()");
-    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    app.els["backup-status"].textContent = "No saved scales to export yet.";
+    open(app);
     assert.ok(linksOf(textOf(app)).length >= 1, "the list is still empty");
     assert.strictEqual(app.els["backup-copy"].disabled, false);
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
 
-  test("an open backup panel on desktop shows the new scale after a save", async () => {
+  test("the export page on desktop shows the new scale after a save", async () => {
     const app = await durableBoot();
     app.run("desktopMQ.matches = true");
     open(app);
-    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to export yet.");
+    closePage(app);
     await makeCustom(app);
-    assert.strictEqual(app.els["backup-panel"].hidden, false);
-    assert.ok(linksOf(textOf(app)).length >= 1, "the open list is stale after the save");
+    open(app);
+    assert.ok(linksOf(textOf(app)).length >= 1, "the list is stale after the save");
     assert.strictEqual(app.els["backup-copy"].disabled, false);
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
@@ -20960,7 +20962,7 @@ describe("backup: back up saved scales", () => {
     assert.deepStrictEqual(plain(app.get("savedState.entries.map(row=>row.record)")), records);
     assert.strictEqual(savedRaw(app), envelope, "the saved envelope did not change");
     assert.ok(records.every((r) => r.v === records[0].v));
-    assert.ok(app.get("/Last backed up/.test(document.getElementById('backup-last').textContent)"));
+    assert.ok(app.get("/Last exported/.test(document.getElementById('backup-last').textContent)"));
   });
 
   test("writing lastBackup does not change the migration or recovery state", async () => {
@@ -21895,10 +21897,16 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
 
   test("the English sync and backup copy is the plan's exact wording", () => {
     const expected = {
-      "sync.menu": "Sign in to sync",
-      "sync.menuAccount": "Account & sync",
       "sync.signedIn": "Signed in",
-      "sync.intro": "Sync saved scales across devices.",
+      "sync.intro": "Save your scales to your account to use them on any device.",
+      "sync.title": "Save scales to your account",
+      "sync.entrySignIn": "Sign in",
+      "sync.entrySub": "Save your scales",
+      "sync.entryErr": "Not saved to account",
+      "sync.pageSignIn": "Sign in",
+      "sync.pageAccount": "Account",
+      "sync.pageBack": "Back to the practice screen",
+      "sync.resendAt": "You can ask for a new code at {time}.",
       "sync.send": "Send code",
       "sync.sending": "Sending code\u2026",
       "sync.signIn": "Sign in",
@@ -21906,21 +21914,21 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       "sync.otherEmail": "Change email",
       "sync.resend": "Resend code",
       "sync.resending": "Resending code\u2026",
-      "sync.resendIn": "Resend in {s}s",
       "sync.sent": "Enter the code sent to {email}. Check spam too.",
-      "sync.status.syncing": "Syncing\u2026",
-      "sync.status.pending": "Changes waiting to sync",
-      "sync.status.synced": "Account synced at {time}",
+      "sync.status.syncing": "Saving to your account\u2026",
+      "sync.status.pending": "Changes not yet saved to your account",
+      "sync.status.synced": "Saved to your account at {time}",
       "sync.addLocalYes": "Add scales",
       "sync.addLocalNo": "Not now",
       "sync.signOut": "Sign out",
       "sync.signedOutDone": "Signed out. Your scales remain on this device.",
       "sync.delete": "Delete account",
-      "sync.deleteArmed": "Permanently deletes your account and synced scales. Copies on this device stay.",
+      "sync.deleteArmed": "Permanently deletes your account and the scales saved to it. Copies on this device stay.",
       "sync.deleteConfirm": "Confirm account deletion",
       "sync.err.deleteFailed": "Could not delete your account. Try again.",
-      "backup.open": "Back up scales",
-      "backup.intro": "Keep a separate copy of your saved scale links, such as in Notes or an email to yourself.",
+      "backup.open": "Export scale links",
+      "backup.intro": "A list of links you keep yourself.",
+      "backup.signIn": "To save scales automatically, sign in.",
     };
     for (const [key, value] of Object.entries(expected)) assert.strictEqual(en[key], value, key);
     assert.deepStrictEqual(en["sync.addLocal"], {
@@ -21941,7 +21949,7 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
 
   test("the markup keeps #sync-msg as the sole status region and drops #sync-last", () => {
     assert.ok(!/id="sync-last"/.test(html), "#sync-last is removed, not hidden");
-    const panel = html.slice(html.indexOf('id="sync-open"'), html.indexOf('id="backup-panel"'));
+    const panel = html.slice(html.indexOf('<section id="account"'), html.indexOf('<section id="export"'));
     assert.strictEqual((panel.match(/role="status"/g) || []).length, 1);
     assert.strictEqual((panel.match(/aria-live=/g) || []).length, 1);
     assert.match(panel, /<p[^>]*id="sync-msg"[^>]*>/);
@@ -21952,18 +21960,18 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
   test("a retained synced message never masks pending work, and clearing a message restores the live status", async () => {
     const app = await fixture();
     await app.getAsync("syncKick(false)");
-    assert.match(app.els["sync-msg"].textContent, /^(Account s|S)ynced at /, "precondition: a routine success is cached");
+    assert.match(app.els["sync-msg"].textContent, /^Saved to your account at /, "precondition: a routine success is cached");
     setSidecar(app, { pending: true });
     app.run("syncPaint()");
-    assert.strictEqual(app.els["sync-msg"].textContent, "Changes waiting to sync");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Changes not yet saved to your account");
     setSidecar(app, { pending: false, first: true });
     app.run("syncPaint()");
-    assert.strictEqual(app.els["sync-msg"].textContent, "Syncing\u2026");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Saving to your account\u2026");
     app.run("syncSay('sync.err.offline')");
     app.run("syncPaint()");
     assert.match(app.els["sync-msg"].textContent, /offline/, "a repaint keeps an error");
     app.run("syncSay(null)");
-    assert.strictEqual(app.els["sync-msg"].textContent, "Syncing\u2026", "clearing the error restores the live status");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Saving to your account\u2026", "clearing the error restores the live status");
   });
 
   test("syncMsgFits: a message shows only in the sign-in state it was set in; untagged fits both", async () => {
@@ -21987,14 +21995,155 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
   test("sync-msg stays the single place for the timestamp: nothing else carries it", async () => {
     const app = await fixture();
     await app.getAsync("syncKick(false)");
-    const time = /^Account synced at (.+)$/.exec(app.els["sync-msg"].textContent);
+    const time = /^Saved to your account at (.+)$/.exec(app.els["sync-msg"].textContent);
     assert.ok(time, app.els["sync-msg"].textContent);
     assert.ok(app.els["sync-account-email"], "the markup has #sync-account-email");
-    for (const id of ["sync-open", "sync-heading", "sync-account-email", "sync-ask-text"]) {
+    for (const id of ["sync-entry-main", "sync-entry-sub", "sync-heading", "sync-account-email", "sync-ask-text"]) {
       assert.ok(!app.els[id].textContent.includes(time[1]), id + " repeats the timestamp");
     }
-    assert.strictEqual(app.els["sync-open"].textContent, "Account & sync");
+    assert.strictEqual(app.els["sync-entry-main"].textContent, "a@b.test");
     assert.strictEqual(app.els["sync-heading"].textContent, "Signed in");
     assert.strictEqual(app.els["sync-account-email"].textContent, "a@b.test");
+  });
+});
+
+describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
+  const fsx = require("node:fs");
+  const pathx = require("node:path");
+  const html = fsx.readFileSync(pathx.join(__dirname, "..", "index.html"), "utf8");
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const KEY = "hpfc.sync.v1";
+  const sidecar = (extra) => JSON.stringify({ v: 1, project: PROJECT, userId: "11111111-1111-4111-8111-111111111111",
+    email: "pat@example.test", refresh: "r0", access: "a0", accessExp: Date.now() + 3600e3, cursor: 0,
+    base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, ...extra });
+  const mount = async ({ signedIn = true, extra = {}, href = DEV } = {}) => {
+    const app = boot({ origin: require("./helpers/sandbox.js").createOrigin(), href, locks: true, indexedDB: true, isSecureContext: true,
+      storage: signedIn ? { [KEY]: sidecar(extra) } : {} });
+    for (const id of [...html.matchAll(/id="(sync-[^"]+)"/g)].map((m) => m[1])) {
+      if (!app.els[id]) { app.els[id] = app.sandbox.document.createElement("div"); app.els[id].id = id; app.els[id].contains = () => false; }
+    }
+    app.run(`globalThis.__tracked = []; track = function (n, p) { globalThis.__tracked.push([n, p]); };
+      globalThis.fetch = async function (url) {
+        const path = String(url).replace(${JSON.stringify(PROJECT)}, "");
+        if (path.startsWith("/auth/v1/verify")) return { status: 200, ok: true, json: async () => ({ access_token: "a1", refresh_token: "r1", expires_in: 3600, user: { id: "22222222-2222-4222-8222-222222222222", email: "pat@example.test" } }) };
+        return { status: 200, ok: true, json: async () => (path.startsWith("/auth/v1/token") ? { access_token: "a1", refresh_token: "r1", expires_in: 3600 } : path.startsWith("/rest/v1/saved_scales") || path.endsWith("push_scales") ? [] : {}) };
+      };`);
+    await app.waitFor("booted === true", { timeout: 2000 });
+    return app;
+  };
+  const tracked = (app) => JSON.parse(JSON.stringify(app.get("globalThis.__tracked")));
+
+  test("the entry is a direct child of the settings panel, hidden in markup, with a dialog popup", () => {
+    assert.match(html, /<h2 id="settings-title"[^>]*>[^<]*<\/h2>\s*<button class="mode" type="button" id="sync-open" aria-haspopup="dialog" hidden>/);
+  });
+
+  test("signed out the entry says Sign in over Save your scales and is described by the subtext", async () => {
+    const app = await mount({ signedIn: false });
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-entry-main"].textContent, "Sign in");
+    assert.strictEqual(app.els["sync-entry-sub"].textContent, "Save your scales");
+    assert.strictEqual(app.els["sync-entry-sub"].hidden, false);
+    assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), "sync-entry-sub");
+  });
+
+  test("signed in the entry shows the email, drops the subtext and shows the error line only for cap and rate", async () => {
+    const app = await mount();
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-entry-main"].textContent, "pat@example.test");
+    assert.strictEqual(app.els["sync-entry-sub"].hidden, true);
+    assert.strictEqual(app.els["sync-entry-err"].hidden, true);
+    assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), null);
+    for (const key of ["sync.err.cap", "sync.err.rate"]) {
+      app.run(`syncSay(${JSON.stringify(key)}); syncPaint()`);
+      assert.strictEqual(app.els["sync-entry-err"].hidden, false, key);
+      assert.strictEqual(app.els["sync-entry-err"].textContent, "Not saved to account");
+      assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), "sync-entry-err");
+    }
+    app.run('syncSay("sync.err.offline"); syncPaint()');
+    assert.strictEqual(app.els["sync-entry-err"].hidden, true, "offline is not an entry error");
+  });
+
+  test("the account page pushes one #account entry and Back pops it", async () => {
+    const app = await mount();
+    app.run("syncPaint(); openPanel(); openSubpage(\"account\")");
+    assert.strictEqual(app.get("subpage"), "account");
+    assert.strictEqual(app.els["account"].hidden, false);
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push").map((c) => c.url), ["#account"]);
+    app.els["account-close"].click();
+    assert.strictEqual(app.els["account"].hidden, true);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1);
+  });
+
+  test("#account is ignored when sync is inactive (a production host)", async () => {
+    const app = boot({ href: "https://handpantheory.com/#account" });
+    assert.strictEqual(app.get("subpage"), null);
+    assert.strictEqual(app.els["account"].hidden, true);
+  });
+
+  test("#export opens the export page on any host", async () => {
+    const app = boot({ href: "https://handpantheory.com/#export" });
+    await app.waitFor("booted === true", { timeout: 2000 });
+    assert.strictEqual(app.get("subpage"), "export");
+    assert.strictEqual(app.els["export"].hidden, false);
+  });
+
+  test("a verified sign-in fires sign_in once with only the method", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('syncStep = "code"; syncEmail = "pat@example.test"');
+    app.els["sync-code"].value = "123456";
+    await app.getAsync("syncSubmit()");
+    assert.deepStrictEqual(tracked(app).filter((e) => e[0] === "sign_in"), [["sign_in", { method: "email" }]]);
+  });
+
+  test("no sign_in on a bad code, a resend, a cross-tab sign-in or a failed session write", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('syncStep = "code"; syncEmail = "pat@example.test"');
+    app.els["sync-code"].value = "12";
+    await app.getAsync("syncSubmit()");
+    app.run("syncResendAt = 0");
+    await app.getAsync("syncResend()");
+    app.run('localStorage.setItem(SYNC_KEY, ' + JSON.stringify(sidecar()) + '); syncPaint()');
+    assert.deepStrictEqual(tracked(app).filter((e) => e[0] === "sign_in"), []);
+    const failing = await mount({ signedIn: false });
+    failing.run('syncStep = "code"; syncEmail = "pat@example.test"; const __set = localStorage.setItem.bind(localStorage); localStorage.setItem = (k, v) => { if (k === SYNC_KEY) throw new Error("quota"); return __set(k, v); };');
+    failing.els["sync-code"].value = "123456";
+    await failing.getAsync("syncSubmit()");
+    assert.deepStrictEqual(tracked(failing).filter((e) => e[0] === "sign_in"), []);
+  });
+
+  test("the resend line shows a clock time, never a countdown, and the button keeps its label", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('syncStep = "code"; syncEmail = "pat@example.test"; syncResendAt = syncCeilMinute(Date.now() + 61000); syncPaint()');
+    assert.strictEqual(app.els["sync-resend"].textContent, "Resend code");
+    assert.strictEqual(app.els["sync-resend"].disabled, true);
+    assert.strictEqual(app.els["sync-resend-at"].hidden, false);
+    assert.match(app.els["sync-resend-at"].textContent, /^You can ask for a new code at \d/);
+    app.run("syncResendAt = Date.now() - 1; syncPaintResend()");
+    assert.strictEqual(app.els["sync-resend"].disabled, false);
+    assert.strictEqual(app.els["sync-resend-at"].hidden, true);
+  });
+
+  test("the export page shows a sign-in hint only while sync is active and nothing is signed in", async () => {
+    const out = await mount({ signedIn: false });
+    out.run("paintBackup()");
+    assert.strictEqual(out.els["backup-signin"].hidden, false);
+    assert.strictEqual(out.els["backup-signin"].textContent, "To save scales automatically, sign in.");
+    const inn = await mount();
+    inn.run("paintBackup()");
+    assert.strictEqual(inn.els["backup-signin"].hidden, true);
+    const prod = boot();
+    prod.run("paintBackup()");
+    assert.strictEqual(prod.els["backup-signin"].hidden, true);
+    assert.deepStrictEqual(tracked(out).filter((e) => /export|backup/.test(e[0])), []);
+  });
+
+  test("no visible sync wording in any locale for a signed-out entry and page", () => {
+    const stems = { en: /sync|synchro/i, de: /sync|synchro/i, fr: /sync|synchro/i, es: /sincron/i, it: /sincron/i, ja: /同期/, "zh-Hans": /同步/, "zh-Hant": /同步/ };
+    const keys = ["sync.title", "sync.intro", "sync.entrySignIn", "sync.entrySub", "sync.entryErr", "sync.pageSignIn", "sync.pageAccount", "sync.pageBack", "sync.resendAt", "sync.status.syncing", "sync.status.synced", "sync.status.pending", "backup.signIn"];
+    for (const [loc, re] of Object.entries(stems)) {
+      const table = JSON.parse(fsx.readFileSync(pathx.join(__dirname, "..", "data", "i18n", loc + ".json"), "utf8"));
+      for (const k of keys) assert.ok(!re.test(typeof table[k] === "string" ? table[k] : JSON.stringify(table[k])), `${loc} ${k}: ${table[k]}`);
+    }
   });
 });

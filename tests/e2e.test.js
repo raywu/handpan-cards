@@ -10498,8 +10498,6 @@ function run() {
               await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
               await rb.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
               await rb.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
-              if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
-              await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
               await rb.settle();
               const label = `${lang} ${w}x${h}`;
               const m = await rb.eval(`
@@ -10522,7 +10520,7 @@ function run() {
         }
       });
 
-    test("LS2: with the backup panel open its controls are panel Tab stops right after BACKUP YOUR SCALES, in the grid and DOM orders (REAL fonts)",
+    test("LS2: the export page controls are its own Tab stops, close button first (REAL fonts)",
       { timeout: 120000 }, async () => {
         try {
           await rb.setViewport(844, 390, true);
@@ -10536,20 +10534,18 @@ function run() {
             await rb.settle();
             await rb.click("#settings-trigger");
             await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
-            if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
-            await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
+            await rb.click("#backup-open");
+            await rb.waitFor(`!document.getElementById("export").hidden`, { label: "export page open" });
             await rb.eval(`for (const id of ["backup-share", "backup-copy", "backup-download"]) document.getElementById(id).disabled = false; return true;`);
             const m = await rb.eval(`
-              const ids = window.panelStops().map(e => e.id);
-              const want = ["backup-open", ...[...document.getElementById("backup-panel").querySelectorAll("textarea, button")]
+              const ids = exportStops().map(e => e.id);
+              const want = ["export-close", ...[...document.getElementById("backup-panel").querySelectorAll("textarea, button")]
                 .filter(e => !e.disabled && e.getClientRects().length > 0).map(e => e.id)];
               return { ids, want };`);
-            const at = m.ids.indexOf("backup-open");
-            assert.ok(at >= 0, `${w}x${h}: backup-open is a stop: ${JSON.stringify(m.ids)}`);
-            assert.ok(m.want.includes("backup-text") && m.want.includes("backup-copy") && m.want.includes("backup-download"), `${w}x${h}: the backup controls render`);
-            assert.deepStrictEqual(m.ids.slice(at, at + m.want.length), m.want, `${w}x${h}: ${JSON.stringify(m.ids)}`);
-            await rb.key("Escape", "Escape", 27);
-            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${w}x${h}` });
+            assert.ok(m.want.includes("backup-text") && m.want.includes("backup-copy") && m.want.includes("backup-download"), `${w}x${h}: the export controls render`);
+            assert.deepStrictEqual(m.ids, m.want, `${w}x${h}: ${JSON.stringify(m.ids)}`);
+            await rb.click("#export-close");
+            await rb.waitFor(`document.getElementById("export").hidden === true`, { label: `close at ${w}x${h}` });
           }
         } finally {
           await rb.setViewport(900, 900, false);

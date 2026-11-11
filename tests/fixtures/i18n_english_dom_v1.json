@@ -160,10 +160,8 @@
   "backup-panel": {
    "text": "",
    "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
-   }
+   "hidden": false,
+   "attrs": {}
   },
   "backup-intro": {
    "text": "",
@@ -224,6 +222,42 @@
    "attrs": {
     "hidden": ""
    }
+  },
+  "backup-signin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "export": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "export-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
   },
   "scale-name-row": {
    "text": "",
@@ -1000,10 +1034,8 @@
   "backup-panel": {
    "text": "",
    "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
-   }
+   "hidden": false,
+   "attrs": {}
   },
   "backup-intro": {
    "text": "",
@@ -1064,6 +1096,42 @@
    "attrs": {
     "hidden": ""
    }
+  },
+  "backup-signin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "export": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "export-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
   },
   "scale-name-row": {
    "text": "",
@@ -1844,10 +1912,8 @@
   "backup-panel": {
    "text": "",
    "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
-   }
+   "hidden": false,
+   "attrs": {}
   },
   "backup-intro": {
    "text": "",
@@ -1908,6 +1974,42 @@
    "attrs": {
     "hidden": ""
    }
+  },
+  "backup-signin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "export": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "export-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
   },
   "scale-name-row": {
    "text": "",
@@ -2706,10 +2808,8 @@
   "backup-panel": {
    "text": "",
    "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
-   }
+   "hidden": false,
+   "attrs": {}
   },
   "backup-intro": {
    "text": "",
@@ -2770,6 +2870,42 @@
    "attrs": {
     "hidden": ""
    }
+  },
+  "backup-signin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "export": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "export-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
   },
   "scale-name-row": {
    "text": "",
@@ -3568,10 +3704,8 @@
   "backup-panel": {
    "text": "",
    "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
-   }
+   "hidden": false,
+   "attrs": {}
   },
   "backup-intro": {
    "text": "",
@@ -3632,6 +3766,42 @@
    "attrs": {
     "hidden": ""
    }
+  },
+  "backup-signin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "export": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "export-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
   },
   "scale-name-row": {
    "text": "",
@@ -4430,10 +4600,8 @@
   "backup-panel": {
    "text": "",
    "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
-   }
+   "hidden": false,
+   "attrs": {}
   },
   "backup-intro": {
    "text": "",
@@ -4494,6 +4662,42 @@
    "attrs": {
     "hidden": ""
    }
+  },
+  "backup-signin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "export": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "export-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
   },
   "scale-name-row": {
    "text": "",
@@ -5290,10 +5494,8 @@
   "backup-panel": {
    "text": "",
    "html": "",
-   "hidden": true,
-   "attrs": {
-    "hidden": ""
-   }
+   "hidden": false,
+   "attrs": {}
   },
   "backup-intro": {
    "text": "",
@@ -5354,6 +5556,42 @@
    "attrs": {
     "hidden": ""
    }
+  },
+  "backup-signin": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "account-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
+  },
+  "export": {
+   "text": "",
+   "html": "",
+   "hidden": true,
+   "attrs": {
+    "hidden": ""
+   }
+  },
+  "export-close": {
+   "text": "",
+   "html": "",
+   "hidden": false,
+   "attrs": {}
   },
   "scale-name-row": {
    "text": "",
