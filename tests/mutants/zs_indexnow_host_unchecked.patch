@@ -1,0 +1,12 @@
+# kills: test_send_refuses_a_non_handpantheory_host
+# suite: python3 -m unittest -k test_send_refuses_a_non_handpantheory_host tests.test_site_files
+# indexnow.py stops refusing a foreign host.
+diff --git a/tools/indexnow.py b/tools/indexnow.py
+--- a/tools/indexnow.py
++++ b/tools/indexnow.py
+@@ -47,3 +47,3 @@
+     args = ap.parse_args(argv)
+-    if args.host != HOST:
++    if False:
+         print("indexnow: only %s is allowed, got %s" % (HOST, args.host), file=sys.stderr)
+         return 2

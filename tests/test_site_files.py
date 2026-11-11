@@ -1,6 +1,7 @@
 import glob
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -119,10 +120,16 @@ class SiteFilesTest(unittest.TestCase):
 
     def test_sitemap_lists_the_root_every_scale_page_and_handpan_101(self):
         locs = {e.text.strip() for e in sitemap_tree().iter(NS + "loc")}
-        pages = {SITE + os.path.relpath(os.path.dirname(f), ROOT) + "/"
-                 for f in glob.glob(os.path.join(ROOT, "scales", "*", "index.html"))}
+        pages = set()
+        for prefix in ("", "zh-hant/", "zh-hans/"):
+            pages |= {SITE + os.path.relpath(os.path.dirname(f), ROOT).replace(os.sep, "/") + "/"
+                      for f in glob.glob(os.path.join(ROOT, prefix + "scales", "*", "index.html"))}
         self.assertTrue(pages)
-        self.assertEqual(locs, {SITE} | pages | {SITE + "handpan-101/", SITE + "scales/"})
+        hubs = {SITE + "scales/"}
+        for prefix in ("zh-hant/", "zh-hans/"):
+            if os.path.isfile(os.path.join(ROOT, prefix + "scales", "index.html")):
+                hubs.add(SITE + prefix + "scales/")
+        self.assertEqual(locs, {SITE} | pages | hubs | {SITE + "handpan-101/"})
 
     def test_no_lastmod_and_nojekyll_is_empty(self):
         self.assertEqual(list(sitemap_tree().iter(NS + "lastmod")), [])
@@ -189,7 +196,10 @@ class SiteFilesTest(unittest.TestCase):
                 for n in names:
                     built.add(os.path.relpath(os.path.join(base, n), out))
             expected = set(allow_files)
-            for d in allow_dirs:
+            for f in ("indexnow-key.txt",):
+                if f in tracked_files():
+                    expected.add(f)
+            for d in allow_dirs + ["zh-hant", "zh-hans", "fonts"]:
                 for f in tracked_files():
                     if f.startswith(d + "/"):
                         expected.add(f)
@@ -254,6 +264,77 @@ class SiteFilesTest(unittest.TestCase):
             "evilhandpan-cards-dev.pages.dev": False, "handpan-cards-dev.pages.dev.evil.com": False,
             "localhost": False})
 
+def fake_site(root, optional):
+    os.makedirs(os.path.join(root, "tools"))
+    shutil.copy(os.path.join(ROOT, "tools", "publish.sh"), os.path.join(root, "tools", "publish.sh"))
+    for f in ["index.html", "404.html", "sitemap.xml", "robots.txt", "llms.txt", "_headers", "_redirects",
+              "og.png", "apple-touch-icon.png", "favicon.ico"]:
+        open(os.path.join(root, f), "w").write(f)
+    for d in ("scales", "handpan-101", "brand"):
+        os.makedirs(os.path.join(root, d))
+        open(os.path.join(root, d, "x.txt"), "w").write(d)
+    for rel in optional:
+        path = os.path.join(root, rel)
+        if rel.endswith("/"):
+            os.makedirs(path)
+            open(os.path.join(path, "x.txt"), "w").write(rel)
+        else:
+            open(path, "w").write(rel)
+
+
+def publish_fake(optional):
+    with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as out:
+        fake_site(root, optional)
+        out = os.path.join(out, "o")
+        r = subprocess.run(["sh", os.path.join(root, "tools", "publish.sh"), out], capture_output=True)
+        built = set()
+        for base, _, names in os.walk(out):
+            for n in names:
+                built.add(os.path.relpath(os.path.join(base, n), out))
+        return r.returncode, built
+
+
+class OptionalPublishTest(unittest.TestCase):
+    def test_publish_copies_the_zh_fonts_and_key_paths_only_when_present(self):
+        code, built = publish_fake([])
+        self.assertEqual(code, 0)
+        self.assertEqual({b.split(os.sep)[0] for b in built} & {"zh-hant", "zh-hans", "fonts", "indexnow-key.txt"}, set())
+        code, built = publish_fake(["zh-hant/", "zh-hans/", "fonts/", "indexnow-key.txt"])
+        self.assertEqual(code, 0)
+        for rel in ("zh-hant/x.txt", "zh-hans/x.txt", "fonts/x.txt", "indexnow-key.txt"):
+            self.assertIn(rel.replace("/", os.sep), built)
+
+    def test_publish_copies_each_optional_path_independently(self):
+        for opt in ("zh-hant/", "zh-hans/", "fonts/", "indexnow-key.txt"):
+            code, built = publish_fake([opt])
+            self.assertEqual(code, 0, opt)
+            extra = {b for b in built if b.split(os.sep)[0] in ("zh-hant", "zh-hans", "fonts", "indexnow-key.txt")}
+            self.assertEqual(len(extra), 1, opt)
+            self.assertTrue(next(iter(extra)).startswith(opt.rstrip("/")), opt)
+
+
+def redirect_sources():
+    return [l.split()[0] for l in read("_redirects").splitlines() if l.strip() and not l.startswith("#")]
+
+
+class ZhPathsUnrulesTest(unittest.TestCase):
+    PATHS = ["/zh-hant/", "/zh-hant/scales/d-kurd-10/", "/zh-hans/scales/", "/fonts/fonts.css",
+             "/fonts/x.woff", "/indexnow-key.txt"]
+
+    def test_no_redirect_rule_matches_zh_fonts_or_the_key_file(self):
+        for src in redirect_sources():
+            rx = re.compile("^" + re.escape(src).replace(r"\*", ".*").rstrip("/") + "/?$")
+            for p in self.PATHS:
+                self.assertIsNone(rx.match(p), "%s matches %s" % (src, p))
+
+    def test_no_headers_rule_matches_zh_fonts_or_the_key_file_on_any_host(self):
+        for line in read("_headers").splitlines():
+            if line.strip() and not line[0].isspace():
+                self.assertTrue(line.startswith("https://"), "path rule would hit " + line)
+                path = "/" + line[len("https://"):].split("/", 1)[1]
+                self.assertEqual(path, "/*", line)
+
+
 class HandpantheoryHostSetTest(unittest.TestCase):
     def test_the_old_host_string_survives_only_in_cname_and_the_move_switch(self):
         out = subprocess.run(["git", "grep", "-l", "handpan.raywu.org", "--", ".", ":!docs", ":!tests"],
@@ -268,6 +349,61 @@ class HandpantheoryHostSetTest(unittest.TestCase):
         self.assertIn('<meta property="og:url" content="https://handpantheory.com/">', html)
         self.assertIn('const MOVE_FROM = "handpan.raywu.org";', html)
         self.assertIn('const MOVE_TARGET = "https://handpantheory.com";', html)
+
+
+INDEXNOW = os.path.join(ROOT, "tools", "indexnow.py")
+
+
+def run_indexnow(*args, cwd=None):
+    return subprocess.run(["python3", INDEXNOW] + list(args), cwd=cwd or ROOT, capture_output=True, text=True)
+
+
+class IndexNowTest(unittest.TestCase):
+    def test_dry_run_is_the_default_and_prints_valid_json_with_the_sitemap_locs(self):
+        import json
+        r = run_indexnow()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        payload = json.loads(r.stdout)
+        locs = [e.text.strip() for e in sitemap_tree().iter(NS + "loc")]
+        self.assertEqual(payload["host"], "handpantheory.com")
+        self.assertEqual(payload["keyLocation"], SITE + "indexnow-key.txt")
+        self.assertEqual(payload["urlList"], locs)
+        self.assertTrue(payload["key"])
+
+    def test_dry_run_reads_the_key_from_the_key_file_when_present(self):
+        import json
+        with tempfile.TemporaryDirectory() as d:
+            key = os.path.join(d, "k.txt")
+            with open(key, "w") as f:
+                f.write("abc123def456\n")
+            r = run_indexnow("--key-file", key)
+            self.assertEqual(json.loads(r.stdout)["key"], "abc123def456")
+
+    def test_send_without_a_key_file_exits_non_zero_and_sends_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            r = run_indexnow("--send", "--key-file", os.path.join(d, "absent.txt"))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(r.stdout, "")
+
+    def test_send_refuses_a_non_handpantheory_host(self):
+        for host in ("handpan.raywu.org", "handpantheory.com.evil.com", "evilhandpantheory.com",
+                     "handpan-cards-dev.pages.dev", "localhost"):
+            with tempfile.TemporaryDirectory() as d:
+                key = os.path.join(d, "k.txt")
+                with open(key, "w") as f:
+                    f.write("abc123def456")
+                r = run_indexnow("--send", "--host", host, "--key-file", key)
+                self.assertNotEqual(r.returncode, 0, host)
+                self.assertIn("handpantheory.com", r.stderr, host)
+
+    def test_dry_run_also_refuses_a_foreign_host(self):
+        r = run_indexnow("--host", "example.com")
+        self.assertNotEqual(r.returncode, 0)
+
+    def test_the_tool_names_only_the_indexnow_endpoint_as_a_network_target(self):
+        src = read("tools/indexnow.py")
+        self.assertEqual(sorted(set(re.findall(r"https?://[A-Za-z0-9.\-]+", src))),
+                         ["http://www.sitemaps.org", "https://api.indexnow.org"])
 
 
 if __name__ == "__main__":
