@@ -162,15 +162,47 @@ function run() {
     assert.ok((await log()).some(l => l.path === "/rest/v1/saved_scales"));
   });
 
-  async function addScale(text) {
-    const hidden = await b.eval(`return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
-    if (!hidden && await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`)) await b.click("#settings-trigger");
-    await b.click("#deck-add");
-    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the scale sheet" });
-    await type("scale-box", text);
-    if (await b.eval(`return !document.getElementById("scale-next").hidden;`)) {
-      await b.click("#scale-next");
-      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
+  async function addScale(text, frame = false) {
+    // Visibility is local to the document: tab B's transparent parent is intentional.
+    const inPage = expr => {
+      const scoped = `(() => {
+        const visible = id => {
+          const el = document.getElementById(id);
+          if (!el) return false;
+          const rect = el.getBoundingClientRect(), style = getComputedStyle(el);
+          return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility === "visible";
+        };
+        return (${expr});
+      })()`;
+      return frame ? `document.getElementById("tabB").contentWindow.eval(${JSON.stringify(scoped)})` : scoped;
+    };
+    const read = expr => b.eval(`return ${inPage(expr)};`);
+    const wait = (expr, label) => b.waitFor(inPage(expr), { label });
+    const click = id => frame ? read(`document.getElementById(${JSON.stringify(id)}).click()`) : b.click("#" + id);
+
+    if (await read(`!document.getElementById("account").hidden`)) await click("account-close");
+    if (await read(`visible("settings-trigger") && !visible("settings-panel")`)) await click("settings-trigger");
+    await click("deck-add");
+    await wait(`visible("scale-sheet") && !document.getElementById("scale-sheet").hasAttribute("hidden")`, "the scale sheet");
+    const [editor, legacy] = await read(`[visible("editor-line"), visible("scale-box")]`);
+    if (editor === legacy) throw new Error("Expected exactly one visible scale editor profile");
+    const line = editor ? "editor-line" : "scale-box";
+    if (editor) await click(line);
+    await read(`(() => {
+      const el = document.getElementById(${JSON.stringify(line)});
+      el.value = ${JSON.stringify(text)};
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    })()`);
+    if (editor) {
+      if (frame) {
+        await read(`document.getElementById("editor-line").dispatchEvent(new KeyboardEvent("keydown",
+          { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true }))`);
+      } else {
+        await b.key("Enter", "Enter", 13);
+      }
+    } else if (await read(`visible("scale-next")`)) {
+      await click("scale-next");
+      await wait(`visible("scale-panel-layout")`, "the Layout tab");
     }
     await b.click("#scale-generate");
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet closing" });
@@ -521,8 +553,7 @@ function run() {
     assert.strictEqual((await log()).filter(l => l.path.indexOf("delete_my_account") >= 0).length, 0, "one press makes no request");
     await b.click("#account-close");
     await b.waitFor(`document.getElementById("account").hidden`, { label: "closed" });
-    await b.click("#sync-open");
-    await b.waitFor(`!document.getElementById("account").hidden`, { label: "reopened" });
+    await openSync();
     assert.strictEqual(await q("#sync-delete", `$$.textContent`), "Delete account", "closing the panel disarms");
     await b.click("#sync-delete");
     await b.waitFor(`document.getElementById("sync-delete").textContent === "Confirm account deletion"`, { label: "armed again" });
@@ -606,10 +637,10 @@ function run() {
     await b.setViewport(390, 800, true);
   });
 
-  test("polish: the Backup opener reads Back up scales and no longer says scales live only in this browser", async () => {
+  test("polish: the export opener reads Export scale links and no longer says scales live only in this browser", async () => {
     await fresh();
-    assert.strictEqual(await q("#backup-open", `$$.textContent`), "Back up scales");
-    assert.strictEqual(await q("#backup-intro", `$$.textContent`), "Keep a separate copy of your saved scale links, such as in Notes or an email to yourself.");
+    assert.strictEqual(await q("#backup-open", `$$.textContent`), "Export scale links");
+    assert.strictEqual(await q("#backup-intro", `$$.textContent`), "A list of links you keep yourself.");
     assert.ok(!/only in this browser/i.test(await q("#backup-panel", `$$.textContent`)));
   });
 
