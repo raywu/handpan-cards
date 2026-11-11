@@ -11,4 +11,4 @@ diff --git a/index.html b/index.html
 -  observeLinkRoute();
    if (aboutOpen) { hideAbout(); return; }
    if (subpage) { hideSubpage(); return; }
-   if (location.hash === ABOUT_ROUTE || location.hash === ACCOUNT_ROUTE || location.hash === EXPORT_ROUTE) { syncRoute(); return; }
+   if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }

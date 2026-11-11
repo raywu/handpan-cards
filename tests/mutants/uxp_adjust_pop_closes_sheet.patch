@@ -6,7 +6,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -18238,6 +18238,7 @@ window.addEventListener("popstate", () => {
    if (subpage) { hideSubpage(); return; }
-   if (location.hash === ABOUT_ROUTE || location.hash === ACCOUNT_ROUTE || location.hash === EXPORT_ROUTE) { syncRoute(); return; }
+   if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }
    if (!sheetOpen) return;
 +  if (sheetTab === "layout") { setTab("scale"); return; }
    sheetRouted = false;
