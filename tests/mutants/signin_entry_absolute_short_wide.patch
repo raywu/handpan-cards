@@ -1,4 +1,4 @@
-# kills: E-entry: the sign-in entry overlaps no panel group
+# kills: E-entry: the sign-in entry overlaps no panel group at short wide, landscape and portrait sizes
 # suite: node --test --test-name-pattern=^E-entry tests/e2e_sync.test.js
 # The short wide landscape rule leaves the entry absolute so it covers MODE A.
 diff --git a/index.html b/index.html
