@@ -33,10 +33,10 @@ function legacyHelpers(source) {
   return legacy;
 }
 
-function classifierFor(file, byName) {
+function classifierFor(file, byName, kept) {
   const helpers = legacyHelpers(require("node:fs").readFileSync(file, "utf8"));
   const re = helpers.size ? new RegExp("(?<![.\\w])(?:" + [...helpers].join("|") + ")\\(") : null;
-  return (fn, name) => byName.some((n) => name.startsWith(n)) || LEGACY_SHEET.test(String(fn)) || (re !== null && re.test(String(fn)));
+  return (fn, name) => !kept.has(name) && (byName.some((n) => name.startsWith(n)) || LEGACY_SHEET.test(String(fn)) || (re !== null && re.test(String(fn))));
 }
 
 function wrapFn(name, fn, isLegacy) {
@@ -70,8 +70,8 @@ function wrapRegistrar(register, isLegacy) {
 const legacyNow = () => state.legacy;
 const onePanelFor = () => (state.legacy ? false : undefined);
 
-function forFile(file, byName = []) {
-  const isLegacy = classifierFor(file, byName);
+function forFile(file, byName = [], kept = []) {
+  const isLegacy = classifierFor(file, byName, new Set(kept));
   return { test: wrapRegistrar(nodeTest.test, isLegacy), onePanelFor, legacyNow, pinned };
 }
 
