@@ -1,0 +1,15 @@
+# kills: E-deeplink-export: #export and #account open their pages
+# suite: node --test --test-name-pattern=^E-deeplink tests/e2e_sync.test.js
+# The popstate branch claims account and export hashes without the pushed state, so a fragment navigation is rewritten first.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18236,7 +18236,7 @@ window.addEventListener("popstate", () => {
+   observeLinkRoute();
+   if (aboutOpen) { hideAbout(); return; }
+   if (subpage) { hideSubpage(); return; }
+-  if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }
++  if (location.hash === ABOUT_ROUTE || location.hash === ACCOUNT_ROUTE || location.hash === EXPORT_ROUTE) { syncRoute(); return; }
+   if (!sheetOpen) return;
+   sheetRouted = false;
+   hideSheet();
