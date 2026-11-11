@@ -1988,6 +1988,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -2002,6 +2003,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -2884,6 +2886,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -2898,6 +2901,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -3780,6 +3784,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -3794,6 +3799,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -4676,6 +4682,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -4690,6 +4697,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -5570,6 +5578,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },
@@ -5584,6 +5593,7 @@
    "html": "",
    "hidden": true,
    "attrs": {
+    "aria-hidden": "true",
     "hidden": ""
    }
   },

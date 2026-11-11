@@ -5654,12 +5654,12 @@ test("AP2-2 setInert applies each caller's own background set", async () => {
   const app = boot({ layout: true });
   const ids = (expr) => plain(app.get(`${expr}.map(e => e.id)`));
   const inertIds = () => plain(app.get(`[...new Set([...background, ...panelBackground])].filter(e => e.inert).map(e => e.id)`));
-  assert.deepStrictEqual(ids("background"), ["settings-panel", "about", "main"], "the sheet's set");
+  assert.deepStrictEqual(ids("background"), ["account", "export", "settings-panel", "about", "main"], "the sheet's set");
   assert.deepStrictEqual(ids("panelBackground"), ["main", "decks", "about", "share-copy", "saved-temporary-use"], "the panel's set");
   assert.deepStrictEqual(inertIds(), []);
 
   app.run("openScaleSheet()");
-  assert.deepStrictEqual(inertIds().sort(), ["about", "main", "settings-panel"], "the sheet inerts its own set only");
+  assert.deepStrictEqual(inertIds().sort(), ["about", "account", "export", "main", "settings-panel"], "the sheet inerts its own set only");
   assert.strictEqual(app.get("background[0].getAttribute('aria-hidden')"), "true");
   app.run("closeScaleSheet()");
   assert.deepStrictEqual(inertIds(), [], "closing the sheet frees exactly what it took");
