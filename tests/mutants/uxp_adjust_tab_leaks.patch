@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15620,7 +15620,7 @@ sheet.addEventListener("keydown", e => {
-   if (e.key !== "Tab") return;
+@@ -18627,7 +18627,7 @@ sheet.addEventListener("keydown", e => {
+   if (editorSession) { cycleTabStops(editorTabStops(), e); return; }
    const onTab = sheetTab === "layout" ? tabLayout : tabScale;
    const shut = isLipShut();
 -  const stops = (sheetTab === "layout"
