@@ -638,6 +638,41 @@ function run() {
     await b.setViewport(390, 800, true);
   });
 
+  test("E-entry: the sign-in entry overlaps no panel group at short wide, landscape and portrait sizes", async () => {
+    await fresh();
+    try {
+      for (const [w, h] of [[800, 330], [844, 340], [844, 359], [740, 300], [390, 800]]) {
+        await b.setViewport(w, h, w < 1024);
+        await b.goto(URL);
+        const hidden = await b.eval(`return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
+        if (!hidden && await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`)) await b.click("#settings-trigger");
+        await b.waitFor(`!document.getElementById("sync-open").hidden`, { label: "the sync opener at " + w + "x" + h });
+        const hits = await b.eval(`const e = document.getElementById("sync-open").getBoundingClientRect();
+          return [...document.querySelectorAll("#settings-panel .panel-group")].filter(g => { const x = g.getBoundingClientRect(); return x.width && x.height && !(x.right <= e.left || x.left >= e.right || x.bottom <= e.top || x.top >= e.bottom); }).map(g => g.id || g.className);`);
+        assert.deepStrictEqual(hits, [], "the entry covers a group at " + w + "x" + h);
+      }
+    } finally { await b.setViewport(390, 800, true); }
+  });
+
+  test("E-deeplink-export: #export and #account open their pages at boot and by same-tab fragment, and Back lands on the deck", async () => {
+    await fresh();
+    await b.eval(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(JSON.stringify({ v: 1, project: PROJECT, userId: B_USER, email: "b@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, syncedAt: Date.now() }))});`);
+    for (const [hash, page, focus] of [["#export", "export", "export-close"], ["#account", "account", "sync-email"]]) {
+      await b.goto(URL + "?d=" + page + hash);
+      await b.waitFor(`!document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " at boot" });
+      if (page === "export") assert.strictEqual(await active(), focus);
+      await b.eval(`history.back();`);
+      await b.waitFor(`document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " closed by Back" });
+      await b.goto(URL + "?d=" + page + "b");
+      await b.eval(`location.hash = ${JSON.stringify(hash)};`);
+      await b.waitFor(`!document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " by fragment" });
+      if (page === "export") assert.strictEqual(await active(), focus);
+      await b.eval(`history.back();`);
+      await b.waitFor(`document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " closed by Back after fragment" });
+      assert.notStrictEqual(await b.eval(`return location.hash;`), hash);
+    }
+  });
+
   test("polish: the export opener reads Export scale links and no longer says scales live only in this browser", async () => {
     await fresh();
     assert.strictEqual(await q("#backup-open", `$$.textContent`), "Export scale links");
