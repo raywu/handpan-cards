@@ -24,6 +24,7 @@ Chinese pages (zh-Hant, zh-Hans; labels in tools/scale_page_zh.json):
 An hreflang alternate is emitted only for a script whose copy file exists.
 """
 import colorsys
+import functools
 import html
 import json
 import os
@@ -222,6 +223,7 @@ LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/
 SCALE_LOCKUP = LOCKUP
 
 
+@functools.lru_cache(maxsize=None)
 def load_zh():
     with open(ZH_TABLE, encoding="utf-8") as f:
         return json.load(f)
@@ -342,14 +344,23 @@ def hub_page_zh(rows, script, scripts):
     return "".join(out)
 
 
-def notes_line(fields, bottom_label="Bottom shell", ding_label="ding"):
+SIMPLIFIED_ONLY = "阶进级灵钢乐调声这个对门书发应们时间图单线种与为"
+TRADITIONAL_ONLY = "階進級靈鋼樂調聲這個對門書發應們時間圖單線種與為"
+
+
+def script_impurities(text, script):
+    other = SIMPLIFIED_ONLY if script == "zh-Hant" else TRADITIONAL_ONLY
+    return sorted({c for c in text if c in other})
+
+
+def notes_line(fields, bottom_label="Bottom shell", ding_label="ding", punct=(", ", ". ", ": ")):
     entries = list(fields.values())
     ding = [f for f in entries if f[3] == "ding"][0]
     top = sorted((f for f in entries if f[3] not in ("ding", "bottom")), key=lambda f: f[2])
     bottom = sorted((f for f in entries if f[3] == "bottom"), key=lambda f: f[2])
-    line = "%s%s %s, %s" % (ding[0], ding[1], ding_label, " ".join("%s%s" % (f[0], f[1]) for f in top))
+    line = "%s%s %s%s%s" % (ding[0], ding[1], ding_label, punct[0], " ".join("%s%s" % (f[0], f[1]) for f in top))
     if bottom:
-        line += ". " + bottom_label + ": " + " ".join("%s%s" % (f[0], f[1]) for f in bottom)
+        line += punct[1] + bottom_label + punct[2] + " ".join("%s%s" % (f[0], f[1]) for f in bottom)
     return line
 
 
@@ -843,7 +854,7 @@ def render_zh(row, data, rows_by_slug, copy, alt, script, avail):
     out.append("</ol>\n</section>\n")
     out.append('<section class="scale" id="%s">\n' % row["slug"])
     out.append('<h2>%s</h2><p class="muted">%s</p>\n'
-               % (esc(name), esc(notes_line(data["fields"], z["bottom_shell"], z["ding"]))))
+               % (esc(name), esc(notes_line(data["fields"], z["bottom_shell"], z["ding"], z["notes_punct"]))))
     prog_degs = "" if not all(degs) else " (%s)" % ", ".join(degs)
     out.append("<p>%s<b>%s</b>%s%s</p>\n" % (esc(z["progression"]), esc(", ".join(names)), prog_degs,
                                              copy["progression_tail_html"]))
@@ -894,7 +905,7 @@ def pages_for(slugs, rows=None, copy=None, script="en", avail=None):
     avail = avail if avail is not None else discover(rows)
     by = {r["slug"]: r for r in rows}
     data = engine([by[s] for s in slugs])
-    return {s: render(by[s], data["rows"][s], by, copy if copy is not None else (load_copy(by[s]) if script == "en" else load_copy(by[s], script)),
+    return {s: render(by[s], data["rows"][s], by, copy if copy is not None else load_copy(by[s], script),
                       data["alt"].get(s), script, avail) for s in slugs}
 
 
@@ -992,6 +1003,8 @@ def main(argv):
         slugs = args or (every if "--all" in argv else [])
         if not (slugs or "--hub" in argv):
             raise SystemExit(__doc__)
+        if script != "en" and "--hub" in argv and not avail[script]:
+            raise SystemExit("gen_scale_page: no copy.%s.json on disk, so there is no %s hub to write" % (script, script))
         out = os.path.join(SITE_DIR, prefix(script) + "scales")
         results = []
         if slugs:

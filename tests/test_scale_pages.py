@@ -377,7 +377,7 @@ class GeneratorTest(unittest.TestCase):
         slugs = [s for s in ROWS if exists(s)][:2]
         loaded = []
         real = gen.load_copy
-        gen.load_copy = lambda row: loaded.append(row["slug"]) or real(row)
+        gen.load_copy = lambda row, script="en": loaded.append(row["slug"]) or real(row, script)
         try:
             pages = gen.pages_for(slugs)
         finally:

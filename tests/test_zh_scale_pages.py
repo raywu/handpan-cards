@@ -249,5 +249,113 @@ class ZhCliTest(unittest.TestCase):
             self.assertEqual(sorted(alternates(f.read())), ["en", "x-default", "zh-Hant"])
 
 
+PURE_PROBE = {"zh-Hant": "階進級靈鋼樂", "zh-Hans": "阶进级灵钢乐"}
+
+
+def copy_files(script):
+    base = os.path.join(gen.SITE_DIR, "scales")
+    return sorted(os.path.join(base, d, "copy.%s.json" % script) for d in os.listdir(base)
+                  if os.path.exists(os.path.join(base, d, "copy.%s.json" % script)))
+
+
+def strings_of(node):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for v in node.values():
+            yield from strings_of(v)
+    elif isinstance(node, list):
+        for v in node:
+            yield from strings_of(v)
+
+
+def committed_drift(script, rows=None):
+    rows = rows or gen.load_rows()
+    avail = gen.discover(rows)
+    slugs = sorted(avail[script])
+    if not slugs:
+        return []
+    pages = gen.pages_for(slugs, rows, script=script, avail=avail)
+    want = {os.path.join(gen.SITE_DIR, gen.prefix(script) + "scales", s, "index.html"): pages[s] for s in slugs}
+    want[os.path.join(gen.SITE_DIR, gen.prefix(script) + "scales", "index.html")] = gen.hub_page(rows, script, avail)
+    bad = []
+    for path, text in want.items():
+        if not os.path.exists(path):
+            bad.append(path)
+            continue
+        with open(path, encoding="utf-8") as f:
+            if f.read() != text:
+                bad.append(path)
+    return bad
+
+
+class ZhScriptPurityTest(unittest.TestCase):
+    def test_the_probe_text_is_impure_for_the_other_script_and_pure_for_its_own(self):
+        for script, other in (("zh-Hant", "zh-Hans"), ("zh-Hans", "zh-Hant")):
+            with self.subTest(script=script):
+                self.assertEqual(gen.script_impurities(PURE_PROBE[script], script), [])
+                self.assertEqual("".join(gen.script_impurities(PURE_PROBE[other], script)), "".join(sorted(PURE_PROBE[other])))
+
+    def test_every_copy_file_on_disk_is_pure_for_its_script(self):
+        for script in SCRIPTS:
+            for path in copy_files(script):
+                with self.subTest(path=path), open(path, encoding="utf-8") as f:
+                    text = "".join(strings_of(json.load(f)))
+                    self.assertEqual(gen.script_impurities(text, script), [])
+
+    def test_the_label_table_is_pure_for_both_scripts(self):
+        for script in SCRIPTS:
+            with self.subTest(script=script):
+                text = "".join(strings_of(gen.load_zh()[script]))
+                self.assertEqual(gen.script_impurities(text, script), [])
+
+
+class ZhCommittedBytesTest(unittest.TestCase):
+    def test_every_committed_zh_page_and_hub_equals_the_generator_output(self):
+        for script in SCRIPTS:
+            with self.subTest(script=script):
+                self.assertEqual(committed_drift(script), [])
+
+    def test_the_drift_check_sees_a_missing_stale_and_current_page(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old = gen.SITE_DIR
+            gen.SITE_DIR = tmp
+            try:
+                d = os.path.join(tmp, "scales", SLUG)
+                os.makedirs(d)
+                with open(os.path.join(d, "copy.zh-Hant.json"), "w", encoding="utf-8") as f:
+                    json.dump(SAMPLE["zh-Hant"], f, ensure_ascii=False)
+                self.assertEqual(len(committed_drift("zh-Hant")), 2)
+                self.assertEqual(gen.main(["--lang", "zh-Hant", "--all"]), 0)
+                self.assertEqual(committed_drift("zh-Hant"), [])
+                with open(os.path.join(tmp, "zh-hant", "scales", "index.html"), "a", encoding="utf-8") as f:
+                    f.write(" ")
+                self.assertEqual(len(committed_drift("zh-Hant")), 1)
+            finally:
+                gen.SITE_DIR = old
+
+
+class ZhTextTest(unittest.TestCase):
+    def test_zh_notes_use_chinese_punctuation_and_the_cross_label_has_no_space(self):
+        html_text = page(slug="d-aegean-18", script="zh-Hant", avail=NONE)
+        self.assertRegex(html_text, r"中心音，")
+        self.assertRegex(html_text, r"。底殼：")
+        z = gen.load_zh()
+        a, b = dict(root="D", family="minor", notes=10), dict(root="D", family="minor", notes=9)
+        self.assertEqual(gen.zh_cross_lead(a, b, z["zh-Hant"]), "九個音？")
+        self.assertEqual(gen.zh_cross_lead(a, b, z["zh-Hans"]), "九个音？")
+
+    def test_hub_without_any_copy_file_refuses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old = gen.SITE_DIR
+            gen.SITE_DIR = tmp
+            os.makedirs(os.path.join(tmp, "scales"))
+            try:
+                with self.assertRaises(SystemExit):
+                    gen.main(["--lang", "zh-Hant", "--hub"])
+            finally:
+                gen.SITE_DIR = old
+
+
 if __name__ == "__main__":
     unittest.main()
