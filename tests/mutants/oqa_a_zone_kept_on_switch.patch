@@ -1,0 +1,14 @@
+# kills: OQA zone clear on lift and pan switch: s.zone is null after a pan-type switch (N1; the drag lift is in the e2e suite)
+# suite: node --test --test-name-pattern ^OQA.zone.clear.on.lift.and.pan.switch tests/editor_shell.test.js
+# fault: A picked zone survives a pan-type switch.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16275,7 +16275,6 @@ function editorDragUp(e) {
+ }
+ function editorSetPanType(kind) {
+   if (!editorDo((m) => editorPanType(m, kind))) return;
+-  editorSession.zone = null;
+   editorRender();
+ }
+ function editorWire() {

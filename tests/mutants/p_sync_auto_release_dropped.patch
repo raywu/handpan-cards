@@ -1,0 +1,14 @@
+# kills: local scales are released and pushed on their own after the first sync
+# suite: node --test --test-name-pattern ^local.scales.are.released.and.pushed tests/app.test.js
+# Refs TRI-28: sign-in QA fixes. The cycle no longer releases held local scales, so they never upload.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20748,7 +20748,6 @@ async function syncCycle(pull) {
+     const local = syncLocal();
+     if (!syncWrite(scope, cur => { const audit = HPE.sync.firstSyncAudit({ local, sidecar: cur }); return { ...audit.sidecar, first: false }; })) return;
+   }
+-  if (ok && !syncReleaseLocal(scope)) return;
+   if (ok) ok = await syncPush(scope);
+   if (!syncStill(scope)) return;
+   if (ok && !scope.sidecar.pending) {

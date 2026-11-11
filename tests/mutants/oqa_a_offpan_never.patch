@@ -1,0 +1,15 @@
+# kills: OQA drag off removes with undo toast; OQA release to remove ghost: past the margin the ghost says so, release removes in one step, the chip restores
+# suite: node --test --test-name-pattern ^OQA.drag.off.removes.with tests/editor_e2e.test.js
+# fault: A drag past the pan edge never counts as off the pan.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16353,7 +16353,7 @@ function editorDropTarget(e, src) {
+     return Math.hypot(pt[0], pt[1]) > svg.viewBox.baseVal.width / 200 + EDITOR_OFF_MARGIN ? { kind: "outside" } : editorHitAt(solved.value, pt, true, editorSession.history.present);
+   }
+   const hit = editorHitAt(solved.value, pt, true, editorSession.history.present);
+-  return hit.kind === "off" ? { kind: "outside" } : hit;
++  return hit;
+ }
+ function editorDragEnd(e) {
+   const d = editorDrag;

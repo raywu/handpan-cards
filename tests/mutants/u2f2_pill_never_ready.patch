@@ -1,0 +1,15 @@
+# kills: pill without a note asks to pick; pills stay enabled and turn ready for a held or a selected note
+# suite: node --test --test-name-pattern ^pill.without.a.note tests/editor_e2e.test.js
+# fault: The ready style is never applied.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15822,7 +15822,7 @@ function editorRenderAreas(m) {
+     }
+     b.setAttribute("aria-label", t("editor.pill_aria." + ring, vars));
+     b.disabled = false;
+-    b.classList.toggle("ready", ready);
++    b.classList.toggle("ready", false);
+     if (n >= EDITOR_CAPS[ring]) b.setAttribute("aria-disabled", "true"); else b.removeAttribute("aria-disabled");
+   }
+ }

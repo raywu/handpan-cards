@@ -1,0 +1,14 @@
+# kills: U2e3: a tray note over the ding lights the ding zone only, a small move lights the cyclops, and a drop on the ding replaces it with an Undo
+# suite: node --test --test-name-pattern ^U2e3:.a.tray.note.over.the.ding tests/editor_e2e.test.js
+# fault: No ding zone is drawn while dragging.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16525,7 +16525,6 @@ function editorZoneLayer(d) {
+     if (full) out += `<text class="ezone-label" x="0" y="${(-(lo + hi) / 2).toFixed(2)}">${escapeHtml(t("editor.zone_full"))}</text>`;
+   });
+   const ding = editorDingZone(geom);
+-  out += `<path class="ezone" data-ring="ding" d="${editorZoneDisc(ding.r, ding.cy)}"/>`;
+   svg.insertAdjacentHTML("beforeend", out);
+ }
+ function editorMarkDrop(target) {

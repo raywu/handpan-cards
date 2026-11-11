@@ -1,14 +1,15 @@
-# kills: an open backup panel is repainted when the menu reopens after a save
-# suite: node --test --test-name-pattern an.open.backup.panel.is.repainted.when.the.menu.reopens.after.a.save tests/app.test.js
+# kills: the export page is repainted when it reopens after a save
+# suite: node --test --test-name-pattern ^the.export.page.is.repainted.when.it.reopens.after.a.save tests/app.test.js
 # The menu open path no longer repaints an already open backup panel.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16717,7 +16717,6 @@
-   settingsPanel.removeAttribute("hidden");
-   panelOpen = true;
-   settingsTrigger.setAttribute("aria-expanded", "true");
--  if (!backupPanel.hasAttribute("hidden")) paintBackup();
-   if (desktopMQ.matches) return;
-   retireLinkUI();
-   settingsScrim.removeAttribute("hidden");
+@@ -19632,7 +19632,7 @@ const SUBPAGES = {
+   account: { section: document.getElementById("account"), opener: () => syncEl("sync-open"), route: ACCOUNT_ROUTE, stops: accountStops,
+     onOpen: () => { syncPaint(); syncFocusFor(syncLoad()); }, onHide: () => { clearTimeout(syncDeleteArmed); syncDeleteArmed = null; } },
+   export: { section: document.getElementById("export"), opener: () => backupOpen, route: EXPORT_ROUTE, stops: exportStops,
+-    onOpen: () => { paintBackup(); document.getElementById("export-close").focus(); }, onHide: null }
++    onOpen: () => { document.getElementById("export-close").focus(); }, onHide: null }
+ };
+ const subpageBackground = () => [document.querySelector("#app"), settingsPanel, moveBannerEl].filter(Boolean);
+ function syncPageHead() {
