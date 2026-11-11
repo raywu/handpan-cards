@@ -1,0 +1,15 @@
+# kills: T0 pan hash: the .ehit centre offset
+# suite: node --test --test-name-pattern ^T0.pan.hash: tests/editor_freeze.test.js
+# Every .ehit circle shifts one unit right of its note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16316,7 +16316,7 @@ function editorWithOverlay(markup, m, solved) {
+     const r = geom.place && !neo && (zone === "inner" || zone === "bottom") ? EDITOR_HIT_AREA * 100 : drawn * 100;
+     const i = ring === "ding" ? 0 : ringIds(fields, ring).indexOf(id);
+     const fresh = !!(s && s.flash && s.flash.some((f) => f.ring === ring && f.i === i));
+-    out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"/>`;
++    out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${(at[0] + 1).toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"/>`;
+     if (EDITOR_PINNABLE.includes(zone) && m.pins.some((p) => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;
+     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
+   }
