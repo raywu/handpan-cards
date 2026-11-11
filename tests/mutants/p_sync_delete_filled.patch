@@ -1,4 +1,4 @@
-# kills: polish: control hierarchy - primary Add scales, secondary Sign out, Delete account separated and unfilled
+# kills: polish: control hierarchy - Sign out secondary, Delete account separated and unfilled
 # Previously: polish Delete account is unfilled (transparent)
 # suite: node --test --test-name-pattern control.hierarchy tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish.
