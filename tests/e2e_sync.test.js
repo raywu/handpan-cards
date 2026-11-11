@@ -180,6 +180,7 @@ function run() {
     const wait = (expr, label) => b.waitFor(inPage(expr), { label });
     const click = id => frame ? read(`document.getElementById(${JSON.stringify(id)}).click()`) : b.click("#" + id);
 
+    if (await read(`!document.getElementById("account").hidden`)) await click("account-close");
     if (await read(`visible("settings-trigger") && !visible("settings-panel")`)) await click("settings-trigger");
     await click("deck-add");
     await wait(`visible("scale-sheet") && !document.getElementById("scale-sheet").hasAttribute("hidden")`, "the scale sheet");
@@ -548,8 +549,7 @@ function run() {
     assert.strictEqual((await log()).filter(l => l.path.indexOf("delete_my_account") >= 0).length, 0, "one press makes no request");
     await b.click("#account-close");
     await b.waitFor(`document.getElementById("account").hidden`, { label: "closed" });
-    await b.click("#sync-open");
-    await b.waitFor(`!document.getElementById("account").hidden`, { label: "reopened" });
+    await openSync();
     assert.strictEqual(await q("#sync-delete", `$$.textContent`), "Delete account", "closing the panel disarms");
     await b.click("#sync-delete");
     await b.waitFor(`document.getElementById("sync-delete").textContent === "Confirm account deletion"`, { label: "armed again" });
@@ -633,10 +633,10 @@ function run() {
     await b.setViewport(390, 800, true);
   });
 
-  test("polish: the Backup opener reads Back up scales and no longer says scales live only in this browser", async () => {
+  test("polish: the export opener reads Export scale links and no longer says scales live only in this browser", async () => {
     await fresh();
-    assert.strictEqual(await q("#backup-open", `$$.textContent`), "Back up scales");
-    assert.strictEqual(await q("#backup-intro", `$$.textContent`), "Keep a separate copy of your saved scale links, such as in Notes or an email to yourself.");
+    assert.strictEqual(await q("#backup-open", `$$.textContent`), "Export scale links");
+    assert.strictEqual(await q("#backup-intro", `$$.textContent`), "A list of links you keep yourself.");
     assert.ok(!/only in this browser/i.test(await q("#backup-panel", `$$.textContent`)));
   });
 
