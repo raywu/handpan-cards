@@ -53,7 +53,7 @@ def main(argv=None):
         return 3
     req = urllib.request.Request(ENDPOINT, json.dumps(payload).encode(),
                                  {"Content-Type": "application/json; charset=utf-8"})
-    with urllib.request.urlopen(req) as r:
+    with urllib.request.urlopen(req, timeout=10) as r:
         print(r.status)
     return 0
 

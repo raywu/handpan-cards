@@ -354,8 +354,19 @@ class HandpantheoryHostSetTest(unittest.TestCase):
 INDEXNOW = os.path.join(ROOT, "tools", "indexnow.py")
 
 
+DEAD_PROXY = "http://127.0.0.1:9"
+
+
+def hermetic_env():
+    env = {k: v for k, v in os.environ.items() if k.lower() not in ("https_proxy", "http_proxy", "all_proxy", "no_proxy")}
+    env.update({"https_proxy": DEAD_PROXY, "HTTPS_PROXY": DEAD_PROXY, "http_proxy": DEAD_PROXY,
+                "HTTP_PROXY": DEAD_PROXY, "no_proxy": "", "NO_PROXY": ""})
+    return env
+
+
 def run_indexnow(*args, cwd=None):
-    return subprocess.run(["python3", INDEXNOW] + list(args), cwd=cwd or ROOT, capture_output=True, text=True)
+    return subprocess.run(["python3", INDEXNOW] + list(args), cwd=cwd or ROOT, capture_output=True, text=True,
+                          env=hermetic_env())
 
 
 class IndexNowTest(unittest.TestCase):
@@ -399,6 +410,13 @@ class IndexNowTest(unittest.TestCase):
     def test_dry_run_also_refuses_a_foreign_host(self):
         r = run_indexnow("--host", "example.com")
         self.assertNotEqual(r.returncode, 0)
+
+    def test_the_indexnow_tests_run_with_a_dead_proxy_and_the_send_has_a_timeout(self):
+        env = hermetic_env()
+        for k in ("https_proxy", "HTTPS_PROXY", "http_proxy"):
+            self.assertEqual(env[k], DEAD_PROXY)
+        self.assertEqual(env["no_proxy"], "")
+        self.assertIn("timeout=", read("tools/indexnow.py"))
 
     def test_the_tool_names_only_the_indexnow_endpoint_as_a_network_target(self):
         src = read("tools/indexnow.py")
