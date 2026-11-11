@@ -20857,9 +20857,7 @@ describe("backup: back up saved scales", () => {
     app.run("desktopMQ.matches = true");
     open(app);
     assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to export yet.");
-    closePage(app);
     await makeCustom(app);
-    open(app);
     assert.ok(linksOf(textOf(app)).length >= 1, "the list is stale after the save");
     assert.strictEqual(app.els["backup-copy"].disabled, false);
     assert.strictEqual(app.els["backup-status"].textContent, "");
@@ -22078,6 +22076,8 @@ describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
   test("#account is ignored when sync is inactive (a production host)", async () => {
     const app = boot({ href: "https://handpantheory.com/#account" });
     assert.strictEqual(app.get("subpage"), null);
+    app.run('routedSubpage("account")');
+    assert.strictEqual(app.get("subpage"), null);
     assert.strictEqual(app.els["account"].hidden, true);
   });
 
@@ -22118,7 +22118,7 @@ describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
     assert.strictEqual(app.els["sync-resend"].textContent, "Resend code");
     assert.strictEqual(app.els["sync-resend"].disabled, true);
     assert.strictEqual(app.els["sync-resend-at"].hidden, false);
-    assert.match(app.els["sync-resend-at"].textContent, /^You can ask for a new code at \d/);
+    assert.match(app.els["sync-resend-at"].textContent, /^You can ask for a new code at \d{1,2}:\d{2}/);
     app.run("syncResendAt = Date.now() - 1; syncPaintResend()");
     assert.strictEqual(app.els["sync-resend"].disabled, false);
     assert.strictEqual(app.els["sync-resend-at"].hidden, true);

@@ -143,6 +143,7 @@ function run() {
     assert.strictEqual(await q("#sync-resend", `$$.disabled`), true);
     assert.strictEqual(await q("#sync-resend", `$$.textContent`), "Resend code");
     assert.match(await q("#sync-resend-at", `$$.textContent`), /^You can ask for a new code at /);
+    assert.ok(await b.eval(`return syncResendAt - Date.now();`) >= 60000, "the wait is at least 60 seconds");
     assert.match(await q("#sync-msg", `$$.textContent`), /me@example\.test/);
     await b.eval(`syncResendAt = Date.now() - 1; syncPaintResend();`);
     assert.strictEqual(await q("#sync-resend", `$$.disabled`), false);
