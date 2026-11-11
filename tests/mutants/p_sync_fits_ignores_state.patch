@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20538,7 +20538,7 @@ function syncStatus(kind) {
+@@ -20638,7 +20638,7 @@ function syncStatus(kind) {
    if (kind === "synced" && syncMsg && syncMsg.key.indexOf("sync.err.") === 0) { syncMsg = null; syncField = null; }
    syncPaint();
  }
 -const syncMsgFits = (msg, sc) => !msg || msg.signedIn == null || msg.signedIn === !!sc;
 +const syncMsgFits = (msg, sc) => true;
+ const syncSavedCount = sc => Object.keys(sc.base || {}).length;
  function syncLiveMessage(sc) {
    if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
-   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;

@@ -1,0 +1,15 @@
+# kills: hidden seeds appear only as a note, never as a link
+# suite: node --test --test-name-pattern ^hidden.seeds.appear.only.as.a.note tests/app.test.js
+# Refs TRI-28: sign-in QA round 2. DOWNLOAD stays enabled with nothing to export.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18576,7 +18576,7 @@ function paintBackup(message) {
+   document.getElementById("backup-signin").textContent = t("backup.signIn");
+   paintBackupHint();
+   document.getElementById("backup-share").hidden = typeof navigator.share !== "function";
+-  for (const b of backupButtons) b.disabled = !rows;
++  for (const b of backupButtons) b.disabled = b.id === "backup-download" ? false : !rows;
+   backupStatus.textContent = message !== undefined ? message : rows ? "" : t("backup.empty");
+   const last = backupLastText();
+   backupLast.textContent = last;

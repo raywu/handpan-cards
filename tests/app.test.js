@@ -21928,6 +21928,12 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
     assert.strictEqual(en["sync.menuSignedIn"], undefined, "the repeated SYNCED AS {email} message is retired");
   });
 
+  test("zh-Hant says 複製 for the copy action, never 拷貝", () => {
+    const zh = JSON.parse(require("node:fs").readFileSync(path.join(__dirname, "..", "data", "i18n", "zh-Hant.json"), "utf8"));
+    assert.strictEqual(zh["backup.copy"], "複製");
+    for (const key of Object.keys(zh)) assert.ok(!/拷貝/.test(JSON.stringify(zh[key])), key);
+  });
+
   test("the backup copy no longer claims scales live only in this browser", () => {
     for (const key of Object.keys(en).filter(k => k.startsWith("backup."))) {
       const text = typeof en[key] === "string" ? en[key] : "";

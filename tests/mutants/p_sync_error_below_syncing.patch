@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20541,9 +20541,9 @@ function syncStatus(kind) {
- const syncMsgFits = (msg, sc) => !msg || msg.signedIn == null || msg.signedIn === !!sc;
+@@ -20642,9 +20642,9 @@ const syncMsgFits = (msg, sc) => !msg || msg.signedIn == null || msg.signedIn ==
+ const syncSavedCount = sc => Object.keys(sc.base || {}).length;
  function syncLiveMessage(sc) {
    if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
 -  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
@@ -14,5 +14,5 @@ diff --git a/index.html b/index.html
    if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
 +  if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
    if (sc.pending) return { key: "sync.status.pending" };
-   if (sc.syncedAt) return { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
+   if (sc.syncedAt) return syncSavedCount(sc) ? { key: "sync.status.count", vars: { n: syncSavedCount(sc) } } : { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
    return null;
