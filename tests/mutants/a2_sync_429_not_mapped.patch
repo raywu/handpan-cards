@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20760,7 +20760,6 @@ function syncTogglePanel(force) {
-   if (want) syncFocusFor(syncLoad());
+@@ -20875,7 +20875,6 @@ function syncFocusFor(sc) {
+   if (target) target.focus();
  }
  const syncAuthError = (r, bad) => {
 -  if (r.status === 429) return "sync.err.rateLimited";

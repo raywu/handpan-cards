@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1715,7 +1715,7 @@ html.about-open{overflow:hidden}
+@@ -1883,7 +1883,7 @@ html.account-open, html.export-open{overflow:hidden}
    <h3>Privacy</h3>
    <p>Your scales stay in this browser on this device. Nothing is published, and no one else can see them. To use a scale on another device or send it to a friend, tap the link icon at the top of the screen and share the link. Opening it adds the scale to that browser, and it stays there. The site counts anonymous visits and feature use with Google Analytics, without cookies in the EEA, the UK and Switzerland. Signing in is optional. If you sign in, we store your email address and your saved scales with Supabase (our database provider) so they can return on your other devices or after your browser clears its storage. The sign-in code is sent by Resend. We never send your email or your scales to Google Analytics. Signing out keeps your scales on this device. Delete account removes your email and all your synced scales from our servers.</p>
    <h3>Contact</h3>
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  <p><a href="https://handpantheory.com">hi@handpantheory.com</a></p>
  </section>
  
- <div id="scale-sheet" role="dialog" aria-modal="true" aria-labelledby="scale-title" hidden>
+ <section id="account" aria-labelledby="account-title" role="dialog" aria-modal="true" hidden>
