@@ -386,6 +386,14 @@ class GeneratorTest(unittest.TestCase):
         for slug in slugs:
             self.assertEqual(pages[slug], read("scales/%s/index.html" % slug))
 
+    def test_english_pages_carry_hreflang_only_for_scripts_with_a_copy_file(self):
+        for slug in ROWS:
+            have = [sc for sc in gen.SCRIPTS if os.path.exists(os.path.join(ROOT, "scales", slug, "copy.%s.json" % sc))]
+            p = Page(read("scales/%s/index.html" % slug))
+            got = sorted(a["hreflang"] for t, a in p.tags if t == "link" and a.get("rel") == "alternate")
+            with self.subTest(page=slug):
+                self.assertEqual(got, sorted(["en", "x-default"] + have) if have else [])
+
     def test_pages_for_refuses_one_copy_shared_across_several_slugs(self):
         slugs = [s for s in ROWS if exists(s)][:2]
         copy = gen.load_copy({"slug": slugs[0]})
