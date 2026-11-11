@@ -1,0 +1,14 @@
+# kills: the export page hint follows a sign-in and sign-out that arrive through syncPaint
+# suite: node --test --test-name-pattern ^the.export.page.hint.follows tests/app.test.js
+# Refs TRI-28: sign-in page. syncPaint no longer repaints the export page hint, so a two-tab sign-in leaves it stale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20787,7 +20787,6 @@ function syncReleaseLocal(scope) {
+   return !ids(scope.sidecar).length || !!syncWrite(scope, cur => HPE.sync.releaseLocal(cur, ids(cur)));
+ }
+ function syncPaint() {
+-  paintBackupHint();
+   const open = syncEl("sync-open");
+   if (!open) return;
+   const sc = syncLoad();

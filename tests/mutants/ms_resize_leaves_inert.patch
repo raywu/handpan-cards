@@ -23,9 +23,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16848,33 +16848,6 @@ aboutSection.addEventListener("click", e => {
-   aboutLink(a.getAttribute("href"));
- });
+@@ -19681,33 +19681,6 @@ function routedSubpage(name) {
+ document.getElementById("account-close").onclick = closeSubpage;
+ document.getElementById("export-close").onclick = closeSubpage;
  
 -// If the viewport crosses the breakpoint while the panel is open in its
 -// modal, below-breakpoint presentation, shed the modal state so the page

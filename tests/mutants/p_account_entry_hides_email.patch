@@ -1,0 +1,15 @@
+# kills: signed in the entry shows the email, drops the subtext and shows the error line only for cap and rate
+# suite: node --test --test-name-pattern ^signed.in.the.entry.shows.the.email tests/app.test.js
+# Refs TRI-28: sign-in page. The signed-in entry keeps the Sign in label instead of the account email.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20831,7 +20831,7 @@ function syncPaint() {
+   syncPaintResend();
+   const msg = syncLiveMessage(sc);
+   const main = syncEl("sync-entry-main"), sub = syncEl("sync-entry-sub"), entryErr = syncEl("sync-entry-err");
+-  if (main) main.textContent = sc ? sc.email : t("sync.entrySignIn");
++  if (main) main.textContent = t("sync.entrySignIn");
+   if (sub) { sub.textContent = t("sync.entrySub"); sub.hidden = !!sc; }
+   const entryFails = !!sc && !!msg && SYNC_ENTRY_ERRS.indexOf(msg.key) >= 0;
+   if (entryErr) { entryErr.textContent = t("sync.entryErr"); entryErr.hidden = !entryFails; }

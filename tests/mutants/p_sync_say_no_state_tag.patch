@@ -1,0 +1,16 @@
+# kills: syncMsgFits: a message shows only in the sign-in state it was set in; untagged fits both
+# Previously: none (new guard)
+# suite: node --test --test-name-pattern syncMsgFits tests/app.test.js
+# Refs TRI-28: login/sync UI polish. Mutation: syncSay records no sign-in state, so a message survives a flip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20529,7 +20529,7 @@ function syncCtx() {
+   };
+ }
+ function syncSay(key, vars, field) {
+-  syncMsg = key ? { key, vars, signedIn: !!syncLoad() } : null;
++  syncMsg = key ? { key, vars } : null;
+   syncField = key && field ? field : null;
+   syncPaint();
+ }

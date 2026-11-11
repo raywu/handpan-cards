@@ -4,9 +4,9 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -33,7 +33,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next",
-   "backup-open", "backup-panel", "backup-intro", "backup-session", "backup-restore", "backup-text", "backup-share", "backup-copy",
-   "backup-download", "backup-status", "backup-last",
+@@ -36,7 +36,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next",
+   "backup-download", "backup-status", "backup-last", "backup-signin",
+   "account", "account-close", "export", "export-close",
    // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
 -  "scale-name-row", "scale-name", "scale-name-label",
 +  "scale-name-row", "scale-name", "scale-name-label", "scale-degrees-row", "scale-degrees",
