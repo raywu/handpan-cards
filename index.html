@@ -18566,6 +18566,9 @@ function backupMarkDone() {
   try { localStorage.setItem(BACKUP_KEY, JSON.stringify({ lastBackup: Date.now() })); } catch (e) {}
   paintBackup();
 }
+function paintBackupHint() {
+  document.getElementById("backup-signin").hidden = !(syncActive() && !syncLoad());
+}
 function paintBackup(message) {
   const rows = backupRows().length;
   backupBox.value = backupText();
@@ -18573,7 +18576,7 @@ function paintBackup(message) {
   document.getElementById("backup-restore").textContent = t("backup.restore");
   document.getElementById("backup-session").hidden = savedMode !== "session";
   document.getElementById("backup-signin").textContent = t("backup.signIn");
-  document.getElementById("backup-signin").hidden = !(syncActive() && !syncLoad());
+  paintBackupHint();
   document.getElementById("backup-share").hidden = typeof navigator.share !== "function";
   for (const b of backupButtons) b.disabled = !rows;
   backupStatus.textContent = message !== undefined ? message : rows ? "" : t("backup.empty");
@@ -20788,6 +20791,7 @@ function syncAskIds() {
   return sc && !sc.first && savedState ? HPE.sync.pendingLocalIds({ local: syncLocal(), sidecar: sc }) : [];
 }
 function syncPaint() {
+  paintBackupHint();
   const open = syncEl("sync-open");
   if (!open) return;
   const sc = syncLoad();

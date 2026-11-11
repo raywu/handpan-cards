@@ -22138,6 +22138,16 @@ describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
     assert.deepStrictEqual(tracked(out).filter((e) => /export|backup/.test(e[0])), []);
   });
 
+  test("the export page hint follows a sign-in and sign-out that arrive through syncPaint", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('openSubpage("export")');
+    assert.strictEqual(app.els["backup-signin"].hidden, false);
+    app.run('localStorage.setItem(SYNC_KEY, ' + JSON.stringify(sidecar()) + '); syncPaint()');
+    assert.strictEqual(app.els["backup-signin"].hidden, true);
+    app.run('localStorage.removeItem(SYNC_KEY); syncPaint()');
+    assert.strictEqual(app.els["backup-signin"].hidden, false);
+  });
+
   test("no visible sync wording in any locale for a signed-out entry and page", () => {
     const stems = { en: /sync|synchro/i, de: /sync|synchro/i, fr: /sync|synchro/i, es: /sincron/i, it: /sincron/i, ja: /同期/, "zh-Hans": /同步/, "zh-Hant": /同步/ };
     const keys = ["sync.title", "sync.intro", "sync.entrySignIn", "sync.entrySub", "sync.entryErr", "sync.pageSignIn", "sync.pageAccount", "sync.pageBack", "sync.resendAt", "sync.status.syncing", "sync.status.synced", "sync.status.pending", "backup.signIn"];
