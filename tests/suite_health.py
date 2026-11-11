@@ -214,7 +214,8 @@ def check_python():
 # clearance tests (2026-10-21) took the file past 300s on CI, so it became 420s;
 # the combined sheet-polish release (every test bounded by its own 90s-or-less
 # timeout, so no hang) overran 420s on CI, so it became 900s; the file then ran
-# 849-897s on CI (2026-11-10), so it is 1500s. Every node file now prints its wall clock (timed_run) so the next
+# 849-897s on CI (2026-11-10) and the sign-in QA fixes (2026-11-11) took it past
+# 900s (base ran 873s), so it is 1500s. Every node file now prints its wall clock (timed_run) so the next
 # sizing is measured. tests/mutation_check.sh
 # keeps its own 180s SUITE_TIMEOUT: it runs a filtered subset per mutant, never
 # the whole file. NODE_SUITE_TIMEOUT overrides this one.

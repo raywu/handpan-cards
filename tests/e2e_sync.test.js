@@ -60,6 +60,11 @@ function run() {
         res.end(page());
         return;
       }
+      if (rel === "nosync.html") {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        res.end(fs.readFileSync(path.join(REPO, "index.html"), "utf8"));
+        return;
+      }
       res.writeHead(404).end();
     });
     await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
@@ -112,13 +117,13 @@ function run() {
     assert.deepStrictEqual(await log(), []);
   });
 
-  test("email step: input attributes, focus, status region and the address warning", async () => {
+  test("email step: input attributes, focus and status region", async () => {
     await fresh();
     await openSync();
     assert.strictEqual(await q("#sync-email", `$$.type + "|" + $$.autocomplete + "|" + $$.inputMode + "|" + $$.required`), "email|email|email|true");
     assert.strictEqual(await active(), "sync-email");
     assert.strictEqual(await q("#sync-msg", `$$.getAttribute("role") + "|" + $$.getAttribute("aria-live")`), "status|polite");
-    assert.match(await q("#sync-domain", `$$.textContent`), /handpantheory\.com/);
+    assert.strictEqual(await b.eval(`return document.getElementById("sync-domain");`), null, "the address-bar line is gone");
     assert.strictEqual(await q("#account", `$$.hidden`), false);
   });
 
@@ -277,7 +282,7 @@ function run() {
     await frameJs(`localStorage.setItem("hpfc.sync.v1", JSON.stringify({ v: 1, project: ${JSON.stringify(PROJECT)}, userId: "11111111-1111-4111-8111-111111111111", email: "me@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: true })); syncStartLock();`);
     await b.waitFor(`JSON.parse(localStorage.getItem("hpfc.sync.v1")).first === false`, { timeout: 8000, label: "first sync" });
     await b.eval(`syncPaint();`);
-    await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { timeout: 8000, label: "synced status replaces the signed-out text" });
+    await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { timeout: 8000, label: "synced status replaces the signed-out text" });
     assert.doesNotMatch(await q("#sync-msg", `$$.textContent`), /Signed out/);
   });
 
@@ -305,9 +310,8 @@ function run() {
     await fresh();
     await signIn();
     await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).first === false`, { label: "first sync done" });
-    await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { label: "a routine success is cached (copy asserted separately)" });
+    await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { label: "a routine success is cached (copy asserted separately)" });
   };
-  const withAsk = n => b.eval(`syncAskIds = () => Array.from({ length: ${n} }, (_, i) => "id" + i); syncAskDismissed = false; syncPaint();`);
   const gateFetch = async frag => {
     await b.eval(`window.__orig = window.__orig || window.fetch; window.__gated = 0; window.fetch = function (u, o) { if (String(u).indexOf(${JSON.stringify(frag)}) >= 0) return new Promise(function (res) { window.__gate = function () { res(window.__orig(u, o)); }; window.__gated++; }); return window.__orig(u, o); };`);
   };
@@ -325,7 +329,7 @@ function run() {
     assert.strictEqual(await q("#sync-send", `$$.innerText`), "Send code");
     assert.strictEqual(await q("#sync-email-label", `$$.textContent`), "Email address");
     assert.ok((await q("#sync-panel", `$$.textContent`)).includes("Save your scales to your account to use them on any device."));
-    assert.match(await q("#sync-domain", `$$.textContent`), /handpantheory\.com/);
+    assert.ok(!/address bar/i.test(await q("#sync-panel", `$$.textContent`)));
   });
 
   test("polish: the code step uses sentence-case Sign in, Change email and a Resend code line with a clock time", async () => {
@@ -361,6 +365,8 @@ function run() {
 
   test("polish: #sync-msg is the only status region and the synced time appears once", async () => {
     await signedSynced();
+    await setSidecar({ base: {} });
+    await b.eval(`syncMsg = null; syncPaint();`);
     const m = await msg();
     const time = /^Saved to your account at (.+)$/.exec(m);
     assert.ok(time, "expected 'Saved to your account at {time}', got: " + m);
@@ -384,7 +390,7 @@ function run() {
     await b.eval(`const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); s.first = false; s.pending = false; delete s.syncedAt; localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s)); syncMsg = null; syncPaint();`);
     assert.ok(!/synced|\d:\d\d/i.test(await msg()), "no timestamp before a successful sync: " + await msg());
     await setSidecar({ syncedAt: Date.now() });
-    assert.match(await msg(), /^Saved to your account at /, "the last success shows when nothing live applies");
+    assert.match(await msg(), /^(Saved to your account at |\d+ scales? saved to your account)/, "the last success shows when nothing live applies");
   });
 
   test("polish: an error outranks routine repaint and pending; clearing it restores the live status", async () => {
@@ -402,67 +408,136 @@ function run() {
     assert.strictEqual(await msg(), "Saving to your account\u2026", "clearing a transient message restores the status");
   });
 
-  test("polish: consent copy for 0, 1 and 205 eligible scales, with Add scales / Not now", async () => {
-    await signedSynced();
-    await withAsk(0);
-    assert.strictEqual(await shown("sync-ask"), false, "zero eligible hides the prompt");
-    await withAsk(1);
-    assert.strictEqual(await shown("sync-ask"), true);
-    assert.strictEqual(await q("#sync-ask-text", `$$.textContent`), "Add 1 scale from this device to your account?");
-    assert.strictEqual(await q("#sync-ask-yes", `$$.innerText`), "Add scales");
-    assert.strictEqual(await q("#sync-ask-no", `$$.innerText`), "Not now");
-    await withAsk(205);
-    assert.strictEqual(await q("#sync-ask-text", `$$.textContent`), "Add 205 scales from this device to your account?");
-    assert.ok(!/\ball\b[^.]*\bsynced\b|everything|all (your )?scales/i.test(await msg()), "no account-wide all-synced claim while consent remains: " + await msg());
-    assert.match(await msg(), /^Saved to your account at /, "the status is about the account only");
-  });
+  const pushed = () => b.eval(`return JSON.parse(localStorage.getItem("__sblog") || "[]").filter(l => l.path === "/rest/v1/rpc/push_scales").length;`);
 
-  test("polish: a real device scale shows the prompt; Not now only dismisses it, Add scales uploads", async () => {
+  test("polish: there is no consent prompt; scales already on the device upload by themselves after sign-in", async () => {
     await fresh();
     await addScale("(C3) G3 C4 D4 E4 G4 A4 C5");
     await signIn();
     await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).first === false`, { label: "first sync done" });
-    await b.waitFor(`document.getElementById("sync-ask") && !document.getElementById("sync-ask").hidden`, { label: "the consent prompt" });
-    const n = await b.eval(`return syncAskIds().length;`);
-    assert.ok(n >= 1, "precondition: the device scale is eligible");
-    assert.strictEqual(await q("#sync-ask-text", `$$.textContent`), `Add ${n} scale${n === 1 ? "" : "s"} from this device to your account?`);
-    assert.ok(!/all (your )?scales/i.test(await msg()));
-    assert.strictEqual((await log()).filter(l => l.path === "/rest/v1/rpc/push_scales").length, 0, "nothing uploads before consent");
-    const before = await b.eval(`return savedState.entries.length;`);
-    await b.click("#sync-ask-no");
-    await b.waitFor(`document.getElementById("sync-ask").hidden`, { label: "the prompt dismissed" });
-    await sleep(400);
-    assert.strictEqual((await log()).filter(l => l.path === "/rest/v1/rpc/push_scales").length, 0, "Not now uploads nothing");
-    assert.ok(await b.eval(`return !!localStorage.getItem(${JSON.stringify(KEY)});`), "Not now does not sign out");
-    assert.strictEqual(await b.eval(`return savedState.entries.length;`), before);
-    await b.eval(`syncAskDismissed = false; syncPaint();`);
-    await b.waitFor(`!document.getElementById("sync-ask").hidden`, { label: "the prompt again" });
-    await b.click("#sync-ask-yes");
-    await b.waitFor(`JSON.parse(localStorage.getItem("__sblog") || "[]").some(l => l.path === "/rest/v1/rpc/push_scales")`, { timeout: 8000, label: "the consented push" });
-    await b.waitFor(`document.getElementById("sync-ask").hidden`, { label: "the prompt gone after Add scales" });
+    await b.waitFor(`JSON.parse(localStorage.getItem("__sblog") || "[]").some(l => l.path === "/rest/v1/rpc/push_scales")`, { timeout: 8000, label: "the automatic push" });
+    for (const id of ["sync-ask", "sync-ask-text", "sync-ask-yes", "sync-ask-no"]) assert.strictEqual(await b.eval(`return document.getElementById(${JSON.stringify(id)});`), null, id);
+    assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).localOnly;`), [], "nothing is left held");
+    assert.ok(await b.eval(`return savedState.entries.length >= 1;`), "the device scale is kept");
   });
 
-  test("polish: control hierarchy - primary Add scales, secondary Sign out, Delete account separated and unfilled", async () => {
+  test("polish: a signed-in session that still holds local scales releases and uploads them on the next sync", async () => {
     await signedSynced();
-    await withAsk(1);
+    await addScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
+    await b.waitFor(`JSON.parse(localStorage.getItem("__sblog") || "[]").some(l => l.path === "/rest/v1/rpc/push_scales")`, { timeout: 8000, label: "the routine push" });
+    const id = await b.eval(`return savedState.entries[savedState.entries.length - 1].instanceId;`);
+    await b.eval(`localStorage.setItem("__sblog", "[]"); const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); s.localOnly = [${JSON.stringify(id)}]; s.base = {}; s.alias = {}; localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s));`);
+    await b.eval(`syncKick(false);`);
+    await b.waitFor(`JSON.parse(localStorage.getItem("__sblog") || "[]").some(l => l.path === "/rest/v1/rpc/push_scales")`, { timeout: 8000, label: "the held scale is pushed" });
+    assert.deepStrictEqual(await b.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).localOnly;`), []);
+    assert.ok(await b.eval(`return savedState.entries.some(e => e.instanceId === ${JSON.stringify(id)});`), "the scale is still on the device");
+  });
+
+  test("polish: control hierarchy - Sign out secondary, Delete account separated and unfilled", async () => {
+    await signedSynced();
     const info = await b.eval(`
       const r = id => document.getElementById(id).getBoundingClientRect();
       const cs = id => getComputedStyle(document.getElementById(id));
-      const yes = r("sync-ask-yes"), out = r("sync-out"), del = r("sync-delete");
-      return { yesTop: yes.top, outTop: out.top, outBottom: out.bottom, delTop: del.top,
-        yesBg: cs("sync-ask-yes").backgroundColor, outBg: cs("sync-out").backgroundColor, delBg: cs("sync-delete").backgroundColor,
+      const out = r("sync-out"), del = r("sync-delete");
+      return { outTop: out.top, outBottom: out.bottom, delTop: del.top,
+        delBg: cs("sync-delete").backgroundColor,
         tag: document.getElementById("sync-delete").tagName,
-        sizes: ["sync-ask-yes", "sync-ask-no", "sync-out", "sync-delete"].map(id => [id, r(id).width, r(id).height]),
+        sizes: ["sync-out", "sync-delete"].map(id => [id, r(id).width, r(id).height]),
         texts: ["sync-out", "sync-delete"].map(id => document.getElementById(id).innerText),
         align: cs("sync-msg").textAlign };`);
-    assert.ok(info.yesTop < info.outTop && info.outTop < info.delTop, "order: consent, Sign out, Delete account " + JSON.stringify(info));
+    assert.ok(info.outTop < info.delTop, "order: Sign out, Delete account " + JSON.stringify(info));
     assert.ok(info.delTop - info.outBottom >= 16, "Delete account is visually separated from routine controls: " + (info.delTop - info.outBottom));
-    assert.notStrictEqual(info.yesBg, info.outBg, "Sign out is secondary to the active task");
     assert.strictEqual(info.delBg, "rgba(0, 0, 0, 0)", "Delete account is an unfilled text-style button");
     assert.strictEqual(info.tag, "BUTTON");
     assert.deepStrictEqual(info.texts, ["Sign out", "Delete account"]);
     for (const [id, w, h] of info.sizes) assert.ok(w >= 44 && h >= 44, id + " target " + w + "x" + h);
     assert.ok(["start", "left"].includes(info.align), "status is left-aligned: " + info.align);
+  });
+
+  test("polish: sign-in fields, buttons and status lines have clear vertical space between them", async () => {
+    await fresh();
+    await openSync();
+    const gaps = () => b.eval(`
+      const ids = [...document.querySelectorAll("#sync-panel label, #sync-panel input, #sync-panel button, #sync-panel p")].filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && !el.closest("[hidden]"); });
+      const out = [];
+      for (let i = 1; i < ids.length; i++) out.push([ids[i - 1].id || ids[i - 1].tagName, ids[i].id || ids[i].tagName, ids[i].getBoundingClientRect().top - ids[i - 1].getBoundingClientRect().bottom]);
+      return out;`);
+    const need = (a, c) => (a === "sync-msg" || c === "sync-msg" ? 16 : 8);
+    for (const [a, c, gap] of await gaps()) assert.ok(gap >= need(a, c), `email step: ${a} to ${c} is ${gap}px`);
+    await type("sync-email", EMAIL);
+    await b.click("#sync-send");
+    await b.waitFor(`!document.getElementById("sync-step-code").hidden`, { label: "the code step" });
+    const code = await gaps();
+    assert.ok(code.length >= 5, "the code step lists its controls: " + JSON.stringify(code));
+    for (const [a, c, gap] of code) assert.ok(gap >= need(a, c), `code step: ${a} to ${c} is ${gap}px`);
+  });
+
+  test("polish: a refused save shows the reason with Try again, and Try again runs the save once more", async () => {
+    for (const [key, text] of [["sync.err.cap", "Not saved: scale limit reached. Remove a scale, then try again."], ["sync.err.rate", "Not saved: too many saves. Try again in a minute."]]) {
+      await signedSynced();
+      assert.strictEqual(await shown("sync-retry"), false, "no Try again while all is saved");
+      await b.eval(`syncSay(${JSON.stringify(key)});`);
+      assert.strictEqual(await msg(), text);
+      assert.strictEqual(await shown("sync-retry"), true);
+      assert.strictEqual(await q("#sync-retry", `$$.innerText`), "Try again");
+      assert.strictEqual(await q("#sync-entry-err", `$$.textContent`), "Not saved to account \u203a");
+      await b.eval(`window.__kicks = 0; const k = syncKick; syncKick = p => { window.__kicks++; return k(p); };`);
+      await b.click("#sync-retry");
+      await b.waitFor(`window.__kicks >= 1`, { label: "the retry save" });
+      await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { label: "the refusal cleared by a good save" });
+      assert.strictEqual(await shown("sync-retry"), false);
+    }
+  });
+
+  test("polish: the not-saved line in the menu entry is an error colour with a dot, readable on its ground", async () => {
+    await signedSynced();
+    await b.eval(`syncSay("sync.err.cap");`);
+    const r = await b.eval(`
+      const lum = rgb => { const [x, y, z] = rgb.map(v => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); return 0.2126 * x + 0.7152 * y + 0.0722 * z; };
+      const num = css => css.match(/[0-9.]+/g).slice(0, 3).map(Number);
+      const err = document.getElementById("sync-entry-err"), sub = document.getElementById("sync-entry-sub"), btn = document.getElementById("sync-open");
+      const fg = num(getComputedStyle(err).color), bg = num(getComputedStyle(btn).backgroundColor);
+      const a = lum(fg), c = lum(bg);
+      const dot = getComputedStyle(err, "::before");
+      return { ratio: (Math.max(a, c) + 0.05) / (Math.min(a, c) + 0.05), errColor: getComputedStyle(err).color, subColor: getComputedStyle(sub).color, dotContent: dot.content, dotW: dot.width, dotRadius: dot.borderTopLeftRadius };`);
+    assert.ok(r.ratio >= 4.5, "contrast " + r.ratio);
+    assert.notStrictEqual(r.errColor, r.subColor, "differs from the normal subtitle");
+    assert.notStrictEqual(r.dotContent, "none", "has a dot");
+    assert.strictEqual(r.dotW, "6px");
+    assert.notStrictEqual(r.dotRadius, "0px");
+  });
+
+  test("polish: the signed-in heading is a real h3 under the h2, a proper size, and the count is the main status line", async () => {
+    await signedSynced();
+    await b.eval(`openSubpage("account");`);
+    const r = await b.eval(`const h = document.getElementById("sync-heading"); return { tag: h.tagName, size: parseFloat(getComputedStyle(h).fontSize), weight: Number(getComputedStyle(h).fontWeight), h2: document.getElementById("account-title").tagName };`);
+    assert.deepStrictEqual([r.tag, r.h2], ["H3", "H2"]);
+    assert.ok(r.size >= 18, "a heading, not 13px small print: " + JSON.stringify(r));
+    await setSidecar({ base: { r1: { rev: 1, localRevision: 1 }, r2: { rev: 1, localRevision: 1 } }, syncedAt: Date.now(), pending: false });
+    await b.eval(`syncMsg = null; syncPaint();`);
+    assert.strictEqual(await msg(), "2 scales saved to your account");
+  });
+
+  test("polish: the export page has plain restore copy and COPY and DOWNLOAD look and act disabled with no saved scales", async () => {
+    await fresh();
+    await b.eval(`openSubpage("export"); for (const id of ["backup-copy", "backup-download"]) document.getElementById(id).disabled = true;`);
+    assert.strictEqual(await q("#backup-restore", `$$.textContent`), "Tap a link to bring that scale back.");
+    for (const id of ["backup-copy", "backup-download"]) {
+      assert.strictEqual(await q("#" + id, `$$.disabled`), true, id);
+      assert.strictEqual(await q("#" + id, `getComputedStyle($$).color`), "rgb(138, 132, 123)", id + " looks disabled");
+    }
+  });
+
+  test("polish: Escape closes the account page and Tab wraps inside it", async () => {
+    await fresh();
+    await openSync();
+    await b.eval(`document.getElementById("account-close").focus();`);
+    for (const next of ["sync-email", "sync-send", "account-close"]) {
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await active(), next, "Tab walks the stops in order and wraps from the last to the first");
+    }
+    await b.key("Escape", "Escape", 27);
+    await b.waitFor(`document.getElementById("account").hidden`, { label: "Escape closes the account page" });
   });
 
   test("polish: sending, signing in and resending disable competing controls, keep values and focus, and set aria-busy", async () => {
@@ -612,14 +687,13 @@ function run() {
     assert.strictEqual(await q("#sync-email", `$$.getAttribute("aria-invalid")`), "true");
   });
 
-  test("polish: a 254-character address wraps without clipping at 320px and 380px, with the consent buttons inside", async () => {
+  test("polish: a 254-character address wraps without clipping at 320px and 380px, ", async () => {
     const long = "a".repeat(64) + "@" + ["b".repeat(63), "c".repeat(63), "d".repeat(58), "te"].join(".");
     assert.strictEqual(long.length, 254);
     for (const width of [380, 320]) {
       await b.setViewport(width, 800, true);
       await signedSynced();
       await setSidecar({ email: long });
-      await withAsk(205);
       assert.ok(await b.eval(`return !!document.getElementById("sync-account-email");`), "the markup has #sync-account-email");
       assert.strictEqual(await q("#sync-account-email", `$$.textContent`), long, "no truncation");
       const fit = await b.eval(`
@@ -653,20 +727,32 @@ function run() {
   test("E-deeplink-export: #export and #account open their pages at boot and by same-tab fragment, and Back lands on the deck", async () => {
     await fresh();
     await b.eval(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(JSON.stringify({ v: 1, project: PROJECT, userId: B_USER, email: "b@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, syncedAt: Date.now() }))});`);
-    for (const [hash, page, focus] of [["#export", "export", "export-close"], ["#account", "account", "sync-email"]]) {
+    for (const [hash, page, focus] of [["#export", "export", "export-close"], ["#account", "account", "sync-heading"]]) {
       await b.goto(URL + "?d=" + page + hash);
       await b.waitFor(`!document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " at boot" });
-      if (page === "export") assert.strictEqual(await active(), focus);
+      assert.strictEqual(await active(), focus);
       await b.eval(`history.back();`);
       await b.waitFor(`document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " closed by Back" });
       await b.goto(URL + "?d=" + page + "b");
       await b.eval(`location.hash = ${JSON.stringify(hash)};`);
       await b.waitFor(`!document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " by fragment" });
-      if (page === "export") assert.strictEqual(await active(), focus);
+      assert.strictEqual(await active(), focus);
       await b.eval(`history.back();`);
       await b.waitFor(`document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " closed by Back after fragment" });
       assert.notStrictEqual(await b.eval(`return location.hash;`), hash);
     }
+  });
+
+  test("a same-tab #account link on a host without sign-in leaves the deck's own route in the address bar", async () => {
+    await fresh();
+    const plain = URL.replace("index.html", "nosync.html");
+    await b.goto(plain);
+    await b.waitFor(`document.getElementById("sync-open").hidden === true`, { label: "no sync entry on this host" });
+    await b.eval(`location.hash = "#account";`);
+    await b.waitFor(`location.hash !== "#account"`, { label: "the account fragment replaced" });
+    assert.strictEqual(await q("#account", `$$.hidden`), true);
+    await b.goto(plain + "#account");
+    await b.waitFor(`location.hash !== "#account"`, { label: "the account fragment replaced at boot" });
   });
 
   test("polish: the export opener reads Export scale links and no longer says scales live only in this browser", async () => {
@@ -719,7 +805,7 @@ function run() {
         await bSignIn(holder ? "A" : "B");
         await waitSigned(true);
         await holderIs(holder);
-        await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
+        await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
         await bSignOut();
         await waitSigned(false);
         assert.notStrictEqual(await msg(), old, row + ": the message does not come back after the flip back");

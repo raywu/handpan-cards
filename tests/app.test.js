@@ -15512,8 +15512,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const syncKeys=["entryErr","entrySignIn","entrySub","pageSignIn","pageAccount","pageBack","resendAt","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","sent","domainWarn","status.syncing","status.synced","status.pending","addLocal","addLocalYes","addLocalNo","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.neo.mirror","editor.neo.mirror.aria","editor.neo.rotate_ccw","editor.neo.rotate_ccw.aria","editor.neo.rotate_cw","editor.neo.rotate_cw.aria","editor.neo.say_mirror","editor.neo.say_rotate_cw","editor.neo.say_rotate_ccw","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","signIn"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.addLocal"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2) and the thirty-eight sync.* keys (login sync lane A2, polished by TRI-28)");
+    const syncKeys=["entryErr","entrySignIn","entrySub","pageSignIn","pageAccount","pageBack","resendAt","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","sent","status.syncing","status.synced","status.count","status.pending","retry","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.neo.mirror","editor.neo.mirror.aria","editor.neo.rotate_ccw","editor.neo.rotate_ccw.aria","editor.neo.rotate_cw","editor.neo.rotate_cw.aria","editor.neo.say_mirror","editor.neo.say_rotate_cw","editor.neo.say_rotate_ccw","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","signIn"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.status.count"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2) and the thirty-five sync.* keys (login sync lane A2, polished by TRI-28)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -20863,12 +20863,11 @@ describe("backup: back up saved scales", () => {
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
 
-  test("the panel copy says a restored seed replacement is a new custom scale and hidden seeds are a note", () => {
+  test("the panel copy tells a plain story: tap a link to bring that scale back", () => {
     const app = boot();
     const copy = app.get('t("backup.restore")');
-    assert.match(copy, /new custom scale/);
-    assert.match(copy, /hidden/);
-    assert.match(copy, /note/);
+    assert.strictEqual(copy, "Tap a link to bring that scale back.");
+    assert.doesNotMatch(copy, /seed|replacement/i, "no jargon");
     assert.doesNotMatch(copy, /\bdeck\b/i, "visible text says scale, never deck");
   });
 
@@ -20940,6 +20939,7 @@ describe("backup: back up saved scales", () => {
     assert.match(text, /D AMARA 9/);
     assert.match(text, /Hidden seeded scales/);
     assert.strictEqual(app.els["backup-copy"].disabled, true, "nothing to restore by link means nothing to copy");
+    assert.strictEqual(app.els["backup-download"].disabled, true, "nothing to restore by link means nothing to download");
   });
 
   test("COPY writes the list to the clipboard and stores lastBackup in its own key, not in hpfc", async () => {
@@ -21175,7 +21175,7 @@ describe("sync client", () => {
     assert.strictEqual(app.get("savedState.entries.length"), 1);
   });
 
-  test("Not now pushes nothing for the held local scales", async () => {
+  test("local scales are released and pushed on their own after the first sync", async () => {
     const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true });
     install(app);
     await app.waitFor("booted === true", {timeout:2000});
@@ -21184,8 +21184,9 @@ describe("sync client", () => {
     await app.waitFor("syncHolder === true", { timeout: 2000 });
     await app.getAsync("syncRunning");
     const s = sc(app);
-    assert.strictEqual(s.localOnly.length, 1);
-    assert.strictEqual(calls(app, "/rest/v1/rpc/push_scales").length, 0);
+    assert.strictEqual(s.localOnly.length, 0);
+    assert.strictEqual(calls(app, "/rest/v1/rpc/push_scales").length, 1);
+    assert.strictEqual(app.get("savedState.entries.length"), 1, "the local scale is kept");
   });
 
   test("no analytics call carries an email or a token", async () => {
@@ -21400,11 +21401,10 @@ describe("sync store safety", () => {
       reset(app); await app.getAsync("syncKick(true)");
       assert.ok(app.get('__requests.some(r=>r.path.startsWith("/rest/v1/saved_scales"))'),"replacement GET runs");
       assert.strictEqual(app.get("syncLoad().first"),false);
-      assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[q.instanceId],"first audit holds unmatched Q");
-      assert.strictEqual(pushes(app).length,0,"Q stays held before Add N");
+      assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"first audit releases unmatched Q at once");
       assert.ok(app.get(`syncLocal().some(e=>(syncLoad().alias[e.id]||e.id)===${JSON.stringify(remote.scale_id)})`),"GET restores R locally");
-      app.run("syncAskAnswer(true)"); await app.getAsync("syncRunning");
-      assert.ok(pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId && !row.deleted)),"Add N permits Q push");
+      await app.getAsync("syncRunning");
+      assert.ok(pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId && !row.deleted)),"Q is pushed without a prompt");
       assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)),"recovery never deletes R");
       assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(remote.scale_id)}).deleted`),false);
       assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(q.instanceId)}).deleted`),false);
@@ -21634,10 +21634,9 @@ describe("sync store safety", () => {
         assert.ok(app.get("__requests.some(r=>/rev=gt\\.0&/.test(r.path))"),"real replacement pull requests cursor0");
         const persisted=JSON.parse((await idbRecord(app)).raw);
         assert.ok(persisted.entries.some(e=>app.get(`(syncLoad().alias[${JSON.stringify(e.instanceId)}]||${JSON.stringify(e.instanceId)})`)===remote.scale_id),"R is durably restored");
-        assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[q.instanceId],"first audit holds distinct unmatched Q");
-        assert.strictEqual(pushes(app).length,0,"Q waits for Add N");
-        app.run("syncAskAnswer(true)"); await app.getAsync("syncRunning");
-        assert.ok(pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId&&!row.deleted)),"Add N permits Q push");
+        assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"first audit releases distinct unmatched Q at once");
+        await app.getAsync("syncRunning");
+        assert.ok(pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId&&!row.deleted)),"Q is pushed without a prompt");
         assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)),"R remains alive on server");
         assert.strictEqual(app.get("__rows[0].deleted"),false);
       } finally {app.run("__hook=()=>{}");}
@@ -21727,9 +21726,9 @@ describe("sync store safety", () => {
       __rows=[{scale_id:${JSON.stringify(remote)},rev:3,record:${JSON.stringify(body)},deleted:false}];`);
     reset(app); await app.getAsync("syncKick(true)");
     assert.strictEqual(app.get("syncLoad().refresh"),"r1"); assert.strictEqual(app.get("syncLoad().first"),false);
-    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[local]);
-    assert.strictEqual(pushes(app).length,0); assert.strictEqual(JSON.parse((await idbRecord(app)).raw).entries.length,2);
-    app.run("syncAskAnswer(true)");await app.getAsync("syncRunning");
+    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[]);
+    assert.strictEqual(JSON.parse((await idbRecord(app)).raw).entries.length,2);
+    await app.getAsync("syncRunning");
     assert.ok(pushes(app).some(c=>c.body.rows.some(r=>r.scale_id===local&&!r.deleted)));
     assert.strictEqual(app.get("syncLoad().pending"),false); assert.ok(app.get("syncLoad().syncedAt"));
     await app.getAsync(`commitSaved({type:'delete',collectionId:savedState.collectionId,instanceId:${JSON.stringify(local)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(local)}).revision})`);
@@ -21807,22 +21806,16 @@ describe("sync store safety", () => {
       } finally {app.run(`HPE.sync.${method}=__osPlan`);}
     });
   }
-  test("T-APP-OS-liveness: Add N during pull releases Q through the existing queued operation", async () => {
+  test("T-APP-OS-liveness: a scale held in the sidecar is released and sent once by the next cycle", async () => {
     const app=await fixture({clock:true});const q=await makeCustom(app,OTHER_STRING);
-    app.run("syncPatch(syncLoad().userId,s=>({...s,first:true}));clearTimeout(syncTimer);syncTimer=null");
-    await app.getAsync("syncKick(true)");
-    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[q.instanceId]);reset(app);
-    app.run(`globalThis.__osReleased=false;__hook=async path=>{if(path.startsWith('/rest/v1/saved_scales')&&!__osReleased){
-      __osReleased=true;syncAskAnswer(true);}};`);
-    try {
-      await app.getAsync("syncKick(true)");await app.getAsync("syncRunning");
-      assert.strictEqual(app.get("__osReleased"),true);
-      assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[]);
-      assert.strictEqual(pushes(app).length,1,"queued current operation sends Q once");
-      assert.ok(pushes(app)[0].body.rows.some(row=>row.scale_id===q.instanceId&&!row.deleted));
-      assert.strictEqual(app.get("syncLoad().pending"),false);
-      assert.ok(JSON.parse((await idbRecord(app)).raw).entries.some(e=>e.instanceId===q.instanceId));
-    } finally {app.run("__hook=()=>{}");}
+    app.run(`syncPatch(syncLoad().userId,s=>({...s,localOnly:[${JSON.stringify(q.instanceId)}]}));clearTimeout(syncTimer);syncTimer=null`);
+    reset(app);
+    await app.getAsync("syncKick(true)");await app.getAsync("syncRunning");
+    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[]);
+    assert.strictEqual(pushes(app).length,1,"the cycle sends Q once");
+    assert.ok(pushes(app)[0].body.rows.some(row=>row.scale_id===q.instanceId&&!row.deleted));
+    assert.strictEqual(app.get("syncLoad().pending"),false);
+    assert.ok(JSON.parse((await idbRecord(app)).raw).entries.some(e=>e.instanceId===q.instanceId));
   });
   test("T-APP-OS-own-writes: concurrent local edit keeps revision reconciliation live", async () => {
     const app=await fixture(), a=await makeCustom(app), b=await makeCustom(app,OTHER_STRING);
@@ -21900,7 +21893,11 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       "sync.title": "Save scales to your account",
       "sync.entrySignIn": "Sign in",
       "sync.entrySub": "Save your scales",
-      "sync.entryErr": "Not saved to account",
+      "sync.entryErr": "Not saved to account \u203a",
+      "sync.retry": "Try again",
+      "sync.status.count": { one: "{n} scale saved to your account", other: "{n} scales saved to your account" },
+      "sync.err.cap": "Not saved: scale limit reached. Remove a scale, then try again.",
+      "sync.err.rate": "Not saved: too many saves. Try again in a minute.",
       "sync.pageSignIn": "Sign in",
       "sync.pageAccount": "Account",
       "sync.pageBack": "Back to the practice screen",
@@ -21916,8 +21913,6 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       "sync.status.syncing": "Saving to your account\u2026",
       "sync.status.pending": "Changes not yet saved to your account",
       "sync.status.synced": "Saved to your account at {time}",
-      "sync.addLocalYes": "Add scales",
-      "sync.addLocalNo": "Not now",
       "sync.signOut": "Sign out",
       "sync.signedOutDone": "Signed out. Your scales remain on this device.",
       "sync.delete": "Delete account",
@@ -21928,12 +21923,15 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       "backup.intro": "A list of links you keep yourself.",
       "backup.signIn": "To save scales automatically, sign in.",
     };
-    for (const [key, value] of Object.entries(expected)) assert.strictEqual(en[key], value, key);
-    assert.deepStrictEqual(en["sync.addLocal"], {
-      one: "Add {n} scale from this device to your account?",
-      other: "Add {n} scales from this device to your account?",
-    });
+    for (const [key, value] of Object.entries(expected)) assert.deepStrictEqual(en[key], value, key);
+    for (const gone of ["sync.addLocal", "sync.addLocalYes", "sync.addLocalNo", "sync.domainWarn"]) assert.strictEqual(en[gone], undefined, gone + " is retired");
     assert.strictEqual(en["sync.menuSignedIn"], undefined, "the repeated SYNCED AS {email} message is retired");
+  });
+
+  test("zh-Hant says 複製 for the copy action, never 拷貝", () => {
+    const zh = JSON.parse(require("node:fs").readFileSync(path.join(__dirname, "..", "data", "i18n", "zh-Hant.json"), "utf8"));
+    assert.strictEqual(zh["backup.copy"], "複製");
+    for (const key of Object.keys(zh)) assert.ok(!/拷貝/.test(JSON.stringify(zh[key])), key);
   });
 
   test("the backup copy no longer claims scales live only in this browser", () => {
@@ -21942,7 +21940,7 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       assert.ok(!/only in this browser/i.test(text), key);
     }
     assert.match(en["backup.session"], /disappear when you close this tab/, "the session-only warning is preserved");
-    assert.match(en["backup.restore"], /To restore, tap each link/, "the restore instructions are preserved");
+    assert.match(en["backup.restore"], /Tap a link to bring that scale back/, "the restore instructions are preserved");
   });
 
   test("the markup keeps #sync-msg as the sole status region and drops #sync-last", () => {
@@ -21990,13 +21988,34 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
     assert.ok(!/synced|\d:\d/i.test(app.els["sync-msg"].textContent), app.els["sync-msg"].textContent);
   });
 
+  test("after a save the account page counts the scales saved to the account, pluralised", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    const base = n => Object.fromEntries(Array.from({ length: n }, (_, i) => ["r" + i, { rev: 1, localRevision: 1 }]));
+    for (const [n, text] of [[1, "1 scale saved to your account"], [3, "3 scales saved to your account"]]) {
+      setSidecar(app, { base: base(n), syncedAt: Date.now(), pending: false, first: false });
+      app.run("syncMsg = null; syncPaint()");
+      assert.strictEqual(app.els["sync-msg"].textContent, text);
+    }
+    setSidecar(app, { base: {}, syncedAt: Date.now(), pending: false, first: false });
+    app.run("syncMsg = null; syncPaint()");
+    assert.match(app.els["sync-msg"].textContent, /^Saved to your account at /, "nothing saved yet keeps the time line");
+  });
+
+  test("the signed-in heading is an h3 under the page's h2", async () => {
+    const html = require("node:fs").readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    assert.match(html, /<h2 id="account-title">/);
+    assert.match(html, /<h3 id="sync-heading"/);
+    assert.doesNotMatch(html, /<h4 id="sync-heading"/);
+  });
+
   test("sync-msg stays the single place for the timestamp: nothing else carries it", async () => {
     const app = await fixture();
     await app.getAsync("syncKick(false)");
     const time = /^Saved to your account at (.+)$/.exec(app.els["sync-msg"].textContent);
     assert.ok(time, app.els["sync-msg"].textContent);
     assert.ok(app.els["sync-account-email"], "the markup has #sync-account-email");
-    for (const id of ["sync-entry-main", "sync-entry-sub", "sync-heading", "sync-account-email", "sync-ask-text"]) {
+    for (const id of ["sync-entry-main", "sync-entry-sub", "sync-heading", "sync-account-email"]) {
       assert.ok(!app.els[id].textContent.includes(time[1]), id + " repeats the timestamp");
     }
     assert.strictEqual(app.els["sync-entry-main"].textContent, "a@b.test");
@@ -22045,6 +22064,25 @@ describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
     assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), "sync-entry-sub");
   });
 
+  test("a refused save shows its reason and a Try again button that runs the save once more", async () => {
+    const app = await mount();
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-retry"].hidden, true);
+    const wording = { "sync.err.cap": "Not saved: scale limit reached. Remove a scale, then try again.", "sync.err.rate": "Not saved: too many saves. Try again in a minute." };
+    for (const [key, text] of Object.entries(wording)) {
+      app.run(`syncSay(${JSON.stringify(key)}); syncPaint()`);
+      assert.strictEqual(app.els["sync-msg"].textContent, text);
+      assert.strictEqual(app.els["sync-retry"].hidden, false, key);
+      assert.strictEqual(app.els["sync-retry"].textContent, "Try again");
+      app.run("globalThis.__kicked = 0; syncKick = () => { __kicked++; return Promise.resolve(); };");
+      app.els["sync-retry"].dispatchEvent({ type: "click" });
+      assert.strictEqual(app.get("__kicked"), 1, key + ": Try again re-runs the save");
+      assert.strictEqual(app.get("syncMsg"), null, key + ": the refusal is cleared before the retry");
+    }
+    app.run('syncSay("sync.err.offline"); syncPaint()');
+    assert.strictEqual(app.els["sync-retry"].hidden, true, "offline has no Try again");
+  });
+
   test("signed in the entry shows the email, drops the subtext and shows the error line only for cap and rate", async () => {
     const app = await mount();
     app.run("syncPaint()");
@@ -22055,7 +22093,7 @@ describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
     for (const key of ["sync.err.cap", "sync.err.rate"]) {
       app.run(`syncSay(${JSON.stringify(key)}); syncPaint()`);
       assert.strictEqual(app.els["sync-entry-err"].hidden, false, key);
-      assert.strictEqual(app.els["sync-entry-err"].textContent, "Not saved to account");
+      assert.strictEqual(app.els["sync-entry-err"].textContent, "Not saved to account \u203a");
       assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), "sync-entry-err");
     }
     app.run('syncSay("sync.err.offline"); syncPaint()');

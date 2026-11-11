@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -19674,7 +19674,7 @@ function closeSubpage() {
- }
+@@ -19673,7 +19673,7 @@ function closeSubpage() {
  function routedSubpage(name) {
    if (subpage || aboutOpen || sheetOpen) return;
+   history.replaceState(history.state, "", location.pathname + location.search + routeInfo(deck()).route);
 -  if (name === "account" && !syncActive()) return;
 +  if (!syncActive()) return;
-   history.replaceState(history.state, "", location.pathname + location.search + routeInfo(deck()).route);
    openSubpage(name);
  }
+ document.getElementById("account-close").onclick = closeSubpage;

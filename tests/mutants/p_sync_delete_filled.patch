@@ -1,13 +1,13 @@
-# kills: polish: control hierarchy - primary Add scales, secondary Sign out, Delete account separated and unfilled
+# kills: polish: control hierarchy - Sign out secondary, Delete account separated and unfilled
 # Previously: polish Delete account is unfilled (transparent)
 # suite: node --test --test-name-pattern control.hierarchy tests/e2e_sync.test.js
 # Refs TRI-28: login/sync UI polish.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -308,7 +308,7 @@ h1 svg{display:block; width:223.3px; max-width:100%; height:auto; margin:0 auto}
+@@ -315,7 +315,7 @@ h1 svg{display:block; width:223.3px; max-width:100%; height:auto; margin:0 auto}
+ #sync-panel .mode:focus-visible{outline:2px solid #242424; outline-offset:2px}
  #sync-panel .panel-note{font-size:13px; text-align:start; overflow-wrap:anywhere}
- #sync-ask-text{color:#242424}
  #sync-danger{margin-top:var(--sp-4); padding-top:var(--sp-3); border-top:1px solid #8A847B}
 -#sync-panel #sync-delete{background:transparent; border-color:transparent; color:#5E5850; text-decoration:underline; text-underline-offset:3px}
 +#sync-panel #sync-delete{background:#6756B5; border-color:transparent; color:#5E5850; text-decoration:underline; text-underline-offset:3px}
