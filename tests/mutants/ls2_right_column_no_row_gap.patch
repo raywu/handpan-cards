@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -384,7 +384,7 @@ a.mode{text-decoration:none}
-   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]), :is(#backup-panel, #sync-panel):not([hidden])) > div:nth-of-type(1){grid-column:1; grid-row:1}
-   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]), :is(#backup-panel, #sync-panel):not([hidden])) > div:nth-of-type(3){grid-column:1; grid-row:2}
-   #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]), :is(#backup-panel, #sync-panel):not([hidden])) > div:nth-of-type(2){grid-column:1; grid-row:3}
--  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]), :is(#backup-panel, #sync-panel):not([hidden])) > .panel-col{grid-column:2; grid-row:1 / 5; display:flex; flex-direction:column; row-gap:var(--sp-3)}
-+  #settings-panel:has(#panel-seq-note:not([hidden]), #deck-restore:not([hidden]), :is(#backup-panel, #sync-panel):not([hidden])) > .panel-col{grid-column:2; grid-row:1 / 5; display:flex; flex-direction:column}
+@@ -397,7 +397,7 @@ a.mode{text-decoration:none}
+   #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(1){grid-column:1; grid-row:2}
+   #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(3){grid-column:1; grid-row:3}
+   #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > div:nth-of-type(2){grid-column:1; grid-row:4}
+-  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > .panel-col{grid-column:2; grid-row:2 / 6; display:flex; flex-direction:column; row-gap:var(--sp-2)}
++  #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > .panel-col{grid-column:2; grid-row:2 / 6; display:flex; flex-direction:column}
+   #settings-panel:has(#panel-seq-note:not([hidden])):has(#deck-restore:not([hidden])) > #sync-open{position:static; grid-column:1 / -1; grid-row:1; justify-self:start; margin:0}
  }
- /* LE: wide landscape phones lay the groups out in two balanced CSS columns. */
- @media (min-height:360px) and (max-height:520px) and (min-width:740px){
+ @media (min-height:300px) and (max-height:359px) and (min-width:740px){

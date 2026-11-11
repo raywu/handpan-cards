@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20694,7 +20694,6 @@ function syncPaint() {
+@@ -20793,7 +20793,6 @@ function syncPaint() {
    const sc = syncLoad();
    if (!syncMsgFits(syncMsg, sc)) { syncMsg = null; syncField = null; }
    if (!sc && syncDeleteArmed) { clearTimeout(syncDeleteArmed); syncDeleteArmed = null; }
--  if (sc && syncStep !== "email") { syncStep = "email"; syncEmail = ""; }
+-  if (sc && syncStep !== "email") { syncStep = "email"; syncEmail = ""; syncResendAt = 0; }
    const show = syncActive();
    open.hidden = !show;
-   open.textContent = t(sc ? "sync.menuAccount" : "sync.menu");
+   const panel = syncEl("sync-panel");
