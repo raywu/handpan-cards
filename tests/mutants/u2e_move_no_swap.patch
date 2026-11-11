@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15252,7 +15252,7 @@
+@@ -15369,7 +15369,7 @@ function editorNeoMove(m, from, to) {
    if (from === to) return { ok: true, value: m };
    if (to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
    const next = map.slice();
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  next[to] = next[from]; next[from] = null;
    return editorNeoBuild(m, editorPartsOf(m), next, map[from]);
  }
- function editorRemoveNeotone(m, ring, i) {
+ /* Mirror and rotate on a profile permute the tonefields of profile.map, main and mutant
