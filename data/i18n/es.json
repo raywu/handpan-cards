@@ -368,7 +368,7 @@
   "backup.open": "Exportar enlaces de escalas",
   "backup.intro": "Una lista de enlaces que guardas tú mismo.",
   "backup.session": "Las escalas guardadas no se conservan ahora en este navegador. Desaparecen al cerrar esta pestaña, así que expórtalas ahora.",
-  "backup.restore": "Para restaurar, toca cada enlace de tu lista. El reemplazo de una escala inicial vuelve como una escala personalizada nueva junto a la inicial, y las escalas iniciales ocultas aparecen solo como una nota.",
+  "backup.restore": "Toca un enlace para recuperar esa escala.",
   "backup.text.aria": "Enlaces de escalas guardadas",
   "backup.share": "COMPARTIR",
   "backup.copy": "COPIAR",
@@ -396,6 +396,10 @@
   "sync.sent": "Introduce el código enviado a {email}. Revisa también el spam.",
   "sync.status.syncing": "Guardando en tu cuenta…",
   "sync.status.synced": "Guardado en tu cuenta a las {time}",
+  "sync.status.count": {
+    "one": "{n} escala guardada en tu cuenta",
+    "other": "{n} escalas guardadas en tu cuenta"
+  },
   "sync.status.pending": "Cambios aún no guardados en tu cuenta",
   "sync.signOut": "Cerrar sesión",
   "sync.signedOutDone": "Sesión cerrada. Tus escalas siguen en este dispositivo.",

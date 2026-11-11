@@ -15507,7 +15507,7 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const syncKeys=["entryErr","entrySignIn","entrySub","pageSignIn","pageAccount","pageBack","resendAt","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","sent","status.syncing","status.synced","status.pending","retry","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","signIn"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner"];
+    const syncKeys=["entryErr","entrySignIn","entrySub","pageSignIn","pageAccount","pageBack","resendAt","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","sent","status.syncing","status.synced","status.count","status.pending","retry","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","signIn"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.status.count"];
     assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the Neotone keys (Neotone lane U2) and the thirty-five sync.* keys (login sync lane A2, polished by TRI-28)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
@@ -20848,12 +20848,11 @@ describe("backup: back up saved scales", () => {
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
 
-  test("the panel copy says a restored seed replacement is a new custom scale and hidden seeds are a note", () => {
+  test("the panel copy tells a plain story: tap a link to bring that scale back", () => {
     const app = boot();
     const copy = app.get('t("backup.restore")');
-    assert.match(copy, /new custom scale/);
-    assert.match(copy, /hidden/);
-    assert.match(copy, /note/);
+    assert.strictEqual(copy, "Tap a link to bring that scale back.");
+    assert.doesNotMatch(copy, /seed|replacement/i, "no jargon");
     assert.doesNotMatch(copy, /\bdeck\b/i, "visible text says scale, never deck");
   });
 
@@ -20925,6 +20924,7 @@ describe("backup: back up saved scales", () => {
     assert.match(text, /D AMARA 9/);
     assert.match(text, /Hidden seeded scales/);
     assert.strictEqual(app.els["backup-copy"].disabled, true, "nothing to restore by link means nothing to copy");
+    assert.strictEqual(app.els["backup-download"].disabled, true, "nothing to restore by link means nothing to download");
   });
 
   test("COPY writes the list to the clipboard and stores lastBackup in its own key, not in hpfc", async () => {
@@ -21880,6 +21880,7 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       "sync.entrySub": "Save your scales",
       "sync.entryErr": "Not saved to account \u203a",
       "sync.retry": "Try again",
+      "sync.status.count": { one: "{n} scale saved to your account", other: "{n} scales saved to your account" },
       "sync.err.cap": "Not saved: scale limit reached. Remove a scale, then try again.",
       "sync.err.rate": "Not saved: too many saves. Try again in a minute.",
       "sync.pageSignIn": "Sign in",
@@ -21907,7 +21908,7 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       "backup.intro": "A list of links you keep yourself.",
       "backup.signIn": "To save scales automatically, sign in.",
     };
-    for (const [key, value] of Object.entries(expected)) assert.strictEqual(en[key], value, key);
+    for (const [key, value] of Object.entries(expected)) assert.deepStrictEqual(en[key], value, key);
     for (const gone of ["sync.addLocal", "sync.addLocalYes", "sync.addLocalNo", "sync.domainWarn"]) assert.strictEqual(en[gone], undefined, gone + " is retired");
     assert.strictEqual(en["sync.menuSignedIn"], undefined, "the repeated SYNCED AS {email} message is retired");
   });
@@ -21918,7 +21919,7 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
       assert.ok(!/only in this browser/i.test(text), key);
     }
     assert.match(en["backup.session"], /disappear when you close this tab/, "the session-only warning is preserved");
-    assert.match(en["backup.restore"], /To restore, tap each link/, "the restore instructions are preserved");
+    assert.match(en["backup.restore"], /Tap a link to bring that scale back/, "the restore instructions are preserved");
   });
 
   test("the markup keeps #sync-msg as the sole status region and drops #sync-last", () => {
@@ -21964,6 +21965,27 @@ describe("login sync UI polish (TRI-28): copy and status contract", () => {
     setSidecar(app, { syncedAt: null, pending: false, first: false });
     app.run("syncMsg = null; syncPaint()");
     assert.ok(!/synced|\d:\d/i.test(app.els["sync-msg"].textContent), app.els["sync-msg"].textContent);
+  });
+
+  test("after a save the account page counts the scales saved to the account, pluralised", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    const base = n => Object.fromEntries(Array.from({ length: n }, (_, i) => ["r" + i, { rev: 1, localRevision: 1 }]));
+    for (const [n, text] of [[1, "1 scale saved to your account"], [3, "3 scales saved to your account"]]) {
+      setSidecar(app, { base: base(n), syncedAt: Date.now(), pending: false, first: false });
+      app.run("syncMsg = null; syncPaint()");
+      assert.strictEqual(app.els["sync-msg"].textContent, text);
+    }
+    setSidecar(app, { base: {}, syncedAt: Date.now(), pending: false, first: false });
+    app.run("syncMsg = null; syncPaint()");
+    assert.match(app.els["sync-msg"].textContent, /^Saved to your account at /, "nothing saved yet keeps the time line");
+  });
+
+  test("the signed-in heading is an h3 under the page's h2", async () => {
+    const html = require("node:fs").readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    assert.match(html, /<h2 id="account-title">/);
+    assert.match(html, /<h3 id="sync-heading"/);
+    assert.doesNotMatch(html, /<h4 id="sync-heading"/);
   });
 
   test("sync-msg stays the single place for the timestamp: nothing else carries it", async () => {

@@ -352,7 +352,7 @@
   "backup.open": "导出音阶链接",
   "backup.intro": "一份由你自己保管的链接列表。",
   "backup.session": "已保存的音阶目前不会保留在此浏览器中。关闭此标签页后会消失，请现在导出。",
-  "backup.restore": "要恢复，请逐个点按列表中的链接。替换内置音阶的音阶会作为新的自定义音阶出现在内置音阶旁边，被隐藏的内置音阶只会显示为备注。",
+  "backup.restore": "点按链接即可恢复该音阶。",
   "backup.text.aria": "已保存音阶的链接",
   "backup.share": "分享",
   "backup.copy": "复制",
@@ -380,6 +380,9 @@
   "sync.sent": "请输入发送到 {email} 的验证码。也请检查垃圾邮件。",
   "sync.status.syncing": "正在保存到账户…",
   "sync.status.synced": "已于 {time} 保存到账户",
+  "sync.status.count": {
+    "other": "已将 {n} 个音阶保存到账户"
+  },
   "sync.status.pending": "更改尚未保存到账户",
   "sync.signOut": "退出登录",
   "sync.signedOutDone": "已退出登录。你的音阶仍保留在此设备上。",
