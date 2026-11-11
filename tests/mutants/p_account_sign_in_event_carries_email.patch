@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20914,7 +20914,7 @@ async function syncSubmit() {
+@@ -20912,7 +20912,7 @@ async function syncSubmit() {
    }
    const fresh = { ...HPE.sync.emptySidecar(), project: SYNC_CFG.url, userId: String(r.json.user.id), email: String(r.json.user.email || syncEmail), first: true };
    try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncSession(fresh, r.json))); } catch (e) { syncSay("sync.err.offline"); return; }
 -  track("sign_in", { method: "email" });
 +  track("sign_in", { method: "email", email: syncEmail });
-   syncStep = "email"; syncAskDismissed = false; syncResendAt = 0; input.value = "";
+   syncStep = "email"; syncResendAt = 0; input.value = "";
    syncSay(null); syncFocusFor(syncLoad());
    syncStartLock(); syncKick(true);
