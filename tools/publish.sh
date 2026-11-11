@@ -15,6 +15,14 @@ done
 for d in scales handpan-101 brand; do
   cp -R "$d" "$out/$d"
 done
+for d in zh-hant zh-hans fonts; do
+  if [ -d "$d" ]; then
+    cp -R "$d" "$out/$d"
+  fi
+done
+if [ -f indexnow-key.txt ]; then
+  cp indexnow-key.txt "$out/indexnow-key.txt"
+fi
 if [ -n "${CF_PAGES_BRANCH:-}" ] && [ "$CF_PAGES_BRANCH" != "main" ]; then
   cp qa-seed.html "$out/qa-seed.html"
 fi
