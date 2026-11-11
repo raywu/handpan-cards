@@ -460,13 +460,14 @@ function run() {
       const out = [];
       for (let i = 1; i < ids.length; i++) out.push([ids[i - 1].id || ids[i - 1].tagName, ids[i].id || ids[i].tagName, ids[i].getBoundingClientRect().top - ids[i - 1].getBoundingClientRect().bottom]);
       return out;`);
-    for (const [a, c, gap] of await gaps()) assert.ok(gap >= 8, `email step: ${a} to ${c} is ${gap}px`);
+    const need = (a, c) => (a === "sync-msg" || c === "sync-msg" ? 16 : 8);
+    for (const [a, c, gap] of await gaps()) assert.ok(gap >= need(a, c), `email step: ${a} to ${c} is ${gap}px`);
     await type("sync-email", EMAIL);
     await b.click("#sync-send");
     await b.waitFor(`!document.getElementById("sync-step-code").hidden`, { label: "the code step" });
     const code = await gaps();
     assert.ok(code.length >= 5, "the code step lists its controls: " + JSON.stringify(code));
-    for (const [a, c, gap] of code) assert.ok(gap >= 8, `code step: ${a} to ${c} is ${gap}px`);
+    for (const [a, c, gap] of code) assert.ok(gap >= need(a, c), `code step: ${a} to ${c} is ${gap}px`);
   });
 
   test("polish: a refused save shows the reason with Try again, and Try again runs the save once more", async () => {

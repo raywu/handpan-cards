@@ -1,0 +1,15 @@
+# kills: a refused save shows its reason and a Try again button that runs the save once more
+# suite: node --test --test-name-pattern ^a.refused.save.shows.its.reason tests/app.test.js
+# Refs TRI-28: sign-in QA fixes. Try again is never shown.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20848,7 +20848,7 @@ function syncPaint() {
+     const who = syncEl("sync-account-email"); if (who) who.textContent = sc.email;
+   }
+   const retry = syncEl("sync-retry");
+-  if (retry) { retry.textContent = t("sync.retry"); retry.hidden = !entryFails; }
++  if (retry) { retry.textContent = t("sync.retry"); retry.hidden = true; }
+   const el = syncEl("sync-msg");
+   if (el) el.textContent = msg ? t(msg.key, msg.vars) : "";
+ }

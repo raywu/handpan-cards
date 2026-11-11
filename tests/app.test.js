@@ -22047,7 +22047,7 @@ describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
       assert.strictEqual(app.els["sync-retry"].hidden, false, key);
       assert.strictEqual(app.els["sync-retry"].textContent, "Try again");
       app.run("globalThis.__kicked = 0; syncKick = () => { __kicked++; return Promise.resolve(); };");
-      app.els["sync-retry"].click();
+      app.els["sync-retry"].dispatchEvent({ type: "click" });
       assert.strictEqual(app.get("__kicked"), 1, key + ": Try again re-runs the save");
       assert.strictEqual(app.get("syncMsg"), null, key + ": the refusal is cleared before the retry");
     }

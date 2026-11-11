@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20791,7 +20791,6 @@
-   return sc && !sc.first && savedState ? HPE.sync.pendingLocalIds({ local: syncLocal(), sidecar: sc }) : [];
+@@ -20787,7 +20787,6 @@ function syncReleaseLocal(scope) {
+   return !ids(scope.sidecar).length || !!syncWrite(scope, cur => HPE.sync.releaseLocal(cur, ids(cur)));
  }
  function syncPaint() {
 -  paintBackupHint();

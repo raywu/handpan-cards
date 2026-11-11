@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20529,9 +20529,9 @@ const SYNC_ORIGINS = {"handpan-cards-dev.pages.dev":{url:"https://cknlvnxyjwcjzz
+@@ -20527,9 +20527,9 @@ const SYNC_ORIGINS = {"handpan-cards-dev.pages.dev":{url:"https://cknlvnxyjwcjzz
  const SYNC_KEY = "hpfc.sync.v1";
  const SYNC_LOCK = "hpfc.sync";
  const SYNC_CFG = !MOVE_ON_OLD && Object.prototype.hasOwnProperty.call(SYNC_ORIGINS, location.hostname) ? SYNC_ORIGINS[location.hostname] : null;
@@ -15,5 +15,5 @@ diff --git a/index.html b/index.html
 -const syncCeilMinute = ms => Math.ceil(ms / 60000) * 60000;
 +const syncCeilMinute = ms => ms;
  let syncHolder = false, syncLockAsked = false, syncRunning = null, syncQueued = null, syncTimer = null, syncLastPull = 0;
- let syncStep = "email", syncEmail = "", syncResendAt = 0, syncResendTimer = null, syncAskDismissed = false, syncDeleteArmed = null;
+ let syncStep = "email", syncEmail = "", syncResendAt = 0, syncResendTimer = null, syncDeleteArmed = null;
  let syncMsg = null, syncBusy = false, syncBusyKind = null, syncField = null, syncSyncing = false;

@@ -5,7 +5,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20834,7 +20834,7 @@ async function syncDeleteAccount() {
+@@ -20954,7 +20954,7 @@ async function syncDeleteAccount() {
    const token = sc.accessExp > Date.now() + 5000 ? sc.access : null;
    const r = token ? await syncFetch("/rest/v1/rpc/delete_my_account", { method: "POST", token, body: {} }) : { ok: false };
    if (!syncStill(scope)) return;
@@ -13,4 +13,4 @@ diff --git a/index.html b/index.html
 +  if (!r.ok) { syncSay(null); return; }
    if (syncRemove(scope, null)) syncFocusFor(null);
  }
- function syncAskAnswer(yes) {
+ function syncRetry() {
