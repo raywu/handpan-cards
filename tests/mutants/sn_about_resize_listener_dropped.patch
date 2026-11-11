@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14468,7 +14468,7 @@ function syncAboutHead() {
-   const head = document.querySelector(".abouthead");
+@@ -19558,7 +19558,7 @@ function syncAboutHead() {
+   const head = document.querySelector("#about .abouthead");
    document.documentElement.style.setProperty("--about-head-h", (head ? head.offsetHeight : 0) + "px");
  }
--window.addEventListener("resize", syncAboutHead);
-+
+-window.addEventListener("resize", () => { syncAboutHead(); syncPageHead(); });
++window.addEventListener("resize", () => { syncPageHead(); });
  function aboutStops() {
    return [aboutCloseBtn, ...document.querySelectorAll('#about a[href^="#deck="], #about a[href^="mailto:"]')].filter(isStop);
  }
