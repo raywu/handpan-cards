@@ -11177,7 +11177,7 @@ function run() {
         const lines = (el) => { const r = document.createRange(); r.selectNodeContents(el);
           return new Set([...r.getClientRects()].map((k) => Math.round(k.top))).size; };
         const second = document.getElementById("panel-prog-heading");
-        const modebar = document.querySelector(".modebar"), tierbar = document.querySelector(".tierbar");
+        const modebar = document.querySelector("#settings-panel .modebar"), tierbar = document.querySelector("#settings-panel .tierbar");
         return {
           texts: hs.map((h) => h.textContent.trim()), tags: hs.map((h) => h.tagName),
           lines: hs.map(lines), same: hs.map((h) => style(h) === style(scales)),
