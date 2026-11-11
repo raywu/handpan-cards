@@ -52,12 +52,14 @@ FLOORS = {
     "tests/test_scale_pages.py": 130,
     "tests/test_site_files.py": 14,
     "tests/test_ci_scope.py": 36,
+    "tests/test_sync_schema_lint.py": 9,
     # node
-    "tests/app.test.js": 1140,
+    "tests/app.test.js": 1287,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
     "tests/e2e.test.js": 637,
+    "tests/e2e_sync.test.js": 33,
     "tests/harness.test.js": 67,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 28,
@@ -67,11 +69,14 @@ FLOORS = {
     "tests/import.test.js": 131,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
-    "tests/layout.test.js": 144,
+    "tests/layout.test.js": 163,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 55,
-    "tests/share.test.js": 113,
+    "tests/share.test.js": 149,
     "tests/link_corpus.test.js": 7,
+    "tests/editor_model.test.js": 31,
+    "tests/editor_shell.test.js": 51,
+    "tests/editor_e2e.test.js": 92,
     "tests/storage_corpus.test.js": 18,
     "tests/preview.test.js": 14,
     "tests/pdf.test.js": 16,
@@ -81,6 +86,8 @@ FLOORS = {
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 59,
     "tests/swipe.test.js": 21,
+    "tests/pgenv.test.js": 3,
+    "tests/sync.test.js": 178,
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
     "tests/persist.test.js": 7,
@@ -91,7 +98,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js", "tests/e2e_sync.test.js", "tests/editor_e2e.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40
@@ -206,12 +213,13 @@ def check_python():
 # and overran 180s with them, so the budget became 300s; the sheet-polish lip
 # clearance tests (2026-10-21) took the file past 300s on CI, so it became 420s;
 # the combined sheet-polish release (every test bounded by its own 90s-or-less
-# timeout, so no hang) overran 420s on CI, so it is 900s, half the 30-minute
-# job limit. Every node file now prints its wall clock (timed_run) so the next
+# timeout, so no hang) overran 420s on CI, so it became 900s; the file then ran
+# 849-897s on CI (2026-11-10) and the sign-in QA fixes (2026-11-11) took it past
+# 900s (base ran 873s), so it is 1500s. Every node file now prints its wall clock (timed_run) so the next
 # sizing is measured. tests/mutation_check.sh
 # keeps its own 180s SUITE_TIMEOUT: it runs a filtered subset per mutant, never
 # the whole file. NODE_SUITE_TIMEOUT overrides this one.
-NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "900"))
+NODE_TIMEOUT = int(os.environ.get("NODE_SUITE_TIMEOUT", "1500"))
 
 
 # How much of a failing suite's own output to reprint. A return code with no

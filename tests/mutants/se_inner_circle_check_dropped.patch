@@ -1,0 +1,15 @@
+# kills: SE: innerClash names a rim note or a bottom note whose circle the pinned inner note would touch
+# suite: node --test --test-name-pattern ^SE..innerClash.names.a.rim.note.or.a.bottom.note.whose.circle.the.pinned.inner.note.would.touch$ tests/layout.test.js
+# A pinned inner note can sit on a rim or bottom note's circle: the circle-distance check is disabled.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -696,7 +696,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       } else {
+         continue;
+       }
+-      if (distance(mine, there) < geom.r_note + reach - CLASH_EPS) return id;
++      if (false && distance(mine, there) < geom.r_note + reach - CLASH_EPS) return id;
+     }
+     return null;
+   }

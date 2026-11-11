@@ -1,0 +1,14 @@
+# kills: the account page pushes one #account entry and Back pops it
+# suite: node --test --test-name-pattern ^the.account.page.pushes.one.#account.entry tests/app.test.js
+# Refs TRI-28: sign-in page. Opening a page pushes no history entry, so Back leaves the app.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -19650,7 +19650,6 @@ function openSubpage(name) {
+   subpage = name;
+   setInert(true, subpageBackground());
+   document.documentElement.classList.add(name + "-open");
+-  history.pushState({ [name]: true }, "", page.route);
+   page.section.scrollTop = 0;
+   syncPageHead();
+   page.onOpen();

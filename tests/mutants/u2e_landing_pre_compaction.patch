@@ -1,0 +1,15 @@
+# kills: U2e-1: insert fills the first empty field, then main compaction; the landing is the post-compaction slot (D9)
+# suite: node --test --test-name-pattern ^U2e.1:. tests/editor_shell.test.js
+# fault: The landing is read before compaction.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15214,7 +15214,7 @@
+   const loaded = editorLoad(editorText(m, parts), { ...m.options, profile, seats: null, angles: null });
+   if (!loaded.ok) return loaded;
+   const settled = editorSettle(loaded.value, {});
+-  return settled.ok && landedKey !== undefined ? { ...settled, notice: { ...settled.notice, landed: compact.indexOf(landedKey) } } : settled;
++  return settled.ok && landedKey !== undefined ? { ...settled, notice: { ...settled.notice, landed: map.indexOf(landedKey) } } : settled;
+ }
+ const EDITOR_SEMITONE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+ function editorNeoKeyOfName(ring, name) {

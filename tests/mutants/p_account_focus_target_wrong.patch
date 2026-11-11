@@ -1,0 +1,15 @@
+# kills: E-deeplink-export: #export and #account open their pages at boot and by same-tab fragment, and Back lands on the deck
+# suite: node --test --test-name-pattern ^E-deeplink-export tests/e2e_sync.test.js
+# Refs TRI-28: sign-in QA fixes. A signed-in account page opens with focus on Sign out instead of its heading.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20869,7 +20869,7 @@ function syncPaintResend() {
+   syncResendTimer = left > 0 ? setTimeout(syncPaintResend, left) : null;
+ }
+ function syncFocusFor(sc) {
+-  const target = sc ? syncEl("sync-heading") : syncEl(syncStep === "code" ? "sync-code" : "sync-email");
++  const target = sc ? syncEl("sync-out") : syncEl(syncStep === "code" ? "sync-code" : "sync-email");
+   if (target) target.focus();
+ }
+ const syncAuthError = (r, bad) => {

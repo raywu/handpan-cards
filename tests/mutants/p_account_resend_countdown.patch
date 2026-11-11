@@ -1,0 +1,15 @@
+# kills: the resend line shows a clock time, never a countdown, and the button keeps its label
+# suite: node --test --test-name-pattern ^the.resend.line.shows.a.clock.time tests/app.test.js
+# Refs TRI-28: sign-in page. The resend line counts seconds down instead of naming a clock time.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20865,7 +20865,7 @@ function syncPaintResend() {
+   if (at) {
+     const show = left > 0 && !(syncMsg && syncMsg.key === "sync.err.expired");
+     at.hidden = !show;
+-    at.textContent = show ? t("sync.resendAt", { time: new Date(syncResendAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) }) : "";
++    at.textContent = show ? t("sync.resendAt", { time: Math.ceil(left / 1000) + "s" }) : "";
+   }
+   clearTimeout(syncResendTimer);
+   syncResendTimer = left > 0 ? setTimeout(syncPaintResend, left) : null;

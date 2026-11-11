@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1429,7 +1429,7 @@ html.about-open{overflow:hidden}
+@@ -1641,7 +1641,7 @@ html.account-open, html.export-open{overflow:hidden}
    background:#6756B5; color:#FFFFFF; border-color:#6756B5}
  #settings-panel .mode.on:active, #scale-sheet .mode.on:active{background:#5A49A6}
  #settings-panel .mode:disabled, #scale-sheet .mode:disabled, #settings-panel .prints button:disabled{
 -  background:#F6F4ED; color:#8A847B; border-color:#8A847B; opacity:1}
 +  background:#F6F4ED; color:#242424; border-color:#8A847B; opacity:1}
  
- #scale-sheet #scale-title{color:#242424}
- #scale-sheet .sheetlabel, #scale-sheet .sheethint, #scale-sheet #scale-parse, #scale-sheet #scale-refusal,
+ #export .mode:disabled, #export .mode:disabled:hover{background:#F6F4ED; color:#8A847B; border-color:#8A847B; cursor:default}
+ 
