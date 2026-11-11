@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18573,7 +18573,7 @@ function paintBackup(message) {
-   document.getElementById("backup-restore").textContent = t("backup.restore");
-   document.getElementById("backup-session").hidden = savedMode !== "session";
-   document.getElementById("backup-signin").textContent = t("backup.signIn");
+@@ -18567,7 +18567,7 @@ function backupMarkDone() {
+   paintBackup();
+ }
+ function paintBackupHint() {
 -  document.getElementById("backup-signin").hidden = !(syncActive() && !syncLoad());
 +  document.getElementById("backup-signin").hidden = !syncActive();
-   document.getElementById("backup-share").hidden = typeof navigator.share !== "function";
-   for (const b of backupButtons) b.disabled = !rows;
-   backupStatus.textContent = message !== undefined ? message : rows ? "" : t("backup.empty");
+ }
+ function paintBackup(message) {
+   const rows = backupRows().length;
