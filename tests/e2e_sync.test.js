@@ -282,7 +282,7 @@ function run() {
     await frameJs(`localStorage.setItem("hpfc.sync.v1", JSON.stringify({ v: 1, project: ${JSON.stringify(PROJECT)}, userId: "11111111-1111-4111-8111-111111111111", email: "me@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: true })); syncStartLock();`);
     await b.waitFor(`JSON.parse(localStorage.getItem("hpfc.sync.v1")).first === false`, { timeout: 8000, label: "first sync" });
     await b.eval(`syncPaint();`);
-    await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { timeout: 8000, label: "synced status replaces the signed-out text" });
+    await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { timeout: 8000, label: "synced status replaces the signed-out text" });
     assert.doesNotMatch(await q("#sync-msg", `$$.textContent`), /Signed out/);
   });
 
@@ -310,7 +310,7 @@ function run() {
     await fresh();
     await signIn();
     await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).first === false`, { label: "first sync done" });
-    await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { label: "a routine success is cached (copy asserted separately)" });
+    await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { label: "a routine success is cached (copy asserted separately)" });
   };
   const gateFetch = async frag => {
     await b.eval(`window.__orig = window.__orig || window.fetch; window.__gated = 0; window.fetch = function (u, o) { if (String(u).indexOf(${JSON.stringify(frag)}) >= 0) return new Promise(function (res) { window.__gate = function () { res(window.__orig(u, o)); }; window.__gated++; }); return window.__orig(u, o); };`);
@@ -365,6 +365,8 @@ function run() {
 
   test("polish: #sync-msg is the only status region and the synced time appears once", async () => {
     await signedSynced();
+    await setSidecar({ base: {} });
+    await b.eval(`syncMsg = null; syncPaint();`);
     const m = await msg();
     const time = /^Saved to your account at (.+)$/.exec(m);
     assert.ok(time, "expected 'Saved to your account at {time}', got: " + m);
@@ -388,7 +390,7 @@ function run() {
     await b.eval(`const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); s.first = false; s.pending = false; delete s.syncedAt; localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s)); syncMsg = null; syncPaint();`);
     assert.ok(!/synced|\d:\d\d/i.test(await msg()), "no timestamp before a successful sync: " + await msg());
     await setSidecar({ syncedAt: Date.now() });
-    assert.match(await msg(), /^Saved to your account at /, "the last success shows when nothing live applies");
+    assert.match(await msg(), /^(Saved to your account at |\d+ scales? saved to your account)/, "the last success shows when nothing live applies");
   });
 
   test("polish: an error outranks routine repaint and pending; clearing it restores the live status", async () => {
@@ -482,8 +484,47 @@ function run() {
       await b.eval(`window.__kicks = 0; const k = syncKick; syncKick = p => { window.__kicks++; return k(p); };`);
       await b.click("#sync-retry");
       await b.waitFor(`window.__kicks >= 1`, { label: "the retry save" });
-      await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { label: "the refusal cleared by a good save" });
+      await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { label: "the refusal cleared by a good save" });
       assert.strictEqual(await shown("sync-retry"), false);
+    }
+  });
+
+  test("polish: the not-saved line in the menu entry is an error colour with a dot, readable on its ground", async () => {
+    await signedSynced();
+    await b.eval(`syncSay("sync.err.cap");`);
+    const r = await b.eval(`
+      const lum = rgb => { const [x, y, z] = rgb.map(v => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); return 0.2126 * x + 0.7152 * y + 0.0722 * z; };
+      const num = css => css.match(/[0-9.]+/g).slice(0, 3).map(Number);
+      const err = document.getElementById("sync-entry-err"), sub = document.getElementById("sync-entry-sub"), btn = document.getElementById("sync-open");
+      const fg = num(getComputedStyle(err).color), bg = num(getComputedStyle(btn).backgroundColor);
+      const a = lum(fg), c = lum(bg);
+      const dot = getComputedStyle(err, "::before");
+      return { ratio: (Math.max(a, c) + 0.05) / (Math.min(a, c) + 0.05), errColor: getComputedStyle(err).color, subColor: getComputedStyle(sub).color, dotContent: dot.content, dotW: dot.width, dotRadius: dot.borderTopLeftRadius };`);
+    assert.ok(r.ratio >= 4.5, "contrast " + r.ratio);
+    assert.notStrictEqual(r.errColor, r.subColor, "differs from the normal subtitle");
+    assert.notStrictEqual(r.dotContent, "none", "has a dot");
+    assert.strictEqual(r.dotW, "6px");
+    assert.notStrictEqual(r.dotRadius, "0px");
+  });
+
+  test("polish: the signed-in heading is a real h3 under the h2, a proper size, and the count is the main status line", async () => {
+    await signedSynced();
+    await b.eval(`openSubpage("account");`);
+    const r = await b.eval(`const h = document.getElementById("sync-heading"); return { tag: h.tagName, size: parseFloat(getComputedStyle(h).fontSize), weight: Number(getComputedStyle(h).fontWeight), h2: document.getElementById("account-title").tagName };`);
+    assert.deepStrictEqual([r.tag, r.h2], ["H3", "H2"]);
+    assert.ok(r.size >= 18, "a heading, not 13px small print: " + JSON.stringify(r));
+    await setSidecar({ base: { r1: { rev: 1, localRevision: 1 }, r2: { rev: 1, localRevision: 1 } }, syncedAt: Date.now(), pending: false });
+    await b.eval(`syncMsg = null; syncPaint();`);
+    assert.strictEqual(await msg(), "2 scales saved to your account");
+  });
+
+  test("polish: the export page has plain restore copy and COPY and DOWNLOAD look and act disabled with no saved scales", async () => {
+    await fresh();
+    await b.eval(`openSubpage("export"); for (const id of ["backup-copy", "backup-download"]) document.getElementById(id).disabled = true;`);
+    assert.strictEqual(await q("#backup-restore", `$$.textContent`), "Tap a link to bring that scale back.");
+    for (const id of ["backup-copy", "backup-download"]) {
+      assert.strictEqual(await q("#" + id, `$$.disabled`), true, id);
+      assert.strictEqual(await q("#" + id, `getComputedStyle($$).color`), "rgb(138, 132, 123)", id + " looks disabled");
     }
   });
 
@@ -764,7 +805,7 @@ function run() {
         await bSignIn(holder ? "A" : "B");
         await waitSigned(true);
         await holderIs(holder);
-        await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
+        await b.waitFor(`/^(Saved to your account at |\\d+ scales? saved to your account)/.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
         await bSignOut();
         await waitSigned(false);
         assert.notStrictEqual(await msg(), old, row + ": the message does not come back after the flip back");

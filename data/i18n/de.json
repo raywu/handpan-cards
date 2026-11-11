@@ -368,7 +368,7 @@
   "backup.open": "Skalen-Links exportieren",
   "backup.intro": "Eine Liste mit Links, die du selbst aufbewahrst.",
   "backup.session": "Gespeicherte Skalen werden in diesem Browser gerade nicht dauerhaft behalten. Sie verschwinden, wenn du diesen Tab schließt. Exportiere sie jetzt.",
-  "backup.restore": "Zum Wiederherstellen tippst du in deiner Liste auf jeden Link. Eine wiederhergestellte Ersetzung einer Standardskala kommt als neue eigene Skala neben der Standardskala zurück, und ausgeblendete Standardskalen erscheinen nur als Hinweis.",
+  "backup.restore": "Tippe auf einen Link, um diese Skala zurückzuholen.",
   "backup.text.aria": "Links zu gespeicherten Skalen",
   "backup.share": "TEILEN",
   "backup.copy": "KOPIEREN",
@@ -396,6 +396,10 @@
   "sync.sent": "Gib den Code ein, den wir an {email} gesendet haben. Schau auch im Spam-Ordner nach.",
   "sync.status.syncing": "Speichere im Konto…",
   "sync.status.synced": "Um {time} im Konto gespeichert",
+  "sync.status.count": {
+    "one": "{n} Skala im Konto gespeichert",
+    "other": "{n} Skalen im Konto gespeichert"
+  },
   "sync.status.pending": "Änderungen noch nicht im Konto gespeichert",
   "sync.signOut": "Abmelden",
   "sync.signedOutDone": "Abgemeldet. Deine Skalen bleiben auf diesem Gerät.",

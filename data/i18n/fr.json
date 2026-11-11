@@ -368,7 +368,7 @@
   "backup.open": "Exporter les liens de gammes",
   "backup.intro": "Une liste de liens que vous conservez vous-même.",
   "backup.session": "Les gammes enregistrées ne sont pas conservées dans ce navigateur pour le moment. Elles disparaissent à la fermeture de cet onglet, exportez-les donc maintenant.",
-  "backup.restore": "Pour restaurer, touchez chaque lien de votre liste. Le remplacement d’une gamme d’origine revient comme une nouvelle gamme personnalisée à côté de la gamme d’origine, et les gammes d’origine masquées n’apparaissent que comme une note.",
+  "backup.restore": "Touchez un lien pour récupérer cette gamme.",
   "backup.text.aria": "Liens des gammes enregistrées",
   "backup.share": "PARTAGER",
   "backup.copy": "COPIER",
@@ -396,6 +396,10 @@
   "sync.sent": "Saisissez le code envoyé à {email}. Vérifiez aussi vos spams.",
   "sync.status.syncing": "Enregistrement dans votre compte…",
   "sync.status.synced": "Enregistré dans votre compte à {time}",
+  "sync.status.count": {
+    "one": "{n} gamme enregistrée dans votre compte",
+    "other": "{n} gammes enregistrées dans votre compte"
+  },
   "sync.status.pending": "Modifications pas encore enregistrées dans votre compte",
   "sync.signOut": "Se déconnecter",
   "sync.signedOutDone": "Déconnecté. Vos gammes restent sur cet appareil.",

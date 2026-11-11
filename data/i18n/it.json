@@ -368,7 +368,7 @@
   "backup.open": "Esporta i link delle scale",
   "backup.intro": "Un elenco di link che conservi tu.",
   "backup.session": "Le scale salvate al momento non vengono conservate in questo browser. Spariscono quando chiudi questa scheda, quindi esportale ora.",
-  "backup.restore": "Per ripristinare, tocca ogni link del tuo elenco. Una sostituzione di una scala predefinita torna come nuova scala personalizzata accanto a quella predefinita, e le scale predefinite nascoste compaiono solo come nota.",
+  "backup.restore": "Tocca un link per riavere quella scala.",
   "backup.text.aria": "Link delle scale salvate",
   "backup.share": "CONDIVIDI",
   "backup.copy": "COPIA",
@@ -396,6 +396,10 @@
   "sync.sent": "Inserisci il codice inviato a {email}. Controlla anche lo spam.",
   "sync.status.syncing": "Salvataggio nel tuo account…",
   "sync.status.synced": "Salvato nel tuo account alle {time}",
+  "sync.status.count": {
+    "one": "{n} scala salvata nel tuo account",
+    "other": "{n} scale salvate nel tuo account"
+  },
   "sync.status.pending": "Modifiche non ancora salvate nel tuo account",
   "sync.signOut": "Esci",
   "sync.signedOutDone": "Disconnesso. Le tue scale restano su questo dispositivo.",

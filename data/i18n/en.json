@@ -368,7 +368,7 @@
   "backup.open": "Export scale links",
   "backup.intro": "A list of links you keep yourself.",
   "backup.session": "Saved scales are not being kept in this browser right now. They disappear when you close this tab, so export them now.",
-  "backup.restore": "To restore, tap each link in your saved list. A restored seeded-scale replacement comes back as a new custom scale beside the seeded one, and hidden seeded scales appear only as a note.",
+  "backup.restore": "Tap a link to bring that scale back.",
   "backup.text.aria": "Saved scale links",
   "backup.share": "SHARE",
   "backup.copy": "COPY",
@@ -396,6 +396,10 @@
   "sync.sent": "Enter the code sent to {email}. Check spam too.",
   "sync.status.syncing": "Saving to your account…",
   "sync.status.synced": "Saved to your account at {time}",
+  "sync.status.count": {
+    "one": "{n} scale saved to your account",
+    "other": "{n} scales saved to your account"
+  },
   "sync.status.pending": "Changes not yet saved to your account",
   "sync.signOut": "Sign out",
   "sync.signedOutDone": "Signed out. Your scales remain on this device.",

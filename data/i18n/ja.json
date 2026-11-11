@@ -352,7 +352,7 @@
   "backup.open": "スケールのリンクを書き出す",
   "backup.intro": "自分で保管するリンクの一覧です。",
   "backup.session": "保存したスケールは今このブラウザに残りません。このタブを閉じると消えるので、今すぐ書き出してください。",
-  "backup.restore": "復元するには、リストの各リンクをタップします。標準スケールを置き換えたものは、標準スケールの隣に新しいカスタムスケールとして戻り、非表示の標準スケールはメモとしてのみ表示されます。",
+  "backup.restore": "リンクをタップすると、そのスケールが戻ります。",
   "backup.text.aria": "保存したスケールのリンク",
   "backup.share": "共有",
   "backup.copy": "コピー",
@@ -380,6 +380,9 @@
   "sync.sent": "{email} に送信したコードを入力してください。迷惑メールも確認してください。",
   "sync.status.syncing": "アカウントに保存中…",
   "sync.status.synced": "{time} にアカウントへ保存しました",
+  "sync.status.count": {
+    "other": "{n}件のスケールをアカウントに保存しました"
+  },
   "sync.status.pending": "アカウントに未保存の変更があります",
   "sync.signOut": "ログアウト",
   "sync.signedOutDone": "ログアウトしました。スケールはこの端末に残ります。",
