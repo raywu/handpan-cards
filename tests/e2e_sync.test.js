@@ -89,8 +89,8 @@ function run() {
     const hidden = await b.eval(`return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
     if (!hidden && await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`)) await b.click("#settings-trigger");
     await b.waitFor(`!document.getElementById("sync-open").hidden`, { label: "the sync opener" });
-    if (await b.eval(`return document.getElementById("sync-panel").hidden;`)) await b.click("#sync-open");
-    await b.waitFor(`!document.getElementById("sync-panel").hidden`, { label: "the sync panel" });
+    if (await b.eval(`return document.getElementById("account").hidden;`)) await b.click("#sync-open");
+    await b.waitFor(`!document.getElementById("account").hidden`, { label: "the account page" });
   };
   const type = (id, v) => b.eval(`const el = document.getElementById(${JSON.stringify(id)}); el.value = ${JSON.stringify(v)}; el.dispatchEvent(new Event("input", { bubbles: true }));`);
   const signIn = async () => {
@@ -104,11 +104,11 @@ function run() {
   };
   const log = () => b.eval(`return JSON.parse(localStorage.getItem("__sblog") || "[]");`);
 
-  test("signed out the opener is visible and the panel starts closed", async () => {
+  test("signed out the entry is visible and the account page starts closed", async () => {
     await fresh();
     await b.waitFor(`!document.getElementById("sync-open").hidden`, { label: "the sync opener" });
-    assert.strictEqual(await q("#sync-panel", `$$.hidden`), true);
-    assert.strictEqual(await q("#sync-open", `$$.getAttribute("aria-expanded")`), "false");
+    assert.strictEqual(await q("#account", `$$.hidden`), true);
+    assert.strictEqual(await q("#sync-open", `$$.getAttribute("aria-haspopup")`), "dialog");
     assert.deepStrictEqual(await log(), []);
   });
 
@@ -119,7 +119,7 @@ function run() {
     assert.strictEqual(await active(), "sync-email");
     assert.strictEqual(await q("#sync-msg", `$$.getAttribute("role") + "|" + $$.getAttribute("aria-live")`), "status|polite");
     assert.match(await q("#sync-domain", `$$.textContent`), /handpantheory\.com/);
-    assert.strictEqual(await q("#sync-open", `$$.getAttribute("aria-expanded")`), "true");
+    assert.strictEqual(await q("#account", `$$.hidden`), false);
   });
 
   test("a bad address is refused in place with aria-invalid and focus kept", async () => {
@@ -141,7 +141,9 @@ function run() {
     assert.strictEqual(await q("#sync-code", `$$.inputMode + "|" + $$.autocomplete + "|" + $$.getAttribute("pattern") + "|" + $$.maxLength`), "numeric|one-time-code|[0-9]{6}|6");
     assert.strictEqual(await active(), "sync-code");
     assert.strictEqual(await q("#sync-resend", `$$.disabled`), true);
-    assert.match(await q("#sync-resend", `$$.textContent`), /^Resend in (5[89]|60)s$/);
+    assert.strictEqual(await q("#sync-resend", `$$.textContent`), "Resend code");
+    assert.match(await q("#sync-resend-at", `$$.textContent`), /^You can ask for a new code at /);
+    assert.ok(await b.eval(`return syncResendAt - Date.now();`) >= 60000, "the wait is at least 60 seconds");
     assert.match(await q("#sync-msg", `$$.textContent`), /me@example\.test/);
     await b.eval(`syncResendAt = Date.now() - 1; syncPaintResend();`);
     assert.strictEqual(await q("#sync-resend", `$$.disabled`), false);
@@ -179,6 +181,7 @@ function run() {
     const wait = (expr, label) => b.waitFor(inPage(expr), { label });
     const click = id => frame ? read(`document.getElementById(${JSON.stringify(id)}).click()`) : b.click("#" + id);
 
+    if (await read(`!document.getElementById("account").hidden`)) await click("account-close");
     if (await read(`visible("settings-trigger") && !visible("settings-panel")`)) await click("settings-trigger");
     await click("deck-add");
     await wait(`visible("scale-sheet") && !document.getElementById("scale-sheet").hasAttribute("hidden")`, "the scale sheet");
@@ -274,7 +277,7 @@ function run() {
     await frameJs(`localStorage.setItem("hpfc.sync.v1", JSON.stringify({ v: 1, project: ${JSON.stringify(PROJECT)}, userId: "11111111-1111-4111-8111-111111111111", email: "me@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: true })); syncStartLock();`);
     await b.waitFor(`JSON.parse(localStorage.getItem("hpfc.sync.v1")).first === false`, { timeout: 8000, label: "first sync" });
     await b.eval(`syncPaint();`);
-    await b.waitFor(`/^(Account s|S)ynced at /.test(document.getElementById("sync-msg").textContent)`, { timeout: 8000, label: "synced status replaces the signed-out text" });
+    await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { timeout: 8000, label: "synced status replaces the signed-out text" });
     assert.doesNotMatch(await q("#sync-msg", `$$.textContent`), /Signed out/);
   });
 
@@ -302,7 +305,7 @@ function run() {
     await fresh();
     await signIn();
     await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).first === false`, { label: "first sync done" });
-    await b.waitFor(`/^(Account s|S)ynced at /.test(document.getElementById("sync-msg").textContent)`, { label: "a routine success is cached (copy asserted separately)" });
+    await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { label: "a routine success is cached (copy asserted separately)" });
   };
   const withAsk = n => b.eval(`syncAskIds = () => Array.from({ length: ${n} }, (_, i) => "id" + i); syncAskDismissed = false; syncPaint();`);
   const gateFetch = async frag => {
@@ -312,19 +315,20 @@ function run() {
   const failFetch = (frag, status) => b.eval(`window.__orig = window.__orig || window.fetch; window.fetch = function (u, o) { if (String(u).indexOf(${JSON.stringify(frag)}) >= 0) return Promise.resolve({ status: ${status}, ok: false, json: function () { return Promise.resolve(null); } }); return window.__orig(u, o); };`);
   const restoreFetch = () => b.eval(`if (window.__orig) window.fetch = window.__orig;`);
 
-  test("polish: signed out the opener says Sign in to sync and the email step has one primary Send code", async () => {
+  test("polish: signed out the entry says Sign in and the email step has one primary Send code", async () => {
     await fresh();
     await b.waitFor(`!document.getElementById("sync-open").hidden`, { label: "the sync opener" });
-    assert.strictEqual(await q("#sync-open", `$$.textContent`), "Sign in to sync");
+    assert.strictEqual(await q("#sync-entry-main", `$$.textContent`), "Sign in");
+    assert.strictEqual(await q("#sync-entry-sub", `$$.textContent`), "Save your scales");
     assert.ok(!/synced|@/i.test(await q("#sync-open", `$$.textContent`)), "no account or success claim while signed out");
     await openSync();
     assert.strictEqual(await q("#sync-send", `$$.innerText`), "Send code");
     assert.strictEqual(await q("#sync-email-label", `$$.textContent`), "Email address");
-    assert.ok((await q("#sync-panel", `$$.textContent`)).includes("Sync saved scales across devices."));
+    assert.ok((await q("#sync-panel", `$$.textContent`)).includes("Save your scales to your account to use them on any device."));
     assert.match(await q("#sync-domain", `$$.textContent`), /handpantheory\.com/);
   });
 
-  test("polish: the code step uses sentence-case Sign in, Change email and Resend in {s}s", async () => {
+  test("polish: the code step uses sentence-case Sign in, Change email and a Resend code line with a clock time", async () => {
     await fresh();
     await openSync();
     await type("sync-email", EMAIL);
@@ -334,7 +338,8 @@ function run() {
     assert.strictEqual(await q("#sync-code-label", `$$.textContent`), "6-digit code");
     assert.strictEqual(await q("#sync-verify", `$$.innerText`), "Sign in");
     assert.strictEqual(await q("#sync-other", `$$.innerText`), "Change email");
-    assert.match(await q("#sync-resend", `$$.innerText`), /^Resend in (5[89]|60)s$/);
+    assert.strictEqual(await q("#sync-resend", `$$.innerText`), "Resend code");
+    assert.match(await q("#sync-resend-at", `$$.innerText`), /^You can ask for a new code at /);
     await b.eval(`syncResendAt = Date.now() - 1; syncPaintResend();`);
     assert.strictEqual(await q("#sync-resend", `$$.innerText`), "Resend code");
     const bg = id => q(id, `getComputedStyle($$).backgroundColor`);
@@ -344,21 +349,21 @@ function run() {
 
   test("polish: signed in shows one identity (opener, heading, email once) and no #sync-last", async () => {
     await signedSynced();
-    assert.strictEqual(await q("#sync-open", `$$.textContent`), "Account & sync");
+    assert.strictEqual(await q("#sync-entry-main", `$$.textContent`), EMAIL);
     assert.strictEqual(await q("#sync-heading", `$$.textContent`), "Signed in");
     assert.strictEqual(await q("#sync-account-email", `$$.textContent`), EMAIL);
     assert.notStrictEqual(await q("#sync-account-email", `$$.tagName`), "A", "plain text, not a mail link");
     assert.strictEqual(await b.eval(`return document.querySelectorAll('#sync-panel a[href^="mailto:"]').length;`), 0);
-    const text = await accountText();
-    assert.strictEqual(text.split(EMAIL).length - 1, 1, "the address appears once in the opener and panel text");
+    const text = await q("#sync-panel", `$$.textContent`);
+    assert.strictEqual(text.split(EMAIL).length - 1, 1, "the address appears once in the panel text");
     assert.strictEqual(await b.eval(`return document.getElementById("sync-last");`), null, "#sync-last is removed");
   });
 
   test("polish: #sync-msg is the only status region and the synced time appears once", async () => {
     await signedSynced();
     const m = await msg();
-    const time = /^Account synced at (.+)$/.exec(m);
-    assert.ok(time, "expected 'Account synced at {time}', got: " + m);
+    const time = /^Saved to your account at (.+)$/.exec(m);
+    assert.ok(time, "expected 'Saved to your account at {time}', got: " + m);
     const text = await accountText();
     assert.strictEqual(text.split(time[1]).length - 1, 1, "the timestamp appears once: " + text);
     assert.strictEqual(await b.eval(`return document.querySelectorAll('#sync-panel [role="status"], #sync-panel [aria-live]').length;`), 1);
@@ -369,17 +374,17 @@ function run() {
   test("polish: live first-pull and pending outrank a cached success; no timestamp before a first success", async () => {
     await signedSynced();
     await setSidecar({ pending: true });
-    assert.strictEqual(await msg(), "Changes waiting to sync", "a cached Account synced message must not mask pending work");
+    assert.strictEqual(await msg(), "Changes not yet saved to your account", "a cached Saved to your account message must not mask pending work");
     await setSidecar({ pending: false, first: true });
-    assert.strictEqual(await msg(), "Syncing\u2026");
+    assert.strictEqual(await msg(), "Saving to your account\u2026");
     await setSidecar({ pending: true, first: true });
-    assert.strictEqual(await msg(), "Syncing\u2026", "a live first pull outranks pending");
+    assert.strictEqual(await msg(), "Saving to your account\u2026", "a live first pull outranks pending");
     await setSidecar({ pending: false, first: true });
-    assert.ok(!/Account synced/.test(await accountText()), "signed in is not synced");
+    assert.ok(!/Saved to your account/.test(await accountText()), "signed in is not synced");
     await b.eval(`const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); s.first = false; s.pending = false; delete s.syncedAt; localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s)); syncMsg = null; syncPaint();`);
     assert.ok(!/synced|\d:\d\d/i.test(await msg()), "no timestamp before a successful sync: " + await msg());
     await setSidecar({ syncedAt: Date.now() });
-    assert.match(await msg(), /^Account synced at /, "the last success shows when nothing live applies");
+    assert.match(await msg(), /^Saved to your account at /, "the last success shows when nothing live applies");
   });
 
   test("polish: an error outranks routine repaint and pending; clearing it restores the live status", async () => {
@@ -394,7 +399,7 @@ function run() {
     await setSidecar({ pending: false, first: true });
     assert.strictEqual(await msg(), offline, "a live first pull does not hide an error");
     await b.eval(`syncSay(null);`);
-    assert.strictEqual(await msg(), "Syncing\u2026", "clearing a transient message restores the status");
+    assert.strictEqual(await msg(), "Saving to your account\u2026", "clearing a transient message restores the status");
   });
 
   test("polish: consent copy for 0, 1 and 205 eligible scales, with Add scales / Not now", async () => {
@@ -409,7 +414,7 @@ function run() {
     await withAsk(205);
     assert.strictEqual(await q("#sync-ask-text", `$$.textContent`), "Add 205 scales from this device to your account?");
     assert.ok(!/\ball\b[^.]*\bsynced\b|everything|all (your )?scales/i.test(await msg()), "no account-wide all-synced claim while consent remains: " + await msg());
-    assert.match(await msg(), /^Account synced at /, "the status is about the account only");
+    assert.match(await msg(), /^Saved to your account at /, "the status is about the account only");
   });
 
   test("polish: a real device scale shows the prompt; Not now only dismisses it, Add scales uploads", async () => {
@@ -513,7 +518,7 @@ function run() {
     assert.strictEqual(await active(), "sync-code");
     assert.strictEqual(await q("#sync-panel", `$$.getAttribute("aria-busy")`), "true");
     await releaseGate();
-    await b.waitFor(`/^Resend in \\d+s$/.test(document.getElementById("sync-resend").textContent)`, { label: "the cooldown" });
+    await b.waitFor(`!document.getElementById("sync-resend-at").hidden`, { label: "the cooldown" });
     assert.strictEqual(await q("#sync-verify", `$$.disabled`), false);
     assert.strictEqual(await q("#sync-other", `$$.disabled`), false);
     assert.strictEqual(await q("#sync-code", `$$.readOnly`), false);
@@ -539,13 +544,13 @@ function run() {
     const offline = await msg();
     await b.click("#sync-delete");
     await b.waitFor(`document.getElementById("sync-delete").textContent === "Confirm account deletion"`, { label: "the armed button" });
-    assert.strictEqual(await msg(), "Permanently deletes your account and synced scales. Copies on this device stay.");
+    assert.strictEqual(await msg(), "Permanently deletes your account and the scales saved to it. Copies on this device stay.");
     assert.strictEqual(await active(), "sync-delete", "focus stays on the confirmation button");
     assert.strictEqual(await q("#sync-msg", `$$.getAttribute("aria-live")`), "polite");
     assert.strictEqual((await log()).filter(l => l.path.indexOf("delete_my_account") >= 0).length, 0, "one press makes no request");
-    await b.click("#sync-open");
-    await b.click("#sync-open");
-    await b.waitFor(`!document.getElementById("sync-panel").hidden`, { label: "reopened" });
+    await b.click("#account-close");
+    await b.waitFor(`document.getElementById("account").hidden`, { label: "closed" });
+    await openSync();
     assert.strictEqual(await q("#sync-delete", `$$.textContent`), "Delete account", "closing the panel disarms");
     await b.click("#sync-delete");
     await b.waitFor(`document.getElementById("sync-delete").textContent === "Confirm account deletion"`, { label: "armed again" });
@@ -590,7 +595,7 @@ function run() {
     await b.waitFor(`localStorage.getItem(${JSON.stringify(KEY)}) === null`, { label: "the sidecar removed" });
     assert.strictEqual(await msg(), "Signed out. Your scales remain on this device.");
     assert.strictEqual(await active(), "sync-email");
-    assert.strictEqual(await q("#sync-open", `$$.textContent`), "Sign in to sync");
+    assert.strictEqual(await q("#sync-entry-main", `$$.textContent`), "Sign in");
   });
 
   test("polish: signing out while Delete account is armed says signed out, and a bad address then shows its own error", async () => {
@@ -629,10 +634,45 @@ function run() {
     await b.setViewport(390, 800, true);
   });
 
-  test("polish: the Backup opener reads Back up scales and no longer says scales live only in this browser", async () => {
+  test("E-entry: the sign-in entry overlaps no panel group at short wide, landscape and portrait sizes", async () => {
     await fresh();
-    assert.strictEqual(await q("#backup-open", `$$.textContent`), "Back up scales");
-    assert.strictEqual(await q("#backup-intro", `$$.textContent`), "Keep a separate copy of your saved scale links, such as in Notes or an email to yourself.");
+    try {
+      for (const [w, h] of [[800, 330], [844, 340], [844, 359], [740, 300], [390, 800]]) {
+        await b.setViewport(w, h, w < 1024);
+        await b.goto(URL);
+        const hidden = await b.eval(`return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
+        if (!hidden && await b.eval(`return getComputedStyle(document.getElementById("settings-panel")).display === "none";`)) await b.click("#settings-trigger");
+        await b.waitFor(`!document.getElementById("sync-open").hidden`, { label: "the sync opener at " + w + "x" + h });
+        const hits = await b.eval(`const e = document.getElementById("sync-open").getBoundingClientRect();
+          return [...document.querySelectorAll("#settings-panel .panel-group")].filter(g => { const x = g.getBoundingClientRect(); return x.width && x.height && !(x.right <= e.left || x.left >= e.right || x.bottom <= e.top || x.top >= e.bottom); }).map(g => g.id || g.className);`);
+        assert.deepStrictEqual(hits, [], "the entry covers a group at " + w + "x" + h);
+      }
+    } finally { await b.setViewport(390, 800, true); }
+  });
+
+  test("E-deeplink-export: #export and #account open their pages at boot and by same-tab fragment, and Back lands on the deck", async () => {
+    await fresh();
+    await b.eval(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(JSON.stringify({ v: 1, project: PROJECT, userId: B_USER, email: "b@example.test", refresh: "r", access: "a", accessExp: Date.now() + 3600000, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, syncedAt: Date.now() }))});`);
+    for (const [hash, page, focus] of [["#export", "export", "export-close"], ["#account", "account", "sync-email"]]) {
+      await b.goto(URL + "?d=" + page + hash);
+      await b.waitFor(`!document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " at boot" });
+      if (page === "export") assert.strictEqual(await active(), focus);
+      await b.eval(`history.back();`);
+      await b.waitFor(`document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " closed by Back" });
+      await b.goto(URL + "?d=" + page + "b");
+      await b.eval(`location.hash = ${JSON.stringify(hash)};`);
+      await b.waitFor(`!document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " by fragment" });
+      if (page === "export") assert.strictEqual(await active(), focus);
+      await b.eval(`history.back();`);
+      await b.waitFor(`document.getElementById(${JSON.stringify(page)}).hidden`, { label: page + " closed by Back after fragment" });
+      assert.notStrictEqual(await b.eval(`return location.hash;`), hash);
+    }
+  });
+
+  test("polish: the export opener reads Export scale links and no longer says scales live only in this browser", async () => {
+    await fresh();
+    assert.strictEqual(await q("#backup-open", `$$.textContent`), "Export scale links");
+    assert.strictEqual(await q("#backup-intro", `$$.textContent`), "A list of links you keep yourself.");
     assert.ok(!/only in this browser/i.test(await q("#backup-panel", `$$.textContent`)));
   });
 
@@ -655,6 +695,17 @@ function run() {
     else { await sleep(200); assert.strictEqual(await b.eval(`return syncHolder;`), false, "the other tab holds the lock"); }
   };
 
+  test("E-export-hint: with the export page open, another tab signing in hides the hint and signing out shows it", async () => {
+    await fresh();
+    await openFrame();
+    await b.eval(`openSubpage("export");`);
+    assert.strictEqual(await q("#backup-signin", `$$.hidden`), false);
+    await bSignIn("B");
+    await b.waitFor(`document.getElementById("backup-signin").hidden === true`, { label: "hint hidden once signed in" });
+    await bSignOut();
+    await b.waitFor(`document.getElementById("backup-signin").hidden === false`, { label: "hint shown once signed out" });
+  });
+
   test("two tabs: a state flip in the other tab drops this tab's state-bound message and flags", async () => {
     for (const holder of [true, false]) {
       for (const key of ["sync.err.badCode", "sync.err.expired", "sync.err.badEmail", "sync.err.sendFailed", "sync.err.rateLimited", "sync.err.offline", "sync.sent", "sync.signedOutDone"]) {
@@ -668,7 +719,7 @@ function run() {
         await bSignIn(holder ? "A" : "B");
         await waitSigned(true);
         await holderIs(holder);
-        await b.waitFor(`/^Account synced at /.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
+        await b.waitFor(`/^Saved to your account at /.test(document.getElementById("sync-msg").textContent)`, { label: row + " signed-in status" });
         await bSignOut();
         await waitSigned(false);
         assert.notStrictEqual(await msg(), old, row + ": the message does not come back after the flip back");
@@ -709,11 +760,11 @@ function run() {
     await bSignIn("A", { first: true, syncedAt: null });
     await waitSigned(true);
     await holderIs(true);
-    await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).pending === true || document.getElementById("sync-msg").textContent === "Changes waiting to sync"`, { timeout: 8000, label: "the failed first sync" });
+    await b.waitFor(`JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).pending === true || document.getElementById("sync-msg").textContent === "Changes not yet saved to your account"`, { timeout: 8000, label: "the failed first sync" });
     await sleep(200);
     await restoreFetch();
     assert.notStrictEqual(await msg(), old);
-    assert.match(await msg(), /^(Changes waiting to sync|Syncing…)$/);
+    assert.match(await msg(), /^(Changes not yet saved to your account|Saving to your account…)$/);
   });
 
   const gateFail = async (frag, status) => {

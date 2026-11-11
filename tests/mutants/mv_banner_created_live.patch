@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17463,7 +17463,6 @@ function renderMoveBanner() {
+@@ -20498,7 +20498,6 @@ function renderMoveBanner() {
      if (first) document.body.insertBefore(moveBannerEl, first); else document.body.appendChild(moveBannerEl);
      background.push(moveBannerEl);
      panelBackground.push(moveBannerEl);
--    if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);
+-    if (sheetOpen || panelOpen || aboutOpen || subpage) setInert(true, [moveBannerEl]);
      window.addEventListener("resize", placeMoveBanner);
    }
    const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;
