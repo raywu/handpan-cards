@@ -1,0 +1,15 @@
+# kills: the export page shows a sign-in hint only while sync is active and nothing is signed in
+# suite: node --test --test-name-pattern ^the.export.page.shows.a.sign.in.hint tests/app.test.js
+# Refs TRI-28: sign-in page. The export page hint ignores the signed-in state.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18573,7 +18573,7 @@ function paintBackup(message) {
+   document.getElementById("backup-restore").textContent = t("backup.restore");
+   document.getElementById("backup-session").hidden = savedMode !== "session";
+   document.getElementById("backup-signin").textContent = t("backup.signIn");
+-  document.getElementById("backup-signin").hidden = !(syncActive() && !syncLoad());
++  document.getElementById("backup-signin").hidden = !syncActive();
+   document.getElementById("backup-share").hidden = typeof navigator.share !== "function";
+   for (const b of backupButtons) b.disabled = !rows;
+   backupStatus.textContent = message !== undefined ? message : rows ? "" : t("backup.empty");
