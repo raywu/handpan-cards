@@ -1,4 +1,4 @@
-# kills: T0 drop plans: branch order of editorDropPlan
+# kills: T0 drop plans: editorDropPlan and editorNeoDropPlan results are frozen for every source and target kind
 # suite: node --test --test-name-pattern ^T0.drop.plans: tests/editor_freeze.test.js
 # The not-a-spot snap guard moves ahead of the note/ding trade branch, so a drop on a note or the ding snaps instead of trading.
 diff --git a/index.html b/index.html

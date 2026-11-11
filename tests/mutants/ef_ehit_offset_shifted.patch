@@ -1,4 +1,4 @@
-# kills: T0 pan hash: the .ehit centre offset
+# kills: T0 pan hash: editorWithOverlay(pan(...)) is byte-identical for every frozen model and state
 # suite: node --test --test-name-pattern ^T0.pan.hash: tests/editor_freeze.test.js
 # Every .ehit circle shifts one unit right of its note.
 diff --git a/index.html b/index.html

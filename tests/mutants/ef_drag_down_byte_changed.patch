@@ -1,4 +1,4 @@
-# kills: T0 source hash: editorDragDown
+# kills: T0 source hash: the drag, hit and drop functions and their constants are byte-identical
 # suite: node --test --test-name-pattern ^T0.source.hash: tests/editor_freeze.test.js
 # editorDragDown accepts a secondary mouse button, one byte of its guard.
 diff --git a/index.html b/index.html

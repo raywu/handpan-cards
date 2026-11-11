@@ -1,4 +1,4 @@
-# kills: T0 geometry and style: the pin ring stroke-dasharray
+# kills: T0 geometry and style: 375x667 .ehit sizes and offsets in viewBox units, viewBox, computed pan styles
 # suite: node --test --test-name-pattern ^T0.geometry.and.style:.375x667 tests/editor_freeze.test.js
 # The pinned-note ring dash pattern in the editor CSS changes from 1.5 4 to 1.5 5.
 diff --git a/index.html b/index.html

@@ -1,4 +1,4 @@
-# kills: T0 source hash: EDITOR_HIT_AREA
+# kills: T0 source hash: the drag, hit and drop functions and their constants are byte-identical
 # suite: node --test --test-name-pattern ^T0.source.hash: tests/editor_freeze.test.js
 # EDITOR_HIT_AREA grows from 0.43 to 0.44, so every hit circle in the placed geometry changes size.
 diff --git a/index.html b/index.html

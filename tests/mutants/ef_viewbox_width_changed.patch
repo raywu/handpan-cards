@@ -1,4 +1,4 @@
-# kills: T0 pan hash: the pan svg viewBox
+# kills: T0 pan hash: editorWithOverlay(pan(...)) is byte-identical for every frozen model and state
 # suite: node --test --test-name-pattern ^T0.pan.hash: tests/editor_freeze.test.js
 # The pan svg viewBox grows by one unit in width, so every frozen pan changes.
 diff --git a/index.html b/index.html

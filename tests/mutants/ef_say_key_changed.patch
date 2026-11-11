@@ -1,4 +1,4 @@
-# kills: T0 drop plans: the removal say key
+# kills: T0 drop plans: editorDropPlan and editorNeoDropPlan results are frozen for every source and target kind
 # suite: node --test --test-name-pattern ^T0.drop.plans: tests/editor_freeze.test.js
 # The standard drop plan announces a removal with the moved copy.
 diff --git a/index.html b/index.html

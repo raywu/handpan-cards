@@ -1,4 +1,4 @@
-# kills: T0 ONE_PANEL line
+# kills: T0 ONE_PANEL line: const ONE_PANEL = true ; appears once, byte-identical
 # suite: node --test --test-name-pattern ^T0.ONE_PANEL.line: tests/editor_freeze.test.js
 # The ONE_PANEL flag line loses its padding space, so it is no longer byte-identical.
 diff --git a/index.html b/index.html
