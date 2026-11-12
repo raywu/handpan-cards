@@ -1,0 +1,15 @@
+# kills: polish: the not-saved line in the menu entry is an error colour with a dot, readable on its ground
+# suite: node --test --test-name-pattern ^polish:.the.not.saved.line tests/e2e_sync.test.js
+# Refs TRI-28: sign-in QA round 2. The not-saved line looks like the normal subtitle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -303,7 +303,7 @@ h1 svg{display:block; width:223.3px; max-width:100%; height:auto; margin:0 auto}
+ #account .panel-note, #export .panel-note{margin:0}
+ #sync-entry-main{display:block; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+ #sync-entry-sub, #sync-entry-err{display:block; font:400 11px/1.3 "Nunito Sans"; color:#5E5850}
+-#sync-entry-err{color:var(--err); font-weight:600}
++#sync-entry-err{color:#5E5850; font-weight:600}
+ #sync-entry-err::before{content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor; margin-inline-end:5px; vertical-align:middle}
+ #account #sync-heading{margin:0; overflow-wrap:anywhere}
+ #sync-heading:focus-visible{outline:2px solid #242424; outline-offset:2px}

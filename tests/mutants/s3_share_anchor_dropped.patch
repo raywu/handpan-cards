@@ -5,12 +5,12 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -362,7 +362,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -342,7 +342,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      if (mirrors.top && mirrors.bottom) option("mirror");
      else if (mirrors.top) option("mirror-top");
      else if (mirrors.bottom) option("mirror-bottom");
 -    if (opts.anchor === "between") option("between");
 +    if (false) option("between");
-     var angles = anglesField(opts.angles, "bottom");
-     var seats = seatsField(opts.seats, angles !== "", innerAt !== "");
+     var angles = anglesField(opts.angles);
+     var seats = seatsField(opts.seats, angles !== "");
      if (seats !== "") option("seats-" + seats);

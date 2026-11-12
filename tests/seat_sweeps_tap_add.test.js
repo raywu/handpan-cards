@@ -74,7 +74,7 @@ for (const edit of [false]) {
     for (const [ring, max] of d2AllRings) {
       for (let n = 2; n <= max; n += 1) {
         const sc = d2Build(d2Sizes(ring, n));
-        const app = boot({ onePanel: false, clock: true });
+        const app = boot({ clock: true });
         await d2Open(app, sc.text, edit);
         const names = sc.names[ring];
         const seats = { rim: D2_OTHER, inner: D2_OTHER, bottom: D2_OTHER, [ring]: d2Id(n) };

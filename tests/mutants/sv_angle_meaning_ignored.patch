@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11629,7 +11629,7 @@ function savedMeaning(deckValue) {
+@@ -10741,7 +10741,7 @@ function savedMeaning(deckValue) {
      o.parent == null ? [false, null] : [true, o.parent], o.palette, mirrors.top, mirrors.bottom,
      o.anchor === "between" ? "between" : "one",
      normalizedSeats,
 -    angles.value ? angles.value.bottom : null];
 +    null];
-   const inner = angles.value && angles.value.inner;
    if (o.profile) meaning.push(o.profile.map);
-   else if (inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
+   return JSON.stringify(meaning);
+ }

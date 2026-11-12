@@ -4,9 +4,9 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -94,7 +94,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-   var INNER_VERSION = 8;
-   var INNER_RECORD_VERSION = 6;
+@@ -89,7 +89,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+   var PROFILE_VERSION = 7;
+   var PROFILE_RECORD_VERSION = 5;
    var NEWEST = VERSION;   // an alias decode can still see past its own shadow
 -  var OLDEST = 1;         // no version 0 ever shipped
 +  var OLDEST = 2;         // no version 0 ever shipped

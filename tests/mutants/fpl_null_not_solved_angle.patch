@@ -4,12 +4,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -723,7 +723,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var plainHome = placeZones(counts, false, false, anchor);
-     var geom = geometry(counts, home);
-     var effective = function (given, solved) {
--      return solved.map(function (angle, i) { return given[i] === null ? angle : given[i]; });
-+      return solved.map(function (angle, i) { return given[i] === null ? 0 : given[i]; });
-     };
-     var bottoms = asked.bottom ? effective(asked.bottom, home.bottoms) : null;
-     var inners = asked.inner ? effective(asked.inner, home.inners) : null;
+@@ -623,7 +623,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var i;
+     for (i = 0; i < home.bottoms.length; i += 1) {
+       var asked = angles.value.bottom[i];
+-      effective.push(asked === null ? home.bottoms[i] : asked);
++      effective.push(asked === null ? 0 : asked);
+     }
+     var homeFields = merge(source, zones, home, null);
+     for (i = 0; i < effective.length; i += 1) {

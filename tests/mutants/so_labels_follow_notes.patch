@@ -4,12 +4,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -786,7 +786,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -697,7 +697,7 @@
          fields[ids[i]][5] = source[ids[map ? map[seat] : seat]][5];
        }
      }
 -    if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
 +
-     if (seats && seats.innerAngles && seats.innerHome) {
-       cyclicLabels(source, zones.inner, seats.innerHome, seats.innerAngles, fields);
-     }
+     return fields;
+   }
+ 

@@ -4,7 +4,7 @@
 // No dependencies - run with: node tools/boot_sim.js
 const { boot } = require("./sandbox.js");
 
-const app = boot({ onePanel: false });
+const app = boot();
 if (!app.els.front.innerHTML.includes("hdr")) throw new Error("front not rendered at boot");
 console.log("boot OK - default deck rendered, count =", app.els.count.textContent);
 

@@ -13,12 +13,11 @@
 //
 // Known failures on main are `todo: "<fixing PR>"`: node:test reports them
 // without failing, and the fixing PR removes the todo, which is its proof.
-const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename);
+const { test } = require("node:test");
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
-const { boot: sandboxBoot } = require("./helpers/sandbox.js");
-const boot = (opts = {}) => sandboxBoot({ onePanel: onePanelFor(), ...opts });
+const { boot } = require("./helpers/sandbox.js");
 
 const APP_ROOT = process.env.HPFC_APP_ROOT || path.join(__dirname, "..");
 const HTML = fs.readFileSync(path.join(APP_ROOT, "index.html"), "utf8");
@@ -609,7 +608,7 @@ test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport inta
     const url = old.get("window.__assigned");
     assert.ok(url && url.startsWith("https://new.example/"), `${n}: the old host did not forward`);
     const oldEnv = envelopeOf(old);
-    const readable = plain(old.get(`savedState.entries.filter(r=>r.record&&typeof r.record==='object'&&!Array.isArray(r.record)).map(r=>({i:r.instanceId,r:r.record}))`));
+    const readable = plain(old.get(`savedState.entries.filter(r=>readSavedRecord(r.record).ok).map(r=>({i:r.instanceId,r:r.record}))`));
     const dest = await bootAt(createOrigin({}), url, "https://old.example/");
     const arrived = plain(envelopeOf(dest).entries.map((e) => e.record));
     const distinct = (rs) => [...new Set(rs.map((r) => JSON.stringify(r)))].sort();

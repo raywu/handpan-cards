@@ -88,11 +88,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // record v5; an acoustic seed never leaves v6 / record 4.
   var PROFILE_VERSION = 7;
   var PROFILE_RECORD_VERSION = 5;
-  // v8 carries pinned inner angles (`ai-`) and is written only when one is
-  // pinned; its record is v6. A bottom-only seed stays at v6 / record 4.
-  var ANGLES_VERSION = 6;
-  var INNER_VERSION = 8;
-  var INNER_RECORD_VERSION = 6;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -223,13 +218,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // shortens the link back to what it was.
   var RINGS = ["rim", "inner", "bottom"];
 
-  function seatsField(seats, skipBottom, skipInner) {
+  function seatsField(seats, skipBottom) {
     if (!seats || typeof seats !== "object") return "";
     var parts = [];
     var any = false;
     for (var r = 0; r < RINGS.length; r += 1) {
-      var skipped = (skipBottom && RINGS[r] === "bottom") || (skipInner && RINGS[r] === "inner");
-      var list = skipped ? null : seats[RINGS[r]];
+      var list = skipBottom && RINGS[r] === "bottom" ? null : seats[RINGS[r]];
       if (list && list.length) {
         any = true;
         parts.push(list.join(","));
@@ -242,8 +236,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   // v6: the bottom ring's angles, one entry per note, an empty entry for the
   // solved angle. Written only when some entry is set.
-  function anglesField(angles, ring) {
-    var list = angles && typeof angles === "object" ? angles[ring] : null;
+  function anglesField(angles) {
+    var list = angles && typeof angles === "object" ? angles.bottom : null;
     if (!Array.isArray(list)) return "";
     var any = false;
     var parts = list.map(function (a) {
@@ -341,8 +335,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
     var scale = scaleSegment(seed.fields);
     var profiled = opts.profile !== undefined && opts.profile !== null;
-    var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
-    var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
+    var wire = String(profiled ? PROFILE_VERSION : VERSION);
     var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
@@ -363,11 +356,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     else if (mirrors.top) option("mirror-top");
     else if (mirrors.bottom) option("mirror-bottom");
     if (opts.anchor === "between") option("between");
-    var angles = anglesField(opts.angles, "bottom");
-    var seats = seatsField(opts.seats, angles !== "", innerAt !== "");
+    var angles = anglesField(opts.angles);
+    var seats = seatsField(opts.seats, angles !== "");
     if (seats !== "") option("seats-" + seats);
     if (angles !== "") option("at-" + angles);
-    if (innerAt !== "") option("ai-" + innerAt);
     segs.push(checkHex(meaning.join(SEP)));
     var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
@@ -453,8 +445,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return HPE.naming.PARENTS[index].name.toLowerCase().split(" ").join("-");
   }
 
-  var INNER_RE = /^ai-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
-  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6, ai: 7 };
+  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -504,7 +495,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (found < 0) return badNote(text);
         options.parent = found;
       } else if ((m = PAIR_RE.exec(o))) {
-        if (text.charAt(0) === "8") return err("PROFILE_CONFLICT", {});
         if (!profiled) return badNote(text);
         at = OPTION_ORDER.pair;
         pairs += 1;
@@ -534,18 +524,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var delta = readDeltaLine(o.slice(6), 3);
         if (!delta) return badNote(text);
         carry.delta = delta;
-      } else if ((text.charAt(0) === "6" || text.charAt(0) === "8") && (m = ANGLES_RE.exec(o))) {
+      } else if (text.charAt(0) === "6" && (m = ANGLES_RE.exec(o))) {
         at = OPTION_ORDER.at;
         var entries = m[1].split(",");
         var list = entries.map(function (e) { return e === "" ? null : Number(e); });
         if (list.every(function (a) { return a === null; })) return badNote(text);
         carry.angles = list;
-      } else if (text.charAt(0) === "8" && (m = INNER_RE.exec(o))) {
-        at = OPTION_ORDER.ai;
-        var innerEntries = m[1].split(",");
-        var innerList = innerEntries.map(function (e) { return e === "" ? null : Number(e); });
-        if (innerList.every(function (a) { return a === null; })) return badNote(text);
-        carry.inner = innerList;
       } else {
         return badNote(text);
       }
@@ -553,7 +537,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rank = at;
     }
     if (profiled && pairs !== 1) return badNote(text);
-    if (text.charAt(0) === "8" && !carry.inner) return badNote(text);
     var read = HPE.core.parseSeed(scaleString(scale), options);
     if (!read.ok && profiled && options.profile.rev === 2 &&
         (read.code === "PROFILE_NOTE_MISSING" || read.code === "PROFILE_FULL")) {
@@ -585,14 +568,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (!read.ok) return badNote(text);
       if (read.value) result.value.options.seats = read.value;
     }
-    if (carry.angles || carry.inner) {
-      var seatLists = (carry.delta && carry.delta.seats) || {};
-      if (carry.angles && seatLists.bottom && seatLists.bottom.length) return badNote(text);
-      if (carry.inner && seatLists.inner && seatLists.inner.length) return badNote(text);
-      var pinned = {};
-      if (carry.angles) pinned.bottom = carry.angles;
-      if (carry.inner) pinned.inner = carry.inner;
-      var angles = HPE.layout.readAngles(pinned, counts);
+    if (carry.angles) {
+      var bottomSeats = carry.delta && carry.delta.seats && carry.delta.seats.bottom;
+      if (bottomSeats && bottomSeats.length) return badNote(text);
+      var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
       if (!angles.ok || !angles.value) return badNote(text);
       var o = result.value.options;
       var mirrors = HPE.layout.resolveMirrors(o, {});
@@ -600,7 +579,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (o.seats) asked.seats = o.seats;
       var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
       if (!placed.ok) return badNote(text);
-      result.value.options.angles = pinned;
+      result.value.options.angles = { bottom: carry.angles };
     }
     return result;
   }
@@ -628,7 +607,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // while making every version this build knows decodable, so a v1 link
     // still opens in a v2 app and only a genuinely NEWER one is refused.
     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
-    if (INDEX[text.charAt(0)] === INNER_VERSION && NEWEST >= ANGLES_VERSION) newest = INNER_VERSION;
     var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
@@ -678,8 +656,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function recordVersion(seed) {
     var opts = (seed && seed.options) || {};
-    if (opts.profile !== undefined && opts.profile !== null) return PROFILE_RECORD_VERSION;
-    return anglesField(opts.angles, "inner") !== "" ? INNER_RECORD_VERSION : RECORD_VERSION;
+    return opts.profile !== undefined && opts.profile !== null ? PROFILE_RECORD_VERSION : RECORD_VERSION;
   }
 
   HPE.share = {
@@ -688,8 +665,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     recordVersion: recordVersion,
     VERSION: VERSION,
     PROFILE_VERSION: PROFILE_VERSION,
-    INNER_VERSION: INNER_VERSION,
-    INNER_RECORD_VERSION: INNER_RECORD_VERSION,
     RECORD_VERSION: RECORD_VERSION,
     PROFILE_RECORD_VERSION: PROFILE_RECORD_VERSION,
     CAPS: CAPS

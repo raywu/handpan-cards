@@ -5,11 +5,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16136,6 +16136,7 @@ function openEditSheet(d, opener) {
+@@ -13357,6 +13357,7 @@ function openEditSheet(d, opener) {
    shareUrl.setAttribute("hidden", "");
    resetSheetState(d);
    showSheet(opener);
 +  if ([...savedEntries.values()].filter(view => view.deck.id === d.id).length > 1) { refusal="Another scale has these notes."; showRefusal(refusal); scaleBox.classList.add("bad"); }
-   if (ONE_PANEL) editorOpen(d);
    // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
    // at generation time; the Edit sheet reads them and never rebuilds to re-derive.
+   const warned = (d.warnings || []).map(w => reasonText(w));

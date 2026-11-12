@@ -269,17 +269,6 @@ is out of flow and 0px tall (owner 2026-10-20, superseding the guidance plan's
 36px reserve).
 - The importer (`HPE.importer`) is engine-only: the paste-text
 import UI and the `scale_import` event were removed; do not rebuild them.
-- Editor drag (ONE_PANEL editor, owner 2026-11-07): while a note is held, from
-`editorDragLift` to `editorDragEnd`, the control panel (areas, layout, toolbar, tray) is
-hidden outright (`#editor.dragging`: slid down, opacity 0, `visibility:hidden`,
-`pointer-events:none`) and the pan magnifies from its top edge into the freed space by
-`--ed-mag` (measured once at the lift, at most 1.35, never past the screen width, never
-below 1). The panel returns after the drop is painted, at once on a cancel (Escape,
-pointercancel, resize, orientationchange, a hidden page), and ignores taps for 250ms
-(`.settling`). With reduced motion the pan stays at 1x, there is no slide, and the new-note
-stroke fades statically. A note placed by drag, tap, pill, Replace ding, trade or keyboard
-carries `.editor-new` once; Undo does not. Tests: `tests/editor_e2e.test.js` "drag ux E1"
-to "E7", `tests/editor_shell.test.js` "drag ux unit 1" to "4".
 
 ## Feature plans
 

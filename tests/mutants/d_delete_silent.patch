@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17696,7 +17696,7 @@ async function deleteDeck(id) {
-   if(result.published===false){if(editorSession)editorDeleteFailed(savedPublicationText(result));return;}
+@@ -13478,7 +13478,7 @@ async function deleteDeck(id) {
+   if(result.published===false)return;
    const gone=base.deck.name;
    closeScaleSheet();selectDeck(fallbackSelection(),false);
 -  say(t("boot.removed",{a:gone,b:deck().name}),"warn");

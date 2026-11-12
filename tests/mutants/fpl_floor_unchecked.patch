@@ -4,12 +4,12 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -732,7 +732,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     if (bottoms) {
-       var withInner = merge(source, zones, { rims: home.rims, inners: inners || home.inners, bottoms: home.bottoms }, null);
-       for (i = 0; i < bottoms.length; i += 1) {
--        if (bottomClash(geom, withInner, bottoms, i) !== null) return badNote(asked.bottom);
-+        if (false && bottomClash(geom, withInner, bottoms, i) !== null) return badNote(asked.bottom);
-       }
+@@ -627,7 +627,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      }
-     if (inners) {
+     var homeFields = merge(source, zones, home, null);
+     for (i = 0; i < effective.length; i += 1) {
+-      if (bottomClash(geom, homeFields, effective, i) !== null) return badNote(angles.value.bottom);
++      if (false && bottomClash(geom, homeFields, effective, i) !== null) return badNote(angles.value.bottom);
+     }
+     var out = {};
+     var key;

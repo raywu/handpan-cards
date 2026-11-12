@@ -1049,59 +1049,6 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   independently, so a wire bump rewrites no stored deck. Readers for every older
   version stay. Detail: `docs/plans/2026-10-17-share-readable.md`,
   `docs/plans/2026-10-23-free-placement.md`.
-- DECIDED(scale-editor-reinvent, R2-2) Share version 8 adds one option,
-  `ai-<list>`: the cyclops (inner) notes' absolute angles, same grammar as
-  `at-` (ANGLES_RE with the `ai-` prefix): one comma-separated entry per inner
-  note in seat order, each an integer 0-355 on the 5-degree step, an empty
-  entry for a solved angle. It is written only when at least one inner angle is
-  pinned; then the link is version 8 and the record version 6
-  (`recordVersion` returns 6 exactly then, never with a profile; the app's
-  record gates `newestRecordVersion`, `savedCandidate` and `readSavedRecord`
-  accept v6 only with pinned inner angles and no profile, and refuse 7+). With no pinned
-  inner angle the writer emits exactly today's version 6 bytes (`at-` stays a
-  version 6 option and is also valid on version 8, refused on version 7).
-- Option order on version 8: palette-N, parent-<mode>, mirror | mirror-top |
-  mirror-bottom, between, seats-<rim>;<inner>;<bottom>, at-<list>, ai-<list>.
-  `ai-` is always last; out of order, repeated, or on a version below 8 it is
-  refused as a corrupt payload. The check covers `ai-` like every option.
-- `angles` is `{bottom?, inner?}`; each list has the zone's note count; a list
-  whose entries are all null reads as absent and is never written; an object
-  with neither list reads as no angles. Any other key is refused.
-- A pinned inner angle refuses an inner seats list (`seats-` with a non-empty
-  inner part), exactly as `at-` refuses a bottom seats list. Each pinned inner
-  angle must lie inside INNER_SPAN (0 to 180 degrees about top centre), keep
-  `innerClearance(geom, [angle]) >= INNER_CLEARANCE` (0.01) against the solved
-  ding (the ding offset is not re-solved for a pin, so angles near the fan
-  ends are refused, the exact bound depending on the counts), and pass
-  innerClash; out of bound is refused as BAD_NOTE, never clamped. Decode and
-  encode both go through readCorrections, so both refuse.
-- `ai-` beside `pair-` (a Neotone profile) is PROFILE_CONFLICT; a profiled link
-  stays version 7. A version 8 link must carry `ai-` with at least one pinned
-  entry (no `ai-` is non-canonical and refused), and `pair-` on version 8 is
-  PROFILE_CONFLICT (R4-2). Version 8 decodes whatever PROFILE_ENABLED says; version 9 or
-  above is NEEDS_NEWER_APP. Versions 1-7 decode unchanged.
-- MIRROR TOP reflects pinned inner angles (180 - a), as MIRROR BOTTOM reflects
-  pinned bottom angles; the wire carries the angles as stored (absolute).
-
-### snapTarget (the editor's pointer hit-test)
-
-`HPE.layout.snapTarget(geom, point, options)` is pure: `geom` is `solve().geom`,
-`point` is `[x, y]` in pan units (SVG y down, the ding at `[0, -geom.ding_dy]`),
-`options` is `{panKind, occupancy, allowInnerAngle}`.
-
-- `panKind` is `"acoustic"` (the default when absent) or `"profile"` (a Neotone
-  profile, hit-tested against `PROFILE`). Any other value throws; it is never
-  read as acoustic.
-- `occupancy` names who sits where: `{ding: id, top: [{id, angle}], inner:
-  [{id, angle}], bottom: [{id, angle}]}` for acoustic, `{ding: id, main: [id],
-  mutant: [id]}` (slot order) for profile; a missing ring is empty.
-- `allowInnerAngle` (acoustic only) lets the inner ring return a snapped angle.
-- Returns `null` when the point is off the pan, else `{zone, seat, angle?,
-  occupiedBy?}` with `zone` one of `"ding"`, `"top"`, `"inner"`, `"bottom"`
-  (acoustic) or `"ding"`, `"main"`, `"mutant"` (profile); `seat` is the index in
-  that zone's ring; `angle` is present for the bottom ring, and for the inner
-  ring when `allowInnerAngle`, on the 5-degree step; `occupiedBy` is the id of
-  the note already there or too close (under the touching floor).
 
 ## 15. UI element ids
 
@@ -1450,10 +1397,15 @@ compare-and-set server. A scale's remote id is `sidecar.alias[id] || id`; the si
 - DECIDED(plan login-sync-v2 s9) First sync: a remote row whose meaning (`ctx.describe`) equals an unmatched local scale adopts the remote id through the alias map, with no duplicate; a deck-id collision with a different identity inserts a renamed copy (`ctx.copyName`) under a fresh id.
 - DECIDED(plan login-sync-v2 s9) A live remote row whose id matches a local entry (directly or through the alias map) with no base and a different body is treated as edit-vs-edit: the local entry is kept, the remote body is inserted as a conflict copy that is pushed as a new row, and the local base rev is set to the remote rev with mode `edited`. Re-signing in after the other device edited therefore keeps both bodies and cannot loop on compare-and-set (`tests/sync.test.js`, re-sign-in test). A collision copy (deck-id collision, different identity) differs from the server body, so its base mode is `edited`, never `committed`.
 - DECIDED(plan login-sync-v2 s9) Meaning matching (`ctx.describe`) runs on every pull, not only the first: any live remote row with no local entry and no base whose body equals, or whose meaning equals the meaning of, a local entry with no base, not `localOnly`, and not already on the server, adopts that entry through the alias map. A match on deck identity alone never adopts; it inserts.
-- CONTRACT(plan login-sync-v2 s9) Callers supply `ctx.describe`, `ctx.copyName`, `ctx.newId`, `ctx.usedIds`, `ctx.readable`, `ctx.slotTaken` and `ctx.builtinVisible`; `planPull`, `planPush`, `planDeferred`, `settlePull` and `settlePush` never mutate their inputs, and `settlePull` throws when a `committed` update has no committed revision for its local id.
+- DECIDED(sync-store-safety S3-S5) `planPush`, `planPull` and `planDeferred` first trust only base ids witnessed by the current store: a live local entry resolving to the remote id, or an append-only `ctx.usedIds` identity. An aliased id requires at least one alias key in that history; the remote id alone is insufficient. Without aliases the remote id itself suffices. Missing `usedIds` is empty. Unheld base, alias and deferred-delete entries are excluded from the planning view: push cannot infer their tombstones, and a delivered live remote row inserts as new. A deliberate reset keeps identity history and still propagates deletions.
+- DECIDED(sync-store-safety S4) Voiding a base is a planning view only: planners never mutate the stored sidecar, and `planPull` does not drop a voided stale base from it; the stale base lingers harmlessly. `settlePull` and `settlePush` retain their existing contracts. A replaced store keeps the cursor, so remote rows at or below it are not fetched and recovery of evicted content is outside this change.
+- CONTRACT(plan login-sync-v2 s9) Callers supply `ctx.describe`, `ctx.copyName`, `ctx.newId`, `ctx.usedIds`, `ctx.readable`, `ctx.slotTaken` and `ctx.builtinVisible`; `planPull`, `planPush`, `planDeferred`, `settlePull` and `settlePush` never mutate their inputs, and `settlePull` holds a `committed` update whose local id has no committed revision (base kept, cursor held at the source rev) instead of throwing.
 - DECIDED(plan login-sync-v2 s9) `firstSyncAudit` holds every scale with no base in `localOnly` and returns their ids as the "Add N scales" count, so N counts only scales unmatched after matching. `localOnly` scales are never pushed, never matched and never tombstoned; `releaseLocal` frees them.
 - DECIDED(plan login-sync-v2 s9) `planPush` sends new or changed entries with `base_rev` (`null` for a new row) and a tombstone only for a remote id in `base`, in batches of `MAX_ROWS_PER_PUSH` (200). An entry the build cannot read (`ctx.readable`) is never pushed. `settlePush` records refusals, conflicts and `pending` without touching the base of a refused or conflicting row.
 - DECIDED(plan login-sync-v2 s9) A pulled record that `ctx.readable` rejects is applied as an opaque op; `replaces` is dropped from inserted records when the seed slot is taken (`ctx.slotTaken`) or claimed earlier in the same pull.
 - DECIDED(plan login-sync-v2 s9) When the remote record is unreadable and the local entry differs (edit-vs-edit, or no base), the remote body stays at its id as an opaque overwrite with base `committed` at the remote rev, and the local body moves to a fresh id (`reason` `unreadable-remote`) that is pushed as a new row, because `planPush` never pushes an unreadable entry and a conflict copy of it could not be sent (`tests/sync.test.js`, both unreadable-remote tests). Both bodies survive on the server and on every build that can read them.
-- DECIDED(plan login-sync-v2 s9) `planPull` skips any remote row, live or tombstone, whose id resolves to a `localOnly` entry: such an entry is never removed, overwritten or given a base by a pull. A deferred removal records its base as `committed` at the current revision, so it is never pushed live (`tests/sync.test.js`, deferred-with-no-base test).
+- DECIDED(plan login-sync-v2 s9) `planPull` skips any remote row, live or tombstone, whose id resolves to a `localOnly` entry: such an entry is never removed, overwritten or given a base by a pull. A deferred removal records its base as `observed` at the revision the plan read, so it is never pushed live and a concurrent edit is never removed (`tests/sync.test.js`, deferred-with-no-base test, `settle R3b`).
+- DECIDED(plan login-sync-v2 s8, lane A1 fix) Every `overwrite` and `remove` op (`planPull`, `planDeferred`) carries `expectedRevision`, the local entry revision the plan read. The `sync-apply` command skips an op whose row has a different revision (`sync.skipped` reason `revision`, the row untouched, so a local edit made between planning and commit wins), and reports a `remove` of an unknown id as `missing`; an op without a non-negative integer `expectedRevision` is refused. The `opaque` overwrite that `planPull` pairs with a moved-copy `insert` carries `requires: <that insert's id>` and is skipped (reason `dependency`) when the insert was skipped, so the local body is never replaced without its copy (`tests/sync.test.js`, `tests/app.test.js` sync-apply stale, concurrent and requires tests).
+- DECIDED(plan login-sync-v2 s8, lane A1 fix 3) WITNESSED WRITES: a base claim is stamped with a revision the plan verified. An update with an op (`mode: committed`) takes the post-state of a compare-and-set op from `committed`; an update with no op (`mode: observed`: equal-body match, first-sync match, last-visible deferral) carries `localRevision` as the plan read it and `settlePull` never consults `committed` for it, so a concurrent edit leaves the entry pushable and the deferred removal refuses it. Every op has a `sources` entry with the REMOTE id and rev, including the moved copy of an unreadable remote. Pinned by the race-matrix tests in `tests/sync.test.js` (every `site` tag in `planPull` must be exercised) and `settle R3a`, `R3b`, `R3c`, `N1`, `N2`.
+- CONTRACT(plan login-sync-v2 s8, lane A1 fix 2) SETTLE CONTRACT: the caller ALWAYS passes `result.sync.skipped` as the fourth argument of `settlePull(sidecar, plan, committed, skipped)`; `committed` lists every entry, skipped or not, so it cannot tell a skip from a commit. `planPull` and `planDeferred` return `sources`, `{ <op id>: { rid, rev } }`, for that. For a skipped `overwrite`, `insert` or non-`missing` `remove`, `settlePull` applies none of that row's `baseUpdates`, drops no base, keeps the alias, deletes the alias of a skipped insert, and holds the cursor at `rev - 1`, so the next pull sees the row again and replans it against the local copy as it is then (an edited entry pushes as a normal edit or becomes a conflict copy; it is never overwritten). A skipped `remove` with reason `last-visible` is deferred instead: the base moves to the remote rev with the planned local revision, the alias is kept, the id joins `deferredDeletes` and the cursor advances (plan R1-7), so the remote delete is neither reversed nor lost. A `remove` skipped as `missing` settles as a normal remove (`tests/sync.test.js` settle tests).
 - DECIDED(login-sync lane E regroup) I-row: the pull cursor passes a remote row only when the plan has reconciled it (its body is kept on the device or in a row the next push sends, and `base[id].rev` is set to the row's rev, or the id is dropped for a mirrored tombstone). A `localOnly` entry's remote row therefore holds the cursor at the rev before it until the entry is released or gone; later rows are re-delivered as no-ops (`tests/sync.test.js`, held-row, released-after-same-id and deleted-before-release tests, and the bounded two-device model). Meaning matching also accepts an identical body (same body or same meaning), so an unreadable revived scale is adopted, not duplicated, after a sign-out and sign-in (`tests/sync.test.js`, unreadable-revived test).

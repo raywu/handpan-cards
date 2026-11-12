@@ -1,0 +1,15 @@
+# kills: polish: sign-in fields, buttons and status lines have clear vertical space between them
+# suite: node --test --test-name-pattern ^polish:.sign.in.fields tests/e2e_sync.test.js
+# Refs TRI-28: sign-in QA fixes. The email and code step groups lose their vertical gap, so field and buttons touch.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -290,7 +290,7 @@ h1 svg{display:block; width:223.3px; max-width:100%; height:auto; margin:0 auto}
+ #backup-panel .mode[hidden]{display:none}
+ #sync-panel{display:flex; flex-direction:column; gap:var(--sp-2); margin-top:var(--sp-2)}
+ #sync-panel[hidden], #sync-panel [hidden]{display:none}
+-#sync-panel form, #sync-signed, #sync-step-email, #sync-step-code{display:flex; flex-direction:column; gap:var(--sp-3)}
++#sync-panel form, #sync-signed, #sync-step-email, #sync-step-code{display:flex; flex-direction:column; gap:0}
+ #sync-panel #sync-msg{margin:var(--sp-2) 0}
+ #sync-panel label{font:600 13px/1.4 "Nunito Sans"; color:#5E5850}
+ #sync-panel input{width:100%; box-sizing:border-box; min-height:44px; font:400 16px/1.4 "Nunito Sans"; color:#242424; background:#fff; border:1px solid #8A847B; border-radius:4px; padding:var(--sp-2) var(--sp-3)}

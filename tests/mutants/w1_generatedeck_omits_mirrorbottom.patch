@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11279,7 +11279,7 @@ function buildGenerated(text, options, guard) {
-   const bottomAngles = pinnedRing("bottom") || pinnedRing("inner") ? options.angles : null;
+@@ -9876,7 +9876,7 @@ function buildGenerated(text, options, guard) {
+     options.angles.bottom.some(a => a !== null && a !== undefined) ? options.angles : null;
    if (wanted !== null || bottomAngles !== null) {
      const o = built.value.options;
 -    const asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor };

@@ -33,7 +33,8 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
   "scale-mirror-bottom", "scale-box-wrap", "scale-swatches", "scale-generate", "deck-add", "deck-restore",
   "backup-open", "backup-panel", "backup-intro", "backup-session", "backup-restore", "backup-text", "backup-share", "backup-copy",
-  "backup-download", "backup-status", "backup-last",
+  "backup-download", "backup-status", "backup-last", "backup-signin",
+  "account", "account-close", "export", "export-close",
   // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
   "scale-name-row", "scale-name", "scale-name-label",
   "scale-delete-row", "scale-delete", "scale-del-note",
@@ -593,14 +594,14 @@ function makeLocation(href) {
  * @param {object} opts
  *   storage        - seed object for localStorage (default empty)
  *   throwOnStorage - make localStorage throw, exercising the private-mode guard
+ *   throwOnKeys    - make reads of only the listed localStorage keys throw
  *   random         - deterministic replacement for Math.random
  *   href           - initial location (default "https://example.test/index.html")
  *   userAgent      - navigator.userAgent (default a desktop Chrome string)
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
- *   html           - boot this markup instead of reading index.html (onePanel still applies when it holds the ONE_PANEL line)
- *   onePanel       - boot index.html with the ONE_PANEL constant forced on or off (length-preserving)
+ *   html           - boot this markup instead of reading index.html
  *   sheetBody      - with layout, expose the anonymous sheet body and its markup ancestry;
  *                    event capture/bubble and native focus/selection remain unsimulated
  *   origin         - explicit shared handle (createOrigin() or {}), partitioned by URL origin
@@ -617,9 +618,7 @@ const JS_TYPES = new Set([
 ]);
 
 function boot(opts = {}) {
-  const base = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
-  const html = opts.onePanel !== undefined && /const ONE_PANEL = (?:true |false);/.test(base)
-    ? require("../tests/helpers/editor_flag.js").apply(base, !!opts.onePanel) : base;
+  const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
   // A script whose type is not JavaScript (application/ld+json, a template) is data.
@@ -904,7 +903,7 @@ function boot(opts = {}) {
 
   const sandbox = {
     localStorage: {
-      getItem(k) { if (opts.throwOnStorage) throw new Error("denied"); return k in store ? store[k] : null; },
+      getItem(k) { if (opts.throwOnStorage || opts.throwOnKeys?.includes(String(k))) throw new Error("denied"); return k in store ? store[k] : null; },
       setItem(k, v) { if (opts.throwOnStorage) throw new Error("denied"); store[k] = String(v); },
       removeItem(k) { if (opts.throwOnStorage) throw new Error("denied"); delete store[k]; },
     },
@@ -1030,7 +1029,7 @@ function boot(opts = {}) {
       if (opts.origin.events === "auto") setTimeout(() => opts.origin.flushStorageEvents(), 0);
     };
     const check = (operation, key, value) => {
-      if (opts.throwOnStorage) throw new Error("denied");
+      if (opts.throwOnStorage || (operation === "getItem" && opts.throwOnKeys?.includes(key))) throw new Error("denied");
       const failure = opts.storageFault && opts.storageFault({ operation, key, value });
       if (failure) throw failure;
     };
