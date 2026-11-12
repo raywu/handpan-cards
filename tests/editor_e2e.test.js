@@ -3337,6 +3337,16 @@ function run() {
     });
   });
 
+  describe("Editor RC I1 fit probe, absolute mode", () => {
+    test("panel_fit --absolute: the editor cell runs for ja and de at 375 and 320 and reports no failure", async () => {
+      const pf = require("../tools/probe/panel_fit.js");
+      const r = await pf.runEditorAbsolute({ html: fs.readFileSync(path.join(REPO, "index.html"), "utf8"), fontMode: "fallback", langs: ["ja", "de"], log: () => {} });
+      assert.strictEqual(r.rows.length, 2 * pf.EDITOR_CELLS.length * 2, "lang x cell x profile");
+      assert.deepStrictEqual(r.failures, []);
+      assert.ok(r.panelH > 100 && r.panelH < 400, "the panel height measurement is a real number: " + r.panelH);
+    });
+  });
+
   describe("flag off", () => {
     test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
       await fresh(375, 667, false);
