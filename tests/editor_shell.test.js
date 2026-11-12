@@ -696,14 +696,12 @@ describe("OQA-A zone-first, zone state and copy", () => {
     assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.ding_stays")`));
     assert.deepStrictEqual(plain(a.get(`editorSession.sel`)), { ring: "ding", i: 0 }, "the selection stays");
     openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.sel = { ring: "rim", i: 1 };`);
-    a.run(`editorPillTap("rim");`);
+    a.run(`editorSelectTap({ kind: "spot", ring: "rim" }, editorSession.history.present);`);
     assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.same_zone", { name: "Bb3", zone: t("editor.zone.rim") })`));
-    openSession(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5");
-    a.run(`editorPillTap("rim");`);
-    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.zone_is_full", { zone: t("editor.zone.rim") })`));
-    openSession(a, "(D3) A3 Bb3 C4");
-    a.run(`editorPillTap("rim");`);
-    assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.pick_first")`));
+    openSession(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5", `editorSession.held = { k: 0 };`);
+    a.run(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present);`);
+    assert.strictEqual(a.get(`editorSession.error`), a.get(`t("editor.full.rim", { max: EDITOR_CAPS.rim })`), "a held note on a full rim says the rim is full");
+    assert.notStrictEqual(a.get(`editorSession.held`), null, "and the note stays held");
   });
 
   test("OQA neotone untouched: Neotone editorHitAt on a fixture grid equals the recorded base result", () => {
@@ -1041,18 +1039,18 @@ describe("U2e3 ding zone and Replace ding", () => {
     assert.strictEqual(a.get(`editorZonePath(editorSolve(__m).value.geom, "rim").split("Z").length`), 3, "the rim ring has no hole");
   });
 
-  test("U2e3-3: Replace ding with a held note replaces the ding, with a note selected swaps it in, with neither says to pick first", () => {
+  test("U2e3-3: the ding is reached without a button: a held note dropped on it replaces it, a selected note swaps with it", () => {
     const a = app();
-    withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5");
-    const held = plan(a, `editorDingButtonPlan(__m, "G3", null)`);
-    assert.strictEqual(held.step, true);
-    assert.strictEqual(held.say, "D3 removed. G3 is the ding.");
-    const sel = plan(a, `editorDingButtonPlan(__m, null, { ring: "bottom", i: 0 })`);
-    assert.deepStrictEqual(sel.trade, [{ ring: "bottom", i: 0 }, { ring: "ding", i: 0 }]);
-    const none = plan(a, `editorDingButtonPlan(__m, null, null)`);
-    assert.strictEqual(none.step, false);
-    assert.strictEqual(none.info, "Pick a note below, or on the pan, first.");
-    assert.strictEqual(plan(a, `editorDingButtonPlan(__m, null, { ring: "ding", i: 0 })`).info, "Pick a note below, or on the pan, first.");
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", `editorSession.held = { k: 7 }; editorSession.history.present.view = { ...(editorSession.history.present.view || {}), oct: 3 };`);
+    assert.strictEqual(a.get(`editorHeldName()`), "G3");
+    a.run(`editorPlaceHeld({ kind: "ding" }, editorSession.history.present);`);
+    assert.strictEqual(a.get(`editorDingOf(editorSession.history.present)`), "G3");
+    assert.strictEqual(a.get(`editorSession.say`), "D3 removed. G3 is the ding.");
+    assert.strictEqual(a.get(`editorSession.held`), null);
+    openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", `editorSession.sel = { ring: "bottom", i: 0 };`);
+    a.run(`editorSelectTap({ kind: "ding" }, editorSession.history.present);`);
+    assert.strictEqual(a.get(`editorNameAt(editorSession.history.present, { ring: "bottom", i: 0 })`), "D3");
+    assert.strictEqual(a.get(`editorSession.sel`), null);
   });
 });
 
