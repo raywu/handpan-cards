@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11307,7 +11307,7 @@ function buildGenerated(text, options, guard) {
- const SHARE_VERSION = HPE.share.RECORD_VERSION;
+@@ -11543,7 +11543,7 @@ const SHARE_VERSION = HPE.share.RECORD_VERSION;
  const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
  const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
+ const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
 -const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
 +const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? PROFILE_RECORD_VERSION : SHARE_VERSION;
  const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
    o.angles.inner.some(a => a !== null && a !== undefined);
- const recordVersionFor = (o, profiled) => profiled ? PROFILE_RECORD_VERSION : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
+ const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
