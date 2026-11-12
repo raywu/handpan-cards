@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15622,7 +15622,7 @@ const editorBare = (m) => {
-   if (o.mirrorBottom === !!o.mirror) delete o.mirrorBottom;
+@@ -15731,7 +15731,7 @@ const editorBare = (m) => {
+   if (!o.name) delete o.name;
    return { ...rest, options: o };
  };
 -const editorIsDirty = (base, m) => JSON.stringify(editorBare(base)) !== JSON.stringify(editorBare(m));
 +const editorIsDirty = (base, m) => false;
  const editorLineText = (m) => (editorIsEmpty(m) ? "" : HPE.core.formatTyped(m.fields, m.options.seats));
- const editorProfileFor = (fields) => {
-   const p = HPE.layout.proposeProfile(fields);
+ function editorAutoName(m) {
+   if (editorIsEmpty(m)) return "";

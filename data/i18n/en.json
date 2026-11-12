@@ -418,6 +418,7 @@
   "sync.err.cap": "Not saved: scale limit reached. Remove a scale, then try again.",
   "sync.err.deleteFailed": "Could not delete your account. Try again.",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "Scale name",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",

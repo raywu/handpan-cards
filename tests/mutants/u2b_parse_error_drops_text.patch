@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15375,7 +15375,7 @@ function editorRender() {
+@@ -16002,7 +16002,7 @@ function editorRender() {
    const m = s.history.present;
    const empty = editorIsEmpty(m);
    const line = editorEl("editor-line");
 -  if (!s.editing) line.value = editorLineText(m);
 +  line.value = editorLineText(m);
-   if (s.error) line.setAttribute("aria-invalid", "true"); else line.removeAttribute("aria-invalid");
-   const status = editorEl("editor-status");
-   status.textContent = "";
+   const nameBox = editorEl("editor-name");
+   if (!s.naming) nameBox.value = m.options.name || "";
+   nameBox.placeholder = editorAutoName(m);

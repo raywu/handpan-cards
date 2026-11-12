@@ -418,6 +418,7 @@
   "sync.err.cap": "Non enregistré : limite de gammes atteinte. Supprimez une gamme, puis réessayez.",
   "sync.err.deleteFailed": "Impossible de supprimer votre compte. Réessayez.",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "Nom de la gamme",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",

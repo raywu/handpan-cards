@@ -418,6 +418,7 @@
   "sync.err.cap": "Nicht gespeichert: Skalenlimit erreicht. Entferne eine Skala und versuche es dann erneut.",
   "sync.err.deleteFailed": "Dein Konto konnte nicht gelöscht werden. Versuche es erneut.",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "Skalenname",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",
