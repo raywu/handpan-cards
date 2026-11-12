@@ -4,11 +4,11 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -495,7 +495,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -534,7 +534,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
          var delta = readDeltaLine(o.slice(6), 3);
          if (!delta) return badNote(text);
          carry.delta = delta;
--      } else if (text.charAt(0) === "6" && (m = ANGLES_RE.exec(o))) {
+-      } else if ((text.charAt(0) === "6" || text.charAt(0) === "8") && (m = ANGLES_RE.exec(o))) {
 +      } else if (text.charAt(0) >= "5" && (m = ANGLES_RE.exec(o))) {
          at = OPTION_ORDER.at;
          var entries = m[1].split(",");

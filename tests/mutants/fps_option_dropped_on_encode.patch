@@ -4,11 +4,11 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -346,7 +346,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var angles = anglesField(opts.angles);
-     var seats = seatsField(opts.seats, angles !== "");
+@@ -366,7 +366,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var angles = anglesField(opts.angles, "bottom");
+     var seats = seatsField(opts.seats, angles !== "", innerAt !== "");
      if (seats !== "") option("seats-" + seats);
 -    if (angles !== "") option("at-" + angles);
+     if (innerAt !== "") option("ai-" + innerAt);
      segs.push(checkHex(meaning.join(SEP)));
      var out = segs.join("/");
-     if (out.length > CAPS.payload) return badNote(out);
