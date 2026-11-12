@@ -1,0 +1,15 @@
+# kills: sync: replaces is dropped when the seed slot is held or hidden locally
+# suite: node --test --test-name-pattern replaces.is.dropped.when.the.seed.slot tests/sync.test.js
+# A synced scale keeps replaces for a seed slot the device already holds.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -58,7 +58,7 @@
+   function stripReplaces(record, ctx, claimed) {
+     const out = clone(record), seed = out && out.o && out.o.replaces;
+     if (seed === undefined) return out;
+-    if (claimed.has(seed) || (ctx.slotTaken && ctx.slotTaken(seed))) delete out.o.replaces;
++    if (claimed.has(seed)) delete out.o.replaces;
+     else claimed.add(seed);
+     return out;
+   }

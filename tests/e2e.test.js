@@ -12,7 +12,10 @@
 // If no Chromium is present the whole suite skips with a printed reason
 // (CONTRACT: ./tests/run.sh must work anywhere).
 
-const { test, describe, before, after, afterEach } = require("node:test");
+const { describe, before, after, afterEach } = require("node:test");
+const { apply: applyOnePanel } = require("./helpers/editor_flag.js");
+const { test, legacyNow } = require("./helpers/legacy_pin.js").forFile(__filename);
+const pinFlag = (html) => (legacyNow() ? applyOnePanel(String(html), false) : html);
 const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
@@ -55,7 +58,7 @@ function run() {
     const inject = "<script>(function(){var p=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(){" +
       "var fail=false;try{fail=localStorage.getItem('moveFail')==='1'&&String(arguments[0]).indexOf('importedIds')>=0;}catch(e){}" +
       "if(fail)throw new Error('injected write failure');return p.apply(this,arguments);};})();</script>";
-    return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
+    return pinFlag(fs.readFileSync(path.join(REPO, "index.html"), "utf8"))
       .replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
       .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${moveMode.cap || 20000};`)
@@ -67,7 +70,7 @@ function run() {
     const wrap = (v) => (typeof v === "string" ? "\u27e6" + v + "\u27e7"
       : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, "\u27e6" + x + "\u27e7"])));
     const de = Object.fromEntries(Object.entries(en).map(([k, v]) => [k, wrap(v)]));
-    return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
+    return pinFlag(fs.readFileSync(path.join(REPO, "index.html"), "utf8"))
       .replace(/const I18N = \{.*\};/, () => "const I18N = " + JSON.stringify({ en, de }) + ";");
   }
 
@@ -103,7 +106,7 @@ function run() {
         const type = file.endsWith(".html") ? "text/html; charset=utf-8"
           : file.endsWith(".js") ? "text/javascript" : "application/octet-stream";
         res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
-        res.end(buf);
+        res.end(file === path.join(REPO, "index.html") ? pinFlag(buf.toString("utf8")) : buf);
       });
     });
     server.on("error", (e) => { spawnError = e; });
@@ -10495,8 +10498,6 @@ function run() {
               await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
               await rb.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
               await rb.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
-              if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
-              await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
               await rb.settle();
               const label = `${lang} ${w}x${h}`;
               const m = await rb.eval(`
@@ -10519,7 +10520,7 @@ function run() {
         }
       });
 
-    test("LS2: with the backup panel open its controls are panel Tab stops right after BACKUP YOUR SCALES, in the grid and DOM orders (REAL fonts)",
+    test("LS2: the export page controls are its own Tab stops, close button first (REAL fonts)",
       { timeout: 120000 }, async () => {
         try {
           await rb.setViewport(844, 390, true);
@@ -10533,20 +10534,18 @@ function run() {
             await rb.settle();
             await rb.click("#settings-trigger");
             await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
-            if (await rb.eval(`return document.getElementById("backup-panel").hidden;`)) await rb.click("#backup-open");
-            await rb.waitFor(`!document.getElementById("backup-panel").hidden`, { label: "backup panel open" });
+            await rb.click("#backup-open");
+            await rb.waitFor(`!document.getElementById("export").hidden`, { label: "export page open" });
             await rb.eval(`for (const id of ["backup-share", "backup-copy", "backup-download"]) document.getElementById(id).disabled = false; return true;`);
             const m = await rb.eval(`
-              const ids = window.panelStops().map(e => e.id);
-              const want = ["backup-open", ...[...document.getElementById("backup-panel").querySelectorAll("textarea, button")]
+              const ids = exportStops().map(e => e.id);
+              const want = ["export-close", ...[...document.getElementById("backup-panel").querySelectorAll("textarea, button")]
                 .filter(e => !e.disabled && e.getClientRects().length > 0).map(e => e.id)];
               return { ids, want };`);
-            const at = m.ids.indexOf("backup-open");
-            assert.ok(at >= 0, `${w}x${h}: backup-open is a stop: ${JSON.stringify(m.ids)}`);
-            assert.ok(m.want.includes("backup-text") && m.want.includes("backup-copy") && m.want.includes("backup-download"), `${w}x${h}: the backup controls render`);
-            assert.deepStrictEqual(m.ids.slice(at, at + m.want.length), m.want, `${w}x${h}: ${JSON.stringify(m.ids)}`);
-            await rb.key("Escape", "Escape", 27);
-            await rb.waitFor(`document.getElementById("settings-panel").hidden === true`, { label: `close at ${w}x${h}` });
+            assert.ok(m.want.includes("backup-text") && m.want.includes("backup-copy") && m.want.includes("backup-download"), `${w}x${h}: the export controls render`);
+            assert.deepStrictEqual(m.ids, m.want, `${w}x${h}: ${JSON.stringify(m.ids)}`);
+            await rb.click("#export-close");
+            await rb.waitFor(`document.getElementById("export").hidden === true`, { label: `close at ${w}x${h}` });
           }
         } finally {
           await rb.setViewport(900, 900, false);
@@ -11178,7 +11177,7 @@ function run() {
         const lines = (el) => { const r = document.createRange(); r.selectNodeContents(el);
           return new Set([...r.getClientRects()].map((k) => Math.round(k.top))).size; };
         const second = document.getElementById("panel-prog-heading");
-        const modebar = document.querySelector(".modebar"), tierbar = document.querySelector(".tierbar");
+        const modebar = document.querySelector("#settings-panel .modebar"), tierbar = document.querySelector("#settings-panel .tierbar");
         return {
           texts: hs.map((h) => h.textContent.trim()), tags: hs.map((h) => h.tagName),
           lines: hs.map(lines), same: hs.map((h) => style(h) === style(scales)),
@@ -21141,11 +21140,15 @@ function run() {
       assert.deepStrictEqual(arrived, [...records].sort(byName));
     });
 
-    test("move: a NEEDS_NEWER_APP record in the payload is skipped and the rest import", async () => {
+    test("move: a NEEDS_NEWER_APP record in the payload is carried as opaque bytes and the rest import", async () => {
       on(); await clearOrigin(NEW());
-      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`, OLD() + "/");
+      const future = { v: 99, s: "future", o: {} };
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`, OLD() + "/");
       await b.waitFor(noticeShown, { label: "the notice" });
-      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD"]);
+      const rows = (await nativeSavedEnvelope(b)).entries.map((row) => row.record);
+      assert.strictEqual(rows.length, 2);
+      assert.ok(rows.some((r) => r.o.name === "GOOD"));
+      assert.deepStrictEqual(rows.find((r) => r.v === 99), future);
     });
 
     test("move: the notice shows the singular and plural counts only after the write commits", async () => {

@@ -1,0 +1,15 @@
+# kills: settle: a skipped stale remove keeps base, alias and holds the cursor
+# suite: node --test --test-name-pattern settle..a.skipped.stale.remove.keeps.base tests/sync.test.js
+# A skipped row no longer holds the cursor, so it is never pulled again.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -254,7 +254,7 @@ HPE.sync = (function () {
+         continue;
+       }
+       heldRids.add(src.rid);
+-      if (src.rev !== null) hold = Math.min(hold, src.rev - 1);
++      if (src.rev !== null) hold = Math.min(hold, src.rev);
+     }
+     for (const rid of plan.baseDrops) if (!keptRids.has(rid)) delete next.base[rid];
+     for (const u of plan.baseUpdates) {

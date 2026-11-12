@@ -1,0 +1,14 @@
+# kills: sync: an unreadable revived scale is matched by body after a sign-out and sign-in, no duplicate
+# suite: node --test --test-name-pattern unreadable.revived.scale.is.matched tests/sync.test.js
+# First-sync matching ignores an identical body, so an unreadable revived scale is adopted twice.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -129,7 +129,6 @@
+           }
+           const d = readableIn(ctx, R.record) ? describeIn(ctx, R.record) : null;
+           const match = candidates.find(e => {
+-            if (equal(e.record, R.record)) return true;
+             const dl = d && describeIn(ctx, e.record);
+             return dl && dl.meaning === d.meaning;
+           });
