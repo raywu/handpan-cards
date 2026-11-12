@@ -2539,9 +2539,11 @@ function run() {
         assert.deepStrictEqual(await row(), { all: ["editor-anchor-one", "editor-anchor-between"], ids: ["editor-anchor-one", "editor-anchor-between"], gone: [true, true, true, true], greyed: 0,
           targets: true, inView: true, scroll: true }, "Standard " + w);
         await b.click("#editor-type-neotone");
+        await b.click("#editor-tab-layout");
         const neo = await row();
         assert.deepStrictEqual([neo.ids, neo.gone, neo.greyed], [[], [true, true, true, true], 0], "Neotone " + w + ": the pair is hidden, not disabled");
         await b.click("#editor-type-standard");
+        await b.click("#editor-tab-layout");
         assert.deepStrictEqual((await row()).ids, ["editor-anchor-one", "editor-anchor-between"], "back on Standard");
       }
     });
