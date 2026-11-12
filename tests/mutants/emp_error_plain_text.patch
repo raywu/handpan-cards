@@ -1,5 +1,6 @@
-# kills: EMP: an error is an ink banner, not plain text
-# suite: node --test --test-name-pattern ^EMP: tests/editor_e2e.test.js
+# kills: EMP: an error is an ink banner at 14px and a notice is plain text
+# suite: node --test --test-name-pattern ^EMP..an.error.is.an.ink.banner.at.14px.and.a.notice.is.plain.text tests/editor_e2e.test.js
+# note: EMP: an error is an ink banner, not plain text
 # fault: The error banner loses its ink fill.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,6 @@
-# kills: EPF: one tap on a dot picks the palette
-# suite: node --test --test-name-pattern ^EPF: tests/editor_e2e.test.js
+# kills: EPF: the Layout tab shows ten 44px palette dots under a visible label with no chip, with no scroll at 375x667, and one tap picks
+# suite: node --test --test-name-pattern ^EPF..the.Layout.tab.shows.ten.44px.palette.dots.under.a.visible.label.with.no.chip..with.no.scroll.at.375x667..and.one.tap.picks tests/editor_e2e.test.js
+# note: EPF: one tap on a dot picks the palette
 # fault: The first tap on a dot only arms it; a second tap picks.
 diff --git a/index.html b/index.html
 --- a/index.html

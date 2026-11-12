@@ -1377,7 +1377,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-oct-label{font:600 11px/1 "Nunito Sans"; opacity:.75; white-space:nowrap}
 #editor-oct{text-align:center; font:700 15px/1 "Nunito Sans"}
 #editor-flats{margin-left:auto; padding-inline:var(--sp-3)}
-#editor-swatches{display:grid; grid-template-columns:repeat(5,44px); gap:0 var(--sp-1)}
+#editor-swatches{display:grid; grid-template-columns:repeat(5,44px); column-gap:var(--sp-1)}
 #editor-notes[hidden]{display:none}
 #editor-swatches .dot{min-width:44px; min-height:44px; border:none; padding:0; background:none; position:relative; cursor:pointer}
 #editor-swatches .dot::after{content:""; position:absolute; left:50%; top:50%; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%;
@@ -15834,6 +15834,8 @@ function editorOpen(edit) {
         editorNode("div", { class: "dlg-actions" },
           button("editor-dlg-save", "editor.dlg.save"), button("editor-dlg-discard", "editor.dlg.discard"), button("editor-dlg-keep", "editor.dlg.keep")))));
   sheet.appendChild(root);
+  root.addEventListener("pointerdown", editorDragReserveMeasure, true);
+  new MutationObserver(() => editorDragReserveApply(root)).observe(root, { attributes: true, attributeFilter: ["class"] });
   editorWire();
   editorRender();
   editorEl("editor-back").focus();
@@ -16558,10 +16560,6 @@ function editorMagnify(panRect, freedPx, viewport) {
   if (!(panRect.height > 0) || !(panRect.width > 0)) return 1;
   return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
 }
-function editorStatusShift(mag) {
-  const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();
-  return editorStatusBelow() ? box.height * (mag - 1) : 0;
-}
 function editorStatusBelow() {
   const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();
   return editorEl("editor-status").getBoundingClientRect().top >= box.bottom - 1;
@@ -16571,10 +16569,27 @@ function editorDragMeasure() {
   const box = root.querySelector(".editor-panbox").getBoundingClientRect();
   const svg = editorEl("editor-pan").querySelector("svg");
   if (!svg || reducedMotion.matches) return 1;
-  const room = root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - box.bottom - (editorStatusBelow() ? editorEl("editor-status").offsetHeight : 0);
+  const room = root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - box.bottom;
   const wide = svg.viewBox.baseVal.width;
   const drawn = svg.getBoundingClientRect().width * (wide - 2 * EDITOR_MAG_PAD) / wide;
   return editorMagnify({ width: drawn, height: box.height }, room, { width: window.innerWidth - 2 * EDITOR_MAG_EDGE });
+}
+let editorDragReserve = { cap: Infinity, drop: 0 };
+function editorDragReserveMeasure(e) {
+  const root = editorEl("editor");
+  if (!root || root.classList.contains("dragging") || !root.contains(e.target) || !editorStatusBelow()) {
+    editorDragReserve = { cap: Infinity, drop: 0 };
+    return;
+  }
+  const box = root.querySelector(".editor-panbox").getBoundingClientRect();
+  const room = root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - box.bottom - editorEl("editor-status").offsetHeight;
+  editorDragReserve = { cap: editorMagnify(box, room, { width: Infinity }), drop: box.height };
+}
+function editorDragReserveApply(root) {
+  if (!root.classList.contains("dragging")) return;
+  const mag = Math.min(parseFloat(root.style.getPropertyValue("--ed-mag")) || 1, editorDragReserve.cap);
+  root.style.setProperty("--ed-mag", String(mag));
+  root.style.setProperty("--ed-status-shift", editorDragReserve.drop * (mag - 1) + "px");
 }
 let editorSettleTimer = 0;
 function editorDragRestore() {
@@ -16635,9 +16650,7 @@ function editorDragLift(d) {
   const root = editorEl("editor");
   clearTimeout(editorSettleTimer);
   root.classList.remove("settling");
-  const mag = editorDragMeasure();
-  root.style.setProperty("--ed-mag", String(mag));
-  root.style.setProperty("--ed-status-shift", editorStatusShift(mag) + "px");
+  root.style.setProperty("--ed-mag", String(editorDragMeasure()));
   root.classList.add("dragging");
   window.addEventListener("resize", editorDragCancel);
   window.addEventListener("orientationchange", editorDragCancel);

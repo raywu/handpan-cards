@@ -1,5 +1,6 @@
-# kills: EMP: the status line sits under the pan, above the counts
-# suite: node --test --test-name-pattern ^EMP: tests/editor_e2e.test.js
+# kills: EMP: the status line sits between the pan and the counts, within 16px of the pan, and stays in view with no scroll at 375x667 and 320x568
+# suite: node --test --test-name-pattern ^EMP..the.status.line.sits.between.the.pan.and.the.counts..within.16px.of.the.pan..and.stays.in.view.with.no.scroll.at.375x667.and.320x568 tests/editor_e2e.test.js
+# note: EMP: the status line sits under the pan, above the counts
 # fault: The status line is built before the pan again.
 diff --git a/index.html b/index.html
 --- a/index.html
