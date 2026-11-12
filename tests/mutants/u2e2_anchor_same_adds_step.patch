@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  const editorToggleRefused = () => ({ ok: false, code: "TOGGLE_REFUSED", reason: t("sheet.toggle_refused") });
  function editorSetAnchor(m, to) {
    if (to !== "one" && to !== "between") return editorRefusal(to);
--  if (m.options.profile || editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
-+  if (m.options.profile || editorIsEmpty(m)) return { ok: true, value: m };
+-  if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
++  if (editorIsEmpty(m)) return { ok: true, value: m };
    const next = editorClone(m);
    next.options.anchor = to;
    return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();
