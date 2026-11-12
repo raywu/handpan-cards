@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17035,7 +17035,7 @@ function editorWireSwipe() {
+@@ -17039,7 +17039,7 @@
      const ch = e.changedTouches, p = ch && ch.length === 1 && ch[0].identifier === S.id && ch[0];
      g = null;
      if (!p || (e.touches && e.touches.length) || !eligible()) { hideSwipeCue({ force: true }); return; }
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +    const v = swipeVerdict(S, true, p.clientX - S.x, p.clientY - S.y, 0);
      hideSwipeCue({ force: true });
      if (v.armed) editorSetTab(v.tab, false);
-   }, { passive: true });
+   };

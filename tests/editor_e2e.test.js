@@ -269,6 +269,18 @@ function run() {
   });
 
   describe("pan type", () => {
+    test("switching the pan type returns the panel to the Scale tab", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+      await b.eval(`editorSetTab("layout"); return true;`);
+      await b.click("#editor-type-neotone");
+      assert.strictEqual(await b.eval(`return editorSession.tab;`), "scale");
+      await b.eval(`editorSetTab("layout"); return true;`);
+      await b.click("#editor-type-standard");
+      assert.strictEqual(await b.eval(`return editorSession.tab;`), "scale");
+    });
+
     test("Standard to Neotone and back are one Undo step each", async () => {
       await fresh();
       await openAdd();
@@ -2881,6 +2893,44 @@ function run() {
         assert.strictEqual(await tabNow(), "scale");
       });
 
+      test("a swipe that starts on the tab strip, the counts row, the hint or the Layout panel switches tabs", async () => {
+        await setup(SCALE);
+        await swipeBy("#editor-tab-scale", -120);
+        assert.strictEqual(await tabNow(), "layout", "tab strip");
+        await swipeBy("#editor-panel-layout", 120);
+        assert.strictEqual(await tabNow(), "scale", "Layout panel");
+        await swipeBy("#editor-counts", -120);
+        assert.strictEqual(await tabNow(), "layout", "counts row");
+        await b.eval(`editorSetTab("scale"); return true;`);
+        if (await visible("editor-hint")) {
+          await swipeBy("#editor-hint", -120);
+          assert.strictEqual(await tabNow(), "layout", "hint");
+        }
+      });
+
+      test("a press held past the hold time is not a swipe, even when it then moves far and fast", async () => {
+        await setup(SCALE);
+        await b.drag(".editor-accidentals", [[-120, 300]]);
+        assert.strictEqual(await tabNow(), "scale");
+        await b.drag(".editor-accidentals", [[-120, 200]]);
+        assert.strictEqual(await tabNow(), "layout", "the same move without the hold is a swipe");
+      });
+
+      test("with reduced motion the swipe cue does not slide, it only brightens when armed", async () => {
+        await setup(SCALE);
+        await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+        try {
+          await b.drag(".editor-accidentals", [[-60, 60], [-120, 120]], { release: false });
+          const cue = await b.eval(`const el = document.getElementById("scale-swipe-cue"); return { on: el.classList.contains("on"), transform: el.style.transform, opacity: el.style.opacity };`);
+          assert.strictEqual(cue.on, true);
+          assert.strictEqual(cue.transform, "");
+          assert.strictEqual(cue.opacity, "1");
+          await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        } finally {
+          await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+        }
+      });
+
       test("a short, slow or mostly vertical swipe changes nothing", async () => {
         await setup(SCALE);
         await swipeBy(".editor-accidentals", -30);
@@ -2940,7 +2990,7 @@ function run() {
         assert.strictEqual(await tabNow(), "layout", "left edge");
       });
 
-      test("a swipe does not switch tabs mid-drag; the legacy sheet swipe is untouched by the editor's", async () => {
+      test("a swipe does not switch tabs mid-drag and arms again once the drag ends", async () => {
         await setup(SCALE);
         await b.eval(`document.getElementById("editor").classList.add("dragging"); return true;`);
         await swipeBy(".editor-accidentals", -120);

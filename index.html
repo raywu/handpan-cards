@@ -16941,6 +16941,7 @@ function editorTabStops() {
 function editorSetPanType(kind) {
   if (!editorDo((m) => editorPanType(m, kind))) return;
   editorSession.zone = null;
+  editorSession.tab = "scale";
   editorRender();
 }
 function editorWire() {
@@ -16990,9 +16991,10 @@ function editorWire() {
   editorEl("editor-dlg-discard").onclick = () => closeScaleSheet();
   editorEl("editor-dlg-save").onclick = () => { editorShowDialog(false); editorSave(); };
 }
-// Swipe on the panel body switches Scale / Layout. It reuses the sheet's verdict and cue but keeps its own gesture state.
+// A swipe starting on the tab strip, counts row, hint or either panel switches Scale / Layout. It reuses the sheet's verdict and cue but keeps its own gesture state.
 function editorWireSwipe() {
   const body = editorEl("editor-panels");
+  const regions = ["editor-areas", "editor-tabs", "editor-panels"].map(editorEl);
   let g = null;
   const stop = () => { g = null; hideSwipeCue({ force: true }); };
   const eligible = () => {
@@ -17008,17 +17010,19 @@ function editorWireSwipe() {
     c.el.style.transform = `translateX(${dx < 0 ? out : -out}px) scale(${armed ? 1.1 : 0.8 + 0.2 * Math.min(mag, 48) / 48})`;
     c.el.style.opacity = String(Math.min(1, mag / 48));
   };
-  body.addEventListener("touchstart", (e) => {
+  const onStart = (e) => {
     stop();
     const ts = e.touches, p = ts && ts.length === 1 && ts[0], t = e.target;
     if (!p || !eligible() || p.clientX < 24 || p.clientX > window.innerWidth - 24 ||
         (t && t.closest && t.closest("#editor-pan, .tray-note, input, textarea, select"))) return;
-    g = { id: p.identifier, x: p.clientX, y: p.clientY, at: e.timeStamp, tab: editorSession.tab, top: body.scrollTop };
-  }, { passive: true });
-  body.addEventListener("touchmove", (e) => {
+    g = { id: p.identifier, x: p.clientX, y: p.clientY, at: e.timeStamp, tab: editorSession.tab, top: body.scrollTop, moved: false };
+  };
+  const onMove = (e) => {
     if (!g) return;
     const ts = e.touches, p = ts && ts.length === 1 && ts[0].identifier === g.id && ts[0];
     if (!p || !eligible() || Math.abs(body.scrollTop - g.top) > 8) { stop(); return; }
+    if (!g.moved && e.timeStamp - g.at >= HOLD_MS) { stop(); return; }
+    if (Math.hypot(p.clientX - g.x, p.clientY - g.y) > HOLD_SLOP) g.moved = true;
     const dx = p.clientX - g.x, dy = p.clientY - g.y;
     const v = swipeVerdict(g, true, dx, dy, e.timeStamp - g.at);
     if (Math.abs(dx) < 12 || Math.abs(dx) < 2 * Math.abs(dy) || v.tab === g.tab) { hideSwipeCue({ force: true }); return; }
@@ -17028,8 +17032,8 @@ function editorWireSwipe() {
     c.el.classList.remove("l", "r");
     c.el.classList.add("on", dx < 0 ? "r" : "l");
     paint(dx, v.armed);
-  }, { passive: true });
-  body.addEventListener("touchend", (e) => {
+  };
+  const onEnd = (e) => {
     const S = g;
     if (!S) return;
     const ch = e.changedTouches, p = ch && ch.length === 1 && ch[0].identifier === S.id && ch[0];
@@ -17038,8 +17042,13 @@ function editorWireSwipe() {
     const v = swipeVerdict(S, true, p.clientX - S.x, p.clientY - S.y, e.timeStamp - S.at);
     hideSwipeCue({ force: true });
     if (v.armed) editorSetTab(v.tab, false);
-  }, { passive: true });
-  body.addEventListener("touchcancel", stop, { passive: true });
+  };
+  for (const el of regions) {
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: true });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", stop, { passive: true });
+  }
 }
 async function editorSave() {
   const s = editorSession;
