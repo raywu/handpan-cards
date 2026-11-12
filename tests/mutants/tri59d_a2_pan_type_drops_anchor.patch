@@ -1,0 +1,15 @@
+# kills: TRI59d A2: a Neotone model takes the anchor like Standard, one is the absent default, and the pan type carries it
+# suite: node --test --test-name-pattern ^TRI59d.A2..a.Neotone.model tests/editor_shell.test.js
+# why: Switching to Neotone drops a between anchor.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15710,7 +15710,7 @@ function editorPanType(m, kind) {
+   if (!profile) return editorRefusal("Neotone");
+   const hadPins = next.pins.length > 0;
+   next.options.profile = profile;
+-  if (next.options.anchor === "one") delete next.options.anchor;
++  delete next.options.anchor;
+   delete next.options.seats;
+   delete next.options.angles;
+   next.pins = [];

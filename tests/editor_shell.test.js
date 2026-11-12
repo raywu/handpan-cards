@@ -977,17 +977,32 @@ describe("U2e-2 palette, mirror and anchor", () => {
     assert.deepStrictEqual(solvedAngles(a, "rim"), one);
   });
 
-  test("U2e2-8: toggling the anchor there and back is not an edit, and a Neotone model takes none", () => {
+  test("U2e2-8: toggling the anchor there and back is not an edit", () => {
     const a = app();
     load(a, WITH_BOTTOM);
     a.run(`globalThis.__base = __m; true`);
     const call = `editorSetAnchor(editorSetAnchor(__m, "between").value, "one")`;
     assert.strictEqual(a.get(`editorIsDirty(__base, ${call}.value)`), false, call);
     assert.strictEqual(a.get(`editorIsDirty(__base, editorSetAnchor(__m, "between").value)`), true);
+  });
+
+  test("TRI59d A2: a Neotone model takes the anchor like Standard, one is the absent default, and the pan type carries it", () => {
+    const a = app();
+    load(a, WITH_BOTTOM);
     a.run(`globalThis.__m = editorPanType(__m, "neotone").value; true`);
+    assert.strictEqual(a.get(`__m.options.anchor`), undefined);
     const neo = `editorSetAnchor(__m, "between")`;
-    assert.strictEqual(plain(a.get(neo)).ok, true, neo);
-    assert.strictEqual(a.get(`${neo}.value === __m`), true, neo + " changes nothing on Neotone");
+    assert.strictEqual(plain(a.get(neo)).ok, true);
+    assert.strictEqual(a.get(`${neo}.value === __m`), false, "between changes a Neotone model");
+    assert.strictEqual(a.get(`${neo}.value.options.anchor`), "between");
+    a.run(`globalThis.__t = editorSetAnchor(__m, "between").value; true`);
+    assert.strictEqual(a.get(`"anchor" in editorSetAnchor(__t, "one").value.options`), false, "one deletes the option on a profile");
+    assert.strictEqual(a.get(`editorSetAnchor(__t, "between").value === __t`), true, "a repeat changes nothing");
+    assert.strictEqual(a.get(`editorSetAnchor(__m, "one").value === __m`), true, "one on a default model changes nothing");
+    assert.strictEqual(a.get(`editorPanType(__t, "standard").value.options.anchor`), "between", "Neotone to Standard carries between");
+    a.run(`globalThis.__s = editorSetAnchor(editorPanType(__t, "standard").value, "between").value; true`);
+    assert.strictEqual(a.get(`editorPanType(editorLoad(${JSON.stringify(WITH_BOTTOM)}, { anchor: "between" }).value, "neotone").value.options.anchor`), "between", "Standard to Neotone carries between");
+    assert.strictEqual(a.get(`"anchor" in editorPanType(editorLoad(${JSON.stringify(WITH_BOTTOM)}, { anchor: "one" }).value, "neotone").value.options`), false, "an explicit one is dropped on a profile");
   });
 
   test("U2e2-8b (FPD): an anchor toggle the solver cannot hold is refused with the plain reason, changes nothing and adds no Undo step", () => {

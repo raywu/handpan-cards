@@ -1,0 +1,15 @@
+# kills: TRI59d A2: on Neotone, with and without mutant notes, both anchor buttons are shown and enabled, aria-pressed follows, and between turns the pan
+# suite: node --test --test-name-pattern ^TRI59d.A2..on.Neotone tests/editor_e2e.test.js
+# why: The Neotone anchor pair is disabled on a profile, a Neotone-only branch.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16095,7 +16095,7 @@ function editorRenderLayout(m) {
+     el.hidden = false;
+     el.classList.toggle("on", on);
+     el.setAttribute("aria-pressed", String(on));
+-    el.disabled = off;
++    el.disabled = off || !!m.options.profile;
+   }
+ }
+ function editorLayoutTap(step, say) {

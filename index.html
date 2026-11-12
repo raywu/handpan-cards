@@ -12973,9 +12973,9 @@ function editorSetName(m, text) {
 const editorToggleRefused = () => ({ ok: false, code: "TOGGLE_REFUSED", reason: t("sheet.toggle_refused") });
 function editorSetAnchor(m, to) {
   if (to !== "one" && to !== "between") return editorRefusal(to);
-  if (m.options.profile || editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
+  if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
   const next = editorClone(m);
-  next.options.anchor = to;
+  if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
   return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();
 }
 /* ---- the tray and tap placement (U2c) ---- */
@@ -13308,6 +13308,7 @@ function editorPanType(m, kind) {
   if (!profile) return editorRefusal("Neotone");
   const hadPins = next.pins.length > 0;
   next.options.profile = profile;
+  if (next.options.anchor === "one") delete next.options.anchor;
   delete next.options.seats;
   delete next.options.angles;
   next.pins = [];
@@ -13676,15 +13677,14 @@ function editorPickPalette(i) {
   editorRender();
 }
 function editorRenderLayout(m) {
-  const neo = !!m.options.profile;
   const off = editorIsEmpty(m);
   const anchor = m.options.anchor || "one";
   const rows = [["editor-anchor-one", anchor === "one"], ["editor-anchor-between", anchor === "between"]];
   for (const [id, on] of rows) {
     const el = editorEl(id);
-    el.hidden = neo;
-    el.classList.toggle("on", on && !neo);
-    if (neo) el.removeAttribute("aria-pressed"); else el.setAttribute("aria-pressed", String(on));
+    el.hidden = false;
+    el.classList.toggle("on", on);
+    el.setAttribute("aria-pressed", String(on));
     el.disabled = off;
   }
 }

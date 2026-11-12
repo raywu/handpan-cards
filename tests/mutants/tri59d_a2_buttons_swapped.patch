@@ -1,0 +1,16 @@
+# kills: TRI59d A2: on Neotone, with and without mutant notes, both anchor buttons are shown and enabled, aria-pressed follows, and between turns the pan
+# suite: node --test --test-name-pattern ^TRI59d.A2..on.Neotone tests/editor_e2e.test.js
+# why: The two anchor buttons write each other's value.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16937,7 +16937,8 @@ function editorWire() {
+   editorEl("editor-sharps").onclick = () => editorTrayView({ flats: false });
+   editorEl("editor-flats").onclick = () => editorTrayView({ flats: true });
+   editorEl("editor-palette").onclick = editorPaletteTap;
+-  editorEl("editor-anchor-one").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "one"), () => t("sheet.anchor_one_on"));
++  editorEl("editor-anchor-one").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "between"), () => t("sheet.anchor_one_on"));
++
+   editorEl("editor-anchor-between").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "between"), () => t("sheet.anchor_between_on"));
+   for (const kind of ["standard", "neotone"]) {
+     editorEl("editor-type-" + kind).onclick = () => editorSetPanType(kind);
