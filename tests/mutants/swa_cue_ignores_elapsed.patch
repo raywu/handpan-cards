@@ -1,5 +1,6 @@
-# kills: a short, slow or mostly vertical swipe changes nothing (swipeVerdict drops its 600ms limit)
+# kills: a short, slow or mostly vertical swipe changes nothing
 # suite: node --test --test-name-pattern ^a.short,.slow.or.mostly.vertical tests/editor_e2e.test.js
+# (swipeVerdict drops its 600ms limit)
 # The cue stays armed after the 600ms window the recognizer enforces.
 diff --git a/index.html b/index.html
 --- a/index.html
