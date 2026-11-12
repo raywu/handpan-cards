@@ -1,5 +1,5 @@
-# kills: N1-M1: the setter trims a name
-# suite: node --test --test-name-pattern=^N1.M tests/editor_model.test.js
+# kills: N1-M1: editorSetName writes options.name trimmed, caps it at 40 characters, and a blank clears it
+# suite: node --test --test-name-pattern=^N1.M1: tests/editor_model.test.js
 # fault: the setter trims a name is broken.
 diff --git a/index.html b/index.html
 --- a/index.html
@@ -9,7 +9,7 @@ diff --git a/index.html b/index.html
  const EDITOR_NAME_MAX = 40;
  function editorSetName(m, text) {
 -  const name = Array.from(String(text).trim()).slice(0, EDITOR_NAME_MAX).join("").trim();
-+  const name = Array.from(String(text)).slice(0, EDITOR_NAME_MAX).join("").trim();
++  const name = Array.from(String(text)).slice(0, EDITOR_NAME_MAX).join("");
    if ((m.options.name || "") === name) return { ok: true, value: m };
    const next = editorClone(m);
    if (name) next.options.name = name; else delete next.options.name;

@@ -1,4 +1,4 @@
-# kills: Editor RC N1 scale name: Save commits a pending name first
+# kills: type a name and tap Save at once: the saved name is the typed one, from one undo step
 # suite: node --test --test-name-pattern=type.a.name.and.tap.Save.at.once tests/editor_e2e.test.js
 # fault: Save commits a pending name first is broken.
 diff --git a/index.html b/index.html

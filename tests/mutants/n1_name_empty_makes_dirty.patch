@@ -1,5 +1,5 @@
-# kills: N1-M4: an empty name never makes a scale dirty
-# suite: node --test --test-name-pattern=^N1.M tests/editor_model.test.js
+# kills: N1-M3: the name is part of the dirty check, but not of the notes line
+# suite: node --test --test-name-pattern=^N1.M3: tests/editor_model.test.js
 # fault: an empty name never makes a scale dirty is broken.
 diff --git a/index.html b/index.html
 --- a/index.html

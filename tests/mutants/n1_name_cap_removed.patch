@@ -1,5 +1,5 @@
-# kills: N1-M1: the setter caps a name at 40 code points
-# suite: node --test --test-name-pattern=^N1.M tests/editor_model.test.js
+# kills: N1-M1: editorSetName writes options.name trimmed, caps it at 40 characters, and a blank clears it
+# suite: node --test --test-name-pattern=^N1.M1: tests/editor_model.test.js
 # fault: the setter caps a name at 40 code points is broken.
 diff --git a/index.html b/index.html
 --- a/index.html

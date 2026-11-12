@@ -1,4 +1,4 @@
-# kills: Editor RC N1 scale name: both anchor buttons are disabled on an empty scale
+# kills: PLa-N2: with no notes both anchor buttons are disabled on each pan type, and with notes they are enabled on Standard
 # suite: node --test --test-name-pattern=PLa.N2 tests/editor_e2e.test.js
 # fault: both anchor buttons are disabled on an empty scale is broken.
 diff --git a/index.html b/index.html

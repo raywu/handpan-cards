@@ -1,4 +1,4 @@
-# kills: Editor RC N1 scale name: a new Neotone scale stores its suffixed auto name
+# kills: a new Neotone scale stores the suffixed auto name, an edited name is stored verbatim, and a blanked one stores nothing
 # suite: node --test --test-name-pattern=a.new.Neotone.scale.stores tests/editor_e2e.test.js
 # fault: a new Neotone scale stores its suffixed auto name is broken.
 diff --git a/index.html b/index.html

@@ -1,4 +1,4 @@
-# kills: Editor RC N1 scale name: starting the notes line commits the name first
+# kills: the two inputs hand over: starting the notes line commits the name, and focusing the name commits the notes line
 # suite: node --test --test-name-pattern=the.two.inputs.hand.over tests/editor_e2e.test.js
 # fault: starting the notes line commits the name first is broken.
 diff --git a/index.html b/index.html
