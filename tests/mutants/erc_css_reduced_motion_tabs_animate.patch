@@ -1,5 +1,5 @@
-# kills: drag ux E5: with reduced motion the pan stays at 1x and unscaled, the panel is still out of play, and the highlight is still set
-# suite: node --test --test-name-pattern ^drag.ux.E5 tests/editor_e2e.test.js
+# kills: with reduced motion the tabs and panels do not animate in or out of play
+# suite: node --test --test-name-pattern ^with.reduced.motion.the.tabs tests/editor_e2e.test.js
 # fault: With reduced motion the tabs and panels still slide while a note is dragged.
 diff --git a/index.html b/index.html
 --- a/index.html

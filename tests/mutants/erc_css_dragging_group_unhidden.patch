@@ -1,5 +1,5 @@
-# kills: drag ux E1: a live drag sets dragging and takes the panel out of play; a press that does not move does not
-# suite: node --test --test-name-pattern ^drag.ux.E1 tests/editor_e2e.test.js
+# kills: the tabs and both panels leave play with the rest of the controls while a note is dragged, and stop taking taps while it settles
+# suite: node --test --test-name-pattern ^the.tabs.and.both.panels tests/editor_e2e.test.js
 # fault: The tabs and panels stay on screen while a note is dragged, hiding the pan behind them.
 diff --git a/index.html b/index.html
 --- a/index.html

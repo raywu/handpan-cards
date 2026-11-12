@@ -1,5 +1,5 @@
-# kills: every label in the pills row and the action row fits its button at 390, 375 and 320 wide, in all eight locales, with the real fonts
-# suite: node --test --test-name-pattern ^every.label.in.the.pills tests/editor_e2e.test.js
+# kills: every label in the tabs, the count row and the toolbar fits its button at 390, 375 and 320 wide, in all eight locales, with the real fonts
+# suite: node --test --test-name-pattern ^every.label.in.the.tabs tests/editor_e2e.test.js
 # fault: The action row labels cannot wrap.
 diff --git a/index.html b/index.html
 --- a/index.html

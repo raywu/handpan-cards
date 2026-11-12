@@ -1,0 +1,15 @@
+# kills: a swipe does not switch tabs mid-drag; the legacy sheet swipe is untouched by the editor's
+# suite: node --test --test-name-pattern ^a.swipe.does.not.switch.tabs.mid-drag tests/editor_e2e.test.js
+# fault: A swipe switches tabs while the editor is marked dragging.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16998,7 +16998,7 @@ function editorWireSwipe() {
+   const eligible = () => {
+     const s = editorSession;
+     return !!(s && !s.dialog && !s.editing && !s.held && !s.sel && !editorDrag && !sheetZoomed() &&
+-      !editorEl("editor").classList.contains("dragging"));
++      true);
+   };
+   const paint = (dx, armed) => {
+     const c = swipeCue, mag = Math.abs(dx);
