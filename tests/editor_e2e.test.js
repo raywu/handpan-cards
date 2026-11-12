@@ -2935,7 +2935,7 @@ function run() {
         await setup(SCALE);
         await swipeBy(".editor-accidentals", -30);
         assert.strictEqual(await tabNow(), "scale", "under 48px");
-        await b.drag(".editor-accidentals", [[-60, 400], [-120, 800]]);
+        await b.drag(".editor-accidentals", [[-60, 200], [-120, 800]]);
         assert.strictEqual(await tabNow(), "scale", "over 600ms");
         await swipeBy(".editor-accidentals", -80, 120, 70);
         assert.strictEqual(await tabNow(), "scale", "not twice as wide as tall");
