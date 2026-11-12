@@ -181,6 +181,13 @@ exactly where its diagram has it.
   (`crescentBand` stays computed for the name fit). A placed card without a mutant note, and
   every standard card, keep their ring bands and a white ding, byte for byte (`tests/pdfcards.test.js`
   "NS: ..."; `tests/test_render_agreement.py` reads lit state from the tint fill).
+  **Neotone turn (TRI-59 PL-b):** a Neotone seed with `anchor: between` and a mutant note
+  turns the pan by `PROFILE_TURN` (`180 / tonefields`, 20 degrees): every tone angle is
+  `(base + turn) % 360` in `neoPlan` (`src/engine/pdfcards.js`) and `draw_neo_pan`
+  (`tools/hifi.py`), keyed by `HPE.layout.profileAngles(turn)`. `anchor: one` and every
+  seed without a mutant note keep turn 0, byte for byte (`tests/pdfcards.test.js`
+  "NT: a turned card keys main and mutant tones by the turned angles";
+  `tests/test_print.py` `NeotoneTurnTest`).
   K1 delta: the card reference's `lens_orbit` (0.4917) no longer holds; the lens centre is
   0.536 (the "PA: K1" test names the exception). The inner lens edge (0.346R) clears the
   decor ring (0.355R) by only 0.009R.
