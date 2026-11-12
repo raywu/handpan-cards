@@ -16030,7 +16030,7 @@ function editorRenderPalette(m) {
 }
 function editorPickPalette(i) {
   const s = editorSession;
-  if (!s || s.dialog) return;
+  if (!s || s.dialog || (s.editing && s.error)) return;
   editorDo((m) => editorSetPalette(m, i));
   editorRender();
 }

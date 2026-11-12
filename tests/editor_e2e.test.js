@@ -1905,6 +1905,18 @@ function run() {
       await b.eval(`document.querySelector('#editor-swatches [data-palette="5"]').click(); return true;`);
       assert.strictEqual((await model()).options.palette, 3, "a pick under a dialog is refused");
     });
+
+    test("EPF: a palette pick is refused while a rejected text line is still being edited, and the error stays visible", async () => {
+      await setup(BOTTOM);
+      await typeLine("A3 QQ9");
+      const kind = () => b.eval(`const s = document.getElementById("editor-status"); return [s.getAttribute("data-kind"), s.textContent.trim().length > 0, editorSession.editing];`);
+      assert.deepStrictEqual(await kind(), ["error", true, true]);
+      const before = (await model()).options.palette || 0;
+      await b.click("#editor-tab-layout");
+      await b.eval(`document.querySelector('#editor-swatches [data-palette="4"]').click(); return true;`);
+      assert.deepStrictEqual(await kind(), ["error", true, true], "the banner stays and editing is still on");
+      assert.strictEqual((await model()).options.palette || 0, before, "the palette is unchanged");
+    });
   });
 
   describe("U2e-3 Replace ding and button fit", () => {

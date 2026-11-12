@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
 @@ -16029,6 +16029,7 @@
  function editorPickPalette(i) {
    const s = editorSession;
-   if (!s || s.dialog) return;
+   if (!s || s.dialog || (s.editing && s.error)) return;
 +  if (s.armedPick !== i) { s.armedPick = i; return; }
    editorDo((m) => editorSetPalette(m, i));
    editorRender();
