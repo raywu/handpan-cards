@@ -1,0 +1,14 @@
+# kills: NA: with a mutant note and between, every place angle is the fixture angle plus 20 and geom.turn is 20
+# suite: node --test --test-name-pattern ^NA..with.a.mutant.note.and.between tests/layout.test.js
+# why: geom.turn is never recorded for a between pan with mutant notes.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -933,7 +933,6 @@
+       var turn = between && hasMutants(profile.value) ? PROFILE_TURN : 0;
+       var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields, turn);
+       if (placed.ok === false) return placed;
+-      if (turn) plain.value.geom.turn = turn;
+       if (placed.mutants) {
+         plain.value.geom.r_ding = PROFILE.ding.r;
+         plain.value.geom.ding_dy = PROFILE.ding.dy;

@@ -313,10 +313,10 @@ test("U2a-P7: a v7 profile link and a v8 pinned-cyclops link (with at-, ai- and 
   assert.strictEqual(plain(app.get(`editorExport(editorLoadShare(${js(v7)}).value).record`)).v, 5);
 });
 
-test("U2a-P4b: a v9 link is refused through the existing needs-newer path", () => {
+test("U2a-P4b: a v10 link is refused through the existing needs-newer path", () => {
   const app = appBoot();
   const v8 = PIN8(app);
-  const forged = "9" + v8.slice(1);
+  const forged = "A" + v8.slice(1);
   const via = plain(app.get(`(() => { const a = HPE.share.decode(${js(forged)}); const b = editorLoadShare(${js(forged)}); return { a: a.code, b: b.code, ok: b.ok }; })()`));
   assert.strictEqual(via.a, "NEEDS_NEWER_APP");
   assert.strictEqual(via.b, "NEEDS_NEWER_APP");

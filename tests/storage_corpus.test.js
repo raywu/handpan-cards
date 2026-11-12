@@ -620,3 +620,42 @@ test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport inta
     assert.deepStrictEqual(envelopeOf(old), oldEnv, `${n}: the old store changed`);
   }
 });
+
+test("PAU-I: a record 7 (profile plus between) row stays opaque, untouched and unprotected in the shipped client and the c6ef6b58 client", async () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  for (const [label, html] of [["ee5438d0", OLD_HTML], ["c6ef6b58", OLD_HTML_C6]]) {
+    const origin = createOrigin({ storage: {} });
+    const fresh = await sharedBoot(origin, NEW_HTML);
+    await saveAcoustic(fresh, PA_AMARA, "ACOUSTIC ONE");
+    await savePaired(fresh, PA_HIJAZ, "PAIRED ONE");
+    const ok = await fresh.getAsync(`(async () => {
+      const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+      const tx = db.transaction("collections", "readwrite");
+      const store = tx.objectStore("collections");
+      const row = await new Promise((res, rej) => { const q = store.get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+      const env = JSON.parse(row);
+      const entry = env.entries.find((e) => e.record.v === 5);
+      entry.record.v = 7;
+      entry.record.o.anchor = "between";
+      await new Promise((res, rej) => { const q = store.put(JSON.stringify(env), "current"); q.onsuccess = () => res(); q.onerror = () => rej(q.error); });
+      await new Promise((res) => { tx.oncomplete = () => res(); });
+      return true;
+    })()`);
+    assert.strictEqual(ok, true);
+    const before = envelopeOf(fresh);
+    const row7 = before.entries.find((e) => e.record.v === 7);
+    assert.ok(row7 && row7.record.o.anchor === "between", `${label}: a v7 row is stored`);
+    const snapshot = JSON.stringify(before);
+
+    const old = await sharedBoot(origin, html);
+    assert.notStrictEqual(old.get("savedMode"), "protected", `${label}: not protected`);
+    assert.strictEqual(JSON.stringify(envelopeOf(old)), snapshot, `${label}: boot wrote nothing`);
+    assert.ok(chips(old).some((c) => c.includes("ACOUSTIC ONE")), `${label}: acoustic row shows`);
+    assert.ok(!chips(old).some((c) => c.includes("PAIRED ONE")), `${label}: record 7 is not offered`);
+
+    await saveAcoustic(old, PA_HIJAZ.replace("B4", "C#5"), "ACOUSTIC TWO");
+    const after = envelopeOf(old);
+    assert.deepStrictEqual(after.entries.find((e) => e.record.v === 7), row7, `${label}: the v7 row is never rewritten`);
+    assert.notStrictEqual(old.get("savedMode"), "protected");
+  }
+});

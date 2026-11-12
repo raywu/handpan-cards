@@ -277,7 +277,7 @@
   "reason.PROFILE_NOTE_MISSING": "La disposizione Neotone lascia fuori una delle tue note. Ogni nota ha bisogno di un campo tonale.",
   "reason.PROFILE_NOTE_TWICE": "La disposizione Neotone mette la stessa nota in due campi tonali.",
   "reason.PROFILE_FULL": "Neotone accoglie al massimo 9 note superiori e 9 di fondo e nessuna nota interna. Togli qualche nota.",
-  "reason.PROFILE_CONFLICT": "Neotone stabilisce da sé la disposizione, quindi specchio, ancoraggio, posti e angoli non si possono combinare con esso.",
+  "reason.PROFILE_CONFLICT": "Neotone stabilisce da sé la disposizione, quindi specchio, posti e angoli non si possono combinare con esso.",
   "reason.SMALL_LABELS": "Handpan affollato: le etichette più piccole saranno stampate a {N} pt, sotto la soglia di leggibilità di 3,6 pt scelta per questa app. Nessun contenuto viene omesso.",
   "sheet.angle_prev": "ANTIORARIO",
   "sheet.angle_prev.aria": "Sposta di 5 gradi in senso antiorario",

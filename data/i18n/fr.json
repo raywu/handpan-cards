@@ -277,7 +277,7 @@
   "reason.PROFILE_NOTE_MISSING": "La disposition Neotone oublie une de vos notes. Chaque note a besoin d'un champ tonal.",
   "reason.PROFILE_NOTE_TWICE": "La disposition Neotone place la même note dans deux champs tonals.",
   "reason.PROFILE_FULL": "Neotone accepte au plus 9 notes du dessus et 9 du dessous, et aucune note intérieure. Retirez quelques notes.",
-  "reason.PROFILE_CONFLICT": "Neotone fixe son propre placement : miroir, ancrage, places et angles ne peuvent pas s'y combiner.",
+  "reason.PROFILE_CONFLICT": "Neotone fixe son propre placement : miroir, places et angles ne peuvent pas s'y combiner.",
   "reason.SMALL_LABELS": "Handpan chargé : les plus petits libellés seront imprimés à {N} pt, sous le seuil de lisibilité de 3,6 pt retenu par cette application. Rien n’est omis.",
   "sheet.angle_prev": "SENS ANTIHORAIRE",
   "sheet.angle_prev.aria": "Déplacer de 5 degrés dans le sens antihoraire",

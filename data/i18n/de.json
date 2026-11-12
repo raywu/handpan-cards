@@ -277,7 +277,7 @@
   "reason.PROFILE_NOTE_MISSING": "Die Neotone-Anordnung lässt eine deiner Noten aus. Jede Note braucht ein Tonfeld.",
   "reason.PROFILE_NOTE_TWICE": "Die Neotone-Anordnung setzt dieselbe Note in zwei Tonfelder.",
   "reason.PROFILE_FULL": "Neotone fasst höchstens 9 obere und 9 untere Töne und keine Innentöne. Entferne einige Noten.",
-  "reason.PROFILE_CONFLICT": "Neotone legt die Platzierung selbst fest, daher lassen sich Spiegeln, Anker, Plätze und Winkel nicht damit kombinieren.",
+  "reason.PROFILE_CONFLICT": "Neotone legt die Platzierung selbst fest, daher lassen sich Spiegeln, Plätze und Winkel nicht damit kombinieren.",
   "reason.SMALL_LABELS": "Viele Tonfelder: Die kleinsten Beschriftungen werden mit {N} pt gedruckt, unter der Lesbarkeitsgrenze dieser App von 3,6 pt. Nichts wird weggelassen.",
   "sheet.angle_prev": "LINKSHERUM",
   "sheet.angle_prev.aria": "Um 5 Grad gegen den Uhrzeigersinn bewegen",

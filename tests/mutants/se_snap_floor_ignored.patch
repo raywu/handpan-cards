@@ -4,7 +4,7 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -1038,7 +1038,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -1059,7 +1059,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      var floor = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
      if (ring.length >= 2) floor = Math.min(floor, defaultBottomGap(ring.map(function (n) { return n.angle; })));
      var crowd = angleGap(angle, ring[seat] ? ring[seat].angle : 0);
@@ -12,4 +12,4 @@ diff --git a/src/engine/layout.js b/src/engine/layout.js
 +    return targetOf(zone, seat, null, angle);
    }
  
-   function snapProfile(pt, occupancy) {
+   function snapProfile(pt, occupancy, turn) {

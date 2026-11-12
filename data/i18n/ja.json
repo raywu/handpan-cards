@@ -265,7 +265,7 @@
   "reason.PROFILE_NOTE_MISSING": "Neotoneの配置にノートが1つ足りません。すべてのノートにトーンフィールドが必要です。",
   "reason.PROFILE_NOTE_TWICE": "Neotoneの配置で、同じノートが2つのトーンフィールドに入っています。",
   "reason.PROFILE_FULL": "Neotoneに入るのは、上のノート9個とボトムノート9個までで、内側のノートは入りません。ノートを減らしてください。",
-  "reason.PROFILE_CONFLICT": "Neotoneは独自の配置を使うため、ミラー・アンカー・席・角度とは組み合わせられません。",
+  "reason.PROFILE_CONFLICT": "Neotoneは独自の配置を使うため、ミラー・席・角度とは組み合わせられません。",
   "reason.SMALL_LABELS": "配置が込み合っています。最小の文字は{N}ptで印刷され、このアプリで読みやすさの目安とする3.6ptを下回ります。内容は省略しません。",
   "sheet.angle_prev": "反時計回り",
   "sheet.angle_prev.aria": "反時計回りに5°動かす",
