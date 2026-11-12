@@ -1,15 +1,15 @@
-# kills: tabs: tablist semantics, roving tabindex, Arrow, Home and End move and focus, the other panel is hidden
+# kills:  tabs: tablist semantics, roving tabindex, Arrow, Home and End move and focus, the other panel is hidden
 # suite: node --test --test-name-pattern ^tabs:.tablist.semantics tests/editor_e2e.test.js
 # fault: Both tabs sit in the tab order, so Tab walks through the inactive tab.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16212,7 +16212,7 @@ function editorRenderTabs() {
+@@ -16078,7 +16078,7 @@
      const on = s.tab === tab;
      const b = editorEl("editor-tab-" + tab);
      b.setAttribute("aria-selected", String(on));
 -    b.tabIndex = on ? 0 : -1;
 +    b.tabIndex = 0;
-     b.classList.toggle("on", on);
      const panel = editorEl("editor-panel-" + tab);
      if (on) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
+   }

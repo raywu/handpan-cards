@@ -1,0 +1,15 @@
+# kills: EMP: the arrive animation plays once per new error text
+# suite: node --test --test-name-pattern ^EMP: tests/editor_e2e.test.js
+# fault: The arrive animation restarts on every render.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15864,7 +15864,7 @@
+   if (s.error) {
+     status.setAttribute("data-kind", "error");
+     status.textContent = s.error;
+-    if (s.error !== s.lastError) {
++    if (true) {
+       s.lastError = s.error;
+       status.classList.remove("arrive");
+       void status.offsetWidth;

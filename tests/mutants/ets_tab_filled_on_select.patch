@@ -1,0 +1,14 @@
+# kills: ETS: the selected editor tab carries no fill class, no fill on hover or press
+# suite: node --test --test-name-pattern ^ETS: tests/editor_e2e.test.js
+# fault: Selecting a tab adds the on class again, which fills it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16079,6 +16079,7 @@
+     const b = editorEl("editor-tab-" + tab);
+     b.setAttribute("aria-selected", String(on));
+     b.tabIndex = on ? 0 : -1;
++    b.classList.toggle("on", on);
+     const panel = editorEl("editor-panel-" + tab);
+     if (on) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
+   }

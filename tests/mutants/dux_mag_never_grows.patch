@@ -1,15 +1,15 @@
-# kills: drag ux E3: the pan grows into the freed space, never above its rest top, and drops land in the scaled geometry in every zone
+# kills:  drag ux E3: the pan grows into the freed space, never above its rest top, and drops land in the scaled geometry in every zone
 # suite: node --test --test-name-pattern ^drag.ux.E3 tests/editor_e2e.test.js
 # fault: The magnify factor is always 1.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16524,7 +16524,7 @@
+@@ -16556,7 +16556,7 @@
  const EDITOR_MAG_MAX = 1.35, EDITOR_MAG_PAD = 14, EDITOR_MAG_EDGE = 8;
  function editorMagnify(panRect, freedPx, viewport) {
    if (!(panRect.height > 0) || !(panRect.width > 0)) return 1;
 -  return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
 +  return Math.max(1, 0 * Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
  }
- function editorDragMeasure() {
-   const root = editorEl("editor");
+ function editorStatusShift(mag) {
+   const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();

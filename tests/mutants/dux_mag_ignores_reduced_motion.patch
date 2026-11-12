@@ -1,15 +1,15 @@
-# kills: drag ux E5: with reduced motion the pan stays at 1x and unscaled, the panel is still out of play, and the highlight is still set
+# kills:  drag ux E5: with reduced motion the pan stays at 1x and unscaled, the panel is still out of play, and the highlight is still set
 # suite: node --test --test-name-pattern ^drag.ux.E5 tests/editor_e2e.test.js
 # fault: The magnify ignores prefers-reduced-motion.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16530,7 +16530,7 @@
+@@ -16570,7 +16570,7 @@
    const root = editorEl("editor");
    const box = root.querySelector(".editor-panbox").getBoundingClientRect();
    const svg = editorEl("editor-pan").querySelector("svg");
 -  if (!svg || reducedMotion.matches) return 1;
 +  if (!svg) return 1;
-   const room = root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - box.bottom;
+   const room = root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - box.bottom - (editorStatusBelow() ? editorEl("editor-status").offsetHeight : 0);
    const wide = svg.viewBox.baseVal.width;
    const drawn = svg.getBoundingClientRect().width * (wide - 2 * EDITOR_MAG_PAD) / wide;

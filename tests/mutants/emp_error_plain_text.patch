@@ -1,0 +1,15 @@
+# kills: EMP: an error is an ink banner, not plain text
+# suite: node --test --test-name-pattern ^EMP: tests/editor_e2e.test.js
+# fault: The error banner loses its ink fill.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1290,7 +1290,7 @@
+ #editor-status{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
+ @media (max-width:420px){#editor-status{min-height:56px}}
+ #editor.dragging #editor-status{transform:translateY(var(--ed-status-shift,0px))}
+-#editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:8px 12px}
++#editor-status[data-kind="error"]{background:none; color:#242424; font-size:14px; border-radius:8px; padding:8px 12px}
+ #editor-status[data-kind="error"]::before{content:"\26A0"}
+ #editor-status.arrive{animation:editor-arrive 180ms cubic-bezier(.2,.8,.2,1)}
+ @keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}

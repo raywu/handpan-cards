@@ -1,0 +1,15 @@
+# kills: EMP: a live drag never lets the enlarged pan cover the status line
+# suite: node --test --test-name-pattern ^EMP: tests/editor_e2e.test.js
+# fault: The status line is treated as never below the pan, so a drag neither reserves room nor shifts it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16564,7 +16564,7 @@
+ }
+ function editorStatusBelow() {
+   const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();
+-  return editorEl("editor-status").getBoundingClientRect().top >= box.bottom - 1;
++  return false;
+ }
+ function editorDragMeasure() {
+   const root = editorEl("editor");

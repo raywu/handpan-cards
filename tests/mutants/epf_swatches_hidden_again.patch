@@ -1,0 +1,15 @@
+# kills: EPF: the ten palette dots are always visible in the Layout tab
+# suite: node --test --test-name-pattern ^EPF: tests/editor_e2e.test.js
+# fault: The palette dots start hidden.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15820,7 +15820,7 @@
+           editorNode("button", { id: "editor-anchor-between", type: "button", class: "mode", text: t("sheet.anchor_between"), "aria-label": t("sheet.anchor_between.aria") })),
+         editorNode("div", { class: "editor-palette-row" },
+           editorNode("p", { id: "editor-palette-label", text: t("editor.palette") }),
+-          editorNode("div", { id: "editor-swatches", role: "group", "aria-labelledby": "editor-palette-label" })))),
++          editorNode("div", { id: "editor-swatches", hidden: true, role: "group", "aria-labelledby": "editor-palette-label" })))),
+     editorNode("div", { class: "editor-toolbar" },
+       button("editor-undo", "editor.undo"), button("editor-save", "editor.save", "mode primary"),
+       editorNode("button", { id: "editor-more", type: "button", class: "mode", text: "\u2026", "aria-label": t("editor.more.aria"), "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "editor-menu" }),

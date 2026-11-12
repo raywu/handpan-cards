@@ -1,0 +1,14 @@
+# kills: EPF: one tap on a dot picks the palette
+# suite: node --test --test-name-pattern ^EPF: tests/editor_e2e.test.js
+# fault: The first tap on a dot only arms it; a second tap picks.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16029,6 +16029,7 @@
+ function editorPickPalette(i) {
+   const s = editorSession;
+   if (!s || s.dialog) return;
++  if (s.armedPick !== i) { s.armedPick = i; return; }
+   editorDo((m) => editorSetPalette(m, i));
+   editorRender();
+ }
