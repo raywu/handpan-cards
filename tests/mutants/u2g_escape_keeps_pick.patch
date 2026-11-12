@@ -1,0 +1,15 @@
+# kills: Escape cancels a pick and does not leave the panel; with nothing picked it is Back
+# suite: node --test --test-name-pattern ^Escape.cancels.a.pick tests/editor_e2e.test.js
+# fault: Escape no longer clears a pick or zone selection.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16462,7 +16462,7 @@
+   else if (s.dialog) editorShowDialog(false);
+   else if (s.editing) editorCancelEdit();
+   else if (s.held) editorCancelHold();
+-  else if (s.sel || s.zone) { s.sel = null; s.zone = null; s.say = ""; s.error = ""; editorRender(); }
++  else if (s.zone) { s.sel = null; s.zone = null; s.say = ""; s.error = ""; editorRender(); }
+   else editorBack();
+ }
+ // Drag (D3): one pointer path for the tray chips and the placed notes. More than 8px

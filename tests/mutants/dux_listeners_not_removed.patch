@@ -1,0 +1,14 @@
+# kills: drag ux E6c: orientationchange cancels a live drag, and every listener a drag adds is removed when it ends
+# suite: node --test --test-name-pattern ^drag.ux.E6c tests/editor_e2e.test.js
+# fault: The resize cancel listener is never removed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16711,7 +16711,6 @@
+   window.removeEventListener("pointerup", editorDragUp);
+   window.removeEventListener("pointercancel", editorDragUp);
+   window.removeEventListener("lostpointercapture", editorDragUp);
+-  window.removeEventListener("resize", editorDragCancel);
+   window.removeEventListener("orientationchange", editorDragCancel);
+   document.removeEventListener("visibilitychange", editorDragHidden);
+   if (!d || !d.live) return;
