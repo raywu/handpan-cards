@@ -277,7 +277,7 @@
   "reason.PROFILE_NOTE_MISSING": "The Neotone layout leaves out one of your notes. Every note needs a tonefield.",
   "reason.PROFILE_NOTE_TWICE": "The Neotone layout places the same note in two tonefields.",
   "reason.PROFILE_FULL": "Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes.",
-  "reason.PROFILE_CONFLICT": "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it.",
+  "reason.PROFILE_CONFLICT": "Neotone sets its own placement, so mirror, seats and angles cannot be combined with it.",
   "reason.SMALL_LABELS": "Crowded pan: the smallest labels print at {N} pt, under the 3.6 pt this app treats as readable. Nothing is left out.",
   "sheet.angle_prev": "ANTICLOCKWISE",
   "sheet.angle_prev.aria": "Move 5 degrees anticlockwise",

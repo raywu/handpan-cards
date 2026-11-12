@@ -3057,3 +3057,151 @@ test("SE snapTarget: Neotone maps a point to the nearest main slot, the lens tow
   assert.equal(neo(dot(1.2, 150)), null);
   assert.equal(neo([2, -2]), null);
 });
+
+/* ---- Neotone anchor (TRI-59 PL-b lane E): geom.turn, profileAngles ---------- */
+
+const NA_TURN = 180 / PAIRED.tonefields;
+const naNorm = (a) => ((a % 360) + 360) % 360;
+const naSeed = (str, anchor, map) => {
+  const seed = plSeed(str, map || plPropose(str));
+  const copy = plain(seed);
+  if (anchor !== undefined) copy.options.anchor = anchor;
+  return copy;
+};
+const naMutantSeeds = Object.entries(PL_NO_UNPLACED).filter(([, str]) => plPropose(str).slice(9).some(Boolean));
+
+test("NA: the Neotone profile ids readProfile accepts are exactly paired, and its angles are congruent mod 360/n with none in the half-step coset", () => {
+  const n = PAIRED.tonefields;
+  const step = 360 / n;
+  assert.equal(PHPE.layout.PROFILE.id, "paired");
+  const unknown = PHPE.core.parseSeed(PL_SEEDS.kurd, { profile: { id: "second", rev: 2, map: plPropose(PL_SEEDS.kurd) } });
+  assert.equal(unknown.code, "PROFILE_UNKNOWN");
+  const residues = PAIRED.angles.map((a) => ((a % step) + step) % step);
+  residues.forEach((r) => assert.ok(Math.abs(r - residues[0]) < 1e-9, "all congruent mod " + step));
+  PAIRED.angles.forEach((a) => {
+    const half = ((a % step) + step) % step;
+    assert.ok(Math.abs(half - step / 2) > 1e-9, "none in the half-step coset");
+  });
+  assert.equal(NA_TURN, 20);
+});
+
+test("NA: profileAngles(0) is the frozen angles and profileAngles(20) is each plus 20 mod 360", () => {
+  assert.deepEqual(plain(PHPE.layout.profileAngles(0)), PAIRED.angles);
+  assert.deepEqual(plain(PHPE.layout.profileAngles()), PAIRED.angles);
+  assert.deepEqual(plain(PHPE.layout.profileAngles(20)), PAIRED.angles.map((a) => naNorm(a + 20)));
+  assert.deepEqual(plain(PHPE.layout.PROFILE.angles), [270, 230, 310, 190, 350, 150, 30, 110, 70], "PROFILE is untouched");
+});
+
+test("NA: with a mutant note and between, every place angle is the fixture angle plus 20 and geom.turn is 20", () => {
+  assert.ok(naMutantSeeds.length >= 1);
+  for (const [id, str] of naMutantSeeds) {
+    const seed = naSeed(str, "between");
+    const r = PHPE.layout.solve(seed);
+    assert.equal(r.ok, true, id);
+    assert.equal(r.value.geom.turn, 20, id);
+    const map = seed.options.profile.map;
+    const idOf = {};
+    for (const fid of plNonDing(seed.fields)) idOf[ZL[seed.fields[fid][3]] + seed.fields[fid][2]] = fid;
+    map.forEach((key, k) => {
+      if (key === null) return;
+      const entry = plain(r.value.geom.place)[idOf[key]];
+      assert.equal(entry[0], naNorm(PAIRED.angles[k % 9] + 20), `${id} slot ${k}`);
+      assert.equal(entry[1], PAIRED.main.orbit, id);
+      assert.equal(entry[2], PAIRED.main.r, id);
+    });
+  }
+});
+
+test("NA: with one or no anchor geom.turn is absent and the output equals the unanchored output", () => {
+  for (const [id, str] of Object.entries(PL_NO_UNPLACED)) {
+    const bare = PHPE.layout.solve(naSeed(str));
+    assert.equal(bare.ok, true, id);
+    assert.equal("turn" in bare.value.geom, false, id);
+    const one = PHPE.layout.solve(naSeed(str, "one"));
+    assert.equal("turn" in one.value.geom, false, id);
+    assert.equal(JSON.stringify(one), JSON.stringify(bare), id);
+  }
+  for (const [id, str] of naMutantSeeds) {
+    const turned = PHPE.layout.solve(naSeed(str, "between")).value;
+    const bare = PHPE.layout.solve(naSeed(str)).value;
+    assert.equal(JSON.stringify(Object.keys(turned.geom).filter((k) => k !== "turn")), JSON.stringify(Object.keys(bare.geom)), id);
+    for (const key of Object.keys(bare.geom)) {
+      if (key !== "place") assert.deepEqual(plain(turned.geom[key]), plain(bare.geom[key]), id + " " + key);
+    }
+    for (const fid of Object.keys(bare.fields)) {
+      assert.deepEqual(plain(turned.fields[fid]).slice(5), plain(bare.fields[fid]).slice(5), id + " labels");
+    }
+  }
+});
+
+test("NA: turning changes neither labels, radii, orbits, ext nor the print extent", () => {
+  const P = loadEngine(["core", "layout", "voicing", "pdfdeck", "pdfcards"]);
+  P.core.PROFILE_ENABLED = true;
+  for (const [id, str] of naMutantSeeds) {
+    const a = P.layout.solve(naSeed(str)).value;
+    const b = P.layout.solve(naSeed(str, "between")).value;
+    assert.equal(b.geom.ext, a.geom.ext, id);
+    for (const fid of Object.keys(a.geom.place)) {
+      assert.deepEqual(plain(b.geom.place[fid]).slice(1), plain(a.geom.place[fid]).slice(1), id);
+      assert.equal(b.fields[fid][5], a.fields[fid][5], id);
+    }
+    assert.equal(P.pdfcards.profileExtent(b.geom), P.pdfcards.profileExtent(a.geom), id);
+    assert.equal(P.pdfcards.profileRadius(b.geom), 61.8, id);
+  }
+});
+
+test("NA: zone labels and label numbers stay Main and Mutant numbering on a turned card", () => {
+  const [, str] = naMutantSeeds[0];
+  const seed = naSeed(str, "between");
+  const turned = PHPE.layout.solve(seed).value;
+  const bare = PHPE.layout.solve(naSeed(str)).value;
+  for (const fid of plNonDing(seed.fields)) assert.equal(turned.fields[fid][5], bare.fields[fid][5]);
+});
+
+test("NA: a permuted profile.map with between has its unturned angles plus 20", () => {
+  const str = PL_NO_UNPLACED.pygmy;
+  const map = plPropose(str);
+  const rotated = map.slice(0, 9).slice(3).concat(map.slice(0, 9).slice(0, 3)).concat(map.slice(9));
+  const seed = naSeed(str, "between", rotated);
+  const flat = naSeed(str, undefined, rotated);
+  const turned = PHPE.layout.solve(seed).value.geom.place;
+  const plainPlace = PHPE.layout.solve(flat).value.geom.place;
+  for (const fid of Object.keys(plainPlace)) {
+    assert.equal(turned[fid][0], naNorm(plainPlace[fid][0] + 20), fid);
+  }
+});
+
+test("NA: with no mutant note and k = 4..9 rim notes the place angles are the Standard between seat angles and geom.turn is absent", () => {
+  const rimNames = ["(D3)", "A3", "Bb3", "C4", "D4", "E4", "F4", "G4", "A4", "C5"];
+  for (let k = 4; k <= 9; k += 1) {
+    const str = rimNames.slice(0, k + 1).join(" ");
+    const seed = naSeed(str, "between");
+    const r = PHPE.layout.solve(seed);
+    assert.equal(r.ok, true, "k=" + k);
+    assert.equal("turn" in r.value.geom, false, "k=" + k);
+    const std = PHPE.layout.solve({ fields: seed.fields, options: {} }, { anchor: "between" }).value;
+    const one = PHPE.layout.solve({ fields: seed.fields, options: {} }, {}).value;
+    const rims = plNonDing(seed.fields).filter((fid) => seed.fields[fid][3] === "rim")
+      .sort((a, b) => seed.fields[a][2] - seed.fields[b][2]);
+    rims.forEach((fid, i) => {
+      assert.equal(r.value.geom.place[fid][0], std.fields[fid][4], `k=${k} rim ${i}`);
+    });
+    if (k % 2 === 1) assert.notDeepEqual(rims.map((f) => std.fields[f][4]), rims.map((f) => one.fields[f][4]), `k=${k} anchors differ`);
+    const without = PHPE.layout.solve(naSeed(str)).value;
+    assert.deepEqual(plain(without.geom.place[rims[0]]).slice(1), plain(r.value.geom.place[rims[0]]).slice(1));
+  }
+});
+
+test("NA: snapTarget on a turned profile finds the slot nearest the turned angle", () => {
+  const turned = PHPE.layout.profileAngles(20);
+  const at = (angle, orbit) => [orbit * Math.cos(angle * DEG), orbit * Math.sin(angle * DEG)];
+  const pick = (pt, turn) => plain(HPE.layout.snapTarget(turn === undefined ? seScene().geom : Object.assign({}, seScene().geom, { turn }), pt,
+    { panKind: "profile", occupancy: NEO_OCC, allowInnerAngle: false }));
+  turned.forEach((angle, slot) => {
+    assert.equal(pick(at(angle, PAIRED.main.orbit), 20).seat, slot, "turned slot " + slot);
+    assert.equal(pick(at(angle + 4, 0.536), 20).seat, slot, "turned lens " + slot);
+  });
+  assert.equal(pick(at(PAIRED.angles[0], PAIRED.main.orbit)).seat, 0, "no turn keeps the fixture angle");
+  assert.equal(pick(at(PAIRED.angles[0] - 5, PAIRED.main.orbit)).seat, 0);
+  assert.equal(pick(at(PAIRED.angles[0] - 5, PAIRED.main.orbit), 20).seat, 1, "a turned pan reads that point as another slot");
+});

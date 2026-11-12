@@ -192,7 +192,7 @@ test("LC: re-encoding a frozen deck at the current VERSION and decoding it gives
 });
 
 test("LC: a version byte above VERSION is NEEDS_NEWER_APP and boot stores nothing and rewrites no stored record", async () => {
-  const above = String(HPE.share.INNER_VERSION + 1);
+  const above = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(HPE.share.PROFILE_ANCHOR_VERSION + 1);
   for (const e of ENTRIES) {
     const res = HPE.share.decode(above + e.link.slice(1));
     assert.equal(res.ok, false, `v${e.wire} ${e.id}`);
@@ -355,5 +355,25 @@ test("LC19: dev-build v7 links decode and migrateProfile gives the A5 result", (
     assert.equal(op.unplaced, undefined);
   } finally {
     HPE.core.PROFILE_ENABLED = false;
+  }
+});
+
+test("LC: the hand-written v9 links decode to profile plus between and re-encode byte for byte", () => {
+  const doc = JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "fixtures", "paired_anchor_links_v9.json"), "utf8"));
+  assert.equal(doc.wireVersion, 9);
+  const on = loadEngine();
+  on.core.PROFILE_ENABLED = true;
+  const off = loadEngine();
+  off.core.PROFILE_ENABLED = false;
+  assert.ok(doc.entries.length >= 3);
+  for (const e of doc.entries) {
+    const res = on.share.decode(e.link);
+    assert.equal(res.ok, true, `${e.id}: ${res.code} ${res.reason}`);
+    assert.equal(res.value.options.anchor, e.anchor, e.id);
+    assert.ok(res.value.options.profile, e.id);
+    assert.equal(on.core.deckId(res.value.fields), e.deckId, e.id);
+    assert.equal(on.share.encode(res.value).value, e.link, e.id);
+    assert.equal(on.share.recordVersion(res.value), 7, e.id);
+    assert.equal(off.share.decode(e.link).code, "NEEDS_NEWER_APP", e.id);
   }
 });

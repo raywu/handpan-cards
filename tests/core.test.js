@@ -1747,7 +1747,6 @@ test("PR: each profile refusal code fires on a minimal case with its sentence", 
     ["PROFILE_NOTE_MISSING", prof(swap(0, null))],
     ["PROFILE_CONFLICT", withMap(good, { mirror: true })],
     ["PROFILE_CONFLICT", withMap(good, { mirrorBottom: false })],
-    ["PROFILE_CONFLICT", withMap(good, { anchor: "between" })],
     ["PROFILE_CONFLICT", withMap(good, { seats: { rim: [1, 0] } })],
     ["PROFILE_CONFLICT", withMap(good, { angles: { bottom: [null] } })]
   ];
@@ -1757,6 +1756,17 @@ test("PR: each profile refusal code fires on a minimal case with its sentence", 
     assert.equal(r.code, code, JSON.stringify(options));
     assert.equal(r.reason, core.REASONS[code].reason);
   }
+});
+
+test("PR: anchor is allowed on a profile, between is kept and one is canonicalised away", () => {
+  const kurd = PROFILE_SEEDS.kurd;
+  const good = mapFor(kurd);
+  const between = pc.parseSeed(kurd, withMap(good, { anchor: "between" }));
+  assert.equal(between.ok, true, between.reason);
+  assert.equal(between.value.options.anchor, "between");
+  const one = pc.parseSeed(kurd, withMap(good, { anchor: "one" }));
+  assert.equal(one.ok, true, one.reason);
+  assert.equal("anchor" in one.value.options, false);
 });
 
 test("PR: rev 2 is ring-strict: an inner key or a key in the other ring is PROFILE_MAP_INVALID", () => {

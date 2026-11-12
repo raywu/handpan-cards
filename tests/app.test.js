@@ -1446,7 +1446,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.INNER_VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_ANCHOR_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);

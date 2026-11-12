@@ -265,7 +265,7 @@
   "reason.PROFILE_NOTE_MISSING": "Neotone 布局漏掉了你的一个音。每个音都需要一个音位。",
   "reason.PROFILE_NOTE_TWICE": "Neotone 布局把同一个音放进了两个音位。",
   "reason.PROFILE_FULL": "Neotone 最多容纳 9 个上方音和 9 个底部音，且没有内圈音。请去掉一些音。",
-  "reason.PROFILE_CONFLICT": "Neotone 自行决定摆放，因此不能与镜像、锚点、座位和角度组合。",
+  "reason.PROFILE_CONFLICT": "Neotone 自行决定摆放，因此不能与镜像、座位和角度组合。",
   "reason.SMALL_LABELS": "音区较挤：最小标注打印时为 {N} pt，低于我们采用的 3.6 pt 可读标准。所有内容都会保留。",
   "sheet.angle_prev": "逆时针",
   "sheet.angle_prev.aria": "逆时针移动 5 度",

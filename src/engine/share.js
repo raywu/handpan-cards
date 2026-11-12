@@ -93,6 +93,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   var ANGLES_VERSION = 6;
   var INNER_VERSION = 8;
   var INNER_RECORD_VERSION = 6;
+  // v9 is a profile link carrying `between` (Neotone "#1 / #2"); its record is
+  // v7. Written only when a profile seed has anchor "between".
+  var PROFILE_ANCHOR_VERSION = 9;
+  var PROFILE_ANCHOR_RECORD_VERSION = 7;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -342,7 +346,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var scale = scaleSegment(seed.fields);
     var profiled = opts.profile !== undefined && opts.profile !== null;
     var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
-    var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
+    var between = profiled && opts.anchor === "between";
+    var wire = ALPHABET.charAt(profiled ? (between ? PROFILE_ANCHOR_VERSION : PROFILE_VERSION)
+      : innerAt !== "" ? INNER_VERSION : VERSION);
     var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
@@ -353,6 +359,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (opts.parent !== undefined && opts.parent !== null) option("parent-" + parentSlug(opts.parent));
     if (profiled) {
       option("pair-" + opts.profile.map.map(function (k) { return k === null ? "-" : k; }).join("."));
+      if (between) option("between");
       segs.push(checkHex(meaning.join(SEP)));
       var wired = segs.join("/");
       if (wired.length > CAPS.payload) return badNote(wired);
@@ -485,8 +492,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (segs[segs.length - 1] !== checkHex(meaning.join(SEP))) return badNote(text);
 
     var options = { palette: 0, parent: null, mirror: false, name: name };
-    var profiled = text.charAt(0) === "7";
+    var anchored = text.charAt(0) === "9";
+    var profiled = text.charAt(0) === "7" || anchored;
     var pairs = 0;
+    var betweens = 0;
     var rank = -1;
     for (var k = 0; k < texts.length; k += 1) {
       var o = texts[k];
@@ -514,6 +523,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
           rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
           map: pairMap
         };
+      } else if (anchored && o === "between") {
+        at = OPTION_ORDER.between;
+        betweens += 1;
+        options.anchor = "between";
       } else if (profiled) {
         return badNote(text);
       } else if (o === "mirror") {
@@ -553,6 +566,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       rank = at;
     }
     if (profiled && pairs !== 1) return badNote(text);
+    if (anchored && betweens !== 1) return badNote(text);
     if (text.charAt(0) === "8" && !carry.inner) return badNote(text);
     var read = HPE.core.parseSeed(scaleString(scale), options);
     if (!read.ok && profiled && options.profile.rev === 2 &&
@@ -629,6 +643,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     // still opens in a v2 app and only a genuinely NEWER one is refused.
     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
     if (INDEX[text.charAt(0)] === INNER_VERSION && NEWEST >= ANGLES_VERSION) newest = INNER_VERSION;
+    if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === PROFILE_ANCHOR_VERSION) newest = PROFILE_ANCHOR_VERSION;
     var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
@@ -678,7 +693,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   function recordVersion(seed) {
     var opts = (seed && seed.options) || {};
-    if (opts.profile !== undefined && opts.profile !== null) return PROFILE_RECORD_VERSION;
+    if (opts.profile !== undefined && opts.profile !== null) {
+      return opts.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION;
+    }
     return anglesField(opts.angles, "inner") !== "" ? INNER_RECORD_VERSION : RECORD_VERSION;
   }
 
@@ -688,6 +705,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     recordVersion: recordVersion,
     VERSION: VERSION,
     PROFILE_VERSION: PROFILE_VERSION,
+    PROFILE_ANCHOR_VERSION: PROFILE_ANCHOR_VERSION,
+    PROFILE_ANCHOR_RECORD_VERSION: PROFILE_ANCHOR_RECORD_VERSION,
     INNER_VERSION: INNER_VERSION,
     INNER_RECORD_VERSION: INNER_RECORD_VERSION,
     RECORD_VERSION: RECORD_VERSION,

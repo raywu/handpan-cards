@@ -1305,8 +1305,10 @@ only `r` keys; the mutant ring is `map[9..17]` (slots `s1..s9`) and holds only
 `b` keys; an `i` key, or a key in the other ring, is `PROFILE_MAP_INVALID`. On a scale with
 no bottom note, main entries past the rim count are null and the main half orders
 the Standard rim seats. With a
-profile, `mirror`, `mirrorBottom`, `anchor`, `seats` and `angles` must be
-absent. The sheet keeps the standard draft separately and drops it from the
+profile, `mirror`, `mirrorBottom`, `seats` and `angles` must be absent;
+`anchor` MAY be present and is `"one"` or `"between"`, and `parseSeed` accepts
+`"one"` and drops it (a profile with anchor `"one"` is the same seed as one
+with none). The sheet keeps the standard draft separately and drops it from the
 committed record. Validation lives only in `HPE.core.parseSeed`; `profile` joins
 its option whitelist (other unknown options still drop). Until
 `HPE.core.PROFILE_ENABLED` is true, `parseSeed` refuses `profile` with
@@ -1333,7 +1335,7 @@ values follow it.
 | `PROFILE_NOTE_MISSING` | error | `The Neotone layout leaves out one of your notes. Every note needs a tonefield.` |
 | `PROFILE_NOTE_TWICE` | error | `The Neotone layout places the same note in two tonefields.` |
 | `PROFILE_FULL` | error | `Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes.` |
-| `PROFILE_CONFLICT` | error | `Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it.` |
+| `PROFILE_CONFLICT` | error | `Neotone sets its own placement, so mirror, seats and angles cannot be combined with it.` |
 | `NEOTONE_INPUT` | error | `Neotone has 9 main tonefields. Remove the extra top note to save.` |
 
 ### 18.4 Proposal and layout
@@ -1356,7 +1358,18 @@ circle's centre distance and radius follow), with the ding at centre at
 tonefield n (number line `3-4-6-M4`). `ext` and the `f_*` keys are unchanged for
 standard decks, and renderers branch only on `geom.place`.
 
-### 18.5 Wire version 7
+`HPE.layout.solve` with a profile reads `options.anchor` of the seed. With a
+mutant note and anchor `"between"`, every main tonefield and its lens sit at the
+fixture angle plus `turn` = 180 / tonefields (20 degrees), reduced mod 360, and
+`geom.turn` is that number; with anchor `"one"` or absent `geom.turn` is absent.
+With no mutant note the plain solve receives the anchor, so rim notes take the
+Standard seat angles of that anchor and `geom.turn` is absent. `turn` never
+changes the map, labels, radii, orbits, `ext` or the print extent. Renderers
+(`HPE.pdfcards` `neoPlan`, `tools/hifi.py` `draw_neo_pan`) place the main and lens
+of tonefield k at `PROFILE.angles[k-1] + turn`; `HPE.layout.snapTarget` uses
+`geom.turn` the same way.
+
+### 18.5 Wire versions 7 and 9
 
 `HPE.share.VERSION` stays 6; `PROFILE_VERSION = 7`. `NEWEST` stays `VERSION`;
 decode reads up to `PROFILE_VERSION` only while `HPE.core.PROFILE_ENABLED` is on.
@@ -1378,7 +1391,18 @@ ring-correct but incomplete (or overfull) v7 link opens as the pitch-order propo
 keeps older links readable (owner acknowledgement pending). The grammar and token order do
 not change in rev 2; links v1 to v6 decode as standard layouts.
 
-### 18.6 Record version 5 and rule I1
+Wire version 9 (`PROFILE_ANCHOR_VERSION`): the version 7 grammar plus exactly one
+`between` segment after `pair-`. `encode` writes 9 if and only if the seed has a
+profile and `anchor` `"between"`; otherwise it writes 7 (profile) or 6 as before,
+so a profile with anchor `"one"` or none encodes byte-identically to version 7. A
+version 9 link without `pair-` and `between`, or with `mirror*`, `seats-`, `at-` or
+`ai-`, is `BAD_NOTE`; a version 7 link carrying `between` stays `BAD_NOTE`. In
+`decodeReadable` the `between` branch is tested before the profiled fall-through, so
+a profiled v9 link accepts `between` exactly once. `decodeSeed` admits 9 only while
+`HPE.core.PROFILE_ENABLED` is on. A client whose newest wire is below 9 answers a
+version 9 link with `NEEDS_NEWER_APP`; a version 10 or above is `NEEDS_NEWER_APP`.
+
+### 18.6 Record versions 5 and 7, and rule I1
 
 `RECORD_VERSION` stays 4. `PROFILE_RECORD_VERSION = 5` is used for a record
 whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4 or 5:
@@ -1395,12 +1419,19 @@ opaque. Reason: a shipped client treats a record it cannot read as an opaque row
 kept byte-for-byte, but fails its slot-authority check, and so protects the
 whole library, when an opaque row owns a slot.
 
+`PROFILE_ANCHOR_RECORD_VERSION = 7`, returned by `recordVersion` if and only if the
+seed has a profile and `anchor` `"between"`. Rule I1 applies unchanged; a version 7
+record with `replaces` is read as opaque. A client that does not know 7 keeps the
+record opaque, byte-for-byte.
+
 ### 18.7 Fixtures that pin the contract
 
 `tests/fixtures/paired_profile_v4.json` (fixture rev 4; v1, v2 and v3 are superseded
 and kept) and `tests/fixtures/shipped_client_ee5438d0.html.txt` (a verbatim
 `git show ee5438d0:index.html`, the shipped client for the mixed-version
-isolation suite). All are sha256-pinned in `tests/test_fixture_integrity.py`; a
+isolation suite), `tests/fixtures/paired_anchor_links_v9.json` (hand-written
+profile-plus-between links) and `tests/fixtures/share_links_v1/v7.json` and `v8.json`
+(frozen links encoded at `caaec83b`). All are sha256-pinned in `tests/test_fixture_integrity.py`; a
 change is a new revision, never an in-place edit.
 
 Two revisions are counted separately. The map rev (`options.profile.rev`) is the

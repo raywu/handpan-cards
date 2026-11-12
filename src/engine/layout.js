@@ -851,6 +851,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
   var ZONE_LETTER = { rim: "r", inner: "i", bottom: "b" };
 
+  // The turn of "#1 / #2" on a pan with mutant notes: half a tonefield step.
+  var PROFILE_TURN = 180 / PROFILE.tonefields;
+
+  // The tonefield angles of a pan turned by `turn` degrees (0 or absent: the
+  // frozen angles). PROFILE.angles itself is never changed.
+  function profileAngles(turn) {
+    var by = turn || 0;
+    return PROFILE.angles.map(function (a) { return norm(a + by); });
+  }
+
   function occurrenceKey(rec) {
     return ZONE_LETTER[rec[3]] + rec[2];
   }
@@ -867,9 +877,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return round(PROFILE.main.orbit - (2 * PROFILE.main.r - depth), 4);
   }
 
+  function hasMutants(profile) {
+    return profile.map.slice(PROFILE.tonefields).some(function (entry) { return entry !== null; });
+  }
+
   // geom.place: {fieldId: [angle, orbitFrac, rFrac, kind, ...]} for every mapped
   // non-ding field. A mutant field also carries its lens centre and radius.
-  function placeProfile(fields, profile, geom, plain) {
+  function placeProfile(fields, profile, geom, plain, turn) {
     var byKey = {};
     var id;
     for (id in fields) {
@@ -877,13 +891,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         byKey[occurrenceKey(fields[id])] = id;
       }
     }
-    var mutants = profile.map.slice(PROFILE.tonefields).some(function (entry) { return entry !== null; });
+    var mutants = hasMutants(profile);
     var seatAngles = [];
     if (!mutants) {
       Object.keys(plain).filter(function (fid) { return plain[fid][3] === "rim"; })
         .sort(function (a, b) { return plain[a][2] - plain[b][2]; })
         .forEach(function (fid) { seatAngles.push(plain[fid][4]); });
     }
+    var angles = profileAngles(turn);
     var place = {};
     var labels = {};
     for (var k = 0; k < profile.map.length; k += 1) {
@@ -894,11 +909,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         if (!mutants && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
         labels[fid] = String(k + 1);
         place[fid] = mutants
-          ? [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
+          ? [angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
           : [seatAngles[k], geom.rim, geom.r_note, "main"];
       } else {
         labels[fid] = "M" + (slot + 1);
-        place[fid] = [PROFILE.angles[slot], PROFILE.main.orbit, PROFILE.main.r, "mutant",
+        place[fid] = [angles[slot], PROFILE.main.orbit, PROFILE.main.r, "mutant",
                       lensCentre(), PROFILE.mutant.r];
       }
     }
@@ -913,9 +928,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (seedOptions.profile !== undefined && seedOptions.profile !== null) {
       var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
       if (!profile.ok) return profile;
-      var plain = solve({ fields: source, options: {} }, {});
-      var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields);
+      var between = seedOptions.anchor === "between";
+      var plain = solve({ fields: source, options: {} }, between ? { anchor: "between" } : {});
+      var turn = between && hasMutants(profile.value) ? PROFILE_TURN : 0;
+      var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields, turn);
       if (placed.ok === false) return placed;
+      if (turn) plain.value.geom.turn = turn;
       if (placed.mutants) {
         plain.value.geom.r_ding = PROFILE.ding.r;
         plain.value.geom.ding_dy = PROFILE.ding.dy;
@@ -1044,12 +1062,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return targetOf(zone, seat, ring.length && crowd < floor - CLASH_EPS ? ring[seat].id : null, angle);
   }
 
-  function snapProfile(pt, occupancy) {
+  function snapProfile(pt, occupancy, turn) {
     var radius = Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1]);
     if (radius <= PROFILE.ding.r) return targetOf("ding", 0, occupancy.ding);
     if (radius > 1) return null;
     var angle = norm(Math.atan2(pt[1], pt[0]) / DEG);
-    var slot = nearestSeat(PROFILE.angles.map(function (a) { return { angle: a }; }), angle);
+    var slot = nearestSeat(profileAngles(turn).map(function (a) { return { angle: a }; }), angle);
     var lens = radius < (PROFILE.main.orbit + lensCentre()) / 2;
     var ids = (lens ? occupancy.mutant : occupancy.main) || [];
     return targetOf(lens ? "mutant" : "main", slot, ids[slot]);
@@ -1058,7 +1076,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function snapTarget(geom, pt, options) {
     var occupancy = (options && options.occupancy) || {};
     var kind = options && options.panKind !== undefined ? options.panKind : "acoustic";
-    if (kind === "profile") return snapProfile(pt, occupancy);
+    if (kind === "profile") return snapProfile(pt, occupancy, geom && geom.turn);
     if (kind !== "acoustic") throw new Error("snapTarget: unknown panKind " + String(kind));
     return snapGeneric(geom, pt, occupancy, !!(options && options.allowInnerAngle));
   }
@@ -1068,6 +1086,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     reflectAngles: reflectAngles,
     snapTarget: snapTarget,
     proposeProfile: proposeProfile,
+    profileAngles: profileAngles,
     PROFILE: PROFILE,
     slotOrder: slotOrder,
     seatsFromOrder: seatsFromOrder,

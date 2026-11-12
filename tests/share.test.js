@@ -500,13 +500,13 @@ test("a payload over CAPS is rejected", () => {
 test("an over-cap payload is rejected WITHOUT parsing anything", () => {
   // The cap is the first gate, so an over-cap string that also carries a newer
   // version byte is refused on length and never reaches the version check.
-  const over = String(share.INNER_VERSION + 1) +
+  const over = VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + 1) +
     new Array(share.CAPS.payload + 8).join("A");
   const r = share.decode(over);
   assert.equal(r.ok, false);
   assert.notEqual(r.code, "NEEDS_NEWER_APP",
     "the payload cap must be checked before the version byte");
-  const under = String(share.INNER_VERSION + 1) + new Array(40).join("A");
+  const under = VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + 1) + new Array(40).join("A");
   assert.equal(share.decode(under).code, "NEEDS_NEWER_APP",
     "an under-cap newer link must still say NEEDS_NEWER_APP");
 });
@@ -1226,10 +1226,10 @@ test("a v2 link is NEEDS_NEWER_APP to an app pinned at v1", () => {
 test("a version byte above this app's is still NEEDS_NEWER_APP", () => {
   const str = encoded(parsed(BASE));
   for (const bump of [1, 2, 8]) {
-    const newer = VERSION_CHARS.charAt(share.INNER_VERSION + bump) + str.slice(1);
+    const newer = VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + bump) + str.slice(1);
     const r = share.decode(newer);
     assert.equal(r.ok, false);
-    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.INNER_VERSION + bump}`);
+    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.PROFILE_ANCHOR_VERSION + bump}`);
     assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
   }
 });
@@ -1775,7 +1775,7 @@ test("SV: the auto label is ignored on receipt and lies outside the checksum", (
   }
 });
 
-test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 9 or above is NEEDS_NEWER_APP", () => {
+test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 10 or above is NEEDS_NEWER_APP", () => {
   const rest = V5_BUILTINS[0][4].slice(2);
   for (const lead of ["5", "6"]) {
     for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
@@ -1784,7 +1784,7 @@ test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 9 or above is NEEDS_NEWER_
     }
     reject(lead + rest);
   }
-  for (const version of ["9", "A", "z", "_"]) {
+  for (const version of ["A", "z", "_"]) {
     const r = share.decode(version + "/" + rest);
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", version);
@@ -2050,7 +2050,7 @@ test("PD: packed v1 to v4 links with a palette above 5 keep the exact numeric BA
 test("PD: gate precedence is unchanged: cap, then version, then integrity, then payload", () => {
   const good = forgeN("6", PD_SEG, "*x", ["palette-8"]);
   assert.equal(share.decode(good).ok, true);
-  assert.equal(share.decode("9" + good.slice(1)).code, "NEEDS_NEWER_APP");
+  assert.equal(share.decode(VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + 1) + good.slice(1)).code, "NEEDS_NEWER_APP");
   reject(good.slice(0, -1) + (good.endsWith("0") ? "1" : "0"));
   reject(forgeN("6", PD_SEG, "*" + "x".repeat(4100), ["palette-8"]));
 });
@@ -2200,14 +2200,14 @@ test("PV: every single-character flip of a v7 link is refused (the auto label is
   }
 });
 
-test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v9 always is", () => {
+test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v10 always is", () => {
   const link = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
   const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
   off.core.PROFILE_ENABLED = false;
   const r = off.share.decode(link);
   assert.equal(r.ok, false);
   assert.equal(r.code, "NEEDS_NEWER_APP");
-  assert.equal(PSH.share.decode("9" + link.slice(1)).code, "NEEDS_NEWER_APP");
+  assert.equal(PSH.share.decode(VERSION_CHARS.charAt(PSH.share.PROFILE_ANCHOR_VERSION + 1) + link.slice(1)).code, "NEEDS_NEWER_APP");
 });
 
 test("PV: v7 shapes the grammar forbids are BAD_NOTE, and the good crafted link decodes", () => {
@@ -2579,9 +2579,9 @@ test("SE: pair- on a v8 link is PROFILE_CONFLICT, and v8 reads whatever PROFILE_
   assert.equal(off.decode(v7).code, "NEEDS_NEWER_APP", "v7 stays gated by the flag");
 });
 
-test("SE: version 9 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8", () => {
+test("SE: version 10 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8", () => {
   const link = pygmyInner("110,");
-  for (const lead of ["9", "A", "B", "z"]) {
+  for (const lead of ["A", "B", "z"]) {
     const r = share.decode(lead + link.slice(1));
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", lead);
@@ -2608,4 +2608,77 @@ test("SE: a pinned inner angle clashing with the other inner note's floor is BAD
   const refused = share.decode(pygmyInner("95,50"));
   assert.equal(refused.ok, false);
   assert.equal(refused.code, "BAD_NOTE");
+});
+
+test("PA: the v9 constants are 9 and 7, and recordVersion is 7 only for profile plus between", () => {
+  assert.equal(PSH.share.PROFILE_ANCHOR_VERSION, 9);
+  assert.equal(PSH.share.PROFILE_ANCHOR_RECORD_VERSION, 7);
+  for (const str of Object.values(PSEEDS)) {
+    assert.equal(PSH.share.recordVersion(pSeed(str, { anchor: "between" })), 7, str);
+    assert.equal(PSH.share.recordVersion(pSeed(str)), 5, str);
+    assert.equal(PSH.share.recordVersion(pSeed(str, { anchor: "one" })), 5, str);
+    assert.equal(PSH.share.recordVersion(PSH.core.parseSeed(str).value), 4, str);
+    assert.equal(PSH.share.recordVersion(PSH.core.parseSeed(str, { anchor: "between" }).value), 4, str);
+  }
+});
+
+test("PA: a profile plus between seed encodes at v9 with one between after pair-, and round-trips", () => {
+  const seed = pSeed(PSEEDS.kurd, { name: "My pan", palette: 2, parent: 3, anchor: "between" });
+  const link = PSH.share.encode(seed).value;
+  const segs = link.split("/");
+  assert.equal(segs[0], "9");
+  assert.equal(segs.filter((s) => s.startsWith("pair-")).length, 1);
+  assert.equal(segs.filter((s) => s === "between").length, 1);
+  assert.equal(segs.indexOf("between"), segs.findIndex((s) => s.startsWith("pair-")) + 1);
+  const back = PSH.share.decode(link);
+  assert.equal(back.ok, true, back.reason);
+  assert.equal(back.value.options.anchor, "between");
+  assert.deepEqual(back.value.options.profile, seed.options.profile);
+  assert.equal(PSH.share.encode(back.value).value, link);
+  const flipped = link.replace("/between/", "/betweeN/");
+  assert.equal(PSH.share.decode(flipped).ok, false);
+});
+
+test("PA: a profile with none or one anchor stays a byte-identical v7 link", () => {
+  const plain = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
+  assert.equal(plain.charAt(0), "7");
+  assert.equal(PSH.share.encode(pSeed(PSEEDS.kurd, { anchor: "one" })).value, plain);
+  assert.equal(PSH.core.parseSeed(PSEEDS.kurd).ok, true);
+});
+
+test("PA: a crafted v9 link decodes, and every shape the grammar forbids is BAD_NOTE", () => {
+  const good = craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between"]);
+  const r = PSH.share.decode(good);
+  assert.equal(r.ok, true, r.reason);
+  assert.equal(r.value.options.anchor, "between");
+  const bad = [
+    craft("9", KURD_SEG, "*Label", [KURD_PAIR]),
+    craft("9", KURD_SEG, "*Label", ["between"]),
+    craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between", "between"]),
+    craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between", "mirror"]),
+    craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between", "mirrorbottom"]),
+    craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between", "seats-0.1"]),
+    craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between", "at-0"]),
+    craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between", "ai-0"]),
+    craft("9", KURD_SEG, "*Label", ["between", KURD_PAIR]),
+    craft("7", KURD_SEG, "*Label", [KURD_PAIR, "between"]),
+  ];
+  for (const link of bad) {
+    const x = PSH.share.decode(link);
+    assert.equal(x.ok, false, link);
+    assert.equal(x.code, "BAD_NOTE", link);
+  }
+});
+
+test("PA: v9 is NEEDS_NEWER_APP with the flag off and on the base engine, and v10 always is", () => {
+  const good = craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between"]);
+  const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
+  off.core.PROFILE_ENABLED = false;
+  assert.equal(off.share.decode(good).code, "NEEDS_NEWER_APP");
+  assert.equal(engineAtVersion(8).decode(good).code, "NEEDS_NEWER_APP");
+  for (const lead of ["A", "B", "z"]) {
+    assert.equal(PSH.share.decode(lead + good.slice(1)).code, "NEEDS_NEWER_APP", lead);
+  }
+  const v10 = VERSION_CHARS.charAt(PSH.share.PROFILE_ANCHOR_VERSION + 1);
+  assert.equal(PSH.share.decode(v10 + good.slice(1)).code, "NEEDS_NEWER_APP");
 });

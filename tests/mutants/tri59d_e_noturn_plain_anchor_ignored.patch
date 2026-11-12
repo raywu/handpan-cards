@@ -1,0 +1,15 @@
+# kills: NA: with no mutant note and k = 4..9 rim notes the place angles are the Standard between seat angles
+# suite: node --test --test-name-pattern ^NA..with.no.mutant.note.and.k tests/layout.test.js
+# why: The no-mutant plain solve ignores the between anchor.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -929,7 +929,7 @@
+       var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
+       if (!profile.ok) return profile;
+       var between = seedOptions.anchor === "between";
+-      var plain = solve({ fields: source, options: {} }, between ? { anchor: "between" } : {});
++      var plain = solve({ fields: source, options: {} }, {});
+       var turn = between && hasMutants(profile.value) ? PROFILE_TURN : 0;
+       var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields, turn);
+       if (placed.ok === false) return placed;
