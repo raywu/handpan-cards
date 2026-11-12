@@ -269,6 +269,30 @@ is out of flow and 0px tall (owner 2026-10-20, superseding the guidance plan's
 36px reserve).
 - The importer (`HPE.importer`) is engine-only: the paste-text
 import UI and the `scale_import` event were removed; do not rebuild them.
+- Editor drag (ONE_PANEL editor, owner 2026-11-07): while a note is held, from
+`editorDragLift` to `editorDragEnd`, the control panel (areas, layout, toolbar, tray) is
+hidden outright (`#editor.dragging`: slid down, opacity 0, `visibility:hidden`,
+`pointer-events:none`) and the pan magnifies from its top edge into the freed space by
+`--ed-mag` (measured once at the lift, at most 1.35, never past the screen width, never
+below 1). The panel returns after the drop is painted, at once on a cancel (Escape,
+pointercancel, resize, orientationchange, a hidden page), and ignores taps for 250ms
+(`.settling`). With reduced motion the pan stays at 1x, there is no slide, and the new-note
+stroke fades statically. A note placed by drag, tap, pill, Replace ding, trade or keyboard
+carries `.editor-new` once; Undo does not. Tests: `tests/editor_e2e.test.js` "drag ux E1"
+to "E7", `tests/editor_shell.test.js` "drag ux unit 1" to "4".
+- Neotone Mirror and Rotate (ONE_PANEL editor, owner 2026-11-08, `editorNeoMirror` and
+`editorNeoRotate`): on a Neotone scale the layout row shows a momentary MIRROR (no
+`aria-pressed`) and two momentary rotate buttons (one step anticlockwise or clockwise, wraps);
+Mirror Bottom and the two "#1" buttons are hidden. Both write only `profile.map`, permuting
+main and mutant fields together, so a mutant stays under its main field and the number labels
+stay on their tonefields. Ring order is the fixture angles ascending (increasing angle is
+clockwise), `HPE.layout.PROFILE.angles`: p1 p3 p5 p7 p9 p8 p6 p4 p2. A clockwise step sends a
+note to the next larger angle; Mirror sends angle a to 540 - a (pairs p2/p3, p4/p5, p6/p7,
+p8/p9; p1 fixed). With no mutant note only the filled main fields take part (the same cycle
+and pairs restricted to p1..pk), and with an even k the last note sits on the axis and stays.
+Rotation is not kept when the mutant count changes (`compactMain` re-packs) or a text edit
+changes the notes. Tests: `tests/editor_model.test.js` "TRI59c-M1" to "M7",
+`tests/editor_e2e.test.js` "TRI59c".
 
 ## Feature plans
 
