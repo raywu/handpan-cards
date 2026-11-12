@@ -4,8 +4,8 @@
 diff --git a/data/i18n/ja.json b/data/i18n/ja.json
 --- a/data/i18n/ja.json
 +++ b/data/i18n/ja.json
-@@ -118,7 +118,8 @@
-   "sheet.hit_label": "{name}、{ring}、位置{label}、{place}",
+@@ -158,7 +158,8 @@
+   "sheet.counts": "ハンドパンの配置：外周{rim}音、内側{inner}音、裏面{bottom}音。",
    "sheet.ring_back": "{ring}が{n}音に戻ったので、以前の位置に戻しました。",
    "sheet.ring_reset": {
 -    "other": "{ring}が{n}音になったので、位置をリセットしました。"
