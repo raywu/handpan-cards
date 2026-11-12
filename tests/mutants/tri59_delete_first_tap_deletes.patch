@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15875,7 +15875,7 @@ function editorDeleteTap() {
+@@ -15877,7 +15877,7 @@ function editorDeleteTap() {
    const s = editorSession;
    if (!s || s.dialog || s.editing || !editingId) return;
    const b = editorEl("editor-delete");
 -  if (s.delArmed) {
 +  if (true) {
+     if (Date.now() - s.delArmedAt < EDITOR_DELETE_GUARD_MS) return;
      s.delArmed = false;
      if (wouldEmpty(editingId)) {
-       editorResetDeleteButton(b);

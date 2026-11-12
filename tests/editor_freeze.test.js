@@ -247,8 +247,10 @@ function runBrowser() {
     const a = svg.getScreenCTM().a;
     const o = svg.getBoundingClientRect();
     const r2 = (n) => Math.round(n * 100) / 100;
+    const vb = svg.viewBox.baseVal;
+    const padX = (o.width - vb.width * a) / 2, padY = (o.height - vb.height * a) / 2;
     return { viewBox: svg.getAttribute("viewBox"),
-      ehit: [...svg.querySelectorAll(".ehit")].map((c) => { const r = c.getBoundingClientRect(); return [r2(r.width / a), r2(r.height / a), r2((r.left - o.left) / a), r2((r.top - o.top) / a)]; }) };
+      ehit: [...svg.querySelectorAll(".ehit")].map((c) => { const r = c.getBoundingClientRect(); return [r2(r.width / a), r2(r.height / a), r2((r.left - o.left - padX) / a), r2((r.top - o.top - padY) / a)]; }) };
   })()`;
 
   const STYLES = (state) => `(() => {

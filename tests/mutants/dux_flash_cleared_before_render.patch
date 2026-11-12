@@ -1,4 +1,4 @@
-# kills: drag ux E4: a placed note is highlighted after a drag, a tap, a pill, Replace ding, a trade and the keyboard, and not after Undo
+# kills: drag ux E4: a placed note is highlighted after a drag, a tap, a zone add, a ding swap, a trade and the keyboard, and not after Undo
 # suite: node --test --test-name-pattern ^drag.ux.E4 tests/editor_e2e.test.js
 # fault: The flash is dropped before the pan renders.
 diff --git a/index.html b/index.html
