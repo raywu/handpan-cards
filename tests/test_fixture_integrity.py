@@ -690,5 +690,34 @@ class TestPlanIsCommitted(unittest.TestCase):
         self.assertIn(raw, plan, "the plan's Frozen v2 fixture section must hold the exact JSON")
 
 
+EXPECTED_SHARE_LINK_SHA256 = {
+    "v7.json": "6142c9fa9f0fd0a6044c4c0d05f80281c4698e7fbd9ae833f0390f13408b5f1f",
+    "v8.json": "15272c6731ead7ad45253a6ac42096331663a475fee351c1fb4ba25b67212312",
+}
+
+
+class TestFrozenShareLinkFixtures(unittest.TestCase):
+    """Frozen wire v7 and v8 links, encoded at caaec83b before any anchor edit (TRI-59 lane E)."""
+
+    def test_sha256_is_pinned(self):
+        for name, want in EXPECTED_SHARE_LINK_SHA256.items():
+            with self.subTest(name=name):
+                with open(os.path.join(FIXTURES, "share_links_v1", name), "rb") as fh:
+                    self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), want,
+                                     "a frozen link fixture is append-only; add a file, never edit one")
+
+
+EXPECTED_ANCHOR_LINKS_V9_SHA256 = "f775440f54722ca098f0b31f55717df4b7bbdfe47796b15548e930fac31b2ae8"
+
+
+class TestAnchorLinkFixtureV9(unittest.TestCase):
+    """Hand-written profile-plus-between wire v9 links (TRI-59 lane E)."""
+
+    def test_sha256_is_pinned(self):
+        with open(os.path.join(FIXTURES, "paired_anchor_links_v9.json"), "rb") as fh:
+            self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_ANCHOR_LINKS_V9_SHA256,
+                             "the v9 link fixture is append-only; add a file, never edit one")
+
+
 if __name__ == "__main__":
     unittest.main()

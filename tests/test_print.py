@@ -1252,3 +1252,35 @@ class OverlayFromPrintTest(unittest.TestCase):
         overlay = decks._overlay_from_print(source)
         overlay["blurb"].append("MUTATED")
         self.assertEqual(source["blurb"], ["a", "b"])
+
+
+class _Sink(object):
+    def __getattr__(self, name):
+        return lambda *a, **k: _Sink()
+
+
+class _LenientCanvas(RecordingCanvas):
+    def __getattr__(self, name):
+        return lambda *a, **k: _Sink()
+
+
+class NeotoneTurnTest(unittest.TestCase):
+    """A geom carrying `turn` is keyed by the turned angles, as in pdfcards."""
+
+    def _spec(self, angle, turn):
+        place = {"1": [angle, 0.6, 0.1, "main"], "2": [angle, 0.6, 0.1, "mutant"]}
+        geom = {"place": place, "r_ding": 0.1, "ding_dy": 0.0}
+        if turn:
+            geom["turn"] = turn
+        return {"_geom": geom, "0": ["D", 3, 0, "ding", 0, ""],
+                "1": ["C", 4, 0, "main", 0, "1"], "2": ["E", 4, 0, "mutant", 0, "2"]}
+
+    def test_a_turned_card_places_main_and_mutant_at_the_turned_angle(self):
+        for turn in (0, 20):
+            angle = (hifi.PROFILE_DRAW["angles"][0] + turn) % 360
+            c = _LenientCanvas()
+            hifi.draw_neo_pan(c, 0.0, 0.0, 100.0, self._spec(angle, turn), {"1"}, set(), True)
+            want = (round(100 * hifi.PROFILE_DRAW["main"]["orbit"] * math.cos(math.radians(angle)), 3),
+                    round(100 * hifi.PROFILE_DRAW["main"]["orbit"] * math.sin(math.radians(angle)), 3))
+            got = {(round(ci["x"], 3), round(ci["y"], 3)) for ci in c.circles}
+            self.assertIn(want, got, "turn %s" % turn)

@@ -181,6 +181,13 @@ exactly where its diagram has it.
   (`crescentBand` stays computed for the name fit). A placed card without a mutant note, and
   every standard card, keep their ring bands and a white ding, byte for byte (`tests/pdfcards.test.js`
   "NS: ..."; `tests/test_render_agreement.py` reads lit state from the tint fill).
+  **Neotone turn (TRI-59 PL-b):** a Neotone seed with `anchor: between` and a mutant note
+  turns the pan by `PROFILE_TURN` (`180 / tonefields`, 20 degrees): every tone angle is
+  `(base + turn) % 360` in `neoPlan` (`src/engine/pdfcards.js`) and `draw_neo_pan`
+  (`tools/hifi.py`), keyed by `HPE.layout.profileAngles(turn)`. `anchor: one` and every
+  seed without a mutant note keep turn 0, byte for byte (`tests/pdfcards.test.js`
+  "NT: a turned card keys main and mutant tones by the turned angles";
+  `tests/test_print.py` `NeotoneTurnTest`).
   K1 delta: the card reference's `lens_orbit` (0.4917) no longer holds; the lens centre is
   0.536 (the "PA: K1" test names the exception). The inner lens edge (0.346R) clears the
   decor ring (0.355R) by only 0.009R.
@@ -269,6 +276,17 @@ is out of flow and 0px tall (owner 2026-10-20, superseding the guidance plan's
 36px reserve).
 - The importer (`HPE.importer`) is engine-only: the paste-text
 import UI and the `scale_import` event were removed; do not rebuild them.
+- Editor drag (ONE_PANEL editor, owner 2026-11-07): while a note is held, from
+`editorDragLift` to `editorDragEnd`, the control panel (areas, layout, toolbar, tray) is
+hidden outright (`#editor.dragging`: slid down, opacity 0, `visibility:hidden`,
+`pointer-events:none`) and the pan magnifies from its top edge into the freed space by
+`--ed-mag` (measured once at the lift, at most 1.35, never past the screen width, never
+below 1). The panel returns after the drop is painted, at once on a cancel (Escape,
+pointercancel, resize, orientationchange, a hidden page), and ignores taps for 250ms
+(`.settling`). With reduced motion the pan stays at 1x, there is no slide, and the new-note
+stroke fades statically. A note placed by drag, tap, pill, Replace ding, trade or keyboard
+carries `.editor-new` once; Undo does not. Tests: `tests/editor_e2e.test.js` "drag ux E1"
+to "E7", `tests/editor_shell.test.js` "drag ux unit 1" to "4".
 
 ## Feature plans
 
