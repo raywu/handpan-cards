@@ -43,6 +43,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 47,
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
+    "tests/test_sync_schema_lint.py": 14,
     "tests/test_suite_health.py": 31,
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
@@ -86,6 +87,7 @@ FLOORS = {
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
     "tests/persist.test.js": 7,
+    "tests/pgenv.test.js": 3,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
