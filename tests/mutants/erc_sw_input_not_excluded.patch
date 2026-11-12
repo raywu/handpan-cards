@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
      stop();
      const ts = e.touches, p = ts && ts.length === 1 && ts[0], t = e.target;
      if (!p || !eligible() || p.clientX < 24 || p.clientX > window.innerWidth - 24 ||
--        (t && t.closest && t.closest("input, textarea, select"))) return;
-+        (t && t.closest && t.closest("textarea, select"))) return;
+-        (t && t.closest && t.closest("#editor-pan, .tray-note, input, textarea, select"))) return;
++        (t && t.closest && t.closest("#editor-pan, .tray-note, textarea, select"))) return;
      g = { id: p.identifier, x: p.clientX, y: p.clientY, at: e.timeStamp, tab: editorSession.tab, top: body.scrollTop };
    }, { passive: true });
    body.addEventListener("touchmove", (e) => {
