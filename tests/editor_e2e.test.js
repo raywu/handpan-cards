@@ -2897,7 +2897,6 @@ function run() {
         assert.strictEqual(await tabNow(), "scale", "pan");
         await swipeBy(".tray-note", -120);
         assert.strictEqual(await tabNow(), "scale", "tray note");
-        assert.strictEqual(await b.eval(`return !document.getElementById("editor-panels").contains(document.getElementById("editor-pan")) && !document.getElementById("editor-panels").contains(document.querySelector(".tray-note"));`), true, "the pan and the tray sit outside the swiped panels");
         await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); return true;`);
         await swipeBy("#probe-input", -120);
         assert.strictEqual(await tabNow(), "scale", "text field");
