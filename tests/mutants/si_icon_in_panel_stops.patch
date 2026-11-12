@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16729,7 +16729,7 @@ function panelStops() {
-   const prints = [...settingsPanel.querySelectorAll(".prints button")];
-   const backup = backupPanel.hasAttribute("hidden") ? [] :
+@@ -17230,7 +17230,7 @@ function panelStops() {
      ["backup-text", "backup-share", "backup-copy", "backup-download"].map(id => document.getElementById(id));
--  const scales = [document.getElementById("deck-add"), restoreBtn, document.getElementById("backup-open"), ...backup];
-+  const scales = [document.getElementById("deck-add"), document.getElementById("share-copy"), restoreBtn, document.getElementById("backup-open"), ...backup];
+   const syncOpen = syncEl("sync-open"), syncPanel = syncEl("sync-panel");
+   const syncStops = !syncOpen ? [] : [syncOpen, ...(syncPanel && !syncPanel.hidden ? ["sync-email", "sync-send", "sync-code", "sync-verify", "sync-other", "sync-resend", "sync-ask-yes", "sync-ask-no", "sync-out", "sync-delete"].map(syncEl) : [])];
+-  const scales = [document.getElementById("deck-add"), restoreBtn, document.getElementById("backup-open"), ...backup, ...syncStops];
++  const scales = [document.getElementById("deck-add"), document.getElementById("share-copy"), restoreBtn, document.getElementById("backup-open"), ...backup, ...syncStops];
    const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"], #about-open')];
    const lang = document.getElementById("lang-select");
    const col = document.querySelector("#settings-panel > .panel-col");

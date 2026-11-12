@@ -1,0 +1,14 @@
+# kills: T-ENG-S4-void-base: live remote inserts and stale stored base stays untouched
+# suite: node --test --test-name-pattern T-ENG-S4-void-base tests/sync.test.js
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -94,7 +94,7 @@ HPE.sync = (function () {
+   const describeIn = (ctx, record) => (ctx.describe ? ctx.describe(record) : null) || null;
+ 
+   function planPull(input) {
+-    const ctx = input.ctx || {}, local = input.local || [], sc = trustedBase(input.sidecar, local, ctx);
++    const ctx = input.ctx || {}, local = input.local || [], sc = normalized(input.sidecar);
+     const alias = sc.alias, base = sc.base, localOnly = new Set(sc.localOnly);
+     const deferred = new Set(sc.deferredDeletes);
+     const remote = (input.remote || []).slice().sort((a, b) => a.rev - b.rev);

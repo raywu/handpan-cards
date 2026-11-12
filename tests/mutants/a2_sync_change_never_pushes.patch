@@ -1,0 +1,16 @@
+# kills: a save is pushed after the debounce, with the bearer token
+# suite: node --test --test-name-pattern a.save.is.pushed.after.the.debounce tests/app.test.js
+# Previously: sync: a save is pushed after the debounce
+# Lane A2 (login sync client).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18411,7 +18411,7 @@ function syncKick(pull) {
+ function syncChanged() {
+   if (!syncActive() || !syncHolder || !syncLoad()) return;
+   clearTimeout(syncTimer);
+-  syncTimer = setTimeout(() => { syncKick(false); }, 2000);
++  syncTimer = setTimeout(() => { }, 2000);
+ }
+ function syncStartLock() {
+   if (!syncActive() || syncLockAsked || !syncLoad()) return;

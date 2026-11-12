@@ -1,0 +1,15 @@
+# kills: a 429 from the auth endpoint shows the rate-limited copy and no retry
+# suite: node --test --test-name-pattern 429.from.the.auth.endpoint tests/app.test.js
+# Previously: sync: a 429 from the auth endpoint shows the rate-limited copy
+# Lane A2 (login sync client).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20760,7 +20760,6 @@ function syncTogglePanel(force) {
+   if (want) syncFocusFor(syncLoad());
+ }
+ const syncAuthError = (r, bad) => {
+-  if (r.status === 429) return "sync.err.rateLimited";
+   if (r.status === 0) return "sync.err.offline";
+   if (r.status >= 500) return "sync.err.sendFailed";
+   return bad;
