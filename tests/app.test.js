@@ -9,14 +9,62 @@
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
-const { test, describe } = require("node:test");
+const { describe } = require("node:test");
+const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename, [
+  // The sandbox has no document for the dynamically built panel, so a boot that opens
+  // the create sheet (empty library) or a chip click that opens Edit needs the legacy sheet.
+  "every rendered face is well-formed markup", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
+], [
+  // Kept behaviour (U2i): these asserted nothing about the removed sheet and run on the default panel build.
+  "writing the app's own keys leaves a sibling key in hpfc untouched",
+  "every gap in the app comes from the spacing ramp, never a fresh literal",
+  "a pop with no page open is not an invitation to close something",
+  "booting on a page route opens nothing and leaves a clean hash",
+  "panel fit rule 2: a control unrendered on the candidate fails, whether or not the base fits",
+  "panel fit rule 2: a control pushed below max(base bottom, avail) + 0.5 fails",
+  "panel fit rule 2: where the base itself overflows the offender is reported or failed by the OD-8 constant alone",
+  "panel fit rule 2: a control the base renders and the candidate lacks fails unless it is removed by design",
+  "panel fit rule 5: a control that does not exist on the candidate is not counted as rendered",
+  "panel fit rule 6: a rendered enabled control missing from the stop list fails, and a disabled one need not be listed",
+  "panel fit rule 2: controls after the second heading may sit one allowance lower, modeA and modeB may not",
+  "panel fit rule 2: the Resources allowance does not move any existing control",
+  "panel fit rule 2: the About-row allowance does not move any existing control",
+  "panel fit: the Language-group allowance is 88, owed only for a lang-select control the base lacks",
+  "panel fit: a run that measured any cell with a scrollbar gutter fails",
+  "PF-1 tallyJudgement adds fails and reported and keeps the first ten messages",
+  "AP1-1 canStartGesture guard table",
+  "editable defaults: a fresh store lists the five decks in DECKS order, hides nothing and adds no key",
+  "editable defaults: a stored hidden deck falls back to the first visible one with the gone warning",
+  "editable defaults: new hidden metadata recognizes built-ins while malformed legacy preferences stay protected",
+  "SD: a seed both hidden and replaced boots onto its replacement without a warning",
+  "DS1: no served text, attribute, JSON-LD value or app-script string literal says deck",
+  "I18N: a positive sample renders the table value",
+  "I18N: under a non-English table every English-only island carries lang=en and the hint carries the UI language",
+  "SHC U1: latest LINK owns fallback in both completion orders and at identical URLs",
+  "SHC U4: stale success and deferred ticks preserve newer and identical-text notices",
+  "SHC U5: native branches keep captured URLs and never start fallback after retirement",
+  "SHC U6: blur Escape and panel dismissal stay closed and a new LINK still works",
+  "SHC U8: hidden and refused LINK consume stale UI without replay and analytics stay nonsecret",
+  "SV1 U1: differently named same-inventory imports coexist in either order",
+  "SV1 U2: layout-only variants coexist and exact portable repeats reuse the selected match",
+  "SV1 U3: default normalization preserves explicit name parent and absolute-angle intent",
+  "SV3 U2: instance selection retires pending LINK UI when the route is identical",
+  "SV4 U3: absent denied corrupt and newer sources are distinct",
+  "SV7 U1: late old-client writes remain a separate recovery branch",
+  "IDB1 U1: successful put followed by transaction abort never acknowledges or spends history",
+  "IDB3 U1: present undefined null and object records protect authority and legacy bytes",
+  "IDB9 U1: a newly created experimental legacy branch warns without replaying over IDB",
+  "SV17 U1: preference acknowledgments and unchanged rereads preserve chip nodes while collection changes remain visible",
+  "opening and closing the panel toggles aria-expanded and writes nothing",
+  "with nothing saved the list is empty, the buttons are disabled and the panel says so",
+]);
 const assert = require("node:assert");
 const { boot: sandboxBoot } = require("./helpers/sandbox.js");
 // Ordinary unit fixtures exercise the real no-Web-Locks session adapter with
 // real host crypto and AbortController. Durable/reload fixtures opt in to the
 // asynchronous shared-origin model below. Explicit negative capabilities win.
 const boot = (options = {}) => sandboxBoot({ crypto: require("node:crypto").webcrypto,
-  abortController: true, ...options });
+  abortController: true, onePanel: onePanelFor(), ...options });
 
 const coarse = (app, on = true) => {
   app.sandbox.matchMedia = (query) => ({
@@ -1397,7 +1445,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.INNER_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -15507,8 +15555,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.name.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria","editor.hint.place","editor.hint.ding","editor.tabs.aria","editor.accidentals.aria","editor.sharps","editor.more.aria","editor.menu.delete","editor.menu.delete_armed","editor.count.rim","editor.count.inner","editor.count.bottom","editor.count.ding","editor.count.main","editor.count.mutant",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the editor tab, menu and zone-count keys (Editor RC W3 P1), the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -15896,425 +15944,9 @@ describe("SO: bottom seat numbers stay on their seats", () => {
   });
 });
 
-/* ---- SWA: the decorative edge cue that follows a Scale / Layout swipe ---- */
+/* ---- the swipe cue element: print and DOM position (the sheet swipe itself is gone; editor swipe is covered in editor_e2e) ---- */
 describe("SWA: swipe edge cue", () => {
-  let RM = false;
-  const BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
-  const INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
-  const BOTH = "(D3) C4 A3 D4 E4 F4 | G5 F5";
-  const BOTH_SAID = "The rim now follows the order listed. The inner notes now follow the order listed.";
-  const rect = (top, bottom) => () => ({ left: 0, right: 380, top, bottom, width: 380, height: bottom - top });
-  const fresh = () => {
-    const app = boot({ reducedMotion: RM, layout: true, clock: true, sheetBody: true, innerHeight: 800,
-      visualViewport: { height: 800, offsetTop: 0, scale: 1 } });
-    app.sandbox.innerWidth = 380;
-    const body = app.sandbox.document.querySelector(".sheetbody");
-    assert.ok(body, "the independently validated body fixture is required");
-    body.scrollTop = 0;
-    body.scrollHeight = 1400;
-    body.clientHeight = 500;
-    body.getBoundingClientRect = rect(100, 600);
-    const surface = app.els["scale-sheet"].firstElementChild;
-    surface.scrollTop = 0;
-    surface.scrollHeight = 700;
-    surface.clientHeight = 700;
-    surface.getBoundingClientRect = rect(0, 700);
-    app.els["scale-foot"].getBoundingClientRect = rect(600, 700);
-    return app;
-  };
-  const line = (app, text) => {
-    const box = app.els["scale-box"];
-    box.dispatchEvent({ type: "focus", target: box });
-    box.value = text;
-    box.dispatchEvent({ type: "input", target: box });
-  };
-  // The sandbox does not model capture ordering. Deliver the actual registered
-  // sheet-capture callbacks before the body callbacks explicitly; this is a
-  const on = (app, tab) => app.els["scale-tab-" + tab].getAttribute("aria-selected");
-  const bodyOf = (app) => app.sandbox.document.querySelector(".sheetbody");
-  const surfOf = (app) => app.els["scale-sheet"].firstElementChild;
-  const emit = (app, type, o = {}) => {
-    const target = o.target || bodyOf(app);
-    const point = { identifier: o.id === undefined ? 7 : o.id,
-      clientX: o.x === undefined ? 220 : o.x, clientY: o.y === undefined ? 300 : o.y };
-    const ended = type === "touchend" || type === "touchcancel";
-    const e = { type, target, touches: o.touches === undefined ? (ended ? [] : [point]) : o.touches,
-      changedTouches: o.changed === undefined ? [point] : o.changed, cancelable: true,
-      defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} };
-    app.els["scale-sheet"].dispatchEvent(e);
-    if (bodyOf(app).contains(target)) bodyOf(app).dispatchEvent(e);
-    return e;
-  };
-  const ready = async (kind = "add", tab = "scale") => {
-    const app = fresh();
-    if (kind === "edit") openEdit(app, await makeCustom(app, BASE));
-    else { openSheet(app); line(app, BASE); }
-    // This bounded fixture supplies the native tag selectors used by public
-    // focus handlers. It is not a general selector engine or an app test seam.
-    const fieldTag = (el, tag) => {
-      el.tagName = tag;
-      el.matches = (selector) => {
-        const tags = String(selector).split(",").map((s) => s.trim());
-        assert.ok(tags.every((s) => /^[a-z]+$/i.test(s)), "the field fixture supports literal tag selectors only");
-        return tags.some((s) => s.toUpperCase() === el.tagName);
-      };
-    };
-    fieldTag(app.els["scale-box"], "TEXTAREA");
-    for (const id of ["ding", "top", "inner", "bottom", "name"]) fieldTag(app.els["scale-" + id], "INPUT");
-    if (tab === "layout") app.click(app.els["scale-tab-layout"]);
-    app.advance(300);
-    return app;
-  };
-  const gesture = (app, { x = 220, dx = -80, y = 300, dy = 0, ms = 100, target } = {}) => {
-    emit(app, "touchstart", { x, y, target });
-    app.advance(ms);
-    emit(app, "touchmove", { x: x + dx, y: y + dy, target });
-    emit(app, "touchend", { x: x + dx, y: y + dy, target });
-  };
-  const vertical = (app) => {
-    emit(app, "touchstart", { x: 200, y: 400 });
-    emit(app, "touchmove", { x: 200, y: 360 });
-    emit(app, "touchend", { x: 200, y: 360 });
-  };
-  const scroll = (app, el, top) => {
-    el.scrollTop = top;
-    const e = { type: "scroll", target: el };
-    // Scroll does not bubble: model its actual ancestor capture -> target order,
-    // including the outer surface, rather than selecting a listener location.
-    // The sandbox still does not distinguish callback options; native wiring
-    // remains separate browser evidence.
-    app.els["scale-sheet"].dispatchEvent(e);
-    if (el !== bodyOf(app) && bodyOf(app).contains(el)) bodyOf(app).dispatchEvent(e);
-    el.dispatchEvent(e);
-  };
-  const focusEvent = (app, el, focused) => {
-    if (focused) el.focus(); else el.blur();
-    const e = { type: focused ? "focusin" : "focusout", target: el };
-    app.sandbox.document.dispatchEvent(e);
-    bodyOf(app).dispatchEvent(e);
-    el.dispatchEvent({ type: focused ? "focus" : "blur", target: el });
-  };
-  const keyboard = (app, up) => {
-    app.sandbox.visualViewport.height = up ? 500 : 800;
-    app.sandbox.visualViewport.dispatchEvent({ type: "resize" });
-    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), up, "the keyboard fixture must actually change public sheet state");
-  };
-  const selected = (app, field, selected) => {
-    field.selectionStart = 0;
-    field.selectionEnd = selected ? 1 : 0;
-    const get = () => ({ isCollapsed: !selected, anchorNode: field, focusNode: field,
-      toString: () => selected ? "D" : "" });
-    app.sandbox.getSelection = get;
-    app.sandbox.document.getSelection = get;
-    app.sandbox.document.dispatchEvent({ type: "selectionchange", target: field });
-  };
-  const finishLeft = (app, target) => {
-    emit(app, "touchmove", { x: 140, target });
-    emit(app, "touchend", { x: 140, target });
-  };
-  const shut = (app) => app.els["scale-sheet"].classList.contains("lipshut");
-  const cueOf = (app) => app.els["scale-swipe-cue"];
-  const has = (app, c) => cueOf(app).classList.contains(c);
-  const cueClasses = (app) => ["on", "l", "r", "armed", "commit", "back"].filter((c) => has(app, c));
-  const begin = (app, o = {}) => emit(app, "touchstart", { x: 220, y: 300, ...o });
-  const drag = (app, x, o = {}) => { emit(app, "touchmove", { y: 300, ...o, x }); app.advance(20); };
   const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
-  const swipeHtml = html.slice(html.indexOf("the optional Scale / Layout touch shortcut"), html.indexOf("/** Leaving the sheet or opening a fresh session"));
-  const expectArmed = (dx, dy, ms, from, to) => ms >= 0 && ms <= 600 && Math.abs(dx) >= 48 && Math.abs(dx) >= 2 * Math.abs(dy) && from !== to;
-  const target = (dx) => dx < 0 ? "layout" : "scale";
-  const shownCue = async (kind = "add") => {
-    const app = await ready(kind);
-    begin(app);
-    drag(app, 180);
-    assert.deepStrictEqual(cueClasses(app).includes("on"), true, "precondition: the cue is up");
-    return app;
-  };
-
-  test("SWA: swipeVerdict and the touchend commit agree on every sampled gesture", async () => {
-    for (const from of ["scale", "layout"]) {
-      const app = await ready("add", from);
-      for (const dx of [-100, -49, -48, -47, 0, 47, 48, 49, 100]) for (const dy of [0, 10, 24, 25, 60]) for (const ms of [0, 599, 600, 601]) {
-        if (on(app, from) !== "true") app.click(app.els["scale-tab-" + from]);
-        const x = 220;
-        emit(app, "touchstart", { x, y: 300 });
-        app.advance(ms);
-        emit(app, "touchmove", { x: x + dx, y: 300 + dy });
-        emit(app, "touchend", { x: x + dx, y: 300 + dy });
-        const want = expectArmed(dx, dy, ms, from, target(dx));
-        const to = from === "scale" ? "layout" : "scale";
-        const cell = `${from} dx=${dx} dy=${dy} ${ms}ms`;
-        assert.strictEqual(on(app, to) === "true", want, cell + " (touchend)");
-        const v = app.get(`swipeVerdict({ tab: ${JSON.stringify(from)} }, true, ${dx}, ${dy}, ${ms})`);
-        assert.strictEqual(v.armed, want, cell + " (swipeVerdict)");
-      }
-    }
-  });
-
-  test("SWA: the cue shows only after direction lock and only toward a different tab", async () => {
-    const app = await ready();
-    assert.ok(cueOf(app), "the cue element is served");
-    begin(app);
-    drag(app, 215);
-    assert.deepStrictEqual(cueClasses(app), [], "5px is not a lock");
-    drag(app, 205);
-    assert.ok(has(app, "on") && has(app, "r") && !has(app, "l"), "a left swipe on Scale lights the right edge");
-    const back = await ready();
-    begin(back);
-    drag(back, 260);
-    assert.deepStrictEqual(cueClasses(back), [], "a right swipe on Scale has no target tab");
-    const lay = await ready("add", "layout");
-    begin(lay);
-    drag(lay, 260);
-    assert.ok(has(lay, "on") && has(lay, "l") && !has(lay, "r"), "a right swipe on Layout lights the left edge");
-    const diag = await ready();
-    begin(diag);
-    drag(diag, 190, { y: 400 });
-    assert.deepStrictEqual(cueClasses(diag), [], "a diagonal drag past 2:1 never locks");
-  });
-
-  test("SWA: the cue arms exactly at 48px, and a still finger disarms it by the timer at 600ms with no touchmove; the timer repaint calls check(), and a body scroll before it hides the cue", async () => {
-    const app = await ready();
-    begin(app);
-    drag(app, 173);
-    assert.ok(has(app, "on") && !has(app, "armed"), "47px is shown, not armed");
-    drag(app, 172);
-    assert.ok(has(app, "armed"), "48px arms");
-    app.advance(700);
-    assert.ok(has(app, "on") && !has(app, "armed"), "past 600ms a still finger disarms with no touchmove");
-    emit(app, "touchend", { x: 172 });
-    assert.strictEqual(on(app, "scale"), "true", "and the release agrees");
-
-    const scrolled = await ready();
-    begin(scrolled);
-    drag(scrolled, 172);
-    assert.ok(has(scrolled, "armed"));
-    scroll(scrolled, bodyOf(scrolled), 40);
-    assert.deepStrictEqual(cueClasses(scrolled), [], "a body scroll hides the cue");
-
-    const stale = await ready();
-    begin(stale);
-    drag(stale, 172);
-    assert.ok(has(stale, "armed"));
-    stale.run("sheetTab = 'layout'");
-    stale.advance(700);
-    assert.deepStrictEqual(cueClasses(stale), [], "the timer goes through check(): a tab changed behind its back hides the cue and repaints nothing armed");
-  });
-
-  test("SWA: release armed switches the tab with the cue in its commit fade right after the switch; release unarmed springs back and switches nothing", async () => {
-    const app = await ready();
-    begin(app);
-    drag(app, 140);
-    assert.ok(has(app, "armed"));
-    emit(app, "touchend", { x: 140 });
-    assert.strictEqual(on(app, "layout"), "true");
-    assert.ok(has(app, "commit") && has(app, "on"), "the commit fade is up right after the switch");
-    app.advance(250);
-    assert.deepStrictEqual(cueClasses(app), [], "and gone after the fade");
-
-    const un = await ready();
-    begin(un);
-    drag(un, 190);
-    assert.ok(has(un, "on") && !has(un, "armed"));
-    emit(un, "touchend", { x: 190 });
-    assert.strictEqual(on(un, "scale"), "true", "an unarmed release switches nothing");
-    assert.ok(has(un, "back") && !has(un, "commit"), "it springs back");
-    un.advance(400);
-    assert.deepStrictEqual(cueClasses(un), []);
-  });
-
-  test("SWA: a vertical scroll shows no cue and switches nothing", async () => {
-    const app = await ready();
-    emit(app, "touchstart", { x: 200, y: 400 });
-    for (const y of [380, 360, 330]) { emit(app, "touchmove", { x: 200, y }); app.advance(20); assert.deepStrictEqual(cueClasses(app), []); }
-    emit(app, "touchend", { x: 200, y: 330 });
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SWA: a swipe in a focused field, a selection, or a scrolled #scale-box shows no cue", async () => {
-    const focused = await ready();
-    focusEvent(focused, focused.els["scale-box"], true);
-    begin(focused, { target: focused.els["scale-box"] });
-    drag(focused, 140, { target: focused.els["scale-box"] });
-    assert.deepStrictEqual(cueClasses(focused), [], "focused field");
-
-    const sel = await ready();
-    selected(sel, sel.els["scale-top"], true);
-    begin(sel, { target: sel.els["scale-top"] });
-    drag(sel, 140, { target: sel.els["scale-top"] });
-    assert.deepStrictEqual(cueClasses(sel), [], "selection");
-
-    const box = await ready();
-    begin(box, { target: box.els["scale-box"] });
-    box.els["scale-box"].scrollTop = 12;
-    drag(box, 140, { target: box.els["scale-box"] });
-    assert.deepStrictEqual(cueClasses(box), [], "scrolled box");
-  });
-
-  test("SWA: a press held HOLD_MS on a pan note then dragged shows no cue (press.lifted)", async () => {
-    const held = await ready();
-    const plate = held.els["scale-preview"];
-    begin(held, { target: plate });
-    held.advance(300);
-    drag(held, 140, { target: plate });
-    assert.deepStrictEqual(cueClasses(held), [], "held without moving");
-    const lifted = await ready();
-    begin(lifted, { target: lifted.els["scale-preview"] });
-    lifted.run("press = { lifted: true }");
-    drag(lifted, 140, { target: lifted.els["scale-preview"] });
-    lifted.run("press = null");
-    assert.deepStrictEqual(cueClasses(lifted), [], "a lifted note");
-    assert.strictEqual(on(lifted, "scale"), "true");
-  });
-
-  test("SWA: a touch starting inside the 24px edge, on #scale-lip or a select shows no cue", async () => {
-    const edge = await ready();
-    begin(edge, { x: 23 });
-    drag(edge, 100, { x: 100 });
-    assert.deepStrictEqual(cueClasses(edge), []);
-    const lip = await ready();
-    begin(lip, { target: lip.els["scale-lip"] });
-    drag(lip, 140, { target: lip.els["scale-lip"] });
-    assert.deepStrictEqual(cueClasses(lip), []);
-    const app = await ready(), select = bodyOf(app).appendChild(app.sandbox.document.createElement("select"));
-    begin(app, { target: select });
-    drag(app, 140, { target: select });
-    assert.deepStrictEqual(cueClasses(app), []);
-  });
-
-  test("SWA: each site that nulls sheetSwipe hides the cue: cancel, a second finger, kbup, setTab from the tab strip, dropDrawer on close, and zoom", async () => {
-    const gone = (app, why) => assert.deepStrictEqual(cueClasses(app), [], why);
-    const a = await shownCue();
-    emit(a, "touchcancel", { touches: [] });
-    gone(a, "cancel");
-    const b = await shownCue();
-    b.els["scale-sheet"].dispatchEvent({ type: "touchstart", target: bodyOf(b), touches: [{ identifier: 7, clientX: 180, clientY: 300 }, { identifier: 8, clientX: 90, clientY: 300 }], changedTouches: [] });
-    gone(b, "a second finger");
-    const c = await shownCue();
-    keyboard(c, true);
-    gone(c, "kbup");
-    const d = await shownCue();
-    d.click(d.els["scale-tab-layout"]);
-    gone(d, "setTab from the tab strip");
-    const e = await shownCue();
-    e.run("dropDrawer()");
-    gone(e, "dropDrawer");
-    const f = await shownCue();
-    f.sandbox.visualViewport.scale = 2;
-    f.sandbox.visualViewport.dispatchEvent({ type: "resize" });
-    gone(f, "zoom");
-    for (const app of [a, b, c, d, e, f]) {
-      app.advance(1000);
-      gone(app, "and nothing repaints it later");
-    }
-  });
-
-  test("SWA: the cue is aria-hidden, has no text, and every move listener is passive", async () => {
-    const m = /<div id="scale-swipe-cue"([^>]*)>([\s\S]*?)<\/div>/.exec(html);
-    assert.ok(m, "the cue is served");
-    assert.match(m[1], /aria-hidden="true"/);
-    assert.strictEqual(m[2].replace(/<[^>]*>/g, "").trim(), "", "no text");
-    const regs = swipeHtml.split(/\b(?:body|sheet|document)\.addEventListener\(/).slice(1);
-    const touches = regs.filter((r) => /^"touch/.test(r));
-    assert.strictEqual(touches.length, 4);
-    for (const r of touches) assert.match(r.split(/\n\s*\}\);?\n|\n\s*sheet\.addEventListener|\n\s*document\.addEventListener|\n\s*body\.addEventListener/)[0], /passive: true/, r.slice(0, 20));
-  });
-
-  test("SWA: the cue writes only transform, opacity and class, at most once per frame", async () => {
-    const app = await ready();
-    const writes = [], klass = [];
-    const real = cueOf(app).style;
-    cueOf(app).style = new Proxy(real, {
-      set(t, k, v) { writes.push(String(k)); t[k] = v; return true; },
-      get(t, k) { if (k === "setProperty") return (n, v) => { writes.push(String(n)); t.setProperty(n, v); }; return t[k]; },
-    });
-    for (const k of ["add", "remove", "toggle"]) {
-      const orig = cueOf(app).classList[k];
-      cueOf(app).classList[k] = function (...a) { klass.push(a[0]); return orig.apply(this, a); };
-    }
-    begin(app);
-    for (const x of [214, 208, 200, 190, 180, 170, 160]) emit(app, "touchmove", { x, y: 300 });
-    app.advance(40);
-    const allowed = new Set(["transform", "opacity", "--cue-y"]);
-    assert.ok(writes.length > 0);
-    assert.ok(writes.every((w) => allowed.has(w)), JSON.stringify(writes));
-    assert.ok(klass.every((c) => ["on", "l", "r", "armed", "commit", "back"].includes(c)), JSON.stringify(klass));
-    assert.strictEqual(writes.filter((w) => w === "transform").length, 1, "seven moves in one frame paint once");
-  });
-
-  test("SWA: under reduced motion the cue never translates or scales, and the armed state is filled, not opacity alone", async () => {
-    RM = true;
-    try {
-      const app = await ready();
-      const seen = [];
-      const real = cueOf(app).style;
-      cueOf(app).style = new Proxy(real, { set(t, k, v) { seen.push([String(k), String(v)]); t[k] = v; return true; } });
-      begin(app);
-      drag(app, 190);
-      assert.ok(has(app, "on") && !has(app, "armed"));
-      assert.strictEqual(cueOf(app).style.opacity, "0.6");
-      drag(app, 150);
-      assert.ok(has(app, "armed"));
-      assert.strictEqual(cueOf(app).style.opacity, "1", "armed is the fill class at full opacity");
-      assert.ok(seen.filter(([k]) => k === "transform").every(([, v]) => v === ""), "no transform is ever written: " + JSON.stringify(seen));
-      emit(app, "touchend", { x: 150 });
-      assert.strictEqual(on(app, "layout"), "true");
-      assert.ok(has(app, "commit"), "no transitions, so the 200ms timer is the only cleanup");
-      app.advance(210);
-      assert.deepStrictEqual(cueClasses(app), []);
-      const back = await ready();
-      begin(back);
-      drag(back, 190);
-      emit(back, "touchend", { x: 190 });
-      assert.deepStrictEqual(cueClasses(back), [], "spring back is a plain hide");
-    } finally { RM = false; }
-  });
-
-  test("SWA: lipQuietUntil and the lip state are unchanged by a shown-and-cancelled cue", async () => {
-    const app = await ready();
-    const before = [app.get("lipQuietUntil"), shut(app)];
-    begin(app);
-    drag(app, 150);
-    assert.ok(has(app, "on"));
-    emit(app, "touchcancel", { touches: [] });
-    assert.deepStrictEqual([app.get("lipQuietUntil"), shut(app)], before);
-  });
-
-  test("SWA: a quick unheld drag on a pan note shows the cue exactly when the recognizer would switch", async () => {
-    for (const from of ["scale", "layout"]) {
-      for (const ms of [20, 100, 640]) {
-        const app = await ready("add", from);
-        const plate = app.els["scale-preview"], dir = from === "scale" ? -1 : 1;
-        begin(app, { x: 190, target: plate });
-        const t0 = app.get("Date.now()");
-        for (const dx of [10, 30, 50, 70]) {
-          app.advance(Math.max(1, Math.round(ms / 4)));
-          emit(app, "touchmove", { x: 190 + dir * dx, y: 300, target: plate });
-          const elapsed = app.get("Date.now()") - t0;
-          app.advance(20);
-          const would = expectArmed(dir * dx, 0, elapsed, from, from === "scale" ? "layout" : "scale");
-          assert.strictEqual(has(app, "armed"), would, `${from} ${ms}ms dx=${dx}: cue armed matches the recognizer`);
-        }
-      }
-    }
-  });
-
-  test("SWA: closing the sheet during a commit fade hides the cue at once, and a new touchstart ends the fade", async () => {
-    const app = await ready();
-    begin(app);
-    drag(app, 140);
-    emit(app, "touchend", { x: 140 });
-    assert.ok(has(app, "commit"));
-    app.run("dropDrawer()");
-    assert.deepStrictEqual(cueClasses(app), []);
-    const again = await ready();
-    begin(again);
-    drag(again, 140);
-    emit(again, "touchend", { x: 140 });
-    assert.ok(has(again, "commit"));
-    begin(again, { x: 300 });
-    assert.deepStrictEqual(cueClasses(again), [], "T1: a new touchstart ends a commit fade");
-  });
-
   test("SWA: the print block hides #scale-swipe-cue, and it is a direct child of #scale-sheet", async () => {
     const block = html.slice(html.lastIndexOf("@media print{"));
     const hidden = [...block.matchAll(/([^{}]+)\{([^{}]+)\}/g)].filter(([, , d]) => /\bdisplay\s*:\s*none\b/.test(d));
@@ -16326,651 +15958,6 @@ describe("SWA: swipe edge cue", () => {
     for (const t of stripped.slice(from, at).matchAll(/<div\b|<\/div>/g)) depth += t[0] === "</div>" ? -1 : 1;
     assert.strictEqual(depth, 1, "only #scale-sheet is open around the cue");
   });
-});
-
-/* ---- SPS primary feature oracles: public sheet state, not recognizer state ---- */
-describe("SPS: primary public-event traces", () => {
-  const BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
-  const INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
-  const BOTH = "(D3) C4 A3 D4 E4 F4 | G5 F5";
-  const BOTH_SAID = "The rim now follows the order listed. The inner notes now follow the order listed.";
-  const rect = (top, bottom) => () => ({ left: 0, right: 380, top, bottom, width: 380, height: bottom - top });
-  const fresh = () => {
-    const app = boot({ layout: true, clock: true, sheetBody: true, innerHeight: 800,
-      visualViewport: { height: 800, offsetTop: 0, scale: 1 } });
-    app.sandbox.innerWidth = 380;
-    const body = app.sandbox.document.querySelector(".sheetbody");
-    assert.ok(body, "the independently validated body fixture is required");
-    body.scrollTop = 0;
-    body.scrollHeight = 1400;
-    body.clientHeight = 500;
-    body.getBoundingClientRect = rect(100, 600);
-    const surface = app.els["scale-sheet"].firstElementChild;
-    surface.scrollTop = 0;
-    surface.scrollHeight = 700;
-    surface.clientHeight = 700;
-    surface.getBoundingClientRect = rect(0, 700);
-    app.els["scale-foot"].getBoundingClientRect = rect(600, 700);
-    return app;
-  };
-  const line = (app, text) => {
-    const box = app.els["scale-box"];
-    box.dispatchEvent({ type: "focus", target: box });
-    box.value = text;
-    box.dispatchEvent({ type: "input", target: box });
-  };
-  // The sandbox does not model capture ordering. Deliver the actual registered
-  // sheet-capture callbacks before the body callbacks explicitly; this is a
-  // bounded unit trace, not proof of DOM propagation or native touch behavior.
-  const touch = (app, type, x) => {
-    const body = app.sandbox.document.querySelector(".sheetbody");
-    const point = { identifier: 7, clientX: x, clientY: 300 };
-    const event = { type, target: body, touches: type === "touchend" ? [] : [point],
-      changedTouches: [point], cancelable: true, defaultPrevented: false,
-      preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} };
-    app.els["scale-sheet"].dispatchEvent(event);
-    body.dispatchEvent(event);
-    assert.strictEqual(event.defaultPrevented, false, "optional navigation must leave the native gesture passive");
-  };
-  const on = (app, tab) => app.els["scale-tab-" + tab].getAttribute("aria-selected");
-  const status = (app) => app.els["scale-drawer-status"].textContent;
-
-  test("SPS primary: Add left touchend enters Layout and consumes both ring outcomes once", async () => {
-    const app = fresh();
-    openSheet(app);
-    line(app, BASE);
-    line(app, INNER);
-    line(app, BOTH);
-    app.advance(300);
-    assert.strictEqual(app.els["scale-generate"].disabled, false, "valid active input exposes a missed transition");
-    assert.strictEqual(on(app, "scale"), "true");
-    assert.strictEqual(status(app), "", "Scale does not announce Layout feedback early");
-    const history = JSON.stringify(app.history.calls), focus = app.activeId();
-    touch(app, "touchstart", 220);
-    app.advance(100);
-    touch(app, "touchmove", 140);
-    assert.strictEqual(on(app, "scale"), "true", "navigation waits for the matching touchend");
-    touch(app, "touchend", 140);
-    assert.strictEqual(on(app, "layout"), "true", "a completed left swipe enters Layout");
-    assert.strictEqual(on(app, "scale"), "false");
-    assert.strictEqual(app.els["scale-panel-layout"].hidden, false);
-    assert.strictEqual(app.els["scale-panel-scale"].hidden, true);
-    assert.strictEqual(status(app), BOTH_SAID);
-    assert.strictEqual(app.els["scale-drawer-status"].hidden, false);
-    assert.strictEqual(JSON.stringify(app.history.calls), history, "swipe adds no history operation");
-    assert.strictEqual(app.activeId(), focus, "swipe forces no focus transfer");
-    app.click(app.els["scale-tab-scale"]);
-    app.click(app.els["scale-tab-layout"]);
-    assert.strictEqual(status(app), "", "later ordinary tab entry cannot replay the consumed outcomes");
-  });
-
-  test("SPS primary: Edit right touchend returns to Scale preserving input options and history", async () => {
-    const app = fresh();
-    const made = await makeCustom(app, BASE);
-    openEdit(app, made);
-    app.els["scale-name"].value = "SPS RETAINED SCALE";
-    app.els["scale-name"].dispatchEvent({ type: "input", target: app.els["scale-name"] });
-    app.click(app.els["scale-tab-layout"]);
-    app.els["scale-anchor-between"].click();
-    app.els["scale-mirror"].click();
-    assert.ok(app.els["scale-swatches"].children.length > 1);
-    app.els["scale-swatches"].children[1].click();
-    app.advance(300);
-    assert.strictEqual(on(app, "layout"), "true");
-    assert.strictEqual(app.els["scale-anchor-between"].getAttribute("aria-pressed"), "true");
-    assert.strictEqual(app.els["scale-mirror"].getAttribute("aria-pressed"), "true");
-    const values = () => ({
-      line: app.els["scale-box"].value, name: app.els["scale-name"].value,
-      fields: ["ding", "top", "inner", "bottom"].map((id) => app.els["scale-" + id].value),
-      anchors: ["one", "between"].map((id) => app.els["scale-anchor-" + id].getAttribute("aria-pressed")),
-      mirror: app.els["scale-mirror"].getAttribute("aria-pressed"),
-      palettes: app.els["scale-swatches"].children.map((el) => el.getAttribute("aria-pressed")),
-    });
-    const before = values(), stored = JSON.stringify(app.get("savedState")),
-      history = JSON.stringify(app.history.calls), focus = app.activeId();
-    touch(app, "touchstart", 140);
-    app.advance(100);
-    touch(app, "touchmove", 220);
-    assert.strictEqual(on(app, "layout"), "true", "navigation waits for touchend");
-    touch(app, "touchend", 220);
-    assert.strictEqual(on(app, "scale"), "true", "a completed right swipe returns to Scale");
-    assert.strictEqual(on(app, "layout"), "false");
-    assert.strictEqual(app.els["scale-panel-scale"].hidden, false);
-    assert.strictEqual(app.els["scale-panel-layout"].hidden, true);
-    assert.deepStrictEqual(values(), before, "the pending Edit values and nondefault options survive");
-    assert.strictEqual(JSON.stringify(app.get("savedState")), stored, "navigation never saves or replaces the scale");
-    assert.strictEqual(JSON.stringify(app.history.calls), history);
-    assert.strictEqual(app.activeId(), focus, "swipe has no route-specific focus transfer");
-  });
-
-  // Each trace below models the public sheet-capture -> body observer order.
-  // It does not simulate browser event propagation or native selection/clicks.
-  const bodyOf = (app) => app.sandbox.document.querySelector(".sheetbody");
-  const surfOf = (app) => app.els["scale-sheet"].firstElementChild;
-  const emit = (app, type, o = {}) => {
-    const target = o.target || bodyOf(app);
-    const point = { identifier: o.id === undefined ? 7 : o.id,
-      clientX: o.x === undefined ? 220 : o.x, clientY: o.y === undefined ? 300 : o.y };
-    const ended = type === "touchend" || type === "touchcancel";
-    const e = { type, target, touches: o.touches === undefined ? (ended ? [] : [point]) : o.touches,
-      changedTouches: o.changed === undefined ? [point] : o.changed, cancelable: true,
-      defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} };
-    app.els["scale-sheet"].dispatchEvent(e);
-    if (bodyOf(app).contains(target)) bodyOf(app).dispatchEvent(e);
-    return e;
-  };
-  const ready = async (kind = "add", tab = "scale") => {
-    const app = fresh();
-    if (kind === "edit") openEdit(app, await makeCustom(app, BASE));
-    else { openSheet(app); line(app, BASE); }
-    // This bounded fixture supplies the native tag selectors used by public
-    // focus handlers. It is not a general selector engine or an app test seam.
-    const fieldTag = (el, tag) => {
-      el.tagName = tag;
-      el.matches = (selector) => {
-        const tags = String(selector).split(",").map((s) => s.trim());
-        assert.ok(tags.every((s) => /^[a-z]+$/i.test(s)), "the field fixture supports literal tag selectors only");
-        return tags.some((s) => s.toUpperCase() === el.tagName);
-      };
-    };
-    fieldTag(app.els["scale-box"], "TEXTAREA");
-    for (const id of ["ding", "top", "inner", "bottom", "name"]) fieldTag(app.els["scale-" + id], "INPUT");
-    if (tab === "layout") app.click(app.els["scale-tab-layout"]);
-    app.advance(300);
-    return app;
-  };
-  const gesture = (app, { x = 220, dx = -80, y = 300, dy = 0, ms = 100, target } = {}) => {
-    emit(app, "touchstart", { x, y, target });
-    app.advance(ms);
-    emit(app, "touchmove", { x: x + dx, y: y + dy, target });
-    emit(app, "touchend", { x: x + dx, y: y + dy, target });
-  };
-  const vertical = (app) => {
-    emit(app, "touchstart", { x: 200, y: 400 });
-    emit(app, "touchmove", { x: 200, y: 360 });
-    emit(app, "touchend", { x: 200, y: 360 });
-  };
-  const scroll = (app, el, top) => {
-    el.scrollTop = top;
-    const e = { type: "scroll", target: el };
-    // Scroll does not bubble: model its actual ancestor capture -> target order,
-    // including the outer surface, rather than selecting a listener location.
-    // The sandbox still does not distinguish callback options; native wiring
-    // remains separate browser evidence.
-    app.els["scale-sheet"].dispatchEvent(e);
-    if (el !== bodyOf(app) && bodyOf(app).contains(el)) bodyOf(app).dispatchEvent(e);
-    el.dispatchEvent(e);
-  };
-  const focusEvent = (app, el, focused) => {
-    if (focused) el.focus(); else el.blur();
-    const e = { type: focused ? "focusin" : "focusout", target: el };
-    app.sandbox.document.dispatchEvent(e);
-    bodyOf(app).dispatchEvent(e);
-    el.dispatchEvent({ type: focused ? "focus" : "blur", target: el });
-  };
-  const keyboard = (app, up) => {
-    app.sandbox.visualViewport.height = up ? 500 : 800;
-    app.sandbox.visualViewport.dispatchEvent({ type: "resize" });
-    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), up, "the keyboard fixture must actually change public sheet state");
-  };
-  const selected = (app, field, selected) => {
-    field.selectionStart = 0;
-    field.selectionEnd = selected ? 1 : 0;
-    const get = () => ({ isCollapsed: !selected, anchorNode: field, focusNode: field,
-      toString: () => selected ? "D" : "" });
-    app.sandbox.getSelection = get;
-    app.sandbox.document.getSelection = get;
-    app.sandbox.document.dispatchEvent({ type: "selectionchange", target: field });
-  };
-  const finishLeft = (app, target) => {
-    emit(app, "touchmove", { x: 140, target });
-    emit(app, "touchend", { x: 140, target });
-  };
-  const shut = (app) => app.els["scale-sheet"].classList.contains("lipshut");
-
-  test("SPS1: 47 48 and 49 pixel boundaries hold in both directions for Add and Edit", async () => {
-    for (const kind of ["add", "edit"]) for (const way of ["left", "right"]) for (const pixels of [47, 48, 49]) {
-      const from = way === "left" ? "scale" : "layout", to = way === "left" ? "layout" : "scale";
-      const app = await ready(kind, from);
-      gesture(app, { x: way === "left" ? 220 : 140, dx: (way === "left" ? -1 : 1) * pixels });
-      assert.strictEqual(on(app, pixels >= 48 ? to : from), "true", `${kind} ${way} ${pixels}px`);
-    }
-  });
-
-  test("SPS1: the two to one axis ratio includes its boundary and rejects a more diagonal trace", async () => {
-    for (const dy of [-25, -24, -23, 23, 24, 25]) {
-      const app = await ready();
-      gesture(app, { dx: -48, dy });
-      assert.strictEqual(on(app, Math.abs(dy) <= 24 ? "layout" : "scale"), "true", "dy=" + dy);
-    }
-  });
-
-  test("SPS1: elapsed 599 and 600 qualify while 601 milliseconds is refused", async () => {
-    for (const ms of [599, 600, 601]) {
-      const app = await ready();
-      gesture(app, { ms });
-      assert.strictEqual(on(app, ms <= 600 ? "layout" : "scale"), "true", ms + "ms");
-    }
-  });
-
-  test("SPS1: normal touchend uses matching changedTouches final coordinates even without a move sample", async () => {
-    const app = await ready();
-    emit(app, "touchstart", { x: 220 });
-    app.advance(100);
-    emit(app, "touchend", { x: 140, touches: [] });
-    assert.strictEqual(on(app, "layout"), "true");
-  });
-
-  test("SPS1: the 24 pixel margins are inclusive and closer starts stay excluded", async () => {
-    for (const [x, from, dx, allowed] of [[23, "layout", 80, false], [24, "layout", 80, true],
-      [356, "scale", -80, true], [357, "scale", -80, false]]) {
-      const app = await ready("add", from);
-      gesture(app, { x, dx });
-      assert.strictEqual(on(app, allowed ? (from === "scale" ? "layout" : "scale") : from), "true", "start x=" + x);
-    }
-  });
-
-  test("SW: preview and preview-descendant origins start the shortcut like any other body origin", async () => {
-    for (const child of [false, true]) {
-      const app = await ready("add", "layout"), preview = app.els["scale-preview"];
-      const target = child ? preview.appendChild(app.sandbox.document.createElement("span")) : preview;
-      gesture(app, { x: 140, dx: 100, target });
-      assert.strictEqual(on(app, "scale"), "true", child ? "preview child" : "preview");
-    }
-  });
-
-  test("SPS2: lip and select origins cannot become a sheet shortcut", async () => {
-    const lip = await ready();
-    gesture(lip, { target: lip.els["scale-lip"] });
-    assert.strictEqual(on(lip, "scale"), "true");
-    const app = await ready(), select = bodyOf(app).appendChild(app.sandbox.document.createElement("select"));
-    gesture(app, { target: select });
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SPS2: already-focused input and textarea origins preserve the current tab", async () => {
-    for (const id of ["scale-top", "scale-box"]) {
-      const app = await ready(), field = app.els[id];
-      focusEvent(app, field, true);
-      gesture(app, { target: field });
-      assert.strictEqual(on(app, "scale"), "true", id);
-      assert.strictEqual(app.activeId(), id);
-    }
-  });
-
-  test("SPS2: keyboard-up and initial multi-touch starts cannot recover into a shortcut", async () => {
-    const kb = await ready();
-    keyboard(kb, true);
-    emit(kb, "touchstart"); keyboard(kb, false); finishLeft(kb);
-    assert.strictEqual(on(kb, "scale"), "true");
-    const app = await ready(), p = { identifier: 7, clientX: 220, clientY: 300 };
-    emit(app, "touchstart", { touches: [p, { ...p, identifier: 8 }] });
-    finishLeft(app);
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SPS3: a late second finger cancels even when it lifts before the final move", async () => {
-    for (const type of ["touchstart", "touchmove"]) {
-      const app = await ready(), p = { identifier: 7, clientX: 220, clientY: 300 };
-      emit(app, "touchstart");
-      emit(app, type, { touches: [p, { ...p, identifier: 8 }] });
-      app.advance(100); finishLeft(app);
-      assert.strictEqual(on(app, "scale"), "true", "second finger seen in " + type);
-    }
-    for (const [id, x, y] of [["scale-back", 80, 40], ["scale-next", 190, 650]]) {
-      const app = await ready(), target = app.els[id];
-      const original = { identifier: 7, clientX: 220, clientY: 300 };
-      const secondary = { identifier: 8, clientX: x, clientY: y };
-      assert.strictEqual(bodyOf(app).contains(target), false, id + " must be outside the body observer");
-      assert.ok(target.getClientRects().length > 0, id + " is a visible header/footer target");
-      emit(app, "touchstart");
-      // The second contact starts and ends outside the body while the first
-      // body finger remains. emit therefore delivers only sheet capture for
-      // these two events; body observers cannot mask a missing global fence.
-      emit(app, "touchstart", { target, id: 8, x, y,
-        touches: [original, secondary], changed: [secondary] });
-      emit(app, "touchend", { target, id: 8, x, y,
-        touches: [original], changed: [secondary] });
-      app.advance(100); finishLeft(app);
-      assert.strictEqual(on(app, "scale"), "true", "outside-body secondary contact at " + id + " stays cancelled");
-    }
-  });
-
-  test("SPS3: losing or replacing the original identifier on a move is sticky", async () => {
-    for (const touches of [[], [{ identifier: 8, clientX: 200, clientY: 300 }]]) {
-      const app = await ready(); emit(app, "touchstart");
-      emit(app, "touchmove", { touches }); finishLeft(app);
-      assert.strictEqual(on(app, "scale"), "true");
-    }
-  });
-
-  test("SPS3: a wrong changed identifier and touchcancel never commit navigation", async () => {
-    for (const how of ["wrong-end", "cancel"]) {
-      const app = await ready(); emit(app, "touchstart"); app.advance(100);
-      emit(app, "touchmove", { x: 140 });
-      if (how === "cancel") emit(app, "touchcancel", { x: 140 });
-      else emit(app, "touchend", { x: 140, changed: [{ identifier: 8, clientX: 140, clientY: 300 }] });
-      // A later matching sample/end must not revive the cancelled gesture.
-      finishLeft(app);
-      assert.strictEqual(on(app, "scale"), "true", how);
-    }
-  });
-
-  test("SPS3: a start field focused then blurred between touch samples stays cancelled", async () => {
-    const app = await ready(), field = app.els["scale-top"];
-    emit(app, "touchstart", { target: field });
-    focusEvent(app, field, true); focusEvent(app, field, false);
-    app.els["scale-back"].focus();
-    finishLeft(app, field);
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SPS3: selection appearing then clearing between samples stays cancelled", async () => {
-    const app = await ready(), field = app.els["scale-box"];
-    selected(app, field, false);
-    emit(app, "touchstart", { target: field });
-    selected(app, field, true); selected(app, field, false);
-    finishLeft(app, field);
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SPS3: keyboard rising and falling between samples stays cancelled", async () => {
-    const app = await ready(); emit(app, "touchstart");
-    keyboard(app, true); keyboard(app, false);
-    finishLeft(app);
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SPS3: unfocused-field hold observes 250 milliseconds and the 8 pixel slop boundary", async () => {
-    for (const [wait, early, expected] of [[249, null, "layout"], [250, null, "scale"],
-      [249, 8, "scale"], [249, 9, "layout"]]) {
-      const app = await ready(), field = app.els["scale-box"];
-      emit(app, "touchstart", { target: field }); app.advance(wait);
-      if (early !== null) { emit(app, "touchmove", { x: 220 - early, target: field }); app.advance(1); }
-      finishLeft(app, field);
-      assert.strictEqual(on(app, expected), "true", `hold=${wait}, first move=${early}`);
-    }
-  });
-
-  test("SPS3: internal textarea scroll out and back cancels before another touch sample", async () => {
-    const app = await ready(), field = app.els["scale-box"];
-    field.scrollTop = 0; field.scrollHeight = 300; field.clientHeight = 60;
-    emit(app, "touchstart", { target: field });
-    scroll(app, field, 10); scroll(app, field, 0);
-    finishLeft(app, field);
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SPS3: internal textarea horizontal scroll, held or out and back, cancels the tab swipe", async () => {
-    for (const back of [false, true]) {
-      const app = await ready(), field = app.els["scale-box"];
-      field.scrollLeft = 0; field.scrollWidth = 600; field.clientWidth = 200;
-      emit(app, "touchstart", { target: field });
-      field.scrollLeft = 20;
-      app.els["scale-sheet"].dispatchEvent({ type: "scroll", target: field });
-      if (back) { field.scrollLeft = 0; app.els["scale-sheet"].dispatchEvent({ type: "scroll", target: field }); }
-      finishLeft(app, field);
-      assert.strictEqual(on(app, "scale"), "true", "back=" + back);
-    }
-  });
-
-  test("SPS3: body maximum excursion allows 8 pixels but cancels 9 including out and back", async () => {
-    for (const [max, expected] of [[8, "layout"], [9, "scale"]]) {
-      const app = await ready(); emit(app, "touchstart");
-      scroll(app, bodyOf(app), max); scroll(app, bodyOf(app), 0); finishLeft(app);
-      assert.strictEqual(on(app, expected), "true", "body maximum=" + max);
-    }
-  });
-
-  test("SPS3: active outer-surface maximum excursion uses the same 8 pixel fence", async () => {
-    for (const [max, expected] of [[8, "layout"], [9, "scale"]]) {
-      const app = await ready(), surface = surfOf(app); surface.scrollHeight = 1200;
-      emit(app, "touchstart"); scroll(app, surface, max); scroll(app, surface, 0); finishLeft(app);
-      assert.strictEqual(on(app, expected), "true", "outer maximum=" + max);
-    }
-  });
-
-  test("SPS3: cancellation clears only at a new eligible one-finger start", async () => {
-    const app = await ready(); emit(app, "touchstart"); emit(app, "touchcancel"); finishLeft(app);
-    assert.strictEqual(on(app, "scale"), "true");
-    gesture(app);
-    assert.strictEqual(on(app, "layout"), "true", "a cancelled record must not poison a fresh gesture");
-  });
-
-  test("SPS4: vertical-first hook is restored and residual fling cannot revive after the quiet interval", async () => {
-    const app = await ready();
-    emit(app, "touchstart", { x: 220, y: 400 }); app.advance(20);
-    emit(app, "touchmove", { x: 220, y: 360 });
-    assert.strictEqual(shut(app), true, "the existing vertical hook really collapsed the lip");
-    app.advance(20); emit(app, "touchmove", { x: 140, y: 360 }); emit(app, "touchend", { x: 140, y: 360 });
-    assert.strictEqual(on(app, "layout"), "true");
-    assert.strictEqual(shut(app), false);
-    app.advance(60); scroll(app, bodyOf(app), 30);
-    assert.strictEqual(shut(app), false, "early native-scroll observation stays quiet");
-    assert.strictEqual(bodyOf(app).scrollTop, 30, "quiet does not clamp the modeled native scroll");
-    app.advance(161); scroll(app, bodyOf(app), 60);
-    assert.strictEqual(shut(app), false, "an old fling cannot gain new momentum after the swipe");
-  });
-
-  test("SPS4: fresh vertical touches stay quiet through 219 milliseconds and work at 220", async () => {
-    const app = await ready(); gesture(app);
-    app.advance(219); vertical(app);
-    assert.strictEqual(shut(app), false);
-    app.advance(1); vertical(app);
-    assert.strictEqual(shut(app), true, "fresh input works after the agreed quiet interval");
-  });
-
-  test("SPS4: public viewport resize and scroll cannot shorten the swipe quiet deadline", async () => {
-    for (const type of ["resize", "scroll"]) {
-      const app = await ready(); gesture(app); app.advance(20);
-      app.sandbox.visualViewport.dispatchEvent({ type });
-      app.advance(170); vertical(app);
-      assert.strictEqual(shut(app), false, type + " must not shorten 220ms to 150ms");
-      app.advance(30); vertical(app);
-      assert.strictEqual(shut(app), true, type + " must not permanently suppress later input");
-    }
-  });
-
-  test("SPS4: a same-Scale right gesture creates no quiet reset or other navigation effect", async () => {
-    const app = await ready(), history = JSON.stringify(app.history.calls), focus = app.activeId();
-    gesture(app, { x: 140, dx: 80 });
-    assert.strictEqual(on(app, "scale"), "true");
-    assert.strictEqual(JSON.stringify(app.history.calls), history); assert.strictEqual(app.activeId(), focus);
-    vertical(app); assert.strictEqual(shut(app), true, "a no-op must not create a new 220ms guard");
-  });
-
-  test("SPS4: a same-Layout left gesture does not extend an existing quiet deadline", async () => {
-    const app = await ready(); gesture(app); app.advance(100);
-    gesture(app, { ms: 10 }); app.advance(111);
-    vertical(app);
-    assert.strictEqual(shut(app), true, "the first switch's 220ms window has ended");
-  });
-
-  test("SPS5: empty and refused input can swipe into Layout and still use its palette", async () => {
-    for (const text of ["", "not-a-note"]) {
-      const app = fresh(); openSheet(app); line(app, text); app.advance(300);
-      gesture(app);
-      assert.strictEqual(on(app, "layout"), "true", JSON.stringify(text));
-      assert.strictEqual(status(app), "");
-      const swatches = app.els["scale-swatches"];
-      assert.ok(swatches.children.length > 1);
-      assert.notStrictEqual(swatches.children[1].disabled, true);
-      swatches.children[1].click();
-      assert.strictEqual(app.els["scale-swatches"].children[1].getAttribute("aria-pressed"), "true");
-    }
-  });
-
-  test("SPS5: invalid active fields defer outcomes and a later valid swipe consumes them once", async () => {
-    const app = await ready(); line(app, INNER); line(app, BOTH);
-    const top = app.els["scale-top"]; top.dispatchEvent({ type: "focus", target: top });
-    top.value = "not-a-note"; top.dispatchEvent({ type: "input", target: top });
-    assert.strictEqual(app.els["scale-box"].value, BOTH);
-    gesture(app); assert.strictEqual(on(app, "layout"), "true"); assert.strictEqual(status(app), "");
-    app.click(app.els["scale-tab-scale"]); line(app, BOTH); gesture(app);
-    assert.strictEqual(status(app), BOTH_SAID);
-    app.click(app.els["scale-tab-scale"]); app.click(app.els["scale-tab-layout"]);
-    assert.strictEqual(status(app), "");
-  });
-
-  test("SPS5: cancelled and same-tab gestures retain pending feedback for a real Layout entry", async () => {
-    for (const how of ["cancel", "same-tab"]) {
-      const app = await ready(); line(app, INNER); line(app, BOTH);
-      if (how === "cancel") { emit(app, "touchstart"); emit(app, "touchcancel"); finishLeft(app); }
-      else gesture(app, { x: 140, dx: 80 });
-      assert.strictEqual(on(app, "scale"), "true"); assert.strictEqual(status(app), "");
-      gesture(app); assert.strictEqual(status(app), BOTH_SAID, how);
-    }
-  });
-
-  test("SPS5: a same-tab Layout gesture retains its current action status", async () => {
-    const app = await ready("add", "layout"); app.els["scale-mirror"].click();
-    const before = status(app); assert.ok(before);
-    gesture(app); assert.strictEqual(status(app), before);
-  });
-
-  test("SPS6: button-origin traces do not invoke actions while genuine clicks remain effective", async () => {
-    for (const name of ["reset", "anchor", "palette"]) for (const dx of [40, 80]) {
-      const app = await ready("add", "layout"); app.els["scale-anchor-between"].click();
-      const control = name === "reset" ? app.els["scale-layout-reset"]
-        : name === "anchor" ? app.els["scale-anchor-one"] : app.els["scale-swatches"].children[1];
-      control.tagName = "BUTTON";
-      let calls = 0; const original = control.onclick;
-      assert.strictEqual(typeof original, "function");
-      control.onclick = function (...args) { calls += 1; return original.apply(this, args); };
-      gesture(app, { x: 140, dx, target: control });
-      assert.strictEqual(calls, 0, name + " gesture must not fake a click");
-      assert.strictEqual(on(app, dx >= 48 ? "scale" : "layout"), "true");
-      if (dx >= 48) app.click(app.els["scale-tab-layout"]);
-      control.click(); assert.strictEqual(calls, 1, name + " genuine click remains live");
-    }
-  });
-
-  test("SPS7: a closing Add and superseding Edit cannot inherit an old gesture", async () => {
-    const app = await ready(); emit(app, "touchstart");
-    app.els["scale-back"].click();
-    assert.strictEqual(app.sheetOpen(), false);
-    const made = await makeCustom(app, BASE); openEdit(app, made); app.advance(300);
-    finishLeft(app);
-    assert.strictEqual(on(app, "scale"), "true");
-    gesture(app); assert.strictEqual(on(app, "layout"), "true");
-  });
-
-  test("SPS7: body-origin switching blurs a now-hidden field without forcing destination focus", async () => {
-    const app = await ready(), field = app.els["scale-top"];
-    focusEvent(app, field, true);
-    assert.strictEqual(app.els["scale-sheet"].classList.contains("kbup"), false);
-    gesture(app);
-    assert.strictEqual(on(app, "layout"), "true");
-    assert.strictEqual(app.activeId(), null, "existing hidden-field blur remains; swipe focuses no replacement");
-  });
-
-  test("SPS7: repeated Add sessions each accept one transition and retain ordinary tab and NEXT routes", async () => {
-    const app = await ready();
-    for (let i = 0; i < 3; i++) {
-      gesture(app); assert.strictEqual(on(app, "layout"), "true");
-      app.click(app.els["scale-tab-scale"]); app.click(app.els["scale-next"]);
-      assert.strictEqual(on(app, "layout"), "true");
-      app.els["scale-back"].click(); openSheet(app); line(app, BASE); app.advance(300);
-      assert.strictEqual(on(app, "scale"), "true");
-    }
-  });
-
-  test("SPS8: accepted switching creates no sheet animation and preserves English note input", async () => {
-    const app = await ready(), before = app.els["scale-box"].value;
-    gesture(app);
-    assert.strictEqual(on(app, "layout"), "true");
-    for (const el of [bodyOf(app), surfOf(app), app.els["scale-panel-scale"], app.els["scale-panel-layout"]]) {
-      assert.strictEqual(el.getAnimations().length, 0, "no added JS animation on the sheet containers");
-    }
-    assert.strictEqual(app.els["scale-box"].value, before);
-  });
-
-
-  test("SPS7: vertical-first Layout to Scale blurs the newly hidden lip without destination focus", async () => {
-    const app = await ready("add", "layout");
-    // The bounded fixture skips anonymous footer wrappers by default. Supply
-    // this one literal shipped path through public DOM operations so the
-    // existing footer focus hand-off can genuinely see its focused primary.
-    const clip = app.sandbox.document.createElement("div");
-    clip.id = "scale-footclip";
-    app.els["scale-foot"].appendChild(clip);
-    clip.appendChild(app.els["scale-footslide"]);
-    app.els["scale-footslide"].appendChild(app.els["scale-generate"]);
-    assert.strictEqual(app.els["scale-generate"].hidden, false);
-    app.els["scale-generate"].focus();
-    assert.strictEqual(app.activeId(), "scale-generate");
-    emit(app, "touchstart", { x: 140, y: 400 }); app.advance(20);
-    emit(app, "touchmove", { x: 140, y: 360 });
-    assert.strictEqual(shut(app), true, "the vertical hook must really collapse the lip");
-    assert.strictEqual(app.activeId(), "scale-lip", "the real footer hand-off must first focus the lip");
-    const focusCalls = [];
-    for (const node of new Set([...Object.values(app.els), bodyOf(app), surfOf(app), ...app.created, ...app.hits()])) {
-      const original = node.focus;
-      if (typeof original !== "function") continue;
-      node.focus = function (...args) {
-        focusCalls.push(this.id || this.tagName);
-        return original.apply(this, args);
-      };
-    }
-    app.advance(20); emit(app, "touchmove", { x: 240, y: 360 }); emit(app, "touchend", { x: 240, y: 360 });
-    assert.strictEqual(on(app, "scale"), "true");
-    assert.strictEqual(app.els["scale-lip"].hidden, true);
-    assert.deepStrictEqual(focusCalls, [], "the transition makes no destination focus call");
-    // The minimal DOM does not implement UA focus fixup when hidden changes.
-    // Actual Chrome independently verifies visible focus and BODY after this
-    // same positive footer -> lip -> Scale path. Do not change the app merely
-    // to reproduce that browser cleanup inside this bounded unit fixture.
-  });
-
-
-  test("SPS zoom: normal residue and missing API allow shortcuts while deliberate zoom excludes starts", async () => {
-    for (const [scale, expected] of [[1, "layout"], [1.01, "layout"], [1.0101, "scale"], [2, "scale"]]) {
-      const app = await ready();
-      app.sandbox.visualViewport.scale = scale;
-      app.sandbox.visualViewport.dispatchEvent({ type: "resize" });
-      app.advance(300);
-      gesture(app);
-      assert.strictEqual(on(app, expected), "true", "start scale=" + scale);
-    }
-    // Boot without the API from the outset: removing an already-captured
-    // visualViewport object would not test the supported missing-API path.
-    const app = boot({ layout: true, clock: true, sheetBody: true, innerHeight: 800 });
-    assert.strictEqual(app.sandbox.visualViewport, undefined);
-    app.sandbox.innerWidth = 380;
-    const body = bodyOf(app), surface = surfOf(app);
-    body.scrollTop = 0; body.scrollHeight = 1400; body.clientHeight = 500;
-    body.getBoundingClientRect = rect(100, 600);
-    surface.scrollTop = 0; surface.scrollHeight = 700; surface.clientHeight = 700;
-    surface.getBoundingClientRect = rect(0, 700);
-    app.els["scale-foot"].getBoundingClientRect = rect(600, 700);
-    openSheet(app); line(app, BASE); app.advance(300);
-    gesture(app);
-    assert.strictEqual(on(app, "layout"), "true", "an absent visualViewport API preserves navigation");
-  });
-
-  test("SPS zoom: acceptance samples a zoom rise after the last move without a viewport notification", async () => {
-    const app = await ready();
-    assert.strictEqual(app.sandbox.visualViewport.scale, 1);
-    emit(app, "touchstart"); app.advance(100);
-    emit(app, "touchmove", { x: 140 });
-    app.sandbox.visualViewport.scale = 2;
-    // No resize/scroll dispatch: the current scale must be checked at acceptance.
-    emit(app, "touchend", { x: 140 });
-    assert.strictEqual(on(app, "scale"), "true");
-  });
-
-  test("SPS zoom: observed resize and scroll zoom rises stay cancelled after falling back to normal", async () => {
-    for (const type of ["resize", "scroll"]) {
-      const app = await ready(); emit(app, "touchstart");
-      app.sandbox.visualViewport.scale = 2;
-      app.sandbox.visualViewport.dispatchEvent({ type });
-      app.sandbox.visualViewport.scale = 1;
-      app.sandbox.visualViewport.dispatchEvent({ type });
-      app.advance(100); finishLeft(app);
-      assert.strictEqual(on(app, "scale"), "true", type + " must retain observed cancellation");
-    }
-  });
-
 });
 /* SHARE-CUSTOMIZATION-HOTFIX: eight observable groups, no helper/app seams.
  * Promise completion is drained independently of DOM mutation. The VM's history
@@ -19691,7 +18678,13 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
     assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
     assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
+    const droppedBranch = `    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
+      const { name, ...bare } = row.r.o;
+      if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+    }`;
+    assert.ok(shipped.includes(droppedBranch.replace("moveCanon(row.r)", "moveCanon(read.record)")) || shipped.includes(droppedBranch), "the shipped region no longer holds the branch lane U replaced");
     const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))")
+      .replace(droppedBranch, () => `    else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });`)
       .replace("const MOVE_FROM = null;\nconst MOVE_TARGET = null;\n", () => 'const MOVE_FROM = "handpan.raywu.org";\nconst MOVE_TARGET = "https://handpantheory.com";\n');
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
@@ -20060,11 +19053,15 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.ok(!/javascript/.test(app.get("location.href")));
   });
 
-  test("a record the app cannot read is skipped and the rest import", async () => {
+  test("a record the app cannot read is carried as opaque bytes and the rest import", async () => {
     const origin = createOrigin({});
-    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`;
+    const future = { v: 99, s: "future", o: {} };
+    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`;
     await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
-    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["GOOD"]);
+    const rows = envelopeAt(origin).entries.map(r => r.record);
+    assert.strictEqual(rows.length, 2, "the unreadable row is carried, never dropped (R4-1)");
+    assert.ok(rows.some(r => r.o.name === "GOOD"));
+    assert.deepStrictEqual(rows.find(r => r.v === 99), future);
   });
 
   test("an older build's edit keeps the top-level importedIds", async () => {

@@ -1,0 +1,14 @@
+# kills: type a name and tap Save at once: the saved name is the typed one, from one undo step
+# suite: node --test --test-name-pattern=type.a.name.and.tap.Save.at.once tests/editor_e2e.test.js
+# fault: Save commits a pending name first is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17115,7 +17115,6 @@ function editorWireSwipe() {
+ async function editorSave() {
+   const s = editorSession;
+   if (!s || s.saving || savePending) return;
+-  editorCommitName();
+   if (s.editing) editorCommitLine();
+   const m = s.history.present;
+   if (!editorCanSave(m) || s.error) return;
