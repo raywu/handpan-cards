@@ -641,7 +641,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
+                     "layout", "naming", "select", "share", "sequence", "sync", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -652,7 +652,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence", "swipe"]);
+                                 "share", "sequence", "sync", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -20453,6 +20453,320 @@ describe("PDF tier menu (lane U)", () => {
     const body = SRC.slice(SRC.indexOf("function downloadDeckPDF"), SRC.indexOf("const ISLAND ="));
     const before = body.slice(body.indexOf("  try {"), body.indexOf("HPE.pdfcards.build("));
     assert.ok(!/setTimeout|requestAnimationFrame|\.focus\(|await /.test(before), "the build runs inside the click's gesture");
+  });
+});
+
+/* ------------------------------------------------------------- sync-apply */
+/* docs/plans/2026-11-05-login-sync-v2.md section 8 (sync-apply inserts with the
+   remote id), section 9 (pull step 3: replaces drop, last-visible guard) and
+   section 12 lane A1. The command applies a pure HPE.sync plan under the
+   existing lock/transaction; it never touches the network. */
+describe("sync-apply", () => {
+  const syncId = () => require("node:crypto").randomUUID();
+  const remoteRecord = async (text, replaces) => {
+    const donor = boot();
+    await makeCustom(donor, text);
+    const record = plain(donor.get("savedState.entries[0].record"));
+    if (replaces) record.o = { ...(record.o || {}), replaces };
+    return record;
+  };
+  const applySync = (app, ops) => plain(app.get(
+    `commitSavedSession({type:"sync-apply",collectionId:savedState.collectionId,ops:${JSON.stringify(ops)}})`));
+  const insertOp = (id, record) => ({ op: "insert", id, remoteId: id, record, reason: "new" });
+  const seeds = app => plain(app.get("DECKS.map(d=>d.id)"));
+  const shapeOk = app => app.get("savedEnvelopeShape(savedState)");
+  const rowOf = (app, id) => plain(app.get(`savedState.entries.find(e=>e.instanceId===${JSON.stringify(id)})`));
+  const hide = (app, seed) => plain(app.get(`commitSavedSession({type:"hide-builtin",collectionId:savedState.collectionId,seedId:${JSON.stringify(seed)},
+    expectedSlotStateRevision:savedState.slotStateRevision,expectedOwnerId:null})`));
+
+  test("inserts with the remote id and keeps the envelope shape valid", async () => {
+    const app = boot(), id = syncId(), record = await remoteRecord(AMARA_STRING);
+    assert.strictEqual(app.get("savedMode"), "session");
+    const before = app.get("savedState.nextDisplayOrdinal");
+    const result = applySync(app, [insertOp(id, record)]);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.changed, true);
+    assert.strictEqual(shapeOk(app), true);
+    assert.deepStrictEqual(plain(app.get("savedState.usedInstanceIds")).slice(-1), [id]);
+    assert.strictEqual(rowOf(app, id).displayOrdinal, before);
+    assert.strictEqual(rowOf(app, id).revision, 1);
+    assert.deepStrictEqual(rowOf(app, id).record, record);
+    assert.ok(app.get(`savedEntries.has(${JSON.stringify(id)})`), "a readable record gets an engine view");
+    assert.ok(result.sync.committed.some(c => c.id === id && c.revision === 1));
+    assert.deepStrictEqual(result.sync.inserted, [id]);
+  });
+
+  test("a durable commit persists the remote id", async () => {
+    const app = await durableBoot(), id = syncId(), record = await remoteRecord(AMARA_STRING);
+    const result = plain(await app.getAsync(
+      `commitSaved({type:"sync-apply",collectionId:savedState.collectionId,ops:${JSON.stringify([insertOp(id, record)])}})`));
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.persistence, "durable");
+    assert.ok(savedEnvelope(app).entries.some(e => e.instanceId === id));
+    assert.ok(savedEnvelope(app).usedInstanceIds.includes(id));
+  });
+
+  test("an id already used on this device is skipped, never reused", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+    const before = plain(app.get("savedState"));
+    const result = applySync(app, [insertOp(a.instanceId, record), insertOp("not-a-uuid", record)]);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.changed, false);
+    assert.deepStrictEqual(result.sync.skipped.map(s => s.reason), ["id", "id"]);
+    assert.deepStrictEqual(plain(app.get("savedState")), before);
+  });
+
+  test("an unreadable record is kept opaque with no engine view", async () => {
+    const app = boot(), id = syncId(), record = await remoteRecord(AMARA_STRING);
+    const future = { ...record, v: 99 };
+    const result = applySync(app, [{ ...insertOp(id, future), opaque: true }]);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(rowOf(app, id).record, future);
+    assert.strictEqual(app.get(`savedEntries.has(${JSON.stringify(id)})`), false);
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("remove drops the entry; the last visible scale is never removed", async () => {
+    const app = boot(), a = await makeCustom(app);
+    for (const seed of seeds(app)) assert.strictEqual(hide(app, seed).ok, true);
+    const lone = applySync(app, [{ op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 }]);
+    assert.strictEqual(lone.ok, true);
+    assert.deepStrictEqual(lone.sync.skipped, [{ id: a.instanceId, reason: "last-visible" }]);
+    assert.ok(rowOf(app, a.instanceId), "the lone visible scale stays");
+    const id = syncId(), record = await remoteRecord(OTHER_STRING);
+    const both = applySync(app, [insertOp(id, record), { op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 }]);
+    assert.strictEqual(both.ok, true);
+    assert.deepStrictEqual(both.sync.removed, [a.instanceId]);
+    assert.strictEqual(rowOf(app, a.instanceId), undefined);
+    assert.ok(rowOf(app, id));
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("remove of a slot holder hides the seed like delete; remove of a missing id is a no-op", async () => {
+    const app = boot(), [seed] = seeds(app), id = syncId();
+    applySync(app, [insertOp(id, await remoteRecord(AMARA_STRING, seed))]);
+    assert.strictEqual(app.get(`savedState.slots[${JSON.stringify(seed)}]`), id);
+    const gone = applySync(app, [{ op: "remove", id, remoteId: id, expectedRevision: 1 }, { op: "remove", id: syncId(), remoteId: "x", expectedRevision: 1 }]);
+    assert.strictEqual(gone.ok, true);
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), {});
+    assert.ok(plain(app.get("savedState.hidden")).includes(seed));
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("replaces: a free slot is claimed, a held or hidden slot is dropped", async () => {
+    const app = boot(), [free, hidden] = seeds(app);
+    assert.strictEqual(hide(app, hidden).ok, true);
+    const [one, two, three] = [syncId(), syncId(), syncId()];
+    const result = applySync(app, [
+      insertOp(one, await remoteRecord(AMARA_STRING, free)),
+      insertOp(two, await remoteRecord(OTHER_STRING, free)),
+      insertOp(three, await remoteRecord(THIRD_STRING, hidden))]);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(app.get(`savedState.slots[${JSON.stringify(free)}]`), one);
+    assert.strictEqual(rowOf(app, one).record.o.replaces, free);
+    assert.strictEqual(rowOf(app, two).record.o.replaces, undefined, "slot already held");
+    assert.strictEqual(rowOf(app, three).record.o.replaces, undefined, "seed hidden locally");
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), { [free]: one });
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("overwrite carries replaces itself and reconciles slot ownership", async () => {
+    const app = boot(), [seed, other] = seeds(app), a = await makeCustom(app), b = await makeCustom(app, OTHER_STRING);
+    const claim = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1,
+      record: await remoteRecord(AMARA_STRING, seed) }]);
+    assert.strictEqual(claim.ok, true);
+    assert.strictEqual(app.get(`savedState.slots[${JSON.stringify(seed)}]`), a.instanceId);
+    assert.strictEqual(rowOf(app, a.instanceId).revision, 2);
+    const slotRevision = app.get("savedState.slotStateRevision");
+    const lost = applySync(app, [{ op: "overwrite", id: b.instanceId, remoteId: b.instanceId, expectedRevision: 1,
+      record: await remoteRecord(OTHER_STRING, seed) }]);
+    assert.strictEqual(lost.ok, true);
+    assert.strictEqual(rowOf(app, b.instanceId).record.o.replaces, undefined, "slot held by another entry");
+    assert.strictEqual(app.get("savedState.slotStateRevision"), slotRevision);
+    const moved = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 2,
+      record: await remoteRecord(AMARA_STRING, other) }]);
+    assert.strictEqual(moved.ok, true);
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), { [other]: a.instanceId });
+    const plainAgain = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 3,
+      record: await remoteRecord(AMARA_STRING) }]);
+    assert.strictEqual(plainAgain.ok, true);
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), {});
+    assert.ok(app.get("savedState.slotStateRevision") > slotRevision);
+    assert.strictEqual(shapeOk(app), true);
+    assert.ok(app.get("stageSavedEnvelope(savedState).ok"), "slot authority holds after every overwrite");
+  });
+
+  test("overwrite of a missing id fails the command; an equal body changes nothing", async () => {
+    const app = boot(), a = await makeCustom(app), record = plain(app.get("savedState.entries[0].record"));
+    const same = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record }]);
+    assert.strictEqual(same.ok, true);
+    assert.strictEqual(same.changed, false);
+    assert.strictEqual(rowOf(app, a.instanceId).revision, 1);
+    assert.ok(same.sync.committed.some(c => c.id === a.instanceId && c.revision === 1));
+    const missing = applySync(app, [{ op: "overwrite", id: syncId(), remoteId: "x", expectedRevision: 1, record }]);
+    assert.strictEqual(missing.ok, false);
+  });
+
+  test("overwrite and remove need an expectedRevision; a malformed one is refused", async () => {
+    const app = boot(), a = await makeCustom(app), record = plain(app.get("savedState.entries[0].record"));
+    const before = plain(app.get("savedState"));
+    for (const bad of [undefined, -1, 1.5, "1"]) {
+      assert.strictEqual(applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: "x", expectedRevision: bad, record }]).ok, false);
+      assert.strictEqual(applySync(app, [{ op: "remove", id: a.instanceId, remoteId: "x", expectedRevision: bad }]).ok, false);
+    }
+    assert.deepStrictEqual(plain(app.get("savedState")), before);
+  });
+
+  test("a stale overwrite or remove is skipped and the edited row is untouched", async () => {
+    const app = boot(), a = await makeCustom(app), b = await makeCustom(app, OTHER_STRING);
+    const edit = plain(app.get(`commitSavedSession({type:"edit",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:1,
+      candidate:{deck:savedEntries.get(${JSON.stringify(b.instanceId)}).deck,record:scaleRecord(seedOf(savedEntries.get(${JSON.stringify(b.instanceId)}).deck))}})`));
+    assert.strictEqual(edit.ok, true);
+    const edited = rowOf(app, a.instanceId), remote = await remoteRecord(THIRD_STRING);
+    const result = applySync(app, [
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record: remote },
+      { op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 }]);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.sync.skipped, [{ id: a.instanceId, reason: "revision" }, { id: a.instanceId, reason: "revision" }]);
+    assert.deepStrictEqual(result.sync.removed, []);
+    assert.deepStrictEqual(rowOf(app, a.instanceId), edited);
+    assert.ok(result.sync.committed.some(c => c.id === a.instanceId && c.revision === 2));
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("an overwrite that requires a skipped insert is skipped too, the row untouched", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+    const before = rowOf(app, a.instanceId);
+    const result = applySync(app, [insertOp("not-a-uuid", record),
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record, opaque: true, requires: "not-a-uuid" }]);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.sync.skipped, [{ id: "not-a-uuid", reason: "id" }, { id: a.instanceId, reason: "dependency" }]);
+    assert.deepStrictEqual(rowOf(app, a.instanceId), before);
+  });
+
+  test("an overwrite that requires an applied insert goes ahead", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING), moved = syncId();
+    const result = applySync(app, [insertOp(moved, record),
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record, opaque: true, requires: moved }]);
+    assert.deepStrictEqual(result.sync.skipped, []);
+    assert.deepStrictEqual(rowOf(app, a.instanceId).record, record);
+  });
+
+  test("a remove of an unknown id is reported as missing", async () => {
+    const app = boot(), id = syncId();
+    await makeCustom(app);
+    const result = applySync(app, [{ op: "remove", id, remoteId: "x", expectedRevision: 1 }]);
+    assert.deepStrictEqual(result.sync.skipped, [{ id, reason: "missing" }]);
+  });
+
+  for (const kind of ["overwrite", "remove"]) {
+    test(`durable: a concurrent edit and a stale sync ${kind} keep the edit`, async () => {
+      const app = await durableBoot(), a = await makeCustom(app), b = await makeCustom(app, THIRD_STRING);
+      const remote = await remoteRecord(OTHER_STRING);
+      const op = kind === "overwrite"
+        ? { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record: remote }
+        : { op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 };
+      const edit = app.getAsync(`commitSaved({type:"edit",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:1,
+        candidate:{deck:savedEntries.get(${JSON.stringify(b.instanceId)}).deck,record:scaleRecord(seedOf(savedEntries.get(${JSON.stringify(b.instanceId)}).deck))}})`);
+      const sync = app.getAsync(`commitSaved({type:"sync-apply",collectionId:savedState.collectionId,ops:${JSON.stringify([op])}})`);
+      const [editResult, syncResult] = (await Promise.all([edit, sync])).map(plain);
+      const row = savedEnvelope(app).entries.find(e => e.instanceId === a.instanceId);
+      assert.ok(row, "the scale is never deleted by a stale remove");
+      if (editResult.ok) {
+        assert.strictEqual(row.revision, 2);
+        assert.notDeepStrictEqual(row.record, remote, "the edit is not replaced by the remote body");
+        assert.deepStrictEqual(syncResult.sync.skipped, [{ id: a.instanceId, reason: "revision" }]);
+      } else {
+        assert.strictEqual(editResult.kind, "conflict");
+      }
+    });
+  }
+
+  test("a malformed op or a wrong epoch is refused", async () => {
+    const app = boot();
+    assert.strictEqual(applySync(app, [{ op: "frobnicate", id: syncId() }]).ok, false);
+    const wrong = plain(app.get(`commitSavedSession({type:"sync-apply",collectionId:${JSON.stringify(syncId())},ops:[]})`));
+    assert.strictEqual(wrong.ok, false);
+  });
+
+  test("signed out: sync-apply and ordinary commits make zero fetch calls", async () => {
+    const app = boot();
+    app.run("globalThis.__fetchCalls = 0; globalThis.fetch = function () { globalThis.__fetchCalls++; throw new Error('network'); };");
+    await makeCustom(app);
+    applySync(app, [insertOp(syncId(), await remoteRecord(OTHER_STRING))]);
+    assert.strictEqual(app.get("__fetchCalls"), 0);
+    assert.strictEqual(app.get("typeof HPE.sync.planPull"), "function");
+  });
+
+  describe("conformance with the sync-apply model (tests/sync_model.js)", () => {
+    const { applyOps } = require("./sync_model.js");
+    const op = (kind, id, extra) => ({ op: kind, id, remoteId: id, ...extra });
+    const modelState = app => {
+      const st = plain(app.get("savedState"));
+      return {
+        entries: st.entries.map(e => ({ id: e.instanceId, revision: e.revision, record: e.record })),
+        used: st.usedInstanceIds,
+        slotTaken: (seed, id) => (st.slots[seed] !== undefined && st.slots[seed] !== id) || st.hidden.includes(seed),
+        builtinVisible: plain(app.get("DECKS.map(d=>d.id)")).filter(s => !st.hidden.includes(s) && st.slots[s] === undefined).length
+      };
+    };
+    const scenarios = {
+      "clean insert": async app => [insertOp(syncId(), await remoteRecord(AMARA_STRING))],
+      "overwrite with an identical record": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 1, record: plain(app.get("savedState.entries[0].record")) })];
+      },
+      "overwrite with a changed record": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 1, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "stale overwrite": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 7, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "overwrite requiring a skipped insert": async app => {
+        const a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+        return [insertOp("not-a-uuid", record), op("overwrite", a.instanceId, { expectedRevision: 1, record, opaque: true, requires: "not-a-uuid" })];
+      },
+      "stale remove": async app => {
+        const a = await makeCustom(app);
+        return [op("remove", a.instanceId, { expectedRevision: 7 })];
+      },
+      "remove of a missing row": async app => {
+        await makeCustom(app);
+        return [op("remove", syncId(), { expectedRevision: 1 })];
+      },
+      "remove of the last visible scale": async app => {
+        const a = await makeCustom(app);
+        for (const seed of seeds(app)) assert.strictEqual(hide(app, seed).ok, true);
+        return [op("remove", a.instanceId, { expectedRevision: 1 })];
+      },
+      "overwrite of a missing row": async app => {
+        await makeCustom(app);
+        return [op("overwrite", syncId(), { expectedRevision: 1, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "replaces stripped by a taken slot": async app => {
+        const [seed] = seeds(app), a = await makeCustom(app), b = await makeCustom(app, OTHER_STRING);
+        assert.strictEqual(applySync(app, [op("overwrite", a.instanceId, { expectedRevision: 1, record: await remoteRecord(AMARA_STRING, seed) })]).ok, true);
+        return [op("overwrite", b.instanceId, { expectedRevision: 1, record: await remoteRecord(OTHER_STRING, seed) }),
+          insertOp(syncId(), await remoteRecord(THIRD_STRING, seed))];
+      }
+    };
+    for (const [name, build] of Object.entries(scenarios)) {
+      test("model matches the command: " + name, async () => {
+        const app = boot(), ops = await build(app), state = modelState(app);
+        const model = applyOps(state.entries, ops, { used: state.used, slotTaken: state.slotTaken, builtinVisible: state.builtinVisible });
+        const real = applySync(app, ops);
+        if (model.conflict) return assert.strictEqual(real.ok, false);
+        assert.strictEqual(real.ok, true);
+        assert.deepStrictEqual(real.sync.committed, model.committed);
+        assert.deepStrictEqual(real.sync.skipped, model.skipped);
+        assert.deepStrictEqual(real.sync.inserted, model.inserted);
+        assert.deepStrictEqual(real.sync.removed, model.removed);
+        const after = plain(app.get("savedState.entries")).map(e => e.record);
+        assert.deepStrictEqual(after, model.live.map(e => e.record), "records, including a stripped replaces");
+      });
+    }
   });
 });
 
