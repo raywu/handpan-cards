@@ -59,6 +59,8 @@
   "share.select": "SELECCIONA EL ENLACE Y CÓPIALO",
   "boot.gone": "Esa escala ya no existe. Mostrando {name}.",
   "boot.removed": "{a} eliminada. Mostrando {b}.",
+  "about.back": "← ATRÁS",
+  "about.back.aria": "Volver a la pantalla de práctica",
   "sheet.back": "← ATRÁS",
   "sheet.title_add": "Añadir una escala",
   "sheet.title_edit": "Editar esta escala",

@@ -59,6 +59,8 @@
   "share.select": "SELEZIONA IL LINK E COPIALO",
   "boot.gone": "Quella scala non c'è più. Ecco {name}.",
   "boot.removed": "{a} rimossa. Ecco {b}.",
+  "about.back": "← INDIETRO",
+  "about.back.aria": "Torna alla schermata di esercizio",
   "sheet.back": "← INDIETRO",
   "sheet.title_add": "Aggiungi una scala",
   "sheet.title_edit": "Modifica questa scala",

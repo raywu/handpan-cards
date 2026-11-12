@@ -59,6 +59,8 @@
   "share.select": "SELECT THE LINK AND COPY IT",
   "boot.gone": "That scale is gone. Showing {name}.",
   "boot.removed": "Removed {a}. Showing {b}.",
+  "about.back": "← BACK",
+  "about.back.aria": "Back to the practice screen",
   "sheet.back": "← BACK",
   "sheet.title_add": "Add a scale",
   "sheet.title_edit": "Edit this scale",

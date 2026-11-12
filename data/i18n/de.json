@@ -59,6 +59,8 @@
   "share.select": "LINK MARKIEREN UND KOPIEREN",
   "boot.gone": "Diese Skala gibt es nicht mehr. Du siehst jetzt {name}.",
   "boot.removed": "{a} entfernt. Du siehst jetzt {b}.",
+  "about.back": "← ZURÜCK",
+  "about.back.aria": "Zurück zum Üben",
   "sheet.back": "← ZURÜCK",
   "sheet.title_add": "Skala hinzufügen",
   "sheet.title_edit": "Skala bearbeiten",

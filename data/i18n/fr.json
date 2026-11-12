@@ -59,6 +59,8 @@
   "share.select": "SÉLECTIONNEZ LE LIEN ET COPIEZ-LE",
   "boot.gone": "Cette gamme n’existe plus. Affichage de {name}.",
   "boot.removed": "{a} supprimée. Affichage de {b}.",
+  "about.back": "← RETOUR",
+  "about.back.aria": "Retour à l’écran d’entraînement",
   "sheet.back": "← RETOUR",
   "sheet.title_add": "Ajouter une gamme",
   "sheet.title_edit": "Modifier cette gamme",

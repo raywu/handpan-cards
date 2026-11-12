@@ -59,6 +59,8 @@
   "share.select": "请选择链接并复制",
   "boot.gone": "这个音阶已不存在，改为显示 {name}。",
   "boot.removed": "已删除 {a}，现在显示 {b}。",
+  "about.back": "← 返回",
+  "about.back.aria": "返回练习界面",
   "sheet.back": "← 返回",
   "sheet.title_add": "添加音阶",
   "sheet.title_edit": "编辑这个音阶",
