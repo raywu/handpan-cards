@@ -1,0 +1,15 @@
+# kills: U2a-M2: a pinned angle survives a count change; a clash the change creates unpins the newest pin (D18)
+# suite: node --test --test-name-pattern ^U2a-M2:.a.pinned.angle.survives.a.count.change;.a.clash.the.change.creates.unpins.the.newest.pin..D18.$ tests/editor_model.test.js
+# fault: Unpin the oldest pin first instead of the newest when a count change clashes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15044,7 +15044,7 @@ function editorSettle(m, notice) {
+       return { ok: true, value: cur, ...(Object.keys(note).length ? { notice: note } : {}) };
+     }
+     if (!cur.pins.length) return solved;
+-    const newest = cur.pins[cur.pins.length - 1];
++    const newest = cur.pins[0];
+     unpinned.push(newest);
+     cur = editorWithAngle(cur, newest.ring, newest.i, null);
+   }
