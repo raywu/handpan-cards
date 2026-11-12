@@ -1,0 +1,16 @@
+# kills: EPF: the Layout tab shows ten 44px palette dots under a visible label with no chip, with no scroll at 375x667, and one tap picks
+# suite: node --test --test-name-pattern ^EPF..the.Layout.tab.shows.ten.44px.palette.dots.under.a.visible.label.with.no.chip..with.no.scroll.at.375x667..and.one.tap.picks tests/editor_e2e.test.js
+# note: EPF: the ten palette dots are always visible in the Layout tab
+# fault: The palette dots start hidden.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15820,7 +15820,7 @@
+           editorNode("button", { id: "editor-anchor-between", type: "button", class: "mode", text: t("sheet.anchor_between"), "aria-label": t("sheet.anchor_between.aria") })),
+         editorNode("div", { class: "editor-palette-row" },
+           editorNode("p", { id: "editor-palette-label", text: t("editor.palette") }),
+-          editorNode("div", { id: "editor-swatches", role: "group", "aria-labelledby": "editor-palette-label" })))),
++          editorNode("div", { id: "editor-swatches", hidden: true, role: "group", "aria-labelledby": "editor-palette-label" })))),
+     editorNode("div", { class: "editor-toolbar" },
+       button("editor-undo", "editor.undo"), button("editor-save", "editor.save", "mode primary"),
+       editorNode("button", { id: "editor-more", type: "button", class: "mode", text: "\u2026", "aria-label": t("editor.more.aria"), "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "editor-menu" }),

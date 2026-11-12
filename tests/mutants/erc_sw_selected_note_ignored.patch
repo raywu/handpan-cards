@@ -1,0 +1,15 @@
+# kills: a swipe does not switch tabs while a note is held or selected
+# suite: node --test --test-name-pattern ^a.swipe.does.not.switch.tabs.while.a.note tests/editor_e2e.test.js
+# fault: A swipe switches tabs while a pan note is selected.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16997,7 +16997,7 @@ function editorWireSwipe() {
+   const stop = () => { g = null; hideSwipeCue({ force: true }); };
+   const eligible = () => {
+     const s = editorSession;
+-    return !!(s && !s.dialog && !s.editing && !s.held && !s.sel && !editorDrag && !sheetZoomed() &&
++    return !!(s && !s.dialog && !s.editing && !s.held && !editorDrag && !sheetZoomed() &&
+       !editorEl("editor").classList.contains("dragging"));
+   };
+   const paint = (dx, armed) => {

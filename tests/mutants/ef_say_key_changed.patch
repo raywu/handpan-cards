@@ -1,0 +1,15 @@
+# kills: T0 drop plans: editorDropPlan and editorNeoDropPlan results are frozen for every source and target kind
+# suite: node --test --test-name-pattern ^T0.drop.plans: tests/editor_freeze.test.js
+# The standard drop plan announces a removal with the moved copy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16380,7 +16380,7 @@ function editorDropPlan(m, src, target) {
+   if (target.kind === "outside") {
+     if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
+     if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+-    return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
++    return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) };
+   }
+   if (target.kind === "note" || target.kind === "ding") {
+     const to = target.kind === "ding" ? { ring: "ding", i: 0 } : { ring: target.ring, i: target.i };
