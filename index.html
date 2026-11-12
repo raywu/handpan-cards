@@ -18315,7 +18315,7 @@ function placeMoveBanner() {
 // Optional email-code sign-in. Signed out, nothing here runs: no request, no sidecar.
 // Only the Supabase publishable key lives here (public by design); only hosts listed
 // in SYNC_ORIGINS get the sign-in UI or make any call.
-const SYNC_ORIGINS = {"handpan-cards-dev.pages.dev":{url:"https://cknlvnxyjwcjzzrmlhum.supabase.co",key:"sb_publishable_CCs-4Q1unP7f8RmNc5bdPQ_eWBZox53"}};
+const SYNC_ORIGINS = {"handpantheory.com":{url:"https://maidverpsglouqqfleby.supabase.co",key:"sb_publishable_3-1Zp601z_Lg5qAAFPMDqA_oxUGwaNq"},"handpan-cards-dev.pages.dev":{url:"https://cknlvnxyjwcjzzrmlhum.supabase.co",key:"sb_publishable_CCs-4Q1unP7f8RmNc5bdPQ_eWBZox53"}};
 const SYNC_KEY = "hpfc.sync.v1";
 const SYNC_LOCK = "hpfc.sync";
 const SYNC_CFG = !MOVE_ON_OLD && Object.prototype.hasOwnProperty.call(SYNC_ORIGINS, location.hostname) ? SYNC_ORIGINS[location.hostname] : null;

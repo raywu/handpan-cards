@@ -21207,8 +21207,18 @@ describe("sync client", () => {
     assert.strictEqual(calls(app, "/rest/v1/saved_scales").length >= 2, true);
   });
 
-  test("the prod host and the old host make no calls and show no sign-in", async () => {
-    for (const href of ["https://handpantheory.com/", "https://handpan.raywu.org/", "https://example.test/"]) {
+  test("hosts map to their own project: prod to prod, dev to dev, all others to null", () => {
+    const PROD = { url: "https://maidverpsglouqqfleby.supabase.co", key: "sb_publishable_3-1Zp601z_Lg5qAAFPMDqA_oxUGwaNq" };
+    const DEVCFG = { url: PROJECT, key: "sb_publishable_CCs-4Q1unP7f8RmNc5bdPQ_eWBZox53" };
+    for (const [href, want] of [["https://handpantheory.com/", PROD], [DEV, DEVCFG]]) {
+      const app = boot({ href, locks: true });
+      assert.deepStrictEqual(plain(app.get("SYNC_CFG")), want, href);
+    }
+  });
+
+  test("the old host, www, localhost, a preview host and unknown hosts make no calls and show no sign-in", async () => {
+    const hosts = ["https://handpan.raywu.org/", "https://www.handpantheory.com/", "http://localhost:8000/", "https://abc123.handpan-cards-dev.pages.dev/", "https://claude-qa-harness.handpan-cards-dev.pages.dev/", "https://example.test/"];
+    for (const href of hosts) {
       const app = boot({ href, locks: true, storage: { "hpfc.sync.v1": sidecar() } });
       install(app);
       await makeCustom(app);
