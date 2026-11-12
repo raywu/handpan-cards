@@ -272,10 +272,11 @@ import UI and the `scale_import` event were removed; do not rebuild them.
 
 ## Scale editor
 
-The scale editor is one panel: the pan drawing on top, a status line, zone counts, a
-two-tab control area (Scale, Layout) and an action row. It replaces the legacy sheet
-editor. Plans: `docs/plans/2026-11-11-editor-rc.md` (release candidate),
-`docs/plans/2026-11-08-editor-panel-simplify.md` (tabs, counts, menu). Claims below cite
+The scale editor is one panel: a header (Back, title, Standard / Neotone switch), the notes
+line, a status line, the pan drawing, the zone counts and hint, a two-tab control area
+(Scale, Layout) and an action row (Undo, Save, `...`). It replaces the legacy sheet
+editor. Plans: the editor release candidate plan and the editor panel simplify plan (tabs,
+counts, menu). Claims below cite
 the test that pins them; items marked PLANNED or PENDING have no passing test yet and
 carry the lane that lands them, so a reviewer can re-check each after that lane merges.
 
@@ -294,9 +295,10 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   each way and returns the panel to the Scale tab. Tests: "switching the pan type returns
   the panel to the Scale tab", "Standard to Neotone and back are one Undo step each".
 - **Scale name.** The Scale panel opens with a name field: 40 characters at most, trimmed,
-  16px or larger so iOS does not zoom, a 44px target, and a tab stop. A blank name stores
-  nothing and the auto name shows (placeholder = the auto name; on Neotone it carries the
-  Neotone suffix). Enter or leaving the field commits it as one Undo step; Escape restores
+  16px or larger so iOS does not zoom, a 44px target, and a tab stop. A name the user
+  blanks stores nothing and the auto name shows (placeholder = the auto name; on Neotone it
+  carries the Neotone suffix); a new Neotone scale saved with its name never typed stores the
+  suffixed auto name. Enter or leaving the field commits it as one Undo step; Escape restores
   the stored name without closing the editor. Typing a name and tapping Save at once saves
   the typed name. A name change alone makes the editor dirty. Pressing the field starts no
   drag, and taps or keys on the pan do nothing while it is being typed in. Tests:
@@ -344,8 +346,10 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   Ding"; model `tests/editor_shell.test.js` "U2d-2", "U2d-3", "U2d-5", "U2f-7".
 - **Hold, tap and place.** Tapping a note chip HOLDS it (status line with a Cancel chip;
   tapping it again, Cancel and Escape cancel); tapping a pan spot, a ring or the ding places
-  it. There is no "Add to" pill and no auto-fill. A rim note lands in pitch order, a cyclops
-  or bottom note at its 5 degree angle and pinned. A held note replaces a placed note in its
+  it. There is no "Add to" pill and no auto-fill. A rim note lands in pitch order; a cyclops or
+  bottom note tapped at a free spot lands at that spot's 5 degree angle and is pinned, and one
+  added to the area as a whole (the keyboard area stop, or a tap with no free angle) takes its
+  auto position, unpinned. A held note replaces a placed note in its
   seat; a tray note on the ding replaces it; a placed bottom note on the ding swaps seats
   with it. Tests: "holding a note shows the status with a Cancel chip", "tap-tap placement",
   "a held note tapped on a placed note replaces it", "D23: a tray note on the ding replaces
@@ -374,7 +378,7 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   screen width, never below 1). The panel returns after the drop is painted, at once on a
   cancel (Escape, pointercancel, resize, orientationchange, a hidden page), and ignores taps
   for 250ms (`.settling`). With reduced motion the pan stays at 1x, there is no slide, and the
-  new-note stroke fades statically. A note placed by drag, tap, pill, Replace ding, trade or
+  new-note stroke fades statically. A note placed by drag, tap, a zone add, a ding swap, a trade or the
   keyboard carries `.editor-new` once; Undo does not. Tests: `tests/editor_e2e.test.js`
   "drag ux E1" to "E7", "the tabs and both panels leave play with the rest of the controls
   while a note is dragged", "with reduced motion the tabs and panels do not animate in or
@@ -382,7 +386,7 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
 - **Undo and Redo.** Every edit is one history step; Undo and Redo walk back through drops,
   a pan-type switch and Reset spacing; a refused or no-op action adds none. Exactly one
   Undo is visible at a time. Cmd or Ctrl+Z is Undo, with Shift it is Redo, except while the
-  notes line is being typed in. Tests: "Undo and Redo walk back through drops, a pan-type
+  notes line is being typed in, while naming, in a dialog and mid-drag. Tests: "Undo and Redo walk back through drops, a pan-type
   switch and Reset spacing", "OQA one visible undo: exactly one visible Undo", "Cmd/Ctrl+Z is
   Undo and Shift+Cmd/Ctrl+Z is Redo"; model `tests/editor_model.test.js` "U2a-H1" to "U2a-H3".
 - **Action row and menu.** The row is Undo, Save (violet, white text, 4.5:1 or better) and
@@ -401,8 +405,8 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   (`sheet.anchor_one`, `sheet.anchor_between`), 44px or larger and in view at 320, 375 and
   820 wide; no Mirror and no Rotate (the app-wide MIRROR feature, saved and shared mirrored
   layouts are untouched; a scale saved mirrored keeps its flags and stays editable by swap,
-  remove and save). With no notes both are disabled on both pan types (matching the Standard
-  pan); that is the only disabled state. Standard: the anchor splits notes 1 and 2,
+  remove and save). With no notes both are disabled (on Neotone they are also hidden); that is the only
+  disabled state. Standard: the anchor splits notes 1 and 2,
   `aria-pressed` follows, a repeat adds no step. Tests: "PL-a the Layout row holds only the
   two anchor buttons", "PLa-N2: with no notes both anchor buttons are disabled", "the anchor
   splits notes 1 and 2", "the anchor controls are at least 44px", "PL-a a permuted Neotone
@@ -433,9 +437,10 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   bottom ring are named stops", "keyboard pick and drop", "Left and Right nudge a picked
   bottom or cyclops note 5 degrees", "Escape cancels a pick and does not leave the panel",
   "focus order and accessibility of the panel".
-- **Fit.** Every label in the tabs, count row and toolbar fits its button at 390, 375 and
-  320 wide in all eight UI languages with the real fonts. Tests: "every label in the tabs,
-  the count row and the toolbar fits its button", "TRI59 octave label and delete fit in all
+- **Fit.** Every label in the tabs and toolbar fits its button at 390, 375 and
+  320 wide in all eight UI languages with the real fonts. The fit test covers the tabs and
+  toolbar buttons only. Tests: "every label in the tabs, the count row and the toolbar fits
+  its button", "TRI59 octave label and delete fit in all
   eight locales".
 - **Legacy sheet editor: removed.** Once lane U2j-2 lands, the editor above is the only way
   to add or edit a scale, and the `ONE_PANEL` flag, the sheet tabs, drawer and its swipe are
@@ -450,20 +455,20 @@ Three owner-approved changes land together in lane W5a after U2j-1. They are des
 here as the intended behaviour; every test named is specified by the plan and does not
 exist yet, so re-check this block after W5a merges and delete the PLANNED marks.
 
-- **PLANNED (W5a): quieter selected tab**, `docs/plans/2026-11-12-editor-tab-selected-state.md`.
+- **PLANNED (W5a): quieter selected tab**.
   The selected tab shows through `aria-selected` only: transparent background, a 3px accent
   underline (`#6756B5`), full-strength text (`#242424`, weight 600); unselected tabs are muted
   (`#5E5A53`); no `.on` class on editor tabs, no fill on hover or `:active`, so `#1 CENTRED`
   is the only filled control on Layout. Test: a selected-tab computed-style test in
   `tests/editor_e2e.test.js` (to be added; mutant `ets_tab_filled_on_select`).
-- **PLANNED (W5a): flat card palette**, `docs/plans/2026-11-12-editor-palette-flat.md`.
+- **PLANNED (W5a): flat card palette**.
   The `#editor-palette` chip is removed; `#editor-swatches` is always shown on Layout under a
   visible label (`editor.palette`, "Card palette") as a 5x2 grid of 44px dots with
   `aria-labelledby`; one tap picks, the group stays open, Undo covers it, the palette is
   absent from the Scale tab, a pick during a dialog is refused. The ten chip tests in
   `tests/editor_e2e.test.js` are rewritten to the flat behaviour (to be added; mutants
   `epf_swatches_hidden_again`, `epf_pick_needs_two_taps`).
-- **PLANNED (W5a): message placement**, `docs/plans/2026-11-12-editor-message-placement.md`.
+- **PLANNED (W5a): message placement**.
   `#editor-status` moves to just under the pan box, before the counts; an error shows as an
   ink pill (`#242424` background, white text, 14px/600, radius 8px, a leading warning
   glyph, no red, no hover) and plays one 180ms settle only when the error text changes (none
@@ -482,4 +487,4 @@ Sheet guidance and footer lip: `docs/plans/2026-10-13-sheet-guidance.md`,
 `docs/plans/2026-10-16-scale-import.md`. Discoverability, routes, GA, JSON-LD:
 `docs/plans/2026-10-16-discoverability.md`. About overlay:
 `docs/plans/2026-10-17-about-off-main.md`. DEV env: `docs/plans/2026-10-17-dev-env.md`.
-Scale engine roadmap and owner decisions: `docs/SCALE_ENGINE_PLAN.md`. Scale editor: `docs/plans/2026-11-11-editor-rc.md`.
+Scale engine roadmap and owner decisions: `docs/SCALE_ENGINE_PLAN.md`. Scale editor: the editor release candidate plan.
