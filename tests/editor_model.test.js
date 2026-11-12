@@ -199,7 +199,7 @@ const DIRECT_READERS = [
   "tests/app.test.js", "tests/coverage_merge.test.js", "tests/drawer_drag.test.js", "tests/drawer_grid.test.js",
   "tests/drawer_seats.test.js", "tests/e2e.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/editor_shell.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
   "tests/helpers/dump_app_render.js", "tests/layout.test.js", "tests/link_corpus.test.js",
-  "tests/mutation_harness.test.js", "tests/pdfcards.test.js", "tests/sandbox_events.test.js", "tests/select.test.js",
+  "tests/mutation_harness.test.js", "tests/pdfcards.test.js", "tests/select.test.js",
   "tests/sequence.test.js", "tests/storage_corpus.test.js", "tests/swipe.test.js",
 ];
 test("U2a-F3: no suite starts reading index.html directly without joining the inventory", () => {

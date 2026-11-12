@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12288,6 +12288,7 @@ function paintTabs() {
+@@ -14115,6 +14115,7 @@ function paintTabs() {
  }
  function setTab(tab) {
    if (tab === sheetTab) return;
 +  if (tab === "layout" && !currentScaleInput()) return;
-   sheetSwipe = null;
    hideSwipeCue();
    if (sheetTab === "layout") {
+     cancelGesture();

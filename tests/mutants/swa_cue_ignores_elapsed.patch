@@ -1,5 +1,5 @@
-# kills: SWA: the cue arms exactly at 48px, and a still finger disarms it by the timer at 600ms with no touchmove; the timer repaint calls check(), and a body scroll before it hides the cue
-# suite: node --test --test-reporter=tap --test-name-pattern ^SWA..the.cue.arms.exactly.at.48px..and.a.still.finger.disarms.it.by.the.timer.at.600ms.with.no.touchmove..the.timer.repaint.calls.check....and.a.body.scroll.before.it.hides.the.cue$ tests/app.test.js
+# kills: a short, slow or mostly vertical swipe changes nothing (swipeVerdict drops its 600ms limit)
+# suite: node --test --test-name-pattern ^a.short,.slow.or.mostly.vertical tests/editor_e2e.test.js
 # The cue stays armed after the 600ms window the recognizer enforces.
 diff --git a/index.html b/index.html
 --- a/index.html
