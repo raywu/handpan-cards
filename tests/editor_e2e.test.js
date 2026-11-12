@@ -46,6 +46,13 @@ function run() {
     base = `http://127.0.0.1:${server.address().port}/index.html`;
     b = await launch({ foregroundSettle: true });
     assert.ok(b, "browser found but launch() returned null");
+    const rawClick = b.click.bind(b);
+    b.click = async (selector, ...rest) => {
+      const need = /^#editor-(redo|remove|reset|delete)\b/.test(selector) ? ["editor-menu", "editor-more"]
+        : /^#editor-(palette|swatches|anchor-)/.test(selector) ? ["editor-panel-layout", "editor-tab-layout"] : null;
+      if (need && await b.eval(`const e = document.getElementById(${JSON.stringify(need[0])}); return !!e && e.hidden;`)) await rawClick("#" + need[1]);
+      return rawClick(selector, ...rest);
+    };
   });
   after(async () => {
     if (b) await b.close();
@@ -72,6 +79,8 @@ function run() {
   };
   const clickUndo = async () => b.click((await b.eval(`return !!document.getElementById("editor-notice-undo");`)) ? "#editor-notice-undo" : "#editor-undo");
   const model = () => b.eval(`return JSON.parse(JSON.stringify(editorSession.history.present));`);
+  const place = (ring) => b.eval(`const s = editorSession, hit = { kind: "spot", ring: ${JSON.stringify(ring)} }; if (s.held) editorPlaceHeld(hit, s.history.present); else if (s.sel && s.sel.ring !== "ding") editorMoveSelected(hit, s.history.present); return true;`);
+  const zoneCount = (zone) => b.eval(`const e = document.querySelector('#editor-counts [data-zone="${zone}"]'); return e ? e.textContent : null;`);
   const text = () => b.eval(`return document.getElementById("editor-line").value;`);
   const sheetHidden = () => b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`);
   const savedCount = () => b.eval(`return savedState.entries.length;`);
@@ -86,8 +95,8 @@ function run() {
     editorRender(); return editorSession.history.present.pins.length;`);
 
   describe("D13 layout", () => {
-    const IDS = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-undo", "editor-redo", "editor-remove",
-      "editor-reset", "editor-save", "editor-tray"];
+    const IDS = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
+      "editor-save", "editor-tray"];
 
     test("375x667: header, line, pan, area slot, toolbar and tray slot are all reachable with no scroll", async () => {
       await fresh(375, 667);
@@ -102,11 +111,11 @@ function run() {
       for (const [id, q] of Object.entries(r.boxes)) {
         assert.ok(q.top >= 0 && q.bottom <= 667 && q.left >= 0 && q.right <= 375, id + " is inside the viewport: " + JSON.stringify(q));
       }
-      for (const id of ["editor-back", "editor-undo", "editor-redo", "editor-remove", "editor-reset", "editor-save"]) {
+      for (const id of ["editor-back", "editor-undo", "editor-more", "editor-save", "editor-tab-scale", "editor-tab-layout"]) {
         assert.ok(r.boxes[id].h >= 44 && r.boxes[id].w >= 44, id + " is a 44px target: " + JSON.stringify(r.boxes[id]));
       }
-      const order = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-undo", "editor-tray"].map((id) => r.boxes[id].top);
-      assert.deepStrictEqual([...order].sort((x, y) => x - y), order, "header, line, pan, area slot, toolbar, tray slot read top to bottom");
+      const order = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-tabs", "editor-panels", "editor-undo"].map((id) => r.boxes[id].top);
+      assert.deepStrictEqual([...order].sort((x, y) => x - y), order, "header, line, pan, counts, tabs, panel, toolbar read top to bottom");
     });
 
     test("1280x800 renders clean: nothing overflows and every part is in view", async () => {
@@ -573,9 +582,9 @@ function run() {
       assert.deepStrictEqual(await model(), before);
     });
 
-    test("D23 copy: a rim or cyclops note dropped on the ding is refused with a plain message; the hint only promises a bottom note", async () => {
+    test("D23 copy: a rim or cyclops note dropped on the ding is refused with a plain message; the hint line still carries the ding cue", async () => {
       await setup("[A2] " + SCALE);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-hint").textContent;`), "Drop a bottom note on the ding to swap it with the root.");
+      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent);`), ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.", "Drop or tap a note on the ding to swap it with the root."]);
       const before = await model();
       await tapNote("rim", 0);
       await tapNote("ding", 0);
@@ -615,8 +624,8 @@ function run() {
       assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8] });
     });
 
-    describe("U2d area pills, caps, crowded refusal, Reset spacing", () => {
-      const pill = (ring) => b.eval(`const p = document.getElementById("editor-pill-${ring}"); return { text: [...p.children].length ? [...p.children].map((c) => c.textContent).join(" ") : p.textContent, aria: p.getAttribute("aria-label"), disabled: p.disabled, full: p.getAttribute("aria-disabled") === "true" };`);
+    describe("U2d zone counts, caps, crowded refusal, Reset spacing", () => {
+      const pill = (ring) => zoneCount(ring);
       const reset = () => b.eval(`const r = document.getElementById("editor-reset"); const vis = (c) => getComputedStyle(r.querySelector(c)).display !== "none";
         return { aria: r.getAttribute("aria-label"), disabled: r.disabled, visible: [...r.querySelectorAll("span")].filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent).join("|") };`);
       const linkOf = () => b.eval(`return editorExport(editorSession.history.present).link.value;`);
@@ -624,47 +633,47 @@ function run() {
       const RIM12 = "A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5";
       const BOT_LINE = (n) => ["A2", "B2", "C3", "E3", "F3", "G3", "Bb2", "Db3", "Eb3", "Gb3", "Ab3", "B3"].slice(0, n).map((x) => "[" + x + "]").join(" ");
 
-      test("D17: the pills read '+ Rim n of 12', '+ Cyclops n of 6', '+ Bottom n of 12', wait for a held note, and add it at its auto position", async () => {
+      test("D17: the counts read 'Rim n/12', 'Cyclops n/6', 'Bottom n/12', follow the model live, and a held note is added at its auto position", async () => {
         await setup(SCALE);
-        assert.deepStrictEqual(await pill("rim"), { text: "Add to rim 8 of 12", aria: "Add the held note to the rim, 8 of 12 used", disabled: false, full: false });
-        assert.strictEqual((await pill("inner")).text, "Add to cyclops 2 of 6");
-        assert.strictEqual((await pill("bottom")).text, "Add to bottom 0 of 12");
-        assert.strictEqual(await b.eval(`return document.getElementById("editor-pills").getAttribute("aria-label");`), "Add the held note to an area");
+        assert.strictEqual(await pill("rim"), "Rim 8/12");
+        assert.strictEqual(await pill("inner"), "Cyclops 2/6");
+        assert.strictEqual(await pill("bottom"), "Bottom 0/12");
+        assert.strictEqual(await pill("ding"), "Ding 1/1 Full");
         await hold("B");
-        assert.strictEqual((await pill("rim")).disabled, false);
-        await b.click("#editor-pill-rim");
+        await place("rim");
         assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"], "pitch-order seat");
-        assert.strictEqual((await pill("rim")).text, "Add to rim 9 of 12", "the count follows the model live");
+        assert.strictEqual(await pill("rim"), "Rim 9/12", "the count follows the model live");
         assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
         await hold("E");
         await b.click("#editor-oct-down");
-        await b.click("#editor-pill-bottom");
+        await place("bottom");
         let m = await model();
         assert.strictEqual(Object.values(m.fields).filter((f) => f[3] === "bottom").length, 1);
         assert.strictEqual(m.options.angles, undefined, "an area add is auto, never pinned");
         await hold("C");
         for (let k = 0; k < 3; k++) await b.click("#editor-oct-up");
-        await b.click("#editor-pill-inner");
-        assert.strictEqual((await pill("inner")).text, "Add to cyclops 3 of 6", await status());
+        await place("inner");
+        assert.strictEqual(await pill("inner"), "Cyclops 3/6", await status());
         await clickUndo();
-        assert.strictEqual((await pill("inner")).text, "Add to cyclops 2 of 6");
+        assert.strictEqual(await pill("inner"), "Cyclops 2/6");
       });
 
-      test("D16: a full area's pill is aria-disabled and a tap or pill into it is refused with the exact copy", async () => {
+      test("D16: a full area reads Full in the counts and a tap or drop into it is refused with the exact copy", async () => {
         await setup("(D3) " + RIM12 + " | C6");
-        assert.deepStrictEqual(await pill("rim"), { text: "Rim full", aria: "Add the held note to the rim, 12 of 12 used", disabled: false, full: true });
+        assert.strictEqual(await pill("rim"), "Rim 12/12 Full");
+        assert.strictEqual(await b.eval(`return document.querySelector('#editor-counts [data-zone="rim"]').classList.contains("full");`), true);
         const core = () => b.eval(`const m = editorSession.history.present; return { parts: editorPartsOf(m), ding: editorDingOf(m), options: m.options };`);
         const before = await core();
         await hold("F");
         await b.click("#editor-oct-up");
-        await b.click("#editor-pill-rim");
+        await place("rim");
         assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.");
         assert.deepStrictEqual(await core(), before);
         assert.strictEqual(await b.eval(`return editorSession.held !== null;`), true, "the note is still held");
         await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
         assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.", "a drop into the rim is refused too");
         assert.deepStrictEqual(await core(), before);
-        await b.click("#editor-pill-inner");
+        await place("inner");
         assert.strictEqual((await model()).fields && Object.values((await model()).fields).filter((f) => f[3] === "inner").length, 2, "another area still takes it");
       });
 
@@ -673,14 +682,14 @@ function run() {
         await hold("A");
         await b.click("#editor-oct-up");
         await b.click("#editor-oct-up");
-        await b.click("#editor-pill-inner");
+        await place("inner");
         assert.strictEqual(await status(), "Too crowded: labels would print at 2.71 pt, under 3.6 pt. Remove a note first.");
         assert.strictEqual(Object.values((await model()).fields).filter((f) => f[3] === "inner").length, 5);
         await setup(BOT_LINE(11) + " (D3) " + RIM8 + " | C5 D5 E5 F5");
         await hold("D");
         await b.click("#editor-oct-down");
         await b.click("#editor-oct-down");
-        await b.click("#editor-pill-bottom");
+        await place("bottom");
         assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 12, await status());
         assert.strictEqual(await status(), "D2 added to the bottom.Undo");
       });
@@ -691,7 +700,7 @@ function run() {
         const want = await b.eval(`const s = HPE.core.parseSeed(${JSON.stringify(OVER)}); const seed = { fields: s.value.fields, options: s.value.options }; return { record: scaleRecord(seed), link: shareLink(seed).value };`);
         assert.strictEqual(await linkOf(), want.link);
         await hold("G");
-        await b.click("#editor-pill-rim");
+        await place("rim");
         assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.");
         await hold("G");
         assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
@@ -727,13 +736,13 @@ function run() {
         assert.strictEqual((await model()).pins.length, 3);
         await hold("E");
         await b.click("#editor-oct-down");
-        await b.click("#editor-pill-bottom");
+        await place("bottom");
         assert.strictEqual((await model()).pins.length, 3, "the add keeps the pins");
         assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 4);
         assert.match(await linkOf(), /at-/);
         const unpinnedIdx = await b.eval(`const a = editorSession.history.present.options.angles.bottom; return a.findIndex((x) => x === null);`);
         await tapNote("bottom", unpinnedIdx);
-        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset spacing" });
+        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
         const before = await model();
         const steps = await pastLen();
         await b.click("#editor-reset");
@@ -749,6 +758,7 @@ function run() {
         await b.eval(`editorSession.sel = null; editorRender(); return true;`);
         assert.strictEqual((await reset()).aria, "Reset cyclops and bottom spacing");
         assert.strictEqual(await b.eval(`return document.getElementById("editor-reset").querySelector(".rs-short").textContent;`), "Reset spacing");
+        assert.strictEqual((await reset()).visible, "Reset spacing (2)");
         const steps2 = await pastLen();
         await b.click("#editor-reset");
         assert.strictEqual(await pastLen(), steps2 + 1, "both clear in one step");
@@ -764,7 +774,7 @@ function run() {
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 150, true)).history; editorRender(); return true;`);
         assert.match(await linkOf(), /#s=8/);
         await tapNote("inner", 0);
-        assert.deepStrictEqual(await reset(), { aria: "Reset cyclops spacing", disabled: false, visible: "Reset spacing" });
+        assert.deepStrictEqual(await reset(), { aria: "Reset cyclops spacing", disabled: false, visible: "Reset cyclops spacing" });
         await b.click("#editor-reset");
         assert.doesNotMatch(await linkOf(), /#s=8/);
         assert.strictEqual((await model()).options.angles, undefined);
@@ -775,7 +785,7 @@ function run() {
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
         await tapSpot(...polar(1.15, 150));
         assert.strictEqual(await b.eval(`return editorSession.zone;`), "bottom");
-        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset spacing" });
+        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
         await tapSpot(...polar(1.15, 150));
         assert.strictEqual(await b.eval(`return editorSession.zone;`), null);
         await tapSpot(...polar(1.15, 150));
@@ -783,7 +793,7 @@ function run() {
         assert.strictEqual((await model()).options.angles, undefined);
       });
 
-      test("an empty cyclops arc and bottom ring show as targets for a held note and take the first note by tap or pill", async () => {
+      test("an empty cyclops arc and bottom ring show as targets for a held note and take the first note by tap or drop", async () => {
         await setup("(D3) " + RIM8);
         assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`), 2, "the empty cyclops arc and bottom band are drawn without a hold (v4 zones)");
         await hold("E");
@@ -797,8 +807,8 @@ function run() {
         await tapSpot(...polar(1.15, 150));
         assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["E3"], await status());
         await hold("F");
-        await b.click("#editor-pill-bottom");
-        assert.strictEqual((await pill("bottom")).text, "Add to bottom 2 of 12");
+        await place("bottom");
+        assert.strictEqual(await pill("bottom"), "Bottom 2/12");
       });
 
       test("the octave stepper carries a visible Octave label and keeps its Octave n accessible name", async () => {
@@ -808,7 +818,7 @@ function run() {
         assert.strictEqual(await b.eval(`return document.getElementById("editor-oct").getAttribute("aria-label");`), "Octave 4");
       });
 
-      test("D18 labels: a wide screen shows the scoped label, a phone shows 'Reset spacing' with the scope in the accessible name", async () => {
+      test("D18 labels: the menu item shows the scoped label at any width, with the scope in the accessible name", async () => {
         await fresh(1100, 800);
         await openAdd();
         await typeLine("[A2] [B2] " + SCALE);
@@ -820,10 +830,10 @@ function run() {
         await openAdd();
         await typeLine("[A2] [B2] " + SCALE);
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); return true;`);
-        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset spacing" });
+        assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
       });
 
-      test("D18 disabled cases: a rim note or the ding selected gives an empty scope; Neotone disables Reset and hides the pills", async () => {
+      test("D18 disabled cases: a rim note or the ding selected gives an empty scope; Neotone disables Reset and shows Main and Mutant counts", async () => {
         await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
         assert.strictEqual((await reset()).disabled, false);
@@ -835,7 +845,7 @@ function run() {
         await tapNote("ding", 0);
         await b.click("#editor-type-neotone");
         assert.strictEqual((await reset()).disabled, true);
-        assert.strictEqual(await b.eval(`return document.getElementById("editor-pills").hasAttribute("hidden");`), true);
+        assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-counts .zc")].map((e) => e.dataset.zone);`), ["main", "mutant", "ding"]);
       });
 
       test("U2c nit 2: a tray note still replaces the ding when a bottom copy of a rim note is present", async () => {
@@ -1116,7 +1126,7 @@ function run() {
         assert.strictEqual(await ta("#editor-pan svg"), "none");
         assert.strictEqual(await ta(".tray-note"), "none");
         assert.strictEqual(await ta("#editor-tray"), "pan-y");
-        for (const sel of [".editor-head", "#editor-line", "#editor-status", "#editor-pills", ".editor-toolbar", "#editor"]) {
+        for (const sel of [".editor-head", "#editor-line", "#editor-status", "#editor-panels", ".editor-toolbar", "#editor"]) {
           assert.ok(["auto", "manipulation", "pan-y"].includes(await ta(sel)), sel + " keeps scrolling: " + await ta(sel));
         }
         const before = await core();
@@ -1215,19 +1225,18 @@ function run() {
       const lineBoxes = (sel) => b.eval(`return [...document.querySelectorAll(${JSON.stringify(sel)})].map((e) => ({ text: e.textContent, h: e.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.2 }));`);
       const visibleUndo = () => b.eval(`return [...document.querySelectorAll("#editor button, #editor .mode")].filter((e) => e.textContent.trim() === "Undo" && e.offsetParent !== null && getComputedStyle(e).visibility === "visible").length;`);
 
-      test("OQA pill copy two lines and full: 'Add to rim' over '8 of 12', 'Rim full' at the cap, aria carries 'used', each line at most two line boxes (375 and 820)", async () => {
+      test("OQA zone counts: 'Rim 8/12' per zone, 'Full' joins the count at the cap, each count at most two line boxes (375 and 820)", async () => {
         for (const [w, h] of [[375, 667], [820, 1180]]) {
           await fresh(w, h);
           await openAdd();
           await typeLine(SCALE);
-          const rim = await b.eval(`const p = document.getElementById("editor-pill-rim"); return { act: p.querySelector(".pill-act").textContent, count: p.querySelector(".pill-count").textContent, aria: p.getAttribute("aria-label") };`);
-          assert.deepStrictEqual(rim, { act: "Add to rim", count: "8 of 12", aria: "Add the held note to the rim, 8 of 12 used" });
-          assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-inner .pill-act").textContent;`)), "Add to cyclops");
-          assert.strictEqual((await b.eval(`return document.querySelector("#editor-pill-bottom .pill-count").textContent;`)), "0 of 12");
-          for (const l of await lineBoxes("#editor-pills .pill span")) assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": '" + l.text + "' is at most two line boxes, " + l.h + " vs " + l.lh);
+          assert.strictEqual(await zoneCount("rim"), "Rim 8/12");
+          assert.strictEqual(await zoneCount("inner"), "Cyclops 2/6");
+          assert.strictEqual(await zoneCount("bottom"), "Bottom 0/12");
+          for (const l of await lineBoxes("#editor-counts .zc")) assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": '" + l.text + "' is at most two line boxes, " + l.h + " vs " + l.lh);
           await typeLine("(D3) " + RIM12 + " | C6");
-          assert.strictEqual(await b.eval(`return document.getElementById("editor-pill-rim").textContent;`), "Rim full");
-          assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pill-rim span").length;`), 1);
+          assert.strictEqual(await zoneCount("rim"), "Rim 12/12 Full");
+          assert.strictEqual(await b.eval(`return document.querySelectorAll('#editor-counts [data-zone="rim"] b').length;`), 1);
         }
       });
 
@@ -1612,7 +1621,7 @@ function run() {
         assert.strictEqual(await visibleUndo(), 1, "idle");
         await hold("B");
         assert.strictEqual(await visibleUndo(), 1, "holding");
-        await b.click("#editor-pill-rim");
+        await place("rim");
         assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo");`), true);
         assert.strictEqual(await visibleUndo(), 1, "said with the chip");
         await b.eval(`editorSession.say = ""; editorSession.notice = true; editorRender(); return true;`);
@@ -1625,7 +1634,7 @@ function run() {
         await setup(SCALE);
         await hold("B");
         await b.eval(`document.getElementById("editor-undo").focus(); return true;`);
-        await b.eval(`editorPillTap("rim"); return true;`);
+        await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
         assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-notice-undo");
       });
 
@@ -1698,8 +1707,7 @@ function run() {
     });
     });
 
-    describe("U2f-2 tap and pill parity (gap rows 9, 11, 13, 23, 24)", () => {
-      const pillState = (ring) => b.eval(`const p = document.getElementById("editor-pill-${ring}"); return { disabled: p.disabled, ready: p.classList.contains("ready") };`);
+    describe("U2f-2 tap and zone-add parity (gap rows 9, 11, 13, 23, 24)", () => {
       const selectedOf = () => b.eval(`return editorSession.sel;`);
       const pinRings = () => b.eval(`return [...document.querySelectorAll("#editor-pan .epin")].length;`);
       const orbitOf = (ring) => b.eval(`return editorSolve(editorSession.history.present).value.geom[${JSON.stringify(ring)}] || (${JSON.stringify(ring)} === "bottom" ? 1.15 : 0.38);`);
@@ -1709,23 +1717,7 @@ function run() {
 
       for (const touch of [false, true]) {
         describe(touch ? "touch" : "mouse", () => {
-          test("pill without a note asks to pick; pills stay enabled and turn ready for a held or a selected note", async () => {
-            await fresh(375, 667);
-            await openAdd();
-            await typeLine(SCALE);
-            assert.deepStrictEqual(await pillState("bottom"), { disabled: false, ready: false });
-            const past0 = await pastLen();
-            await b.click("#editor-pill-bottom");
-            assert.strictEqual(await status(), "Pick a note below, or on the pan, first.");
-            assert.strictEqual(await pastLen(), past0);
-            await hold("B");
-            assert.deepStrictEqual(await pillState("bottom"), { disabled: false, ready: true });
-            await b.click(".tray-note[data-name=\"B\"]");
-            await tapNote("rim", 3, touch);
-            assert.deepStrictEqual(await pillState("bottom"), { disabled: false, ready: true });
-          });
-
-          test("pill moves a selected note to that area as one Undo step", async () => {
+          test("a selected note moves to a tapped ring as one Undo step", async () => {
             await fresh(375, 667);
             await openAdd();
             await typeLine(SCALE);
@@ -1733,7 +1725,7 @@ function run() {
             await tapNote("rim", 1, touch);
             assert.strictEqual(await status(), "Bb3 picked. Tap another note to swap, or tap a spot to move it.");
             const past = await pastLen();
-            await b.click("#editor-pill-bottom");
+            await place("bottom");
             assert.deepStrictEqual(await names("bottom"), ["Bb3"], await status());
             assert.strictEqual((await names("rim")).length, 7);
             assert.strictEqual(await selectedOf(), null);
@@ -1755,7 +1747,7 @@ function run() {
             await typeLine("(D3) A3");
             const before = await linkOf();
             await tapNote("rim", 0, touch);
-            await b.click("#editor-pill-bottom");
+            await place("bottom");
             assert.strictEqual(await status(), "The rim needs at least 1 note.");
             assert.strictEqual(await linkOf(), before);
           });
@@ -1776,7 +1768,7 @@ function run() {
             assert.deepStrictEqual((await model()).options.angles.inner, [Number(said[1])]);
             assert.strictEqual(await pinRings(), 1, "the pinned cyclops note carries a pin ring");
             await hold("F");
-            await b.click("#editor-pill-rim");
+            await place("rim");
             assert.match(await status(), /^F5 added to the rim\./);
             assert.strictEqual(await pinRings(), 1, "an auto note has no pin ring");
           });
@@ -1820,24 +1812,28 @@ function run() {
     const inView = (ids, w, h) => b.eval(`return ${JSON.stringify(ids)}.filter((id) => { const q = document.getElementById(id).getBoundingClientRect();
       return q.width === 0 || q.height === 0 || q.top < 0 || q.bottom > ${h} || q.left < 0 || q.right > ${w}; });`);
 
-    test("375x667: the octave row holds the flats chip, the octave controls and the palette chip, and the panel does not scroll", async () => {
+    test("375x667: the Scale tab holds the octave controls and Sharps|Flats, the Layout tab the palette and anchors, all 44px and in view, and the panel does not scroll", async () => {
       await setup(BOTTOM);
-      assert.deepStrictEqual(await inView(["editor-oct-down", "editor-oct-up", "editor-flats", "editor-palette", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
-      const row = await b.eval(`const r = document.querySelector(".editor-octaves"); const q = (id) => document.getElementById(id).getBoundingClientRect();
-        return { ids: ["editor-flats", "editor-palette"].map((id) => q(id).height >= 44 && q(id).width >= 44), after: q("editor-palette").left >= q("editor-flats").right - 1, sameRow: Math.abs(q("editor-palette").top - q("editor-flats").top) < 2 };`);
-      assert.deepStrictEqual(row, { ids: [true, true], after: true, sameRow: true });
-      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true });
+      assert.deepStrictEqual(await inView(["editor-oct-down", "editor-oct-up", "editor-sharps", "editor-flats"], 375, 667), []);
+      const big = (ids) => b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect(); return ${JSON.stringify(ids)}.map((id) => q(id).height >= 44 && q(id).width >= 44);`);
+      assert.deepStrictEqual(await big(["editor-oct-down", "editor-oct-up", "editor-sharps", "editor-flats"]), [true, true, true, true]);
+      assert.strictEqual(await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect(); return Math.abs(q("editor-sharps").top - q("editor-flats").top) < 2 && q("editor-flats").left >= q("editor-sharps").right - 1;`), true, "Sharps then Flats on one row");
+      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "Scale tab");
+      await b.click("#editor-tab-layout");
+      assert.deepStrictEqual(await inView(["editor-palette", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
+      assert.deepStrictEqual(await big(["editor-palette", "editor-anchor-one", "editor-anchor-between"]), [true, true, true]);
+      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "Layout tab");
     });
 
-    test("the palette chip swaps the note grid for ten 44px swatches, with no scroll at 375x667, and a pick recolours the chip and closes", async () => {
+    test("the palette chip opens ten 44px swatches in the Layout tab, with no scroll at 375x667, and a pick recolours the chip and closes", async () => {
       await setup(BOTTOM);
       const dot = () => b.eval(`return getComputedStyle(document.querySelector("#editor-palette .pal-dot")).backgroundImage;`);
       const fillBefore = await dot();
       await b.click("#editor-palette");
       const open = await b.eval(`const g = document.getElementById("editor-swatches"); const dots = [...g.querySelectorAll("button")];
-        return { n: dots.length, tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), notes: getComputedStyle(document.getElementById("editor-notes")).display,
+        return { n: dots.length, tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), notes: document.getElementById("editor-panel-scale").hasAttribute("hidden"),
           pressed: document.getElementById("editor-palette").getAttribute("aria-expanded"), names: dots.slice(0, 2).map((d) => d.getAttribute("aria-label")) };`);
-      assert.deepStrictEqual(open, { n: 10, tall: true, notes: "none", pressed: "true", names: ["Card palette 1", "Card palette 2"] });
+      assert.deepStrictEqual(open, { n: 10, tall: true, notes: true, pressed: "true", names: ["Card palette 1", "Card palette 2"] });
       assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "swatches open");
       assert.deepStrictEqual(await inView(["editor-swatches", "editor-save", "editor-palette"], 375, 667), []);
       const past = await pastLen();
@@ -1885,6 +1881,7 @@ function run() {
     test("the anchor controls are at least 44px", async () => {
       await setup("(D3) " + RIM8 + " [G2]\n");
       await typeLine(BOTTOM);
+      await b.click("#editor-tab-layout");
       const sizes = await b.eval(`return ["editor-anchor-one", "editor-anchor-between"].map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return q.width >= 44 && q.height >= 44; });`);
       assert.deepStrictEqual(sizes, [true, true]);
     });
@@ -1903,27 +1900,20 @@ function run() {
     const ding = () => b.eval(`return editorDingOf(editorSession.history.present);`);
     const setup = async (line, width = 390, height = 844) => { await fresh(width, height); await openAdd(); await typeLine(line); };
 
-    test("Replace ding sits beside the area pills, sets the ding to a held tray note, and swaps in a selected bottom note", async () => {
+    test("the ding takes a held tray note or a selected bottom note through the pan, with no Replace ding button", async () => {
       await setup("[A2] (D3) " + RIM8 + " | C5 D5");
-      const row = await b.eval(`const p = document.getElementById("editor-pills").getBoundingClientRect(), d = document.getElementById("editor-replace-ding"); const q = d.getBoundingClientRect();
-        return { inside: q.top >= p.top - 1 && q.bottom <= p.bottom + 1, level: Math.abs(q.top - document.getElementById("editor-pill-rim").getBoundingClientRect().top) < 2, text: d.textContent };`);
-      assert.deepStrictEqual(row, { inside: true, level: true, text: "Replace ding" });
-      await b.click("#editor-replace-ding");
-      assert.strictEqual(await status(), "Pick a note below, or on the pan, first.");
+      assert.strictEqual(await b.eval(`return !document.getElementById("editor-replace-ding") && !document.getElementById("editor-pills");`), true);
       await b.click("#editor-oct-down");
       await b.click('.tray-note[data-name="G"]');
-      await b.click("#editor-replace-ding");
-      assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
-      assert.strictEqual(await ding(), "G3");
-      assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+      await b.eval(`editorPlaceHeld({ kind: "ding" }, editorSession.history.present); return true;`);
+      assert.strictEqual(await ding(), "G3", await status());
       await clickUndo();
-      await b.click("#editor-pan");
-      await b.eval(`editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); return true;`);
-      await b.click("#editor-replace-ding");
+      assert.strictEqual(await ding(), "D3");
+      await b.eval(`editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); editorSelectTap({ kind: "ding" }, editorSession.history.present); return true;`);
       assert.strictEqual(await ding(), "A2");
     });
 
-    test("every label in the pills row and the action row fits its button at 390, 375 and 320 wide, in all eight locales, with the real fonts", async () => {
+    test("every label in the tabs, the count row and the toolbar fits its button at 390, 375 and 320 wide, in all eight locales, with the real fonts", async () => {
       const prev = b;
       b = await launch({ foregroundSettle: true, realFonts: true });
       try {
@@ -1937,7 +1927,7 @@ function run() {
             await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
             await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
             const bad = await b.eval(`const out = [];
-              for (const btn of document.querySelectorAll("#editor-pills button, #editor .editor-toolbar button")) {
+              for (const btn of document.querySelectorAll("#editor-tabs button, #editor .editor-toolbar button")) {
                 if (!btn.offsetParent) continue;
                 const box = btn.getBoundingClientRect();
                 const range = document.createRange(); range.selectNodeContents(btn);
@@ -2115,6 +2105,7 @@ function run() {
       await enter();
       assert.strictEqual(await b.eval(`return editorSession.editing;`), true);
       await press("Escape", "Escape", 27);
+      await b.click("#editor-tab-layout");
       await b.eval(`document.getElementById("editor-palette").focus(); return true;`);
       await enter();
       assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), false);
@@ -2275,7 +2266,7 @@ function run() {
       });
     }
 
-    test("drag ux E4: a placed note is highlighted after a drag, a tap, a pill, Replace ding, a trade and the keyboard, and not after Undo", async () => {
+    test("drag ux E4: a placed note is highlighted after a drag, a tap, a zone add, a ding swap, a trade and the keyboard, and not after Undo", async () => {
       const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
       await setup(SCALE_);
       await liftFrom(await chipAt("B"), await noteAt("rim", 0));
@@ -2286,8 +2277,8 @@ function run() {
       await clickUndo();
       assert.deepStrictEqual(await marked(), [], "not after Undo");
       await b.click('.tray-note[data-name="B"]');
-      await b.click("#editor-pill-rim");
-      assert.deepStrictEqual(await marked(), ["rim8"], "pill tap");
+      await place("rim");
+      assert.deepStrictEqual(await marked(), ["rim8"], "zone add");
       await clickUndo();
       await b.click('.tray-note[data-name="B"]');
       const gm = await geom();
@@ -2297,8 +2288,8 @@ function run() {
       await clickUndo();
       await b.click("#editor-oct-down");
       await b.click('.tray-note[data-name="G"]');
-      await b.click("#editor-replace-ding");
-      assert.deepStrictEqual(await marked(), ["ding0"], "Replace ding");
+      await b.eval(`editorPlaceHeld({ kind: "ding" }, editorSession.history.present); return true;`);
+      assert.deepStrictEqual(await marked(), ["ding0"], "ding swap");
       await clickUndo();
       await b.eval(`editorSession.sel = { ring: "rim", i: 0 }; editorRender(); return true;`);
       await b.eval(`editorTrade(editorSession.history.present, { ring: "rim", i: 0 }, { ring: "rim", i: 1 }); editorRender(); return true;`);
@@ -2442,7 +2433,7 @@ function run() {
   });
 
   describe("TRI-59 owner DEV-QA nits 3", () => {
-    const DELETE_LABEL = "DELETE THIS SCALE";
+    const DELETE_LABEL = "Delete scale";
         const saveNew = async (line) => {
       await openAdd();
       await typeLine(line);
@@ -2453,18 +2444,20 @@ function run() {
       await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
       await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the selected scale" });
     };
-    const label = () => b.eval(`return document.getElementById("editor-delete").getAttribute("aria-label");`);
+    const label = () => b.eval(`return document.getElementById("editor-delete").textContent;`);
+    const guard = () => new Promise((done) => setTimeout(done, 450));
 
-    test("TRI59 delete is offered on an edited scale only, as a 44px target in the header", async () => {
+    test("TRI59 delete is offered on an edited scale only, as a 44px item in the ... menu", async () => {
       await fresh();
       await openAdd();
       assert.strictEqual(await b.eval(`return !!document.getElementById("editor-delete");`), false, "no delete on a scale not yet saved");
       await fresh();
       await openBuiltin();
-      const r = await b.eval(`const e = document.getElementById("editor-delete"), q = e.getBoundingClientRect(), h = document.querySelector(".editor-head").getBoundingClientRect();
-        return { name: e.getAttribute("aria-label"), w: q.width, h: q.height, inHead: q.left >= h.left && q.right <= h.right + 0.5 && q.top >= h.top - 0.5 && q.bottom <= h.bottom + 0.5 };`);
-      assert.deepStrictEqual(r, { name: DELETE_LABEL, w: r.w, h: r.h, inHead: true });
-      assert.ok(r.w >= 44 && r.h >= 44, JSON.stringify(r));
+      await b.click("#editor-more");
+      const r = await b.eval(`const e = document.getElementById("editor-delete"), q = e.getBoundingClientRect(), m = document.getElementById("editor-menu").getBoundingClientRect();
+        return { name: e.textContent, role: e.getAttribute("role"), w: q.width, h: q.height, inMenu: q.left >= m.left - 0.5 && q.right <= m.right + 0.5 && q.top >= m.top - 0.5 && q.bottom <= m.bottom + 0.5, inHead: !!e.closest(".editor-head") };`);
+      assert.deepStrictEqual(r, { name: DELETE_LABEL, role: "menuitem", w: r.w, h: r.h, inMenu: true, inHead: false });
+      assert.ok(r.h >= 44, JSON.stringify(r));
     });
 
     test("TRI59 delete first tap arms and says what will go, the second removes the saved scale and closes the editor", async () => {
@@ -2473,9 +2466,10 @@ function run() {
       const before = await savedCount();
       await reopenSelected();
       await b.click("#editor-delete");
-      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.match(await label(), /^Press again to delete /);
       assert.strictEqual(await savedCount(), before, "one tap deletes nothing");
       assert.match(await b.eval(`return document.getElementById("editor-status").textContent;`), /^Tap again to remove .+ This cannot be undone\.$/);
+      await guard();
       await b.click("#editor-delete");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the editor to close after delete" });
       assert.strictEqual(await savedCount(), before - 1);
@@ -2491,11 +2485,11 @@ function run() {
       assert.strictEqual(await label(), DELETE_LABEL);
       assert.doesNotMatch(await b.eval(`return document.getElementById("editor-status").textContent;`), /Tap again to remove/);
       await b.click("#editor-delete");
-      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.match(await label(), /^Press again to delete /);
       assert.strictEqual(await savedCount(), before);
     });
 
-    test("TRI59 delete leaves the header fitting at 320, 375 and 390", async () => {
+    test("the header keeps Back and the pan type fitting at 320, 375 and 390 now that Delete left it", async () => {
       for (const [w, h] of [[320, 568], [375, 667], [390, 844]]) {
         await fresh(w, h);
         await openBuiltin();
@@ -2503,7 +2497,7 @@ function run() {
           const kids = [...head.querySelectorAll("button")].map((e) => e.getBoundingClientRect());
           return { fits: head.scrollWidth <= head.clientWidth + 0.5 && kids.every((k) => k.left >= q.left - 0.5 && k.right <= q.right + 0.5 && k.width >= 44 && k.height >= 44),
             overlap: kids.some((k, i) => kids.some((o, j) => j > i && k.left < o.right - 0.5 && o.left < k.right - 0.5)), n: kids.length };`);
-        assert.deepStrictEqual(r, { fits: true, overlap: false, n: 4 }, w + " " + JSON.stringify(r));
+        assert.deepStrictEqual(r, { fits: true, overlap: false, n: 3 }, w + " " + JSON.stringify(r));
       }
     });
 
@@ -2522,6 +2516,7 @@ function run() {
         await fresh(w, h);
         await openAdd();
         await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        await b.click("#editor-tab-layout");
         const row = () => b.eval(`const box = (id) => document.getElementById(id).getBoundingClientRect();
           const all = [...document.querySelectorAll("#editor-layout button")].map((e) => e.id);
           const ids = [...document.querySelectorAll("#editor-layout button")].filter((e) => e.offsetParent !== null).map((e) => e.id);
@@ -2573,10 +2568,10 @@ function run() {
         await fresh(w, h);
         await openBuiltin();
         const r = await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect();
-          const down = q("editor-oct-down"), up = q("editor-oct-up"), lab = q("editor-oct-label"), val = q("editor-oct"), flats = q("editor-flats"), pal = q("editor-palette"), notes = q("editor-notes");
+          const down = q("editor-oct-down"), up = q("editor-oct-up"), lab = q("editor-oct-label"), val = q("editor-oct"), sharps = q("editor-sharps"), flats = q("editor-flats"), notes = q("editor-notes");
           const e = document.getElementById("editor"), de = document.documentElement;
-          return { group: Math.round(up.right - down.left), targets: [down, up, flats, pal].every((x) => x.width >= 44 && x.height >= 44),
-            oneRow: [up, flats, pal].every((x) => Math.abs(x.top - down.top) < 1), labelBetween: lab.left >= down.right - 0.5 && lab.right <= up.left + 0.5 && val.left >= down.right - 0.5 && val.right <= up.left + 0.5,
+          return { group: Math.round(up.right - down.left), targets: [down, up, sharps, flats].every((x) => x.width >= 44 && x.height >= 44),
+            oneRow: [up, sharps, flats].every((x) => Math.abs(x.top - down.top) < 1), labelBetween: lab.left >= down.right - 0.5 && lab.right <= up.left + 0.5 && val.left >= down.right - 0.5 && val.right <= up.left + 0.5,
             stacked: val.top >= lab.bottom - 0.5, cols: notes.width / 6, noScroll: e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth && de.scrollWidth === ${w} };`);
         assert.ok(r.group <= 160, w + ": octave stepper spans " + r.group + "px (was 4+ grid columns)");
         assert.ok(r.group <= r.cols * 3 + 4, w + ": octave stepper is at most three note columns: " + JSON.stringify(r));
@@ -2593,7 +2588,7 @@ function run() {
       await saveNew(SCALE);
       await reopenSelected();
       await b.click("#editor-delete");
-      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.match(await label(), /^Press again to delete /);
       const at = await panNote("rim", 1);
       await mouse("mousePressed", at);
       await mouse("mouseReleased", at);
@@ -2602,7 +2597,7 @@ function run() {
       assert.doesNotMatch(await statusText(), /Tap again to remove/);
       await b.eval(`editorSession.sel = null; editorRender(); return true;`);
       await b.click("#editor-delete");
-      assert.strictEqual(await label(), "TAP AGAIN TO DELETE");
+      assert.match(await label(), /^Press again to delete /);
       await mouse("mousePressed", at);
       assert.strictEqual(await label(), DELETE_LABEL, "disarmed on the press");
       for (const k of [0.3, 0.6, 1]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: at.x + 40 * k, y: at.y + 40 * k, button: "left", buttons: 1 });
@@ -2617,11 +2612,12 @@ function run() {
       await reopenSelected();
       await b.eval(`window.__realCommit = commitSaved; commitSaved = async () => ({ ok: false, kind: "failure" }); return true;`);
       await b.click("#editor-delete");
+      await guard();
       await b.click("#editor-delete");
       await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the delete error" });
       assert.match(await statusText(), /^Could not save these changes\./);
       assert.strictEqual(await label(), DELETE_LABEL);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").classList.contains("armed") || document.getElementById("editor-delete").title !== document.getElementById("editor-delete").getAttribute("aria-label");`), false);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").classList.contains("armed");`), false);
       assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), false, "the editor stays open");
       assert.strictEqual(await savedCount(), before);
       await b.eval(`commitSaved = window.__realCommit; return true;`);
@@ -2632,9 +2628,9 @@ function run() {
       await openBuiltin();
       await b.eval(`const all = allDeckViews; allDeckViews = () => all().filter((v) => savedEqual(v.selection, selection)); return true;`);
       await b.click("#editor-delete");
+      await guard();
       await b.click("#editor-delete");
       assert.strictEqual(await label(), DELETE_LABEL);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").title;`), DELETE_LABEL);
       assert.strictEqual(await b.eval(`return editorSession.delNote;`), "");
     });
 
@@ -2675,24 +2671,284 @@ function run() {
             await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
             await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
             await b.click("#editor-type-neotone");
-            const bad = await b.eval(`const out = [], row = document.querySelector(".editor-octaves").getBoundingClientRect();
-              for (const id of ["editor-oct-label", "editor-oct", "editor-flats", "editor-delete", "editor-anchor-one", "editor-anchor-between"]) {
+            const bad = await b.eval(`const out = [];
+              for (const id of ["editor-oct-label", "editor-oct", "editor-sharps", "editor-flats", "editor-anchor-one", "editor-anchor-between", "editor-palette", "editor-more"]) {
                 const e = document.getElementById(id); if (!e || !e.offsetParent) continue;
                 const box = e.getBoundingClientRect();
                 if (e.scrollWidth > e.clientWidth + 0.5) out.push(id + " scrollWidth");
                 const range = document.createRange(); range.selectNodeContents(e);
                 for (const r of range.getClientRects()) if (r.width && (r.left < box.left - 0.5 || r.right > box.right + 0.5)) out.push(id + ":" + e.textContent);
               }
-              const q = document.getElementById("editor-palette").getBoundingClientRect(); if (q.right > row.right + 0.5) out.push("row overflow");
               const ed = document.getElementById("editor"); if (ed.scrollWidth > ed.clientWidth || ed.scrollHeight > ed.clientHeight) out.push("panel scroll");
               return out;`);
             assert.deepStrictEqual(bad, [], width + " " + lang);
+            await b.click("#editor-tab-layout");
+            assert.deepStrictEqual(await b.eval(`const out = []; for (const id of ["editor-anchor-one", "editor-anchor-between", "editor-palette"]) { const e = document.getElementById(id); if (e && e.offsetParent && e.scrollWidth > e.clientWidth + 0.5) out.push(id); } return out;`), [], width + " " + lang + " layout");
+            await b.click("#editor-more");
+            assert.deepStrictEqual(await b.eval(`const m = document.getElementById("editor-menu").getBoundingClientRect(); return [...document.querySelectorAll("#editor-menu [role=menuitem]")].filter((e) => { const q = e.getBoundingClientRect(); return e.scrollWidth > e.clientWidth + 0.5 || q.left < 0 || q.right > innerWidth; }).map((e) => e.id);`), [], width + " " + lang + " menu");
+            await b.key("Escape", "Escape", 27);
+            await b.click("#editor-tab-scale");
           }
         }
       } finally {
         await b.close();
         b = prev;
       }
+    });
+  });
+
+  describe("Editor RC W3 P1 tabs, counts, menu, Sharps|Flats, swipe", () => {
+    const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+    const setup = async (line, w = 375, h = 667) => { await fresh(w, h); await openAdd(); await typeLine(line); };
+    const hold = (name) => b.click(`.tray-note[data-name="${name}"]`);
+    const tabNow = () => b.eval(`return editorSession.tab;`);
+    const visible = (id) => b.eval(`const e = document.getElementById(${JSON.stringify(id)}); return !!e && !e.hidden && !e.hasAttribute("hidden") && e.offsetParent !== null;`);
+    const swipeBy = (selector, dx, ms = 120, dy = 0) => b.drag(selector, [[dx / 2, ms / 2, dy / 2], [dx, ms, dy]]);
+
+    test("tabs: tablist semantics, roving tabindex, Arrow, Home and End move and focus, the other panel is hidden", async () => {
+      await setup(SCALE);
+      const r = await b.eval(`const tabs = [...document.querySelectorAll("#editor-tabs [role=tab]")];
+        return { list: document.getElementById("editor-tabs").getAttribute("role"), ids: tabs.map((x) => x.id), sel: tabs.map((x) => x.getAttribute("aria-selected")), ti: tabs.map((x) => x.tabIndex),
+          ctl: tabs.map((x) => x.getAttribute("aria-controls")), panels: tabs.map((x) => document.getElementById(x.getAttribute("aria-controls")).getAttribute("role")),
+          hidden: tabs.map((x) => document.getElementById(x.getAttribute("aria-controls")).hasAttribute("hidden")) };`);
+      assert.deepStrictEqual(r, { list: "tablist", ids: ["editor-tab-scale", "editor-tab-layout"], sel: ["true", "false"], ti: [0, -1],
+        ctl: ["editor-panel-scale", "editor-panel-layout"], panels: ["tabpanel", "tabpanel"], hidden: [false, true] });
+      await b.eval(`document.getElementById("editor-tab-scale").focus(); return true;`);
+      await b.key("ArrowRight", "ArrowRight", 39);
+      assert.strictEqual(await tabNow(), "layout");
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-tab-layout");
+      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-tabs [role=tab]")].map((x) => x.tabIndex);`), [-1, 0]);
+      await b.key("Home", "Home", 36);
+      assert.strictEqual(await tabNow(), "scale");
+      await b.key("End", "End", 35);
+      assert.strictEqual(await tabNow(), "layout");
+      await b.key("ArrowLeft", "ArrowLeft", 37);
+      assert.strictEqual(await tabNow(), "scale");
+    });
+
+    test("tabs: Scale holds the notes, octave and Sharps|Flats; Layout holds the anchors and the palette; neither tab reaches the other's controls", async () => {
+      await setup(SCALE);
+      assert.deepStrictEqual(await b.eval(`const inside = (p, id) => document.getElementById(p).contains(document.getElementById(id));
+        return ["editor-notes", "editor-oct", "editor-sharps", "editor-flats"].map((id) => inside("editor-panel-scale", id));`), [true, true, true, true]);
+      assert.strictEqual(await visible("editor-palette"), false, "the palette is not on the Scale tab");
+      await b.click("#editor-tab-layout");
+      assert.strictEqual(await visible("editor-palette"), true);
+      assert.strictEqual(await visible("editor-notes"), false);
+      assert.deepStrictEqual(await b.eval(`return ["editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById("editor-panel-layout").contains(document.getElementById(id)));`), [true, true]);
+    });
+
+    test("tabs: a held note survives a tab switch and still places from the Scale tab", async () => {
+      await setup(SCALE);
+      await hold("B");
+      await b.click("#editor-tab-layout");
+      assert.strictEqual(await b.eval(`return editorSession.held !== null;`), true);
+      await b.click("#editor-tab-scale");
+      assert.strictEqual(await b.eval(`return editorSession.held !== null;`), true);
+      await place("rim");
+      assert.strictEqual(await zoneCount("rim"), "Rim 9/12");
+    });
+
+    test("tabs: choosing a palette swatch keeps the Layout tab", async () => {
+      await setup(SCALE);
+      await b.click("#editor-palette");
+      assert.strictEqual(await tabNow(), "layout");
+      await b.click("#editor-swatches button");
+      assert.strictEqual(await tabNow(), "layout");
+    });
+
+    test("counts: Standard shows Rim, Cyclops, Bottom and Ding; Neotone shows Main, Mutant and Ding with no Full mark", async () => {
+      await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-counts .zc")].map((e) => e.textContent);`), ["Rim 7/12", "Cyclops 0/6", "Bottom 1/12", "Ding 1/1 Full"]);
+      await b.click("#editor-type-neotone");
+      const neo = await b.eval(`return [...document.querySelectorAll("#editor-counts .zc")].map((e) => [e.dataset.zone, e.textContent, e.classList.contains("full")]);`);
+      assert.deepStrictEqual(neo.map((x) => x[0]), ["main", "mutant", "ding"]);
+      assert.ok(neo.every((x) => /^(Main|Mutant|Ding) \d\/(9|1)/.test(x[1]) && !/Full/.test(x[1].replace(/^Ding.*/, "")) ), JSON.stringify(neo));
+    });
+
+    test("counts: both hint lines render under the counts on both tabs", async () => {
+      await setup(SCALE);
+      const hint = () => b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent + ":" + (e.offsetParent !== null));`);
+      const want = ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.:true", "Drop or tap a note on the ding to swap it with the root.:true"];
+      assert.deepStrictEqual(await hint(), want);
+      await b.click("#editor-tab-layout");
+      assert.deepStrictEqual(await hint(), want);
+      assert.strictEqual(await b.eval(`return !document.getElementById("editor-panels").contains(document.getElementById("editor-hint"));`), true, "the hint sits outside both panels");
+    });
+
+    test("menu: the ... button opens a menu with Redo, Remove note and Reset spacing; focus moves in, arrows move, Escape closes and returns focus", async () => {
+      await setup(SCALE);
+      const more = () => b.eval(`const e = document.getElementById("editor-more"); const q = e.getBoundingClientRect(); return { exp: e.getAttribute("aria-expanded"), pop: e.getAttribute("aria-haspopup"), w: q.width, h: q.height };`);
+      let m = await more();
+      assert.deepStrictEqual([m.exp, m.pop, m.w >= 44, m.h >= 44], ["false", "menu", true, true]);
+      assert.strictEqual(await visible("editor-menu"), false);
+      await b.click("#editor-more");
+      assert.strictEqual(await visible("editor-menu"), true);
+      assert.strictEqual((await more()).exp, "true");
+      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-menu [role=menuitem]")].map((e) => e.id);`), ["editor-redo", "editor-remove", "editor-reset"]);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-menu").contains(document.activeElement);`), true, "focus moved in");
+      await b.key("Escape", "Escape", 27);
+      assert.strictEqual(await visible("editor-menu"), false);
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-more");
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor");`), true, "Escape closed the menu, not the editor");
+    });
+
+    test("menu: an outside tap closes it, and Tab closes it and returns focus to the button", async () => {
+      await setup(SCALE);
+      await b.click("#editor-more");
+      await b.click("#editor-counts");
+      assert.strictEqual(await visible("editor-menu"), false);
+      await b.click("#editor-more");
+      await b.key("Tab", "Tab", 9);
+      assert.strictEqual(await visible("editor-menu"), false);
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-more");
+    });
+
+    test("menu: Redo and Remove note act and close the menu; disabled items are aria-disabled and do nothing", async () => {
+      await setup(SCALE);
+      await b.click("#editor-more");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-redo").getAttribute("aria-disabled");`), "true");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-remove").getAttribute("aria-disabled");`), "true");
+      await b.key("Escape", "Escape", 27);
+      await hold("B");
+      await place("rim");
+      await clickUndo();
+      assert.strictEqual(await zoneCount("rim"), "Rim 8/12");
+      await b.click("#editor-redo");
+      assert.strictEqual(await zoneCount("rim"), "Rim 9/12");
+      assert.strictEqual(await visible("editor-menu"), false, "the pick closed the menu");
+    });
+
+    test("menu: Save is violet with white text at 4.5:1 or better, and Undo stays beside it on the toolbar", async () => {
+      await setup(SCALE);
+      const r = await b.eval(`const lum = (c) => { const v = c.match(/\\d+/g).slice(0, 3).map((x) => { const s = x / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+        const s = getComputedStyle(document.getElementById("editor-save")); const a = lum(s.backgroundColor), f = lum(s.color);
+        return { bg: s.backgroundColor, ratio: (Math.max(a, f) + 0.05) / (Math.min(a, f) + 0.05), bar: [...document.querySelectorAll(".editor-toolbar > button")].map((e) => e.id) };`);
+      assert.strictEqual(r.bg, "rgb(103, 86, 181)");
+      assert.ok(r.ratio >= 4.5, "contrast " + r.ratio);
+      assert.deepStrictEqual(r.bar, ["editor-undo", "editor-save", "editor-more"]);
+    });
+
+    test("menu: Delete is in the menu only on an edited scale; one press arms it, a press inside the 400ms guard does nothing, a second deletes", async () => {
+      await fresh();
+      await openAdd();
+      await b.click("#editor-more");
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-delete");`), false, "none on a scale not yet saved");
+      await b.key("Escape", "Escape", 27);
+      await fresh();
+      await openBuiltin();
+      await b.click("#editor-more");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").textContent;`), "Delete scale");
+      assert.strictEqual(await b.eval(`return !!document.querySelector("#editor-menu .menu-sep");`), true);
+      await b.click("#editor-delete");
+      assert.match(await b.eval(`return document.getElementById("editor-delete").textContent;`), /^Press again to delete /);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").classList.contains("armed");`), true);
+      assert.strictEqual(await visible("editor-menu"), true, "arming keeps the menu open");
+      await b.eval(`editorDeleteTap(); return true;`);
+      assert.strictEqual(await b.eval(`return editorSession.delArmed;`), true, "inside the guard a second press does nothing");
+    });
+
+    test("menu: an armed Delete disarms when the menu closes by Escape or an outside tap", async () => {
+      await fresh();
+      await openBuiltin();
+      await b.click("#editor-more");
+      await b.click("#editor-delete");
+      await b.key("Escape", "Escape", 27);
+      assert.strictEqual(await b.eval(`return editorSession.delArmed;`), false);
+      await b.click("#editor-more");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").textContent;`), "Delete scale");
+    });
+
+    test("Sharps|Flats: one two-state control, Sharps by default; Flats flips the tray names and Sharps flips them back", async () => {
+      await setup(SCALE);
+      const state = () => b.eval(`return { s: document.getElementById("editor-sharps").getAttribute("aria-pressed"), f: document.getElementById("editor-flats").getAttribute("aria-pressed"), names: [...document.querySelectorAll(".tray-note")].map((e) => e.dataset.name).join(" ") };`);
+      const before = await state();
+      assert.deepStrictEqual([before.s, before.f], ["true", "false"]);
+      await b.click("#editor-flats");
+      const after = await state();
+      assert.deepStrictEqual([after.s, after.f], ["false", "true"]);
+      assert.notStrictEqual(after.names, before.names);
+      assert.match(after.names, /b/);
+      await b.click("#editor-sharps");
+      assert.deepStrictEqual(await state(), before);
+    });
+
+    describe("swipe between Scale and Layout", () => {
+      test("a left swipe on the Scale panel opens Layout and a right swipe returns", async () => {
+        await setup(SCALE);
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "layout");
+        await swipeBy(".editor-palette-row", 120);
+        assert.strictEqual(await tabNow(), "scale");
+      });
+
+      test("a short, slow or mostly vertical swipe changes nothing", async () => {
+        await setup(SCALE);
+        await swipeBy(".editor-accidentals", -30);
+        assert.strictEqual(await tabNow(), "scale", "under 48px");
+        await b.drag(".editor-accidentals", [[-60, 400], [-120, 800]]);
+        assert.strictEqual(await tabNow(), "scale", "over 600ms");
+        await swipeBy(".editor-accidentals", -80, 120, 70);
+        assert.strictEqual(await tabNow(), "scale", "not twice as wide as tall");
+      });
+
+      test("a swipe that starts on the pan, a tray note or a text field does not switch tabs", async () => {
+        await setup(SCALE);
+        await swipeBy("#editor-pan", -120);
+        assert.strictEqual(await tabNow(), "scale", "pan");
+        await swipeBy(".tray-note", -120);
+        assert.strictEqual(await tabNow(), "scale", "tray note");
+        await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); return true;`);
+        await swipeBy("#probe-input", -120);
+        assert.strictEqual(await tabNow(), "scale", "text field");
+      });
+
+      test("a swipe does not switch tabs while a note is held or selected", async () => {
+        await setup(SCALE);
+        await hold("B");
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "scale", "held");
+        await b.eval(`editorSession.held = null; editorSession.sel = { ring: "rim", i: 0 }; editorRender(); return true;`);
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "scale", "selected");
+      });
+
+      test("a swipe does not switch tabs while the line is being edited or a dialog is open", async () => {
+        await setup(SCALE);
+        await b.eval(`editorSession.editing = true; return true;`);
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "scale", "editing");
+        await b.eval(`editorSession.editing = false; editorSession.dialog = true; return true;`);
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "scale", "dialog");
+      });
+
+      test("a swipe that starts within 24px of either screen edge is left to the browser", async () => {
+        await setup(SCALE);
+        const x = await b.eval(`const r = document.querySelector(".editor-accidentals").getBoundingClientRect(); return { left: r.left, w: window.innerWidth };`);
+        const send = async (x0, dx) => {
+          const y = await b.eval(`const r = document.querySelector(".editor-accidentals").getBoundingClientRect(); return r.top + r.height / 2;`);
+          const t0 = Date.now() / 1000;
+          const tp = (px) => [{ x: px, y, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+          await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: tp(x0), timestamp: t0 });
+          await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(x0 + dx), timestamp: t0 + 0.1 });
+          await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + 0.1 });
+        };
+        await send(x.w - 10, -150);
+        assert.strictEqual(await tabNow(), "scale", "right edge");
+        await b.eval(`editorSetTab("layout"); return true;`);
+        await send(10, 150);
+        assert.strictEqual(await tabNow(), "layout", "left edge");
+      });
+
+      test("a swipe does not switch tabs mid-drag; the legacy sheet swipe is untouched by the editor's", async () => {
+        await setup(SCALE);
+        await b.eval(`document.getElementById("editor").classList.add("dragging"); return true;`);
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "scale", "dragging");
+        await b.eval(`document.getElementById("editor").classList.remove("dragging"); return true;`);
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "layout", "armed again once the drag ends");
+      });
     });
   });
 
