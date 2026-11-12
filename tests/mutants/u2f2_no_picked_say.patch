@@ -1,5 +1,5 @@
-# kills: pill moves a selected note to that area as one Undo step
-# suite: node --test --test-name-pattern ^pill.moves.a.selected tests/editor_e2e.test.js
+# kills: a selected note moves to a tapped ring as one Undo step
+# suite: node --test --test-name-pattern ^a.selected.note.moves.a.tapped.ring tests/editor_e2e.test.js
 # fault: Selecting a placed note says nothing.
 diff --git a/index.html b/index.html
 --- a/index.html
