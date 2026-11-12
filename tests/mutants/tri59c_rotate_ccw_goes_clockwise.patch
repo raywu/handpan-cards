@@ -1,0 +1,15 @@
+# kills: TRI59c each rotate tap moves every Neotone note one fixture step, says which way, and wraps
+# suite: node --test --test-name-pattern ^TRI59c.each.rotate.tap tests/editor_e2e.test.js
+# fault: The anticlockwise button turns clockwise.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16962,7 +16962,7 @@ function editorWire() {
+   editorEl("editor-palette").onclick = editorPaletteTap;
+   editorEl("editor-mirror-top").onclick = () => editorLayoutTap((m) => (m.options.profile ? editorNeoMirror(m) : editorSetMirror(m, "top")),
+     (m) => t(m.options.profile ? "editor.neo.say_mirror" : m.options.mirror ? "sheet.mirror_top_off" : "sheet.mirror_top_on"));
+-  editorEl("editor-rotate-ccw").onclick = () => editorLayoutTap((m) => editorNeoRotate(m, -1), () => t("editor.neo.say_rotate_ccw"));
++  editorEl("editor-rotate-ccw").onclick = () => editorLayoutTap((m) => editorNeoRotate(m, 1), () => t("editor.neo.say_rotate_ccw"));
+   editorEl("editor-rotate-cw").onclick = () => editorLayoutTap((m) => editorNeoRotate(m, 1), () => t("editor.neo.say_rotate_cw"));
+   editorEl("editor-mirror-bottom").onclick = () => editorLayoutTap((m) => editorSetMirror(m, "bottom"), (m) => t(editorBottomMirror(m) ? "sheet.mirror_bottom_off" : "sheet.mirror_bottom_on"), true);
+   editorEl("editor-anchor-one").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "one"), () => t("sheet.anchor_one_on"));

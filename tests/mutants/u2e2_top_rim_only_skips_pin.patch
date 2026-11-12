@@ -1,0 +1,15 @@
+# kills: U2e2-9: MIRROR TOP on a rim-only scale writes mirrorBottom false, on the code today's tabs build
+# suite: node --test --test-name-pattern ^U2e2.9:. tests/editor_shell.test.js
+# fault: MIRROR TOP pins mirrorBottom only when a bottom exists, so a rim-only link loses mirror-top.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15364,7 +15364,7 @@ function editorSetMirror(m, which) {
+   const bottom = editorBottomMirror(m);
+   if (which === "top") {
+     next.options.mirror = !next.options.mirror;
+-    next.options.mirrorBottom = bottom;
++    if (editorHasBottom(m)) next.options.mirrorBottom = bottom;
+     if (next.options.angles && next.options.angles.inner) next.options.angles = HPE.layout.reflectAngles(next.options.angles, "inner");
+   } else {
+     next.options.mirrorBottom = !bottom;
