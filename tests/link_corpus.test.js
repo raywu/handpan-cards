@@ -116,6 +116,29 @@ test("LC: every frozen link decodes to its recorded deck id, fields, options and
   }
 });
 
+const FROZEN_LATER = [7, 8].map((n) =>
+  JSON.parse(fs.readFileSync(path.join(FIXTURES, "share_links_v1", `v${n}.json`), "utf8")));
+
+test("LC: frozen v7 and v8 links decode unchanged", () => {
+  assert.deepEqual(FROZEN_LATER.map((d) => d.wireVersion), [7, 8]);
+  const on = loadEngine();
+  on.core.PROFILE_ENABLED = true;
+  for (const doc of FROZEN_LATER) {
+    assert.ok(doc.entries.length >= 4);
+    for (const e of doc.entries) {
+      const where = `v${doc.wireVersion} ${e.id}`;
+      assert.ok(e.link.startsWith(String(doc.wireVersion)), where);
+      assert.ok(e.provenance.includes(doc.encoderCommit), where);
+      const res = on.share.decode(e.link);
+      assert.equal(res.ok, true, `${where}: ${res.code} ${res.reason}`);
+      const value = plain(res.value);
+      assert.deepEqual(value.fields, e.fields, `${where}: fields`);
+      assert.deepEqual(value.options, e.options, `${where}: options`);
+      assert.equal(on.core.deckId(value.fields), e.deckId, `${where}: deck id`);
+    }
+  }
+});
+
 // Two notes decode in every era but make no chord, so the app has refused them since v1.
 const NO_CHORDS = new Set(["minimal-two-notes"]);
 
