@@ -4,12 +4,12 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -347,7 +347,7 @@
-     var profiled = opts.profile !== undefined && opts.profile !== null;
+@@ -348,7 +348,7 @@
      var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
+     var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
      var between = profiled && opts.anchor === "between";
--    var wire = ALPHABET.charAt(profiled ? (between ? PROFILE_ANCHOR_VERSION : PROFILE_VERSION)
-+    var wire = ALPHABET.charAt(profiled ? PROFILE_ANCHOR_VERSION
-       : innerAt !== "" ? INNER_VERSION : VERSION);
+-    if (between) wire = String(PROFILE_ANCHOR_VERSION);
++    if (profiled) wire = String(PROFILE_ANCHOR_VERSION);
      var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
      var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
+     function option(text) {
