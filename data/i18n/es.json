@@ -418,6 +418,7 @@
   "sync.err.cap": "No guardado: límite de escalas alcanzado. Elimina una escala y vuelve a intentarlo.",
   "sync.err.deleteFailed": "No se pudo eliminar tu cuenta. Inténtalo de nuevo.",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "Nombre de la escala",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",

@@ -679,3 +679,91 @@ test("U2a-X7: a saved v4 and a saved v6 record load into the model and re-export
     assert.strictEqual(got.solved, true, label);
   }
 });
+
+// Editor RC lane N1: the scale name. Assertions derive from docs/plans/2026-11-08-editor-panel-simplify.md
+// section 5.2 (setter rules, blank restores autoName, trim, 40 cap, Neotone per Q6).
+const NAMED = (app, name) => `${LOAD(SCALE, {})}
+  const r = editorSetName(m0, ${js(name)});
+  return { ok: r.ok, name: r.value && r.value.options.name, same: r.value === m0 };`;
+
+test("N1-M1: editorSetName writes options.name trimmed, caps it at 40 characters, and a blank clears it", () => {
+  const app = appBoot();
+  assert.strictEqual(run(app, NAMED(app, "  My Kurd  ")).name, "My Kurd", "trimmed");
+  assert.strictEqual(run(app, NAMED(app, "X".repeat(60))).name, "X".repeat(40), "capped at 40");
+  assert.strictEqual(run(app, NAMED(app, "\u{1F3B5}".repeat(45))).name, "\u{1F3B5}".repeat(40), "the cap counts characters, not UTF-16 units");
+  const blank = run(app, `${LOAD(SCALE, { name: "OLD" })}
+    const r = editorSetName(m0, "   ");
+    return { ok: r.ok, has: "name" in r.value.options, before: m0.options.name };`);
+  assert.deepStrictEqual(blank, { ok: true, has: false, before: "OLD" }, "blank removes the key and does not touch the input model");
+});
+
+test("N1-M2: editorSetName is pure, undoable as one step, and a same-name call adds no step", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(SCALE, {})}
+    const h = editorHistoryNew(m0);
+    const a = editorApply(h, (m) => editorSetName(m, "Alpha"));
+    const b = editorApply(a.history, (m) => editorSetName(m, " Alpha "));
+    const c = editorApply(a.history, (m) => editorSetName(m, ""));
+    const undone = editorUndo(a.history).present;
+    return { depth: a.history.past.length, sameDepth: b.history === a.history, cleared: !!c.history.present.options.name,
+      undoneName: !!undone.options.name, untouched: !!m0.options.name, fields: JSON.stringify(a.history.present.fields) === JSON.stringify(m0.fields) };`);
+  assert.deepStrictEqual(r, { depth: 1, sameDepth: true, cleared: false, undoneName: false, untouched: false, fields: true });
+});
+
+test("N1-M3: the name is part of the dirty check, but not of the notes line", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(SCALE, {})}
+    const named = editorSetName(m0, "Alpha").value;
+    const back = editorSetName(named, "").value;
+    return { dirty: editorIsDirty(m0, named), clean: editorIsDirty(m0, back), line: editorLineText(named) === editorLineText(m0) };`);
+  assert.deepStrictEqual(r, { dirty: true, clean: false, line: true });
+});
+
+test("N1-M4: a name reaches the saved record's options, does not change its version or the notes, and survives a reload of the record", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(SCALE, {})}
+    const named = editorSetName(m0, "Alpha").value;
+    const plainX = editorExport(m0), x = editorExport(named);
+    const back = editorLoadRecord(x.record);
+    return { name: x.record.o.name, v: x.record.v === plainX.record.v, s: x.record.s === plainX.record.s, noName: !!plainX.record.o.name,
+      reloaded: back.ok && back.value.options.name };`);
+  assert.deepStrictEqual(r, { name: "Alpha", v: true, s: true, noName: false, reloaded: "Alpha" });
+});
+
+test("N1-M5: editing the notes keeps the name", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(SCALE, { name: "Alpha" })}
+    const next = editorCommitText(m0, ${js(SCALE + " E5")});
+    return { ok: next.ok, name: next.ok && next.value.options.name };`);
+  assert.deepStrictEqual(r, { ok: true, name: "Alpha" });
+});
+
+test("N1-M6: editorAutoName is the engine's auto label on Standard, with the Neotone suffix on a profiled model, and empty for an empty model", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(WITH_BOTTOM, {})}
+    const plainM = editorLoad(${js(SCALE)}, {}).value;
+    const profiled = (m) => ({ ...m, options: { ...m.options, profile: { id: "paired", rev: 2, map: new Array(18).fill(null) } } });
+    const neo = profiled(m0), neoPlain = profiled(plainM);
+    const auto = (m) => HPE.select.deckName({ fields: m.fields, options: { ...m.options, name: undefined } });
+    return { empty: editorAutoName(editorEmptyModel()), std: editorAutoName(m0) === auto(m0), stdText: editorAutoName(m0),
+      neo: editorAutoName(neo) === auto(neo) + " " + t("sheet.neotone_name_suffix"),
+      neoPlain: editorAutoName(neoPlain) === auto(neoPlain) + " " + t("sheet.neotone_name_suffix_plain"),
+      named: editorAutoName(editorSetName(neo, "Mine").value) === auto(neo) + " " + t("sheet.neotone_name_suffix") };`);
+  assert.strictEqual(r.empty, "");
+  assert.strictEqual(r.std, true);
+  assert.ok(/\S/.test(r.stdText));
+  assert.strictEqual(r.neo, true, "a Neotone scale with a bottom note reads the Mutant suffix");
+  assert.strictEqual(r.neoPlain, true, "a Neotone scale with no bottom note reads the plain suffix");
+  assert.strictEqual(r.named, true, "autoName ignores a typed name");
+});
+
+test("N1-M7: a profiled model keeps its name through the save options, and the pan type switch keeps a typed name", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(WITH_BOTTOM, {})}
+    const named = editorSetName(m0, "Mine").value;
+    const neo = editorPanType(named, "neotone");
+    const model = neo.ok ? neo.value : { ...named, options: { ...named.options, profile: { id: "paired", rev: 2, map: new Array(18).fill(null) } } };
+    const back = editorPanType(model, "standard").value;
+    return { kept: editorCommitOptions(model).name, profile: !!editorCommitOptions(model).profile, back: back.options.name };`);
+  assert.deepStrictEqual(r, { kept: "Mine", profile: true, back: "Mine" });
+});

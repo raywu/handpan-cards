@@ -3040,6 +3040,303 @@ function run() {
     });
   });
 
+  describe("Editor RC N1 scale name", () => {
+    const BOTTOMS = "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+    const nameIs = () => b.eval(`return document.getElementById("editor-name").value;`);
+    const placeholder = () => b.eval(`return document.getElementById("editor-name").placeholder;`);
+    const storedName = () => b.eval(`return editorSession.history.present.options.name || "";`);
+    const steps = () => b.eval(`return editorSession.history.past.length;`);
+    const typeName = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+    const typeNameNoBlur = async (value) => {
+      await typeName(value);
+      await b.eval(`document.getElementById("editor-name").onblur = null; return true;`);
+    };
+    const closed = () => b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+    const lastSaved = () => b.eval(`const e = savedState.entries[savedState.entries.length - 1]; return { id: e.instanceId, revision: e.revision, name: e.record.o && e.record.o.name, profile: !!(e.record.o && e.record.o.profile), deck: savedEntries.get(e.instanceId).deck.name };`);
+    const reopenLast = async () => {
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+
+    test("the name field leads the Scale panel and meets the phone input rules", async () => {
+      await fresh(375, 667);
+      await openAdd();
+      const r = await b.eval(`const n = document.getElementById("editor-name"), panel = document.getElementById("editor-panel-scale"), c = getComputedStyle(n), box = n.getBoundingClientRect();
+        return { first: panel.firstElementChild === n, inTray: panel.querySelector("#editor-tray") !== null, size: parseFloat(c.fontSize), h: box.height, max: n.maxLength,
+          aria: n.getAttribute("aria-label"), wide: box.width, stops: editorTabStops().indexOf(n) };`);
+      assert.strictEqual(r.first, true, "the name is the first thing in the Scale panel");
+      assert.ok(r.size >= 16, "font-size " + r.size + " must not zoom iOS");
+      assert.ok(r.h >= 44, "height " + r.h);
+      assert.strictEqual(r.max, 40);
+      assert.strictEqual(r.aria, "Scale name");
+      assert.ok(r.stops >= 0, "the name is a tab stop");
+      assert.ok(r.wide > 200);
+    });
+
+    test("the placeholder is the auto name, the Neotone suffixed one on a Neotone scale, and empty on an empty scale", async () => {
+      await fresh();
+      await openAdd();
+      assert.strictEqual(await placeholder(), "");
+      await typeLine(BOTTOMS);
+      const auto = await b.eval(`return editorAutoName(editorSession.history.present);`);
+      assert.ok(auto.length > 0);
+      assert.strictEqual(await placeholder(), auto);
+      assert.strictEqual(await nameIs(), "", "the field itself stays blank until a name is typed");
+      await b.click("#editor-type-neotone");
+      const neo = await placeholder();
+      assert.strictEqual(neo, auto + " Neotone Mutant");
+    });
+
+    test("Enter commits the name as one Undo step, drops the keyboard, and Undo takes it back", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      const s0 = await steps();
+      await typeName("My Kurd");
+      assert.strictEqual(await storedName(), "", "nothing is committed while typing");
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual(await storedName(), "My Kurd");
+      assert.strictEqual(await steps(), s0 + 1);
+      assert.strictEqual(await b.eval(`return document.activeElement === document.getElementById("editor-name");`), false, "Enter ends the typing");
+      assert.strictEqual(await b.eval(`return editorSession.naming;`), false);
+      await clickUndo();
+      assert.strictEqual(await storedName(), "");
+      assert.strictEqual(await nameIs(), "");
+    });
+
+    test("leaving the field commits it, a blank restores the auto name, and the text is trimmed and capped at 40", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeName("  Padded  ");
+      await b.click("#editor-line");
+      assert.strictEqual(await storedName(), "Padded", "blur commits, trimmed");
+      assert.strictEqual(await nameIs(), "Padded");
+      await b.key("Escape", "Escape", 27);
+      await typeName("Z".repeat(60));
+      await b.eval(`document.getElementById("editor-name").blur(); return true;`);
+      assert.strictEqual((await storedName()).length, 40);
+      await typeName("   ");
+      await b.eval(`document.getElementById("editor-name").blur(); return true;`);
+      assert.strictEqual(await storedName(), "");
+      assert.strictEqual(await nameIs(), "");
+    });
+
+    test("Escape in the field restores the stored name and does not close the editor or open the prompt", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeName("Keep");
+      await b.key("Enter", "Enter", 13);
+      await typeName("Throw away");
+      await b.key("Escape", "Escape", 27);
+      assert.strictEqual(await nameIs(), "Keep");
+      assert.strictEqual(await storedName(), "Keep");
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await dialogOpen(), false);
+      assert.strictEqual(await b.eval(`return editorSession.naming;`), false);
+    });
+
+    test("type a name and tap Save at once: the saved name is the typed one, from one undo step", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeName("Raced Save");
+      const past = await b.eval(`window.__past = null; const orig = editorSave;
+        editorSave = function () { const r = orig.apply(this, arguments); window.__past = editorSession ? editorSession.history.past.length : -1; return r; };
+        document.getElementById("editor-save").click(); return true;`);
+      assert.strictEqual(past, true);
+      await closed();
+      const stepsAtSave = await b.eval(`return window.__past;`);
+      const base = 1;
+      assert.strictEqual(stepsAtSave, base + 1, "the typed scale and the name are one step each");
+      const saved = await lastSaved();
+      assert.strictEqual(saved.name, "Raced Save");
+      assert.strictEqual(saved.deck, "Raced Save");
+    });
+
+    test("a press on the name field starts no drag", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      const r = await b.eval(`const n = document.getElementById("editor-name"), box = n.getBoundingClientRect();
+        const src = editorDragSource({ target: n, clientX: box.left + 5, clientY: box.top + 5 });
+        n.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 7, pointerType: "touch", clientX: box.left + 5, clientY: box.top + 5 }));
+        const down = editorDrag;
+        return { src, down };`);
+      assert.strictEqual(r.src, null);
+      assert.strictEqual(r.down, null);
+    });
+
+    test("while the name is being typed a tap or key on the pan changes nothing", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      const tryTap = (naming) => b.eval(`const s = editorSession; s.naming = ${naming}; s.sel = null;
+        const el = document.querySelector("#editor-pan .ehit"), r = el.getBoundingClientRect();
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+        const tapped = !!s.sel; s.sel = null;
+        const key = document.querySelector("#editor-pan [data-fk]");
+        key.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+        return { tapped, keyed: !!s.sel };`);
+      assert.deepStrictEqual(await tryTap(true), { tapped: false, keyed: false });
+      assert.deepStrictEqual(await tryTap(false), { tapped: true, keyed: true }, "the same press selects once the name is committed");
+      await b.eval(`editorSession.naming = false; return true;`);
+    });
+
+    test("Undo is not taken from the name field: while naming the editor refuses it, so the field undoes its own text", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeName("Typing");
+      const during = await b.eval(`return editorUndoAllowed(editorSession, null);`);
+      await b.key("Enter", "Enter", 13);
+      const after = await b.eval(`return editorUndoAllowed(editorSession, null);`);
+      assert.strictEqual(during, false);
+      assert.strictEqual(after, true);
+    });
+
+    test("the two inputs hand over: starting the notes line commits the name, and focusing the name commits the notes line", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeNameNoBlur("Handover");
+      await b.eval(`editorStartEdit(); return true;`);
+      assert.strictEqual(await storedName(), "Handover", "the name was committed first");
+      assert.deepStrictEqual(await b.eval(`return [editorSession.naming, editorSession.editing];`), [false, true]);
+      await b.eval(`const l = document.getElementById("editor-line"); l.value = ${JSON.stringify(SCALE + " E5")}; document.getElementById("editor-name").dispatchEvent(new Event("focus")); return true;`);
+      assert.deepStrictEqual(await b.eval(`return [editorSession.naming, editorSession.editing];`), [true, false]);
+      assert.match(await text(), /E5/, "the notes line was committed on the hand-over");
+      await b.eval(`editorSession.naming = false; return true;`);
+    });
+
+    test("Back, the ... button and the dialog save all commit a pending name first", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeNameNoBlur("Via menu");
+      await b.eval(`document.getElementById("editor-more").click(); return true;`);
+      assert.strictEqual(await storedName(), "Via menu", "the menu opener committed it");
+      await b.eval(`editorCloseMenu(false); return true;`);
+      await typeNameNoBlur("Via back");
+      await b.eval(`document.getElementById("editor-back").click(); return true;`);
+      assert.strictEqual(await storedName(), "Via back");
+      assert.strictEqual(await dialogOpen(), true, "a name change alone is a change to keep or discard");
+      await b.click("#editor-dlg-save");
+      await closed();
+      assert.strictEqual((await lastSaved()).name, "Via back");
+    });
+
+    test("a name change alone makes the editor dirty, and clearing it again makes it clean", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await closed();
+      await reopenLast();
+      assert.strictEqual(await b.eval(`return editorIsDirty(editorSession.base, editorSession.history.present);`), false);
+      await typeName("Different");
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual(await b.eval(`return editorIsDirty(editorSession.base, editorSession.history.present);`), true);
+      await typeName("");
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual(await b.eval(`return editorIsDirty(editorSession.base, editorSession.history.present);`), false);
+      await b.click("#editor-back");
+      await closed();
+    });
+
+    test("Discard in the dialog drops a name change", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeName("Never saved");
+      await b.eval(`document.getElementById("editor-back").click(); return true;`);
+      assert.strictEqual(await dialogOpen(), true);
+      const before = await savedCount();
+      await b.click("#editor-dlg-discard");
+      await closed();
+      assert.strictEqual(await savedCount(), before);
+    });
+
+    test("a name saves on create and on update, reopens in the field, and a blank save returns to the auto name", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeName("Round trip");
+      await b.key("Enter", "Enter", 13);
+      await b.click("#editor-save");
+      await closed();
+      const created = await lastSaved();
+      assert.strictEqual(created.name, "Round trip");
+      assert.strictEqual(created.deck, "Round trip");
+      assert.strictEqual(await b.eval(`return location.hash === routeFor(deck());`), true, "the address is the app's own route for the selection");
+      await reopenLast();
+      assert.strictEqual(await nameIs(), "Round trip");
+      await typeName("Renamed");
+      await b.key("Enter", "Enter", 13);
+      await b.click("#editor-save");
+      await closed();
+      const updated = await lastSaved();
+      assert.strictEqual(updated.id, created.id, "an update keeps the handle");
+      assert.ok(updated.revision > created.revision);
+      assert.strictEqual(updated.name, "Renamed");
+      await reopenLast();
+      await typeName("");
+      await b.key("Enter", "Enter", 13);
+      await b.click("#editor-save");
+      await closed();
+      const blank = await lastSaved();
+      assert.ok(!blank.name, "a blank name stores nothing");
+      assert.ok(blank.deck.length > 0 && blank.deck !== "Renamed", "the deck falls back to its auto name");
+    });
+
+    test("a new Neotone scale stores the suffixed auto name, an edited name is stored verbatim, and a blanked one stores nothing", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(BOTTOMS);
+      await b.click("#editor-type-neotone");
+      const shown = await placeholder();
+      await b.click("#editor-save");
+      await closed();
+      const seeded = await lastSaved();
+      assert.strictEqual(seeded.profile, true);
+      assert.strictEqual(seeded.name, shown, "seeded with exactly what the field showed");
+      assert.match(seeded.name, / Neotone Mutant$/);
+      await reopenLast();
+      assert.strictEqual(await nameIs(), shown, "reopened with the stored name");
+      await typeName("Mine");
+      await b.key("Enter", "Enter", 13);
+      await b.click("#editor-save");
+      await closed();
+      assert.strictEqual((await lastSaved()).name, "Mine");
+      await fresh();
+      await openAdd();
+      await typeLine(BOTTOMS);
+      await b.click("#editor-type-neotone");
+      await typeName("Typed then blanked");
+      await b.key("Enter", "Enter", 13);
+      await typeName("");
+      await b.key("Enter", "Enter", 13);
+      await b.click("#editor-save");
+      await closed();
+      const blank = await lastSaved();
+      assert.strictEqual(blank.profile, true);
+      assert.ok(!blank.name, "a blank the user chose is not re-seeded");
+    });
+
+    test("PLa-N2: with no notes both anchor buttons are disabled on each pan type, and with notes they are enabled on Standard", async () => {
+      await fresh();
+      await openAdd();
+      const state = () => b.eval(`return ["editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById(id).disabled);`);
+      assert.deepStrictEqual(await state(), [true, true], "an empty scale");
+      await typeLine(SCALE);
+      assert.deepStrictEqual(await state(), [false, false], "a scale with notes");
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorCommitText(m, "")).history; editorRender(); return true;`);
+      assert.deepStrictEqual(await state(), [true, true], "back to empty");
+    });
+  });
+
   describe("flag off", () => {
     test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
       await fresh(375, 667, false);

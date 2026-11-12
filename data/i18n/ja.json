@@ -401,6 +401,7 @@
   "sync.err.cap": "保存されませんでした：スケールの上限に達しました。スケールを1つ削除してから、もう一度お試しください。",
   "sync.err.deleteFailed": "アカウントを削除できませんでした。もう一度お試しください。",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "スケール名",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",

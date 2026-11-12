@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16462,7 +16462,7 @@
-   else if (s.dialog) editorShowDialog(false);
+@@ -16702,7 +16702,7 @@ function editorEscape() {
+   else if (s.naming) editorCancelName();
    else if (s.editing) editorCancelEdit();
    else if (s.held) editorCancelHold();
 -  else if (s.sel || s.zone) { s.sel = null; s.zone = null; s.say = ""; s.error = ""; editorRender(); }

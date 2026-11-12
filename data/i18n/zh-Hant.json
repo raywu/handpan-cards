@@ -401,6 +401,7 @@
   "sync.err.cap": "未儲存:已達音階數量上限。請刪除一個音階後再試一次。",
   "sync.err.deleteFailed": "無法刪除你的帳號。請再試一次。",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "音階名稱",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",
