@@ -1,0 +1,15 @@
+# kills: U2e-11 (D3): on Neotone a tap-swap of two main notes and a tap-move to an empty main field take the drag's path
+# suite: node --test --test-name-pattern ^U2e-11 tests/editor_shell.test.js
+# fault: A Neotone tap-swap goes through the seat swap and is refused.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16033,7 +16033,7 @@ function editorPlaceHeld(hit, m) {
+ function editorTrade(m, a, b) {
+   const s = editorSession;
+   const names = [editorNameAt(m, a), editorNameAt(m, b)];
+-  if (m.options.profile) {
++  if (false) {
+     const plan = editorDropPlan(m, { from: "pan", ref: a }, b.ring === "ding" ? { kind: "ding" } : { kind: "note", ring: b.ring, i: b.i });
+     if (plan.step) return editorDo(plan.step, plan.say, true);
+     if (plan.refuse) s.error = plan.refuse;

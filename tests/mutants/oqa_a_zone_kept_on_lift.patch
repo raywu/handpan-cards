@@ -1,0 +1,14 @@
+# kills: OQA zone cleared on drag lift (N1): a picked zone is gone once a drag lifts
+# suite: node --test --test-name-pattern ^OQA.zone.cleared.on.drag.lift tests/editor_e2e.test.js
+# fault: A picked zone survives the lift of a drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16158,7 +16158,6 @@ function editorDragLift(d) {
+   d.live = true;
+   s.held = null;
+   s.sel = null;
+-  s.zone = null;
+   document.querySelectorAll("#editor-pan .esel").forEach((ring) => ring.remove());
+   document.querySelectorAll("#editor-pan .etarget.picked").forEach((ring) => ring.classList.remove("picked"));
+   document.querySelectorAll("#editor-tray .tray-note.on").forEach((chip) => { chip.classList.remove("on"); chip.setAttribute("aria-pressed", "false"); });
