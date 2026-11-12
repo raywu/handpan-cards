@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15375,7 +15375,7 @@ function editorSetMirror(m, which) {
- }
+@@ -15460,7 +15460,7 @@ function editorSetPalette(m, palette) {
+ const editorToggleRefused = () => ({ ok: false, code: "TOGGLE_REFUSED", reason: t("sheet.toggle_refused") });
  function editorSetAnchor(m, to) {
    if (to !== "one" && to !== "between") return editorRefusal(to);
 -  if (m.options.profile || editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
