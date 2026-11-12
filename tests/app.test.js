@@ -9,14 +9,63 @@
 // from restating the implementation. Field identities come from the deck data's
 // NOTE NAMES, which is an independent route to the pitch-class rule the app
 // implements with midi % 12.
-const { test, describe } = require("node:test");
+const { describe } = require("node:test");
+const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename, [
+  // The sandbox has no document for the dynamically built panel, so a boot that opens
+  // the create sheet (empty library) or a chip click that opens Edit needs the legacy sheet.
+  "every rendered face is well-formed markup", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
+], [
+  // Kept behaviour (U2i): these asserted nothing about the removed sheet and run on the default panel build.
+  "writing the app's own keys leaves a sibling key in hpfc untouched",
+  "every gap in the app comes from the spacing ramp, never a fresh literal",
+  "a pop with no page open is not an invitation to close something",
+  "booting on a page route opens nothing and leaves a clean hash",
+  "panel fit rule 2: a control unrendered on the candidate fails, whether or not the base fits",
+  "panel fit rule 2: a control pushed below max(base bottom, avail) + 0.5 fails",
+  "panel fit rule 2: where the base itself overflows the offender is reported or failed by the OD-8 constant alone",
+  "panel fit rule 2: a control the base renders and the candidate lacks fails unless it is removed by design",
+  "panel fit rule 5: a control that does not exist on the candidate is not counted as rendered",
+  "panel fit rule 6: a rendered enabled control missing from the stop list fails, and a disabled one need not be listed",
+  "panel fit rule 2: controls after the second heading may sit one allowance lower, modeA and modeB may not",
+  "panel fit rule 2: the Resources allowance does not move any existing control",
+  "panel fit rule 2: the About-row allowance does not move any existing control",
+  "panel fit: the Language-group allowance is 88, owed only for a lang-select control the base lacks",
+  "panel fit: a run that measured any cell with a scrollbar gutter fails",
+  "PF-1 tallyJudgement adds fails and reported and keeps the first ten messages",
+  "AP1-1 canStartGesture guard table",
+  "editable defaults: a fresh store lists the five decks in DECKS order, hides nothing and adds no key",
+  "editable defaults: a stored hidden deck falls back to the first visible one with the gone warning",
+  "editable defaults: new hidden metadata recognizes built-ins while malformed legacy preferences stay protected",
+  "SD: a seed both hidden and replaced boots onto its replacement without a warning",
+  "DS1: no served text, attribute, JSON-LD value or app-script string literal says deck",
+  "I18N: a positive sample renders the table value",
+  "I18N: under a non-English table every English-only island carries lang=en and the hint carries the UI language",
+  "SWA: the cue is aria-hidden, has no text, and every move listener is passive",
+  "SHC U1: latest LINK owns fallback in both completion orders and at identical URLs",
+  "SHC U4: stale success and deferred ticks preserve newer and identical-text notices",
+  "SHC U5: native branches keep captured URLs and never start fallback after retirement",
+  "SHC U6: blur Escape and panel dismissal stay closed and a new LINK still works",
+  "SHC U8: hidden and refused LINK consume stale UI without replay and analytics stay nonsecret",
+  "SV1 U1: differently named same-inventory imports coexist in either order",
+  "SV1 U2: layout-only variants coexist and exact portable repeats reuse the selected match",
+  "SV1 U3: default normalization preserves explicit name parent and absolute-angle intent",
+  "SV3 U2: instance selection retires pending LINK UI when the route is identical",
+  "SV4 U3: absent denied corrupt and newer sources are distinct",
+  "SV7 U1: late old-client writes remain a separate recovery branch",
+  "IDB1 U1: successful put followed by transaction abort never acknowledges or spends history",
+  "IDB3 U1: present undefined null and object records protect authority and legacy bytes",
+  "IDB9 U1: a newly created experimental legacy branch warns without replaying over IDB",
+  "SV17 U1: preference acknowledgments and unchanged rereads preserve chip nodes while collection changes remain visible",
+  "opening and closing the panel toggles aria-expanded and writes nothing",
+  "with nothing saved the list is empty, the buttons are disabled and the panel says so",
+]);
 const assert = require("node:assert");
 const { boot: sandboxBoot } = require("./helpers/sandbox.js");
 // Ordinary unit fixtures exercise the real no-Web-Locks session adapter with
 // real host crypto and AbortController. Durable/reload fixtures opt in to the
 // asynchronous shared-origin model below. Explicit negative capabilities win.
 const boot = (options = {}) => sandboxBoot({ crypto: require("node:crypto").webcrypto,
-  abortController: true, ...options });
+  abortController: true, onePanel: onePanelFor(), ...options });
 
 const coarse = (app, on = true) => {
   app.sandbox.matchMedia = (query) => ({
@@ -1397,7 +1446,7 @@ test("a newer share string reaches the user as section 2's NEEDS_NEWER_APP sente
   // is spelled out here rather than read out of the engine (CONTRACT rule 2).
   const VERSION_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                         "abcdefghijklmnopqrstuvwxyz-_";
-  const newer = VERSION_CHARS.charAt(app.get("HPE.share.PROFILE_VERSION") + 1) +
+  const newer = VERSION_CHARS.charAt(app.get("HPE.share.INNER_VERSION") + 1) +
                 payload(url.value).slice(1);
   const res = openShare(app, newer);
   assert.strictEqual(res.ok, false);
@@ -15507,7 +15556,7 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
     assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
@@ -19691,7 +19740,13 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     const fa = shipped.indexOf("async function moveForward"), fb = shipped.indexOf("async function moveImport");
     assert.ok(fa >= 0 && fb > fa, "the shipped region no longer holds moveForward");
     assert.ok(!region(INDEX_HTML()).includes("moveForward"), "moveForward is still inside the frozen region");
+    const droppedBranch = `    else if (savedObject(row.r) && savedObject(row.r.o) && typeof row.r.o.name === "string") {
+      const { name, ...bare } = row.r.o;
+      if (readSavedRecord({ ...row.r, o: bare }).ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+    }`;
+    assert.ok(shipped.includes(droppedBranch.replace("moveCanon(row.r)", "moveCanon(read.record)")) || shipped.includes(droppedBranch), "the shipped region no longer holds the branch lane U replaced");
     const expected = (shipped.slice(0, fa) + shipped.slice(fb)).replace(from, () => "moveDigest(moveCanon(row.r))")
+      .replace(droppedBranch, () => `    else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });`)
       .replace("const MOVE_FROM = null;\nconst MOVE_TARGET = null;\n", () => 'const MOVE_FROM = "handpan.raywu.org";\nconst MOVE_TARGET = "https://handpantheory.com";\n');
     assert.strictEqual(region(INDEX_HTML()), expected);
     assert.match(region(INDEX_HTML()), /const MOVE_CAP = 20000;/);
@@ -20060,11 +20115,15 @@ describe("MV: the saved-scale handoff (armed in the committed bytes)", () => {
     assert.ok(!/javascript/.test(app.get("location.href")));
   });
 
-  test("a record the app cannot read is skipped and the rest import", async () => {
+  test("a record the app cannot read is carried as opaque bytes and the rest import", async () => {
     const origin = createOrigin({});
-    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`;
+    const future = { v: 99, s: "future", o: {} };
+    const hash = `#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`;
     await boot2({ host: NEW_HOST, hash, referrer: `https://${OLD_HOST}/`, origin });
-    assert.deepStrictEqual(envelopeAt(origin).entries.map(r => r.record.o.name), ["GOOD"]);
+    const rows = envelopeAt(origin).entries.map(r => r.record);
+    assert.strictEqual(rows.length, 2, "the unreadable row is carried, never dropped (R4-1)");
+    assert.ok(rows.some(r => r.o.name === "GOOD"));
+    assert.deepStrictEqual(rows.find(r => r.v === 99), future);
   });
 
   test("an older build's edit keeps the top-level importedIds", async () => {
