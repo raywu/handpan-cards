@@ -1,4 +1,4 @@
-# kills: NA: with no mutant note and k = 4..9 rim notes the place angles are the Standard between seat angles
+# kills: NA: with no mutant note and k = 4..9 rim notes the place angles are the Standard between seat angles and geom.turn is absent
 # suite: node --test --test-name-pattern ^NA..with.no.mutant.note.and.k tests/layout.test.js
 # why: The no-mutant plain solve ignores the between anchor.
 diff --git a/src/engine/layout.js b/src/engine/layout.js

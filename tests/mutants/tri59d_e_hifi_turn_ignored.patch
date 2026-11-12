@@ -1,4 +1,4 @@
-# kills: NeotoneTurnTest.test_a_turned_card_places_main_and_mutant_at_the_turned_angle
+# kills: test_a_turned_card_places_main_and_mutant_at_the_turned_angle
 # suite: python3 -m unittest -k test_a_turned_card_places_main_and_mutant tests.test_print
 # why: hifi ignores geom.turn when keying tonefields.
 diff --git a/tools/hifi.py b/tools/hifi.py
