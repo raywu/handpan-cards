@@ -366,6 +366,7 @@
   "move.dismiss": "Nascondi per ora",
   "move.banner_label": "Handpan Theory si è spostato",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "Nome della scala",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",

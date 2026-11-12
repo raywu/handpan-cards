@@ -1,0 +1,15 @@
+# kills: Editor RC N1 scale name: Undo is not hijacked inside the name field
+# suite: node --test --test-name-pattern=Enter.commits.the.name tests/editor_e2e.test.js
+# fault: Undo is not hijacked inside the name field is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16354,7 +16354,7 @@ function editorUndoKey(e) {
+   if (String(e.key).toLowerCase() !== "z" || !(e.ctrlKey || e.metaKey) || e.altKey) return null;
+   return e.shiftKey ? "redo" : "undo";
+ }
+-const editorUndoAllowed = (s, drag) => !!s && !s.editing && !s.naming && !s.dialog && !(drag && drag.live);
++const editorUndoAllowed = (s, drag) => !!s && !s.editing && !s.dialog && !(drag && drag.live);
+ function editorKeyHit(fk) {
+   const [ring, i] = fk.split(":");
+   if (ring === "ding") return { kind: "ding" };

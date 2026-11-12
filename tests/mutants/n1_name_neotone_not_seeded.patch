@@ -1,0 +1,15 @@
+# kills: Editor RC N1 scale name: a new Neotone scale stores its suffixed auto name
+# suite: node --test --test-name-pattern=a.new.Neotone.scale.stores tests/editor_e2e.test.js
+# fault: a new Neotone scale stores its suffixed auto name is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17126,7 +17126,7 @@ async function editorSave() {
+   s.saving = true;
+   editorRender();
+   try {
+-    const seedName = !!m.options.profile && !m.options.name && !s.nameTouched && (!base || base.selection.kind === "builtin");
++    const seedName = false && !m.options.name && !s.nameTouched && (!base || base.selection.kind === "builtin");
+     const built = buildGenerated(HPE.core.formatSeed(m.fields), editorCommitOptions(seedName ? editorSetName(m, editorAutoName(m)).value : m));
+     if (!built.ok) { s.error = reasonText(built); return; }
+     const candidate = { record: scaleRecord(seedOf(built.value)), deck: built.value };

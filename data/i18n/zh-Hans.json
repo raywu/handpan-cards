@@ -350,6 +350,7 @@
   "move.dismiss": "暂时隐藏",
   "move.banner_label": "Handpan Theory 已迁移",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "音阶名称",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",

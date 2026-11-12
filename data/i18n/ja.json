@@ -350,6 +350,7 @@
   "move.dismiss": "今は閉じる",
   "move.banner_label": "Handpan Theory は移転しました",
   "editor.line.aria": "Scale notes - tap to type or paste",
+  "editor.name.aria": "スケール名",
   "editor.pins_reset": "Pins reset",
   "editor.undo": "Undo",
   "editor.redo": "Redo",

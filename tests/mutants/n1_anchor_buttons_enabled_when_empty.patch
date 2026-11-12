@@ -1,0 +1,15 @@
+# kills: Editor RC N1 scale name: both anchor buttons are disabled on an empty scale
+# suite: node --test --test-name-pattern=PLa.N2 tests/editor_e2e.test.js
+# fault: both anchor buttons are disabled on an empty scale is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16201,7 +16201,7 @@ function editorRenderLayout(m) {
+     el.hidden = neo;
+     el.classList.toggle("on", on && !neo);
+     if (neo) el.removeAttribute("aria-pressed"); else el.setAttribute("aria-pressed", String(on));
+-    el.disabled = off;
++    el.disabled = false;
+   }
+ }
+ function editorLayoutTap(step, say) {
