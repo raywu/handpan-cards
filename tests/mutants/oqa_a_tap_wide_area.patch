@@ -1,0 +1,15 @@
+# kills: OQA cyclops drop near midpoint: inside the cyclops/rim midpoint lands on the cyclops (ring on the inner orbit), outside on the rim
+# suite: node --test --test-name-pattern ^OQA.cyclops.drop.near.midpoint tests/editor_e2e.test.js
+# fault: Every hit uses the wide 0.43 area instead of the drawn bubble.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15453,7 +15453,7 @@ function editorHitAt(solved, pt, holding) {
+       spots.push({ ref: { kind: "note", ring: zone, i: ringIds(fields, zone).indexOf(id) }, c: [geom[zone] * Math.cos(a), geom[zone] * Math.sin(a)], r: editorDrawnReach(geom, zone) });
+     }
+   }
+-  const drawn = spots.filter((c) => toward(c.c) <= c.r).sort((x, y) => toward(x.c) - toward(y.c))[0];
++  const drawn = spots.filter((c) => toward(c.c) <= Math.max(c.r, EDITOR_HIT_AREA)).sort((x, y) => toward(x.c) - toward(y.c))[0];
+   if (drawn) return drawn.ref;
+   const zone = editorZoneAt(geom, pt);
+   if (zone === "off") return { kind: "off" };
