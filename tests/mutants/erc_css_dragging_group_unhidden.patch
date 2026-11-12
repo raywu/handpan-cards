@@ -1,0 +1,15 @@
+# kills: drag ux E1: a live drag sets dragging and takes the panel out of play; a press that does not move does not
+# suite: node --test --test-name-pattern ^drag.ux.E1 tests/editor_e2e.test.js
+# fault: The tabs and panels stay on screen while a note is dragged, hiding the pan behind them.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1332,7 +1332,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+    getScreenCTM, which already includes this transform. */
+ #editor-areas, #editor-tabs, #editor-panels, #editor .editor-toolbar{transition:transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms, visibility 0s}
+ #editor.dragging .editor-panbox{transform:scale(var(--ed-mag,1)); z-index:1}
+-#editor.dragging #editor-areas, #editor.dragging #editor-tabs, #editor.dragging #editor-panels, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:translateY(100%); opacity:0; visibility:hidden; transition:transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms, visibility 0s 180ms}
++#editor.dragging #editor-areas, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:translateY(100%); opacity:0; visibility:hidden; transition:transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms, visibility 0s 180ms}
+ #editor.dragging #editor-areas, #editor.dragging #editor-tabs, #editor.dragging #editor-panels, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray,
+ #editor.settling #editor-areas, #editor.settling #editor-tabs, #editor.settling #editor-panels, #editor.settling #editor-layout, #editor.settling .editor-toolbar, #editor.settling #editor-tray{pointer-events:none}
+ @keyframes ed-new{from{stroke-opacity:1; stroke-width:3} to{stroke-opacity:0; stroke-width:16}}

@@ -1,0 +1,15 @@
+# kills: a short, slow or mostly vertical swipe changes nothing
+# suite: node --test --test-name-pattern ^a.short,.slow.or.mostly.vertical tests/editor_e2e.test.js
+# fault: A slow drag switches tabs because the elapsed time is never read.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17035,7 +17035,7 @@ function editorWireSwipe() {
+     const ch = e.changedTouches, p = ch && ch.length === 1 && ch[0].identifier === S.id && ch[0];
+     g = null;
+     if (!p || (e.touches && e.touches.length) || !eligible()) { hideSwipeCue({ force: true }); return; }
+-    const v = swipeVerdict(S, true, p.clientX - S.x, p.clientY - S.y, e.timeStamp - S.at);
++    const v = swipeVerdict(S, true, p.clientX - S.x, p.clientY - S.y, 0);
+     hideSwipeCue({ force: true });
+     if (v.armed) editorSetTab(v.tab, false);
+   }, { passive: true });

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1378,7 +1378,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1382,7 +1382,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #editor-layout .mode:disabled{opacity:.45; cursor:default}
  #editor-layout .mode[hidden]{display:none}
  #editor .editor-toolbar{flex:0 0 auto; display:flex; gap:var(--sp-2); align-items:center}
 -#editor .editor-toolbar .mode{flex:1 1 0; min-width:44px; padding-inline:2px; white-space:normal; text-align:center; line-height:1.15; overflow-wrap:anywhere}
 +#editor .editor-toolbar .mode{flex:1 1 0; min-width:44px; padding-inline:4px; white-space:nowrap}
- #editor .editor-toolbar .mode.primary{flex:1.4 1 0; background:#242424; color:#F6F4ED; border-color:#242424}
- #editor .editor-toolbar .mode:disabled{opacity:.45; cursor:default}
- #editor-tray{flex:0 0 auto; min-height:var(--sp-4)}
+ #editor .editor-toolbar .mode.primary{flex:1.4 1 0; background:#6756B5; color:#fff; border-color:#6756B5}
+ #editor .editor-toolbar{position:relative}
+ #editor .editor-toolbar #editor-more{flex:0 0 auto; min-width:44px}
