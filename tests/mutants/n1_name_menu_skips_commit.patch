@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16624,7 +16624,6 @@ function editorCancelName() {
- }
- function editorStartEdit() {
+@@ -16263,7 +16263,6 @@ function editorTabKey(e) {
+ const editorMenuItems = () => [...editorEl("editor-menu").querySelectorAll('[role="menuitem"]')];
+ function editorOpenMenu() {
    const s = editorSession;
 -  editorCommitName();
-   if (!s || s.editing || s.dialog) return;
-   s.editing = true;
-   editorEl("editor-line").readOnly = false;
+   if (!s || s.dialog || s.editing || s.menu) return;
+   s.menu = true;
+   editorEl("editor-menu").removeAttribute("hidden");

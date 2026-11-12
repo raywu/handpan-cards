@@ -3048,6 +3048,10 @@ function run() {
     const steps = () => b.eval(`return editorSession.history.past.length;`);
     const typeName = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
       n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+    const typeNameNoBlur = async (value) => {
+      await typeName(value);
+      await b.eval(`document.getElementById("editor-name").onblur = null; return true;`);
+    };
     const closed = () => b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
     const lastSaved = () => b.eval(`const e = savedState.entries[savedState.entries.length - 1]; return { id: e.instanceId, revision: e.revision, name: e.record.o && e.record.o.name, profile: !!(e.record.o && e.record.o.profile), deck: savedEntries.get(e.instanceId).deck.name };`);
     const reopenLast = async () => {
@@ -3181,11 +3185,23 @@ function run() {
       await b.eval(`editorSession.naming = false; return true;`);
     });
 
+    test("Undo is not taken from the name field: while naming the editor refuses it, so the field undoes its own text", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeName("Typing");
+      const during = await b.eval(`return editorUndoAllowed(editorSession, null);`);
+      await b.key("Enter", "Enter", 13);
+      const after = await b.eval(`return editorUndoAllowed(editorSession, null);`);
+      assert.strictEqual(during, false);
+      assert.strictEqual(after, true);
+    });
+
     test("the two inputs hand over: starting the notes line commits the name, and focusing the name commits the notes line", async () => {
       await fresh();
       await openAdd();
       await typeLine(SCALE);
-      await typeName("Handover");
+      await typeNameNoBlur("Handover");
       await b.eval(`editorStartEdit(); return true;`);
       assert.strictEqual(await storedName(), "Handover", "the name was committed first");
       assert.deepStrictEqual(await b.eval(`return [editorSession.naming, editorSession.editing];`), [false, true]);
@@ -3199,11 +3215,11 @@ function run() {
       await fresh();
       await openAdd();
       await typeLine(SCALE);
-      await typeName("Via menu");
+      await typeNameNoBlur("Via menu");
       await b.eval(`document.getElementById("editor-more").click(); return true;`);
       assert.strictEqual(await storedName(), "Via menu", "the menu opener committed it");
       await b.eval(`editorCloseMenu(false); return true;`);
-      await typeName("Via back");
+      await typeNameNoBlur("Via back");
       await b.eval(`document.getElementById("editor-back").click(); return true;`);
       assert.strictEqual(await storedName(), "Via back");
       assert.strictEqual(await dialogOpen(), true, "a name change alone is a change to keep or discard");
