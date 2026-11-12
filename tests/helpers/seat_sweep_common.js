@@ -92,7 +92,7 @@ const d2Starts = (k) => {
 };
 const D2_OTHER = [1, 0, 2];
 async function d2Case(ring, n, start, edit) {
-  const app = boot(edit ? { crypto: webcrypto, abortController: true } : {});
+  const app = boot(edit ? { onePanel: false, crypto: webcrypto, abortController: true } : { onePanel: false });
   const sc = d2Build(d2Sizes(ring, n));
   await d2Open(app, sc.text, edit);
   const seats = {};
