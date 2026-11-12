@@ -14374,7 +14374,7 @@ function editorMarkDrop(target) {
     const c = svg.querySelector(`.ehit[data-ring="${target.ring}"][data-i="${target.i}"]`);
     if (c) at = [+c.getAttribute("cx"), +c.getAttribute("cy"), editorDrawnReach(geom, target.ring)];
   } else if (target.kind === "spot" && target.slot !== undefined) {
-    const spot = neoSlotPoint(target.slot, null, geom.turn);
+    const spot = neoSlotPoint(target.slot, null);
     at = [spot.x, spot.y, spot.r / 100];
   } else if (target.kind === "spot" && target.angle !== undefined) {
     const a = target.angle * Math.PI / 180;
