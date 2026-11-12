@@ -1,0 +1,16 @@
+# kills: T-APP-OS-get-reset: during empty gt10 GET preserves first pull and recovers R via visibility
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-OS-get-reset:.during.empty.gt10.GET.preserves.first.pull.and.recovers.R.via.visibility tests/app.test.js
+# Broader manual proof: T-APP-S2-refresh-first-barrier; T-APP-S7-switch-after-apply/switch-empty-pull/switch-last-push/switch-mid-push and T-APP-OS replacement-sidecar assertions
+# Raw witness disabled; durable-store and all boundary checks remain.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18259,7 +18259,7 @@ function syncScope() {
+ function syncStill(scope) {
+   if (!scope || scope.invalid) return false;
+   try {
+-    if (scope.storeToken === syncStoreToken() && localStorage.getItem(SYNC_KEY) === scope.expectedRaw) return true;
++    if (scope.storeToken === syncStoreToken() && true) return true;
+   } catch (e) {}
+   scope.invalid = true;
+   return false;
