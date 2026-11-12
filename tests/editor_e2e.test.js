@@ -2897,6 +2897,7 @@ function run() {
         assert.strictEqual(await tabNow(), "scale", "pan");
         await swipeBy(".tray-note", -120);
         assert.strictEqual(await tabNow(), "scale", "tray note");
+        assert.strictEqual(await b.eval(`return !document.getElementById("editor-panels").contains(document.getElementById("editor-pan")) && !document.getElementById("editor-panels").contains(document.querySelector(".tray-note"));`), true, "the pan and the tray sit outside the swiped panels");
         await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); return true;`);
         await swipeBy("#probe-input", -120);
         assert.strictEqual(await tabNow(), "scale", "text field");
@@ -2949,6 +2950,42 @@ function run() {
         await swipeBy(".editor-accidentals", -120);
         assert.strictEqual(await tabNow(), "layout", "armed again once the drag ends");
       });
+    });
+  });
+
+  describe("Editor RC W3 P1 panel areas", () => {
+    const readPlay = () => b.eval(`const out = {}; for (const id of ["editor-tabs", "editor-panels", "editor-areas"]) { const c = getComputedStyle(document.getElementById(id)); out[id] = { vis: c.visibility, pe: c.pointerEvents, opacity: c.opacity, tr: c.transitionDuration }; } return out;`);
+    const mark = (cls, on) => b.eval(`document.getElementById("editor").classList.${on ? "add" : "remove"}("${cls}"); return true;`);
+    const open = async (w, h) => { await fresh(w, h); await openAdd(); await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4"); };
+
+    test("the tabs and both panels leave play with the rest of the controls while a note is dragged, and stop taking taps while it settles", async () => {
+      await open(390, 844);
+      await mark("dragging", true);
+      await b.waitFor(`getComputedStyle(document.getElementById("editor-tabs")).visibility === "hidden"`, { label: "tabs hidden" });
+      const drag = await readPlay();
+      for (const id of Object.keys(drag)) assert.deepStrictEqual([drag[id].vis, drag[id].pe, drag[id].opacity], ["hidden", "none", "0"], id);
+      await mark("dragging", false);
+      await mark("settling", true);
+      const settle = await readPlay();
+      for (const id of Object.keys(settle)) assert.strictEqual(settle[id].pe, "none", id);
+      await mark("settling", false);
+      const rest = await readPlay();
+      for (const id of Object.keys(rest)) assert.deepStrictEqual([rest[id].vis, rest[id].pe], ["visible", "auto"], id);
+    });
+
+    test("with reduced motion the tabs and panels do not animate in or out of play", async () => {
+      await open(390, 844);
+      await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+      try {
+        await mark("dragging", true);
+        const drag = await readPlay();
+        for (const id of Object.keys(drag)) assert.strictEqual(parseFloat(drag[id].tr), 0, id);
+        await mark("dragging", false);
+        const rest = await readPlay();
+        for (const id of Object.keys(rest)) assert.strictEqual(parseFloat(rest[id].tr), 0, id);
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+      }
     });
   });
 
