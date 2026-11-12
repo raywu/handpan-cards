@@ -43,6 +43,7 @@ FLOORS = {
     "tests/test_fixture_integrity.py": 47,
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
+    "tests/test_sync_schema_lint.py": 14,
     "tests/test_suite_health.py": 31,
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
@@ -53,11 +54,12 @@ FLOORS = {
     "tests/test_site_files.py": 14,
     "tests/test_ci_scope.py": 36,
     # node
-    "tests/app.test.js": 1140,
+    "tests/app.test.js": 1287,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
     "tests/e2e.test.js": 637,
+    "tests/e2e_sync.test.js": 33,
     "tests/harness.test.js": 67,
     "tests/drawer_grid.test.js": 3,
     "tests/drawer_seats.test.js": 28,
@@ -81,9 +83,11 @@ FLOORS = {
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 59,
     "tests/swipe.test.js": 21,
+    "tests/sync.test.js": 178,
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
     "tests/persist.test.js": 7,
+    "tests/pgenv.test.js": 3,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
@@ -91,7 +95,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js", "tests/e2e_sync.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40

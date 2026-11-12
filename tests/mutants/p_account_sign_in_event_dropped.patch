@@ -1,0 +1,14 @@
+# kills: a verified sign-in fires sign_in once with only the method
+# suite: node --test --test-name-pattern ^a.verified.sign.in.fires.sign_in.once tests/app.test.js
+# Refs TRI-28: sign-in page. A verified sign-in no longer fires the sign_in event.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20912,7 +20912,6 @@ async function syncSubmit() {
+   }
+   const fresh = { ...HPE.sync.emptySidecar(), project: SYNC_CFG.url, userId: String(r.json.user.id), email: String(r.json.user.email || syncEmail), first: true };
+   try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncSession(fresh, r.json))); } catch (e) { syncSay("sync.err.offline"); return; }
+-  track("sign_in", { method: "email" });
+   syncStep = "email"; syncResendAt = 0; input.value = "";
+   syncSay(null); syncFocusFor(syncLoad());
+   syncStartLock(); syncKick(true);
