@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  next[to] = next[from]; next[from] = null;
    return editorNeoBuild(m, editorPartsOf(m), next, map[from]);
  }
- /* Mirror and rotate on a profile permute the tonefields of profile.map, main and mutant
+ function editorRemoveNeotone(m, ring, i) {
