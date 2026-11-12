@@ -16,8 +16,15 @@ Card diagrams are the app's own pan() (index.html, run in tools/sandbox.js), so 
 card sits on exactly the angles, radii and colours the app draws. Decks come from
 data/decks.json (built-in rows) or the engine (new rows), never from this file.
 Page copy is the row's "copy" object, else scales/<slug>/copy.json.
+
+Chinese pages (zh-Hant, zh-Hans; labels in tools/scale_page_zh.json):
+    python3 tools/gen_scale_page.py --lang zh-Hant <slug>...   write zh-hant/scales/<slug>/index.html (--check, --stdout)
+    python3 tools/gen_scale_page.py --lang zh-Hant --all       every slug with scales/<slug>/copy.zh-Hant.json, plus the hub
+    python3 tools/gen_scale_page.py --lang zh-Hant --hub       write zh-hant/scales/index.html
+An hreflang alternate is emitted only for a script whose copy file exists.
 """
 import colorsys
+import functools
 import html
 import json
 import os
@@ -28,6 +35,9 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLE = os.path.join(ROOT, "tools", "scale_pages.json")
 FIXTURE = os.path.join(ROOT, "tests", "fixtures", "scale_pages_v1.json")
+ZH_TABLE = os.path.join(ROOT, "tools", "scale_page_zh.json")
+SITE_DIR = ROOT
+SCRIPTS = ("zh-Hant", "zh-Hans")
 NEOTONE_ROW = os.path.join(ROOT, "tools", "neotone_page.json")
 NEOTONE_FIXTURE = os.path.join(ROOT, "tests", "fixtures", "neotone_page_v1.json")
 NEOTONE_SLUG = "neotone"
@@ -213,12 +223,42 @@ LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/
 SCALE_LOCKUP = LOCKUP
 
 
-def head(title, description, og_description, url, theme, brand=True):
-    out = ['<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-           '<meta name="viewport" content="width=device-width, initial-scale=1">\n']
+@functools.lru_cache(maxsize=None)
+def load_zh():
+    with open(ZH_TABLE, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def copy_path(slug, script="en"):
+    return os.path.join(SITE_DIR, "scales", slug, "copy.json" if script == "en" else "copy.%s.json" % script)
+
+
+def discover(rows):
+    return {sc: {r["slug"] for r in rows if os.path.exists(copy_path(r["slug"], sc))} for sc in SCRIPTS}
+
+
+def prefix(script):
+    return "" if script == "en" else load_zh()[script]["dir"] + "/"
+
+
+def hreflang(rel, scripts):
+    if not scripts:
+        return ""
+    pairs = [("en", SITE + rel)] + [(sc, SITE + prefix(sc) + rel) for sc in scripts] + [("x-default", SITE + rel)]
+    return "".join('<link rel="alternate" hreflang="%s" href="%s">\n' % pair for pair in pairs)
+
+
+def head(title, description, og_description, url, theme, brand=True, script="en", alternates=""):
+    zh = script != "en"
+    out = ['<!doctype html>\n<html lang="%s">\n<head>\n<meta charset="utf-8">\n'
+           '<meta name="viewport" content="width=device-width, initial-scale=1">\n' % script]
+    if zh:
+        out.append('<meta http-equiv="content-language" content="%s">\n<meta name="applicable-device" content="pc,mobile">\n'
+                   % script)
     out.append("<title>%s</title>\n" % esc(title))
     out.append('<meta name="description" content="%s">\n' % html.escape(description))
     out.append('<link rel="canonical" href="%s">\n' % url)
+    out.append(alternates)
     out.append('<meta property="og:type" content="website">\n<meta property="og:url" content="%s">\n' % url)
     out.append('<meta property="og:title" content="%s">\n' % html.escape(title))
     out.append('<meta property="og:description" content="%s">\n' % html.escape(og_description))
@@ -226,6 +266,9 @@ def head(title, description, og_description, url, theme, brand=True):
         out.append('<meta property="og:image" content="%sog.png">\n' % SITE)
         out.append('<meta property="og:site_name" content="Handpan Theory">\n')
     out.append('<meta name="theme-color" content="%s">\n' % theme)
+    if zh:
+        out.append('<link rel="stylesheet" href="/fonts/fonts.css">\n')
+        return out
     out.append('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
                '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
                '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family='
@@ -233,13 +276,23 @@ def head(title, description, og_description, url, theme, brand=True):
     return out
 
 
-def hub_page(rows=None):
+def zh_css(css, script):
+    stack = load_zh()[script]["stack"]
+    return (css.replace('"Nunito Sans",system-ui,sans-serif', '"Nunito Sans",%s,system-ui,sans-serif' % stack)
+               .replace("Marcellus,serif", "Marcellus,%s,serif" % stack))
+
+
+def hub_page(rows=None, script="en", avail=None):
     rows = rows or load_rows()
+    avail = avail if avail is not None else discover(rows)
+    scripts = [sc for sc in SCRIPTS if avail[sc]]
+    if script != "en":
+        return hub_page_zh([r for r in rows if r["slug"] in avail[script]], script, scripts)
     url = SITE + "scales/"
     title = "Handpan scale chord charts"
     description = ("Handpan chord charts for %d scales, grouped by sound, with the notes to play for each chord."
                    % len(rows))
-    out = head(title, description, description, url, BG_LIGHT)
+    out = head(title, description, description, url, BG_LIGHT, alternates=hreflang("scales/", scripts))
     out.append("<style>\n" + INDEX_CSS_HEAD + "</style>\n")
     out.append("</head>\n<body>\n<main>\n")
     out.append('<header><p>%s</p>\n<h1>%s</h1>\n' % (LOCKUP, title))
@@ -261,14 +314,53 @@ def esc(s):
     return html.escape(s, quote=False)
 
 
-def notes_line(fields, bottom_label="Bottom shell"):
+def zh_link_item(row, script, avail):
+    z = load_zh()[script]
+    href = "/" + prefix(script) + "scales/%s/" % row["slug"] if row["slug"] in avail[script] else "/scales/%s/" % row["slug"]
+    return '<li><a href="%s">%s</a></li>' % (href, esc(z["related_link"].format(name=row["name"])))
+
+
+def hub_page_zh(rows, script, scripts):
+    z = load_zh()[script]
+    avail = {script: {r["slug"] for r in rows}}
+    url = SITE + prefix(script) + "scales/"
+    title = z["hub_title"]
+    description = z["hub_description"].format(n=len(rows))
+    out = head(title, description, description, url, BG_LIGHT, script=script, alternates=hreflang("scales/", scripts))
+    out.append("<style>\n" + zh_css(INDEX_CSS_HEAD, script) + "</style>\n")
+    out.append("</head>\n<body>\n<main>\n")
+    out.append('<header><p>%s</p>\n<h1>%s</h1>\n' % (LOCKUP.replace("Handpan Theory home", z["home_aria"]), esc(title)))
+    out.append('<p style="margin-top:8px">%s</p>\n<p class="muted" style="margin-top:6px">%s</p>\n</header>\n'
+               % (esc(z["hub_intro"]), esc(z["not_steel"])))
+    for name, _ in GROUPS:
+        members = [r for r in rows if r["group"] == name]
+        if not members:
+            continue
+        label, blurb = z["groups"][name]
+        out.append('<section class="group">\n<h2>%s</h2><p class="muted">%s</p>\n<ul class="rel">\n' % (esc(label), esc(blurb)))
+        out.append("\n".join(zh_link_item(r, script, avail) for r in members))
+        out.append("\n</ul>\n</section>\n")
+    out.append('<p class="muted">%s</p>\n</main>\n</body>\n</html>\n' % esc(z["footer"]))
+    return "".join(out)
+
+
+SIMPLIFIED_ONLY = "阶进级灵钢乐调声这个对门书发应们时间图单线种与为"
+TRADITIONAL_ONLY = "階進級靈鋼樂調聲這個對門書發應們時間圖單線種與為"
+
+
+def script_impurities(text, script):
+    other = SIMPLIFIED_ONLY if script == "zh-Hant" else TRADITIONAL_ONLY
+    return sorted({c for c in text if c in other})
+
+
+def notes_line(fields, bottom_label="Bottom shell", ding_label="ding", punct=(", ", ". ", ": ")):
     entries = list(fields.values())
     ding = [f for f in entries if f[3] == "ding"][0]
     top = sorted((f for f in entries if f[3] not in ("ding", "bottom")), key=lambda f: f[2])
     bottom = sorted((f for f in entries if f[3] == "bottom"), key=lambda f: f[2])
-    line = "%s%s ding, %s" % (ding[0], ding[1], " ".join("%s%s" % (f[0], f[1]) for f in top))
+    line = "%s%s %s%s%s" % (ding[0], ding[1], ding_label, punct[0], " ".join("%s%s" % (f[0], f[1]) for f in top))
     if bottom:
-        line += ". " + bottom_label + ": " + " ".join("%s%s" % (f[0], f[1]) for f in bottom)
+        line += punct[1] + bottom_label + punct[2] + " ".join("%s%s" % (f[0], f[1]) for f in bottom)
     return line
 
 
@@ -437,7 +529,7 @@ th[scope=row]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0
 NEO_TEXT_CSS = '\ntext{font-family:"Nunito Sans",sans-serif;text-anchor:middle}'
 
 
-def card_html(row, data, c, i, n):
+def card_html(row, data, c, i, n, z=None):
     css = CARD_CSS % {"root": data["colors"]["root"], "tone": data["colors"]["tone"]}
     if "profile" in row:
         css += NEO_TEXT_CSS
@@ -454,9 +546,11 @@ def card_html(row, data, c, i, n):
         label += ": " + c["notes"]
     name_html = esc(c["main"]) + ("<sup>" + esc(c["sup"]) + "</sup>" if c["sup"] else "")
     fdeg = '<div class="fdeg">%s</div>' % esc(c["degree"]) if c["degree"] else ""
-    nav = '<label for="p%d">PREV</label><label for="p%d">NEXT</label>' % (i - 1 or n, i % n + 1)
+    step = z["step"].format(i=i, n=n) if z else "Chord %d of %d" % (i, n)
+    nav = '<label for="p%d">%s</label><label for="p%d">%s</label>' % (
+        i - 1 or n, z["prev"] if z else "PREV", i % n + 1, z["next"] if z else "NEXT")
     return (
-        '<div class="slot"><div class="step">Chord %d of %d</div>\n'
+        '<div class="slot"><div class="step">%s</div>\n'
         '<div class="cardhost"><template shadowrootmode="open"><style>%s</style>'
         '<label class="wrap"><input type="checkbox" class="flip" aria-label="Flip card: %s">'
         '<div class="inner"><div class="face front">%s<div class="fname">%s</div></div>'
@@ -465,7 +559,7 @@ def card_html(row, data, c, i, n):
         '<div class="lines">%s<div class="notesline">%s</div><div class="numline">%s</div></div></div></div>'
         '</div></label></template></div>\n'
         '<div class="nav">%s</div></div>\n'
-    ) % (i, n, css, esc(name), fdeg, name_html, esc(data["name"]), c["n"], deg, esc(c["subtitle"]), esc(label), c["svg"],
+    ) % (step, css, esc(name), fdeg, name_html, esc(data["name"]), c["n"], deg, esc(c["subtitle"]), esc(label), c["svg"],
          badge, c["notes_html"], c["numbers_html"], nav)
 
 
@@ -473,12 +567,12 @@ def chord_names(data):
     return [c["main"] + c["sup"] for c in data["cards"]]
 
 
-def load_copy(row):
-    if "copy" in row:
+def load_copy(row, script="en"):
+    if "copy" in row and script == "en":
         return row["copy"]
-    path = os.path.join(ROOT, "scales", row["slug"], "copy.json")
+    path = copy_path(row["slug"], script)
     if not os.path.exists(path):
-        raise SystemExit("gen_scale_page: %s has no copy: add scales/%s/copy.json" % (row["slug"], row["slug"]))
+        raise SystemExit("gen_scale_page: %s has no copy: add %s" % (row["slug"], os.path.relpath(path, SITE_DIR)))
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
@@ -545,7 +639,9 @@ def defaults_html(row, shares):
     return "".join(out)
 
 
-def render(row, data, rows_by_slug, copy, alt=None):
+def render(row, data, rows_by_slug, copy, alt=None, script="en", avail=None):
+    if script != "en":
+        return render_zh(row, data, rows_by_slug, copy, alt, script, avail)
     frozen = row["kind"] == "frozen"
     neo = "profile" in row
     single = row.get("single", False)
@@ -576,7 +672,11 @@ def render(row, data, rows_by_slug, copy, alt=None):
     og_description = copy["og_description"] if frozen else description
     light, dark = row["accent_light"], row["accent_dark"]
     cta = row["cta"]
-    out = head(title, description, og_description, url, light, brand=not frozen)
+    alternates = ""
+    if not (frozen or neo or single):
+        avail = avail if avail is not None else discover(list(rows_by_slug.values()))
+        alternates = hreflang("scales/%s/" % row["slug"], [sc for sc in SCRIPTS if row["slug"] in avail[sc]])
+    out = head(title, description, og_description, url, light, brand=not frozen, alternates=alternates)
     out.append("<style>\n" + CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + CSS_EXTRA
                + (NEO_TABLE_CSS if neo else "") + "</style>\n")
     if not frozen:
@@ -702,14 +802,111 @@ def render(row, data, rows_by_slug, copy, alt=None):
     return "".join(out)
 
 
-def pages_for(slugs, rows=None, copy=None):
+def render_zh(row, data, rows_by_slug, copy, alt, script, avail):
+    if row["kind"] == "frozen" or "profile" in row or row.get("single"):
+        raise SystemExit("gen_scale_page: %s has no %s page (Neotone and frozen pages are English only)" % (row["slug"], script))
+    z = load_zh()[script]
+    avail = avail if avail is not None else discover(list(rows_by_slug.values()))
+    scripts = [sc for sc in SCRIPTS if row["slug"] in avail[sc]]
+    updated = copy["updated"]
+    name = row["name"]
+    pre = "/" + prefix(script)
+    url = SITE + prefix(script) + "scales/%s/" % row["slug"]
+    cards = data["cards"]
+    names = chord_names(data)
+    degs = [c["degree"] for c in cards]
+    title = copy["title"]
+    light, dark = row["accent_light"], row["accent_dark"]
+    out = head(title, copy["description"], copy["description"], url, light, script=script,
+               alternates=hreflang("scales/%s/" % row["slug"], scripts))
+    css = CSS_HEAD.replace("@LIGHT@", light).replace("@DARK@", dark) + CSS_EXTRA
+    out.append("<style>\n" + zh_css(css, script) + "</style>\n")
+    crumb = z["crumb_page"].format(name=name)
+    crumbs = [{"@type": "ListItem", "position": 1, "name": z["home"], "item": SITE},
+              {"@type": "ListItem", "position": 2, "name": crumb, "item": url}]
+    items = [{"@type": "ListItem", "position": i + 1, "name": n} for i, n in enumerate(names)]
+    graph = {"@context": "https://schema.org", "@type": "WebPage", "name": title, "url": url, "dateModified": updated,
+             "publisher": {"@type": "Organization", "name": "Handpan Theory"},
+             "breadcrumb": {"@type": "BreadcrumbList", "itemListElement": crumbs},
+             "mainEntity": {"@type": "ItemList", "itemListElement": items}}
+    out.append('<script type="application/ld+json">%s</script>\n' % json.dumps(graph, ensure_ascii=False,
+                                                                             separators=(",", ":")))
+    out.append("</head>\n<body>\n<main>\n")
+    out.append('<header><p>%s</p>\n<p><a href="%sscales/">%s</a> &rsaquo; %s</p>\n'
+               % (SCALE_LOCKUP.replace("Handpan Theory home", z["home_aria"]), pre, esc(z["crumb_hub"]), esc(crumb)))
+    out.append("<h1>%s</h1>\n" % esc(title))
+    lead = copy["lead_html"] + z["app_count"].format(n=data["count"]) + z["intro_101"]
+    out.append('<p style="margin-top:8px">%s</p>\n' % lead)
+    if copy.get("alias_html"):
+        out.append('<p class="muted" style="margin-top:6px">%s</p>\n' % copy["alias_html"])
+    out.append('<p class="muted" style="margin-top:6px">%s</p>\n' % esc(z["not_steel"]))
+    out.append("</header>\n")
+    out.append('<section class="history">\n<h2>%s</h2>\n' % esc(z["history_heading"]))
+    for para in copy["history_html"]:
+        out.append("<p>%s</p>\n" % para)
+    if row["popularized"]:
+        out.append('<dl class="who"><dt>%s</dt><dd>%s</dd></dl>\n' % (esc(z["popularized"]), copy["who_html"]))
+    out.append("</section>\n")
+    out.append('<section class="plain">\n<h2>%s</h2>\n<ol><li>%s</li>\n<li>%s</li>'
+               % (esc(z["read_heading"]), esc(z["read_root"]), esc(z["read_notes"])))
+    if any(f[3] == "bottom" for f in data["fields"].values()):
+        out.append("\n<li>%s</li>" % esc(z["read_bottom"]))
+    out.append("</ol>\n</section>\n")
+    out.append('<section class="scale" id="%s">\n' % row["slug"])
+    out.append('<h2>%s</h2><p class="muted">%s</p>\n'
+               % (esc(name), esc(notes_line(data["fields"], z["bottom_shell"], z["ding"], z["notes_punct"]))))
+    prog_degs = "" if not all(degs) else " (%s)" % ", ".join(degs)
+    out.append("<p>%s<b>%s</b>%s%s</p>\n" % (esc(z["progression"]), esc(", ".join(names)), prog_degs,
+                                             copy["progression_tail_html"]))
+    n = len(cards)
+    out.append('<div class="prog" role="radiogroup" aria-label="%s">\n' % esc(z["steps_aria"]))
+    for i, c in enumerate(cards, 1):
+        out.append('<input type="radio" name="step" id="p%d"%s aria-label="%s">\n'
+                   % (i, " checked" if i == 1 else "", html.escape(z["step_aria"].format(i=i, n=n, name=c["main"] + c["sup"]))))
+    out.append('<div class="cards">\n')
+    for i, c in enumerate(cards, 1):
+        out.append(card_html(row, data, c, i, n, z))
+    out.append("</div></div>\n")
+    out.append('<div class="ctas"><a class="open" href="%s">%s</a><a class="open ghost" href="/#add">%s</a></div>\n'
+               % (row["cta"], esc(z["cta"].format(name=name)), esc(z["cta_add"])))
+    target = rows_by_slug.get(row["cross"]["to"]) if row.get("cross") else None
+    if target:
+        href = row["cross"]["href"]
+        if href == "/scales/%s/" % target["slug"] and target["slug"] in avail[script]:
+            href = pre + href[1:]
+        out.append("<p>%s</p>\n" % (zh_cross_lead(row, target, z) + z["cross_open"].format(
+            link='<a href="%s">%s</a>' % (href, esc(target["name"])))))
+    if row.get("also_try"):
+        out.append('<p>%s</p>\n<ul class="rel also">%s</ul>\n' % (esc(z["also_try"]), "".join(
+            '<li><a href="%s">%s</a></li>' % (a["href"], esc(a["name"])) for a in row["also_try"])))
+    out.append("</section>\n")
+    all_rows = list(rows_by_slug.values())
+    out.append('<section class="related">\n<h2>%s</h2>\n<ul class="rel">\n%s\n</ul>\n'
+               '<p><a href="%sscales/">%s</a></p>\n</section>\n'
+               % (esc(z["related_heading"]), "\n".join(zh_link_item(rows_by_slug[s], script, avail) for s in siblings(row, all_rows)),
+                  pre, esc(z["all_link"].format(n=len(all_rows)))))
+    out.append('<p class="muted">%s <time datetime="%s">%s</time></p>\n' % (esc(z["updated"]), updated, updated))
+    out.append('<p class="muted">%s</p>\n<script>' % esc(z["footer"]) + SWIPE_JS + "</script>\n</main>\n</body>\n</html>\n")
+    return "".join(out)
+
+
+def zh_cross_lead(row, target, z):
+    if target["root"] != row["root"]:
+        return z["cross_other_root"].format(root=target["root"])
+    if target["family"] == row["family"]:
+        return z["cross_same_family"].format(n=z["numbers"][str(target["notes"])])
+    return z["cross_other"].format(root=row["root"])
+
+
+def pages_for(slugs, rows=None, copy=None, script="en", avail=None):
     if copy is not None and len(slugs) > 1:
         raise ValueError("pages_for: one copy cannot serve %d slugs" % len(slugs))
     rows = rows or load_rows()
+    avail = avail if avail is not None else discover(rows)
     by = {r["slug"]: r for r in rows}
     data = engine([by[s] for s in slugs])
-    return {s: render(by[s], data["rows"][s], by, copy if copy is not None else load_copy(by[s]),
-                      data["alt"].get(s)) for s in slugs}
+    return {s: render(by[s], data["rows"][s], by, copy if copy is not None else load_copy(by[s], script),
+                      data["alt"].get(s), script, avail) for s in slugs}
 
 
 def page_for(slug, rows=None, copy=None):
@@ -784,10 +981,38 @@ def emit(path, text, check, stdout):
     return 0
 
 
+def lang_of(argv):
+    if "--lang" not in argv:
+        return "en", argv
+    i = argv.index("--lang")
+    script = argv[i + 1] if i + 1 < len(argv) else ""
+    if script not in SCRIPTS:
+        raise SystemExit("gen_scale_page: --lang takes one of %s" % ", ".join(SCRIPTS))
+    return script, argv[:i] + argv[i + 2:]
+
+
 def main(argv):
+    script, argv = lang_of(argv)
     check = "--check" in argv
     stdout = "--stdout" in argv
     args = [a for a in argv if not a.startswith("--")]
+    if script != "en" or "--all" in argv:
+        rows = load_rows()
+        avail = discover(rows)
+        every = [r["slug"] for r in rows if script == "en" or r["slug"] in avail[script]]
+        slugs = args or (every if "--all" in argv else [])
+        if not (slugs or "--hub" in argv):
+            raise SystemExit(__doc__)
+        if script != "en" and "--hub" in argv and not avail[script]:
+            raise SystemExit("gen_scale_page: no copy.%s.json on disk, so there is no %s hub to write" % (script, script))
+        out = os.path.join(SITE_DIR, prefix(script) + "scales")
+        results = []
+        if slugs:
+            pages = pages_for(slugs, rows, script=script, avail=avail)
+            results += [emit(os.path.join(out, s, "index.html"), pages[s], check, stdout) for s in slugs]
+        if "--hub" in argv or ("--all" in argv and every):
+            results.append(emit(os.path.join(out, "index.html"), hub_page(rows, script, avail), check, stdout))
+        return max(results)
     if "--serenity" in argv:
         return emit(os.path.join(ROOT, "scales", SERENITY_SLUG, "index.html"), serenity_page(), check, stdout)
     if "--neotone" in argv:

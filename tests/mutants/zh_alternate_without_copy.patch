@@ -1,0 +1,15 @@
+# kills: test_missing_copy_means_no_alternate
+# suite: python3 -m unittest -k test_missing_copy_means_no_alternate tests.test_zh_scale_pages
+# A page advertises a zh alternate for a script whose copy file does not exist, so hreflang points at a 404.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -796,7 +796,7 @@
+         raise SystemExit("gen_scale_page: %s has no %s page (Neotone and frozen pages are English only)" % (row["slug"], script))
+     z = load_zh()[script]
+     avail = avail if avail is not None else discover(list(rows_by_slug.values()))
+-    scripts = [sc for sc in SCRIPTS if row["slug"] in avail[sc]]
++    scripts = list(SCRIPTS)
+     updated = copy["updated"]
+     name = row["name"]
+     pre = "/" + prefix(script)
