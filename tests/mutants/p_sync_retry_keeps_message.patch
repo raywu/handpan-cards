@@ -1,0 +1,14 @@
+# kills: a refused save shows its reason and a Try again button that runs the save once more
+# suite: node --test --test-name-pattern ^a.refused.save.shows.its.reason tests/app.test.js
+# Refs TRI-28: sign-in QA fixes. Try again leaves the refusal on screen.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20959,7 +20959,6 @@ async function syncDeleteAccount() {
+ }
+ function syncRetry() {
+   if (!syncLoad()) return;
+-  syncSay(null);
+   syncKick(false);
+ }
+ function syncBind() {

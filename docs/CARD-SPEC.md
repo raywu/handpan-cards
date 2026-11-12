@@ -208,6 +208,16 @@ exactly where its diagram has it.
   Owner: the parent scale's seven steps take no accidental; case and ° carry
   quality. A root outside the parent scale takes `#`/`b` (default, generated decks only).
 
+- **Chinese scale pages** (zh-Hant, zh-Hans; plan `docs/plans/2026-11-11-zh-seo-aeo.md`):
+  rendered by `tools/gen_scale_page.py --lang <script>` to `/zh-hant/scales/` and
+  `/zh-hans/scales/`; page prose comes from `scales/<slug>/copy.<script>.json`, fixed labels
+  (headings, breadcrumb, footer, the handpan-is-not-a-steel-tongue-drum line) from
+  `tools/scale_page_zh.json`. Chord cards stay English (card copy is English-only). Fonts: zh
+  pages link same-origin `/fonts/fonts.css` (Latin faces) and fall back to a per-script CJK
+  stack (PingFang / Microsoft JhengHei or YaHei / Noto Sans) for Chinese glyphs; they load no
+  third-party host. hreflang (`en`, `zh-Hant`, `zh-Hans`, `x-default`) is emitted only for a
+  script whose copy file exists.
+
 ## Data model
 
 Per deck: `id, name, sub, colors{root,tone,ga,gb}, degrees{pc:label},

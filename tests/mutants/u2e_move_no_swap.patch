@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15369,7 +15369,7 @@ function editorNeoMove(m, from, to) {
+@@ -15697,7 +15697,7 @@ function editorNeoMove(m, from, to) {
    if (from === to) return { ok: true, value: m };
    if (to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
    const next = map.slice();

@@ -13,7 +13,7 @@ const { describe } = require("node:test");
 const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename, [
   // The sandbox has no document for the dynamically built panel, so a boot that opens
   // the create sheet (empty library) or a chip click that opens Edit needs the legacy sheet.
-  "every rendered face is well-formed markup", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
+  "every rendered face is well-formed markup", "model matches the command:", "T-B1:", "N1: the plain handoff", "N1: the payload handoff",
 ], [
   // Kept behaviour (U2i): these asserted nothing about the removed sheet and run on the default panel build.
   "writing the app's own keys leaves a sibling key in hpfc untouched",
@@ -690,7 +690,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const app = boot();
   const HPE = app.get("HPE");
   for (const mod of ["fontdata", "pdf", "pdfdeck", "pdfcards", "core", "importer", "voicing",
-                     "layout", "naming", "select", "share", "sequence", "swipe"]) {
+                     "layout", "naming", "select", "share", "sequence", "sync", "swipe"]) {
     assert.strictEqual(typeof HPE[mod], "object", `HPE.${mod} missing from the app`);
   }
   // core must be visible to the modules that read it, so it loads before them.
@@ -701,7 +701,7 @@ test("index.html carries the whole engine inline, with no external script", asyn
   const order = [...html.matchAll(/<!-- engine:(\w+) begin/g)].map((m) => m[1]);
   assert.deepStrictEqual(order, ["fontdata", "pdf", "pdfdeck", "pdfcards", "core",
                                  "importer", "voicing", "layout", "naming", "select",
-                                 "share", "sequence", "swipe"]);
+                                 "share", "sequence", "sync", "swipe"]);
   // share is the app's share surface: encode, decode and the version it guards.
   const share = app.get("HPE.share");
   for (const key of ["encode", "decode"]) {
@@ -5698,12 +5698,12 @@ test("AP2-2 setInert applies each caller's own background set", async () => {
   const app = boot({ layout: true });
   const ids = (expr) => plain(app.get(`${expr}.map(e => e.id)`));
   const inertIds = () => plain(app.get(`[...new Set([...background, ...panelBackground])].filter(e => e.inert).map(e => e.id)`));
-  assert.deepStrictEqual(ids("background"), ["settings-panel", "about", "main"], "the sheet's set");
+  assert.deepStrictEqual(ids("background"), ["account", "export", "settings-panel", "about", "main"], "the sheet's set");
   assert.deepStrictEqual(ids("panelBackground"), ["main", "decks", "about", "share-copy", "saved-temporary-use"], "the panel's set");
   assert.deepStrictEqual(inertIds(), []);
 
   app.run("openScaleSheet()");
-  assert.deepStrictEqual(inertIds().sort(), ["about", "main", "settings-panel"], "the sheet inerts its own set only");
+  assert.deepStrictEqual(inertIds().sort(), ["about", "account", "export", "main", "settings-panel"], "the sheet inerts its own set only");
   assert.strictEqual(app.get("background[0].getAttribute('aria-hidden')"), "true");
   app.run("closeScaleSheet()");
   assert.deepStrictEqual(inertIds(), [], "closing the sheet frees exactly what it took");
@@ -11372,7 +11372,7 @@ describe("about overlay", () => {
       "window.addEventListener = function (t, f) { (window.__w[t] = window.__w[t] || []).push(f); return __a.apply(this, arguments); };</script>");
     const app = boot({ html });
     openAboutFrom(app);
-    app.run("const __q = document.querySelector.bind(document); document.querySelector = (s) => (s === '.abouthead' ? { offsetHeight: 91 } : __q(s));");
+    app.run("const __q = document.querySelector.bind(document); document.querySelector = (s) => (s === '#about .abouthead' ? { offsetHeight: 91 } : __q(s));");
     assert.notStrictEqual(headVar(app), "91px", "the head height was already 91px, so a resize proves nothing");
     assert.strictEqual(app.get("(window.__w.resize || []).length"), 1, "no resize listener registered");
     app.run("window.__w.resize.forEach((f) => f({ type: 'resize' }))");
@@ -15556,8 +15556,8 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.conflict","saved.conflictDeleted","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.separate","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden"].map(k=>"backup."+k),...neotoneKeys],addedPluralKeys=["move.notice","move.banner"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B) and the Neotone keys (Neotone lane U2)");
+    const syncKeys=["entryErr","entrySignIn","entrySub","pageSignIn","pageAccount","pageBack","resendAt","signedIn","intro","title","email","send","sending","code","signIn","signingIn","otherEmail","resend","resending","sent","status.syncing","status.synced","status.count","status.pending","retry","signOut","signedOutDone","delete","deleteArmed","deleteConfirm","err.deleteFailed","err.badEmail","err.badCode","err.expired","err.rateLimited","err.sendFailed","err.offline","err.signedOut","err.rate","err.cap"].map(k=>"sync."+k),retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["editor.replace_ding","editor.replace_ding_aria","panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.pill.add_bottom","editor.pill.add_inner","editor.pill.add_rim","editor.pill.count","editor.pill.full_bottom","editor.pill.full_inner","editor.pill.full_rim","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.pick_first","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.hint","editor.areas.aria","editor.pill_aria.rim","editor.pill_aria.inner","editor.pill_aria.bottom","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","signIn"].map(k=>"backup."+k),...neotoneKeys,...syncKeys],addedPluralKeys=["move.notice","move.banner","sync.status.count"];
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+16-retiredKeys.length+addedKeys.length,"frozen base plus the sixteen approved saved-variants messages, less the four retired Amy keys, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the sixteen backup.* keys (Safari storage lane B), the editor.* keys (scale editor lanes, incl. editor.palette / editor.palette_n / editor.layout.aria from U2e) and the Neotone keys (Neotone lane U2) and the thirty-five sync.* keys (login sync lane A2, polished by TRI-28)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys);
     assert.strictEqual(require("node:crypto").createHash("sha256")
@@ -18782,11 +18782,11 @@ describe("SHC asynchronous LINK ownership", () => {
 
 test("NS1: About links underline at 1.5px and 2.5px on hover, like the scale pages", () => {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  const rest = /#about a\{([^}]*)\}/.exec(html);
+  const rest = /#about a,#account a,#export a\{([^}]*)\}/.exec(html);
   assert.ok(rest, "no #about a rule");
   assert.match(rest[1], /text-decoration-thickness:\s*1\.5px/);
   assert.match(rest[1], /text-underline-offset:\s*3px/);
-  assert.match(html, /#about a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
+  assert.match(html, /#about a:hover,#account a:hover,#export a:hover\{\s*text-decoration-thickness:\s*2\.5px/);
 });
 
 describe("NS: native share", () => {
@@ -20176,7 +20176,7 @@ describe("FG: field guide light ground for the menu, forms and About (phase 2)",
 
   test("FG: every selector is scoped to the panel, sheet or About", () => {
     for (const r of rules()) for (const s of r.sel)
-      assert.match(s, /^(#settings-panel|#scale-sheet|\.sheetsurf|#about|\.abouthead|@)/, `unscoped: ${s}`);
+      assert.match(s, /^(#settings-panel|#scale-sheet|\.sheetsurf|#about|#account|#export|\.abouthead|@)/, `unscoped: ${s}`);
   });
 
   test("FG: protected card, progression, badge and diagram selectors are never touched", () => {
@@ -20515,6 +20515,320 @@ describe("PDF tier menu (lane U)", () => {
   });
 });
 
+/* ------------------------------------------------------------- sync-apply */
+/* docs/plans/2026-11-05-login-sync-v2.md section 8 (sync-apply inserts with the
+   remote id), section 9 (pull step 3: replaces drop, last-visible guard) and
+   section 12 lane A1. The command applies a pure HPE.sync plan under the
+   existing lock/transaction; it never touches the network. */
+describe("sync-apply", () => {
+  const syncId = () => require("node:crypto").randomUUID();
+  const remoteRecord = async (text, replaces) => {
+    const donor = boot();
+    await makeCustom(donor, text);
+    const record = plain(donor.get("savedState.entries[0].record"));
+    if (replaces) record.o = { ...(record.o || {}), replaces };
+    return record;
+  };
+  const applySync = (app, ops) => plain(app.get(
+    `commitSavedSession({type:"sync-apply",collectionId:savedState.collectionId,ops:${JSON.stringify(ops)}})`));
+  const insertOp = (id, record) => ({ op: "insert", id, remoteId: id, record, reason: "new" });
+  const seeds = app => plain(app.get("DECKS.map(d=>d.id)"));
+  const shapeOk = app => app.get("savedEnvelopeShape(savedState)");
+  const rowOf = (app, id) => plain(app.get(`savedState.entries.find(e=>e.instanceId===${JSON.stringify(id)})`));
+  const hide = (app, seed) => plain(app.get(`commitSavedSession({type:"hide-builtin",collectionId:savedState.collectionId,seedId:${JSON.stringify(seed)},
+    expectedSlotStateRevision:savedState.slotStateRevision,expectedOwnerId:null})`));
+
+  test("inserts with the remote id and keeps the envelope shape valid", async () => {
+    const app = boot(), id = syncId(), record = await remoteRecord(AMARA_STRING);
+    assert.strictEqual(app.get("savedMode"), "session");
+    const before = app.get("savedState.nextDisplayOrdinal");
+    const result = applySync(app, [insertOp(id, record)]);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.changed, true);
+    assert.strictEqual(shapeOk(app), true);
+    assert.deepStrictEqual(plain(app.get("savedState.usedInstanceIds")).slice(-1), [id]);
+    assert.strictEqual(rowOf(app, id).displayOrdinal, before);
+    assert.strictEqual(rowOf(app, id).revision, 1);
+    assert.deepStrictEqual(rowOf(app, id).record, record);
+    assert.ok(app.get(`savedEntries.has(${JSON.stringify(id)})`), "a readable record gets an engine view");
+    assert.ok(result.sync.committed.some(c => c.id === id && c.revision === 1));
+    assert.deepStrictEqual(result.sync.inserted, [id]);
+  });
+
+  test("a durable commit persists the remote id", async () => {
+    const app = await durableBoot(), id = syncId(), record = await remoteRecord(AMARA_STRING);
+    const result = plain(await app.getAsync(
+      `commitSaved({type:"sync-apply",collectionId:savedState.collectionId,ops:${JSON.stringify([insertOp(id, record)])}})`));
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.persistence, "durable");
+    assert.ok(savedEnvelope(app).entries.some(e => e.instanceId === id));
+    assert.ok(savedEnvelope(app).usedInstanceIds.includes(id));
+  });
+
+  test("an id already used on this device is skipped, never reused", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+    const before = plain(app.get("savedState"));
+    const result = applySync(app, [insertOp(a.instanceId, record), insertOp("not-a-uuid", record)]);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.changed, false);
+    assert.deepStrictEqual(result.sync.skipped.map(s => s.reason), ["id", "id"]);
+    assert.deepStrictEqual(plain(app.get("savedState")), before);
+  });
+
+  test("an unreadable record is kept opaque with no engine view", async () => {
+    const app = boot(), id = syncId(), record = await remoteRecord(AMARA_STRING);
+    const future = { ...record, v: 99 };
+    const result = applySync(app, [{ ...insertOp(id, future), opaque: true }]);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(rowOf(app, id).record, future);
+    assert.strictEqual(app.get(`savedEntries.has(${JSON.stringify(id)})`), false);
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("remove drops the entry; the last visible scale is never removed", async () => {
+    const app = boot(), a = await makeCustom(app);
+    for (const seed of seeds(app)) assert.strictEqual(hide(app, seed).ok, true);
+    const lone = applySync(app, [{ op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 }]);
+    assert.strictEqual(lone.ok, true);
+    assert.deepStrictEqual(lone.sync.skipped, [{ id: a.instanceId, reason: "last-visible" }]);
+    assert.ok(rowOf(app, a.instanceId), "the lone visible scale stays");
+    const id = syncId(), record = await remoteRecord(OTHER_STRING);
+    const both = applySync(app, [insertOp(id, record), { op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 }]);
+    assert.strictEqual(both.ok, true);
+    assert.deepStrictEqual(both.sync.removed, [a.instanceId]);
+    assert.strictEqual(rowOf(app, a.instanceId), undefined);
+    assert.ok(rowOf(app, id));
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("remove of a slot holder hides the seed like delete; remove of a missing id is a no-op", async () => {
+    const app = boot(), [seed] = seeds(app), id = syncId();
+    applySync(app, [insertOp(id, await remoteRecord(AMARA_STRING, seed))]);
+    assert.strictEqual(app.get(`savedState.slots[${JSON.stringify(seed)}]`), id);
+    const gone = applySync(app, [{ op: "remove", id, remoteId: id, expectedRevision: 1 }, { op: "remove", id: syncId(), remoteId: "x", expectedRevision: 1 }]);
+    assert.strictEqual(gone.ok, true);
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), {});
+    assert.ok(plain(app.get("savedState.hidden")).includes(seed));
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("replaces: a free slot is claimed, a held or hidden slot is dropped", async () => {
+    const app = boot(), [free, hidden] = seeds(app);
+    assert.strictEqual(hide(app, hidden).ok, true);
+    const [one, two, three] = [syncId(), syncId(), syncId()];
+    const result = applySync(app, [
+      insertOp(one, await remoteRecord(AMARA_STRING, free)),
+      insertOp(two, await remoteRecord(OTHER_STRING, free)),
+      insertOp(three, await remoteRecord(THIRD_STRING, hidden))]);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(app.get(`savedState.slots[${JSON.stringify(free)}]`), one);
+    assert.strictEqual(rowOf(app, one).record.o.replaces, free);
+    assert.strictEqual(rowOf(app, two).record.o.replaces, undefined, "slot already held");
+    assert.strictEqual(rowOf(app, three).record.o.replaces, undefined, "seed hidden locally");
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), { [free]: one });
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("overwrite carries replaces itself and reconciles slot ownership", async () => {
+    const app = boot(), [seed, other] = seeds(app), a = await makeCustom(app), b = await makeCustom(app, OTHER_STRING);
+    const claim = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1,
+      record: await remoteRecord(AMARA_STRING, seed) }]);
+    assert.strictEqual(claim.ok, true);
+    assert.strictEqual(app.get(`savedState.slots[${JSON.stringify(seed)}]`), a.instanceId);
+    assert.strictEqual(rowOf(app, a.instanceId).revision, 2);
+    const slotRevision = app.get("savedState.slotStateRevision");
+    const lost = applySync(app, [{ op: "overwrite", id: b.instanceId, remoteId: b.instanceId, expectedRevision: 1,
+      record: await remoteRecord(OTHER_STRING, seed) }]);
+    assert.strictEqual(lost.ok, true);
+    assert.strictEqual(rowOf(app, b.instanceId).record.o.replaces, undefined, "slot held by another entry");
+    assert.strictEqual(app.get("savedState.slotStateRevision"), slotRevision);
+    const moved = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 2,
+      record: await remoteRecord(AMARA_STRING, other) }]);
+    assert.strictEqual(moved.ok, true);
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), { [other]: a.instanceId });
+    const plainAgain = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 3,
+      record: await remoteRecord(AMARA_STRING) }]);
+    assert.strictEqual(plainAgain.ok, true);
+    assert.deepStrictEqual(plain(app.get("savedState.slots")), {});
+    assert.ok(app.get("savedState.slotStateRevision") > slotRevision);
+    assert.strictEqual(shapeOk(app), true);
+    assert.ok(app.get("stageSavedEnvelope(savedState).ok"), "slot authority holds after every overwrite");
+  });
+
+  test("overwrite of a missing id fails the command; an equal body changes nothing", async () => {
+    const app = boot(), a = await makeCustom(app), record = plain(app.get("savedState.entries[0].record"));
+    const same = applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record }]);
+    assert.strictEqual(same.ok, true);
+    assert.strictEqual(same.changed, false);
+    assert.strictEqual(rowOf(app, a.instanceId).revision, 1);
+    assert.ok(same.sync.committed.some(c => c.id === a.instanceId && c.revision === 1));
+    const missing = applySync(app, [{ op: "overwrite", id: syncId(), remoteId: "x", expectedRevision: 1, record }]);
+    assert.strictEqual(missing.ok, false);
+  });
+
+  test("overwrite and remove need an expectedRevision; a malformed one is refused", async () => {
+    const app = boot(), a = await makeCustom(app), record = plain(app.get("savedState.entries[0].record"));
+    const before = plain(app.get("savedState"));
+    for (const bad of [undefined, -1, 1.5, "1"]) {
+      assert.strictEqual(applySync(app, [{ op: "overwrite", id: a.instanceId, remoteId: "x", expectedRevision: bad, record }]).ok, false);
+      assert.strictEqual(applySync(app, [{ op: "remove", id: a.instanceId, remoteId: "x", expectedRevision: bad }]).ok, false);
+    }
+    assert.deepStrictEqual(plain(app.get("savedState")), before);
+  });
+
+  test("a stale overwrite or remove is skipped and the edited row is untouched", async () => {
+    const app = boot(), a = await makeCustom(app), b = await makeCustom(app, OTHER_STRING);
+    const edit = plain(app.get(`commitSavedSession({type:"edit",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:1,
+      candidate:{deck:savedEntries.get(${JSON.stringify(b.instanceId)}).deck,record:scaleRecord(seedOf(savedEntries.get(${JSON.stringify(b.instanceId)}).deck))}})`));
+    assert.strictEqual(edit.ok, true);
+    const edited = rowOf(app, a.instanceId), remote = await remoteRecord(THIRD_STRING);
+    const result = applySync(app, [
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record: remote },
+      { op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 }]);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.sync.skipped, [{ id: a.instanceId, reason: "revision" }, { id: a.instanceId, reason: "revision" }]);
+    assert.deepStrictEqual(result.sync.removed, []);
+    assert.deepStrictEqual(rowOf(app, a.instanceId), edited);
+    assert.ok(result.sync.committed.some(c => c.id === a.instanceId && c.revision === 2));
+    assert.strictEqual(shapeOk(app), true);
+  });
+
+  test("an overwrite that requires a skipped insert is skipped too, the row untouched", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+    const before = rowOf(app, a.instanceId);
+    const result = applySync(app, [insertOp("not-a-uuid", record),
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record, opaque: true, requires: "not-a-uuid" }]);
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.sync.skipped, [{ id: "not-a-uuid", reason: "id" }, { id: a.instanceId, reason: "dependency" }]);
+    assert.deepStrictEqual(rowOf(app, a.instanceId), before);
+  });
+
+  test("an overwrite that requires an applied insert goes ahead", async () => {
+    const app = boot(), a = await makeCustom(app), record = await remoteRecord(OTHER_STRING), moved = syncId();
+    const result = applySync(app, [insertOp(moved, record),
+      { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record, opaque: true, requires: moved }]);
+    assert.deepStrictEqual(result.sync.skipped, []);
+    assert.deepStrictEqual(rowOf(app, a.instanceId).record, record);
+  });
+
+  test("a remove of an unknown id is reported as missing", async () => {
+    const app = boot(), id = syncId();
+    await makeCustom(app);
+    const result = applySync(app, [{ op: "remove", id, remoteId: "x", expectedRevision: 1 }]);
+    assert.deepStrictEqual(result.sync.skipped, [{ id, reason: "missing" }]);
+  });
+
+  for (const kind of ["overwrite", "remove"]) {
+    test(`durable: a concurrent edit and a stale sync ${kind} keep the edit`, async () => {
+      const app = await durableBoot(), a = await makeCustom(app), b = await makeCustom(app, THIRD_STRING);
+      const remote = await remoteRecord(OTHER_STRING);
+      const op = kind === "overwrite"
+        ? { op: "overwrite", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1, record: remote }
+        : { op: "remove", id: a.instanceId, remoteId: a.instanceId, expectedRevision: 1 };
+      const edit = app.getAsync(`commitSaved({type:"edit",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:1,
+        candidate:{deck:savedEntries.get(${JSON.stringify(b.instanceId)}).deck,record:scaleRecord(seedOf(savedEntries.get(${JSON.stringify(b.instanceId)}).deck))}})`);
+      const sync = app.getAsync(`commitSaved({type:"sync-apply",collectionId:savedState.collectionId,ops:${JSON.stringify([op])}})`);
+      const [editResult, syncResult] = (await Promise.all([edit, sync])).map(plain);
+      const row = savedEnvelope(app).entries.find(e => e.instanceId === a.instanceId);
+      assert.ok(row, "the scale is never deleted by a stale remove");
+      if (editResult.ok) {
+        assert.strictEqual(row.revision, 2);
+        assert.notDeepStrictEqual(row.record, remote, "the edit is not replaced by the remote body");
+        assert.deepStrictEqual(syncResult.sync.skipped, [{ id: a.instanceId, reason: "revision" }]);
+      } else {
+        assert.strictEqual(editResult.kind, "conflict");
+      }
+    });
+  }
+
+  test("a malformed op or a wrong epoch is refused", async () => {
+    const app = boot();
+    assert.strictEqual(applySync(app, [{ op: "frobnicate", id: syncId() }]).ok, false);
+    const wrong = plain(app.get(`commitSavedSession({type:"sync-apply",collectionId:${JSON.stringify(syncId())},ops:[]})`));
+    assert.strictEqual(wrong.ok, false);
+  });
+
+  test("signed out: sync-apply and ordinary commits make zero fetch calls", async () => {
+    const app = boot();
+    app.run("globalThis.__fetchCalls = 0; globalThis.fetch = function () { globalThis.__fetchCalls++; throw new Error('network'); };");
+    await makeCustom(app);
+    applySync(app, [insertOp(syncId(), await remoteRecord(OTHER_STRING))]);
+    assert.strictEqual(app.get("__fetchCalls"), 0);
+    assert.strictEqual(app.get("typeof HPE.sync.planPull"), "function");
+  });
+
+  describe("conformance with the sync-apply model (tests/sync_model.js)", () => {
+    const { applyOps } = require("./sync_model.js");
+    const op = (kind, id, extra) => ({ op: kind, id, remoteId: id, ...extra });
+    const modelState = app => {
+      const st = plain(app.get("savedState"));
+      return {
+        entries: st.entries.map(e => ({ id: e.instanceId, revision: e.revision, record: e.record })),
+        used: st.usedInstanceIds,
+        slotTaken: (seed, id) => (st.slots[seed] !== undefined && st.slots[seed] !== id) || st.hidden.includes(seed),
+        builtinVisible: plain(app.get("DECKS.map(d=>d.id)")).filter(s => !st.hidden.includes(s) && st.slots[s] === undefined).length
+      };
+    };
+    const scenarios = {
+      "clean insert": async app => [insertOp(syncId(), await remoteRecord(AMARA_STRING))],
+      "overwrite with an identical record": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 1, record: plain(app.get("savedState.entries[0].record")) })];
+      },
+      "overwrite with a changed record": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 1, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "stale overwrite": async app => {
+        const a = await makeCustom(app);
+        return [op("overwrite", a.instanceId, { expectedRevision: 7, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "overwrite requiring a skipped insert": async app => {
+        const a = await makeCustom(app), record = await remoteRecord(OTHER_STRING);
+        return [insertOp("not-a-uuid", record), op("overwrite", a.instanceId, { expectedRevision: 1, record, opaque: true, requires: "not-a-uuid" })];
+      },
+      "stale remove": async app => {
+        const a = await makeCustom(app);
+        return [op("remove", a.instanceId, { expectedRevision: 7 })];
+      },
+      "remove of a missing row": async app => {
+        await makeCustom(app);
+        return [op("remove", syncId(), { expectedRevision: 1 })];
+      },
+      "remove of the last visible scale": async app => {
+        const a = await makeCustom(app);
+        for (const seed of seeds(app)) assert.strictEqual(hide(app, seed).ok, true);
+        return [op("remove", a.instanceId, { expectedRevision: 1 })];
+      },
+      "overwrite of a missing row": async app => {
+        await makeCustom(app);
+        return [op("overwrite", syncId(), { expectedRevision: 1, record: await remoteRecord(OTHER_STRING) })];
+      },
+      "replaces stripped by a taken slot": async app => {
+        const [seed] = seeds(app), a = await makeCustom(app), b = await makeCustom(app, OTHER_STRING);
+        assert.strictEqual(applySync(app, [op("overwrite", a.instanceId, { expectedRevision: 1, record: await remoteRecord(AMARA_STRING, seed) })]).ok, true);
+        return [op("overwrite", b.instanceId, { expectedRevision: 1, record: await remoteRecord(OTHER_STRING, seed) }),
+          insertOp(syncId(), await remoteRecord(THIRD_STRING, seed))];
+      }
+    };
+    for (const [name, build] of Object.entries(scenarios)) {
+      test("model matches the command: " + name, async () => {
+        const app = boot(), ops = await build(app), state = modelState(app);
+        const model = applyOps(state.entries, ops, { used: state.used, slotTaken: state.slotTaken, builtinVisible: state.builtinVisible });
+        const real = applySync(app, ops);
+        if (model.conflict) return assert.strictEqual(real.ok, false);
+        assert.strictEqual(real.ok, true);
+        assert.deepStrictEqual(real.sync.committed, model.committed);
+        assert.deepStrictEqual(real.sync.skipped, model.skipped);
+        assert.deepStrictEqual(real.sync.inserted, model.inserted);
+        assert.deepStrictEqual(real.sync.removed, model.removed);
+        const after = plain(app.get("savedState.entries")).map(e => e.record);
+        assert.deepStrictEqual(after, model.live.map(e => e.record), "records, including a stripped replaces");
+      });
+    }
+  });
+});
+
 /* ------------------------------------------------- Safari storage lane B: back up saved scales */
 //
 // docs/plans/2026-10-30-safari-storage.md, Lane B. A readable text list of the
@@ -20524,7 +20838,8 @@ describe("PDF tier menu (lane U)", () => {
 describe("backup: back up saved scales", () => {
   const BK_KEY = "hpfc.backup.v1";
   const fsx = require("node:fs");
-  const open = (app) => { app.run("openPanel()"); app.els["backup-open"].click(); };
+  const open = (app) => { app.run("openPanel()"); app.els["backup-open"].click(); assert.strictEqual(app.get("subpage"), "export"); };
+  const closePage = (app) => app.els["export-close"].click();
   const textOf = (app) => String(app.els["backup-text"].value);
   const linksOf = (text) => text.split("\n").filter((l) => /#s=/.test(l)).map((l) => l.trim());
   const clip = (app) => {
@@ -20536,25 +20851,26 @@ describe("backup: back up saved scales", () => {
 
   test("markup: the opener follows the reset button, the panel starts hidden, the list is read-only", () => {
     const html = fsx.readFileSync(path.join(ROOT, "index.html"), "utf8");
-    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*>BACKUP YOUR SCALES<\/button>/,
+    assert.match(html, /id="deck-restore"[^>]*>RESET SEEDED SCALES<\/button>\s*<div class="modebar">\s*<button[^>]*id="backup-open"[^>]*aria-haspopup="dialog"[^>]*>Export scale links<\/button>/,
       "the opener is not right after the reset button, with its label");
-    assert.match(html, /<div[^>]*id="backup-panel"[^>]*\bhidden\b/);
+    assert.match(html, /<section id="export"[^>]*\bhidden\b[\s\S]*?<div[^>]*id="backup-panel"(?![^>]*\bhidden\b)[^>]*>/, "the panel sits inside the hidden export page and is not hidden itself");
     assert.match(html, /<textarea[^>]*id="backup-text"[^>]*\breadonly\b/, "the list box is not read-only");
     const inputs = html.match(/<(input|textarea)\b[^>]*>/g).filter((tag) => /id="backup-/.test(tag));
     assert.ok(inputs.every((tag) => /\breadonly\b/.test(tag)), "a writable field in the backup panel is a paste box");
     const app = boot();
-    assert.strictEqual(app.els["backup-panel"].hidden, true);
+    assert.strictEqual(app.els["export"].hidden, true);
   });
 
-  test("opening and closing the panel toggles aria-expanded and writes nothing", async () => {
+  test("opening the export page pushes one #export entry and closing it pops it; nothing is written", async () => {
     const app = boot();
     const before = JSON.stringify(app.store);
     open(app);
-    assert.strictEqual(app.els["backup-panel"].hidden, false);
-    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "true");
-    app.els["backup-open"].click();
-    assert.strictEqual(app.els["backup-panel"].hidden, true);
-    assert.strictEqual(app.els["backup-open"].getAttribute("aria-expanded"), "false");
+    assert.strictEqual(app.els["export"].hidden, false);
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push").map((c) => c.url), ["#export"]);
+    closePage(app);
+    assert.strictEqual(app.els["export"].hidden, true);
+    assert.strictEqual(app.get("subpage"), null);
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "back").length, 1);
     assert.strictEqual(JSON.stringify(app.store), before);
   });
 
@@ -20563,42 +20879,39 @@ describe("backup: back up saved scales", () => {
     open(app);
     assert.strictEqual(textOf(app), "");
     for (const id of ["backup-copy", "backup-download", "backup-share"]) assert.strictEqual(app.els[id].disabled, true, id);
-    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to export yet.");
   });
 
-  test("an open backup panel is repainted when the menu reopens after a save", async () => {
+  test("the export page is repainted when it reopens after a save", async () => {
     const app = await durableBoot();
     open(app);
-    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
-    app.run("closePanel()");
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to export yet.");
+    closePage(app);
     await makeCustom(app);
     app.els["backup-text"].value = "";
-    app.els["backup-status"].textContent = "No saved scales to back up yet.";
-    app.run("openPanel()");
-    assert.strictEqual(app.els["backup-panel"].hidden, false);
+    app.els["backup-status"].textContent = "No saved scales to export yet.";
+    open(app);
     assert.ok(linksOf(textOf(app)).length >= 1, "the list is still empty");
     assert.strictEqual(app.els["backup-copy"].disabled, false);
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
 
-  test("an open backup panel on desktop shows the new scale after a save", async () => {
+  test("the export page on desktop shows the new scale after a save", async () => {
     const app = await durableBoot();
     app.run("desktopMQ.matches = true");
     open(app);
-    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to back up yet.");
+    assert.strictEqual(app.els["backup-status"].textContent, "No saved scales to export yet.");
     await makeCustom(app);
-    assert.strictEqual(app.els["backup-panel"].hidden, false);
-    assert.ok(linksOf(textOf(app)).length >= 1, "the open list is stale after the save");
+    assert.ok(linksOf(textOf(app)).length >= 1, "the list is stale after the save");
     assert.strictEqual(app.els["backup-copy"].disabled, false);
     assert.strictEqual(app.els["backup-status"].textContent, "");
   });
 
-  test("the panel copy says a restored seed replacement is a new custom scale and hidden seeds are a note", () => {
+  test("the panel copy tells a plain story: tap a link to bring that scale back", () => {
     const app = boot();
     const copy = app.get('t("backup.restore")');
-    assert.match(copy, /new custom scale/);
-    assert.match(copy, /hidden/);
-    assert.match(copy, /note/);
+    assert.strictEqual(copy, "Tap a link to bring that scale back.");
+    assert.doesNotMatch(copy, /seed|replacement/i, "no jargon");
     assert.doesNotMatch(copy, /\bdeck\b/i, "visible text says scale, never deck");
   });
 
@@ -20670,6 +20983,7 @@ describe("backup: back up saved scales", () => {
     assert.match(text, /D AMARA 9/);
     assert.match(text, /Hidden seeded scales/);
     assert.strictEqual(app.els["backup-copy"].disabled, true, "nothing to restore by link means nothing to copy");
+    assert.strictEqual(app.els["backup-download"].disabled, true, "nothing to restore by link means nothing to download");
   });
 
   test("COPY writes the list to the clipboard and stores lastBackup in its own key, not in hpfc", async () => {
@@ -20690,7 +21004,7 @@ describe("backup: back up saved scales", () => {
     assert.deepStrictEqual(plain(app.get("savedState.entries.map(row=>row.record)")), records);
     assert.strictEqual(savedRaw(app), envelope, "the saved envelope did not change");
     assert.ok(records.every((r) => r.v === records[0].v));
-    assert.ok(app.get("/Last backed up/.test(document.getElementById('backup-last').textContent)"));
+    assert.ok(app.get("/Last exported/.test(document.getElementById('backup-last').textContent)"));
   });
 
   test("writing lastBackup does not change the migration or recovery state", async () => {
@@ -20778,5 +21092,1150 @@ describe("backup: back up saved scales", () => {
     const ids = () => app.get("panelStops().map((e) => e.id)");
     assert.ok(ids().includes("backup-open"));
     assert.ok(!ids().includes("backup-copy"));
+  });
+});
+
+/* ------------------------------------------------------------ sync client */
+/* docs/plans/2026-11-05-login-sync-v2.md sections 9, 10 and 12 lane A2. The
+   client talks to Supabase only on the dev host; every call here goes to a
+   fetch stub that models the three endpoints the client uses. */
+describe("sync client", () => {
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const UID = "11111111-1111-4111-8111-111111111111";
+  const newId = () => require("node:crypto").randomUUID();
+  const sidecar = extra => JSON.stringify({ v: 1, project: PROJECT, userId: UID, email: "a@b.test", refresh: "r0", access: "a0",
+    accessExp: Date.now() + 3600e3, cursor: 0, base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, ...extra });
+  const remoteRecord = async text => {
+    const donor = boot();
+    await makeCustom(donor, text);
+    return plain(donor.get("savedState.entries[0].record"));
+  };
+  const install = (app, rows = []) => {
+    app.run(`globalThis.__log = []; globalThis.__rows = ${JSON.stringify(rows)}; globalThis.__rev = ${rows.reduce((m, r) => Math.max(m, r.rev), 0)};
+      globalThis.__mode = "ok"; globalThis.__pushed = [];
+      globalThis.fetch = async function (url, opt) {
+        const path = String(url).replace(${JSON.stringify(PROJECT)}, "");
+        __log.push({ path, method: opt.method, auth: opt.headers.authorization || null, body: opt.body || null });
+        const reply = (status, json) => ({ status, ok: status >= 200 && status < 300, json: async () => json });
+        if (__mode === "offline") throw new TypeError("network");
+        if (__mode === "429") return reply(429, { message: "rate" });
+        if (path.startsWith("/auth/v1/token")) return reply(200, { access_token: "a1", refresh_token: "r1", expires_in: 3600 });
+        if (path.startsWith("/rest/v1/saved_scales")) {
+          const gt = Number(/rev=gt\\.(\\d+)/.exec(path)[1]);
+          return reply(200, __rows.filter(r => r.rev > gt));
+        }
+        if (path === "/rest/v1/rpc/push_scales") {
+          const rows = JSON.parse(opt.body).rows;
+          return reply(200, rows.map(r => { __pushed.push(r); const rev = ++__rev;
+            __rows.push({ scale_id: r.scale_id, rev, record: r.record, deleted: r.deleted }); return { scale_id: r.scale_id, rev }; }));
+        }
+        return reply(404, null);
+      };`);
+  };
+  const sc = app => JSON.parse(app.get("localStorage.getItem('hpfc.sync.v1')"));
+  const calls = (app, p) => plain(app.get("__log")).filter(c => c.path.startsWith(p));
+  const start = async (extra, rows) => {
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true, storage: { "hpfc.sync.v1": sidecar(extra) } });
+    install(app, rows);
+    await app.waitFor("syncHolder === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    return app;
+  };
+  const settle = async app => { await app.getAsync("syncKick(false)"); };
+
+  test("a first sync pulls remote scales, inserting them locally, and never pushes before the pull", async () => {
+    const id = newId(), record = await remoteRecord(AMARA_STRING);
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true, storage: { "hpfc.sync.v1": sidecar({ first: true }) } });
+    install(app, [{ scale_id: id, rev: 1, record, deleted: false }]);
+    await app.waitFor("syncHolder === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(id)})`));
+    assert.strictEqual(sc(app).first, false);
+    const order = plain(app.get("__log")).map(c => c.path.split("?")[0]);
+    assert.ok(order.indexOf("/rest/v1/saved_scales") >= 0);
+    assert.ok(order.indexOf("/rest/v1/rpc/push_scales") < 0 || order.indexOf("/rest/v1/rpc/push_scales") > order.indexOf("/rest/v1/saved_scales"));
+  });
+
+  test("a save is pushed after the debounce, with the bearer token", async () => {
+    const app = await start();
+    await makeCustom(app);
+    app.advance(2100);
+    await app.getAsync("syncRunning");
+    const pushes = calls(app, "/rest/v1/rpc/push_scales");
+    assert.strictEqual(pushes.length, 1);
+    assert.match(pushes[0].auth, /^Bearer /);
+    assert.strictEqual(JSON.parse(pushes[0].body).rows.length, 1);
+    assert.strictEqual(sc(app).pending, false);
+  });
+
+  test("deleting a synced scale pushes a tombstone", async () => {
+    const app = await start();
+    const a = await makeCustom(app);
+    app.advance(2100); await app.getAsync("syncRunning");
+    app.run("__pushed.length = 0");
+    await app.getAsync(`commitSaved({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(a.instanceId)}).revision})`);
+    await settle(app);
+    const tomb = plain(app.get("__pushed"));
+    assert.ok(tomb.some(r => r.deleted === true), JSON.stringify(tomb));
+  });
+
+  test("offline: the save stays local, the sidecar goes pending, and nothing is lost", async () => {
+    const app = await start();
+    app.run('__mode = "offline"');
+    await makeCustom(app);
+    await settle(app);
+    assert.strictEqual(sc(app).pending, true);
+    assert.strictEqual(app.get("savedState.entries.length"), 1);
+    app.run('__mode = "ok"');
+    await settle(app);
+    assert.strictEqual(sc(app).pending, false);
+    assert.strictEqual(calls(app, "/rest/v1/rpc/push_scales").filter(c => c.body).length >= 1, true);
+  });
+
+  test("a 429 sets the sidecar pending and does not loop", async () => {
+    const app = await start();
+    app.run('__mode = "429"');
+    await makeCustom(app);
+    await settle(app);
+    const n = plain(app.get("__log")).length;
+    assert.strictEqual(sc(app).pending, true);
+    assert.ok(n <= 3, "no retry storm: " + n);
+    assert.strictEqual(app.get("syncMsg === null || syncMsg.key.indexOf('sync.') === 0"), true);
+  });
+
+  test("a 429 from the auth endpoint shows the rate-limited copy and no retry", async () => {
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true });
+    install(app); await app.waitFor("booted === true", {timeout:2000}); app.run('__mode = "429"');
+    assert.strictEqual(await app.getAsync("syncSendCode('a@b.test')"), "sync.err.rateLimited");
+    assert.strictEqual(plain(app.get("__log")).length, 1);
+  });
+
+  test("sign-out keeps every saved scale and removes the sidecar", async () => {
+    const app = await start();
+    await makeCustom(app);
+    await app.getAsync("syncSignOut()");
+    assert.strictEqual(app.get("localStorage.getItem('hpfc.sync.v1')"), null);
+    assert.strictEqual(app.get("savedState.entries.length"), 1);
+  });
+
+  test("local scales are released and pushed on their own after the first sync", async () => {
+    const app = boot({ href: DEV, indexedDB: true, isSecureContext: true, locks: true });
+    install(app);
+    await app.waitFor("booted === true", {timeout:2000});
+    await makeCustom(app);
+    app.run(`localStorage.setItem("hpfc.sync.v1", ${JSON.stringify(sidecar({ first: true }))}); syncStartLock();`);
+    await app.waitFor("syncHolder === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    const s = sc(app);
+    assert.strictEqual(s.localOnly.length, 0);
+    assert.strictEqual(calls(app, "/rest/v1/rpc/push_scales").length, 1);
+    assert.strictEqual(app.get("savedState.entries.length"), 1, "the local scale is kept");
+  });
+
+  test("no analytics call carries an email or a token", async () => {
+    const app = await start({ email: "secret@mail.test" });
+    await makeCustom(app);
+    app.advance(2100); await app.getAsync("syncRunning");
+    const dump = JSON.stringify(plain(app.get("window.dataLayer || []")));
+    for (const secret of ["a0", "r0", "a1", "r1"]) assert.ok(!dump.includes('"' + secret + '"'), secret);
+    assert.ok(!dump.includes("secret@mail.test"));
+    assert.ok(!dump.includes("Bearer"));
+  });
+
+  test("a conflicted sync-apply replans without settlePull", async () => {
+    const app = await start();
+    const id = newId(), record = await remoteRecord(AMARA_STRING);
+    install(app, [{ scale_id: id, rev: 1, record, deleted: false }]);
+    app.run(`globalThis.__settle = 0; const sp = HPE.sync.settlePull; HPE.sync.settlePull = function () { __settle++; return sp.apply(this, arguments); };
+      globalThis.__commit = commitSaved; globalThis.__fail = 1; commitSaved = async function (c) { if (c.type === "sync-apply" && __fail-- > 0) return { ok: false, kind: "conflict" }; return __commit(c); };`);
+    assert.strictEqual(await app.getAsync("syncPull()"), true);
+    assert.strictEqual(app.get("__settle"), 1, "only the successful attempt settles");
+    assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(id)})`));
+  });
+
+  test("settlePull receives the skipped list as its fourth argument", () => {
+    assert.match(require("node:fs").readFileSync("index.html", "utf8"), /settlePull\(cur, plan, result\.sync\.committed, result\.sync\.skipped\)/);
+  });
+
+  test("a pull merges every page of a long remote list", async () => {
+    const rows = [];
+    const record = await remoteRecord(AMARA_STRING);
+    for (let i = 1; i <= 201; i++) rows.push({ scale_id: newId(), rev: i, record, deleted: false });
+    const app = await start({ first: true }, rows);
+    assert.strictEqual(calls(app, "/rest/v1/saved_scales").length >= 2, true);
+  });
+
+  test("the prod host and the old host make no calls and show no sign-in", async () => {
+    for (const href of ["https://handpantheory.com/", "https://handpan.raywu.org/", "https://example.test/"]) {
+      const app = boot({ href, locks: true, storage: { "hpfc.sync.v1": sidecar() } });
+      install(app);
+      await makeCustom(app);
+      app.advance(3000);
+      assert.strictEqual(app.get("SYNC_CFG"), null, href);
+      assert.strictEqual(plain(app.get("__log")).length, 0, href);
+    }
+  });
+
+  test("the sync keys exist in all eight tables and no visible sync string says deck", () => {
+    const fs = require("node:fs");
+    for (const f of fs.readdirSync("data/i18n")) {
+      const t = JSON.parse(fs.readFileSync("data/i18n/" + f, "utf8"));
+      const keys = Object.keys(t).filter(k => k.startsWith("sync."));
+      assert.ok(keys.length >= 30, f);
+      for (const k of keys) assert.ok(!/\bdecks?\b/i.test(JSON.stringify(t[k])), f + " " + k);
+    }
+  });
+});
+
+/* Store/mode matrix and await boundaries: sync-store-safety subplan sections 2–6. */
+describe("sync store safety", () => {
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const KEY = "hpfc.sync.v1", SAVED = "hpfc.saved-scales.v1";
+  const uuid = () => require("node:crypto").randomUUID();
+  const sidecar = extra => JSON.stringify({v:1, project:PROJECT, userId:"11111111-1111-4111-8111-111111111111",
+    email:"a@b.test", refresh:"r0", access:"a0", accessExp:Date.now()+3600e3, cursor:0,
+    base:{},alias:{},deferredDeletes:[],localOnly:[],pending:false,first:false,...extra});
+  const fixture = async (opts = {}, extra = {}, rows = []) => {
+    const origin=require("./helpers/sandbox.js").createOrigin();
+    const app = boot({origin, href:DEV, locks:true, indexedDB:true, isSecureContext:true,
+      ...opts, storage:{[KEY]:sidecar(extra),...opts.storage}});
+    app.fixtureOrigin=origin;
+    for(const id of [...require("node:fs").readFileSync("index.html","utf8").matchAll(/id="(sync-[^"]+)"/g)].map(m=>m[1])) {
+      app.els[id]=app.sandbox.document.createElement("div"); app.els[id].id=id;
+    }
+    app.run(`globalThis.__requests=[]; globalThis.__rows=${JSON.stringify(rows)};
+      globalThis.__hook=()=>{}; globalThis.__commits=[]; globalThis.__commitSaved=commitSaved;
+      commitSaved=function(c,...args){if(c.type==="sync-apply")__commits.push(c);return __commitSaved(c,...args)};
+      globalThis.fetch=async function(url,opt){
+        const path=String(url).replace(${JSON.stringify(PROJECT)},"");
+        __requests.push({path,body:opt.body?JSON.parse(opt.body):null});
+        const response=path.startsWith("/auth/v1/token")?{access_token:"a1",refresh_token:"r1",expires_in:3600}:
+          path.startsWith("/rest/v1/saved_scales")?__rows.filter(r=>r.rev>Number(/rev=gt\\.(\\d+)/.exec(path)[1])):
+          path.endsWith("push_scales")?JSON.parse(opt.body).rows.map((r,i)=>({scale_id:r.scale_id,rev:i+10})):{};
+        await __hook(path);
+        return {status:200,ok:true,json:async()=>response};
+      };`);
+    await app.waitFor("booted === true",{timeout:2000});
+    await app.getAsync("syncRunning");
+    return app;
+  };
+  const pushes = app => plain(app.get('__requests.filter(r=>r.path.endsWith("push_scales"))'));
+  const reset = app => app.run("__requests=[]; __commits=[];");
+  const record = async () => { const a=boot(); await makeCustom(a); return plain(a.get("savedState.entries[0].record")); };
+  const base3 = () => Object.fromEntries([uuid(),uuid(),uuid()].map(id=>[id,{rev:1,body:"old",localRevision:1}]));
+  const flip = 'retireSavedAuthority(); savedMode="session";';
+  const blocked = async app => {
+    assert.strictEqual(app.get("__requests.length"),0,"blocked boot made zero network calls");
+    assert.strictEqual(pushes(app).length,0,"blocked boot made zero push requests");
+    assert.strictEqual(app.get("__commits.length"),0,"blocked boot made zero sync-apply commits");
+    reset(app); await app.getAsync("syncKick(true)");
+    app.run("syncChanged()"); app.advance(2100); await app.getAsync("syncRunning");
+    assert.strictEqual(pushes(app).length,0,"blocked store makes zero push requests");
+    assert.strictEqual(app.get("__commits.length"),0,"blocked store makes zero sync-apply commits");
+    app.run("syncPaint()"); assert.strictEqual(app.els["sync-open"].hidden,true);
+  };
+
+  test("T-APP-M7-zero-tombstones and T-APP-M7-pull: temporary use stays local", async () => {
+    const app=await fixture({indexedDB:false,storage:{[SAVED]:"{"}}, {base:base3()});
+    assert.strictEqual(app.get("savedMode"),"protected");
+    app.els["saved-temporary-use"].onclick();
+    assert.strictEqual(app.get("savedMode"),"session");
+    await makeCustom(app); await blocked(app);
+    app.run("syncLastPull=Date.now()-61000; document.dispatchEvent({type:'visibilitychange'})");
+    await app.getAsync("syncRunning");
+    assert.strictEqual(pushes(app).length,0);
+    assert.ok(pushes(app).every(c=>c.body.rows.every(r=>!r.deleted)));
+  });
+  test("T-APP-M5-push and T-APP-M5-pull: denied saved keys reach migration-temporary only", async () => {
+    const keys=["hpfc","hpfc.scales","hpfc.scales.v3",SAVED];
+    const app=await fixture({indexedDB:false,throwOnKeys:keys}, {base:base3()},[{scale_id:uuid(),rev:3,record:await record(),deleted:false}]);
+    assert.strictEqual(app.get("savedMode"),"session");
+    assert.strictEqual(app.get("savedState.migration.temporary"),true,"migration-temporary branch actually ran");
+    assert.ok(app.get("syncLoad()"),"sidecar remains readable");
+    for(const key of keys) assert.throws(()=>app.get(`localStorage.getItem(${JSON.stringify(key)})`),/denied/);
+    await blocked(app); assert.strictEqual(app.get("savedState.entries.length"),0);
+  });
+  test("T-APP-M4-push and T-APP-M4-pull: session snapshot cannot advance the cursor", async () => {
+    const donor=boot(); await makeCustom(donor);
+    const app=await fixture({indexedDB:false,storage:{[SAVED]:JSON.stringify(plain(donor.get("savedState")))}}, {},
+      [{scale_id:uuid(),rev:3,record:await record(),deleted:false}]);
+    assert.strictEqual(app.get("savedMode"),"session");
+    const before=JSON.stringify(plain(app.get("savedState")));
+    await blocked(app);
+    assert.strictEqual(JSON.stringify(plain(app.get("savedState"))),before);
+    assert.strictEqual(app.get("syncLoad().cursor"),0);
+  });
+  test("T-APP-M6-holder: protected boot never takes the sync lock", async () => {
+    const app=await fixture({indexedDB:false,storage:{[SAVED]:"{"}});
+    assert.strictEqual(app.get("savedMode"),"protected");
+    assert.strictEqual(app.get("syncHolder"),false,"protected store must not acquire sync lock");
+    await blocked(app);
+  });
+  test("T-APP-M9: starting with a partial state is blocked", async () => {
+    const app=await fixture(); reset(app); app.run('savedMode="starting"'); await blocked(app);
+  });
+  test("T-APP-M10-no-locks: never holder and sign-in hidden", async () => {
+    const app=await fixture({locks:false});
+    assert.strictEqual(app.get("savedMode"),"session"); assert.strictEqual(app.get("syncHolder"),false); await blocked(app);
+  });
+  test("T-APP-M2-push and T-APP-M2-pull: replaced store inserts above-cursor rows only", async () => {
+    const r=await record(), ids=[uuid(),uuid(),uuid()];
+    const app=await fixture({}, {base:Object.fromEntries(ids.map(id=>[id,{rev:1,body:r,localRevision:1}])),cursor:2});
+    assert.strictEqual(app.get("savedMode"),"durable");
+    const oldCollection=app.get("savedState.collectionId"), replacement=plain(app.get("savedState"));
+    replacement.collectionId=uuid();
+    await idbRecord(app,{write:true,value:JSON.stringify(replacement)});
+    await app.getAsync("reconcileSavedCollection()");
+    assert.notStrictEqual(app.get("savedState.collectionId"),oldCollection);
+    assert.strictEqual(app.get("savedState.usedInstanceIds.length"),0);
+    assert.strictEqual(Object.keys(app.get("syncLoad().base")).length,3,"replacement retains sidecar history");
+    reset(app); await app.getAsync("syncKick(false)"); assert.strictEqual(pushes(app).length,0);
+    app.run(`__rows=${JSON.stringify(ids.map((id,i)=>({scale_id:id,record:r,rev:i+2,deleted:false})))};`);
+    await app.getAsync("syncKick(true)");
+    assert.deepStrictEqual(plain(app.get("savedState.entries.map(e=>e.instanceId).sort()")),ids.slice(1).sort());
+    assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)));
+  });
+  test("T-APP-M3-no-mass: reconcile failure keeps held present and unheld ids safe", async () => {
+    const app=await fixture(); await makeCustom(app); await app.getAsync("syncKick(false)");
+    const id=app.get("savedState.entries[0].instanceId"), unheld=uuid();
+    app.run(`syncPatch(syncLoad().userId,s=>({...s,base:{...s.base,[${JSON.stringify(unheld)}]:{rev:1,body:"old"}}}));
+      savedReconciliationFailure(savedFailure("storage","fixture"));`);
+    assert.ok(app.get("savedRecovery")); reset(app); await app.getAsync("syncKick(false)");
+    assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(id)})`));
+    assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)));
+  });
+  test("T-APP-S2-refresh-first-barrier: same-user replacement waits for GET and Add N", async () => {
+    const app=await fixture();
+    const r=await makeCustom(app);
+    await app.getAsync("syncKick(false)");
+    const remote=pushes(app)[0].body.rows[0];
+    app.run(`__rows=[{scale_id:${JSON.stringify(remote.scale_id)},rev:10,record:${JSON.stringify(remote.record)},deleted:false}];
+      __hook=async path=>{if(path.endsWith("push_scales")){
+        for(const row of __requests[__requests.length-1].body.rows){
+          const old=__rows.findIndex(r=>r.scale_id===row.scale_id);
+          const next={...row,rev:__rows.length+20};
+          if(old<0)__rows.push(next);else __rows[old]=next;
+        }
+      }};`);
+    const q=await makeCustom(app,OTHER_STRING);
+    assert.notDeepStrictEqual(plain(app.get(`savedState.entries.find(e=>e.instanceId===${JSON.stringify(q.instanceId)}).record`)),remote.record,"Q has distinct scale meaning");
+    await app.getAsync(`commitSaved({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(r.instanceId)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(r.instanceId)}).revision})`);
+    const identity=app.get("syncStoreToken()");
+    const next=JSON.parse(sidecar({userId:app.get("syncLoad().userId"),first:true}));
+    app.run(`syncPatch(syncLoad().userId,s=>({...s,accessExp:0}));
+      globalThis.__remoteHook=__hook;
+      __hook=async path=>{
+        if(path.startsWith("/auth/v1/token"))localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+        await __remoteHook(path);
+      };`);
+    try {
+      reset(app); await app.getAsync("syncKick(false)");
+      assert.strictEqual(app.get("syncStoreToken()"),identity,"same user and durable authority survive refresh");
+      assert.ok(!pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===remote.scale_id && row.deleted)),"refresh must not push an old-base R tombstone");
+      assert.ok(!pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId && !row.deleted)),"refresh must not push unmatched Q before GET and Add N");
+      assert.strictEqual(pushes(app).length,0);
+      assert.strictEqual(app.get('__requests.filter(r=>r.path.startsWith("/rest/v1/saved_scales")).length'),0);
+      assert.strictEqual(app.get("syncLoad().first"),true,"refresh does not consume the replacement first barrier");
+      assert.deepStrictEqual(plain(app.get("syncLoad().base")),{});
+      assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[]);
+      assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(remote.scale_id)}).deleted`),false);
+      assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(q.instanceId)})`));
+      reset(app); await app.getAsync("syncKick(true)");
+      assert.ok(app.get('__requests.some(r=>r.path.startsWith("/rest/v1/saved_scales"))'),"replacement GET runs");
+      assert.strictEqual(app.get("syncLoad().first"),false);
+      assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"first audit releases unmatched Q at once");
+      assert.ok(app.get(`syncLocal().some(e=>(syncLoad().alias[e.id]||e.id)===${JSON.stringify(remote.scale_id)})`),"GET restores R locally");
+      await app.getAsync("syncRunning");
+      assert.ok(pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId && !row.deleted)),"Q is pushed without a prompt");
+      assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)),"recovery never deletes R");
+      assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(remote.scale_id)}).deleted`),false);
+      assert.strictEqual(app.get(`__rows.find(r=>r.scale_id===${JSON.stringify(q.instanceId)}).deleted`),false);
+      assert.ok(app.get(`syncLocal().some(e=>(syncLoad().alias[e.id]||e.id)===${JSON.stringify(remote.scale_id)})`));
+      assert.ok(app.get(`savedState.entries.some(e=>e.instanceId===${JSON.stringify(q.instanceId)})`));
+    } finally { app.run("__hook=()=>{}"); }
+  });
+  test("T-APP-M8-flip-before-push: no planner call after refresh changes authority", async () => {
+    for(const change of [false,true]) {
+      const app=await fixture(); await makeCustom(app); reset(app);
+      app.run(`globalThis.__plans=0;globalThis.__planPush=HPE.sync.planPush;
+        HPE.sync.planPush=function(...args){__plans++;return __planPush.apply(this,args)};
+        syncPatch(syncLoad().userId,s=>({...s,accessExp:0}));
+        __hook=async path=>{if(path.startsWith("/auth/v1/token")){${change?flip:""}}};`);
+      try {
+        await app.getAsync("syncKick(false)");
+        if(change) {
+          assert.strictEqual(app.get("__plans"),0,"no planner invocations after authority flip");
+          assert.strictEqual(pushes(app).length,0); assert.strictEqual(app.get("__commits.length"),0);
+        } else assert.ok(app.get("__plans")>0,"durable positive control observes real planner");
+      } finally {app.run("HPE.sync.planPush=__planPush; __hook=()=>{}");}
+      assert.strictEqual(app.get("HPE.sync.planPush===__planPush"),true);
+    }
+  });
+  test("T-APP-M8-flip-before-apply: ops-bearing pull aborts on authority change", async () => {
+    const app=await fixture(); reset(app);
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:5,record:${JSON.stringify(await record())},deleted:false}];
+      __hook=async path=>{if(path.startsWith("/rest/v1/saved_scales")){${flip}}};`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("__commits.length"),0,"no sync-apply after authority flip");
+    assert.strictEqual(app.get("savedState.entries.length"),0); assert.strictEqual(pushes(app).length,0);
+  });
+  test("T-APP-M8-flip-between-batches: no second batch after authority changes", async () => {
+    const app=await fixture(); const r=await record();
+    app.run(`{const e=savedClone(savedState);for(let i=0;i<201;i++){const id=crypto.randomUUID();e.entries.push({instanceId:id,revision:1,displayOrdinal:e.nextDisplayOrdinal++,record:${JSON.stringify(r)}});e.usedInstanceIds.push(id)}e.revision++;if(!applySavedSnapshot(e).ok)throw Error("fixture")}
+      __hook=async path=>{if(path.endsWith("push_scales")){${flip}}};`);
+    reset(app); await app.getAsync("syncKick(false)");
+    assert.strictEqual(pushes(app).length,1,"only the first batch was dispatched"); assert.strictEqual(app.get("__commits.length"),0);
+  });
+  test("T-APP-M8-collection-swap: same generation and mode still abort the old cycle", async () => {
+    const app=await fixture(), r=await record(); reset(app);
+    const generation=app.get("savedAuthorityGeneration");
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:4,record:${JSON.stringify(r)},deleted:false}];
+      __hook=async path=>{if(path.startsWith("/rest/v1/saved_scales")){const e=savedClone(savedState);e.collectionId=crypto.randomUUID();if(!applySavedSnapshot(e).ok)throw Error("fixture")}};`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("savedAuthorityGeneration"),generation); assert.strictEqual(app.get("savedMode"),"durable");
+    assert.strictEqual(app.get("__commits.length"),0,"collection swap aborts before commit"); assert.strictEqual(pushes(app).length,0);
+  });
+  test("T-APP-S7-signout-mid-pull: a dropped sidecar prevents apply", async () => {
+    const app=await fixture(); reset(app);
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:5,record:${JSON.stringify(await record())},deleted:false}];
+      __hook=async path=>{if(path.startsWith("/rest/v1/saved_scales"))syncDrop()};`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("__commits.length"),0);assert.strictEqual(pushes(app).length,0);
+  });
+  test("T-APP-S7-switch-after-apply: old cycle preserves the new account deferred cleanup state", async () => {
+    const app=await fixture(); await makeCustom(app);
+    const held=app.get("savedState.entries[0].instanceId");
+    await app.getAsync(`commitSaved({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(held)},expectedRevision:1})`);
+    const next=JSON.parse(sidecar({userId:uuid(),first:true,base:{[held]:{rev:5,localRevision:1}},deferredDeletes:[held]}));
+    reset(app);
+    app.run(`__rows=[{scale_id:${JSON.stringify(uuid())},rev:6,record:${JSON.stringify(await record())},deleted:false}];
+      globalThis.__beforeSwitchCommit=commitSaved;
+      commitSaved=async function(command,...args){
+        const result=await __beforeSwitchCommit(command,...args);
+        if(command.type==="sync-apply" && result.ok)localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+        return result;
+      };`);
+    try {
+      await app.getAsync("syncKick(true)");
+      assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"old apply must not clean up the new account base or deferred deletes");
+      assert.strictEqual(app.get("__commits.length"),1,"only the already-dispatched old apply may finish");
+      assert.strictEqual(pushes(app).length,0); assert.strictEqual(app.get("__requests.length"),1);
+      assert.strictEqual(app.get("savedState.entries.length"),1,"acknowledged old pull commit is retained");
+    } finally { app.run("commitSaved=__beforeSwitchCommit"); }
+  });
+  test("T-APP-S7-switch-empty-pull: old cycle leaves the new account first-sync state untouched", async () => {
+    const app=await fixture(); await makeCustom(app); reset(app);
+    const next=JSON.parse(sidecar({userId:uuid(),first:true}));
+    app.run(`__rows=[]; __hook=async path=>{
+      if(path.startsWith("/rest/v1/saved_scales"))localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+    };`);
+    await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("syncLoad().first"),true,"old zero-row pull must not complete the new account's first sync");
+    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"old cycle must not classify local scales for the new account");
+    assert.strictEqual(app.get("syncLoad().pending"),false,"old cycle must not mark the new account pending");
+    assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"new account sidecar stays unchanged");
+    assert.strictEqual(app.get("__requests.length"),1,"only the old account pull was dispatched");
+    assert.strictEqual(pushes(app).length,0); assert.strictEqual(app.get("__commits.length"),0);
+    assert.strictEqual(app.get("savedState.entries.length"),1);
+    {
+      const app=await fixture(); await makeCustom(app); reset(app);
+      const held=app.get("savedState.entries[0].instanceId"), next=JSON.parse(sidecar({userId:uuid(),first:true}));
+      app.run(`__rows=[];
+        syncPatch(syncLoad().userId,s=>({...s,base:{[${JSON.stringify(held)}]:{rev:5,localRevision:1}},deferredDeletes:[${JSON.stringify(held)}]}));
+        globalThis.__beforeDeferredCommit=commitSaved;
+        commitSaved=async function(command,...args){
+          const result=await __beforeDeferredCommit(command,...args);
+          if(command.type==="sync-apply" && result.ok)localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+          return result;
+        };`);
+      try {
+        await app.getAsync("syncKick(true)");
+        assert.strictEqual(app.get("syncLoad().first"),true,"deferred apply completion must not finish the new account's first sync");
+        assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"deferred apply completion must not classify new account local scales");
+        assert.strictEqual(app.get("syncLoad().pending"),false);
+        assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"new account sidecar stays unchanged after the old deferred commit");
+        assert.strictEqual(app.get("__commits.length"),1,"one already-dispatched deferred removal may finish");
+        assert.strictEqual(app.get("__requests.length"),1); assert.strictEqual(pushes(app).length,0);
+        assert.strictEqual(app.get("savedState.entries.length"),0,"acknowledged old deferred removal is retained");
+      } finally { app.run("commitSaved=__beforeDeferredCommit"); }
+    }
+  });
+  test("T-APP-S7-switch-last-push: old cycle leaves the replacement account status untouched", async () => {
+    const app=await fixture(); await makeCustom(app); reset(app);
+    const next=JSON.parse(sidecar({userId:uuid(),first:true}));
+    app.run(`__hook=async path=>{
+      if(path.endsWith("push_scales"))localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(JSON.stringify(next))});
+    };`);
+    await app.getAsync("syncKick(false)");
+    assert.deepStrictEqual(plain(app.get("syncLoad()")),next,"old final push must not stamp the replacement account status");
+    assert.strictEqual(pushes(app).length,1,"only the already-dispatched old account batch was sent");
+    assert.strictEqual(app.get("__requests.length"),1); assert.strictEqual(app.get("__commits.length"),0);
+    assert.strictEqual(app.get("savedState.entries.length"),1);
+  });
+  test("T-APP-S7-switch-mid-push: user change prevents later batches", async () => {
+    const app=await fixture(); const r=await record();
+    app.run(`{const e=savedClone(savedState);for(let i=0;i<201;i++){const id=crypto.randomUUID();e.entries.push({instanceId:id,revision:1,displayOrdinal:e.nextDisplayOrdinal++,record:${JSON.stringify(r)}});e.usedInstanceIds.push(id)}e.revision++;if(!applySavedSnapshot(e).ok)throw Error("fixture")}
+      __hook=async path=>{if(path.endsWith("push_scales"))syncPatch(syncLoad().userId,s=>({...s,userId:crypto.randomUUID()}))};`);
+    reset(app); await app.getAsync("syncKick(false)");
+    assert.strictEqual(pushes(app).length,1,"old user must not dispatch a later batch");
+  });
+  test("T-APP-M1-remote-delete: legitimate remote tombstone removes an unedited local scale", async () => {
+    const app=await fixture(); await makeCustom(app); await app.getAsync("syncKick(false)");
+    const id=app.get("savedState.entries[0].instanceId");
+    app.run(`__rows=[{scale_id:${JSON.stringify(id)},rev:30,deleted:true,record:null}];`);
+    await app.getAsync("syncKick(true)"); assert.strictEqual(app.get("savedState.entries.length"),0);
+  });
+  test("T-APP-M1-delete-keeps-local: account deletion leaves durable saved scales", async () => {
+    const app=await fixture(); await makeCustom(app);const before=savedRaw(app);
+    await app.getAsync("syncDeleteAccount()");await app.getAsync("syncDeleteAccount()");
+    assert.strictEqual(app.get("syncLoad()"),null);assert.strictEqual(savedRaw(app),before);
+  });
+  test("T-APP-M4-dropped: blocked tab accepts sidecar removal from another tab", async () => {
+    const app=await fixture({indexedDB:false});
+    const peer=boot({origin:app.fixtureOrigin,href:DEV,html:"<script></script>"});
+    peer.run(`localStorage.removeItem(${JSON.stringify(KEY)});`);app.fixtureOrigin.flushStorageEvents();
+    assert.strictEqual(app.get("syncLoad()"),null);await blocked(app);
+  });
+  test("T-APP-M1-signed-out: durable sign-in stays available without a sidecar", async () => {
+    const app=await fixture();app.run("syncDrop();syncPaint()");
+    assert.strictEqual(app.els["sync-open"].hidden,false);assert.notStrictEqual(app.get("syncStoreToken()"),null);
+  });
+  // Operation authority: section 21 of the sync-store-safety subplan.
+  for (const [status, replacement] of [[200,"reset"],[200,"switch"],[200,"remove"],[429,"reset"],[408,"switch"],[429,"remove"],[401,"reset"],[401,"switch"],[401,"remove"]]) {
+    test(`T-APP-OS-refresh: stale ${status} completion preserves ${replacement}`, async () => {
+      const app=await fixture(); reset(app);
+      const next=replacement==="remove"?null:sidecar({first:true,...(replacement==="switch"?{userId:uuid()}:{})});
+      app.run(`syncPatch(syncLoad().userId,s=>({...s,accessExp:0}));
+        globalThis.__osFetch=fetch; fetch=async function(...args){
+          const response=await __osFetch(...args);
+          if(!String(args[0]).includes('/auth/v1/token'))return response;
+          return {status:${status},ok:${status===200},json:async()=>{
+            const body=await response.json();
+            ${next===null?`localStorage.removeItem(${JSON.stringify(KEY)});`:`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});`}
+            syncSay('sync.err.offline'); return body;
+          }};
+        };`);
+      try {
+        await app.getAsync("syncKick(true)");
+        assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next,"obsolete refresh must leave replacement raw bytes unchanged");
+        assert.strictEqual(app.get("syncMsg?.key"),"sync.err.offline","obsolete refresh must not publish status");
+        assert.strictEqual(app.get("__requests.length"),1,"no request follows obsolete refresh");
+        assert.strictEqual(app.get("__commits.length"),0);
+      } finally {app.run("fetch=__osFetch");}
+    });
+  }
+  for(const status of [200,429,401]) {
+    test(`T-APP-OS-refresh: current ${status} completion retains its normal effect`, async () => {
+      const app=await fixture(); reset(app);
+      app.run(`syncPatch(syncLoad().userId,s=>({...s,accessExp:0})); globalThis.__osFetch=fetch;
+        fetch=async function(...args){const response=await __osFetch(...args);
+          if(!String(args[0]).includes('/auth/v1/token'))return response;
+          return {status:${status},ok:${status===200},json:()=>response.json()};};`);
+      try {
+        await app.getAsync("syncKick(true)");
+        if(status===200) {
+          assert.strictEqual(app.get("syncLoad().access"),"a1");
+          assert.strictEqual(app.get("syncLoad().refresh"),"r1");
+          assert.ok(app.get("__requests.some(r=>r.path.startsWith('/rest/v1/saved_scales'))"));
+          assert.strictEqual(app.get("syncLoad().pending"),false);
+        } else if(status===429) assert.strictEqual(app.get("syncLoad().pending"),true);
+        else assert.strictEqual(app.get("syncLoad()"),null);
+      } finally {app.run("fetch=__osFetch");}
+    });
+  }
+  for(const timing of ["during","before"]) {
+    test(`T-APP-OS-get-reset: ${timing} empty gt10 GET preserves first pull and recovers R via visibility`, async () => {
+      const app=await fixture({clock:true}); app.run("document.hidden=false");
+      const r=await makeCustom(app); await app.getAsync("syncKick(false)");
+      const remote=pushes(app)[0].body.rows[0];
+      const q=await makeCustom(app,OTHER_STRING);
+      assert.notDeepStrictEqual(plain(app.get(`savedState.entries.find(e=>e.instanceId===${JSON.stringify(q.instanceId)}).record`)),remote.record);
+      await app.getAsync(`commitSaved({type:'delete',collectionId:savedState.collectionId,instanceId:${JSON.stringify(r.instanceId)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(r.instanceId)}).revision})`);
+      const next=sidecar({first:true});
+      app.run(`clearTimeout(syncTimer); syncTimer=null;
+        __rows=[{scale_id:${JSON.stringify(remote.scale_id)},record:${JSON.stringify(remote.record)},rev:10,deleted:false}];
+        syncPatch(syncLoad().userId,s=>({...s,cursor:10}));
+        ${timing==="before"?`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});`:""}
+        globalThis.__osResetPending=true;
+        __hook=async path=>{if(path.startsWith('/rest/v1/saved_scales')&&__osResetPending){
+          __osResetPending=false;
+          ${timing==="during"?`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)}); syncSay('sync.err.offline');`:""}
+        }};`);
+      try {
+        reset(app); await app.getAsync("syncKick(true)");
+        if(timing==="during") {
+          assert.match(app.get("__requests[0].path"),/rev=gt\.10&/,"old GET actually used cursor10");
+          assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next,"empty old response cannot consume replacement first/cursor0/base{}");
+          assert.strictEqual(app.get("syncMsg?.key"),"sync.err.offline");
+          assert.strictEqual(app.get("__requests.length"),1);
+          assert.strictEqual(app.get("__commits.length"),0);
+          reset(app); app.advance(61001);
+          assert.strictEqual(app.get("syncHolder"),true); assert.strictEqual(app.get("document.hidden"),false);
+          app.run("document.dispatchEvent({type:'visibilitychange'})"); await app.getAsync("syncRunning");
+        }
+        assert.ok(app.get("__requests.some(r=>/rev=gt\\.0&/.test(r.path))"),"real replacement pull requests cursor0");
+        const persisted=JSON.parse((await idbRecord(app)).raw);
+        assert.ok(persisted.entries.some(e=>app.get(`(syncLoad().alias[${JSON.stringify(e.instanceId)}]||${JSON.stringify(e.instanceId)})`)===remote.scale_id),"R is durably restored");
+        assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[],"first audit releases distinct unmatched Q at once");
+        await app.getAsync("syncRunning");
+        assert.ok(pushes(app).some(c=>c.body.rows.some(row=>row.scale_id===q.instanceId&&!row.deleted)),"Q is pushed without a prompt");
+        assert.ok(pushes(app).every(c=>c.body.rows.every(row=>!row.deleted)),"R remains alive on server");
+        assert.strictEqual(app.get("__rows[0].deleted"),false);
+      } finally {app.run("__hook=()=>{}");}
+    });
+  }
+  for(const [count,change] of [[1,true],[200,true],[201,false]]) {
+    test(`T-APP-OS-pages: ${count} rows ${change?"invalidate before planning":"settle unchanged pages"}`, async () => {
+      const app=await fixture(), body=await record(); reset(app);
+      const rows=Array.from({length:count},(_,i)=>({scale_id:uuid(),rev:i+1,record:body,deleted:false}));
+      const next=sidecar({first:true});
+      app.run(`__rows=${JSON.stringify(rows)}; __hook=async path=>{if(path.startsWith('/rest/v1/saved_scales')){
+        ${change?`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)}); syncSay('sync.err.offline');`:""}
+      }};`);
+      try {
+        await app.getAsync("syncKick(true)");
+        if(change) {
+          assert.strictEqual(app.get("__requests.length"),1,"obsolete page cannot dispatch another GET or push");
+          assert.strictEqual(app.get("__commits.length"),0,"obsolete final page cannot apply rows");
+          assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next);
+          assert.strictEqual(app.get("syncMsg?.key"),"sync.err.offline");
+          assert.strictEqual(JSON.parse((await idbRecord(app)).raw).entries.length,0);
+        } else {
+          assert.strictEqual(app.get("__requests.filter(r=>r.path.startsWith('/rest/v1/saved_scales')).length"),2);
+          assert.strictEqual(JSON.parse((await idbRecord(app)).raw).entries.length,201);
+          assert.strictEqual(Object.keys(app.get("syncLoad().base")).length,201);
+          assert.strictEqual(app.get("syncLoad().cursor"),201);
+        }
+      } finally {app.run("__hook=()=>{}");}
+    });
+  }
+  for(const phase of ["primary","deferred"]) {
+    test(`T-APP-OS-apply: ${phase} durable ACK cannot settle replacement`, async () => {
+      const app=await fixture(), body=await record();
+      let held;
+      if(phase==="deferred") {await makeCustom(app); held=app.get("savedState.entries[0].instanceId");}
+      const next=sidecar({first:true}); reset(app);
+      app.run(`__rows=${JSON.stringify(phase==="primary"?[{scale_id:uuid(),rev:6,record:body,deleted:false}]:[])};
+        ${phase==="deferred"?`syncPatch(syncLoad().userId,s=>({...s,base:{[${JSON.stringify(held)}]:{rev:5,localRevision:1}},deferredDeletes:[${JSON.stringify(held)}]}));`:""}
+        globalThis.__osCommit=commitSaved; commitSaved=async function(command,...args){
+          const result=await __osCommit(command,...args);
+          if(command.type==='sync-apply'&&result.ok){localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});syncSay('sync.err.offline');}
+          return result;
+        };`);
+      try {
+        await app.getAsync("syncKick(true)");
+        assert.strictEqual(app.get("__commits.length"),1,"only dispatched real commit finishes");
+        assert.strictEqual(JSON.parse((await idbRecord(app)).raw).entries.length,phase==="primary"?1:0,"accepted store ACK is retained");
+        assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next,"old commit ACK must not settle or audit new sidecar");
+        assert.strictEqual(app.get("syncMsg?.key"),"sync.err.offline"); assert.strictEqual(app.get("__requests.length"),1);
+      } finally {app.run("commitSaved=__osCommit");}
+    });
+  }
+  for(const count of [1,201]) {
+    test(`T-APP-OS-push: ${count===1?"final":"intermediate"} ACK cannot settle or dispatch after reset`, async () => {
+      const app=await fixture(), body=await record(), next=sidecar({first:true});
+      app.run(`{const e=savedClone(savedState);for(let i=0;i<${count};i++){const id=crypto.randomUUID();e.entries.push({instanceId:id,revision:1,displayOrdinal:e.nextDisplayOrdinal++,record:${JSON.stringify(body)}});e.usedInstanceIds.push(id)}e.revision++;if(!applySavedSnapshot(e).ok)throw Error('fixture')}
+        __hook=async path=>{if(path.endsWith('push_scales')){localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});syncSay('sync.err.offline');}};`);
+      reset(app);
+      try {
+        await app.getAsync("syncKick(false)");
+        assert.strictEqual(pushes(app).length,1,"no batch follows obsolete ACK");
+        assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next,"obsolete final ACK cannot settle base or stamp status");
+        assert.strictEqual(app.get("syncMsg?.key"),"sync.err.offline");
+      } finally {app.run("__hook=()=>{}");}
+    });
+  }
+  for(const response of ["failed","refused"]) {
+    test(`T-APP-OS-push: ${response} ACK cannot publish after reset`, async () => {
+      const app=await fixture(); await makeCustom(app); reset(app); const next=sidecar({first:true});
+      app.run(`globalThis.__osFetch=fetch; fetch=async function(...args){const r=await __osFetch(...args);
+        if(!String(args[0]).endsWith('push_scales'))return r;
+        return {status:${response==="failed"?429:200},ok:${response!=="failed"},json:async()=>{
+          const rows=await r.json();localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});syncSay('sync.err.offline');
+          return ${response==="failed"?"{}":"rows.map(row=>({...row,refused:'cap'}))"};}};};`);
+      try {
+        await app.getAsync("syncKick(false)");
+        assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next);
+        assert.strictEqual(app.get("syncMsg?.key"),"sync.err.offline","obsolete refusal/offline must not publish");
+        assert.strictEqual(app.get("__requests.length"),1);
+      } finally {app.run("fetch=__osFetch");}
+    });
+  }
+  test("T-APP-OS-own-writes: refresh pull audit release multi-batch push and intentional deletion stay live", async () => {
+    const app=await fixture(), body=await record(); await makeCustom(app,OTHER_STRING);
+    const local=app.get("savedState.entries[0].instanceId"), remote=uuid();
+    app.run(`syncPatch(syncLoad().userId,s=>({...s,accessExp:0,first:true}));
+      __rows=[{scale_id:${JSON.stringify(remote)},rev:3,record:${JSON.stringify(body)},deleted:false}];`);
+    reset(app); await app.getAsync("syncKick(true)");
+    assert.strictEqual(app.get("syncLoad().refresh"),"r1"); assert.strictEqual(app.get("syncLoad().first"),false);
+    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[]);
+    assert.strictEqual(JSON.parse((await idbRecord(app)).raw).entries.length,2);
+    await app.getAsync("syncRunning");
+    assert.ok(pushes(app).some(c=>c.body.rows.some(r=>r.scale_id===local&&!r.deleted)));
+    assert.strictEqual(app.get("syncLoad().pending"),false); assert.ok(app.get("syncLoad().syncedAt"));
+    await app.getAsync(`commitSaved({type:'delete',collectionId:savedState.collectionId,instanceId:${JSON.stringify(local)},expectedRevision:savedState.entries.find(e=>e.instanceId===${JSON.stringify(local)}).revision})`);
+    reset(app);await app.getAsync("syncKick(false)");
+    assert.ok(pushes(app).some(c=>c.body.rows.some(r=>r.scale_id===local&&r.deleted)),"intentional deletion still pushes tombstone");
+    app.run(`{const e=savedClone(savedState);for(let i=0;i<201;i++){const id=crypto.randomUUID();e.entries.push({instanceId:id,revision:1,displayOrdinal:e.nextDisplayOrdinal++,record:${JSON.stringify(body)}});e.usedInstanceIds.push(id)}e.revision++;if(!applySavedSnapshot(e).ok)throw Error('fixture')}`);
+    reset(app); await app.getAsync("syncKick(false)");
+    assert.strictEqual(pushes(app).length,2,"own successful batch settlements retain authority");
+    assert.strictEqual(app.get("syncLoad().pending"),false);
+  });
+  test("T-APP-OS-liveness: ordinary sidecar write aborts and real delayed visibility resumes", async () => {
+    const app=await fixture({clock:true}), body=await record(), id=uuid(); app.run("document.hidden=false"); reset(app);
+    const next=sidecar({pending:true});
+    app.run(`__rows=[{scale_id:${JSON.stringify(id)},rev:7,record:${JSON.stringify(body)},deleted:false}];
+      __hook=async path=>{if(path.startsWith('/rest/v1/saved_scales')){__hook=()=>{};localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});syncSay('sync.err.offline');}};`);
+    try {
+      await app.getAsync("syncKick(true)");
+      assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next,"ordinary changed bytes abort old work");
+      assert.strictEqual(app.get("__commits.length"),0);
+      reset(app);app.advance(61001);
+      assert.strictEqual(app.get("document.hidden"),false);assert.strictEqual(app.get("syncHolder"),true);
+      app.run("document.dispatchEvent({type:'visibilitychange'})");await app.getAsync("syncRunning");
+      assert.strictEqual(app.get("__requests.filter(r=>r.path.startsWith('/rest/v1/saved_scales')).length"),1);
+      assert.ok(JSON.parse((await idbRecord(app)).raw).entries.some(e=>e.instanceId===id));
+      assert.strictEqual(app.get("syncLoad().pending"),false);
+    } finally {app.run("__hook=()=>{}");}
+  });
+  for(const [ok,replacement] of [[true,"reset"],[true,"switch"],[true,"remove"],[false,"reset"],[false,"switch"],[false,"remove"]]) {
+    test(`T-APP-OS-delete: delayed ${ok?"success":"failure"} preserves ${replacement}`, async () => {
+      const app=await fixture();await makeCustom(app);app.run("clearTimeout(syncTimer);syncTimer=null");
+      const before=(await idbRecord(app)).raw, next=replacement==="remove"?null:sidecar({first:true,...(replacement==="switch"?{userId:uuid()}:{})});
+      app.run(`globalThis.__osFetch=fetch;fetch=async function(...args){const r=await __osFetch(...args);
+        if(!String(args[0]).endsWith('delete_my_account'))return r;
+        return {status:${ok?200:500},ok:${ok},json:async()=>{
+          ${next===null?`localStorage.removeItem(${JSON.stringify(KEY)});`:`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});`}
+          syncSay('sync.err.rate');return {};}};};`);
+      try {
+        await app.getAsync("syncDeleteAccount()");await app.getAsync("syncDeleteAccount()");
+        assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next,"old delete completion cannot remove a newer sign-in");
+        assert.strictEqual(app.get("syncMsg?.key"),"sync.err.rate","old delete completion cannot paint status");
+        assert.strictEqual((await idbRecord(app)).raw,before,"account deletion never deletes saved scales");
+      } finally {app.run("fetch=__osFetch");}
+    });
+  }
+  test("T-APP-OS-delete: current deletion and synchronous signout retain saved scales", async () => {
+    const app=await fixture();await makeCustom(app);const before=(await idbRecord(app)).raw;
+    await app.getAsync("syncDeleteAccount()");await app.getAsync("syncDeleteAccount()");
+    assert.strictEqual(app.get("syncLoad()"),null);assert.strictEqual((await idbRecord(app)).raw,before);
+    app.run(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(sidecar())})`);
+    await app.getAsync("syncSignOut()");assert.strictEqual(app.get("syncLoad()"),null);
+    assert.strictEqual((await idbRecord(app)).raw,before);
+  });
+  for(const kind of ["zero-op","baseDrops-only"]) {
+    test(`T-APP-OS-apply: ${kind} settlement rejects changed sidecar`, async () => {
+      const app=await fixture(); let held;
+      if(kind==="baseDrops-only") {
+        await makeCustom(app);held=app.get("savedState.entries[0].instanceId");await app.getAsync("syncKick(false)");
+        await app.getAsync(`commitSaved({type:'delete',collectionId:savedState.collectionId,instanceId:${JSON.stringify(held)},expectedRevision:1})`);
+        app.run(`syncPatch(syncLoad().userId,s=>({...s,deferredDeletes:[${JSON.stringify(held)}]}));`);
+      }
+      const next=sidecar({first:true}), method=kind==="zero-op"?"planPull":"planDeferred";
+      app.run(`globalThis.__osPlan=HPE.sync.${method};globalThis.__osBoundary=0;
+        HPE.sync.${method}=function(...args){const plan=__osPlan.apply(this,args);
+          if(${kind==="zero-op"?"plan.ops.length===0":"plan.baseDrops.length>0&&plan.ops.length===0"}){
+            __osBoundary++;localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(next)});syncSay('sync.err.offline');}
+          return plan;};`);
+      reset(app);
+      try {
+        await app.getAsync("syncKick(true)");
+        assert.strictEqual(app.get("__osBoundary"),1,"fixture reaches real no-command settlement boundary");
+        assert.strictEqual(app.get("__commits.length"),0);
+        assert.strictEqual(app.get(`localStorage.getItem(${JSON.stringify(KEY)})`),next,"no-command settlement cannot overwrite replacement");
+        assert.strictEqual(app.get("syncMsg?.key"),"sync.err.offline");
+        assert.strictEqual(app.get("__requests.length"),1);
+      } finally {app.run(`HPE.sync.${method}=__osPlan`);}
+    });
+  }
+  test("T-APP-OS-liveness: a scale held in the sidecar is released and sent once by the next cycle", async () => {
+    const app=await fixture({clock:true});const q=await makeCustom(app,OTHER_STRING);
+    app.run(`syncPatch(syncLoad().userId,s=>({...s,localOnly:[${JSON.stringify(q.instanceId)}]}));clearTimeout(syncTimer);syncTimer=null`);
+    reset(app);
+    await app.getAsync("syncKick(true)");await app.getAsync("syncRunning");
+    assert.deepStrictEqual(plain(app.get("syncLoad().localOnly")),[]);
+    assert.strictEqual(pushes(app).length,1,"the cycle sends Q once");
+    assert.ok(pushes(app)[0].body.rows.some(row=>row.scale_id===q.instanceId&&!row.deleted));
+    assert.strictEqual(app.get("syncLoad().pending"),false);
+    assert.ok(JSON.parse((await idbRecord(app)).raw).entries.some(e=>e.instanceId===q.instanceId));
+  });
+  test("T-APP-OS-own-writes: concurrent local edit keeps revision reconciliation live", async () => {
+    const app=await fixture(), a=await makeCustom(app), b=await makeCustom(app,OTHER_STRING);
+    await app.getAsync("syncKick(false)");
+    const original=plain(app.get(`savedState.entries.find(e=>e.instanceId===${JSON.stringify(a.instanceId)}).record`));
+    app.run(`__rows=[{scale_id:${JSON.stringify(a.instanceId)},rev:30,record:null,deleted:true}];
+      globalThis.__osCommit=commitSaved;globalThis.__osEdited=false;globalThis.__osSkipped=[];
+      commitSaved=async function(command,...args){
+        if(command.type==='sync-apply'&&!__osEdited){__osEdited=true;
+          const edit=await __osCommit({type:'edit',collectionId:savedState.collectionId,instanceId:${JSON.stringify(a.instanceId)},expectedRevision:1,
+            candidate:{deck:savedEntries.get(${JSON.stringify(b.instanceId)}).deck,record:scaleRecord(seedOf(savedEntries.get(${JSON.stringify(b.instanceId)}).deck))}});
+          if(!edit.ok)throw Error('fixture edit must commit');}
+        const result=await __osCommit(command,...args);if(command.type==='sync-apply')__osSkipped.push(...result.sync.skipped);return result;
+      };`);
+    reset(app);
+    try {
+      await app.getAsync("syncKick(true)");
+      assert.strictEqual(app.get("__osEdited"),true);
+      assert.ok(plain(app.get("__osSkipped")).some(s=>s.id===a.instanceId&&s.reason==="revision"));
+      const current=JSON.parse((await idbRecord(app)).raw).entries.find(e=>e.instanceId===a.instanceId);
+      assert.strictEqual(current.revision,2);assert.notDeepStrictEqual(current.record,original);
+      assert.ok(pushes(app).some(c=>c.body.rows.some(r=>r.scale_id===a.instanceId&&!r.deleted)),"current local edit remains pushable");
+      assert.strictEqual(app.get("syncLoad().pending"),false);
+    } finally {app.run("commitSaved=__osCommit");}
+  });
+  test("T-PIN-matrix: modes and destructive call sites stay enumerated", () => {
+    const source=require("node:fs").readFileSync("index.html","utf8");
+    const region=source.slice(source.indexOf("// Optional email-code sign-in"),source.indexOf("/* ---------------- go ---------------- */"));
+    assert.deepStrictEqual([...new Set([...source.matchAll(/\bsavedMode\s*=\s*["']([^"']+)["']/g)].map(m=>m[1]))].sort(),["durable","protected","session","starting"]);
+    assert.strictEqual((region.match(/syncFetch\("\/rest\/v1\/rpc\/push_scales"/g)||[]).length,1);
+    assert.strictEqual((region.match(/\bsyncApply\(/g)||[]).length,3);
+    assert.strictEqual((region.match(/\bsyncKick\(/g)||[]).length,8);
+    assert.strictEqual((region.match(/\bsyncCycle\(/g)||[]).length,2);
+    assert.match(region,/async function syncCycle\(pull\)[\s\S]*?syncScope\(/);
+    assert.match(region,/function syncScope\(\)[\s\S]*?syncStoreToken\(/);
+    assert.match(region,/await syncPull\(scope\);\s*if \(!syncStill\(scope\)\) return;/);
+    assert.match(region,/await syncPush\(scope\);\s*if \(!syncStill\(scope\)\) return;/);
+    assert.match(region,/await syncApply\(scope, plan\);\s*if \(!syncStill\(scope\)\) return false;\s*if \(!applied\) continue;/);
+    assert.match(region,/async function syncPull\([^)]*\)[\s\S]*?syncStill\(/);
+    assert.match(region,/async function syncPush\([^)]*\)[\s\S]*?syncStill\(/);
+  });
+});
+
+describe("login sync UI polish (TRI-28): copy and status contract", () => {
+  const en = JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "data", "i18n", "en.json"), "utf8"));
+  const html = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const KEY = "hpfc.sync.v1";
+  const sidecar = extra => JSON.stringify({ v: 1, project: PROJECT, userId: "11111111-1111-4111-8111-111111111111",
+    email: "a@b.test", refresh: "r0", access: "a0", accessExp: Date.now() + 3600e3, cursor: 0,
+    base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, ...extra });
+  const fixture = async (extra = {}) => {
+    const app = boot({ origin: require("./helpers/sandbox.js").createOrigin(), href: DEV, locks: true, indexedDB: true, isSecureContext: true,
+      storage: { [KEY]: sidecar(extra) } });
+    for (const id of [...html.matchAll(/id="(sync-[^"]+)"/g)].map(m => m[1])) {
+      app.els[id] = app.sandbox.document.createElement("div"); app.els[id].id = id;
+    }
+    app.run(`globalThis.fetch = async function (url, opt) {
+      const path = String(url).replace(${JSON.stringify(PROJECT)}, "");
+      const response = path.startsWith("/auth/v1/token") ? { access_token: "a1", refresh_token: "r1", expires_in: 3600 }
+        : path.startsWith("/rest/v1/saved_scales") ? [] : path.endsWith("push_scales") ? [] : {};
+      return { status: 200, ok: true, json: async () => response };
+    };`);
+    await app.waitFor("booted === true", { timeout: 2000 });
+    await app.getAsync("syncRunning");
+    return app;
+  };
+  const setSidecar = (app, patch) => app.run(`{ const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); Object.assign(s, ${JSON.stringify(patch)}); localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s)); }`);
+
+  test("the English sync and backup copy is the plan's exact wording", () => {
+    const expected = {
+      "sync.signedIn": "Signed in",
+      "sync.intro": "Save your scales to your account to use them on any device.",
+      "sync.title": "Save scales to your account",
+      "sync.entrySignIn": "Sign in",
+      "sync.entrySub": "Save your scales",
+      "sync.entryErr": "Not saved to account \u203a",
+      "sync.retry": "Try again",
+      "sync.status.count": { one: "{n} scale saved to your account", other: "{n} scales saved to your account" },
+      "sync.err.cap": "Not saved: scale limit reached. Remove a scale, then try again.",
+      "sync.err.rate": "Not saved: too many saves. Try again in a minute.",
+      "sync.pageSignIn": "Sign in",
+      "sync.pageAccount": "Account",
+      "sync.pageBack": "Back to the practice screen",
+      "sync.resendAt": "You can ask for a new code at {time}.",
+      "sync.send": "Send code",
+      "sync.sending": "Sending code\u2026",
+      "sync.signIn": "Sign in",
+      "sync.signingIn": "Signing in\u2026",
+      "sync.otherEmail": "Change email",
+      "sync.resend": "Resend code",
+      "sync.resending": "Resending code\u2026",
+      "sync.sent": "Enter the code sent to {email}. Check spam too.",
+      "sync.status.syncing": "Saving to your account\u2026",
+      "sync.status.pending": "Changes not yet saved to your account",
+      "sync.status.synced": "Saved to your account at {time}",
+      "sync.signOut": "Sign out",
+      "sync.signedOutDone": "Signed out. Your scales remain on this device.",
+      "sync.delete": "Delete account",
+      "sync.deleteArmed": "Permanently deletes your account and the scales saved to it. Copies on this device stay.",
+      "sync.deleteConfirm": "Confirm account deletion",
+      "sync.err.deleteFailed": "Could not delete your account. Try again.",
+      "backup.open": "Export scale links",
+      "backup.intro": "A list of links you keep yourself.",
+      "backup.signIn": "To save scales automatically, sign in.",
+    };
+    for (const [key, value] of Object.entries(expected)) assert.deepStrictEqual(en[key], value, key);
+    for (const gone of ["sync.addLocal", "sync.addLocalYes", "sync.addLocalNo", "sync.domainWarn"]) assert.strictEqual(en[gone], undefined, gone + " is retired");
+    assert.strictEqual(en["sync.menuSignedIn"], undefined, "the repeated SYNCED AS {email} message is retired");
+  });
+
+  test("zh-Hant says 複製 for the copy action, never 拷貝", () => {
+    const zh = JSON.parse(require("node:fs").readFileSync(path.join(__dirname, "..", "data", "i18n", "zh-Hant.json"), "utf8"));
+    assert.strictEqual(zh["backup.copy"], "複製");
+    for (const key of Object.keys(zh)) assert.ok(!/拷貝/.test(JSON.stringify(zh[key])), key);
+  });
+
+  test("the backup copy no longer claims scales live only in this browser", () => {
+    for (const key of Object.keys(en).filter(k => k.startsWith("backup."))) {
+      const text = typeof en[key] === "string" ? en[key] : "";
+      assert.ok(!/only in this browser/i.test(text), key);
+    }
+    assert.match(en["backup.session"], /disappear when you close this tab/, "the session-only warning is preserved");
+    assert.match(en["backup.restore"], /Tap a link to bring that scale back/, "the restore instructions are preserved");
+  });
+
+  test("the markup keeps #sync-msg as the sole status region and drops #sync-last", () => {
+    assert.ok(!/id="sync-last"/.test(html), "#sync-last is removed, not hidden");
+    const panel = html.slice(html.indexOf('<section id="account"'), html.indexOf('<section id="export"'));
+    assert.strictEqual((panel.match(/role="status"/g) || []).length, 1);
+    assert.strictEqual((panel.match(/aria-live=/g) || []).length, 1);
+    assert.match(panel, /<p[^>]*id="sync-msg"[^>]*>/);
+    assert.match(panel.match(/<p[^>]*id="sync-msg"[^>]*>/)[0], /role="status"[\s\S]*aria-live="polite"|aria-live="polite"[\s\S]*role="status"/);
+    assert.match(panel, /id="sync-account-email"/, "the account email has its own node, shown once under the heading");
+  });
+
+  test("a retained synced message never masks pending work, and clearing a message restores the live status", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    assert.match(app.els["sync-msg"].textContent, /^Saved to your account at /, "precondition: a routine success is cached");
+    setSidecar(app, { pending: true });
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Changes not yet saved to your account");
+    setSidecar(app, { pending: false, first: true });
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Saving to your account\u2026");
+    app.run("syncSay('sync.err.offline')");
+    app.run("syncPaint()");
+    assert.match(app.els["sync-msg"].textContent, /offline/, "a repaint keeps an error");
+    app.run("syncSay(null)");
+    assert.strictEqual(app.els["sync-msg"].textContent, "Saving to your account\u2026", "clearing the error restores the live status");
+  });
+
+  test("syncMsgFits: a message shows only in the sign-in state it was set in; untagged fits both", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    for (const [msg, sc, fits] of [["null", "null", true], ["null", "{}", true], ["{key:'k',signedIn:true}", "{}", true], ["{key:'k',signedIn:true}", "null", false], ["{key:'k',signedIn:false}", "null", true], ["{key:'k',signedIn:false}", "{}", false], ["{key:'k',signedIn:null}", "null", true], ["{key:'k',signedIn:null}", "{}", true]]) {
+      assert.strictEqual(app.get(`syncMsgFits(${msg}, ${sc})`), fits, msg + " / " + sc);
+    }
+    app.run("syncSay('sync.err.offline')");
+    assert.strictEqual(app.get("syncMsg.signedIn"), true, "syncSay tags the message with the current sign-in state");
+  });
+
+  test("an account with no successful sync yet shows no timestamp", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    setSidecar(app, { syncedAt: null, pending: false, first: false });
+    app.run("syncMsg = null; syncPaint()");
+    assert.ok(!/synced|\d:\d/i.test(app.els["sync-msg"].textContent), app.els["sync-msg"].textContent);
+  });
+
+  test("after a save the account page counts the scales saved to the account, pluralised", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    const base = n => Object.fromEntries(Array.from({ length: n }, (_, i) => ["r" + i, { rev: 1, localRevision: 1 }]));
+    for (const [n, text] of [[1, "1 scale saved to your account"], [3, "3 scales saved to your account"]]) {
+      setSidecar(app, { base: base(n), syncedAt: Date.now(), pending: false, first: false });
+      app.run("syncMsg = null; syncPaint()");
+      assert.strictEqual(app.els["sync-msg"].textContent, text);
+    }
+    setSidecar(app, { base: {}, syncedAt: Date.now(), pending: false, first: false });
+    app.run("syncMsg = null; syncPaint()");
+    assert.match(app.els["sync-msg"].textContent, /^Saved to your account at /, "nothing saved yet keeps the time line");
+  });
+
+  test("the signed-in heading is an h3 under the page's h2", async () => {
+    const html = require("node:fs").readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    assert.match(html, /<h2 id="account-title">/);
+    assert.match(html, /<h3 id="sync-heading"/);
+    assert.doesNotMatch(html, /<h4 id="sync-heading"/);
+  });
+
+  test("sync-msg stays the single place for the timestamp: nothing else carries it", async () => {
+    const app = await fixture();
+    await app.getAsync("syncKick(false)");
+    const time = /^Saved to your account at (.+)$/.exec(app.els["sync-msg"].textContent);
+    assert.ok(time, app.els["sync-msg"].textContent);
+    assert.ok(app.els["sync-account-email"], "the markup has #sync-account-email");
+    for (const id of ["sync-entry-main", "sync-entry-sub", "sync-heading", "sync-account-email"]) {
+      assert.ok(!app.els[id].textContent.includes(time[1]), id + " repeats the timestamp");
+    }
+    assert.strictEqual(app.els["sync-entry-main"].textContent, "a@b.test");
+    assert.strictEqual(app.els["sync-heading"].textContent, "Signed in");
+    assert.strictEqual(app.els["sync-account-email"].textContent, "a@b.test");
+  });
+});
+
+describe("sign-in page (TRI-28): entry, account page and sign_in event", () => {
+  const fsx = require("node:fs");
+  const pathx = require("node:path");
+  const html = fsx.readFileSync(pathx.join(__dirname, "..", "index.html"), "utf8");
+  const DEV = "https://handpan-cards-dev.pages.dev/";
+  const PROJECT = "https://cknlvnxyjwcjzzrmlhum.supabase.co";
+  const KEY = "hpfc.sync.v1";
+  const sidecar = (extra) => JSON.stringify({ v: 1, project: PROJECT, userId: "11111111-1111-4111-8111-111111111111",
+    email: "pat@example.test", refresh: "r0", access: "a0", accessExp: Date.now() + 3600e3, cursor: 0,
+    base: {}, alias: {}, deferredDeletes: [], localOnly: [], pending: false, first: false, ...extra });
+  const mount = async ({ signedIn = true, extra = {}, href = DEV } = {}) => {
+    const app = boot({ origin: require("./helpers/sandbox.js").createOrigin(), href, locks: true, indexedDB: true, isSecureContext: true,
+      storage: signedIn ? { [KEY]: sidecar(extra) } : {} });
+    for (const id of [...html.matchAll(/id="(sync-[^"]+)"/g)].map((m) => m[1])) {
+      if (!app.els[id]) { app.els[id] = app.sandbox.document.createElement("div"); app.els[id].id = id; app.els[id].contains = () => false; }
+    }
+    app.run(`globalThis.__tracked = []; track = function (n, p) { globalThis.__tracked.push([n, p]); };
+      globalThis.fetch = async function (url) {
+        const path = String(url).replace(${JSON.stringify(PROJECT)}, "");
+        if (path.startsWith("/auth/v1/verify")) return { status: 200, ok: true, json: async () => ({ access_token: "a1", refresh_token: "r1", expires_in: 3600, user: { id: "22222222-2222-4222-8222-222222222222", email: "pat@example.test" } }) };
+        return { status: 200, ok: true, json: async () => (path.startsWith("/auth/v1/token") ? { access_token: "a1", refresh_token: "r1", expires_in: 3600 } : path.startsWith("/rest/v1/saved_scales") || path.endsWith("push_scales") ? [] : {}) };
+      };`);
+    await app.waitFor("booted === true", { timeout: 2000 });
+    return app;
+  };
+  const tracked = (app) => JSON.parse(JSON.stringify(app.get("globalThis.__tracked")));
+
+  test("the entry is a direct child of the settings panel, hidden in markup, with a dialog popup", () => {
+    assert.match(html, /<h2 id="settings-title"[^>]*>[^<]*<\/h2>\s*<button class="mode" type="button" id="sync-open" aria-haspopup="dialog" hidden>/);
+  });
+
+  test("signed out the entry says Sign in over Save your scales and is described by the subtext", async () => {
+    const app = await mount({ signedIn: false });
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-entry-main"].textContent, "Sign in");
+    assert.strictEqual(app.els["sync-entry-sub"].textContent, "Save your scales");
+    assert.strictEqual(app.els["sync-entry-sub"].hidden, false);
+    assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), "sync-entry-sub");
+  });
+
+  test("a refused save shows its reason and a Try again button that runs the save once more", async () => {
+    const app = await mount();
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-retry"].hidden, true);
+    const wording = { "sync.err.cap": "Not saved: scale limit reached. Remove a scale, then try again.", "sync.err.rate": "Not saved: too many saves. Try again in a minute." };
+    for (const [key, text] of Object.entries(wording)) {
+      app.run(`syncSay(${JSON.stringify(key)}); syncPaint()`);
+      assert.strictEqual(app.els["sync-msg"].textContent, text);
+      assert.strictEqual(app.els["sync-retry"].hidden, false, key);
+      assert.strictEqual(app.els["sync-retry"].textContent, "Try again");
+      app.run("globalThis.__kicked = 0; syncKick = () => { __kicked++; return Promise.resolve(); };");
+      app.els["sync-retry"].dispatchEvent({ type: "click" });
+      assert.strictEqual(app.get("__kicked"), 1, key + ": Try again re-runs the save");
+      assert.strictEqual(app.get("syncMsg"), null, key + ": the refusal is cleared before the retry");
+    }
+    app.run('syncSay("sync.err.offline"); syncPaint()');
+    assert.strictEqual(app.els["sync-retry"].hidden, true, "offline has no Try again");
+  });
+
+  test("signed in the entry shows the email, drops the subtext and shows the error line only for cap and rate", async () => {
+    const app = await mount();
+    app.run("syncPaint()");
+    assert.strictEqual(app.els["sync-entry-main"].textContent, "pat@example.test");
+    assert.strictEqual(app.els["sync-entry-sub"].hidden, true);
+    assert.strictEqual(app.els["sync-entry-err"].hidden, true);
+    assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), null);
+    for (const key of ["sync.err.cap", "sync.err.rate"]) {
+      app.run(`syncSay(${JSON.stringify(key)}); syncPaint()`);
+      assert.strictEqual(app.els["sync-entry-err"].hidden, false, key);
+      assert.strictEqual(app.els["sync-entry-err"].textContent, "Not saved to account \u203a");
+      assert.strictEqual(app.els["sync-open"].getAttribute("aria-describedby"), "sync-entry-err");
+    }
+    app.run('syncSay("sync.err.offline"); syncPaint()');
+    assert.strictEqual(app.els["sync-entry-err"].hidden, true, "offline is not an entry error");
+  });
+
+  test("the account page pushes one #account entry and Back pops it", async () => {
+    const app = await mount();
+    app.run("syncPaint(); openPanel(); openSubpage(\"account\")");
+    assert.strictEqual(app.get("subpage"), "account");
+    assert.strictEqual(app.els["account"].hidden, false);
+    assert.deepStrictEqual(app.history.calls.filter((c) => c.type === "push").map((c) => c.url), ["#account"]);
+    app.els["account-close"].click();
+    assert.strictEqual(app.els["account"].hidden, true);
+    assert.strictEqual(app.history.calls.filter((c) => c.type === "back").length, 1);
+  });
+
+  test("#account is ignored when sync is inactive (a production host)", async () => {
+    const app = boot({ href: "https://handpantheory.com/#account" });
+    assert.strictEqual(app.get("subpage"), null);
+    app.run('routedSubpage("account")');
+    assert.strictEqual(app.get("subpage"), null);
+    assert.strictEqual(app.els["account"].hidden, true);
+  });
+
+  test("#export opens the export page on any host", async () => {
+    const app = boot({ href: "https://handpantheory.com/#export" });
+    await app.waitFor("booted === true", { timeout: 2000 });
+    assert.strictEqual(app.get("subpage"), "export");
+    assert.strictEqual(app.els["export"].hidden, false);
+  });
+
+  test("a verified sign-in fires sign_in once with only the method", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('syncStep = "code"; syncEmail = "pat@example.test"');
+    app.els["sync-code"].value = "123456";
+    await app.getAsync("syncSubmit()");
+    assert.deepStrictEqual(tracked(app).filter((e) => e[0] === "sign_in"), [["sign_in", { method: "email" }]]);
+  });
+
+  test("no sign_in on a bad code, a resend, a cross-tab sign-in or a failed session write", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('syncStep = "code"; syncEmail = "pat@example.test"');
+    app.els["sync-code"].value = "12";
+    await app.getAsync("syncSubmit()");
+    app.run("syncResendAt = 0");
+    await app.getAsync("syncResend()");
+    app.run('localStorage.setItem(SYNC_KEY, ' + JSON.stringify(sidecar()) + '); syncPaint()');
+    assert.deepStrictEqual(tracked(app).filter((e) => e[0] === "sign_in"), []);
+    const failing = await mount({ signedIn: false });
+    failing.run('syncStep = "code"; syncEmail = "pat@example.test"; const __set = localStorage.setItem.bind(localStorage); localStorage.setItem = (k, v) => { if (k === SYNC_KEY) throw new Error("quota"); return __set(k, v); };');
+    failing.els["sync-code"].value = "123456";
+    await failing.getAsync("syncSubmit()");
+    assert.deepStrictEqual(tracked(failing).filter((e) => e[0] === "sign_in"), []);
+  });
+
+  test("the resend line shows a clock time, never a countdown, and the button keeps its label", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('syncStep = "code"; syncEmail = "pat@example.test"; syncResendAt = syncCeilMinute(Date.now() + 61000); syncPaint()');
+    assert.strictEqual(app.els["sync-resend"].textContent, "Resend code");
+    assert.strictEqual(app.els["sync-resend"].disabled, true);
+    assert.strictEqual(app.els["sync-resend-at"].hidden, false);
+    assert.match(app.els["sync-resend-at"].textContent, /^You can ask for a new code at \d{1,2}:\d{2}/);
+    app.run("syncResendAt = Date.now() - 1; syncPaintResend()");
+    assert.strictEqual(app.els["sync-resend"].disabled, false);
+    assert.strictEqual(app.els["sync-resend-at"].hidden, true);
+  });
+
+  test("the export page shows a sign-in hint only while sync is active and nothing is signed in", async () => {
+    const out = await mount({ signedIn: false });
+    out.run("paintBackup()");
+    assert.strictEqual(out.els["backup-signin"].hidden, false);
+    assert.strictEqual(out.els["backup-signin"].textContent, "To save scales automatically, sign in.");
+    const inn = await mount();
+    inn.run("paintBackup()");
+    assert.strictEqual(inn.els["backup-signin"].hidden, true);
+    const prod = boot();
+    prod.run("paintBackup()");
+    assert.strictEqual(prod.els["backup-signin"].hidden, true);
+    assert.deepStrictEqual(tracked(out).filter((e) => /export|backup/.test(e[0])), []);
+  });
+
+  test("the export page hint follows a sign-in and sign-out that arrive through syncPaint", async () => {
+    const app = await mount({ signedIn: false });
+    app.run('openSubpage("export")');
+    assert.strictEqual(app.els["backup-signin"].hidden, false);
+    app.run('localStorage.setItem(SYNC_KEY, ' + JSON.stringify(sidecar()) + '); syncPaint()');
+    assert.strictEqual(app.els["backup-signin"].hidden, true);
+    app.run('localStorage.removeItem(SYNC_KEY); syncPaint()');
+    assert.strictEqual(app.els["backup-signin"].hidden, false);
+  });
+
+  test("no visible sync wording in any locale for a signed-out entry and page", () => {
+    const stems = { en: /sync|synchro/i, de: /sync|synchro/i, fr: /sync|synchro/i, es: /sincron/i, it: /sincron/i, ja: /同期/, "zh-Hans": /同步/, "zh-Hant": /同步/ };
+    const keys = ["sync.title", "sync.intro", "sync.entrySignIn", "sync.entrySub", "sync.entryErr", "sync.pageSignIn", "sync.pageAccount", "sync.pageBack", "sync.resendAt", "sync.status.syncing", "sync.status.synced", "sync.status.pending", "backup.signIn"];
+    for (const [loc, re] of Object.entries(stems)) {
+      const table = JSON.parse(fsx.readFileSync(pathx.join(__dirname, "..", "data", "i18n", loc + ".json"), "utf8"));
+      for (const k of keys) assert.ok(!re.test(typeof table[k] === "string" ? table[k] : JSON.stringify(table[k])), `${loc} ${k}: ${table[k]}`);
+    }
   });
 });

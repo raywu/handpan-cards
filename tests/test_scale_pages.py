@@ -377,7 +377,7 @@ class GeneratorTest(unittest.TestCase):
         slugs = [s for s in ROWS if exists(s)][:2]
         loaded = []
         real = gen.load_copy
-        gen.load_copy = lambda row: loaded.append(row["slug"]) or real(row)
+        gen.load_copy = lambda row, script="en": loaded.append(row["slug"]) or real(row, script)
         try:
             pages = gen.pages_for(slugs)
         finally:
@@ -385,6 +385,14 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(loaded, slugs)
         for slug in slugs:
             self.assertEqual(pages[slug], read("scales/%s/index.html" % slug))
+
+    def test_english_pages_carry_hreflang_only_for_scripts_with_a_copy_file(self):
+        for slug in ROWS:
+            have = [sc for sc in gen.SCRIPTS if os.path.exists(os.path.join(ROOT, "scales", slug, "copy.%s.json" % sc))]
+            p = Page(read("scales/%s/index.html" % slug))
+            got = sorted(a["hreflang"] for t, a in p.tags if t == "link" and a.get("rel") == "alternate")
+            with self.subTest(page=slug):
+                self.assertEqual(got, sorted(["en", "x-default"] + have) if have else [])
 
     def test_pages_for_refuses_one_copy_shared_across_several_slugs(self):
         slugs = [s for s in ROWS if exists(s)][:2]
@@ -1097,16 +1105,16 @@ class SharedBrownHeadTest(unittest.TestCase):
 
     def test_the_about_overlay_takes_the_shared_rules(self):
         css = read("index.html")
-        about = css[css.index("#about{position:fixed"):css.index("html.about-open{")]
+        about = css[css.index("#about,#account,#export{position:fixed"):css.index("html.about-open{")]
         self.assertNotIn("#1f1b15", about)
         self.assertIn("background:#0f0e0b", about)
         self.assertRegex(about, r"\.abouthead\{[^}]*background:#0f0e0b")
         self.assertRegex(about, r"color:#f6f4ed; font:400 16px/1\.55 \"Nunito Sans\"")
-        self.assertRegex(about, r'#about h2\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
-        self.assertRegex(about, r'#about h3\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#f6f4ed')
+        self.assertRegex(about, r'#about h2(?:,[^{]*)?\{[^}]*font:400 clamp\(30px, 7vw, 44px\)/1\.15 "Marcellus", serif')
+        self.assertRegex(about, r'#about h3(?:,[^{]*)?\{[^}]*font:400 24px/1\.2 "Marcellus", serif[^}]*color:#f6f4ed')
         self.assertNotIn("text-transform:uppercase", about)
-        self.assertRegex(about, r"#about h4\{[^}]*color:#a9a39a")
-        self.assertRegex(about, r"#about a\{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
+        self.assertRegex(about, r"#about h4(?:,[^{]*)?\{[^}]*color:#a9a39a")
+        self.assertRegex(about, r"#about a(?:,[^{]*)?\{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1\.5px; text-underline-offset:3px\}")
         self.assertIn("calc((100% - 520px) / 2)", about)
 
     def test_every_primary_passes_contrast_on_the_brown(self):

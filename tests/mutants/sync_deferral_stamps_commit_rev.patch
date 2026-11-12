@@ -1,0 +1,15 @@
+# kills: settle R3b: a deferred last-visible delete is not removed after a concurrent edit
+# suite: node --test --test-name-pattern settle.R3b tests/sync.test.js
+# The deferral base is stamped from the committed list, so planDeferred removes an edited scale.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -202,7 +202,7 @@ HPE.sync = (function () {
+       const rid = R.scale_id;
+       if (visible - 1 < 1) {
+         deferred.add(rid);
+-        baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "observed", localRevision: L.revision, site: "defer-lastvisible" });
++        baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "observed", localRevision: L.revision + 1, site: "defer-lastvisible" });
+         continue;
+       }
+       visible--;

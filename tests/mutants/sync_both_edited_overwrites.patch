@@ -1,0 +1,15 @@
+# kills: sync: edit-vs-edit converges to exactly two scales on both devices in one pull+push cycle (R1-4)
+# suite: node --test --test-name-pattern edit-vs-edit.converges.to.exactly.two.scales tests/sync.test.js
+# A pull overwrites a locally edited scale with the remote body, losing the local edit.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -169,7 +169,7 @@ HPE.sync = (function () {
+         const unchanged = L.revision === B.localRevision;
+         if (equal(L.record, R.record)) {
+           baseUpdates.push({ rid, localId: L.id, rev: R.rev, mode: "observed", localRevision: L.revision, site: "based-equal" });
+-        } else if (unchanged) {
++        } else if (true) {
+           const opaque = !readableIn(ctx, R.record);
+           const op = { op: "overwrite", id: L.id, remoteId: rid, expectedRevision: L.revision, record: clone(R.record) };
+           if (opaque) op.opaque = true;
