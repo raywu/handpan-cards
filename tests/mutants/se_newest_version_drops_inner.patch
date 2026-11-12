@@ -1,5 +1,5 @@
-# kills: SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 7
-# suite: node --test --test-name-pattern ^SE-G2..newestRecordVersion.accepts.record.6.whatever.PROFILE_ENABLED.says.and.refuses.7$ tests/editor_model.test.js
+# kills: SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 8
+# suite: node --test --test-name-pattern ^SE-G2..newestRecordVersion.accepts.record.6.whatever.PROFILE_ENABLED.says.and.refuses.8$ tests/editor_model.test.js
 # fault: Cap the newest readable record at the profile version.
 diff --git a/index.html b/index.html
 --- a/index.html
@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
  const SHARE_VERSION = HPE.share.RECORD_VERSION;
  const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
  const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
--const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+-const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
 +const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? PROFILE_RECORD_VERSION : SHARE_VERSION;
  const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
    o.angles.inner.some(a => a !== null && a !== undefined);

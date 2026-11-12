@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
  const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
    o.angles.inner.some(a => a !== null && a !== undefined);
--const recordVersionFor = (o, profiled) => profiled ? PROFILE_RECORD_VERSION : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
-+const recordVersionFor = (o, profiled) => profiled ? PROFILE_RECORD_VERSION : SHARE_VERSION;
+-const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
++const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : SHARE_VERSION;
  const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
  // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
  // its own version check on the wire format (share.js step 2), so this is the
