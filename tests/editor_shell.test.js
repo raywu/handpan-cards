@@ -952,61 +952,6 @@ describe("U2e-2 palette, mirror and anchor", () => {
     assert.strictEqual(a.get("editorUndo(editorApply(__h, (m) => editorSetPalette(m, 4)).history).present.options.palette"), 0);
   });
 
-  test("U2e2-3: MIRROR TOP flips the rim and keeps the bottom as it was, on the code today's tabs build", () => {
-    const a = app();
-    load(a, WITH_BOTTOM);
-    const rimBefore = solvedAngles(a, "rim");
-    const bottomBefore = solvedAngles(a, "bottom");
-    assert.strictEqual(apply(a, `editorSetMirror(__m, "top")`).ok, true);
-    assert.strictEqual(a.get("__m.options.mirror"), true);
-    assert.deepStrictEqual(solvedAngles(a, "bottom"), bottomBefore, "the bottom ring did not move");
-    const rimAfter = solvedAngles(a, "rim");
-    assert.notDeepStrictEqual(rimAfter, rimBefore);
-    assert.deepStrictEqual(rimAfter, rimBefore.map((x) => (180 - x + 360) % 360), "the rim is reflected");
-    assert.strictEqual(a.get("editorExport(__m).code"), legacyCode(a, WITH_BOTTOM, { mirror: true, mirrorBottom: false }));
-  });
-
-  test("U2e2-4: MIRROR BOTTOM reflects every bottom note, a placed one too (180 - a), as the sheet's toggle does", () => {
-    const a = app();
-    load(a, WITH_BOTTOM, `{ angles: { bottom: [null, 240, null] } }`);
-    const before = solvedAngles(a, "bottom");
-    assert.strictEqual(apply(a, `editorSetMirror(__m, "bottom")`).ok, true);
-    assert.deepStrictEqual(plain(a.get("__m.options.angles.bottom")), [null, 300, null], "the placed note reflects");
-    assert.strictEqual(a.get("editorBottomMirror(__m)"), true);
-    assert.deepStrictEqual(solvedAngles(a, "rim"), plain(a.get("(() => { const m = editorSetMirror(editorSetMirror(__m, 'bottom').value, 'bottom').value; const s = editorSolve(m); return ringIds(s.value.fields, 'rim').map((id) => s.value.fields[id][4]); })()")), "the rim is untouched");
-    assert.notDeepStrictEqual(solvedAngles(a, "bottom"), before);
-    assert.strictEqual(a.get("editorExport(__m).code"), legacyCode(a, WITH_BOTTOM, { mirrorBottom: true, angles: { bottom: [null, 300, null] } }));
-  });
-
-  test("U2e2-5: MIRROR TOP on a pinned cyclops reflects the cyclops (180 - a), the link keeps its version, and numbers stay with positions", () => {
-    const a = app();
-    load(a, CYCLOPS, `{ angles: { inner: [125, 55] } }`);
-    const labels = () => plain(a.get(`(() => { const s = editorSolve(__m).value.fields; return ringIds(s, "inner").map((id) => [s[id][4], s[id][5]]).sort((x, y) => x[0] - y[0]); })()`));
-    const before = labels();
-    const version = a.get("editorExport(__m).code.split('/')[0]");
-    assert.strictEqual(apply(a, `editorSetMirror(__m, "top")`).ok, true);
-    assert.deepStrictEqual(plain(a.get("__m.options.angles.inner")), [55, 125]);
-    assert.deepStrictEqual(plain(a.get("__m.pins")), [{ ring: "inner", i: 0 }, { ring: "inner", i: 1 }].slice(0, a.get("__m.pins.length")), "the pins stay on their notes");
-    assert.strictEqual(a.get("editorExport(__m).code.split('/')[0]"), version, "the link version does not change");
-    assert.deepStrictEqual(labels().map((p) => p[1]), before.map((p) => p[1]), "each position keeps its number");
-    assert.deepStrictEqual(labels().map((p) => p[0]), before.map((p) => p[0]));
-  });
-
-  test("U2e2-6: each toggle is one Undo step, toggling twice returns the identical model, and a toggle with nothing to flip adds no step", () => {
-    const a = app();
-    load(a, WITH_BOTTOM);
-    const start = a.get("JSON.stringify(__m)");
-    a.run("globalThis.__h = editorHistoryNew(__m); true");
-    const once = plain(a.get(`(() => { const r = editorApply(__h, (m) => editorSetMirror(m, "top")); const t = editorApply(r.history, (m) => editorSetMirror(m, "top")); return { one: r.history.past.length, two: t.history.past.length, back: JSON.stringify(t.history.present) === JSON.stringify(editorHistoryNew(editorLoad(${JSON.stringify(WITH_BOTTOM)}).value).present) }; })()`));
-    assert.deepStrictEqual(once, { one: 1, two: 2, back: true });
-    const bottom = plain(a.get(`(() => { const r = editorApply(__h, (m) => editorSetMirror(m, "bottom")); const t = editorApply(r.history, (m) => editorSetMirror(m, "bottom")); return { one: r.history.past.length, back: JSON.stringify(t.history.present) === JSON.stringify(__m) }; })()`));
-    assert.deepStrictEqual(bottom, { one: 1, back: true });
-    assert.strictEqual(a.get("JSON.stringify(__m)"), start);
-    load(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
-    a.run("globalThis.__h = editorHistoryNew(__m); true");
-    assert.strictEqual(a.get(`editorApply(__h, (m) => editorSetMirror(m, "bottom")).history.past.length`), 0, "no bottom notes, nothing to flip");
-  });
-
   test("U2e2-7: the anchor picks note 1 centred or notes 1 and 2 split, on the code today's tabs build, one Undo step each", () => {
     const a = app();
     load(a, WITH_BOTTOM);
@@ -1026,50 +971,48 @@ describe("U2e-2 palette, mirror and anchor", () => {
     assert.deepStrictEqual(solvedAngles(a, "rim"), one);
   });
 
-  test("U2e2-8: toggling mirror or anchor there and back is not an edit, and a Neotone model takes none of the three", () => {
+  test("U2e2-8: toggling the anchor there and back is not an edit, and a Neotone model takes none", () => {
     const a = app();
     load(a, WITH_BOTTOM);
     a.run(`globalThis.__base = __m; true`);
-    for (const call of [`editorSetMirror(editorSetMirror(__m, "top").value, "top")`, `editorSetMirror(editorSetMirror(__m, "bottom").value, "bottom")`,
-      `editorSetAnchor(editorSetAnchor(__m, "between").value, "one")`]) {
-      assert.strictEqual(a.get(`editorIsDirty(__base, ${call}.value)`), false, call);
-    }
-    assert.strictEqual(a.get(`editorIsDirty(__base, editorSetMirror(__m, "top").value)`), true);
+    const call = `editorSetAnchor(editorSetAnchor(__m, "between").value, "one")`;
+    assert.strictEqual(a.get(`editorIsDirty(__base, ${call}.value)`), false, call);
+    assert.strictEqual(a.get(`editorIsDirty(__base, editorSetAnchor(__m, "between").value)`), true);
     a.run(`globalThis.__m = editorPanType(__m, "neotone").value; true`);
-    for (const call of [`editorSetMirror(__m, "top")`, `editorSetMirror(__m, "bottom")`, `editorSetAnchor(__m, "between")`]) {
-      const res = plain(a.get(call));
-      assert.strictEqual(res.ok, true, call);
-      assert.strictEqual(a.get(`${call}.value === __m`), true, call + " changes nothing on Neotone");
-    }
+    const neo = `editorSetAnchor(__m, "between")`;
+    assert.strictEqual(plain(a.get(neo)).ok, true, neo);
+    assert.strictEqual(a.get(`${neo}.value === __m`), true, neo + " changes nothing on Neotone");
   });
 
   const RIM_ONLY = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
 
-  test("U2e2-9: MIRROR TOP on a rim-only scale writes mirrorBottom false, on the code today's tabs build", () => {
-    const a = app();
-    load(a, RIM_ONLY);
-    assert.strictEqual(apply(a, `editorSetMirror(__m, "top")`).ok, true);
-    assert.strictEqual(a.get("__m.options.mirrorBottom"), false);
-    assert.strictEqual(a.get("editorExport(__m).code"), legacyCode(a, RIM_ONLY, { mirror: true, mirrorBottom: false }));
-  });
-
-  test("U2e2-10: a saved rim-only mirror-top scale toggled twice is not dirty and keeps its link", () => {
+  test("U2e2-10: a saved rim-only mirror-top scale is not dirty and keeps its link", () => {
     const a = app();
     load(a, RIM_ONLY, `{ mirror: true, mirrorBottom: false }`);
     a.run(`globalThis.__base = __m; true`);
     const code = a.get("editorExport(__m).code");
     assert.strictEqual(code, legacyCode(a, RIM_ONLY, { mirror: true, mirrorBottom: false }));
-    a.run(`globalThis.__m = editorSetMirror(editorSetMirror(__m, "top").value, "top").value; true`);
     assert.strictEqual(a.get("editorIsDirty(__base, __m)"), false);
     assert.strictEqual(a.get("editorExport(__m).code"), code);
   });
 
-  test("U2e2-11: a bottom note added after MIRROR TOP keeps the bottom unmirrored, as the tabs do", () => {
+  test("U2e2-11: a bottom note added to a mirror-top scale keeps the bottom unmirrored, as the tabs do", () => {
     const a = app();
-    load(a, RIM_ONLY);
-    apply(a, `editorSetMirror(__m, "top")`);
+    load(a, RIM_ONLY, `{ mirror: true, mirrorBottom: false }`);
     a.run(`globalThis.__m = editorLoad(${JSON.stringify(WITH_BOTTOM)}, __m.options).value; true`);
     assert.strictEqual(a.get("editorExport(__m).code"), legacyCode(a, WITH_BOTTOM, { mirror: true, mirrorBottom: false }));
+  });
+
+  test("PLa-1: a mirrored scale stays editable by swap, remove and save, with the mirror flags unchanged", () => {
+    const a = app();
+    load(a, WITH_BOTTOM, `{ mirror: true, mirrorBottom: true }`);
+    const flags = () => plain(a.get("({ m: __m.options.mirror, b: __m.options.mirrorBottom })"));
+    assert.deepStrictEqual(flags(), { m: true, b: true });
+    assert.strictEqual(apply(a, `editorSwapSeats(__m, "rim", 0, 1)`).ok, true);
+    assert.strictEqual(apply(a, `editorRemove(__m, "bottom", 0)`).ok, true);
+    assert.deepStrictEqual(flags(), { m: true, b: true });
+    assert.strictEqual(a.get("editorExport(__m).solve.ok"), true);
+    assert.strictEqual(plain(a.get("editorExport(__m).record.o")).mirror, true);
   });
 });
 

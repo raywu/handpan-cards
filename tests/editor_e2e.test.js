@@ -1822,7 +1822,7 @@ function run() {
 
     test("375x667: the octave row holds the flats chip, the octave controls and the palette chip, and the panel does not scroll", async () => {
       await setup(BOTTOM);
-      assert.deepStrictEqual(await inView(["editor-oct-down", "editor-oct-up", "editor-flats", "editor-palette", "editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
+      assert.deepStrictEqual(await inView(["editor-oct-down", "editor-oct-up", "editor-flats", "editor-palette", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
       const row = await b.eval(`const r = document.querySelector(".editor-octaves"); const q = (id) => document.getElementById(id).getBoundingClientRect();
         return { ids: ["editor-flats", "editor-palette"].map((id) => q(id).height >= 44 && q(id).width >= 44), after: q("editor-palette").left >= q("editor-flats").right - 1, sameRow: Math.abs(q("editor-palette").top - q("editor-flats").top) < 2 };`);
       assert.deepStrictEqual(row, { ids: [true, true], after: true, sameRow: true });
@@ -1868,36 +1868,11 @@ function run() {
       assert.strictEqual(await b.eval(`return [document.getElementById("editor-swatches").hidden, getComputedStyle(document.getElementById("editor-notes")).display];`).then((r) => r[0]), true);
     });
 
-    test("MIRROR TOP on a scale with a pinned cyclops reflects the cyclops (180 - a), the link version holds, and it is one Undo step", async () => {
-      await setup("(D3) " + RIM8 + " | C5 D5");
-      await pinInner();
-      const before = await model();
-      const version = (await code()).split("/")[0];
-      const past = await pastLen();
-      await b.click("#editor-mirror-top");
-      const after = await model();
-      assert.deepStrictEqual(after.options.angles.inner, before.options.angles.inner.map((a) => (a === null ? null : (180 - a + 360) % 360)));
-      assert.strictEqual(after.options.mirror, true);
-      assert.strictEqual((await code()).split("/")[0], version, "the link stays the same version");
-      assert.strictEqual(await pastLen(), past + 1);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-top").getAttribute("aria-pressed");`), "true");
-      await clickUndo();
-      assert.deepStrictEqual((await model()).options.angles, before.options.angles);
-      assert.strictEqual((await model()).options.mirror, false);
-    });
-
-    test("MIRROR BOTTOM flips the bottom ring only and is disabled with no bottom notes; the anchor splits notes 1 and 2", async () => {
+    test("the anchor splits notes 1 and 2, aria-pressed follows, and a repeat adds no step", async () => {
       await setup("(D3) " + RIM8);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-bottom").disabled;`), true);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-top").disabled;`), false);
       await typeLine(BOTTOM);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-bottom").disabled;`), false);
       const rim = () => b.eval(`const s = editorSolve(editorSession.history.present).value.fields; return ringIds(s, "rim").map((id) => s[id][4]);`);
-      const bot = () => b.eval(`const s = editorSolve(editorSession.history.present).value.fields; return ringIds(s, "bottom").map((id) => s[id][4]);`);
-      const [rim0, bot0] = [await rim(), await bot()];
-      await b.click("#editor-mirror-bottom");
-      assert.deepStrictEqual(await rim(), rim0, "the rim did not move");
-      assert.deepStrictEqual(await bot(), bot0.map((a) => (180 - a + 360) % 360));
+      const rim0 = await rim();
       await b.click("#editor-anchor-between");
       assert.notDeepStrictEqual(await rim(), rim0);
       assert.strictEqual(await b.eval(`return document.getElementById("editor-anchor-between").getAttribute("aria-pressed");`), "true");
@@ -1907,16 +1882,11 @@ function run() {
       assert.strictEqual(await pastLen(), past, "the same anchor adds no step");
     });
 
-    test("the mirror and anchor controls are at least 44px, and the numbers toast shows on MIRROR BOTTOM only", async () => {
+    test("the anchor controls are at least 44px", async () => {
       await setup("(D3) " + RIM8 + " [G2]\n");
       await typeLine(BOTTOM);
-      const sizes = await b.eval(`return ["editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return q.width >= 44 && q.height >= 44; });`);
-      assert.deepStrictEqual(sizes, [true, true, true, true]);
-      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 240)).history; editorRender(); return true;`);
-      await b.click("#editor-mirror-top");
-      assert.strictEqual(await b.eval(`return editorSession.say.includes("Numbers stay");`), false, "no toast on MIRROR TOP");
-      await b.click("#editor-mirror-bottom");
-      assert.strictEqual(await b.eval(`return editorSession.say.includes("Numbers stay");`), true, "toast on MIRROR BOTTOM");
+      const sizes = await b.eval(`return ["editor-anchor-one", "editor-anchor-between"].map((id) => { const q = document.getElementById(id).getBoundingClientRect(); return q.width >= 44 && q.height >= 44; });`);
+      assert.deepStrictEqual(sizes, [true, true]);
     });
 
     test("a palette pick closes the swatches while the text line is being edited", async () => {
@@ -2538,12 +2508,7 @@ function run() {
     });
 
     const NEO_LINE = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
-    const slotAngles = () => b.eval(`const m = editorSession.history.present, map = m.options.profile.map, solved = HPE.layout.solve({ fields: m.fields, options: m.options });
-      return map.map((key, slot) => { if (key === null) return null; const ref = editorNeoRef(m, slot), id = ringIds(m.fields, ref.ring)[ref.i];
-        return { key, angle: solved.value.geom.place[id][0] }; });`);
     const profileMap = () => b.eval(`return editorSession.history.present.options.profile.map.slice();`);
-    const fixtureAngles = () => b.eval(`return HPE.layout.PROFILE.angles.slice();`);
-    const nextLarger = (set, a) => { const sorted = [...set].sort((x, y) => x - y); return sorted.find((v) => v > a) ?? sorted[0]; };
     const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
     const neoSetup = async (width = 375, height = 667) => {
       await fresh(width, height);
@@ -2552,70 +2517,36 @@ function run() {
       await b.click("#editor-type-neotone");
     };
 
-    test("TRI59c the Neotone layout row offers Mirror and two rotate buttons, momentary, in view; Standard keeps its four", async () => {
+    test("PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are gone, and the Neotone pair is hidden, never disabled", async () => {
       for (const [w, h] of [[320, 568], [375, 667], [820, 1180]]) {
         await fresh(w, h);
         await openAdd();
         await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
-        const std = await b.eval(`const vis = (id) => { const e = document.getElementById(id); return e.offsetParent !== null; };
-          return { shown: ["editor-mirror-top", "editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map(vis),
-            rotate: ["editor-rotate-ccw", "editor-rotate-cw"].map(vis), note: !!document.getElementById("editor-layout-note"),
-            pressed: document.getElementById("editor-mirror-top").getAttribute("aria-pressed") };`);
-        assert.deepStrictEqual(std, { shown: [true, true, true, true], rotate: [false, false], note: false, pressed: "false" }, "Standard " + w);
-        await b.click("#editor-type-neotone");
-        const r = await b.eval(`const ids = ["editor-mirror-top", "editor-rotate-ccw", "editor-rotate-cw"], e = document.getElementById("editor");
-          const box = (id) => document.getElementById(id).getBoundingClientRect();
-          return { shown: ids.map((id) => document.getElementById(id).offsetParent !== null), hidden: ["editor-mirror-bottom", "editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById(id).offsetParent === null),
-            enabled: ids.map((id) => !document.getElementById(id).disabled), pressed: ids.map((id) => document.getElementById(id).hasAttribute("aria-pressed")),
-            names: ids.map((id) => document.getElementById(id).getAttribute("aria-label") || document.getElementById(id).textContent),
+        const row = () => b.eval(`const box = (id) => document.getElementById(id).getBoundingClientRect();
+          const all = [...document.querySelectorAll("#editor-layout button")].map((e) => e.id);
+          const ids = [...document.querySelectorAll("#editor-layout button")].filter((e) => e.offsetParent !== null).map((e) => e.id);
+          return { all, ids, gone: ["editor-mirror-top", "editor-mirror-bottom", "editor-rotate-ccw", "editor-rotate-cw"].map((id) => document.getElementById(id) === null),
+            greyed: [...document.querySelectorAll("#editor-layout button")].filter((e) => e.offsetParent !== null && e.disabled).length,
             targets: ids.every((id) => box(id).width >= 44 && box(id).height >= 44), inView: ids.every((id) => box(id).left >= 0 && box(id).right <= innerWidth && box(id).bottom <= innerHeight),
-            oneRow: ids.every((id) => Math.abs(box(id).top - box(ids[0]).top) < 1), scroll: e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth,
-            note: !!document.getElementById("editor-layout-note") };`);
-        assert.deepStrictEqual({ ...r, names: r.names.length }, { shown: [true, true, true], hidden: [true, true, true], enabled: [true, true, true], pressed: [false, false, false],
-          names: 3, targets: true, inView: true, oneRow: true, scroll: true, note: false }, "Neotone " + w + " " + JSON.stringify(r.names));
+            scroll: document.getElementById("editor").scrollHeight <= document.getElementById("editor").clientHeight };`);
+        assert.deepStrictEqual(await row(), { all: ["editor-anchor-one", "editor-anchor-between"], ids: ["editor-anchor-one", "editor-anchor-between"], gone: [true, true, true, true], greyed: 0,
+          targets: true, inView: true, scroll: true }, "Standard " + w);
+        await b.click("#editor-type-neotone");
+        const neo = await row();
+        assert.deepStrictEqual([neo.ids, neo.gone, neo.greyed], [[], [true, true, true, true], 0], "Neotone " + w + ": the pair is hidden, not disabled");
         await b.click("#editor-type-standard");
-        assert.strictEqual(await b.eval(`return document.getElementById("editor-anchor-one").offsetParent !== null && document.getElementById("editor-rotate-cw").offsetParent === null;`), true, "back on Standard");
+        assert.deepStrictEqual((await row()).ids, ["editor-anchor-one", "editor-anchor-between"], "back on Standard");
       }
     });
 
-    test("TRI59c each rotate tap moves every Neotone note one fixture step, says which way, and wraps", async () => {
-      await neoSetup();
-      const fix = await fixtureAngles();
-      for (const [btn, dir, word] of [["editor-rotate-cw", 1, "clockwise"], ["editor-rotate-ccw", -1, "anticlockwise"]]) {
-        const before = (await slotAngles()).filter(Boolean);
-        await b.click("#" + btn);
-        const after = (await slotAngles()).filter(Boolean);
-        for (const note of before) {
-          const want = dir === 1 ? nextLarger(fix, note.angle) : [...fix].sort((x, y) => y - x).find((v) => v < note.angle) ?? Math.max(...fix);
-          assert.strictEqual(after.find((n) => n.key === note.key).angle, want, btn + " " + note.key);
-        }
-        assert.ok((await status()).includes(word) && (word === "clockwise" ? !(await status()).includes("anti") : true), word + ": " + await status());
-      }
-      const start = await profileMap();
-      for (let i = 0; i < 9; i += 1) await b.click("#editor-rotate-cw");
-      assert.deepStrictEqual(await profileMap(), start, "nine steps wrap");
-    });
+    const seedPermuted = () => b.eval(`editorDo((m) => { const map = m.options.profile.map, next = new Array(map.length).fill(null);
+      map.forEach((key, slot) => { if (key !== null) { const f = slot % 9; next[slot - f + ((f + 2) % 9)] = key; } });
+      return editorNeoBuild(m, editorPartsOf(m), next); }); editorRender(); return true;`);
 
-    test("TRI59c Mirror sends each Neotone angle to 540 minus it, twice is the start, undo restores the exact map", async () => {
+    test("PL-a a permuted Neotone arrangement is dropped by Cancel and kept through SAVE, reload and the share link", async () => {
       await neoSetup();
       const start = await profileMap();
-      const before = (await slotAngles()).filter(Boolean);
-      await b.click("#editor-mirror-top");
-      const after = (await slotAngles()).filter(Boolean);
-      for (const note of before) assert.strictEqual(after.find((n) => n.key === note.key).angle, (((540 - note.angle) % 360) + 360) % 360, note.key);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-mirror-top").hasAttribute("aria-pressed");`), false);
-      await clickUndo();
-      assert.deepStrictEqual(await profileMap(), start, "undo restores the exact prior map");
-      await b.click("#editor-mirror-top");
-      await b.click("#editor-mirror-top");
-      assert.deepStrictEqual(await profileMap(), start, "twice is the identity");
-    });
-
-    test("TRI59c a rotated Neotone arrangement is dropped by Cancel and kept through SAVE, reload and the share link", async () => {
-      await neoSetup();
-      const start = await profileMap();
-      await b.click("#editor-rotate-cw");
-      await b.click("#editor-rotate-cw");
+      await seedPermuted();
       const rotated = await profileMap();
       assert.notDeepStrictEqual(rotated, start);
       await b.click("#editor-back");
@@ -2626,8 +2557,7 @@ function run() {
       await typeLine(NEO_LINE);
       await b.click("#editor-type-neotone");
       assert.deepStrictEqual(await profileMap(), start, "a new session starts from the proposal");
-      await b.click("#editor-rotate-cw");
-      await b.click("#editor-rotate-cw");
+      await seedPermuted();
       const link = await b.eval(`const x = editorExport(editorSession.history.present); const back = HPE.share.decode(x.code); return { ok: back.ok, map: back.ok ? back.value.options.profile.map : null };`);
       assert.deepStrictEqual(link, { ok: true, map: rotated }, "the share code carries the rotated map");
       await b.click("#editor-save");
@@ -2635,17 +2565,7 @@ function run() {
       await b.send("Page.navigate", { url: base });
       await b.waitFor(`${APP_READY_EXPR} && booted === true && document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { timeout: 15000, label: "the app to boot" });
       await reopenSelected();
-      assert.deepStrictEqual(await profileMap(), rotated, "the saved scale reopens rotated");
-    });
-
-    test("TRI59c a rotation is not kept when the last mutant note goes (accepted)", async () => {
-      await neoSetup();
-      await b.click("#editor-rotate-cw");
-      const rotated = await profileMap();
-      await b.eval(`editorDo((m) => editorRemove(m, "bottom", 0)); editorRender(); return true;`);
-      const after = await profileMap();
-      assert.ok(after.slice(9).every((k) => k === null));
-      assert.notDeepStrictEqual(after.slice(0, 9), rotated.slice(0, 9));
+      assert.deepStrictEqual(await profileMap(), rotated, "the saved scale reopens permuted");
     });
 
     test("TRI59 octave stepper is compact at every phone and tablet size: one row, 44px targets, no overflow", async () => {
@@ -2756,7 +2676,7 @@ function run() {
             await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
             await b.click("#editor-type-neotone");
             const bad = await b.eval(`const out = [], row = document.querySelector(".editor-octaves").getBoundingClientRect();
-              for (const id of ["editor-oct-label", "editor-oct", "editor-flats", "editor-delete", "editor-mirror-top", "editor-rotate-ccw", "editor-rotate-cw"]) {
+              for (const id of ["editor-oct-label", "editor-oct", "editor-flats", "editor-delete", "editor-anchor-one", "editor-anchor-between"]) {
                 const e = document.getElementById(id); if (!e || !e.offsetParent) continue;
                 const box = e.getBoundingClientRect();
                 if (e.scrollWidth > e.clientWidth + 0.5) out.push(id + " scrollWidth");
