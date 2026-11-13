@@ -11575,6 +11575,115 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.strictEqual(paired[paired.length - 1].length, 18);
   });
 
+  const MUTANT_PYGMY = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]";
+  const placeOf = (app, text, extra) => plain(app.get(`buildGenerated(${JSON.stringify(text)}, ${JSON.stringify(profileOf(app, text, extra))}).value.geom`));
+
+  test("TRI59d A1: buildGenerated keeps anchor between on a profile seed, solves it turned, and drops anchor one", async () => {
+    const app = boot();
+    const flat = placeOf(app, MUTANT_PYGMY);
+    const turned = placeOf(app, MUTANT_PYGMY, { anchor: "between" });
+    assert.strictEqual(turned.turn, 20);
+    assert.strictEqual(flat.turn, undefined);
+    for (const id of Object.keys(flat.place)) {
+      assert.strictEqual(turned.place[id][0], (flat.place[id][0] + 20) % 360, `field ${id} turns by 20`);
+    }
+    const options = (extra) => plain(app.get(`buildGenerated(${JSON.stringify(MUTANT_PYGMY)}, ${JSON.stringify(profileOf(app, MUTANT_PYGMY, extra))}).value.options`));
+    assert.strictEqual(options({ anchor: "between" }).anchor, "between");
+    assert.strictEqual("anchor" in options({ anchor: "one" }), false);
+    assert.strictEqual("anchor" in options(), false);
+    assert.strictEqual(options({ anchor: "between" }).profile.rev, 2);
+  });
+
+  test("TRI59d A1: without mutant notes between moves the seats through the plain solve and keeps the anchor", async () => {
+    const app = boot();
+    const flat = placeOf(app, AMARA_STRING);
+    const split = placeOf(app, AMARA_STRING, { anchor: "between" });
+    assert.strictEqual(split.turn, undefined);
+    assert.notDeepStrictEqual(split.place, flat.place, "notes 1 and 2 are split");
+    assert.strictEqual(plain(app.get(`buildGenerated(${JSON.stringify(AMARA_STRING)}, ${JSON.stringify(profileOf(app, AMARA_STRING, { anchor: "between" }))}).value.options.anchor`)), "between");
+  });
+
+  test("TRI59d A1: a v9 link draws turned and keeps main and mutant roles", async () => {
+    const app = boot();
+    const between = profileOf(app, MUTANT_PYGMY, { anchor: "between" });
+    const code = plain(app.get(`HPE.share.encode({ fields: HPE.core.parseSeed(${JSON.stringify(MUTANT_PYGMY)}).value.fields, options: ${JSON.stringify(between)} })`));
+    assert.strictEqual(code.value.charAt(0), "9");
+    const opened = openShare(app, code.value);
+    assert.strictEqual(opened.ok, true, opened.reason);
+    const shown = app.currentDeck();
+    const flat = placeOf(app, MUTANT_PYGMY);
+    assert.strictEqual(shown.geom.turn, 20);
+    assert.strictEqual(shown.options.anchor, "between");
+    for (const id of Object.keys(flat.place)) {
+      assert.strictEqual(shown.geom.place[id][0], (flat.place[id][0] + 20) % 360);
+      assert.strictEqual(shown.geom.place[id][3], flat.place[id][3], "main stays main, mutant stays mutant");
+    }
+  });
+
+  test("TRI59d A1: neoSlotPoint puts an empty tonefield at the turned angle", async () => {
+    const app = boot();
+    const at = (turn) => plain(app.get(`neoSlotPoint(0, null, ${turn})`));
+    const angle = (p) => ((Math.atan2(-p.y, p.x) * 180 / Math.PI) + 360) % 360;
+    assert.ok(Math.abs(angle(at(0)) - 270) < 1e-6);
+    assert.ok(Math.abs(angle(at(20)) - 290) < 1e-6);
+    assert.deepStrictEqual(plain(app.get("neoSlotPoint(0, null)")), at(0), "no turn is the frozen angles");
+  });
+
+  test("TRI59d A1: the empty-field marks and the landing ring of a turned pan sit at the turned angles", async () => {
+    const app = boot();
+    const marks = (extra) => app.get(`(() => {
+      const m = editorLoad(${JSON.stringify(MUTANT_PYGMY)}, ${JSON.stringify(profileOf(app, MUTANT_PYGMY, extra))}).value;
+      const s = editorSolve(m).value;
+      return editorNeoMarks(m, s.fields, s.geom);
+    })()`);
+    const centre = (markup, slot) => {
+      const tag = String(markup).match(new RegExp(`<circle class="eslot" data-slot="${slot}" cx="([-0-9.]+)" cy="([-0-9.]+)"`));
+      return tag && [Number(tag[1]), Number(tag[2])];
+    };
+    const want = (turn) => plain(app.get(`(() => { const p = neoSlotPoint(15, null, ${turn}); return [+p.x.toFixed(2), +p.y.toFixed(2)]; })()`));
+    assert.deepStrictEqual(centre(marks({}), 15), want(0));
+    assert.deepStrictEqual(centre(marks({ anchor: "between" }), 15), want(20));
+    assert.notDeepStrictEqual(want(20), want(0));
+  });
+
+  test("TRI59d A1: the drop ring on a turned pan lands on the turned slot", async () => {
+    const app = boot();
+    const ring = (extra) => plain(app.get(`(() => {
+      const m = editorLoad(${JSON.stringify(MUTANT_PYGMY)}, ${JSON.stringify(profileOf(app, MUTANT_PYGMY, extra))}).value;
+      const added = [];
+      const svg = { querySelectorAll: () => [], querySelector: () => null, appendChild: (c) => added.push(c) };
+      const saveQuery = document.querySelector, saveCreate = document.createElementNS, saveSession = editorSession;
+      document.querySelector = () => svg;
+      document.createElementNS = () => { const a = {}; return { setAttribute: (k, v) => { a[k] = v; }, a }; };
+      editorSession = { history: { present: m } };
+      try { editorMarkDrop({ kind: "spot", slot: 15 }); } finally { document.querySelector = saveQuery; document.createElementNS = saveCreate; editorSession = saveSession; }
+      return [+added[0].a.cx, +added[0].a.cy];
+    })()`));
+    const want = (turn) => plain(app.get(`(() => { const p = neoSlotPoint(15, null, ${turn}); return [+p.x.toFixed(2), +p.y.toFixed(2)]; })()`));
+    assert.deepStrictEqual(ring({}), want(0));
+    assert.deepStrictEqual(ring({ anchor: "between" }), want(20));
+  });
+
+  test("TRI59d A1: the editor drag snap reads the turned angles from geom.turn", async () => {
+    const app = boot();
+    const hit = (extra, deg) => plain(app.get(`(() => {
+      const m = editorLoad(${JSON.stringify(MUTANT_PYGMY)}, ${JSON.stringify(profileOf(app, MUTANT_PYGMY, extra))}).value;
+      const s = editorSolve(m).value, a = ${deg} * Math.PI / 180;
+      return editorHitAtPlaced(s, [0.745 * Math.cos(a), 0.745 * Math.sin(a)], m);
+    })()`));
+    assert.deepStrictEqual(hit({ anchor: "between" }, 260), hit({}, 240), "a turned pan snaps 20 degrees on");
+    assert.notDeepStrictEqual(hit({ anchor: "between" }, 260), hit({}, 260));
+  });
+
+  test("TRI59d A1: editorCommitOptions keeps between on a profile model and nothing else new", async () => {
+    const app = boot();
+    const commit = (extra) => plain(app.get(`editorCommitOptions(editorLoad(${JSON.stringify(MUTANT_PYGMY)}, ${JSON.stringify(profileOf(app, MUTANT_PYGMY, extra))}).value)`));
+    assert.strictEqual(commit({ anchor: "between" }).anchor, "between");
+    assert.strictEqual("anchor" in commit({}), false);
+    assert.strictEqual("anchor" in commit({ anchor: "one" }), false);
+    assert.deepStrictEqual(Object.keys(commit({ anchor: "between", name: "X" })).sort(), ["anchor", "name", "palette", "profile"]);
+  });
+
 });
 
 describe("MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included", () => {

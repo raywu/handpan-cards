@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11640,7 +11640,7 @@ function readSavedRecord(record) {
-   try {
+@@ -11877,7 +11877,7 @@ function readSavedRecord(record) {
      const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
      const pinned = !profiled && innerPinned(record.o);
--    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled !== (record.v === PROFILE_RECORD_VERSION) || pinned) ||
-+    if (record.v === INNER_RECORD_VERSION ? false : (profiled !== (record.v === PROFILE_RECORD_VERSION) || pinned) ||
+     const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+-    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
++    if (record.v === INNER_RECORD_VERSION ? false : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
          (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
      let canonical = record.s;
      if (record.v < SHARE_VERSION) {

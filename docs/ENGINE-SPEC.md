@@ -1405,7 +1405,7 @@ version 9 link with `NEEDS_NEWER_APP`; a version 10 or above is `NEEDS_NEWER_APP
 ### 18.6 Record versions 5 and 7, and rule I1
 
 `RECORD_VERSION` stays 4. `PROFILE_RECORD_VERSION = 5` is used for a record
-whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4 or 5:
+whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4, 5, 6 or 7:
 the app never chooses it. `savedCandidate` accepts 4 for a standard record and
 5 for a profile record, and refuses 5 without a profile or 4 with one;
 `savedMeaning` appends the canonical profile map (null for a standard record, so

@@ -251,8 +251,8 @@ test("LC: every frozen deck id resolves to itself or through the id map, and the
 
 /* ---------------- section 18: acoustic links stay byte-identical ----------- */
 
-const SHIPPED_HTML = fs.readFileSync(path.join(FIXTURES, "shipped_client_ee5438d0.html.txt"), "utf8");
-function loadShippedEngine() {
+const SHIPPED_HTML_DEFAULT = fs.readFileSync(path.join(FIXTURES, "shipped_client_ee5438d0.html.txt"), "utf8");
+function loadShippedEngine(SHIPPED_HTML = SHIPPED_HTML_DEFAULT) {
   const sb = { console, URL, URLSearchParams, TextEncoder, TextDecoder, structuredClone, btoa, atob };
   vm.createContext(sb);
   for (const m of ["core", "voicing", "layout", "naming", "select", "share"]) {
@@ -375,5 +375,13 @@ test("LC: the hand-written v9 links decode to profile plus between and re-encode
     assert.equal(on.share.encode(res.value).value, e.link, e.id);
     assert.equal(on.share.recordVersion(res.value), 7, e.id);
     assert.equal(off.share.decode(e.link).code, "NEEDS_NEWER_APP", e.id);
+  }
+});
+
+test("LC: the shipped clients ee5438d0 and c6ef6b58 and main a4ecfc2e refuse every v9 fixture link as needing a newer app", () => {
+  const doc = JSON.parse(fs.readFileSync(path.join(FIXTURES, "paired_anchor_links_v9.json"), "utf8"));
+  for (const sha of ["ee5438d0", "c6ef6b58", "a4ecfc2e"]) {
+    const old = loadShippedEngine(fs.readFileSync(path.join(FIXTURES, `shipped_client_${sha}.html.txt`), "utf8"));
+    for (const e of doc.entries) assert.equal(old.share.decode(e.link).code, "NEEDS_NEWER_APP", `${sha} ${e.id}`);
   }
 });

@@ -47,12 +47,12 @@ test("SE-G1: a v6 record is read exactly when angles.inner is pinned and the rec
   assert.strictEqual(read(app, { v: 9, s: SCALE, o: PIN }).ok, false, "record 9 is protected");
 });
 
-test("SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 7", () => {
+test("SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 8", () => {
   for (const flag of [true, false]) {
     const app = appBoot();
     app.run(`HPE.core.PROFILE_ENABLED = ${flag}`);
     assert.strictEqual(app.get("checkShareVersion(6).ok"), true, "PROFILE_ENABLED=" + flag);
-    assert.strictEqual(plain(app.get("checkShareVersion(7)")).code, "NEEDS_NEWER_APP");
+    assert.strictEqual(plain(app.get("checkShareVersion(8)")).code, "NEEDS_NEWER_APP");
     assert.strictEqual(read(app, { v: 6, s: SCALE, o: PIN }).ok, true, "PROFILE_ENABLED=" + flag);
   }
 });

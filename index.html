@@ -10698,12 +10698,14 @@ function buildGenerated(text, options, guard) {
   if (profile) {
     const given = options && options.profile ? options.profile : profile;
     const clean = { id: profile.id, rev: profile.rev, map: profile.map.slice() };
+    const between = seed.value.options.anchor === "between";
     const held = profile.unplaced && profile.unplaced.length;
-    const placed = held ? null : HPE.layout.solve({ fields: seed.value.fields, options: { profile: clean } }, {});
+    const placed = held ? null : HPE.layout.solve({ fields: seed.value.fields, options: between ? { profile: clean, anchor: "between" } : { profile: clean } }, {});
     if (placed && placed.ok) {
       built.value.geom = placed.value.geom;
       built.value.fields = placed.value.fields;
-      for (const name of ["mirror", "mirrorBottom", "anchor"]) delete built.value.options[name];
+      for (const name of ["mirror", "mirrorBottom"]) delete built.value.options[name];
+      if (!between) delete built.value.options.anchor;
       if (seed.value.options.parent == null) built.value.options.parent = null;
     }
     built.value.options.profile = JSON.parse(JSON.stringify(given));
@@ -10756,10 +10758,11 @@ function buildGenerated(text, options, guard) {
 const SHARE_VERSION = HPE.share.RECORD_VERSION;
 const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
 const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
-const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
+const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
 const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
   o.angles.inner.some(a => a !== null && a !== undefined);
-const recordVersionFor = (o, profiled) => profiled ? PROFILE_RECORD_VERSION : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
+const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
 const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
 // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
 // its own version check on the wire format (share.js step 2), so this is the
@@ -11089,7 +11092,8 @@ function readSavedRecord(record) {
   try {
     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
     const pinned = !profiled && innerPinned(record.o);
-    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled !== (record.v === PROFILE_RECORD_VERSION) || pinned) ||
+    const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
     let canonical = record.s;
     if (record.v < SHARE_VERSION) {
@@ -12670,10 +12674,10 @@ function compactMain(map) {
   return map;
 }
 /** Where a tonefield sits, in pan units (R = 100, y down from the centre). */
-function neoSlotPoint(slot, placed) {
+function neoSlotPoint(slot, placed, turn) {
   const P = HPE.layout.PROFILE, R = 100;
   const i = slot % NEO_MAIN;
-  const a = P.angles[i] * Math.PI / 180;
+  const a = HPE.layout.profileAngles(turn)[i] * Math.PI / 180;
   const mutant = slot >= NEO_MAIN;
   if (placed) {
     const orbit = mutant ? placed[4] : placed[1];
@@ -13317,6 +13321,7 @@ function editorCommitOptions(m) {
   const kept = { palette: m.options.palette || 0 };
   if (m.options.name !== undefined) kept.name = m.options.name;
   kept.profile = m.options.profile;
+  if (m.options.anchor === "between") kept.anchor = "between";
   return kept;
 }
 // A built-in never takes its own slot: it saves a new scale (D15).
@@ -13786,7 +13791,7 @@ function editorNoteReach(geom, ring) {
 }
 function editorNeoPoint(m, fields, geom, id) {
   const slot = m.options.profile.map.indexOf(profileKeyOf(fields[id]));
-  return slot === -1 ? null : { slot, ...neoSlotPoint(slot, geom.place[id]) };
+  return slot === -1 ? null : { slot, ...neoSlotPoint(slot, geom.place[id], geom.turn) };
 }
 // The empty fields drawn dashed once mutants exist (the sheet's rule), and the ring on the
 // slot a change landed in, read after compaction (D9).
@@ -13797,14 +13802,14 @@ function editorNeoMarks(m, fields, geom) {
   if (mutants) {
     map.forEach((key, slot) => {
       if (key !== null) return;
-      const at = neoSlotPoint(slot, null);
+      const at = neoSlotPoint(slot, null, geom.turn);
       out += `<circle class="eslot" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}" aria-hidden="true"/>`;
     });
   }
   const landed = editorSession && editorSession.landed;
   if (Number.isInteger(landed) && map[landed]) {
     const id = Object.keys(fields).find((k) => fields[k][3] !== "ding" && profileKeyOf(fields[k]) === map[landed]);
-    const at = id && neoSlotPoint(landed, geom.place[id]);
+    const at = id && neoSlotPoint(landed, geom.place[id], geom.turn);
     if (at) out += `<circle class="editor-landing editor-new" data-slot="${landed}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${(at.r + 4).toFixed(2)}"/>`;
   }
   return out;
@@ -14369,7 +14374,7 @@ function editorMarkDrop(target) {
     const c = svg.querySelector(`.ehit[data-ring="${target.ring}"][data-i="${target.i}"]`);
     if (c) at = [+c.getAttribute("cx"), +c.getAttribute("cy"), editorDrawnReach(geom, target.ring)];
   } else if (target.kind === "spot" && target.slot !== undefined) {
-    const spot = neoSlotPoint(target.slot, null);
+    const spot = neoSlotPoint(target.slot, null, geom.turn);
     at = [spot.x, spot.y, spot.r / 100];
   } else if (target.kind === "spot" && target.angle !== undefined) {
     const a = target.angle * Math.PI / 180;

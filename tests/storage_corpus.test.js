@@ -355,6 +355,7 @@ test("SC: a refused write on SAVE leaves the stored list unchanged and tells the
 const NEW_HTML = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const OLD_HTML = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_ee5438d0.html.txt"), "utf8");
 const OLD_HTML_C6 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8");
+const MAIN_HTML_A4 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_a4ecfc2e.html.txt"), "utf8");
 const PA_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
 const PA_HIJAZ = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
 
@@ -626,9 +627,9 @@ test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport inta
   }
 });
 
-test("PAU-I: a record 7 (profile plus between) row stays opaque, untouched and unprotected in the shipped client and the c6ef6b58 client", async () => {
+test("PAU-I: a record 7 (profile plus between) row stays opaque, untouched and unprotected in the shipped client, the c6ef6b58 client and main a4ecfc2e", async () => {
   const { createOrigin } = require("./helpers/sandbox.js");
-  for (const [label, html] of [["ee5438d0", OLD_HTML], ["c6ef6b58", OLD_HTML_C6]]) {
+  for (const [label, html] of [["ee5438d0", OLD_HTML], ["c6ef6b58", OLD_HTML_C6], ["a4ecfc2e", MAIN_HTML_A4]]) {
     const origin = createOrigin({ storage: {} });
     const fresh = await sharedBoot(origin, NEW_HTML);
     await saveAcoustic(fresh, PA_AMARA, "ACOUSTIC ONE");
