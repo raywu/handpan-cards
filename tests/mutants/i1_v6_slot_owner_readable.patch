@@ -1,6 +1,7 @@
-# kills: SE-I1-1
+# kills: SE-I1-1: readSavedRecord refuses a v6 record that carries replaces, and still reads a v6 record without it
 # suite: node --test --test-name-pattern ^SE-I1-1..readSavedRecord.refuses.a.v6.record.that.carries.replaces.and.still.reads.a.v6.record.without.it$ tests/editor_model.test.js
 # fault: A v6 record that carries replaces is read as a normal row instead of opaque.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -11093,7 +11093,7 @@

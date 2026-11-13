@@ -1,6 +1,7 @@
-# kills: SE-I1-5
+# kills: SE-I1-5: an edit command that would turn a slot owner into a v6 row is refused
 # suite: node --test --test-name-pattern ^SE-I1-5..an.edit.command.that.would.turn.a.slot.owner.into.a.v6.row.is.refused$ tests/editor_model.test.js
 # fault: An edit of a slot owner into a pinned v6 record is applied, so the row keeps replaces.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -11449,7 +11449,7 @@

@@ -1,6 +1,7 @@
-# kills: SE-I1-2
+# kills: SE-I1-2: savedCandidate refuses a pinned (v6) candidate for replace-builtin, and accepts it for save-as-separate
 # suite: node --test --test-name-pattern ^SE-I1-2..savedCandidate.refuses.a.pinned..v6..candidate.for.replace-builtin.and.accepts.it.for.save-as-separate$ tests/editor_model.test.js
 # fault: savedCandidate accepts a pinned v6 candidate for replace-builtin.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -11392,8 +11392,7 @@

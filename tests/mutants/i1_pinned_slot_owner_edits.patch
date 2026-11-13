@@ -1,6 +1,7 @@
-# kills: SE-I1-3
+# kills: SE-I1-3: editorSaveCommand sends a slot owner with an unreadable (pinned or Neotone) record to save-as-separate
 # suite: node --test --test-name-pattern ^SE-I1-3..editorSaveCommand.sends.a.slot.owner.with.an.unreadable..pinned.or.Neotone..record.to.save-as-separate$ tests/editor_model.test.js
 # fault: A slot owner with an unreadable record is saved as an edit, not separately.
+diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -13329,7 +13329,7 @@

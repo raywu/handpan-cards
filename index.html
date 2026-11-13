@@ -11093,7 +11093,8 @@ function readSavedRecord(record) {
     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
     const pinned = !profiled && innerPinned(record.o);
     const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
-    if ((record.v === INNER_RECORD_VERSION ? !pinned || profiled || savedOwn(record.o, "replaces") : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned)) ||
+    if (record.v === INNER_RECORD_VERSION && savedOwn(record.o, "replaces")) return savedFailure("protected", "opaque-record");
+    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
     let canonical = record.s;
     if (record.v < SHARE_VERSION) {
@@ -11392,9 +11393,9 @@ function savedCandidate(command) {
     return savedFailure("invalid", "staged-candidate");
   const profiled = !!candidate.deck.options.profile;
   if (candidate.record.v !== recordVersionFor(candidate.deck.options, profiled) ||
-      (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)) ||
-      (candidate.record.v === INNER_RECORD_VERSION && command.type === "replace-builtin"))
+      (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)))
     return savedFailure("invalid", "staged-candidate");
+  if (candidate.record.v === INNER_RECORD_VERSION && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
   const record = savedClone(candidate.record);
   const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
   if (command.type === "import" || command.type === "save-as-separate") {
@@ -11431,6 +11432,8 @@ function applySavedCommand(staged, command, candidate) {
   // that staged value, never invokes parse/build/layout work in the commit.
   const attachCandidate = (row, deckValue = candidate.deck) => views.set(row.instanceId,
     { ...row, deck: deckValue, meaning: candidate.meaning, identity: candidate.identity });
+  const held = command.type === "edit" && candidate && candidate.ok ? existing() : null;
+  if (held && candidate.record.v === INNER_RECORD_VERSION && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
   if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
     if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
     const inventoryIdentity = staged.identities.get(candidate.deck.id);
@@ -11449,7 +11452,7 @@ function applySavedCommand(staged, command, candidate) {
   } else if (command.type === "edit") {
     const row = existing();
     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
-    if ((candidate.deck.options.profile || candidate.record.v === INNER_RECORD_VERSION) && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
+    if (candidate.deck.options.profile && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
     const record = savedEditedRecord(row.record, candidate);
     if (!savedEqual(record, row.record)) {
       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
