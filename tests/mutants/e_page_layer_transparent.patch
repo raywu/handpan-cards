@@ -1,19 +1,16 @@
-# kills: the page is a modal dialog with the spec'd anatomy
-# suite: node --test --test-name-pattern ^the.page.is.a.modal.dialog.with.the.spec.d.anatomy$ tests/e2e.test.js
-# The layer goes fully transparent. The surface is capped at 520px, so on any
-# viewport wider than that the practice screen shows through the flanks beside
-# the page - the backdrop the owner asked to be removed, back in the worst
-# possible form: visible, and not tappable.
-# Retargeted at the field-guide rule 2026-11-03: the sheet layer ground goes transparent.
+# kills: EPF: the page layer paints an opaque ground and a disabled mode control dims
+# suite: node --test --test-name-pattern ^EPF..the.page.layer.paints tests/editor_e2e.test.js
+# the page layer goes fully transparent and the practice screen shows through the flanks beside the page
+# The sheet layer ground goes transparent. Re-anchored 2026-11-12 on the editor page.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1397,7 +1397,7 @@ html.about-open{overflow:hidden}
+@@ -1141,7 +1141,7 @@
  /* field-guide:begin */
  #settings-panel, #scale-sheet, #about{color-scheme:light}
  #settings-panel{background:#F6F4ED; color:#242424}
 -#scale-sheet{background:#F6F4ED; color:#242424}
 +#scale-sheet{background:transparent; color:#242424}
- #scale-sheet .sheetsurf, .sheetsurf{background:#F6F4ED; color:#242424}
  #about{background:#F6F4ED; color:#242424}
  #about .abouthead{background:#F6F4ED; border-bottom-color:#8A847B}
+ @media (min-width:1024px) and (min-height:700px){

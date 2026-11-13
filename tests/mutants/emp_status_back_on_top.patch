@@ -1,0 +1,19 @@
+# kills: EMP: the status line sits between the pan and the counts, within 16px of the pan, and stays in view with no scroll at 375x667 and 320x568
+# suite: node --test --test-name-pattern ^EMP..the.status.line.sits.between.the.pan.and.the.counts..within.16px.of.the.pan..and.stays.in.view.with.no.scroll.at.375x667.and.320x568 tests/editor_e2e.test.js
+# note: EMP: the status line sits under the pan, above the counts
+# fault: The status line is built before the pan again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15788,10 +15788,10 @@
+     editorNode("div", { class: "editor-line" },
+       editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off", spellcheck: "false",
+         "aria-label": t("editor.line.aria") })),
++    editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" }),
+     editorNode("div", { class: "editor-panbox" },
+       editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") }),
+       editorNode("p", { id: "editor-empty", text: t("editor.empty") })),
+-    editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" }),
+     editorNode("div", { id: "editor-areas" },
+       editorNode("div", { id: "editor-counts" },
+         ...EDITOR_COUNTS.map((zone) => editorNode("span", { class: "zc", "data-zone": zone }))),

@@ -5,15 +5,15 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17468,7 +17468,6 @@
+@@ -16095,7 +16095,6 @@ function placeMoveBanner() {
  }
  
  /* ---------------- go ---------------- */
 -loadAnalytics();
- sheet.setAttribute("hidden", "");buildSwatches();paintLayout();resyncSheet(true);
+ sheet.setAttribute("hidden", "");
  // Only a newly migrated legacy selection can be missing. Once the collection
  // exists, its tagged preference is authoritative; immutable recovery bytes must
-@@ -17501,6 +17500,7 @@
+@@ -16128,6 +16127,7 @@ function finishSavedBoot() {
      if(result&&typeof result.then==="function")return result.then(finish);
    }else if(routed)selectDeck({kind:"builtin",id:routed},true,false);
    finish();

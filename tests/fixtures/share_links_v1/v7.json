@@ -1,0 +1,523 @@
+{
+ "wireVersion": 7,
+ "encoderCommit": "caaec83b",
+ "note": "Append-only. A link here must open the same deck forever. Entries are never edited; a deliberate change adds an id-map file instead.",
+ "entries": [
+  {
+   "id": "kurd-paired",
+   "link": "7/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+10/pair-r57.r58.r60.r62.r64.r65.r67.r69.r72.-.-.-.-.-.-.-.-.-/e4abb5",
+   "deckId": "custom:cb5fe66a",
+   "name": "",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Bb",
+     3,
+     58,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "9"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false,
+    "profile": {
+     "id": "paired",
+     "rev": 2,
+     "map": [
+      "r57",
+      "r58",
+      "r60",
+      "r62",
+      "r64",
+      "r65",
+      "r67",
+      "r69",
+      "r72",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ]
+    }
+   },
+   "provenance": "encoded by HPE.share.encode at caaec83b (wire v7) and read back by that same commit's decode"
+  },
+  {
+   "id": "pygmy-paired-named",
+   "link": "7/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_uAb5/My+pan/pair-r55.r56.r60.r63.r65.r67.r68.r72.r75.b48.b49.b51.b58.b61.b80.-.-.-/521bc6",
+   "deckId": "custom:ee545915",
+   "name": "My pan",
+   "fields": {
+    "0": [
+     "F",
+     3,
+     53,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G",
+     3,
+     55,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "Ab",
+     3,
+     56,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "Eb",
+     4,
+     63,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "Ab",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "Eb",
+     5,
+     75,
+     "rim",
+     null,
+     "9"
+    ],
+    "101": [
+     "C",
+     3,
+     48,
+     "bottom",
+     null,
+     "U1"
+    ],
+    "102": [
+     "Db",
+     3,
+     49,
+     "bottom",
+     null,
+     "U2"
+    ],
+    "103": [
+     "Eb",
+     3,
+     51,
+     "bottom",
+     null,
+     "U3"
+    ],
+    "104": [
+     "Bb",
+     3,
+     58,
+     "bottom",
+     null,
+     "U4"
+    ],
+    "105": [
+     "Db",
+     4,
+     61,
+     "bottom",
+     null,
+     "U5"
+    ],
+    "106": [
+     "Ab",
+     5,
+     80,
+     "bottom",
+     null,
+     "U6"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "My pan",
+    "mirror": false,
+    "profile": {
+     "id": "paired",
+     "rev": 2,
+     "map": [
+      "r55",
+      "r56",
+      "r60",
+      "r63",
+      "r65",
+      "r67",
+      "r68",
+      "r72",
+      "r75",
+      "b48",
+      "b49",
+      "b51",
+      "b58",
+      "b61",
+      "b80",
+      null,
+      null,
+      null
+     ]
+    }
+   },
+   "provenance": "encoded by HPE.share.encode at caaec83b (wire v7) and read back by that same commit's decode"
+  },
+  {
+   "id": "hijaz-paired-palette-parent",
+   "link": "7/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/*C%23+PHRYGIAN+9/palette-3/parent-phrygian/pair-r56.r59.r61.r62.r65.r66.r68.r71.-.-.-.-.-.-.-.-.-.-/c35ea2",
+   "deckId": "custom:626198f8",
+   "name": "",
+   "fields": {
+    "0": [
+     "C#",
+     3,
+     49,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "G#",
+     3,
+     56,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "B",
+     3,
+     59,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "C#",
+     4,
+     61,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "F#",
+     4,
+     66,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "G#",
+     4,
+     68,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "B",
+     4,
+     71,
+     "rim",
+     null,
+     "8"
+    ]
+   },
+   "options": {
+    "palette": 2,
+    "parent": 3,
+    "name": "",
+    "mirror": false,
+    "profile": {
+     "id": "paired",
+     "rev": 2,
+     "map": [
+      "r56",
+      "r59",
+      "r61",
+      "r62",
+      "r65",
+      "r66",
+      "r68",
+      "r71",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ]
+    }
+   },
+   "provenance": "encoded by HPE.share.encode at caaec83b (wire v7) and read back by that same commit's decode"
+  },
+  {
+   "id": "amara10-paired",
+   "link": "7/(D3)_A3_C4_D4_E4_F4_G4_A4_C5_D5/*D+AEOLIAN+10/pair-r57.r60.r62.r64.r65.r67.r69.r72.r74.-.-.-.-.-.-.-.-.-/de3364",
+   "deckId": "custom:b174242c",
+   "name": "",
+   "fields": {
+    "0": [
+     "D",
+     3,
+     50,
+     "ding",
+     null,
+     "Ding"
+    ],
+    "1": [
+     "A",
+     3,
+     57,
+     "rim",
+     null,
+     "1"
+    ],
+    "2": [
+     "C",
+     4,
+     60,
+     "rim",
+     null,
+     "2"
+    ],
+    "3": [
+     "D",
+     4,
+     62,
+     "rim",
+     null,
+     "3"
+    ],
+    "4": [
+     "E",
+     4,
+     64,
+     "rim",
+     null,
+     "4"
+    ],
+    "5": [
+     "F",
+     4,
+     65,
+     "rim",
+     null,
+     "5"
+    ],
+    "6": [
+     "G",
+     4,
+     67,
+     "rim",
+     null,
+     "6"
+    ],
+    "7": [
+     "A",
+     4,
+     69,
+     "rim",
+     null,
+     "7"
+    ],
+    "8": [
+     "C",
+     5,
+     72,
+     "rim",
+     null,
+     "8"
+    ],
+    "9": [
+     "D",
+     5,
+     74,
+     "rim",
+     null,
+     "9"
+    ]
+   },
+   "options": {
+    "palette": 0,
+    "parent": null,
+    "name": "",
+    "mirror": false,
+    "profile": {
+     "id": "paired",
+     "rev": 2,
+     "map": [
+      "r57",
+      "r60",
+      "r62",
+      "r64",
+      "r65",
+      "r67",
+      "r69",
+      "r72",
+      "r74",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+     ]
+    }
+   },
+   "provenance": "encoded by HPE.share.encode at caaec83b (wire v7) and read back by that same commit's decode"
+  }
+ ]
+}

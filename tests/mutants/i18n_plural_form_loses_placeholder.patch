@@ -1,15 +1,15 @@
 # kills: I18N: every table has the keys of en and keeps every placeholder
-# suite: node --test --test-reporter=tap --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
-# per-form-loss: frozen per-form UI translation contract.
+# suite: node --test --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# per-form-loss: one plural form of a German message drops its {n}.
 diff --git a/data/i18n/de.json b/data/i18n/de.json
 --- a/data/i18n/de.json
 +++ b/data/i18n/de.json
-@@ -119,7 +119,7 @@
-   "sheet.hit_label": "{name}, {ring}, Platz {label}, {place}",
-   "sheet.ring_back": "Anzahl der Töne ({ring}): wieder {n}. Die früheren Plätze wurden wiederhergestellt.",
-   "sheet.ring_reset": {
--    "one": "{ring}: jetzt {n} Ton. Die Plätze wurden zurückgesetzt.",
-+    "one": "{ring}: jetzt  Ton. Die Plätze wurden zurückgesetzt.",
-     "other": "{ring}: jetzt {n} Töne. Die Plätze wurden zurückgesetzt."
+@@ -134,7 +134,7 @@
+   "saved.sessionImportAckPending": "Diese geteilte Skala ist vorübergehend, und ihre Ansicht konnte nicht aktualisiert werden. Lass diesen Tab offen und behalte den eingehenden Link. Beim Neuladen oder Schließen gehen vorübergehende Änderungen verloren.",
+   "move.notice": {
+     "one": "Deine gespeicherte Skala ist hierher umgezogen.",
+-    "other": "Deine {n} gespeicherten Skalen sind hierher umgezogen."
++    "other": "Deine  gespeicherten Skalen sind hierher umgezogen."
    },
-   "sheet.put_down": " Das Tonfeld ist nicht mehr ausgewählt.",
+   "move.failed": "Deine gespeicherten Skalen sind noch unter der alten Adresse. Öffne die alte Adresse erneut, um sie zu verschieben.",
+   "move.banner": {

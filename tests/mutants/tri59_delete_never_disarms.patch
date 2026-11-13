@@ -1,0 +1,14 @@
+# kills: TRI59 delete is disarmed by tapping anywhere else in the editor
+# suite: node --test --test-name-pattern ^TRI59.delete.is.disarmed tests/editor_e2e.test.js
+# fault: Tapping elsewhere leaves DELETE armed, so a later stray tap deletes the scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16957,6 +16957,7 @@ function editorWire() {
+   if (del) del.onclick = editorMenuPick(editorDeleteTap);
+   editorEl("editor").addEventListener("pointerdown", (e) => {
+     const menu = editorEl("editor-menu");
++    if (true) return;
+     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
+     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();
+   }, true);

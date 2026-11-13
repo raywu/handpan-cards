@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13448,7 +13448,7 @@ function updateSavedStatus() {
+@@ -14813,7 +14813,7 @@ function updateSavedStatus() {
    const protectedData=savedMode === "protected" || !!savedRecovery;
    let text=protectedData?t("saved.recovery"):savedMode === "session"?t("saved.session"):"";
    if(!text && savedIssue?.detail==="acknowledged-publication-pending")text=t("saved.ackPending");
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if(false)text+=(text?" ":"")+t("saved.legacy");
    if(el.textContent!==text)el.textContent=text;
    el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");
-   document.getElementById("scale-conflict-separate").textContent=t("saved.separate");
+   refreshMoveBanner();

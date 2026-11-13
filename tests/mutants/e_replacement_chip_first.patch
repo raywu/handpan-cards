@@ -1,5 +1,5 @@
-# kills: SD: a replacement chip sits where its seed sat at 380px, selected and with a pencil
-# suite: node --test --test-name-pattern SD:.a.replacement.chip.sits tests/e2e.test.js
+# kills: SV8 U1b: a replacement keeps its seed's slot in the strip, after the plain saved scales
+# suite: node --test --test-name-pattern ^SV8.U1b: tests/app.test.js
 # A replacement jumps to the front of the strip instead of taking its seed's slot.
 # Approved retained contract mapped to the transactional instance adapter.
 diff --git a/index.html b/index.html

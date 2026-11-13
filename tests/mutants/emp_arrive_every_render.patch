@@ -1,0 +1,16 @@
+# kills: EMP: the arrival cue replays for a different error, not for a re-render of the same one, and again after a clear
+# suite: node --test --test-name-pattern ^EMP..the.arrival.cue.replays.for.a.different.error..not.for.a.re.render.of.the.same.one..and.again.after.a.clear tests/editor_e2e.test.js
+# note: EMP: the arrive animation plays once per new error text
+# fault: The arrive animation restarts on every render.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15864,7 +15864,7 @@
+   if (s.error) {
+     status.setAttribute("data-kind", "error");
+     status.textContent = s.error;
+-    if (s.error !== s.lastError) {
++    if (true) {
+       s.lastError = s.error;
+       status.classList.remove("arrive");
+       void status.offsetWidth;

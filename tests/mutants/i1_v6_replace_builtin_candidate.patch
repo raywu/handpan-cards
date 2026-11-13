@@ -1,0 +1,14 @@
+# kills: SE-I1-2: savedCandidate refuses a pinned (v6) candidate for replace-builtin, and accepts it for save-as-separate
+# suite: node --test --test-name-pattern ^SE-I1-2..savedCandidate.refuses.a.pinned..v6..candidate.for.replace-builtin..and.accepts.it.for.save-as-separate$ tests/editor_model.test.js
+# fault: savedCandidate accepts a pinned v6 candidate for replace-builtin.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11395,7 +11395,6 @@
+   if (candidate.record.v !== recordVersionFor(candidate.deck.options, profiled) ||
+       (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)))
+     return savedFailure("invalid", "staged-candidate");
+-  if (candidate.record.v === INNER_RECORD_VERSION && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
+   const record = savedClone(candidate.record);
+   const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+   if (command.type === "import" || command.type === "save-as-separate") {
