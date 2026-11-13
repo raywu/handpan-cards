@@ -4,13 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16937,7 +16937,8 @@ function editorWire() {
+@@ -14543,7 +14543,7 @@ function editorWire() {
+   editorEl("editor-oct-up").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct + 1 });
    editorEl("editor-sharps").onclick = () => editorTrayView({ flats: false });
    editorEl("editor-flats").onclick = () => editorTrayView({ flats: true });
-   editorEl("editor-palette").onclick = editorPaletteTap;
 -  editorEl("editor-anchor-one").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "one"), () => t("sheet.anchor_one_on"));
 +  editorEl("editor-anchor-one").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "between"), () => t("sheet.anchor_one_on"));
-+
    editorEl("editor-anchor-between").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "between"), () => t("sheet.anchor_between_on"));
    for (const kind of ["standard", "neotone"]) {
      editorEl("editor-type-" + kind).onclick = () => editorSetPanType(kind);
