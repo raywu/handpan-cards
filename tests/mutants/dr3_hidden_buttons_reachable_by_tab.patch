@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14358,7 +14358,7 @@ sheet.addEventListener("keydown", e => {
-        scaleBox,
-        shut ? lipBtn : editingId ? genBtn : nextBtn,
-        editingId && !shut ? delBtn : null])
+@@ -15158,7 +15158,7 @@ function panelStops() {
+           // Eng review amendment 1: the Resources links join the Tab trap
+           // after the print controls, in DOM order.
+           ...(grid ? [...prints, ...scales, ...res, lang] : [...scales, ...prints, ...res, lang])]
 -    .filter(isStop);
 +    .filter((el) => !!el && !el.disabled);
-   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
-   cycleTabStops(stops, e);
- });
+ }
+ function openPanel() {
+   navigationGeneration++;

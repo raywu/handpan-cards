@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -962,7 +962,7 @@ footer.seq{row-gap:var(--sp-1)}
- /* The footer lip: open, the wrappers generate no box, so the footer is the layout it always was. */
- #scale-foot, #scale-footclip, #scale-footslide{display:contents}
- #scale-lip[hidden]{display:none}
+@@ -871,7 +871,7 @@ footer.seq{row-gap:var(--sp-1)}
+ .ctlrow{display:flex; align-items:center; justify-content:space-between;
+   gap:var(--sp-3); flex-wrap:wrap}
+ .mirror{display:flex; gap:var(--sp-2)}
 -:root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:calc(var(--lip-zone) - var(--lip-foot))}
 +:root{--lip-ease:cubic-bezier(.3,0,.2,1); --lip-foot:9px; --lip-zone:25px; --lip-over:0px}
- #scale-sheet.lipped .sheetsurf{padding-bottom:env(safe-area-inset-bottom)}
- #scale-sheet.lipped:not(.tiny) .sheetbody{flex-grow:1}
- #scale-sheet.lipped #scale-foot{display:block; position:relative; flex:0 0 auto; height:var(--lip-foot);
+ /* ---- Edit state (Phase 4). The rows below are the ONLY difference between
+    the create sheet and the Edit sheet; SAVE CHANGES reuses #scale-generate so
+    there is never a second primary button on the surface. */

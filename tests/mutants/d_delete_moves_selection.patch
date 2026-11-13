@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13525,7 +13525,7 @@ savedSnapshotListener=event=>{
+@@ -14855,7 +14855,7 @@ savedSnapshotListener=event=>{
    const beforeRow=event.previous?.entries.find(row=>row.instanceId===oldSelection.id);
    const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
    const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
 -  selection=savedResolve(selection,savedState,savedEntries);
 +  selection=savedFallback(savedState,savedEntries);
-   const dirty=sheetOpen && sheetBaseline!==sheetKey();
-   if(dirty && conflictVisible && event.source==="remote"){
-     const deleted=editingBase?.selection.kind==="saved" && !savedEntries.has(editingBase.selection.id);
+   // Preference ACKs and unchanged rereads must not detach an active pointer
+   // target. Rebuild only when the visible collection or local selection changes.
+   const chipsChanged = !event.previous ||
