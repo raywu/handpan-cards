@@ -18,12 +18,12 @@
 diff --git a/tests/mutation_check.sh b/tests/mutation_check.sh
 --- a/tests/mutation_check.sh
 +++ b/tests/mutation_check.sh
-@@ -210,8 +210,8 @@ for p in "${PATCHES[@]}"; do
+@@ -301,8 +301,8 @@ for p in "${PATCHES[@]}"; do
    # `case "$base" in e_*)`, and d_page_background_still_announced.patch - an
    # e2e mutant under a `d_` name - was reported SURVIVED by a suite that had
    # skipped itself for want of a browser.
 -  case "$cmd" in
--    *tests/e2e.test.js*|*tests/harness.test.js*|*tests/drawer_grid.test.js*|*tests/drawer_seats.test.js*|*tests/drawer_drag.test.js*)
+-    *tests/e2e.test.js*|*tests/harness.test.js*)
 +  case "$base" in
 +    e_*)
        if [ -z "$HAVE_BROWSER" ] || [ "$HAVE_BROWSER" = "null" ]; then

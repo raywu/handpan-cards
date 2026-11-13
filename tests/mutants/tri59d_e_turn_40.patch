@@ -1,0 +1,15 @@
+# kills: NA: with a mutant note and between, every place angle is the fixture angle plus 20 and geom.turn is 20
+# suite: node --test --test-name-pattern ^NA..with.a.mutant.note.and.between tests/layout.test.js
+# why: The between turn is 40 degrees instead of 20.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -852,7 +852,7 @@
+   var ZONE_LETTER = { rim: "r", inner: "i", bottom: "b" };
+ 
+   // The turn of "#1 / #2" on a pan with mutant notes: half a tonefield step.
+-  var PROFILE_TURN = 180 / PROFILE.tonefields;
++  var PROFILE_TURN = 360 / PROFILE.tonefields;
+ 
+   // The tonefield angles of a pan turned by `turn` degrees (0 or absent: the
+   // frozen angles). PROFILE.angles itself is never changed.

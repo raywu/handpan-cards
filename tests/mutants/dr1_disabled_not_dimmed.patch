@@ -1,15 +1,16 @@
-# kills: DR1 hint row dimming: the empty hint shows with dimmed controls on an empty scale, and a disabled drawer switch dims
-# suite: node --test --test-name-pattern ^DR1.hint.row.dimming.* tests/e2e.test.js
-# A disabled drawer switch paints like an enabled one (field guide disabled colour dropped). Retargeted at the field-guide block 2026-11-03.
+# kills: EPF: the page layer paints an opaque ground and a disabled mode control dims
+# suite: node --test --test-name-pattern ^EPF..the.page.layer.paints tests/editor_e2e.test.js
+# a disabled mode control paints like an enabled one
+# A disabled mode control paints like an enabled one (disabled colour dropped). Re-anchored 2026-11-12.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1429,7 +1429,7 @@ html.about-open{overflow:hidden}
+@@ -1172,7 +1172,7 @@
    background:#6756B5; color:#FFFFFF; border-color:#6756B5}
  #settings-panel .mode.on:active, #scale-sheet .mode.on:active{background:#5A49A6}
  #settings-panel .mode:disabled, #scale-sheet .mode:disabled, #settings-panel .prints button:disabled{
 -  background:#F6F4ED; color:#8A847B; border-color:#8A847B; opacity:1}
 +  background:#F6F4ED; color:#242424; border-color:#8A847B; opacity:1}
  
- #scale-sheet #scale-title{color:#242424}
- #scale-sheet .sheetlabel, #scale-sheet .sheethint, #scale-sheet #scale-parse, #scale-sheet #scale-refusal,
+ #scale-sheet .sheetlabel,#scale-sheet .sheethint {color:#5E5850}
+ 

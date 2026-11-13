@@ -1,0 +1,15 @@
+# kills: TRI59d A1: the drop ring on a turned pan lands on the turned slot
+# suite: node --test --test-name-pattern ^TRI59d.A1..the.drop.ring tests/app.test.js
+# why: The drop ring is placed without the pan's turn, so on a turned pan it sits at the frozen angle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14374,7 +14374,7 @@ function editorMarkDrop(target) {
+     const c = svg.querySelector(`.ehit[data-ring="${target.ring}"][data-i="${target.i}"]`);
+     if (c) at = [+c.getAttribute("cx"), +c.getAttribute("cy"), editorDrawnReach(geom, target.ring)];
+   } else if (target.kind === "spot" && target.slot !== undefined) {
+-    const spot = neoSlotPoint(target.slot, null, geom.turn);
++    const spot = neoSlotPoint(target.slot, null);
+     at = [spot.x, spot.y, spot.r / 100];
+   } else if (target.kind === "spot" && target.angle !== undefined) {
+     const a = target.angle * Math.PI / 180;

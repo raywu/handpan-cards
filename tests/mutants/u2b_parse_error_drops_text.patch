@@ -1,0 +1,15 @@
+# kills: invalid text stays in the line with the parse error until Escape, and the diagram is unchanged
+# suite: node --test --test-name-pattern ^invalid.text.stays.in.the.line.with.the.parse.error.until.Escape..and.the.diagram.is.unchanged$ tests/editor_e2e.test.js
+# fault: A refused commit rewrites the line, discarding what the player typed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16002,7 +16002,7 @@ function editorRender() {
+   const m = s.history.present;
+   const empty = editorIsEmpty(m);
+   const line = editorEl("editor-line");
+-  if (!s.editing) line.value = editorLineText(m);
++  line.value = editorLineText(m);
+   const nameBox = editorEl("editor-name");
+   if (!s.naming) nameBox.value = m.options.name || "";
+   nameBox.placeholder = editorAutoName(m);

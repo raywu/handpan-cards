@@ -1,0 +1,15 @@
+# kills: TRI59d A1: the empty-field marks and the landing ring of a turned pan sit at the turned angles
+# suite: node --test --test-name-pattern ^TRI59d.A1..the.empty-field.marks tests/app.test.js
+# why: The empty-field marks of a turned pan are placed without the turn.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16213,7 +16213,7 @@ function editorNeoMarks(m, fields, geom) {
+   if (mutants) {
+     map.forEach((key, slot) => {
+       if (key !== null) return;
+-      const at = neoSlotPoint(slot, null, geom.turn);
++      const at = neoSlotPoint(slot, null);
+       out += `<circle class="eslot" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}" aria-hidden="true"/>`;
+     });
+   }

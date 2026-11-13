@@ -1,0 +1,15 @@
+# kills: TRI59d record 7 is read exactly when the record is a profile carrying between
+# suite: node --test --test-name-pattern ^TRI59d.record.7.is.read tests/persist.test.js
+# why: The newest record version stays 6, so a record 7 is refused as needing a newer app.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11543,7 +11543,7 @@ const SHARE_VERSION = HPE.share.RECORD_VERSION;
+ const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
+ const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
+ const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
+-const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
++const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+ const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
+   o.angles.inner.some(a => a !== null && a !== undefined);
+ const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
