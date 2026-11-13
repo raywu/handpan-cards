@@ -11646,6 +11646,24 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.notDeepStrictEqual(want(20), want(0));
   });
 
+  test("TRI59d A1: the drop ring on a turned pan lands on the turned slot", async () => {
+    const app = boot();
+    const ring = (extra) => plain(app.get(`(() => {
+      const m = editorLoad(${JSON.stringify(MUTANT_PYGMY)}, ${JSON.stringify(profileOf(app, MUTANT_PYGMY, extra))}).value;
+      const added = [];
+      const svg = { querySelectorAll: () => [], querySelector: () => null, appendChild: (c) => added.push(c) };
+      const saveQuery = document.querySelector, saveCreate = document.createElementNS, saveSession = editorSession;
+      document.querySelector = () => svg;
+      document.createElementNS = () => { const a = {}; return { setAttribute: (k, v) => { a[k] = v; }, a }; };
+      editorSession = { history: { present: m } };
+      try { editorMarkDrop({ kind: "spot", slot: 15 }); } finally { document.querySelector = saveQuery; document.createElementNS = saveCreate; editorSession = saveSession; }
+      return [+added[0].a.cx, +added[0].a.cy];
+    })()`));
+    const want = (turn) => plain(app.get(`(() => { const p = neoSlotPoint(15, null, ${turn}); return [+p.x.toFixed(2), +p.y.toFixed(2)]; })()`));
+    assert.deepStrictEqual(ring({}), want(0));
+    assert.deepStrictEqual(ring({ anchor: "between" }), want(20));
+  });
+
   test("TRI59d A1: the editor drag snap reads the turned angles from geom.turn", async () => {
     const app = boot();
     const hit = (extra, deg) => plain(app.get(`(() => {
