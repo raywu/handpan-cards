@@ -5459,7 +5459,7 @@ const S_HAS_BOTTOM = { plain: false, bottom: true, inner: false, innerBottom: tr
  * Lane DR2a of docs/plans/2026-10-07-scale-drawer-design-spec.md, read through
  * plan section 20.17. Unit layer: every expectation below is a literal table or
  * a small model written here from the spec; none is read from the app's own
- * functions. The browser layer is tests/drawer_seats.test.js. */
+ * functions. The browser layer is tests/editor_e2e.test.js. */
 const D2_NAT = ["C", "D", "E", "F", "G", "A", "B"];
 /** n natural notes from `start` ("E3") upward. */
 function d2Nat(start, n) {
