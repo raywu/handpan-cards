@@ -1287,8 +1287,14 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-name{width:100%; box-sizing:border-box; min-height:44px; padding:9px var(--sp-3); font:500 16px/1.3 "Nunito Sans"; color:#242424;
   background:#fff; border:1px solid #8A847B; border-radius:8px; text-overflow:ellipsis}
 #editor-name::placeholder{color:#6B665E; opacity:1}
-#editor-status{flex:0 0 auto; min-height:40px; margin:0; font:600 12px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2)}
+#editor-status{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
+@media (max-width:420px){#editor-status{min-height:56px}}
+#editor.dragging #editor-status{transform:translateY(var(--ed-status-shift,0px))}
+#editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:8px 12px}
 #editor-status[data-kind="error"]::before{content:"\26A0"}
+#editor-status.arrive{animation:editor-arrive 180ms cubic-bezier(.2,.8,.2,1)}
+@keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}
+@media (prefers-reduced-motion:reduce){#editor-status.arrive{animation:none}}
 #editor-status .mode{min-height:32px; padding:4px 10px}
 #editor .editor-panbox{flex:1 1 0; min-height:0; display:flex; align-items:center; justify-content:center; position:relative;
   transform-origin:50% 0; transition:transform 220ms cubic-bezier(.2,.8,.2,1)}
@@ -1300,9 +1306,11 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-counts{display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); font:500 13px/20px "Nunito Sans"}
 #editor-counts .zc.full{font-weight:700}
 #editor-tabs{flex:0 0 auto; display:flex; gap:0; border-bottom:1px solid #8A847B}
-#editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#242424; font-weight:600;
+#editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5A53; font-weight:600;
   border-bottom:3px solid transparent; margin-bottom:-1px}
-#editor-tabs .edtab[aria-selected="true"]{border-bottom-color:#6756B5}
+#scale-sheet #editor-tabs .edtab{background:none; color:#5E5A53; border-color:transparent}
+#scale-sheet #editor-tabs .edtab:hover, #scale-sheet #editor-tabs .edtab:active{background:none; color:#242424; border-color:transparent}
+#scale-sheet #editor-tabs .edtab[aria-selected="true"]{color:#242424; border-bottom-color:#6756B5}
 #editor-panels{flex:0 0 auto; min-height:var(--ed-panel-h,168px); display:flex; flex-direction:column}
 #editor-panels [role="tabpanel"]{display:flex; flex-direction:column; gap:var(--sp-2)}
 #editor-panels [role="tabpanel"][hidden]{display:none}
@@ -1310,9 +1318,8 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor .editor-accidentals .mode{border-radius:0; min-width:44px; min-height:44px; padding-inline:var(--sp-2)}
 #editor .editor-accidentals .mode:first-child{border-radius:8px 0 0 8px}
 #editor .editor-accidentals .mode:last-child{border-radius:0 8px 8px 0; border-left-width:0}
-#editor .editor-palette-row{display:flex; gap:var(--sp-1); align-items:flex-start; flex-wrap:wrap}
-#editor .editor-palette-row #editor-palette{flex:0 0 auto; min-width:44px; min-height:44px}
-#editor .editor-palette-row #editor-swatches{flex:1 1 200px}
+#editor .editor-palette-row{display:flex; flex-direction:column; gap:var(--sp-1)}
+#editor-palette-label{margin:0; font:600 12px/1.2 "Nunito Sans"; letter-spacing:.04em; text-transform:uppercase; color:#5E5A53}
 #editor-undo.covered{visibility:hidden}
 #editor .editor-toolbar .rs-short{display:none}
 @media (max-width:599px){#editor .editor-toolbar .rs-full{display:none} #editor .editor-toolbar .rs-short{display:inline}}
@@ -1370,11 +1377,8 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-oct-label{font:600 11px/1 "Nunito Sans"; opacity:.75; white-space:nowrap}
 #editor-oct{text-align:center; font:700 15px/1 "Nunito Sans"}
 #editor-flats{margin-left:auto; padding-inline:var(--sp-3)}
-#editor-palette.on{background:#242424; border-color:#242424}
-#editor-palette .pal-dot{display:block; width:18px; height:18px; margin:auto; border-radius:50%; background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%); box-shadow:0 0 0 1px #242424}
-#editor-palette.on .pal-dot{box-shadow:0 0 0 2px #F6F4ED}
-#editor-swatches{display:grid; grid-template-columns:repeat(5,minmax(44px,1fr)); gap:var(--sp-1)}
-#editor-swatches[hidden], #editor-notes[hidden]{display:none}
+#editor-swatches{display:grid; grid-template-columns:repeat(5,44px); column-gap:var(--sp-1)}
+#editor-notes[hidden]{display:none}
 #editor-swatches .dot{min-width:44px; min-height:44px; border:none; padding:0; background:none; position:relative; cursor:pointer}
 #editor-swatches .dot::after{content:""; position:absolute; left:50%; top:50%; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%;
   background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%); box-shadow:0 0 0 1px #8A847B}
@@ -15814,7 +15818,7 @@ function editorOpen(edit) {
   const failed = model.ok === false;
   const start = failed ? editorEmptyModel() : model;
   editorSession = { history: editorHistoryNew(start), base: start, editing: false, error: failed ? reasonText(model) : "",
-    notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", swatches: false, tab: "scale", menu: false, naming: false, nameTouched: false };
+    notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", tab: "scale", menu: false, naming: false, nameTouched: false };
   sheet.classList.add("onepanel");
   const button = (id, key, cls) => editorNode("button", { id, type: "button", class: cls || "mode", text: t(key) });
   const root = editorNode("div", { id: "editor", class: DRAG_ON_TOUCH ? "dragtouch" : "" },
@@ -15826,10 +15830,10 @@ function editorOpen(edit) {
     editorNode("div", { class: "editor-line" },
       editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off", spellcheck: "false",
         "aria-label": t("editor.line.aria") })),
-    editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" }),
     editorNode("div", { class: "editor-panbox" },
       editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") }),
       editorNode("p", { id: "editor-empty", text: t("editor.empty") })),
+    editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" }),
     editorNode("div", { id: "editor-areas" },
       editorNode("div", { id: "editor-counts" },
         ...EDITOR_COUNTS.map((zone) => editorNode("span", { class: "zc", "data-zone": zone }))),
@@ -15857,9 +15861,8 @@ function editorOpen(edit) {
           button("editor-anchor-one", "sheet.anchor_one"),
           editorNode("button", { id: "editor-anchor-between", type: "button", class: "mode", text: t("sheet.anchor_between"), "aria-label": t("sheet.anchor_between.aria") })),
         editorNode("div", { class: "editor-palette-row" },
-          editorNode("button", { id: "editor-palette", type: "button", class: "mode", "aria-label": t("editor.palette"), "aria-expanded": "false", "aria-controls": "editor-swatches" },
-            editorNode("span", { class: "pal-dot" })),
-          editorNode("div", { id: "editor-swatches", role: "group", "aria-label": t("editor.palette"), hidden: true })))),
+          editorNode("p", { id: "editor-palette-label", text: t("editor.palette") }),
+          editorNode("div", { id: "editor-swatches", role: "group", "aria-labelledby": "editor-palette-label" })))),
     editorNode("div", { class: "editor-toolbar" },
       button("editor-undo", "editor.undo"), button("editor-save", "editor.save", "mode primary"),
       editorNode("button", { id: "editor-more", type: "button", class: "mode", text: "\u2026", "aria-label": t("editor.more.aria"), "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "editor-menu" }),
@@ -15873,6 +15876,8 @@ function editorOpen(edit) {
         editorNode("div", { class: "dlg-actions" },
           button("editor-dlg-save", "editor.dlg.save"), button("editor-dlg-discard", "editor.dlg.discard"), button("editor-dlg-keep", "editor.dlg.keep")))));
   sheet.appendChild(root);
+  root.addEventListener("pointerdown", editorDragReserveMeasure, true);
+  new MutationObserver(() => editorDragReserveApply(root)).observe(root, { attributes: true, attributeFilter: ["class"] });
   editorWire();
   editorRender();
   editorEl("editor-back").focus();
@@ -15899,9 +15904,16 @@ function editorRender() {
   const status = editorEl("editor-status");
   status.textContent = "";
   status.removeAttribute("data-kind");
+  if (!s.error) s.lastError = "";
   if (s.error) {
     status.setAttribute("data-kind", "error");
     status.textContent = s.error;
+    if (s.error !== s.lastError) {
+      s.lastError = s.error;
+      status.classList.remove("arrive");
+      void status.offsetWidth;
+      status.classList.add("arrive");
+    }
   } else if (s.held) {
     status.appendChild(document.createTextNode(t("editor.held", { name: editorHeldName() })));
     const cancel = editorNode("button", { id: "editor-cancel", type: "button", class: "mode", text: t("editor.cancel") });
@@ -16042,17 +16054,8 @@ function editorRenderTray(m) {
   editorRenderPalette(m);
 }
 function editorRenderPalette(m) {
-  const open = editorSession.swatches;
   const current = m.options.palette || 0;
-  const chip = editorEl("editor-palette");
-  const colors = HPE.select.PALETTES[current];
-  chip.firstChild.style.setProperty("--dga", colors.root);
-  chip.firstChild.style.setProperty("--dgb", colors.tone);
-  chip.setAttribute("aria-expanded", String(open));
-  chip.classList.toggle("on", open);
   const box = editorEl("editor-swatches");
-  box.hidden = !open;
-  if (!open) return;
   if (!box.children.length) {
     HPE.select.PALETTES.forEach((p, i) => {
       const b = editorNode("button", { type: "button", class: "dot", "aria-label": t("editor.palette_n", { n: i + 1 }), "data-palette": String(i) });
@@ -16069,15 +16072,8 @@ function editorRenderPalette(m) {
 }
 function editorPickPalette(i) {
   const s = editorSession;
-  if (!s || s.dialog) return;
-  s.swatches = false;
+  if (!s || s.dialog || (s.editing && s.error)) return;
   editorDo((m) => editorSetPalette(m, i));
-  editorRender();
-}
-function editorPaletteTap() {
-  const s = editorSession;
-  if (!s || s.dialog || s.editing) return;
-  s.swatches = !s.swatches;
   editorRender();
 }
 function editorRenderLayout(m) {
@@ -16127,7 +16123,6 @@ function editorRenderTabs() {
     const b = editorEl("editor-tab-" + tab);
     b.setAttribute("aria-selected", String(on));
     b.tabIndex = on ? 0 : -1;
-    b.classList.toggle("on", on);
     const panel = editorEl("editor-panel-" + tab);
     if (on) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
   }
@@ -16607,6 +16602,10 @@ function editorMagnify(panRect, freedPx, viewport) {
   if (!(panRect.height > 0) || !(panRect.width > 0)) return 1;
   return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
 }
+function editorStatusBelow() {
+  const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();
+  return editorEl("editor-status").getBoundingClientRect().top >= box.bottom - 1;
+}
 function editorDragMeasure() {
   const root = editorEl("editor");
   const box = root.querySelector(".editor-panbox").getBoundingClientRect();
@@ -16616,6 +16615,23 @@ function editorDragMeasure() {
   const wide = svg.viewBox.baseVal.width;
   const drawn = svg.getBoundingClientRect().width * (wide - 2 * EDITOR_MAG_PAD) / wide;
   return editorMagnify({ width: drawn, height: box.height }, room, { width: window.innerWidth - 2 * EDITOR_MAG_EDGE });
+}
+let editorDragReserve = { cap: Infinity, drop: 0 };
+function editorDragReserveMeasure(e) {
+  const root = editorEl("editor");
+  if (!root || root.classList.contains("dragging") || !root.contains(e.target) || !editorStatusBelow()) {
+    editorDragReserve = { cap: Infinity, drop: 0 };
+    return;
+  }
+  const box = root.querySelector(".editor-panbox").getBoundingClientRect();
+  const room = root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - box.bottom - editorEl("editor-status").offsetHeight;
+  editorDragReserve = { cap: editorMagnify(box, room, { width: Infinity }), drop: box.height };
+}
+function editorDragReserveApply(root) {
+  if (!root.classList.contains("dragging")) return;
+  const mag = Math.min(parseFloat(root.style.getPropertyValue("--ed-mag")) || 1, editorDragReserve.cap);
+  root.style.setProperty("--ed-mag", String(mag));
+  root.style.setProperty("--ed-status-shift", editorDragReserve.drop * (mag - 1) + "px");
 }
 let editorSettleTimer = 0;
 function editorDragRestore() {
@@ -16894,10 +16910,7 @@ function editorWire() {
     const s = editorSession;
     if (!s || s.dialog) return;
     s.naming = true;
-    if (s.editing) {
-      editorCommitLine();
-      if (s.editing) editorCancelEdit();
-    }
+    if (s.editing) editorCommitLine();
   };
   nameBox.onblur = editorCommitName;
   nameBox.onkeydown = (e) => {
@@ -16931,7 +16944,6 @@ function editorWire() {
   editorEl("editor-oct-up").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct + 1 });
   editorEl("editor-sharps").onclick = () => editorTrayView({ flats: false });
   editorEl("editor-flats").onclick = () => editorTrayView({ flats: true });
-  editorEl("editor-palette").onclick = editorPaletteTap;
   editorEl("editor-anchor-one").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "one"), () => t("sheet.anchor_one_on"));
   editorEl("editor-anchor-between").onclick = () => editorLayoutTap((m) => editorSetAnchor(m, "between"), () => t("sheet.anchor_between_on"));
   for (const kind of ["standard", "neotone"]) {

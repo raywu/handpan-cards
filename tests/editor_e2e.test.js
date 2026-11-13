@@ -1832,48 +1832,45 @@ function run() {
       assert.strictEqual(await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect(); return Math.abs(q("editor-sharps").top - q("editor-flats").top) < 2 && q("editor-flats").left >= q("editor-sharps").right - 1;`), true, "Sharps then Flats on one row");
       assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "Scale tab");
       await b.click("#editor-tab-layout");
-      assert.deepStrictEqual(await inView(["editor-palette", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
-      assert.deepStrictEqual(await big(["editor-palette", "editor-anchor-one", "editor-anchor-between"]), [true, true, true]);
+      assert.deepStrictEqual(await inView(["editor-swatches", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
+      assert.deepStrictEqual(await big(["editor-swatches", "editor-anchor-one", "editor-anchor-between"]), [true, true, true]);
       assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "Layout tab");
     });
 
-    test("the palette chip opens ten 44px swatches in the Layout tab, with no scroll at 375x667, and a pick recolours the chip and closes", async () => {
+    test("EPF: the Layout tab shows ten 44px palette dots under a visible label with no chip, with no scroll at 375x667, and one tap picks", async () => {
       await setup(BOTTOM);
-      const dot = () => b.eval(`return getComputedStyle(document.querySelector("#editor-palette .pal-dot")).backgroundImage;`);
-      const fillBefore = await dot();
-      await b.click("#editor-palette");
-      const open = await b.eval(`const g = document.getElementById("editor-swatches"); const dots = [...g.querySelectorAll("button")];
-        return { n: dots.length, tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), notes: document.getElementById("editor-panel-scale").hasAttribute("hidden"),
-          pressed: document.getElementById("editor-palette").getAttribute("aria-expanded"), names: dots.slice(0, 2).map((d) => d.getAttribute("aria-label")) };`);
-      assert.deepStrictEqual(open, { n: 10, tall: true, notes: true, pressed: "true", names: ["Card palette 1", "Card palette 2"] });
-      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "swatches open");
-      assert.deepStrictEqual(await inView(["editor-swatches", "editor-save", "editor-palette"], 375, 667), []);
+      await b.click("#editor-tab-layout");
+      const flat = await b.eval(`const g = document.getElementById("editor-swatches"); const dots = [...g.querySelectorAll("button")];
+        const label = document.getElementById("editor-palette-label"); const lq = label.getBoundingClientRect();
+        return { chip: document.getElementById("editor-palette"), n: dots.length, shown: !g.hidden && g.offsetParent !== null,
+          tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), names: dots.slice(0, 2).map((d) => d.getAttribute("aria-label")),
+          labelled: g.getAttribute("aria-labelledby") === "editor-palette-label", ownLabel: g.hasAttribute("aria-label"), labelShown: lq.width > 0 && lq.height > 0, labelText: label.textContent,
+          notes: document.getElementById("editor-panel-scale").hasAttribute("hidden") };`);
+      assert.deepStrictEqual(flat, { chip: null, n: 10, shown: true, tall: true, names: ["Card palette 1", "Card palette 2"], labelled: true, ownLabel: false, labelShown: true, labelText: "Card palette", notes: true });
+      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "dots always shown");
+      assert.deepStrictEqual(await inView(["editor-palette-label", "editor-swatches", "editor-save", "editor-anchor-one"], 375, 667), []);
       const past = await pastLen();
       await b.click('#editor-swatches button[data-palette="9"]');
-      assert.strictEqual((await model()).options.palette, 9);
+      assert.strictEqual((await model()).options.palette, 9, "one tap picks");
       assert.match(await code(), /\/palette-10\//);
       assert.strictEqual(await pastLen(), past + 1, "one Undo step");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true, "a pick closes the swatches");
-      assert.notStrictEqual(await dot(), fillBefore, "the chip took the new colours");
-      await b.click("#editor-palette");
+      assert.deepStrictEqual(await b.eval(`const g = document.getElementById("editor-swatches"); return [g.hidden, g.offsetParent !== null, g.querySelector('[data-palette="9"]').getAttribute("aria-pressed"), g.querySelector('[data-palette="0"]').getAttribute("aria-pressed")];`),
+        [false, true, "true", "false"], "the group stays open and marks the pick");
       await b.click('#editor-swatches button[data-palette="0"]');
       assert.strictEqual((await model()).options.palette, 0);
       assert.strictEqual((await code()).includes("palette-"), false, "palette 0 writes no option");
       assert.strictEqual(await pastLen(), past + 2);
       await clickUndo();
       assert.strictEqual((await model()).options.palette, 9);
+      assert.strictEqual(await b.eval(`return document.querySelector('#editor-swatches [data-palette="9"]').getAttribute("aria-pressed");`), "true", "undo moves the mark");
     });
 
-    test("picking the current palette closes the swatches and adds no Undo step; the chip toggles them shut", async () => {
+    test("EPF: picking the current palette adds no Undo step and keeps the dots shown", async () => {
       await setup(BOTTOM);
       const past = await pastLen();
-      await b.click("#editor-palette");
       await b.click('#editor-swatches button[data-palette="0"]');
       assert.strictEqual(await pastLen(), past);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true);
-      await b.click("#editor-palette");
-      await b.click("#editor-palette");
-      assert.strictEqual(await b.eval(`return [document.getElementById("editor-swatches").hidden, getComputedStyle(document.getElementById("editor-notes")).display];`).then((r) => r[0]), true);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").offsetParent !== null;`), true);
     });
 
     test("the anchor splits notes 1 and 2, aria-pressed follows, and a repeat adds no step", async () => {
@@ -1898,12 +1895,27 @@ function run() {
       assert.deepStrictEqual(sizes, [true, true]);
     });
 
-    test("a palette pick closes the swatches while the text line is being edited", async () => {
+    test("EPF: a palette pick applies while the text line is being edited, and is refused while a dialog is open", async () => {
       await setup(BOTTOM);
-      await b.click("#editor-palette");
+      await b.click("#editor-tab-layout");
       await b.eval(`editorSession.editing = true; return true;`);
       await b.click('#editor-swatches button[data-palette="3"]');
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true);
+      assert.strictEqual((await model()).options.palette, 3);
+      await b.eval(`editorSession.editing = false; editorSession.dialog = true; return true;`);
+      await b.eval(`document.querySelector('#editor-swatches [data-palette="5"]').click(); return true;`);
+      assert.strictEqual((await model()).options.palette, 3, "a pick under a dialog is refused");
+    });
+
+    test("EPF: a palette pick is refused while a rejected text line is still being edited, and the error stays visible", async () => {
+      await setup(BOTTOM);
+      await typeLine("A3 QQ9");
+      const kind = () => b.eval(`const s = document.getElementById("editor-status"); return [s.getAttribute("data-kind"), s.textContent.trim().length > 0, editorSession.editing];`);
+      assert.deepStrictEqual(await kind(), ["error", true, true]);
+      const before = (await model()).options.palette || 0;
+      await b.click("#editor-tab-layout");
+      await b.eval(`document.querySelector('#editor-swatches [data-palette="4"]').click(); return true;`);
+      assert.deepStrictEqual(await kind(), ["error", true, true], "the banner stays and editing is still on");
+      assert.strictEqual((await model()).options.palette || 0, before, "the palette is unchanged");
     });
   });
 
@@ -2111,15 +2123,13 @@ function run() {
       assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2, "typing keeps the field's own undo");
     });
 
-    test("the text line opens on Enter; the palette chip and its swatches work from the keyboard", async () => {
+    test("the text line opens on Enter; the palette dots work from the keyboard", async () => {
       await setup();
       await b.eval(`document.getElementById("editor-line").focus(); return true;`);
       await enter();
       assert.strictEqual(await b.eval(`return editorSession.editing;`), true);
       await press("Escape", "Escape", 27);
       await b.click("#editor-tab-layout");
-      await b.eval(`document.getElementById("editor-palette").focus(); return true;`);
-      await enter();
       assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), false);
       await b.eval(`document.querySelector('#editor-swatches [data-palette="3"]').focus(); return true;`);
       await space();
@@ -2686,7 +2696,7 @@ function run() {
             await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
             await b.click("#editor-type-neotone");
             const bad = await b.eval(`const out = [];
-              for (const id of ["editor-oct-label", "editor-oct", "editor-sharps", "editor-flats", "editor-anchor-one", "editor-anchor-between", "editor-palette", "editor-more"]) {
+              for (const id of ["editor-oct-label", "editor-oct", "editor-sharps", "editor-flats", "editor-anchor-one", "editor-anchor-between", "editor-palette-label", "editor-more"]) {
                 const e = document.getElementById(id); if (!e || !e.offsetParent) continue;
                 const box = e.getBoundingClientRect();
                 if (e.scrollWidth > e.clientWidth + 0.5) out.push(id + " scrollWidth");
@@ -2697,7 +2707,7 @@ function run() {
               return out;`);
             assert.deepStrictEqual(bad, [], width + " " + lang);
             await b.click("#editor-tab-layout");
-            assert.deepStrictEqual(await b.eval(`const out = []; for (const id of ["editor-anchor-one", "editor-anchor-between", "editor-palette"]) { const e = document.getElementById(id); if (e && e.offsetParent && e.scrollWidth > e.clientWidth + 0.5) out.push(id); } return out;`), [], width + " " + lang + " layout");
+            assert.deepStrictEqual(await b.eval(`const out = []; for (const id of ["editor-anchor-one", "editor-anchor-between", "editor-palette-label", "editor-swatches"]) { const e = document.getElementById(id); if (e && e.offsetParent && e.scrollWidth > e.clientWidth + 0.5) out.push(id); } return out;`), [], width + " " + lang + " layout");
             await b.click("#editor-more");
             assert.deepStrictEqual(await b.eval(`const m = document.getElementById("editor-menu").getBoundingClientRect(); return [...document.querySelectorAll("#editor-menu [role=menuitem]")].filter((e) => { const q = e.getBoundingClientRect(); return e.scrollWidth > e.clientWidth + 0.5 || q.left < 0 || q.right > innerWidth; }).map((e) => e.id);`), [], width + " " + lang + " menu");
             await b.key("Escape", "Escape", 27);
@@ -2744,9 +2754,11 @@ function run() {
       await setup(SCALE);
       assert.deepStrictEqual(await b.eval(`const inside = (p, id) => document.getElementById(p).contains(document.getElementById(id));
         return ["editor-notes", "editor-oct", "editor-sharps", "editor-flats"].map((id) => inside("editor-panel-scale", id));`), [true, true, true, true]);
-      assert.strictEqual(await visible("editor-palette"), false, "the palette is not on the Scale tab");
+      assert.strictEqual(await visible("editor-swatches"), false, "the palette is not on the Scale tab");
+      assert.strictEqual(await visible("editor-palette-label"), false, "nor its label");
       await b.click("#editor-tab-layout");
-      assert.strictEqual(await visible("editor-palette"), true);
+      assert.strictEqual(await visible("editor-swatches"), true);
+      assert.strictEqual(await visible("editor-palette-label"), true);
       assert.strictEqual(await visible("editor-notes"), false);
       assert.deepStrictEqual(await b.eval(`return ["editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById("editor-panel-layout").contains(document.getElementById(id)));`), [true, true]);
     });
@@ -2764,8 +2776,7 @@ function run() {
 
     test("tabs: choosing a palette swatch keeps the Layout tab", async () => {
       await setup(SCALE);
-      await b.click("#editor-palette");
-      assert.strictEqual(await tabNow(), "layout");
+      await b.click("#editor-tab-layout");
       await b.click("#editor-swatches button");
       assert.strictEqual(await tabNow(), "layout");
     });
@@ -3334,6 +3345,170 @@ function run() {
       assert.deepStrictEqual(await state(), [false, false], "a scale with notes");
       await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorCommitText(m, "")).history; editorRender(); return true;`);
       assert.deepStrictEqual(await state(), [true, true], "back to empty");
+    });
+  });
+
+  describe("Editor RC W5a quieter tab, error banner, name field", () => {
+    const RIM12 = "A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5";
+    const FULL = "(D3) " + RIM12 + " | C6";
+    const setup = async (line, w = 375, h = 667) => { await fresh(w, h); await openAdd(); await typeLine(line); };
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const refuse = async () => {
+      await b.click('.tray-note[data-name="F"]');
+      await b.click("#editor-oct-up");
+      await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the refusal" });
+    };
+    const rect = (sel) => b.eval(`const q = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { top: q.top, bottom: q.bottom, left: q.left, right: q.right, height: q.height };`);
+    const style = (sel, props) => b.eval(`const c = getComputedStyle(document.querySelector(${JSON.stringify(sel)})); return ${JSON.stringify(props)}.map((p) => c[p]);`);
+
+    test("ETS: the selected tab is not filled: underline and strong text on it, muted text on the other, no .on class, no fill on hover or press", async () => {
+      await setup(SCALE);
+      for (const sel of ["scale", "layout"]) {
+        if (sel === "layout") await b.click("#editor-tab-layout");
+        const other = sel === "scale" ? "layout" : "scale";
+        const [bg, under, color, classes, weight] = await b.eval(`const c = getComputedStyle(document.getElementById("editor-tab-${sel}"));
+          return [c.backgroundColor, c.borderBottomColor, c.color, document.getElementById("editor-tab-${sel}").className, c.fontWeight];`);
+        assert.strictEqual(bg, "rgba(0, 0, 0, 0)", sel + " selected tab has no fill");
+        assert.strictEqual(under, "rgb(103, 86, 181)", sel + " underline");
+        assert.strictEqual(color, "rgb(36, 36, 36)");
+        assert.strictEqual(weight, "600");
+        assert.ok(!classes.split(" ").includes("on"), sel + " carries no .on: " + classes);
+        const [obg, ounder, ocolor] = await b.eval(`const c = getComputedStyle(document.getElementById("editor-tab-${other}")); return [c.backgroundColor, c.borderBottomColor, c.color];`);
+        assert.strictEqual(obg, "rgba(0, 0, 0, 0)");
+        assert.strictEqual(ounder, "rgba(0, 0, 0, 0)");
+        assert.strictEqual(ocolor, "rgb(94, 90, 83)", "the unselected tab is muted");
+      }
+      const at = await b.eval(`const q = document.getElementById("editor-tab-scale").getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 };`);
+      await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at });
+      assert.strictEqual((await style("#editor-tab-scale", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "no fill on hover");
+      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...at, button: "left", clickCount: 1 });
+      assert.strictEqual((await style("#editor-tab-scale", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "no fill while pressed");
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...at, button: "left", clickCount: 1 });
+    });
+
+    test("EMP: the status line sits between the pan and the counts, within 16px of the pan, and stays in view with no scroll at 375x667 and 320x568", async () => {
+      for (const [w, h] of [[375, 667], [320, 568]]) {
+        await setup(FULL, w, h);
+        await refuse();
+        const r = await b.eval(`const pb = document.querySelector("#editor .editor-panbox"); const st = document.getElementById("editor-status");
+          const de = document.documentElement, ed = document.getElementById("editor");
+          return { order: pb.nextElementSibling === st && st.nextElementSibling.id === "editor-areas", gap: st.getBoundingClientRect().top - pb.getBoundingClientRect().bottom,
+            inView: st.getBoundingClientRect().top >= 0 && st.getBoundingClientRect().bottom <= ${h} && st.getBoundingClientRect().right <= ${w},
+            page: de.scrollHeight === ${h} && de.scrollWidth === ${w}, panel: ed.scrollHeight <= ed.clientHeight && ed.scrollWidth <= ed.clientWidth };`);
+        assert.strictEqual(r.order, true, w + " DOM order");
+        assert.ok(r.gap >= -0.5 && r.gap <= 16, w + " gap " + r.gap);
+        assert.deepStrictEqual([r.inView, r.page, r.panel], [true, true, true], w + " " + JSON.stringify(r));
+      }
+    });
+
+    test("EMP: landscape 1280x800 puts the status in the right column between the line and the counts", async () => {
+      await setup(FULL, 1280, 800);
+      await refuse();
+      const r = await b.eval(`const q = (s) => document.querySelector(s).getBoundingClientRect(); const pan = q("#editor .editor-panbox"), st = q("#editor-status");
+        return { right: st.left >= pan.right - 1, belowLine: st.top >= q("#editor-line").bottom - 1, aboveCounts: st.bottom <= q("#editor-areas").top + 1, aboveTabs: st.bottom <= q("#editor-tabs").top + 1 };`);
+      assert.deepStrictEqual(r, { right: true, belowLine: true, aboveCounts: true, aboveTabs: true });
+    });
+
+    test("EMP: an error is an ink banner at 14px and a notice is plain text", async () => {
+      await setup(FULL);
+      await refuse();
+      const [bg, color, size] = await style("#editor-status", ["backgroundColor", "color", "fontSize"]);
+      assert.deepStrictEqual([bg, color, size], ["rgb(36, 36, 36)", "rgb(255, 255, 255)", "14px"]);
+      assert.deepStrictEqual(await style("#editor-status", ["cursor", "borderTopLeftRadius"]), ["auto", "8px"]);
+      const wide = await b.eval(`const q = document.getElementById("editor-status").getBoundingClientRect(), e = document.getElementById("editor").getBoundingClientRect(); return q.width / e.width > 0.8;`);
+      assert.strictEqual(wide, true, "full-width banner");
+      await b.eval(`editorSession.error = ""; editorSession.held = null; editorSession.say = "Pins reset."; editorSession.plainSay = "Pins reset."; editorRender(); return true;`);
+      assert.strictEqual((await style("#editor-status", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "a notice has no banner");
+    });
+
+    test("EMP: the arrival cue replays for a different error, not for a re-render of the same one, and again after a clear", async () => {
+      await setup(FULL);
+      const arrive = () => b.eval(`return document.getElementById("editor-status").classList.contains("arrive");`);
+      const strip = () => b.eval(`document.getElementById("editor-status").classList.remove("arrive"); return true;`);
+      const say = (text) => b.eval(`editorSession.error = ${JSON.stringify(text)}; editorRender(); return true;`);
+      await say("First error.");
+      assert.strictEqual(await arrive(), true, "first error arrives");
+      await strip();
+      await say("First error.");
+      assert.strictEqual(await arrive(), false, "an unchanged re-render does not replay");
+      await say("Second error.");
+      assert.strictEqual(await arrive(), true, "a different error replays");
+      await strip();
+      await say("");
+      await say("Second error.");
+      assert.strictEqual(await arrive(), true, "the same text after a clear replays");
+      assert.notStrictEqual((await style("#editor-status", ["animationName"]))[0], "none");
+    });
+
+    test("EMP: no arrival animation under reduced motion", async () => {
+      await setup(FULL);
+      await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+      try {
+        await b.eval(`editorSession.error = "Reduced."; editorRender(); return true;`);
+        assert.strictEqual((await style("#editor-status", ["animationName"]))[0], "none");
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+      }
+    });
+
+    for (const [w, h, key] of [[320, 568, "editor.full.rim"], [375, 667, "editor.crowded"]]) {
+      test(`EMP: a two-line German error does not move the pan at ${w}x${h} or overflow sideways`, async () => {
+        await setup(FULL, w, h);
+        await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+        await b.eval(`editorRender(); return true;`);
+        const before = await rect("#editor .editor-panbox");
+        const long = await b.eval(`return I18N.de[${JSON.stringify(key)}].replace("{max}", "12");`);
+        await b.eval(`editorSession.error = ${JSON.stringify(long)}; editorRender(); return true;`);
+        const lines = await b.eval(`const st = document.getElementById("editor-status"); return Math.round((st.getBoundingClientRect().height - 16) / 20);`);
+        assert.ok(lines >= 1);
+        const after = await rect("#editor .editor-panbox");
+        assert.ok(Math.abs(after.height - before.height) <= 1, `pan height ${before.height} -> ${after.height} (${lines} lines)`);
+        assert.deepStrictEqual(await b.eval(`const ed = document.getElementById("editor"), st = document.getElementById("editor-status"); return [ed.scrollWidth <= ed.clientWidth, st.scrollWidth <= st.clientWidth + 1];`), [true, true]);
+      });
+    }
+
+    describe("live drag", () => {
+      before(() => { magPinned = false; });
+      after(() => { magPinned = true; });
+      const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+      test("EMP: mid-drag at 390x844 the scaled pan box does not cover the status, which stays the top hit", async () => {
+        await setup(SCALE, 390, 844);
+        const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        const to = await b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="rim"][data-i="0"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        await touch("touchStart", chip);
+        for (const k of [0.15, 0.3]) await touch("touchMove", { x: chip.x + (to.x - chip.x) * k, y: chip.y + (to.y - chip.y) * k });
+        await pause(500);
+        try {
+          const r = await b.eval(`const pb = document.querySelector("#editor .editor-panbox").getBoundingClientRect(), st = document.getElementById("editor-status"), sq = st.getBoundingClientRect();
+            const hit = document.elementFromPoint(sq.left + sq.width / 2, sq.top + sq.height / 2);
+            return { dragging: document.getElementById("editor").classList.contains("dragging"), mag: parseFloat(getComputedStyle(document.querySelector("#editor .editor-panbox")).getPropertyValue("--ed-mag")) || 1,
+              overlap: pb.bottom > sq.top + 0.5, hit: hit === st || st.contains(hit), text: st.textContent };`);
+          assert.strictEqual(r.dragging, true);
+          assert.ok(r.mag > 1.05, "the pan did grow: " + r.mag);
+          assert.strictEqual(r.overlap, false, "the pan box ends above the status: " + JSON.stringify(r));
+          assert.strictEqual(r.hit, true);
+          assert.match(r.text, /Dragging/);
+        } finally {
+          await touch("touchEnd");
+          await pause(400);
+        }
+      });
+    });
+
+    test("N-b: focusing the scale name keeps half-typed, invalid notes text in the notes field", async () => {
+      await setup(SCALE);
+      await b.click("#editor-line");
+      await b.eval(`const l = document.getElementById("editor-line"); l.value = "A3 Bb3 C4 QQ9"; l.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      await b.click("#editor-name");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-line").value;`), "A3 Bb3 C4 QQ9", "the typed text survives");
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), true, "still editing");
+      await b.eval(`document.getElementById("editor-line").value = ${JSON.stringify(SCALE)}; return true;`);
+      await b.click("#editor-line");
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), false);
+      assert.strictEqual(await text(), SCALE, "a valid text still commits");
     });
   });
 
