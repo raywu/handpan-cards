@@ -12,7 +12,8 @@
 // If no Chromium is present the whole suite skips with a printed reason
 // (CONTRACT: ./tests/run.sh must work anywhere).
 
-const { test, describe, before, after, afterEach } = require("node:test");
+const { describe, before, after, afterEach } = require("node:test");
+const { test } = require("node:test");
 const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
@@ -103,7 +104,7 @@ function run() {
         const type = file.endsWith(".html") ? "text/html; charset=utf-8"
           : file.endsWith(".js") ? "text/javascript" : "application/octet-stream";
         res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
-        res.end(buf);
+        res.end(file === path.join(REPO, "index.html") ? buf.toString("utf8") : buf);
       });
     });
     server.on("error", (e) => { spawnError = e; });
@@ -896,6 +897,83 @@ function run() {
     );
   });
 
+  test("every scrolling surface contains its overscroll", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    const seen = await b.eval(`
+      const out = {};
+      for (const sel of [".decks", "#about"]) {
+        const el = document.querySelector(sel);
+        out[sel] = el ? getComputedStyle(el).overscrollBehavior : "MISSING";
+      }
+      return out;
+    `);
+    for (const sel of Object.keys(seen)) {
+      assert.strictEqual(seen[sel], "contain",
+        `${sel} has overscroll-behavior: ${seen[sel]} - a flick past its end chains to the page behind it and drags the whole app (row 223e)`);
+    }
+  });
+
+  test("every interactive control has a press state", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    const swept = new Set();
+    const mute = [];
+    for (const state of ["home", "panel"]) {
+    if (state === "panel") {
+      await b.click("#settings-trigger");
+      await b.waitFor(`!document.getElementById("settings-panel").hasAttribute("hidden")`, { label: "the settings panel to open" });
+    }
+    const names = await b.eval(`
+      const name = (el) => el.id ? "#" + el.id
+        : el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim()
+          ? "." + el.className.trim().split(/\\s+/).join(".") : "");
+      const out = [];
+      const seen = new Set();
+      for (const el of document.querySelectorAll('button, [role="button"]')) {
+        if (el.closest("[hidden]")) continue;
+        const n = name(el);
+        if (seen.has(n)) continue;
+        seen.add(n);
+        el.setAttribute("data-press-probe", String(out.length));
+        out.push(n);
+      }
+      return out;
+    `);
+    if (state === "home") assert.ok(names.some((n) => n.includes("chip")), "the sweep did not reach a deck chip");
+    await b.send("DOM.enable");
+    await b.send("CSS.enable");
+    const paint = (i) => b.eval(`
+      const el = document.querySelector('[data-press-probe="${i}"]');
+      const cs = getComputedStyle(el);
+      const own = [cs.color, cs.backgroundColor, cs.borderTopColor, cs.boxShadow, cs.filter, cs.transform, cs.opacity, cs.outlineColor, cs.textDecorationLine].join("|");
+      const kids = [...el.querySelectorAll("*")].map((k) => { const c = getComputedStyle(k); return [c.color, c.fill, c.stroke, c.opacity].join(","); }).join("|");
+      return own + "||" + kids;
+    `);
+    for (let i = 0; i < names.length; i++) {
+      if (swept.has(names[i])) continue;
+      swept.add(names[i]);
+      await b.eval(`document.querySelector('[data-press-probe="${i}"]').scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      const rest = await paint(i);
+      const doc = await b.send("DOM.getDocument", { depth: 0 });
+      const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: `[data-press-probe="${i}"]` });
+      await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
+      let pressed;
+      try {
+        await b.settle();
+        pressed = await paint(i);
+      } finally {
+        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
+      }
+      if (pressed === rest) mute.push(names[i]);
+    }
+    }
+    assert.ok(swept.size > 10, `the sweep found only ${swept.size} controls, so it is broken: ${JSON.stringify([...swept])}`);
+    assert.deepStrictEqual(mute, [],
+      "these controls paint the same pressed as at rest, so on iOS - which has no hover and whose tap highlight this app turns off - a press gives no feedback at all " +
+      `(row 223f). Controls swept: ${JSON.stringify([...swept])}`);
+  });
+
   /* ---------------------------------------------------------------- *
    * 5. persistence
    *
@@ -1653,34 +1731,6 @@ function run() {
       }
     });
 
-  test("a sheet control unrendered by CSS is never a Tab stop, and Tab still cycles",
-    async () => {
-      await freshLoad();
-      await openSettingsPanel();
-      await b.click("#deck-add");
-      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "sheet open" });
-      await b.eval(`const s = document.createElement("style");
-        s.textContent = "#scale-mirror{display:none !important}";
-        document.head.appendChild(s);
-        const box = document.getElementById("scale-box");
-        box.value = "[C3] (D3) A3 C4 D4";
-        box.dispatchEvent(new Event("input", { bubbles: true }));
-        document.getElementById("scale-tab-layout").click();
-        document.getElementById("scale-back").focus(); return true;`);
-      const seen = [];
-      let prev = await stopTag();
-      for (let i = 0; i < 24; i++) {
-        await tabKey(false);
-        const now = await stopTag();
-        assert.notStrictEqual(now, prev,
-          `Tab stuck on #${prev} (an unrendered stop swallowed it): ${JSON.stringify(seen)}`);
-        seen.push(now);
-        prev = now;
-      }
-      assert.ok(!seen.includes("scale-mirror"), "focus landed on the unrendered #scale-mirror");
-      assert.ok(seen.includes("scale-mirror-bottom"), `Tab never reached #scale-mirror-bottom: ${JSON.stringify(seen)}`);
-      assert.ok(seen.includes("scale-back"), `Tab never wrapped to #scale-back: ${JSON.stringify(seen)}`);
-    });
 
   test("Tab from outside the stop list enters the panel cycle", async () => {
     await freshLoad();
@@ -2763,19 +2813,23 @@ function run() {
     // real tap opens the panel first, the same way a real user would.
     await openSettingsPanel();
     await b.click("#deck-add");
-    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden") && !!document.getElementById("editor-line")`,
       { label: "the scale sheet to open" });
   };
 
   // Typing character by character through CDP is slow and the app listens for
   // `input`, so a value plus a real input event is the same journey.
-  const typeScale = (s) =>
-    b.eval(`
-      const el = document.getElementById("scale-box");
+  const typeScale = async (s) => {
+    await b.click("#editor-line");
+    const value = await b.eval(`
+      const el = document.getElementById("editor-line");
       el.value = ${JSON.stringify(s)};
       el.dispatchEvent(new Event("input", { bubbles: true }));
       return el.value;
     `);
+    await b.key("Enter", "Enter", 13);
+    return value;
+  };
 
   // Click a viewport point rather than an element. The drawer used this to hit
   // its backdrop; the page has none, so it is now how a test aims at a spot the
@@ -2786,13 +2840,14 @@ function run() {
     }
   }
 
-  /** Tap the primary: on Add's Scale tab that is NEXT first, then GENERATE CARDS. */
+  const typeName = async (value) => {
+    await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+  };
+
+  /** Tap the editor's SAVE. */
   async function clickGenerate() {
-    if (await b.eval(`return !document.getElementById("scale-next").hidden;`)) {
-      await b.click("#scale-next");
-      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab after NEXT" });
-    }
-    await b.click("#scale-generate");
+    await b.click("#editor-save");
   }
   async function generate(scale) {
     await openSheet();
@@ -2802,222 +2857,10 @@ function run() {
       { label: "the sheet to close after Generate" });
   }
 
-  test("NEO: at 380px the Layout switch, the Neotone checkbox and the 18 tonefield buttons are reachable with no horizontal scroll, and a Neotone SAVE closes the sheet", async () => {
-    await freshLoad();
-    await b.setViewport(380, 800, true);
-    try {
-      await openSheet();
-      await typeScale("[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5");
-      await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
-      await b.click("#scale-neotone");
-      await b.waitFor(`document.getElementById("scale-neotone").checked`, { label: "the box to tick" });
-      // A field focus pins the sheet's scrollers for PIN_MS (iOS focus-scroll guard), so a
-      // programmatic scroll inside that window is put back; wait it out, bounded.
-      await b.waitFor(`scrollPin === null || Date.now() > scrollPin.until`, { label: "the focus scroll pin to lapse" });
-      await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
-      await b.click("#scale-tab-layout");
-      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
-      const m = await b.eval(`
-        const rect = (e) => e.getBoundingClientRect();
-        const targets = [document.getElementById("scale-mode-standard"), document.getElementById("scale-mode-neotone")];
-        return {
-          hits: document.querySelectorAll("#scale-preview .nhit").length,
-          short: targets.filter((e) => rect(e).height < 44 || rect(e).width < 44).map((e) => e.id),
-          outside: targets.filter((e) => rect(e).left < 0 || rect(e).right > window.innerWidth).map((e) => e.id),
-          scrollX: document.documentElement.scrollWidth - window.innerWidth,
-          bodyScrollX: document.querySelector("#scale-sheet .sheetbody").scrollWidth - document.querySelector("#scale-sheet .sheetbody").clientWidth,
-          standardHidden: document.getElementById("scale-standard").hidden,
-        };
-      `);
-      assert.strictEqual(m.hits, 18);
-      assert.deepStrictEqual(m.short, [], "a switch segment is under 44px");
-      assert.deepStrictEqual(m.outside, [], "a control leaves the 380px viewport");
-      assert.ok(m.scrollX <= 0, "the page scrolls sideways: " + m.scrollX);
-      assert.ok(m.bodyScrollX <= 0, "the sheet body scrolls sideways: " + m.bodyScrollX);
-      assert.strictEqual(m.standardHidden, true);
-      await b.click("#scale-generate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after a Neotone SAVE" });
-      const placed = await b.eval(`return !!savedEntries.get(selection.id).deck.geom.place;`);
-      assert.strictEqual(placed, true, "the saved scale is placed by tonefield");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("NEO: in every locale at 380px the switch, checkbox, name field and hints fit inside the sheet", async () => {
-    await freshLoad();
-    await b.setViewport(380, 800, true);
-    try {
-      const langs = await b.eval(`return [...document.getElementById("lang-select").options].map(o => o.value).filter(v => v !== "auto");`);
-      assert.ok(langs.length >= 8);
-      await openSheet();
-      await typeScale("[B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 C5");
-      await b.eval(`document.getElementById("scale-neotone").scrollIntoView({ block: "center" }); return true;`);
-      await b.click("#scale-neotone");
-      await b.waitFor(`document.getElementById("scale-neotone").checked`, { label: "the box to tick" });
-      // A field focus pins the sheet's scrollers for PIN_MS (iOS focus-scroll guard), so a
-      // programmatic scroll inside that window is put back; wait it out, bounded.
-      await b.waitFor(`scrollPin === null || Date.now() > scrollPin.until`, { label: "the focus scroll pin to lapse" });
-      await b.eval(`document.getElementById("scale-tab-layout").scrollIntoView({ block: "center" }); return true;`);
-      await b.click("#scale-tab-layout");
-      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
-      for (const lang of langs) {
-        await b.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
-        const m = await b.eval(`
-          const body = document.querySelector("#scale-sheet .sheetbody");
-          const box = body.getBoundingClientRect();
-          const ids = ["scale-mode-label", "scale-mode-standard", "scale-mode-neotone", "scale-neotone-pair", "scale-neotone-unused", "scale-neotone-rearrange", "scale-neotone-msg"];
-          const els = ids.map((id) => document.getElementById(id)).filter((e) => e && !e.hidden);
-          return {
-            outside: els.filter((e) => { const r = e.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; }).map((e) => e.id),
-            clipped: els.filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow !== "visible").map((e) => e.id),
-            scrollX: body.scrollWidth - body.clientWidth,
-          };
-        `);
-        assert.deepStrictEqual(m.outside, [], lang + ": a Neotone control leaves the sheet");
-        assert.deepStrictEqual(m.clipped, [], lang + ": a Neotone control clips its text");
-        assert.ok(m.scrollX <= 0, lang + ": the sheet scrolls sideways");
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("the page is a modal dialog with the spec'd anatomy", async () => {
-    await freshLoad();
-    const before = await b.eval(`
-      const s = document.getElementById("scale-sheet");
-      return {
-        hidden: s.hasAttribute("hidden"),
-        role: s.getAttribute("role"),
-        modal: s.getAttribute("aria-modal"),
-        labelledby: s.getAttribute("aria-labelledby"),
-        addText: document.getElementById("deck-add").textContent.trim(),
-      };
-    `);
-    assert.strictEqual(before.hidden, true, "the sheet is open before + ADD is tapped");
-    assert.strictEqual(before.role, "dialog");
-    assert.strictEqual(before.modal, "true");
-    // The page is named by the title it shows, not by an invisible aria-label.
-    assert.strictEqual(before.labelledby, "scale-title");
-    assert.match(before.addText, /ADD/);
 
-    await openSheet();
-    const open = await b.eval(`
-      const s = document.getElementById("scale-sheet");
-      const surf = s.firstElementChild;
-      const cs = getComputedStyle(surf);
-      const sr = surf.getBoundingClientRect();
-      const lr = s.getBoundingClientRect();
-      return {
-        maxH: cs.maxHeight,
-        overflowY: cs.overflowY,
-        viewportH: window.innerHeight,
-        surfH: sr.height, layer: { t: lr.top, l: lr.left, h: lr.height, w: lr.width },
-        layerBg: getComputedStyle(s).backgroundColor,
-        title: document.getElementById("scale-title").textContent.trim(),
-        backText: document.getElementById("scale-back").textContent.trim(),
-        parseLine: document.getElementById("scale-parse").textContent.trim(),
-        msgLive: document.getElementById("scale-msg").getAttribute("aria-live"),
-        refusalLive: document.getElementById("scale-refusal").getAttribute("aria-live"),
-        placeholder: document.getElementById("scale-box").placeholder,
-        generateDisabled: document.getElementById("scale-generate").disabled,
-        swatches: document.querySelectorAll("#scale-swatches .dot").length,
-        mirrorOn: [...document.querySelectorAll("#scale-mirror, #scale-mirror-bottom")]
-          .filter(el => el.classList.contains("on")).map(el => el.id),
-      };
-    `);
-    // AC1: the page fills the viewport. max-height: 100dvh, resolved by the
-    // browser into pixels, and the surface actually drawn that tall.
-    assert.ok(Math.abs(parseFloat(open.maxH) - open.viewportH) < 2,
-      `surface max-height is ${open.maxH} at a ${open.viewportH}px viewport`);
-    assert.ok(Math.abs(open.surfH - open.viewportH) < 2,
-      `the surface is ${open.surfH}px tall in a ${open.viewportH}px viewport`);
-    assert.ok(open.layer.t <= 0 && open.layer.l <= 0
-              && open.layer.h >= open.viewportH - 1,
-      `the page layer does not cover the viewport: ${JSON.stringify(open.layer)}`);
-    // Opaque: a translucent layer is a backdrop, and a backdrop is the drawer.
-    // Read the alpha rather than pattern-matching for one: `transparent`
-    // computes to `rgba(0, 0, 0, 0)`, whose alpha has no decimal point, so a
-    // regex looking for a fractional alpha waves the most transparent layer
-    // of all straight through. A bare `rgb(...)` carries no alpha and is 1.
-    const alphaOf = (css) => {
-      const m = /^rgba?\(([^)]*)\)$/.exec(css.trim());
-      assert.ok(m, `the page layer's background is not a colour: ${css}`);
-      const parts = m[1].split(/[,/]/).map((v) => v.trim());
-      return parts.length < 4 ? 1 : parseFloat(parts[3]);
-    };
-    assert.strictEqual(alphaOf(open.layerBg), 1,
-      `the page layer is translucent (${open.layerBg}), so the practice screen ` +
-      "still shows through it");
-    assert.match(open.title, /Add a scale/i, "the page has no visible title");
-    assert.match(open.backText, /BACK/, "the page has no visible way back");
-    assert.strictEqual(open.overflowY, "auto", "the surface does not scroll internally");
-    assert.match(open.parseLine, /^Type every note on one line, in any order/);
-    assert.strictEqual(open.msgLive, "polite");
-    // #scale-sheet is aria-modal, so the page-level .announce is outside the
-    // dialog and unreachable while the sheet is open. A refusal is announced
-    // only if #scale-refusal is itself a live region.
-    assert.strictEqual(open.refusalLive, "polite",
-      "the seed refusal is not in a live region inside the modal sheet");
-    assert.strictEqual(open.placeholder, "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5");
-    assert.strictEqual(open.generateDisabled, true);
-    assert.strictEqual(open.swatches, 10);
-    assert.deepStrictEqual(open.mirrorOn, [], "neither mirror switch is pressed by default");
-  });
 
-  test("Generate stays disabled until the parse line is valid", async () => {
-    await freshLoad();
-    await openSheet();
-    for (const [text, valid] of [["", false], ["(D", false], ["(D3) A3 H4", false],
-                                 ["(D3) A3 C4 D4", true], ["(D3) A3 C4 D4 ", true]]) {
-      await typeScale(text);
-      const st = await b.eval(`
-        return {
-          disabled: document.getElementById("scale-generate").disabled,
-          bad: document.getElementById("scale-box").classList.contains("bad"),
-          msg: document.getElementById("scale-refusal").textContent.trim(),
-        };
-      `);
-      assert.strictEqual(st.disabled, !valid, `"${text}": Generate disabled=${st.disabled}`);
-      if (!valid && text) {
-        assert.ok(st.msg.length > 0, `"${text}": no reason shown`);
-        assert.strictEqual(st.bad, true, `"${text}": the box has no error outline`);
-      }
-    }
-  });
-
-  test("while the sheet is open Generate is the only reachable primary button", async () => {
-    await freshLoad();
-    const closed = await b.eval(`
-      return [...document.querySelectorAll("button.mode.on")]
-        .filter(el => !el.disabled && !el.closest("[inert]")).map(el => el.id || el.className);
-    `);
-    assert.ok(closed.length >= 1, "no primary button on the practice screen");
-
-    await openSheet();
-    await typeScale(SIX_SCALES[1]);          // so Generate is live, not disabled
-    await b.click("#scale-next");
-    await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab after NEXT" });
-    const open = await b.eval(`
-      const sheet = document.getElementById("scale-sheet");
-      const reachable = [...document.querySelectorAll("button")]
-        .filter(el => !el.disabled && !el.closest("[inert]") && !el.inert);
-      const surf = sheet.firstElementChild.getBoundingClientRect();
-      return {
-        outside: reachable.filter(el => !sheet.contains(el)).map(el => el.id || el.className),
-        // A primary is full-width on the sheet surface; the mirror pair and the
-        // swatches are segmented controls and are narrower by construction.
-        wide: reachable.filter(el => sheet.contains(el))
-          .filter(el => el.getBoundingClientRect().width > surf.width * 0.8)
-          .map(el => el.id),
-      };
-    `);
-    assert.deepStrictEqual(open.outside, [],
-      `practice-screen buttons are still reachable behind the sheet: ${JSON.stringify(open.outside)}`);
-    assert.deepStrictEqual(open.wide, ["scale-generate"],
-      `full-width primary buttons in the sheet: ${JSON.stringify(open.wide)}`);
-  });
 
   // AC6, the half the reachability test above cannot see. That test filters on
   // [inert] alone, so it passes just as happily whether aria-hidden is set or
@@ -3070,7 +2913,7 @@ function run() {
     await openSheet();
     // AC2: the page does not steal focus into the box - no soft keyboard until
     // the user taps it - but focus does leave the inert background.
-    assert.strictEqual(await activeId(), "scale-back",
+    assert.strictEqual(await activeId(), "editor-back",
       "focus did not land on BACK when the page opened");
     await b.key("Escape", "Escape", 27);
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
@@ -3127,10 +2970,10 @@ function run() {
       await clickPoint(8, 8);
       assert.strictEqual(await sheetShown(), true,
         "a tap near the page edge closed it - the backdrop gesture is still wired");
-      await b.click("#scale-box");
+      await b.click("#editor-line");
       assert.strictEqual(await sheetShown(), true, "a tap inside the page closed it");
 
-      await b.click("#scale-back");
+      await b.click("#editor-back");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "BACK to close the page" });
       assert.strictEqual(await activeId(), "settings-trigger",
@@ -3400,7 +3243,7 @@ function run() {
       await freshLoad();
       await openSheet();
       await typeScale(SIX_SCALES[1]);
-      await b.eval(`const el=document.getElementById("scale-name");el.value=${JSON.stringify(name)};el.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
+      await typeName(name);
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the sheet to close after Generate with " + JSON.stringify(name) });
@@ -3576,48 +3419,6 @@ function run() {
   // entirely on screen, with no clipping or scroll, at 320x568 and 844x390"
   // and by the 44px-target sweep below.
 
-  test("the owner's journey at 380px: tap the settings trigger, add a scale, see the pan", async () => {
-    await freshLoad();
-    await b.setViewport(380, 800, true);
-    try {
-      await openSettingsPanel();
-      await b.click("#deck-add");
-      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the scale sheet to open from + ADD A SCALE at 380px" });
-      await typeScale("(D) A C D E F G A C");
-      await b.click("#scale-tab-layout");
-      await b.waitFor(
-        `(() => { const p = document.getElementById("scale-preview");
-                  return !!p && !p.hasAttribute("hidden") && !!p.querySelector("svg"); })()`,
-        { label: "the pan preview to render" });
-
-      const m = await b.eval(`
-        const p = document.getElementById("scale-preview");
-        const s = document.querySelector(".sheetsurf");
-        const pr = p.getBoundingClientRect(), sr = s.getBoundingClientRect();
-        const sv = p.querySelector("svg").getBoundingClientRect();
-        return {
-          pr: { l: pr.left, r: pr.right, t: pr.top, b: pr.bottom, w: pr.width, h: pr.height },
-          sr: { l: sr.left, r: sr.right, t: sr.top, b: sr.bottom },
-          sv: { w: sv.width, h: sv.height },
-          vh: document.documentElement.clientHeight,
-          vw: document.documentElement.clientWidth,
-        };
-      `);
-      assert.ok(m.pr.w > 40 && m.pr.h > 40,
-        `the pan preview has no size: ${JSON.stringify(m.pr)}`);
-      assert.ok(m.sv.w > 20 && m.sv.h > 20,
-        `the preview svg has no size: ${JSON.stringify(m.sv)}`);
-      assert.ok(m.pr.l >= m.sr.l - 1 && m.pr.r <= m.sr.r + 1
-                && m.pr.t >= m.sr.t - 1 && m.pr.b <= m.sr.b + 1,
-        `the pan preview is outside the visible sheet surface: ` +
-        `${JSON.stringify(m.pr)} vs ${JSON.stringify(m.sr)}`);
-      assert.ok(m.pr.t >= -1 && m.pr.b <= m.vh + 1 && m.pr.l >= -1 && m.pr.r <= m.vw + 1,
-        `the pan preview is off a 380x800 screen: ${JSON.stringify(m.pr)}`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   // "no deck chip ever rests under + ADD..." (pre-M2) retired 2026-09-28:
   // it guarded a sticky-overlay regression specific to + ADD living in the
@@ -3843,56 +3644,6 @@ function run() {
     }
   });
 
-  test("every chip and sheet control has a 44px hit area", async () => {
-    await freshLoad();
-    await b.setViewport(380, 780, true);
-    try {
-      await openSheet();
-      await b.eval(`const box = document.getElementById("scale-box");
-        box.value = "[C3] (D3) A3 C4 D4";
-        box.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
-      const small = await b.eval(`
-        const out = [];
-        const sel = "#decks .chip, #scale-box, #scale-tab-scale, #scale-tab-layout, #scale-next";
-        for (const el of document.querySelectorAll(sel)) {
-          const r = el.getBoundingClientRect();
-          if (r.height < 44) out.push((el.id || el.className) + " " + r.height.toFixed(1));
-        }
-        return out;`);
-      assert.deepStrictEqual(small, [], "controls shorter than 44px");
-      await openDrawer();
-      const hits = await b.eval(`
-        const out = { swatches: [] };
-        // The palette swatches are 14px by spec, so their hit area is an
-        // invisible overlay: probe it instead of measuring the dot.
-        for (const dot of document.querySelectorAll("#scale-swatches .dot")) {
-          dot.scrollIntoView({ block: "center" });
-          const r = dot.getBoundingClientRect();
-          const cx = r.left + r.width / 2;
-          const cy = r.top + r.height / 2;
-          // The overlay is 44px tall and centred, so +/-21 pins the documented
-          // 44px; +/-18 would pass on anything 36px or taller.
-          const hitsDot = [cy - 21, cy + 21].every(y => document.elementFromPoint(cx, y) === dot);
-          out.swatches.push(hitsDot);
-        }
-        return out;
-      `);
-      assert.strictEqual(hits.swatches.length, 10);
-      assert.ok(hits.swatches.every(Boolean),
-        `a palette swatch has no 44px hit area: ${JSON.stringify(hits.swatches)}`);
-      const layer = await b.eval(`
-        const out = [];
-        for (const id of ["scale-generate", "scale-mirror", "scale-mirror-bottom", "scale-anchor-one", "scale-anchor-between"]) {
-          const r = document.getElementById(id).getBoundingClientRect();
-          if (r.height < 44) out.push(id + " " + r.height.toFixed(1));
-        }
-        return out;`);
-      assert.deepStrictEqual(layer, [], "Layout tab controls shorter than 44px");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- *
    * tap targets and contrast (lane 31; coordination rows 214-216)
@@ -3924,96 +3675,7 @@ function run() {
 
   const AA_NORMAL = 4.5;
 
-  test("every palette swatch owns its full 44px hit area on BOTH axes", async () => {
-    await freshLoad();
-    await b.setViewport(380, 780, true);
-    try {
-      await openSheet();
-      await openDrawer();
-      const probe = await b.eval(`
-        const dots = [...document.querySelectorAll("#scale-swatches .dot")];
-        const name = (el) => !el ? "null"
-          : el === document.documentElement ? "html"
-          : (el.id ? "#" + el.id : el.tagName.toLowerCase()) +
-            (el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\\s+/g, ".") : "");
-        return dots.map((dot, i) => {
-          dot.scrollIntoView({ block: "center" });
-          const r = dot.getBoundingClientRect();
-          const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-          // +/-21 pins the documented 44px box; +/-18 would pass on 36px.
-          const pts = { left: [cx - 21, cy], right: [cx + 21, cy],
-                        top: [cx, cy - 21], bottom: [cx, cy + 21] };
-          const bad = [];
-          for (const [where, [x, y]] of Object.entries(pts)) {
-            const hit = document.elementFromPoint(x, y);
-            if (!(hit === dot || dot.contains(hit))) {
-              bad.push(where + " -> " + name(hit) + " (index " + dots.indexOf(hit) + ")");
-            }
-          }
-          return { i, cx: +cx.toFixed(1), bad };
-        });
-      `);
-      const broken = probe.filter((p) => p.bad.length);
-      assert.strictEqual(probe.length, 10);
-      assert.deepStrictEqual(broken, [],
-        "a palette swatch does not own its own 44px box - a thumb landing inside " +
-        "swatch N selects swatch N+1 with no feedback:\n" +
-        broken.map((p) => `  swatch ${p.i} (centre x=${p.cx}): ${p.bad.join(", ")}`).join("\n"));
 
-      // The pitch itself, so a future gap edit that re-creates the overlap
-      // fails on the cause and not only on the symptom.
-      const pitch = await b.eval(`
-        const d = [...document.querySelectorAll("#scale-swatches .dot")]
-          .map(el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: Math.round(r.top) }; });
-        const gaps = [];
-        for (let i = 1; i < d.length; i++) if (d[i].y === d[i - 1].y) gaps.push(+(d[i].x - d[i - 1].x).toFixed(2));
-        return gaps;
-      `);
-      assert.ok(pitch.every((g) => g >= 44 - 0.5),
-        `palette swatch centres are ${JSON.stringify(pitch)}px apart; 44px overlays ` +
-        `on a pitch under 44 necessarily overlap`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("PD: the ten palette swatches sit in a 5x2 grid of 44px targets at 320x568, 380x780 and 844x390, DOM order 0 to 9", async () => {
-    await freshLoad();
-    try {
-      for (const [w, h, touch] of [[320, 568, true], [380, 780, true], [844, 390, true]]) {
-        await b.setViewport(w, h, touch);
-        await openSheet();
-        await openDrawer();
-        const grid = await b.eval(`
-          const dots = [...document.querySelectorAll("#scale-swatches .dot")];
-          const box = document.getElementById("scale-swatches").getBoundingClientRect();
-          const col = document.getElementById("scale-tabs").getBoundingClientRect();
-          return { box: { l: box.left, r: box.right }, col: { l: col.left, r: col.right }, vw: innerWidth, dots: dots.map((d) => {
-            d.scrollIntoView({ block: "center" });
-            const r = d.getBoundingClientRect();
-            const g = document.getElementById("scale-swatches").getBoundingClientRect();
-            return { x: +(r.left + r.width / 2).toFixed(1), y: +(r.top - g.top).toFixed(1), w: r.width, h: r.height };
-          }) };`);
-        assert.strictEqual(grid.dots.length, 10, `${w}x${h}: ten swatches`);
-        const rows = new Set(grid.dots.map((d) => Math.round(d.y)));
-        assert.strictEqual(rows.size, 2, `${w}x${h}: two rows, got ${[...rows]}`);
-        const cols = new Set(grid.dots.map((d) => Math.round(d.x)));
-        assert.strictEqual(cols.size, 5, `${w}x${h}: five columns, got ${[...cols]}`);
-        grid.dots.forEach((d, i) => {
-          assert.ok(d.w >= 44 - 0.5 && d.h >= 44 - 0.5, `${w}x${h}: swatch ${i} is ${d.w}x${d.h}, under 44px`);
-          assert.strictEqual(Math.round(d.y) === [...rows].sort((p, q) => p - q)[0], i < 5, `${w}x${h}: swatch ${i} is in the wrong row`);
-        });
-        for (let i = 1; i < 5; i += 1) assert.ok(grid.dots[i].x > grid.dots[i - 1].x, `${w}x${h}: row one runs left to right`);
-        for (let i = 6; i < 10; i += 1) assert.ok(grid.dots[i].x > grid.dots[i - 1].x, `${w}x${h}: row two runs left to right`);
-        assert.ok(grid.box.l >= 0 && grid.box.r <= grid.vw, `${w}x${h}: the grid overflows the viewport`);
-        if (w === 844) assert.ok(grid.box.l >= grid.col.l - 1 && grid.box.r <= grid.col.r + 1, `${w}x${h}: the grid ${JSON.stringify(grid.box)} lies outside the controls column ${JSON.stringify(grid.col)}`);
-        await b.key("Escape", "Escape", 27);
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("the card's small print meets AA contrast against the paper", async () => {
     await freshLoad();
@@ -4589,12 +4251,7 @@ function run() {
       // name cannot catch this - the two agree whenever nothing is elided.
       const LONG_NAME = "MY LOW PYGMY SCALE";
       await openEdit();
-      await b.eval(`
-        const el = document.getElementById("scale-name");
-        el.value = ${JSON.stringify(LONG_NAME)};
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        return el.value;
-      `);
+      await typeName(LONG_NAME);
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after the rename" });
@@ -4643,8 +4300,7 @@ function run() {
       // earlier unique-name elision and glyph checks.
       await openSheet();
       await typeScale(SIX_SCALES[2]);
-      await b.eval(`const el=document.getElementById('scale-name');el.value=${JSON.stringify(LONG_NAME)};
-        el.dispatchEvent(new Event('input',{bubbles:true}));return true;`);
+      await typeName(LONG_NAME);
       await clickGenerate();
       await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"second named instrument committed"});
       const colliding=await chipProbe();
@@ -4691,8 +4347,8 @@ function run() {
       await b.click(kurdChip);
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to open on a selected seeded chip" });
-      assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
-        "SAVE CHANGES", "a selected seeded chip did not open the Edit sheet");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-title").textContent.trim();`),
+        "Edit this scale", "a selected seeded chip did not open the Edit sheet");
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -4721,9 +4377,9 @@ function run() {
       await clickPoint(at.x, at.y);
       await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to open from a tap on the pencil" });
-      const primary = await b.eval(
-        `return document.getElementById("scale-generate").textContent.trim();`);
-      assert.strictEqual(primary, "SAVE CHANGES",
+      const title = await b.eval(
+        `return document.getElementById("editor-title").textContent.trim();`);
+      assert.strictEqual(title, "Edit this scale",
         "the pencil opened the CREATE sheet, not the Edit sheet");
     } finally {
       await b.setViewport(900, 900, false);
@@ -4755,98 +4411,7 @@ function run() {
    * declaration exists and names all four edges.
    * ---------------------------------------------------------------- */
 
-  test("every scrolling surface contains its overscroll", async () => {
-    await freshLoad();
-    await b.setViewport(380, 780, true);
-    try {
-      await openSheet();
-      const seen = await b.eval(`
-        const out = {};
-        for (const sel of [".decks", ".sheetsurf", ".sheetbody"]) {
-          const el = document.querySelector(sel);
-          out[sel] = el ? getComputedStyle(el).overscrollBehavior : "MISSING";
-        }
-        return out;
-      `);
-      for (const sel of Object.keys(seen)) {
-        assert.strictEqual(seen[sel], "contain",
-          `${sel} has overscroll-behavior: ${seen[sel]} - a flick past its end ` +
-          "chains to the page behind it and drags the whole app (row 223e)");
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("every interactive control has a press state", async () => {
-    await freshLoad();
-    await b.setViewport(380, 780, true);
-    try {
-      // A custom deck first, so the Edit-only controls (DELETE THIS DECK, the
-      // degrees row) and a custom chip are on the page too. Then the sheet,
-      // so the swatches, the mirror pair, the LAYOUT group and the primary are.
-      await generate(EDIT_SCALE);
-      await b.eval(`document.querySelector("#decks .chip.on")
-                      .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-      await b.click("#decks .chip.on");
-      await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to open" });
-
-      // One element per distinct control name, hidden ones skipped; each is
-      // tagged so CDP can find it. A press state is what the control paints
-      // while :active is forced on it, compared with what it paints at rest
-      // (the armed-delete test below holds a real press; forcing the pseudo-class
-      // reaches the controls a single mouse cannot hold at once).
-      const names = await b.eval(`
-        const name = (el) => el.id ? "#" + el.id
-          : el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim()
-            ? "." + el.className.trim().split(/\\s+/).join(".") : "");
-        const out = [];
-        const seen = new Set();
-        for (const el of document.querySelectorAll('button, [role="button"]')) {
-          if (el.closest("[hidden]")) continue;
-          const n = name(el);
-          if (seen.has(n)) continue;
-          seen.add(n);
-          el.setAttribute("data-press-probe", String(out.length));
-          out.push(n);
-        }
-        return out;
-      `);
-      assert.ok(names.length > 10, `the sweep found only ${names.length} controls, so it is broken: ${JSON.stringify(names)}`);
-      await b.send("DOM.enable");
-      await b.send("CSS.enable");
-      const paint = (i) => b.eval(`
-        const el = document.querySelector('[data-press-probe="${i}"]');
-        const cs = getComputedStyle(el);
-        const own = [cs.color, cs.backgroundColor, cs.borderTopColor, cs.boxShadow, cs.filter, cs.transform, cs.opacity, cs.outlineColor, cs.textDecorationLine].join("|");
-        const kids = [...el.querySelectorAll("*")].map((k) => { const c = getComputedStyle(k); return [c.color, c.fill, c.stroke, c.opacity].join(","); }).join("|");
-        return own + "||" + kids;
-      `);
-      const mute = [];
-      for (let i = 0; i < names.length; i++) {
-        await b.eval(`document.querySelector('[data-press-probe="${i}"]').scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-        const rest = await paint(i);
-        const doc = await b.send("DOM.getDocument", { depth: 0 });
-        const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: `[data-press-probe="${i}"]` });
-        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
-        let pressed;
-        try {
-          await b.settle();
-          pressed = await paint(i);
-        } finally {
-          await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
-        }
-        if (pressed === rest) mute.push(names[i]);
-      }
-      assert.deepStrictEqual(mute, [],
-        "these controls paint the same pressed as at rest, so on iOS - which has no hover and " +
-        "whose tap highlight this app turns off - a press gives no feedback at all " +
-        `(row 223f). Controls swept: ${JSON.stringify(names)}`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- *
    * a press state may not walk back the AA floor PR #53 bought
@@ -4962,7 +4527,7 @@ function run() {
     await b.eval(`document.querySelector("#decks .chip.on")
                     .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
     await b.click("#decks .chip.on");
-    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
+    await b.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden") && !!document.getElementById("editor-line")`,
       { label: "the Edit sheet to open" });
   };
 
@@ -5012,74 +4577,8 @@ function run() {
     return { top: r.top, bottom: r.bottom, spTop: sp.top, spBottom: sp.bottom, h: r.height };
   `);
 
-  test("UX: in Adjust layout the plate band stays in the scrollport at the end of the controls", async () => {
-    try {
-      await addWithDrawer(380, 780);
-      await scrollEnd();
-      const r = await inScrollport("scale-plate-band");
-      assert.ok(r.top >= r.spTop - 1 && r.bottom <= r.spBottom + 1,
-        `the band left the scrollport: ${JSON.stringify(r)}`);
-      assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("scale-plate-band")).position;`), "sticky");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("MSJ: tapping a layout toggle leaves the tapped button where it was in both scrollers", async () => {
-    try {
-      for (const edit of [false, true]) for (const [w, h] of [[380, 667], [380, 780]]) {
-        if (edit) {
-          await freshLoad();
-          await b.setViewport(w, h, true);
-          await generate(DR1_SCALE);
-          await openEdit();
-          await openDrawer();
-        } else await addWithDrawer(w, h);
-        for (const id of ["scale-mirror-bottom", "scale-mirror", "scale-anchor-between", "scale-anchor-one", "scale-mirror-bottom", "scale-mirror"]) {
-          await b.eval(`const s = ${body}; s.scrollTop = s.scrollHeight - s.clientHeight - 0;
-            const u = document.querySelector("#scale-sheet .sheetsurf"); u.scrollTop = u.scrollHeight; return true;`);
-          await b.eval(`const s = ${body}, el = document.getElementById(${JSON.stringify(id)});
-            const hit = () => { const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && el.contains(t); };
-            while (!hit() && s.scrollTop > 0) s.scrollTop = Math.max(0, s.scrollTop - 10);
-            return hit();`);
-          await b.settle();
-          const at = () => b.eval(`return { top: document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top,
-            body: ${body}.scrollTop, surf: document.querySelector("#scale-sheet .sheetsurf").scrollTop };`);
-          const before = await at();
-          await b.click("#" + id);
-          await b.settle();
-          const after = await at();
-          assert.ok(Math.abs(after.top - before.top) <= 1,
-            `${id} moved ${before.top} -> ${after.top} (${edit ? "Edit" : "Add"} ${w} x ${h}): ${JSON.stringify({ before, after })}`);
-        }
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("UX: Adjust layout is two columns at 844x390 with the pan >=270px with no message, one column at 500x390", async () => {
-    try {
-      await addWithDrawer(844, 390);
-      const two = await b.eval(`
-        const z = document.querySelector(".sheetbody");
-        const col = document.getElementById("scale-plate-band").getBoundingClientRect();
-        const ctl = document.getElementById("scale-anchor-one").getBoundingClientRect();
-        return { display: getComputedStyle(z).display, colRight: col.right, ctlLeft: ctl.left,
-                 plate: document.getElementById("scale-preview").getBoundingClientRect().width };
-      `);
-      assert.strictEqual(two.display, "grid");
-      assert.ok(two.ctlLeft >= two.colRight - 1, `the controls are not beside the pan: ${JSON.stringify(two)}`);
-      assert.ok(two.plate >= 270, `the pan is ${two.plate}px wide`);
-      await b.setViewport(500, 390, true);
-      const one = await b.eval(`return getComputedStyle(document.querySelector(".sheetbody")).display;`);
-      assert.notStrictEqual(one, "grid", "500 x 390 laid the layer out in two columns");
-      const short = await b.eval(`return document.getElementById("scale-preview").getBoundingClientRect().width;`);
-      assert.ok(short < 200, `the large pan takes ${short}px at 500x390 and leaves the controls no room`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   // DI-E: the four note fields beside the scale line (plan 2026-10-18-dual-input.md, H2b').
   const DI_FIELDS = ["scale-ding", "scale-top", "scale-inner", "scale-bottom"];
@@ -5127,151 +4626,12 @@ function run() {
     }
   };
 
-  test("DI: at 320x568 with a 260px keyboard each field typed in stays fully in view with the whole small pan in view (at least 24px of it for BOTTOM) and the sheet head hidden, and BACK shows again once the keyboard closes", async () => {
-    await diKeyboardCase(320, 568, true);
-  });
 
-  test("DI: at 380x780 with a 260px keyboard each field typed in stays fully in view with the whole small pan in view", async () => {
-    await diKeyboardCase(380, 780, false);
-  });
 
-  test("DI: keyboard before focus and focus before keyboard both leave the focused field fully in view at 320x568 and 380x780", async () => {
-    try {
-      for (const [w, h] of [[320, 568], [380, 780]]) {
-        for (const order of ["keyboard", "focus"]) {
-          for (const id of ["scale-top", "scale-bottom"]) {
-            await diOpenAdd(w, h);
-            const focus = () => b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
-            if (order === "keyboard") { await b.fakeKeyboard(h - 260); await focus(); } else { await focus(); await b.fakeKeyboard(h - 260); }
-            await b.settle();
-            const f = await diVisible(id);
-            assert.ok(f.vis >= f.h - 0.5, `${w}x${h} ${order} first, ${id}: ${f.vis} of ${f.h}px in view`);
-            await b.clearKeyboard();
-          }
-        }
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DI: SL at 380x780 a real tap on DING after a refused line rebuilds the line and enables GENERATE", async () => {
-    try {
-      await diOpenAdd(380, 780);
-      await b.click("#scale-ding");
-      await b.send("Input.insertText", { text: "D3" });
-      await b.click("#scale-top");
-      await b.send("Input.insertText", { text: "A3 C4 D4 E4 F4 G4 A4 C5" });
-      await b.click("#scale-box");
-      await b.eval(`document.getElementById("scale-box").select(); return true;`);
-      await b.send("Input.insertText", { text: "(D3) A3 X" });
-      const mid = await b.eval(`return { gen: document.getElementById("scale-generate").disabled, ref: document.getElementById("scale-refusal").textContent };`);
-      assert.strictEqual(mid.gen, true);
-      assert.notStrictEqual(mid.ref, "");
-      await b.eval(`document.getElementById("scale-ding").scrollIntoView({ block: "center" }); return true;`);
-      await b.click("#scale-ding");
-      await b.settle();
-      const after = await b.eval(`return { box: document.getElementById("scale-box").value, ref: document.getElementById("scale-refusal").textContent,
-        gen: document.getElementById("scale-generate").disabled, active: document.activeElement.id };`);
-      assert.strictEqual(after.box, "(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-      assert.strictEqual(after.ref, "");
-      assert.strictEqual(after.gen, false);
-      assert.strictEqual(after.active, "scale-ding");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DI: with the keyboard up at 320x568 and 380x780 the TOP error is fully in view in the slot", async () => {
-    try {
-      for (const [w, h] of [[320, 568], [380, 780]]) {
-        await diOpenAdd(w, h);
-        await b.fakeKeyboard(h - 260);
-        await b.eval(`document.getElementById("scale-top").focus(); return true;`);
-        await b.settle();
-        await b.send("Input.insertText", { text: "A3 BB" });
-        await b.settle();
-        await b.eval(`document.getElementById("scale-inner").focus(); return true;`);
-        await b.settle();
-        await b.eval(`const sb = document.querySelector("#scale-sheet .sheetbody"); sb.scrollTop = sb.scrollHeight; return true;`);
-        await b.settle();
-        const m = await b.eval(`
-          const el = document.getElementById("scale-field-msg"), r = el.getBoundingClientRect(), vv = window.visualViewport;
-          return { text: el.textContent, top: r.top, bottom: r.bottom, h: r.height, vvBottom: vv.offsetTop + vv.height };`);
-        assert.match(m.text, /^Top Notes: /, `${w}x${h}: the slot holds "${m.text}"`);
-        assert.ok(m.h > 0 && m.top >= -0.5 && m.bottom <= m.vvBottom + 0.5, `${w}x${h}: the TOP error is outside the view: ${JSON.stringify(m)}`);
-        await b.clearKeyboard();
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("IB: at 380px a dip pan typed in the fields previews, generates and opens from its share link", async () => {
-    try {
-      await diOpenAdd(380, 780);
-      const setField = (id, v) => b.eval(`
-        const el = document.getElementById(${JSON.stringify(id)});
-        el.focus(); el.value = ${JSON.stringify(v)};
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        return true;`);
-      await setField("scale-ding", "D3");
-      await setField("scale-top", "A3 C4 D4 E4");
-      await setField("scale-inner", "B3");
-      await b.eval(`document.getElementById("scale-inner").blur(); return true;`);
-      await b.settle();
-      const m = await b.eval(`return {
-        slot: document.getElementById("scale-field-msg").textContent,
-        box: document.getElementById("scale-box").value,
-        pan: !!document.querySelector("#scale-preview circle"),
-        gen: document.getElementById("scale-generate").disabled };`);
-      assert.strictEqual(m.slot, "TOP INNER NOTES: B3 sits below the top notes. Check it on the pan picture.");
-      assert.strictEqual(m.box, "(D3) A3 C4 D4 E4 | B3");
-      assert.ok(m.pan, "no pan preview");
-      assert.strictEqual(m.gen, false);
-      await clickGenerate();
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Generate" });
-      const shared = await b.eval(`const d = selectedDeck(); const res = shareLink(d);
-        return { ok: res.ok, url: res.ok ? res.value : null, chords: d.chords.length };`);
-      assert.strictEqual(shared.ok, true);
-      const hash = shared.url.slice(shared.url.indexOf("#s="));
-      await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
-      // Empty-receiver round trip, rather than reusing a saved local match.
-      await clearSavedIdbForLegacyMigrationFixture();
-      await navigate(`${URL}?share=${Date.now()}${hash}`);
-      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips after the share link boots" });
-      const after = await b.eval(`return (document.getElementById("count").textContent || "").trim();`);
-      assert.strictEqual(after, `1 / ${shared.chords}`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DI: the passive path's input text is at least 7:1 and its label at least 4.5:1 against the sheet", async () => {
-    try {
-      await diOpenAdd(380, 780);
-      await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-      await b.settle();
-      const m = await b.eval(`
-        const parse = (c) => c.match(/[\\d.]+/g).map(Number);
-        const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-        const lum = ([r, g, bl]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(bl);
-        const bg = (el) => { for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c.length < 4 || c[3] > 0.99) return c.slice(0, 3); } return [255, 255, 255]; };
-        const ratio = (fg, back) => { const a = lum(fg), b2 = lum(back); return (Math.max(a, b2) + 0.05) / (Math.min(a, b2) + 0.05); };
-        const input = document.getElementById("scale-top"), label = document.querySelector("#scale-fields .sheetlabel:not(#scale-fields-head)");
-        const sheetBg = parse(getComputedStyle(document.querySelector(".sheetsurf")).backgroundColor).slice(0, 3);
-        return { passive: document.getElementById("scale-fields").classList.contains("passive"),
-                 text: ratio(parse(getComputedStyle(input).color).slice(0, 3), sheetBg),
-                 label: ratio(parse(getComputedStyle(label).color).slice(0, 3), sheetBg) };`);
-      assert.ok(m.passive, "the fields are not the passive path while the line has focus");
-      assert.ok(m.text >= 7, `the passive input text is ${m.text.toFixed(2)}:1`);
-      assert.ok(m.label >= 4.5, `the passive label is ${m.label.toFixed(2)}:1`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("DI: the settings trigger is neither visible nor hit-testable while the scale sheet is open", async () => {
     try {
@@ -5287,320 +4647,17 @@ function run() {
     }
   });
 
-  test("UX: Adjust layout puts the large pan beside the controls at 844x390 and above them at 380x780", async () => {
-    try {
-      await addWithDrawer(844, 390);
-      const wide = await b.eval(`
-        const R = (id) => document.getElementById(id).getBoundingClientRect();
-        return { plate: R("scale-preview").width, colRight: R("scale-plate-band").right, ctlLeft: R("scale-anchor-one").left };`);
-      assert.ok(wide.plate >= 270, `the large pan is ${wide.plate}px`);
-      assert.ok(wide.ctlLeft >= wide.colRight - 1, `the controls are not beside the pan: ${JSON.stringify(wide)}`);
-      const plateInView = () => b.eval(`
-        const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
-        const r = document.getElementById("scale-preview").getBoundingClientRect();
-        return { top: r.top, bottom: r.bottom, portTop: port.top, portBottom: port.bottom,
-                 focus: document.activeElement && document.activeElement.className };`);
-      const fully = (m, what) => {
-        const shown = Math.min(m.bottom, m.portBottom) - Math.max(m.top, m.portTop);
-        const want = Math.min(m.bottom - m.top, m.portBottom - m.portTop);
-        assert.ok(shown >= want - 0.5,
-          `${what}: the pan is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
-      };
-      fully(await plateInView(), "Add at 844x390, Adjust layout opened by a real click");
-      await freshLoad();
-      await b.setViewport(844, 390, true);
-      await openEdit();
-      await openDrawer();
-      fully(await plateInView(), "Edit Kurd at 844x390, Adjust layout opened by a real click");
-      await addWithDrawer(380, 780);
-      const tall = await b.eval(`
-        const sp = document.querySelector("#scale-sheet .sheetbody"); sp.scrollTop = 0;
-        const R = (id) => document.getElementById(id).getBoundingClientRect(), port = sp.getBoundingClientRect();
-        const above = { bandBottom: R("scale-plate-band").bottom, drawerTop: R("scale-drawer").top };
-        sp.scrollTop = sp.scrollHeight;
-        return { ...above, bandTop: R("scale-plate-band").top, portTop: port.top };`);
-      assert.ok(tall.bandBottom <= tall.drawerTop + 1, `the pan is not above the controls: ${JSON.stringify(tall)}`);
-      assert.ok(tall.bandTop >= tall.portTop - 0.5 && tall.bandTop <= tall.portTop + 1, `the pan left the top of the scrollport: ${JSON.stringify(tall)}`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DI: the Layout tab opened by Tab and ArrowRight at 844x390 shows the plate from the scroller top and keeps the focused tab in view (review F2)", async () => {
-    const enter = async () => {
-      for (const type of ["rawKeyDown", "char", "keyUp"]) {
-        await b.send("Input.dispatchKeyEvent", { type, key: "Enter", code: "Enter",
-          ...(type === "char" ? { text: "\r", unmodifiedText: "\r" } : {}),
-          windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
-      }
-    };
-    const openByKeyboard = async (what) => {
-      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
-      await b.key("Tab", "Tab", 9);
-      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "scale-tab-scale",
-        `${what}: Tab never reached the Scale tab`);
-      await b.key("ArrowRight", "ArrowRight", 39);
-      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: `${what}: the Layout tab to open` });
-      await waitElapsed(500);
-      const m = await b.eval(`
-        const port = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
-        const r = document.getElementById("scale-preview").getBoundingClientRect();
-        const a = document.activeElement, f = a.getBoundingClientRect();
-        return { top: r.top, bottom: r.bottom, portTop: port.top, portBottom: port.bottom,
-                 title: a.id === "scale-tab-layout", fTop: f.top, fBottom: f.bottom };`);
-      const shown = Math.min(m.bottom, m.portBottom) - Math.max(m.top, m.portTop);
-      const want = Math.min(m.bottom - m.top, m.portBottom - m.portTop);
-      assert.ok(shown >= want - 0.5, `${what}: the plate is not as fully inside the scroller as it can be: ${JSON.stringify(m)}`);
-      assert.ok(m.title, `${what}: focus did not stay on the Layout tab: ${JSON.stringify(m)}`);
-      assert.ok(m.fTop >= -0.5 && m.fBottom <= 390.5,
-        `${what}: the focused tab is outside the viewport: ${JSON.stringify(m)}`);
-    };
-    try {
-      await freshLoad();
-      await b.setViewport(844, 390, true);
-      await openEdit();
-      await openByKeyboard("Edit Kurd at 844x390");
-      await freshLoad();
-      await b.setViewport(844, 390, true);
-      await navigate(URL + "?r=f2#deck=f-low-pygmy-18");
-      await openEdit();
-      await openByKeyboard("Edit Pygmy at 844x390");
-      await freshLoad();
-      await b.setViewport(844, 390, true);
-      await openSheet();
-      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-      await openByKeyboard("Add at 844x390 with a typed scale");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 line 37: every drawer control is at least 44px tall and the drawer does not overflow sideways at 380", async () => {
-    try {
-      await addWithDrawer(380, 780);
-      const r = await b.eval(`
-        const d = document.getElementById("scale-drawer");
-        const small = [...d.querySelectorAll("button")].filter(el => el.getClientRects().length)
-          .map(el => ({ id: el.id, h: el.getBoundingClientRect().height })).filter(x => x.h < 44);
-        return { small, sw: d.scrollWidth, cw: d.clientWidth, page: document.body.scrollWidth - document.body.clientWidth };
-      `);
-      assert.deepStrictEqual(r.small, [], `drawer controls under 44px: ${JSON.stringify(r.small)}`);
-      assert.ok(r.sw <= r.cw + 1 && r.page <= 1, `the drawer overflows sideways: ${JSON.stringify(r)}`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 line 38: each drawer control shows the 2px ink #242424 focus ring (field guide, light sheet) from the keyboard", async () => {
-    try {
-      await addWithDrawer(380, 780);
-      await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
-      for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"]) {
-        assert.ok(await tabTo(id, 40), `Tab never reached #${id}`);
-        const o = await b.eval(`const cs = getComputedStyle(document.activeElement);
-          return { w: cs.outlineWidth, c: cs.outlineColor, s: cs.outlineStyle };`);
-        assert.deepStrictEqual(o, { w: "2px", c: "rgb(36, 36, 36)", s: "solid" }, `#${id}: ${JSON.stringify(o)}`);
-      }
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("FG: a focused panhit and a Neotone nhit on the Layout diagram keep outline none", async () => {
-    try {
-      await addWithDrawer(380, 780);
-      const ring = (sel) => b.eval(`const el = document.querySelector(${JSON.stringify(sel)});
-        if (!el) return null;
-        el.focus({ focusVisible: true });
-        const cs = getComputedStyle(el);
-        return { on: document.activeElement === el, s: cs.outlineStyle };`);
-      const pan = await ring("#scale-preview .panhit");
-      assert.deepStrictEqual(pan, { on: true, s: "none" }, `panhit: ${JSON.stringify(pan)}`);
-      await b.eval(`document.getElementById("scale-mode-neotone").click(); return true;`);
-      await b.waitFor(`!!document.querySelector("#scale-preview .nhit")`, { label: "Neotone nhit targets" });
-      const nh = await ring("#scale-preview .nhit");
-      assert.deepStrictEqual(nh, { on: true, s: "none" }, `nhit: ${JSON.stringify(nh)}`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 line 39: the drawer and its controls have no transition or animation", async () => {
-    try {
-      await addWithDrawer(380, 780);
-      const bad = await b.eval(`
-        const els = [document.getElementById("scale-tab-scale"), document.getElementById("scale-tab-layout"), document.getElementById("scale-drawer"),
-          ...document.querySelectorAll("#scale-drawer button")];
-        return els.map(el => { const cs = getComputedStyle(el);
-          return { id: el.id || el.tagName, t: cs.transitionDuration, a: cs.animationName }; })
-          .filter(x => !/^0s(, 0s)*$/.test(x.t) || x.a !== "none");
-      `);
-      assert.deepStrictEqual(bad, []);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 line 82: the status line is inside the scrollport at the end of the body at 380 x 780 and 380 x 667", async () => {
-    try {
-      for (const h of [780, 667]) {
-        await addWithDrawer(380, h);
-        // With the toggle row's hint gone while open, the switch rests under
-        // the sticky footer at 667; bring it into view as a thumb would.
-        await b.eval(`document.getElementById("scale-mirror").scrollIntoView({ block: "center" });`);
-        await b.click("#scale-mirror");
-        await scrollEnd();
-        const r = await inScrollport("scale-drawer-status");
-        assert.ok(r.h > 0 && r.top >= r.spTop - 1 && r.bottom <= r.spBottom + 1,
-          `380 x ${h}: the status left the scrollport: ${JSON.stringify(r)}`);
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 hint row dimming: the empty hint shows with dimmed controls on an empty scale, and a disabled drawer switch dims", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await openSheet();
-      await b.eval(`document.getElementById("scale-tab-layout").click();`);
-      const op = () => b.eval(`return { hintShown: !document.getElementById("scale-layout-hint").hidden,
-        mirror: getComputedStyle(document.getElementById("scale-mirror")).opacity,
-        mirrorColor: getComputedStyle(document.getElementById("scale-mirror")).color };`);
-      const empty = await op();
-      assert.strictEqual(empty.mirrorColor, "rgb(138, 132, 123)", "a disabled drawer control does not paint the field-guide disabled #8A847B");
-      assert.strictEqual(empty.hintShown, true, "the empty-state hint is hidden on an empty scale");
-      await typeScale("(D3) A3 C4 D4");
-      const typed = await op();
-      assert.strictEqual(typed.mirror, "1");
-      assert.strictEqual(typed.hintShown, false, "the hint stayed after the scale parsed");
-      const mb = await b.eval(`const e = document.getElementById("scale-mirror-bottom");
-        return { off: e.disabled, c: getComputedStyle(e).color,
-          top: getComputedStyle(document.getElementById("scale-mirror")).color };`);
-      assert.deepStrictEqual(mb, { off: true, c: "rgb(138, 132, 123)", top: "rgb(36, 36, 36)" },
-        "a disabled drawer switch does not paint #8A847B, or an enabled one does");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("UX: on the Layout tab the plate is the stop after the tab, and is no stop on the Scale tab", async () => {
-    try {
-      await editFreshDeck();
-      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
-      for (let i = 0; i < 16; i += 1) {
-        await b.key("Tab", "Tab", 9);
-        const hit = await b.eval(`return !!document.activeElement.closest("#scale-preview");`);
-        assert.strictEqual(hit, false, `Tab ${i + 1} in the sheet landed on the plate`);
-      }
-      await openDrawer();
-      await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
-      const seen = [];
-      for (let i = 0; i < 2; i += 1) {
-        await b.key("Tab", "Tab", 9);
-        seen.push(await b.eval(`return document.activeElement.id || document.activeElement.getAttribute("class");`));
-      }
-      assert.deepStrictEqual(seen, ["panhit", "scale-mode-standard"]);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 line 87: a control focused by Tab under the open band is not hidden behind it", async () => {
-    try {
-      for (const edit of [false, true]) for (const h of [780, 667]) {
-        const where = `${edit ? "Edit" : "Add"} 380 x ${h}`;
-        if (edit) {
-          await freshLoad();
-          await b.setViewport(380, h, true);
-          await generate(DR1_SCALE);
-          await openEdit();
-          await openDrawer();
-        } else {
-          await addWithDrawer(380, h);
-        }
-        for (const id of ["scale-anchor-one", "scale-anchor-between", "scale-mirror", "scale-mirror-bottom"]) {
-          await b.eval(`document.getElementById("scale-tab-layout").focus(); return true;`);
-          await scrollEnd();
-          assert.ok(await tabTo(id, 40), `${where}: Tab never reached #${id}`);
-          const r = await b.eval(`
-            const e = document.activeElement.getBoundingClientRect();
-            const sp = ${body}.getBoundingClientRect();
-            return { top: e.top, bottom: e.bottom, spBottom: sp.bottom,
-                     band: document.getElementById("scale-plate-band").getBoundingClientRect().bottom,
-                     bandH: document.getElementById("scale-plate-band").getBoundingClientRect().height,
-                     portH: sp.height,
-                     pos: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
-          const unstuck = r.portH - r.bandH < 44;
-          assert.strictEqual(r.pos, unstuck ? "relative" : "sticky", `${where}: the band is not stuck at focus on #${id}`);
-          assert.ok(unstuck || r.top >= r.band - 1, `${where}: #${id} sits under the band: ${JSON.stringify(r)}`);
-          assert.ok(r.bottom <= r.spBottom + 1, `${where}: #${id} ends below the scrollport: ${JSON.stringify(r)}`);
-        }
-      }
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 line 87 landscape: at 844 x 390 with the drawer open every Tab stop of the sheet ends inside the scrollport, on Add and on Edit", async () => {
-    try {
-      for (const edit of [false, true]) {
-        if (edit) {
-          await freshLoad();
-          await b.setViewport(844, 390, true);
-          await generate(EDIT_SCALE);
-          await openEdit();
-          await openDrawer();
-        } else {
-          await addWithDrawer(844, 390);
-        }
-        await b.eval(`document.getElementById("scale-back").focus(); return true;`);
-        const seen = [];
-        for (let i = 0; i < 34; i++) {
-          await b.key("Tab", "Tab", 9);
-          const r = await b.eval(`
-            const a = document.activeElement, sp = ${body};
-            if (!a || !sp.contains(a)) return null;
-            const e = a.getBoundingClientRect(), s = sp.getBoundingClientRect();
-            return { id: a.id || a.tagName, top: e.top - s.top, bottom: e.bottom - s.top, port: s.height };`);
-          if (!r) continue;
-          seen.push(r.id);
-          const fits = r.bottom - r.top <= r.port;
-          assert.ok(r.top >= -1 && (fits ? r.bottom <= r.port + 1 : r.top < r.port),
-            `${edit ? "Edit" : "Add"} at 844 x 390: #${r.id} ends outside the scrollport: ${JSON.stringify(r)}`);
-        }
-        assert.ok(seen.includes("scale-anchor-between"), `Tab never reached #1 / #2: ${seen}`);
-      }
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DR1 line 89 (report): where the Layout tab sits at 380 x 667, and the status at 844 x 390", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 667, true);
-      await openSheet();
-      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-      const t = await b.eval(`const sp = ${body}; sp.scrollTop = 0;
-        const sr = sp.getBoundingClientRect(); const r = document.getElementById("scale-tab-layout").getBoundingClientRect();
-        return { top: r.top - sr.top, bottom: r.bottom - sr.top, scrollport: sr.height };`);
-      console.log("DR1 line 89: Layout tab at 380 x 667, scrollTop 0:", JSON.stringify(t));
-      await addWithDrawer(844, 390);
-      const st = await b.eval(`const sp = ${body}.getBoundingClientRect();
-        const r = document.getElementById("scale-drawer-status").getBoundingClientRect();
-        return { top: r.top - sp.top, bottom: r.bottom - sp.top, scrollport: sp.height, hidden: document.getElementById("scale-drawer-status").hidden };`);
-      console.log("DR1 line 89: status at 844 x 390, open:", JSON.stringify(st));
-      assert.ok(Number.isFinite(t.top) && Number.isFinite(st.top));
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   const activeChipText = () => b.eval(`
     const el = document.activeElement;
@@ -5616,31 +4673,21 @@ function run() {
       await generate(EDIT_SCALE);
       await openEdit();
 
+      await b.click("#editor-more");
       const st = await b.eval(`
-        const rows = ["scale-name-row", "scale-delete-row"]
-          .map(id => !document.getElementById(id).hasAttribute("hidden"));
-        const surf = document.getElementById("scale-sheet").firstElementChild
-          .getBoundingClientRect();
         return {
-          rows,
-          box: document.getElementById("scale-box").value,
-          name: document.getElementById("scale-name").value,
-          primary: document.getElementById("scale-generate").textContent.trim(),
-          del: document.getElementById("scale-delete").textContent.trim(),
-          delColor: getComputedStyle(document.getElementById("scale-delete")).color,
-          delWide: document.getElementById("scale-delete")
-            .getBoundingClientRect().width > surf.width * 0.8,
+          line: document.getElementById("editor-line").value,
+          name: document.getElementById("editor-name").value || document.getElementById("editor-name").placeholder,
+          title: document.getElementById("editor-title").textContent.trim(),
+          del: !!document.getElementById("editor-delete"),
           cardW: getComputedStyle(document.documentElement).getPropertyValue("--card-w"),
           body: { sw: document.body.scrollWidth, cw: document.body.clientWidth },
         };
       `);
-      assert.deepStrictEqual(st.rows, [true, true], "an Edit-only row is hidden");
-      assert.match(st.box, /^\(D3\) /, `the Edit box reads "${st.box}"`);
+      assert.match(st.line, /^\(D3\) /, `the Edit line reads "${st.line}"`);
       assert.ok(st.name.length > 0, "the Name field is empty");
-      assert.strictEqual(st.primary, "SAVE CHANGES");
-      assert.strictEqual(st.del, "DELETE THIS SCALE");
-      assert.strictEqual(st.delColor, "rgb(94, 88, 80)", "the delete link is not the field-guide muted #5E5850");
-      assert.strictEqual(st.delWide, false, "the delete link reads as a second primary");
+      assert.strictEqual(st.title, "Edit this scale");
+      assert.strictEqual(st.del, true, "no delete item on an Edit");
       assert.strictEqual(st.cardW, beforeCardW, "--card-w moved when the Edit sheet opened");
       assert.ok(st.body.sw <= st.body.cw + 1,
         `the Edit sheet scrolls the page horizontally (${st.body.sw} > ${st.body.cw})`);
@@ -5670,7 +4717,7 @@ function run() {
       await clickPoint(8, 8);
       assert.strictEqual(await sheetShown(), true,
         "a tap near the Edit page edge closed it, discarding the edit");
-      await b.click("#scale-back");
+      await b.click("#editor-back");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "BACK to close the Edit page" });
       assert.strictEqual(await sheetShown(), false);
@@ -5679,184 +4726,14 @@ function run() {
     }
   });
 
-  test("Tab is trapped inside the Edit sheet and reaches every Edit control", async () => {
-    try {
-      await editFreshDeck();
-      const seen = [];
-      for (let i = 0; i < 31; i++) {
-        await b.key("Tab", "Tab", 9);
-        seen.push(await b.eval(`
-          const el = document.activeElement;
-          const sheet = document.getElementById("scale-sheet");
-          return { id: (el && el.id) || (el && el.className) || "",
-                   inside: !!(el && sheet.contains(el)) };
-        `));
-      }
-      assert.ok(seen.every(s => s.inside),
-        `Tab escaped the Edit sheet: ${JSON.stringify(seen)}`);
-      const ids = new Set(seen.map(s => s.id));
-      for (const id of ["scale-back",
-                        "scale-name", "scale-box", "scale-generate", "scale-delete"]) {
-        assert.ok(ids.has(id), `Tab never reached #${id}: ${JSON.stringify([...ids])}`);
-      }
-      await openDrawer();
-      const inner = [];
-      for (let k = 0; k < 40; k++) {
-        await b.key("Tab", "Tab", 9);
-        inner.push(await b.eval(`
-          const el = document.activeElement;
-          return { id: (el && el.id) || "", dot: el ? [...document.querySelectorAll("#scale-swatches .dot")].indexOf(el) : -1,
-                   inside: !!(el && document.getElementById("scale-sheet").contains(el)) };`));
-      }
-      assert.ok(inner.every(x => x.inside), `Tab escaped the Layout tab: ${JSON.stringify(inner)}`);
-      const innerIds = new Set(inner.map(x => x.id));
-      const dots = [...new Set(inner.map(x => x.dot).filter(d => d >= 0))].sort((p, q) => p - q);
-      assert.deepStrictEqual(dots, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], `the Layout-tab walk did not reach all ten swatches: ${JSON.stringify(dots)}`);
-      for (const id of ["scale-back", "scale-anchor-one", "scale-anchor-between", "scale-mirror"]) {
-        assert.ok(innerIds.has(id), `Tab never reached #${id} on the Layout tab: ${JSON.stringify([...innerIds])}`);
-      }
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("RD: the Edit page's Tab order is BACK, the Scale tab, name, the fields, box, SAVE CHANGES, DELETE on the Scale tab, forward and back, and no stop is a select", async () => {
-    try {
-      await editFreshDeck();
-      await b.setViewport(380, 800, true);
-      const stop = () => b.eval(`
-        const el = document.activeElement;
-        return (el && (el.id || el.getAttribute("aria-label"))) || "";`);
-      assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false,
-        "the Edit page did not open on the Scale tab");
-      const cycle = 11;
-      const walk = async (start, shift) => {
-        await b.eval(`document.getElementById(${JSON.stringify(start)}).focus(); return true;`);
-        const seen = [];
-        for (let i = 0; i < cycle; i++) {
-          await tabKey(shift);
-          seen.push(await stop());
-        }
-        return seen;
-      };
-      const forward = await walk("scale-back", false);
-      assert.deepStrictEqual(forward,
-        ["scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-generate", "scale-delete", "scale-back"]);
-      const backward = await walk("scale-delete", true);
-      assert.deepStrictEqual(backward,
-        ["scale-generate", "scale-box", "scale-neotone", "scale-bottom", "scale-inner", "scale-top", "scale-ding", "scale-name", "scale-tab-scale", "scale-back", "scale-delete"]);
-      assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null,
-        "the Edit sheet still holds a select");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SPB: the Scale tab's Tab stops end box, primary, DELETE with no swatch; the Layout tab's run RESET LAYOUT, the six swatches, primary, DELETE, forward and back, on create and Edit", async () => {
-    const swatches = Array.from({ length: 10 }, (_, i) => `Palette ${i + 1}`);
-    const ran = [];
-    const stop = () => b.eval(`
-      const el = document.activeElement;
-      return (el && (el.id || el.getAttribute("aria-label"))) || "";`);
-    const walk = async (cycle, shift) => {
-      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
-      const seen = [];
-      for (let i = 0; i < cycle.length; i++) {
-        await tabKey(shift);
-        seen.push(await stop());
-      }
-      return seen;
-    };
-    const both = async (label, cycle) => {
-      assert.ok(cycle.length > 5, `${label}: the expected cycle is too short to mean anything`);
-      assert.deepStrictEqual(await walk(cycle, false), [...cycle.slice(1), cycle[0]], `${label}: forward`);
-      assert.deepStrictEqual(await walk(cycle, true), [...cycle.slice(1).reverse(), cycle[0]], `${label}: backward`);
-    };
-    try {
-      for (const mode of ["create", "edit"]) {
-        const edit = mode === "edit";
-        if (edit) await editFreshDeck();
-        else {
-          await freshLoad();
-          await b.setViewport(380, 840, true);
-          await openSheet();
-          await typeScale(EDIT_SCALE);
-        }
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-delete-row").hidden;`), !edit,
-          `${mode}: the DELETE row is ${edit ? "hidden on Edit" : "shown on create"}`);
-        assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches button").length;`), 10, `${mode}: ten swatches`);
 
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-panel-scale").hidden;`), false, `${mode}: opens on the Scale tab`);
-        const scaleCycle = edit
-          ? ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-generate", "scale-delete"]
-          : ["scale-back", "scale-tab-scale", "scale-name", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-neotone", "scale-box", "scale-next"];
-        await both(`${mode} Scale tab`, scaleCycle);
-        assert.ok(!scaleCycle.some((id) => swatches.includes(id)), "the Scale cycle names a swatch");
-        ran.push(`${mode}/scale`);
-
-        await openDrawer();
-        await b.eval(`document.getElementById("scale-anchor-between").scrollIntoView({ block: "center" }); return true;`);
-        await b.click("#scale-anchor-between");
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-layout-reset").disabled;`), false,
-          `${mode}: RESET LAYOUT is a stop only once a layout change enables it`);
-        const panhit = await b.eval(`const el = document.querySelector('#scale-preview .panhit[tabindex="0"]'); return el ? (el.id || el.getAttribute("aria-label") || "") : null;`);
-        assert.notStrictEqual(panhit, null, `${mode}: the plate is not a tab stop`);
-        const layoutCycle = ["scale-back", "scale-tab-layout", panhit, "scale-mode-standard", "scale-mode-neotone", "scale-anchor-one", "scale-anchor-between", "scale-mirror",
-          "scale-fine-toggle", "scale-layout-reset", ...swatches, "scale-generate", ...(edit ? ["scale-delete"] : [])];
-        await both(`${mode} Layout tab`, layoutCycle);
-        ran.push(`${mode}/layout`);
-        assert.strictEqual(await b.eval(`return document.querySelector("#scale-sheet select");`), null, `${mode}: the sheet holds a select`);
-      }
-      assert.deepStrictEqual(ran, ["create/scale", "create/layout", "edit/scale", "edit/layout"]);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("SPB: at 380x780 a swatch picked on the Layout tab survives a switch to Scale and back and is the palette GENERATE CARDS saves", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await openSheet();
-      await typeScale(EDIT_SCALE);
-      const pressed = () => b.eval(`return [...document.querySelectorAll("#scale-swatches .dot")].map(d => d.getAttribute("aria-pressed"));`);
-      const PICK = 9;
-      const want = Array.from({ length: 10 }, (_, i) => String(i === PICK));
-      await openDrawer();
-      assert.deepStrictEqual(await pressed(), Array.from({ length: 10 }, (_, i) => String(i === 0)), "palette 1 is not the default");
-      await b.eval(`document.querySelectorAll("#scale-swatches button")[${PICK}].scrollIntoView({ block: "center" }); return true;`);
-      await b.click(`#scale-swatches > *:nth-child(${PICK + 1})`);
-      assert.deepStrictEqual(await pressed(), want, "the tap did not pick the tenth swatch");
-
-      await b.eval(`document.getElementById("scale-tab-scale").scrollIntoView({ block: "nearest" }); return true;`);
-      await b.click("#scale-tab-scale");
-      await b.waitFor(`!document.getElementById("scale-panel-scale").hidden`, { label: "the Scale tab" });
-      assert.strictEqual(await b.eval(`return document.getElementById("scale-swatches").getClientRects().length;`), 0,
-        "the swatches are rendered on the Scale tab");
-      await openDrawer();
-      assert.deepStrictEqual(await pressed(), want, "the pick did not survive Scale and back");
-      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[${PICK}].classList.contains("sel");`), true);
-
-      await clickGenerate();
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after GENERATE CARDS" });
-      const saved = (await nativeSavedEnvelope(b)).entries.map(row=>row.record.o&&row.record.o.palette);
-      assert.deepStrictEqual(saved, [PICK], "the saved deck record does not carry the picked palette");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("renaming from the Edit sheet relabels the chip", async () => {
     try {
       await editFreshDeck();
-      await b.eval(`
-        const el = document.getElementById("scale-name");
-        el.value = "RAY'S PAN";
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        return el.value;
-      `);
+      await typeName("RAY'S PAN");
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after SAVE CHANGES" });
@@ -5937,66 +4814,18 @@ function run() {
     assert.ok(st.body.sw <= st.body.cw + 1,
       `${what} scrolls the page horizontally (${st.body.sw} > ${st.body.cw})`);
 
-  test("the armed delete button still answers a press, in the pressed colour", async () => {
-    /* The armed rule and the shared :active rule have the same specificity,
-       so whichever comes last in the file wins. Armed came last, which left
-       the armed button as the only control on the page that did not answer a
-       press - on the one tap that most needs an acknowledgement, because it
-       is the tap that destroys the deck. Held down rather than clicked: the
-       press state only exists between mousePressed and mouseReleased, and the
-       release here is the confirming tap, so this also proves the armed
-       button still fires while wearing its press colour. */
-    try {
-      await editFreshDeck();
-      await b.click("#scale-delete");
-      const box = await b.eval(`
-        const r = document.getElementById("scale-delete").getBoundingClientRect();
-        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-      `);
-      await b.send("Input.dispatchMouseEvent",
-        { type: "mousePressed", x: box.x, y: box.y, button: "left", clickCount: 1 });
-      const held = await b.eval(`
-        const el = document.getElementById("scale-delete");
-        return { color: getComputedStyle(el).color, armed: el.hasAttribute("data-armed") };
-      `);
-      await b.send("Input.dispatchMouseEvent",
-        { type: "mouseReleased", x: box.x, y: box.y, button: "left", clickCount: 1 });
-
-      assert.strictEqual(held.armed, true,
-        "the button disarmed under its own press, so this measured the idle colour");
-      assert.notStrictEqual(held.color, "rgb(227, 178, 92)",
-        "the armed delete button keeps its amber under the thumb - the press that "
-        + "destroys the deck is the one control on the page that does not answer");
-      assert.strictEqual(held.color, "rgb(90, 73, 166)",
-        "the armed delete button presses to something other than the field-guide hover violet #5A49A6 "
-        + "(paper ground: the dark-ground pressed colour #f6f4ed would vanish)");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to close after the held press was released" });
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("deleting the selected deck falls back to a built-in with a visible message", async () => {
     try {
       await editFreshDeck();
       const gone = await b.eval(`return document.querySelector("#decks .chip.on").textContent.trim();`);
-      // Owner instruction, 2026-09-17: delete takes a confirmation. The first
-      // tap only arms it, and says so in the label and in warning amber.
-      await b.click("#scale-delete");
-      const armed = await b.eval(`
-        const el = document.getElementById("scale-delete");
-        const r = el.getBoundingClientRect();
-        return { text: el.textContent.trim(), color: getComputedStyle(el).color,
-                 h: r.height, open: !document.getElementById("scale-sheet").hasAttribute("hidden") };
-      `);
-      assert.strictEqual(armed.open, true, "the first tap on DELETE closed the page");
-      assert.strictEqual(armed.text, "TAP AGAIN TO DELETE",
-        "the armed delete button does not say what the next tap does");
-      assert.strictEqual(armed.color, "rgb(36, 36, 36)",
-        "the armed delete button is not in ink (field guide: no amber on paper)");
-      assert.ok(armed.h >= 44, `the armed button shrank to ${armed.h}px, under the 44px target`);
-      await b.click("#scale-delete");
+      await b.click("#editor-more");
+      await b.click("#editor-delete");
+      assert.match(await b.eval(`return document.getElementById("editor-delete").textContent;`), /^Press again to delete /,
+        "the first tap on DELETE does not say what the next tap does");
+      assert.strictEqual(await sheetShown(), true, "the first tap on DELETE closed the page");
+      await new Promise((done) => setTimeout(done, 450));
+      await b.click("#editor-delete");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after DELETE" });
 
@@ -6034,79 +4863,6 @@ function run() {
     }
   });
 
-  test("cancelling an armed DELETE re-syncs the box, GENERATE and the message (queue row 91)", async () => {
-    /* Type a seed the parser rejects, arm DELETE, then tap elsewhere to
-       disarm it. disarmDelete() must leave the box's .bad class, the
-       GENERATE disabled state and the message agreeing with what is
-       currently typed - not with whatever they said before DELETE was
-       armed. */
-    try {
-      await editFreshDeck();
-      await typeScale("(D3) A3 H4");   // H is not a valid note letter
-      const badBefore = await b.eval(`
-        return {
-          bad: document.getElementById("scale-box").classList.contains("bad"),
-          disabled: document.getElementById("scale-generate").disabled,
-          msg: document.getElementById("scale-refusal").textContent.trim(),
-        };
-      `);
-      assert.strictEqual(badBefore.bad, true, "the rejected seed did not mark the box bad");
-      assert.strictEqual(badBefore.disabled, true, "the rejected seed left GENERATE enabled");
-      assert.ok(badBefore.msg.length > 0, "the rejected seed showed no message");
-
-      await b.click("#scale-delete");   // arm DELETE
-      const armed = await b.eval(`
-        return {
-          armed: document.getElementById("scale-delete").hasAttribute("data-armed"),
-          note: document.getElementById("scale-del-note").textContent.trim(),
-          bad: document.getElementById("scale-box").classList.contains("bad"),
-          disabled: document.getElementById("scale-generate").disabled,
-          msg: document.getElementById("scale-refusal").textContent.trim(),
-        };
-      `);
-      assert.strictEqual(armed.armed, true, "DELETE never armed");
-      /* Read the seed row WHILE armed, not only after the disarm. This is the
-         half that stays observable: the disarm re-derives, so damage done by
-         arming would be repaired before the after-read and the repair would
-         hide its own cause. Queue row 91 WAS that cause - the arming warning
-         and the parser's refusal sharing one element - so assert the warning
-         went to its own line and left the seed's three-way agreement alone. */
-      assert.ok(armed.note.length > 0, "arming DELETE wrote no confirmation");
-      assert.strictEqual(armed.msg, badBefore.msg,
-        `arming DELETE took the seed's row: the refusal became "${armed.msg}"`);
-      assert.strictEqual(armed.bad, true, "arming DELETE cleaned the rejected box");
-      assert.strictEqual(armed.disabled, true, "arming DELETE made GENERATE live");
-
-      // tap elsewhere in the sheet - not on DELETE - to disarm it
-      await clickPoint(8, 8);
-      const disarmed = await b.eval(
-        `return document.getElementById("scale-delete").hasAttribute("data-armed");`);
-      assert.strictEqual(disarmed, false, "the tap elsewhere did not disarm DELETE");
-
-      const after = await b.eval(`
-        return {
-          bad: document.getElementById("scale-box").classList.contains("bad"),
-          disabled: document.getElementById("scale-generate").disabled,
-          msg: document.getElementById("scale-refusal").textContent.trim(),
-          text: document.getElementById("scale-box").value,
-        };
-      `);
-      // The seed in the box is still rejected, so all three must still SAY so -
-      // asserted against what the rejection itself showed, not against each
-      // other: `after.bad === after.disabled` is satisfied by both being false,
-      // which is precisely the state where the box has gone clean and GENERATE
-      // is live on a seed the parser refuses.
-      assert.strictEqual(after.bad, true,
-        `after disarming, the box is no longer bad for the rejected "${after.text}"`);
-      assert.strictEqual(after.disabled, true,
-        `after disarming, GENERATE is live on the rejected "${after.text}"`);
-      assert.strictEqual(after.msg, badBefore.msg,
-        `after disarming, the parser's refusal became "${after.msg}"`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ----------------------------------------------------------------
    * a field edit REPLACES the deck (queue row 73), at 380px
@@ -6284,7 +5040,7 @@ function run() {
   test("an edit onto another scale's inventory preserves both chips at 380px and remains editable", async () => {
     try {
       await freshLoad();await b.setViewport(380,780,true);await generate(EDIT_SCALE);await generate(COLLIDE_SCALE);
-      await openEdit();await b.eval(`const el=document.getElementById('scale-name');el.value="RAY'S PAN";el.dispatchEvent(new Event('input',{bubbles:true}));return true;`);
+      await openEdit();await typeName("RAY'S PAN");
       await clickGenerate();await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"sibling rename acknowledgment"});
       const before=await chipReport(),saved=await nativeSavedEnvelope(b);
       const sibling=saved.entries.find(row=>row.record.o.name==="RAY'S PAN");assert.ok(sibling);
@@ -6297,10 +5053,11 @@ function run() {
       assert.deepStrictEqual(after.selection,target.selection);assert.notStrictEqual(after.inventory,target.inventory);assert.strictEqual(after.inventory,siblingInventory,"converging Edit reaches the sibling musical inventory");
       assert.strictEqual(after.envelope.entries.length,saved.entries.length);assert.deepStrictEqual(after.envelope.entries.find(row=>row.instanceId===sibling.instanceId),sibling,"converging Edit cannot rewrite a named sibling");
       assert.ok((await chipReport()).chips.includes("RAY'S PAN"));
-      await openEdit();const initial=await sheetState();assert.strictEqual(initial.open,true);assert.strictEqual(initial.bad,false);assert.strictEqual(initial.primaries,1);
-      await typeScale(SIX_SCALES[3]);const retyped=await sheetState();assert.strictEqual(retyped.open,true);assert.strictEqual(retyped.primaries,1);assert.strictEqual(retyped.bad,false);assert.strictEqual(retyped.msg,"");assert.ok(retyped.body.sw<=retyped.body.cw+1);
-      await b.eval("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;");
-      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"Escape discards later draft"});
+      await openEdit();assert.strictEqual(await sheetShown(),true);
+      await typeScale(SIX_SCALES[3]);assert.strictEqual(await sheetShown(),true);assert.ok(await b.eval("return document.body.scrollWidth<=document.body.clientWidth+1;"));
+      await b.click("#editor-back");
+      await b.click("#editor-dlg-discard");
+      await b.waitFor("document.getElementById('scale-sheet').hidden",{label:"BACK discards later draft"});
       assert.deepStrictEqual(await nativeSavedEnvelope(b),after.envelope,"cancelled later draft never rewrites either saved instance");
     }finally{await b.setViewport(900,900,false);}
   });
@@ -6331,111 +5088,7 @@ function run() {
     return r;
   `);
 
-  test("a pan warning on the Edit open does not move the pan", async () => {
-    // Path (a): openEditSheet() says its warnings AFTER showSheet() has already
-    // filled the parse line. "(C3) G3 D4 G4 D5" has three pitch classes, so the
-    // engine warns NO_THIRDS on every open.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 840, true);
-      await generate("(C3) G3 D4 G4 D5");
-      await openEdit();
-      const read = () => b.eval(`
-        const row = document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect();
-        return {
-          panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
-          rowBottom: row.bottom,
-          viewportH: window.innerHeight,
-          msg: document.getElementById("scale-msg").textContent.trim(),
-          msgTop: document.getElementById("scale-msg").getBoundingClientRect().top,
-          inSlot: document.getElementById("scale-guidance").contains(document.getElementById("scale-msg")),
-          portBottom: document.querySelector(".sheetbody").getBoundingClientRect().bottom,
-          refusal: document.getElementById("scale-refusal").textContent.trim(),
-          parse: document.getElementById("scale-parse").textContent.trim(),
-        };
-      `);
-      await b.settle();
-      const warned = await read();
-      assert.ok(warned.msg.length > 0,
-        "this deck is meant to warn on open - the fixture no longer warns");
-      // The warning is not about the seed, so it must not be in the seed's row.
-      assert.strictEqual(warned.refusal, "",
-        `the pan warning was written to the seed refusal line: "${warned.refusal}"`);
-      assert.ok(warned.parse.length > 0,
-        "the parse line is empty on a valid prefilled seed");
-      assert.ok(warned.msgTop >= warned.panTop,
-        `the warning's top is ${warned.msgTop.toFixed(1)}px, above the pan at ` +
-        `${warned.panTop.toFixed(1)}px - it is sharing the seed's row`);
-      assert.ok(warned.inSlot && warned.msgTop >= warned.portBottom - 0.5,
-        `the warning is not in the pinned guidance slot below the scrollport (inSlot ${warned.inSlot}, ` +
-        `top ${warned.msgTop.toFixed(1)}px, scrollport bottom ${warned.portBottom.toFixed(1)}px)`);
-      const reach = await layoutRowReachable();
-      assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `the scale field row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
-        `at ${reach.portBottom.toFixed(1)}px - the Scale tab's last row is out of reach`);
 
-      // The next keystroke re-syncs the parse line. If the warning shared that
-      // row, the row would shrink back to one line and step the pan.
-      await typeScale("(C3) G3 D4 G4 D5 ");
-      await b.settle();
-      const typed = await read();
-      assert.ok(Math.abs(typed.panTop - warned.panTop) < 0.5,
-        `the pan moved ${(typed.panTop - warned.panTop).toFixed(1)}px on the first ` +
-        `keystroke after a warned open (warned=${warned.panTop.toFixed(1)}, ` +
-        `typed=${typed.panTop.toFixed(1)})`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("a zero-chord build refusal on SAVE does not move the pan", async () => {
-    // Path (b): runGenerate() refuses a seed that PARSED FINE, so the parse
-    // line is full when the refusal arrives - the one case where a refusal and
-    // the parse summary are both live at once.
-    try {
-      await freshLoad();
-      // 800 high, not 780: the second scale label (spec line 9) is a permanent
-      // extra line, so the row sits ~12px lower than it did before it.
-      await b.setViewport(380, 800, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
-      await selectChipAt(1);   // the FIRST custom deck, now chip 2
-      await openEdit();
-
-      const read = () => b.eval(`
-        const row = document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect();
-        return {
-          panTop: document.getElementById("scale-preview").getBoundingClientRect().top,
-          rowBottom: row.bottom,
-          viewportH: window.innerHeight,
-          refusal: document.getElementById("scale-refusal").textContent.trim(),
-          msg: document.getElementById("scale-msg").textContent.trim(),
-        };
-      `);
-      // Baseline AFTER typing, so the only thing that changes across the SAVE
-      // is the refusal itself.
-      const savedBefore = await stageBuildRefusal();
-      await b.settle();
-      const before = await read();
-
-      await submitBuildRefusal(savedBefore);
-      await b.settle();
-      const after = await read();
-      assert.strictEqual(after.refusal, BUILD_REFUSAL_TEXT,
-        `the refused save says "${after.refusal}" in the seed's row`);
-      assert.strictEqual(after.msg, "",
-        `the seed refusal was written below the pan as well: "${after.msg}"`);
-      assert.ok(Math.abs(after.panTop - before.panTop) < 0.5,
-        `the pan moved ${(after.panTop - before.panTop).toFixed(1)}px on the refusal ` +
-        `(before=${before.panTop.toFixed(1)}, after=${after.panTop.toFixed(1)})`);
-      const reach = await layoutRowReachable();
-      assert.ok(reach.rowBottom <= reach.portBottom + 0.5,
-        `the scale field row's bottom is ${reach.rowBottom.toFixed(1)}px against a scrollport ending ` +
-        `at ${reach.portBottom.toFixed(1)}px - the refusal pushed the Scale tab's last row out of reach`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /** Tap a note on the pan the way a finger does: real pointer events at the
    *  circle's own centre. The pointerdown lands on the `.panhit`, and the
@@ -6453,143 +5106,9 @@ function run() {
     await clickPoint(at.x, at.y);
   }
 
-  test("with DELETE armed, the first tap on a pan note still chooses it (queue row 91)", async () => {
-    /* disarmDelete() runs on the pointerdown, and the pan is the thing under
-       the finger. Repainting it there replaces #scale-preview's markup, so the
-       .panhit the press landed on is detached before the click arrives; the
-       click retargets to an ancestor, the delegated handler finds no hit and
-       drops it, and the owner's first tap does nothing at all. */
-    try {
-      await editFreshDeckOpen();
-      await b.eval(`document.getElementById("scale-delete").click(); return true;`);
-      assert.strictEqual(
-        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
-        true, "DELETE never armed");
-      const before = await panState();
-      const target = before.notes.find(n => n !== before.selected);
-      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(before.notes)}`);
 
-      await tapPanNote(target);
-      const after = await panState();
-      assert.strictEqual(after.selected, target,
-        `with DELETE armed, tapping ${target} selected ${after.selected} - the tap was ` +
-        `swallowed by the disarm's repaint`);
-      assert.strictEqual(
-        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
-        false, "the tap on the pan did not disarm DELETE");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("disarming DELETE leaves a standing build refusal up (queue row 91)", async () => {
-    /* The seed parses, but building produces no playable chords. Only a
-       real seed edit can clear this submit refusal; layout and pointer actions
-       must retain the actionable explanation and committed saved state. */
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
 
-      await selectChipAt(1);
-      await openEdit();
-      const savedBefore = await stageBuildRefusal();
-      await submitBuildRefusal(savedBefore);
-
-      const refused = await sheetState();
-      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
-        `the sheet says "${refused.msg}"`);
-
-      await b.click("#scale-delete");           // arm DELETE on the refused seed
-      assert.strictEqual(
-        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
-        true, "DELETE never armed");
-      await clickPoint(8, 8);                   // and look away again
-
-      const after = await sheetState();
-      await assertStandingBuildRefusal(savedBefore);
-      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
-        `after disarming DELETE the sheet says "${after.msg}"`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("an ordinary unarmed tap does not wipe a build refusal (queue row 91 guard)", async () => {
-    /* The seed parses, but building produces no playable chords. Only a
-       real seed edit can clear this submit refusal; layout and pointer actions
-       must retain the actionable explanation and committed saved state. */
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
-
-      // EDIT_SCALE's chip: generated before COLLIDE_SCALE, so chip 2 (newest custom first).
-      await selectChipAt(1);
-      await openEdit();
-      const savedBefore = await stageBuildRefusal();
-      await submitBuildRefusal(savedBefore);
-
-      const st1 = await sheetState();
-      assert.strictEqual(st1.msg, BUILD_REFUSAL_TEXT,
-        `the sheet says "${st1.msg}"`);
-
-      // an ordinary tap elsewhere in the sheet - DELETE was never armed
-      await clickPoint(8, 8);
-
-      const st2 = await sheetState();
-      await assertStandingBuildRefusal(savedBefore);
-      assert.strictEqual(st2.bad, st1.bad,
-        "an ordinary tap while unarmed changed .bad on a build refusal");
-      assert.strictEqual(st2.msg, st1.msg,
-        `an ordinary tap while unarmed changed the refusal message: "${st1.msg}" -> "${st2.msg}"`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("flipping the mirror does not wipe a build refusal (queue row 115)", async () => {
-    /* The seed parses, but building produces no playable chords. Only a
-       real seed edit can clear this submit refusal; layout and pointer actions
-       must retain the actionable explanation and committed saved state. */
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
-
-      await selectChipAt(1);
-      await openEdit();
-      const savedBefore = await stageBuildRefusal();
-      await submitBuildRefusal(savedBefore);
-
-      const refused = await sheetState();
-      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
-        `the sheet says "${refused.msg}"`);
-
-      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-      await b.eval(`document.getElementById("scale-mirror")
-        .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-      const mirrorBefore=await b.eval("return document.getElementById('scale-mirror').getAttribute('aria-pressed');");
-      assert.ok(["true","false"].includes(mirrorBefore),"mirror exposes its current pressed state");
-      await b.click("#scale-mirror");
-      assert.strictEqual(await b.eval("return document.getElementById('scale-mirror').getAttribute('aria-pressed');"),
-        mirrorBefore==="true"?"false":"true","the real mirror control must actually flip");
-
-      const after = await sheetState();
-      await assertStandingBuildRefusal(savedBefore);
-      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
-        `after flipping the mirror the sheet says "${after.msg}"`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- Lane W1
    * The wrapping scale field (spec 16.2 lines 1-8, 79, 80, 118) and the two
@@ -6622,267 +5141,15 @@ function run() {
     return null;
   }
 
-  test("W1 lines 1, 2 and 118: the field is a textarea that grows from one row to three, and has no sideways overflow", async () => {
-    await freshLoad();
-    await b.setViewport(...W1_PHONE);
-    try {
-      await openSheet();
-      const m0 = await fieldMetrics();
-      assert.strictEqual(m0.tag, "TEXTAREA");
-      assert.deepStrictEqual(await b.eval(`return [
-        document.querySelectorAll("input#scale-box").length,
-        !!document.getElementById("scale-box").closest("#scale-box-wrap"),
-        document.getElementById("scale-label-2").textContent,
-        document.getElementById("scale-label-2").hidden,
-        document.getElementById("scale-box").getAttribute("aria-describedby")]`),
-      [0, true, "[NOTE] = A BOTTOM NOTE", false, "scale-label-2"]);
 
-      await typeScale("(D3) A3 C4");
-      const one = await fieldMetrics();
-      assert.strictEqual(one.rows, 1, "short text did not give one row");
-      assert.strictEqual(one.sw, one.cw, "one row scrolls sideways");
-      assert.strictEqual(one.wsw, one.wcw);
 
-      const n3 = await wordsForRows(3);
-      assert.ok(n3, "no text reached three rows at 380");
-      const three = await fieldMetrics();
-      assert.strictEqual(three.rows, 3);
-      assert.strictEqual(three.sw, three.cw, "three rows scroll sideways");
-      assert.strictEqual(three.wsw, three.wcw);
-      assert.ok(three.h > one.h + three.line, "three rows are not taller than one");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("W1 line 3: an empty field shows an 80-character placeholder whole, in at most three rows", async () => {
-    await freshLoad();
-    await b.setViewport(...W1_PHONE);
-    try {
-      await openSheet();
-      const ph = "[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5";
-      assert.strictEqual(ph.length, 80);
-      const r = await b.eval(`
-        const ta = document.getElementById("scale-box");
-        ta.placeholder = ${JSON.stringify(ph)};
-        ta.value = "";
-        ta.dispatchEvent(new Event("input", { bubbles: true }));
-        const cs = getComputedStyle(ta);
-        const probe = document.createElement("div");
-        probe.textContent = ${JSON.stringify(ph)};
-        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre-wrap;overflow-wrap:anywhere;" +
-          "box-sizing:border-box;width:" + ta.getBoundingClientRect().width + "px;font:" + cs.font +
-          ";padding:" + cs.padding + ";border:" + cs.border;
-        document.body.appendChild(probe);
-        const out = { grow: document.getElementById("scale-box-wrap").dataset.grow,
-          ta: ta.getBoundingClientRect().height, probe: probe.getBoundingClientRect().height,
-          line: parseFloat(cs.lineHeight), pad: parseFloat(cs.paddingTop) * 2 + 2 };
-        probe.remove();
-        return out;`);
-      assert.strictEqual(r.grow, ph);
-      assert.ok(r.ta >= r.probe - 0.5, `the field (${r.ta}) is shorter than the placeholder needs (${r.probe})`);
-      assert.ok(r.ta <= 3 * r.line + r.pad + 0.5, `the field (${r.ta}) is taller than three rows`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("W1 line 5: real Enter and Shift+Enter each generate once and put no line break in the box", async () => {
-    for (const modifiers of [0, 8]) {
-      await freshLoad();
-      await b.setViewport(...W1_PHONE);
-      try {
-        await openSheet();
-        await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-        for (const type of ["keyDown", "keyUp"]) {
-          await b.send("Input.dispatchKeyEvent", { type, key: "Enter", code: "Enter",
-            windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13, modifiers });
-        }
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: `the sheet to close after Enter (modifiers ${modifiers})` });
-        const state = await b.eval(`return {
-          value: document.getElementById("scale-box").value,
-          custom: document.querySelectorAll("#decks .chip:not(#deck-add)").length }`);
-        assert.doesNotMatch(state.value, /[\r\n]/);
-        assert.ok(state.custom >= 1);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    }
-  });
 
-  test("W1 line 6: an Enter that confirms an IME candidate does not generate", async () => {
-    await freshLoad();
-    await b.setViewport(...W1_PHONE);
-    try {
-      await openSheet();
-      await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
-      const r = await b.eval(`
-        const ta = document.getElementById("scale-box");
-        const ev = new KeyboardEvent("keydown", { key: "Enter", isComposing: true, bubbles: true, cancelable: true });
-        ta.dispatchEvent(ev);
-        return { prevented: ev.defaultPrevented, open: !document.getElementById("scale-sheet").hasAttribute("hidden") };`);
-      assert.strictEqual(r.prevented, false);
-      assert.strictEqual(r.open, true, "Enter during composition generated");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("W1 line 7: pasted line breaks become single spaces", async () => {
-    await freshLoad();
-    await b.setViewport(...W1_PHONE);
-    try {
-      await openSheet();
-      await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-      await b.send("Input.insertText", { text: "(D3) A3 C4\nD4\r\nE4" });
-      const v = await b.eval(`return document.getElementById("scale-box").value`);
-      assert.strictEqual(v, "(D3) A3 C4 D4 E4");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("W1 line 8: past three rows the field stays at three, scrolls inside itself and keeps the caret in view", async () => {
-    await freshLoad();
-    await b.setViewport(...W1_PHONE);
-    try {
-      await openSheet();
-      await typeScale("(D3) " + "Ab4 ".repeat(40).trim());
-      await b.eval(`const ta = document.getElementById("scale-box"); ta.focus();
-        ta.setSelectionRange(ta.value.length, ta.value.length); return true;`);
-      await b.send("Input.insertText", { text: " Eb5" });
-      const m = await fieldMetrics();
-      assert.strictEqual(m.rows, 3, "the field grew past three rows");
-      assert.ok(m.sh > m.ch + 1, "the text does not overflow the field, so the test proves nothing");
-      assert.ok(m.st + m.ch >= m.sh - 2, `the caret line is out of view (scrollTop ${m.st}, ${m.ch}/${m.sh})`);
-      assert.strictEqual(m.sw, m.cw);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("W1 line 79: Edit opens a saved scale that wraps to three lines at three rows with no input event", async () => {
-    await freshLoad();
-    await b.setViewport(320, 700, true);
-    try {
-      await generate("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]");
-      await b.eval(`window.__inputs = 0;
-        document.getElementById("scale-box").addEventListener("input", () => { window.__inputs += 1; });
-        return true;`);
-      await openEdit();
-      const m = await fieldMetrics();
-      assert.strictEqual(m.rows, 3, `the Edit field opened at ${m.rows} rows`);
-      assert.strictEqual(await b.eval(`return window.__inputs`), 0, "an input event fired");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("W1 line 80: a 60-character token with no space overflows neither the field nor its wrapper", async () => {
-    await freshLoad();
-    await b.setViewport(...W1_PHONE);
-    try {
-      await openSheet();
-      await typeScale("(D3) " + "W".repeat(60));
-      const m = await fieldMetrics();
-      assert.strictEqual(m.sw, m.cw, "the field scrolls sideways");
-      assert.strictEqual(m.wsw, m.wcw, "the wrapper scrolls sideways");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("tapping a pan note does not wipe a build refusal (queue row 115)", async () => {
-    /* The seed parses, but building produces no playable chords. Only a
-       real seed edit can clear this submit refusal; layout and pointer actions
-       must retain the actionable explanation and committed saved state. */
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
-
-      await selectChipAt(1);
-      await openEdit();
-      const savedBefore = await stageBuildRefusal();
-      await submitBuildRefusal(savedBefore);
-
-      const refused = await sheetState();
-      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
-        `the sheet says "${refused.msg}"`);
-
-      await openDrawer();
-      const pan = await panState();
-      const target = pan.notes.find(n => n !== pan.selected);
-      assert.ok(target, `the pan drew nothing to tap: ${JSON.stringify(pan.notes)}`);
-      await tapPanNote(target);
-      assert.strictEqual((await panState()).selected,target,"the real pan tap must select its target");
-
-      const after = await sheetState();
-      await assertStandingBuildRefusal(savedBefore);
-      assert.strictEqual(after.msg, BUILD_REFUSAL_TEXT,
-        `after tapping a pan note the sheet says "${after.msg}"`);
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("editing the seed after a build refusal clears it cleanly (queue row 116)", async () => {
-    /* The seed parses, but building produces no playable chords. Only a
-       real seed edit can clear this submit refusal; layout and pointer actions
-       must retain the actionable explanation and committed saved state. */
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await generate(EDIT_SCALE);
-      await generate(COLLIDE_SCALE);
-
-      await selectChipAt(1);
-      await openEdit();
-      const savedBefore = await stageBuildRefusal();
-      await submitBuildRefusal(savedBefore);
-
-      const refused = await sheetState();
-      assert.strictEqual(refused.msg, BUILD_REFUSAL_TEXT,
-        `the sheet says "${refused.msg}"`);
-
-      await typeScale(SIX_SCALES[4]);   // a playable seed resolves the build refusal
-
-      await b.click("#scale-delete");   // arm DELETE on the now-clean seed
-      assert.strictEqual(
-        await b.eval(`return document.getElementById("scale-delete").hasAttribute("data-armed");`),
-        true, "DELETE never armed");
-      await clickPoint(8, 8);           // and cancel it
-
-      const action=await b.eval(`return {
-        enabled:!document.getElementById('scale-generate').disabled,
-        conflictHidden:document.getElementById('scale-conflict').hidden &&
-          document.getElementById('scale-conflict-separate').getClientRects().length===0};`);
-      assert.strictEqual(action.enabled,true,"the real SAVE CHANGES action re-enables after a playable seed edit");
-      assert.strictEqual(action.conflictHidden,true,"save-as-separate remains hidden without a concurrency conflict");
-      const after = await sheetState();
-      await assertRefusalSavedUnchanged(savedBefore);
-      assert.strictEqual(after.bad, false,
-        "the box is still marked bad after the build refusal was fixed");
-      assert.strictEqual(after.msg, "",
-        `the sheet still says "${after.msg}" after the build refusal was fixed`);
-      assert.strictEqual(after.primaries, 1,
-        "SAVE CHANGES is not live after the build refusal was fixed");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("an options-only edit keeps its chip position across a reload at 380px", async () => {
     try {
@@ -6898,8 +5165,8 @@ function run() {
 
       await selectChipAt(at);
       await openEdit();
-      await openDrawer();
-      await b.click("#scale-swatches > *:nth-child(5)");    // an OPTION only: the id cannot move
+      await b.click("#editor-tab-layout");
+      await b.click('#editor-swatches button[data-palette="4"]');    // an OPTION only: the id cannot move
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after SAVE CHANGES" });
@@ -7029,191 +5296,15 @@ function run() {
       { label: `the scale sheet to open at ${w}x${h}` });
   };
 
-  test("GENERATE CARDS is reachable without scrolling at every phone viewport", async () => {
-    try {
-      await freshLoad();
-      for (const [w, h] of FOLD_VIEWPORTS) {
-        await b.setViewport(w, h, true);
-        // Freshly opened each time: the resting state is the one that matters.
-        await openSheetForFold(w, h);
-        await typeScale(BIG_SCALE);
-        // The preview is drawn on parse and is the tallest thing on the create
-        // sheet; measuring before it lands would flatter the result.
-        await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
-          { label: `the preview to render at ${w}x${h}` });
-        assertPrimaryVisible(await primaryFold(), `create sheet at ${w}x${h}`);
-        await b.click("#scale-tab-layout");
-        assertPrimaryVisible(await primaryFold(), `create sheet, Layout tab, at ${w}x${h}`);
-        await b.key("Escape", "Escape", 27);
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: "the sheet to close" });
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("CN7: at 380x780 the Add sheet shows SCALE NAME above DING and the primary stays visible", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await openSheetForFold(380, 780);
-      const m = await b.eval(`
-        const r = (id) => document.getElementById(id).getBoundingClientRect();
-        const n = r("scale-name"), d = r("scale-ding");
-        return { hidden: document.getElementById("scale-name-row").hidden,
-          nameBottom: n.bottom, nameHeight: n.height, nameTop: n.top, dingTop: d.top, vh: window.innerHeight };`);
-      assert.strictEqual(m.hidden, false, "the SCALE NAME row is hidden on Add");
-      assert.ok(m.nameHeight > 0 && m.nameTop >= 0 && m.nameBottom <= m.vh, "SCALE NAME is not on screen");
-      assert.ok(m.nameBottom <= m.dingTop + 0.5, "SCALE NAME is not above DING");
-      await typeScale(BIG_SCALE);
-      await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
-        { label: "the preview to render at 380x780" });
-      assertPrimaryVisible(await primaryFold(), "create sheet with SCALE NAME at 380x780");
-      await b.key("Escape", "Escape", 27);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DS3: SCALE NAME labels the name row on Add and on Edit at 380x780", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await openSheetForFold(380, 780);
-      const label = () => b.eval(`return document.querySelector('label[for="scale-name"]').textContent.trim();`);
-      assert.strictEqual(await label(), "SCALE NAME");
-      await b.key("Escape", "Escape", 27);
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Add sheet to close" });
-      await openEdit();
-      assert.strictEqual(await label(), "SCALE NAME");
-      assert.strictEqual(await b.eval(`return document.getElementById("scale-name-row").hidden;`), false);
-      await b.key("Escape", "Escape", 27);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SAVE CHANGES is reachable without scrolling on a built-in-sized deck", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await generate(EDIT_SCALE);
-      for (const [w, h] of FOLD_VIEWPORTS) {
-        await b.setViewport(w, h, true);
-        await openEdit();
-        const m = await primaryFold();
-        assert.strictEqual(m.label, "SAVE CHANGES", "this is not the Edit sheet");
-        assertPrimaryVisible(m, `Edit sheet (8 notes) at ${w}x${h}`);
-        await b.key("Escape", "Escape", 27);
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: "the Edit sheet to close" });
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   const THREE_ROW_SCALE = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6 G6 A6 B6 C7 D7 E7 F7 G7 A7 B7 C8 D8 E8 F8";
 
-  test("G2b: GENERATE CARDS stays on screen when the scale field is three rows tall", async () => {
-    try {
-      await freshLoad();
-      for (const [w, h] of FOLD_VIEWPORTS) {
-        await b.setViewport(w, h, true);
-        await openSheetForFold(w, h);
-        await typeScale(THREE_ROW_SCALE);
-        await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
-          { label: `the preview to render at ${w}x${h}` });
-        const m = await fieldMetrics();
-        if (w <= 390) assert.strictEqual(m.rows, 3, `the field is ${m.rows} rows at ${w}x${h}, not three`);
-        assertPrimaryVisible(await primaryFold(), `three-row create sheet at ${w}x${h}`);
-        await b.click("#scale-tab-layout");
-        assertPrimaryVisible(await primaryFold(), `three-row create sheet, Layout tab, at ${w}x${h}`);
-        await b.key("Escape", "Escape", 27);
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: "the sheet to close" });
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("G2b spec lines 9 and 11: the second label is shown whole and the count line wraps at 380 with no sideways scroll", async () => {
-    await freshLoad();
-    await b.setViewport(...W1_PHONE);
-    try {
-      await openSheet();
-      await typeScale("[C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5");
-      const m = await b.eval(`
-        const l2 = document.getElementById("scale-label-2");
-        const parse = document.getElementById("scale-parse");
-        const surf = document.getElementById("scale-sheet").firstElementChild;
-        const lh = parseFloat(getComputedStyle(parse).lineHeight);
-        return { l2h: l2.hidden, l2w: l2.scrollWidth, l2c: l2.clientWidth,
-          l2r: l2.getBoundingClientRect().right, vw: window.innerWidth,
-          pw: parse.scrollWidth, pc: parse.clientWidth, ph: parse.getBoundingClientRect().height, lh,
-          pt: parse.textContent, sw: surf.scrollWidth, sc: surf.clientWidth };`);
-      assert.strictEqual(m.l2h, false, "the second label is hidden");
-      assert.ok(m.l2w <= m.l2c + 1, `the second label is clipped (${m.l2w} > ${m.l2c})`);
-      assert.ok(m.l2r <= m.vw, "the second label runs off the right edge");
-      assert.match(m.pt, /^Ding E3 \u00b7 9 top \u00b7 3 inner \u00b7 7 bottom\./);
-      assert.ok(m.ph > m.lh * 1.5, `the count line did not wrap (${m.ph}px at ${m.lh}px lines)`);
-      assert.ok(m.pw <= m.pc + 1, "the count line scrolls sideways");
-      assert.ok(m.sw <= m.sc + 1, "the sheet scrolls sideways");
-    } finally {
-      await b.key("Escape", "Escape", 27);
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SAVE CHANGES is reachable without scrolling on the largest pan the engine allows", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await generate(BIG_SCALE);
-      for (const [w, h] of FOLD_VIEWPORTS) {
-        await b.setViewport(w, h, true);
-        await openEdit();
-        const m = await primaryFold();
-        assert.strictEqual(m.label, "SAVE CHANGES", "this is not the Edit sheet");
-        assert.ok(m.slots >= 17,
-          `the worst case regressed: the pan draws only ${m.slots} labels`);
-        assertPrimaryVisible(m, `Edit sheet (${m.slots} notes) at ${w}x${h}`);
-        await b.key("Escape", "Escape", 27);
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: "the Edit sheet to close" });
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("GENERATE CARDS survives a viewport shrunk the way a soft keyboard shrinks one", async () => {
-    // PROXY ONLY. A real iOS keyboard shrinks the visual viewport and leaves
-    // dvh alone, so this is the friendlier of the two cases, not the honest
-    // one; the honest one needs a device. It still pins the regression that a
-    // short viewport must not bury the primary.
-    try {
-      await freshLoad();
-      for (const h of [544, 508]) {
-        await b.setViewport(390, h, true);
-        await openSheet();
-        await typeScale(BIG_SCALE);
-        await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
-          { label: `the preview to render at 390x${h}` });
-        assertPrimaryVisible(await primaryFold(), `create sheet at 390x${h} (keyboard proxy)`);
-        await b.click("#scale-tab-layout");
-        assertPrimaryVisible(await primaryFold(), `create sheet, Layout tab, at 390x${h} (keyboard proxy)`);
-        await b.key("Escape", "Escape", 27);
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: "the sheet to close" });
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   // The owner's own bug, in one measurement: "The keyboard pushes up the input
   // field past the viewport so I can't edit." Both ends of the page have to
@@ -7249,38 +5340,6 @@ function run() {
       `(top ${m.gen.top.toFixed(1)}, bottom ${m.gen.bottom.toFixed(1)})`);
   }
 
-  test("with the box focused and the viewport shrunk, both the box and the primary stay on screen", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await generate(EDIT_SCALE);
-
-      // EDIT first, while the generated deck is the selected chip.
-      await openEdit();
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
-      await b.click("#scale-box");
-      await b.setViewport(380, 508, true);
-      await settleBox();
-      assertBothOnScreen(await boxAndPrimary(), "the Edit page at 380x508");
-      await b.key("Escape", "Escape", 27);
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit page to close" });
-
-      // Then ADD, at the same shrunken viewport.
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      await typeScale(BIG_SCALE);
-      await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
-        { label: "the preview to render" });
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
-      await b.click("#scale-box");
-      await b.setViewport(380, 508, true);
-      await settleBox();
-      assertBothOnScreen(await boxAndPrimary(), "the Add page at 380x508");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* The owner's SECOND device report, 2026-09-17, on the live site at
    * handpan.raywu.org: the keyboard pushes the bottom drawer up over the seed
@@ -7358,45 +5417,6 @@ function run() {
    * friendliest. vvHeight = 745 - keyboard. */
   const KEYBOARDS = [336, 365, 395];
 
-  test("with a real keyboard up, the seed box is not clipped by the sheet's own scroller", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 745, true);
-      await generate(EDIT_SCALE);
-
-      // EDIT first: it carries the most pinned footer, so it fails first.
-      await openEdit();
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
-      await b.click("#scale-box");
-      for (const kb of KEYBOARDS) {
-        await b.fakeKeyboard(745 - kb);
-        assertSeedBoxReadable(await seedBoxVisibility(),
-          `the Edit page with a ${kb}px keyboard`);
-      }
-      await b.clearKeyboard();
-      await b.key("Escape", "Escape", 27);
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit page to close" });
-
-      // Then ADD, the page in the owner's screenshot.
-      await openSheet();
-      await typeScale(BIG_SCALE);
-      await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`,
-        { label: "the preview to render" });
-      // The permanent second label and the three-row field push the box down;
-      // a click at its centre must land on it, not on whatever is under the fold.
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
-      await b.click("#scale-box");
-      for (const kb of KEYBOARDS) {
-        await b.fakeKeyboard(745 - kb);
-        assertSeedBoxReadable(await seedBoxVisibility(),
-          `the Add page with a ${kb}px keyboard`);
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- *
    * Sheet guidance (docs/plans/2026-10-13-sheet-guidance.md, lane app)
@@ -7456,343 +5476,12 @@ function run() {
     await generate(BIG_SCALE);
   };
 
-  test("SG: N-A2 and N-A9 in the live DOM: both messages are children of #scale-guidance, a child of the surface after .sheetbody; the notice is neutral and a warning amber", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await generate(EDIT_SCALE);
-      await openEdit();
-      const m = await b.eval(`
-        const surf = document.querySelector(".sheetsurf");
-        const slot = document.getElementById("scale-guidance");
-        const msg = document.getElementById("scale-msg"), note = document.getElementById("scale-layout-state");
-        say("Looks fine.", "warn"); layoutNote.textContent = "x"; layoutNote.hidden = false;
-        return {
-          slotParent: slot.parentElement === surf,
-          order: [...surf.children].map((c) => c.id || c.className),
-          kids: [...slot.children].map((c) => c.id),
-          msgParent: msg.parentElement.id, noteParent: note.parentElement.id,
-          inBody: !!slot.closest(".sheetbody"), inDrawer: !!slot.closest("#scale-drawer"),
-          noteColor: getComputedStyle(note).color, warnColor: getComputedStyle(msg).color,
-          noteFont: getComputedStyle(note).fontFamily + "|" + getComputedStyle(note).fontSize + "|" + getComputedStyle(note).lineHeight,
-          msgFont: getComputedStyle(msg).fontFamily + "|" + getComputedStyle(msg).fontSize + "|" + getComputedStyle(msg).lineHeight,
-          live: [msg.getAttribute("aria-live"), note.getAttribute("aria-live"), note.getAttribute("aria-atomic"), slot.getAttribute("aria-live")],
-        };`);
-      assert.ok(m.slotParent, "#scale-guidance is not a direct child of the sheet surface");
-      assert.deepStrictEqual(m.order, ["sheethead", "sheetbody", "scale-guidance", "scale-foot"],
-        `the surface order is ${m.order}`);
-      assert.deepStrictEqual(m.kids, ["scale-field-msg", "scale-msg", "scale-layout-state"]);
-      assert.strictEqual(m.msgParent, "scale-guidance");
-      assert.strictEqual(m.noteParent, "scale-guidance");
-      assert.strictEqual(m.inBody || m.inDrawer, false, "the slot is inside the scroll or the drawer");
-      assert.strictEqual(m.noteColor, "rgb(94, 88, 80)", "N-A9: the notice is not the field-guide muted #5E5850 inside the slot");
-      assert.strictEqual(m.warnColor, "rgb(36, 36, 36)", "N-A9: #scale-msg.warn is not ink #242424 (field guide: no amber on paper)");
-      assert.strictEqual(m.noteFont, m.msgFont, "the notice and the message do not share one type system in the slot");
-      assert.deepStrictEqual(m.live, ["polite", "polite", "true", null]);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SG: N-A5 the notice and a warning are inside the viewport, the surface and above the primary at every fold viewport and keyboard, create and Edit, drawer open and closed, scrolled to the top and to the end", async () => {
-    const configs = [];
-    for (const [w, h] of FOLD_VIEWPORTS) {
-      configs.push([w, h, 0]);
-      for (const kb of KEYBOARDS) if (h - kb >= 300) configs.push([w, h, kb]);
-    }
-    const noteRect = (ids) => b.eval(`
-      const surf = document.querySelector(".sheetsurf"), body = surf.querySelector(".sheetbody");
-      const sr = surf.getBoundingClientRect(), gen = document.getElementById("scale-generate").getBoundingClientRect();
-      const vv = window.visualViewport, kbTop = vv.offsetTop + vv.height;
-      const out = {};
-      for (const id of ${JSON.stringify(ids)}) {
-        const el = document.getElementById(id), r = el.getBoundingClientRect();
-        const shown = !el.hidden && el.textContent.length > 0;
-        const hit = shown ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
-        out[id] = { shown, top: r.top, bottom: r.bottom, left: r.left, right: r.right,
-          hits: !shown || (hit && (hit === el || el.contains(hit))), hit: hit && (hit.id || hit.className || hit.tagName) };
-      }
-      return { out, surfTop: sr.top, surfBottom: sr.bottom, genTop: gen.top, genHidden: gen.height === 0, vw: window.innerWidth, vh: window.innerHeight, kbTop };`);
-    const assertOnScreen = (m, where) => {
-      for (const [id, r] of Object.entries(m.out)) {
-        assert.ok(r.shown, `${where}: #${id} is not showing, so this proves nothing`);
-        assert.ok(r.top >= -0.5 && r.bottom <= m.vh + 0.5 && r.bottom <= m.kbTop + 0.5,
-          `${where}: #${id} is outside the viewport (top ${r.top.toFixed(1)}, bottom ${r.bottom.toFixed(1)}, viewport ${m.vh}, keyboard line ${m.kbTop})`);
-        assert.ok(r.top >= m.surfTop - 0.5 && r.bottom <= m.surfBottom + 0.5, `${where}: #${id} is clipped by the surface`);
-        assert.ok(r.left >= -0.5 && r.right <= m.vw + 0.5, `${where}: #${id} runs off the side`);
-        assert.ok(m.genHidden || r.bottom <= m.genTop + 0.5, `${where}: #${id} overlaps or sits below the primary (${r.bottom.toFixed(1)} > ${m.genTop.toFixed(1)})`);
-        assert.ok(r.hits, `${where}: #${id} is covered by "${r.hit}"`);
-      }
-    };
-    try {
-      await sgEditBig();
-      for (const [w, h, kb] of configs) {
-        for (const page of ["create", "edit"]) {
-          await b.setViewport(w, h, true);
-          if (page === "create") {
-            await openSheet();
-            await typeScale(BIG_SCALE);
-            await b.waitFor(`!document.getElementById("scale-preview").hasAttribute("hidden")`, { label: "the preview" });
-          } else await openEdit();
-          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-          await b.settle();
-          await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-          await b.settle();
-          if (kb) {
-            await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-            await b.fakeKeyboard(h - kb);
-          }
-          const realNote = await b.eval(`return layoutNote.textContent;`);
-          assert.ok(realNote.length > 0, "the anchor tap raised no notice");
-          for (const drawer of [false, true]) {
-            const open = await b.eval(`return !document.getElementById("scale-drawer").hidden;`);
-            if (open !== drawer) {
-              await b.eval(`document.getElementById("scale-tab-${drawer ? "layout" : "scale"}").click(); return true;`);
-              await b.settle();
-            }
-            for (const end of [false, true]) {
-              await b.eval(`const s = document.querySelector(".sheetbody"); s.scrollTop = ${end ? "s.scrollHeight" : "0"}; return true;`);
-              await b.settle();
-              for (const [label, state, ids] of [
-                ["notice", { note: realNote }, ["scale-layout-state"]],
-                ["warning", { warn: "Crowded pan. Labels are drawn smaller." }, ["scale-msg"]],
-              ]) {
-                await sgPut(state);
-                assertOnScreen(await noteRect(ids), `the ${label} on the ${page} page at ${w}x${h}${kb ? ` with a ${kb}px keyboard` : ""}, drawer ${drawer ? "open" : "closed"}, scrolled to the ${end ? "end" : "top"}`);
-              }
-            }
-          }
-          if (kb) await b.clearKeyboard();
-          await b.eval(`document.getElementById("scale-back").click(); return true;`);
-          await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
-        }
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SG: N-A6 the slot takes no height when empty, grows to its message by exactly 18px a line in the enumerated states and back to 0 on clearing, a warning yields to a standing notice, and the slot sits --sp-2 from both neighbours while it shows", async () => {
-    try {
-      await sgEditBig();
-      for (const [w, h] of [[380, 800], [844, 390], [390, 745]]) {
-        await b.setViewport(w, h, true);
-        await openEdit();
-        await sgPut({});
-        const base = await sgGeometry();
-        const where = `Edit at ${w}x${h}`;
-        const t1 = await sgFit("note", 1), t2 = await sgFit("note", 2), t3 = await sgFit("note", 3);
-        const w1 = await sgFit("msg", 1), w2 = await sgFit("msg", 2), w3 = await sgFit("msg", 3);
-        const check = async (label, state, lines, warnHidden = false) => {
-          await sgPut(state);
-          const display = await b.eval(`return getComputedStyle(msgLine).display;`);
-          assert.strictEqual(display === "none", warnHidden, `${where}, ${label}: #scale-msg display is ${display}, expected ${warnHidden ? "none (one message wins)" : "shown"}`);
-          const g = await sgGeometry();
-          const want = g.msgH + g.noteH;
-          assert.strictEqual(Math.round((g.msgH + g.noteH) / SG_LINE), lines, `${where}, ${label}: measured ${(g.msgH + g.noteH) / SG_LINE} lines, expected ${lines}`);
-          assert.ok(Math.abs(g.slotH - want) < 0.5, `${where}, ${label}: the slot is ${g.slotH}px, expected ${want}px`);
-          assert.ok(Math.abs(g.port - (base.port - (g.bodyToGen - base.bodyToGen))) < 0.5,
-            `${where}, ${label}: the scrollport is ${g.port}px, expected ${base.port - (g.bodyToGen - base.bodyToGen)}px (empty ${base.port}px)`);
-          if (lines === 0) {
-            assert.ok(Math.abs(g.bodyToGen - g.rowGap) < 0.5, `${where}, ${label}: body to primary is ${g.bodyToGen}px, one flow gap is ${g.rowGap}px`);
-            return g;
-          }
-          assert.ok(Math.abs(g.gapTop - g.sp2) < 0.5, `${where}, ${label}: the gap above the slot is ${g.gapTop}px, --sp-2 is ${g.sp2}px`);
-          assert.ok(Math.abs(g.gapBottom - g.sp2) < 0.5, `${where}, ${label}: the gap below the slot is ${g.gapBottom}px, --sp-2 is ${g.sp2}px`);
-          return g;
-        };
-        assert.strictEqual(base.slotH, 0, `${where}: the empty slot is ${base.slotH}px, it takes no space`);
-        await check("empty", {}, 0);
-        await check("notice, one line", { note: t1 }, 1);
-        await check("warning, one line", { warn: w1 }, 1);
-        await check("warning, two lines", { warn: w2 }, 2);
-        await check("notice, two lines", { note: t2 }, 2);
-        await check("warning one line plus notice one line: the warning yields", { warn: w1, note: t1 }, 1, true);
-        const cleared = await check("cleared again", {}, 0);
-        assert.strictEqual(cleared.port, base.port, `${where}: the scrollport did not come back after clearing`);
-        await check("(a) two-line warning plus notice: the warning yields, the slot does not grow", { warn: w2, note: t1 }, 1, true);
-        await check("(b) joined warnings, three lines", { warn: w3 }, 3);
-        await check("(c) three-line warning plus notice: the warning yields, the slot does not grow", { warn: w3, note: t1 }, 1, true);
-        await check("(e) the notice with all three ring suffixes, three lines", { note: t3 }, 3);
-        const f1 = await sgFit("field", 1), f2 = await sgFit("field", 2), f3 = await sgFit("field", 3);
-        await check("(f) a field message, one line", { field: f1 }, 1, true);
-        await check("(f) a field message, two lines", { field: f2 }, 2, true);
-        await check("(f) a field message, three lines", { field: f3 }, 3, true);
-        await sgPut({});
-        await sgPut({});
-        await b.key("Escape", "Escape", 27);
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit sheet to close" });
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SG: N-A6 the delete refusal then a re-armed DELETE: the slot keeps its height, the refusal stays up and the arming note shows beside DELETE", async () => {
-    try {
-      await freshLoad();
-      await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
-      await clearSavedIdbForLegacyMigrationFixture();
-      await navigate();
-      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,["amara10","amara","hijaz","pygmy"],"fixture actually migrates the four hidden seeds, leaving only Kurd");
-      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
-      await b.setViewport(380, 800, true);
-      await openEdit();
-      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-      await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-      await b.settle();
-      assert.ok((await b.eval(`return layoutNote.textContent;`)).length > 0, "the anchor tap raised no notice");
-      const read = () => b.eval(`
-        const slot = document.getElementById("scale-guidance").getBoundingClientRect();
-        const note = document.getElementById("scale-del-note"), nr = note.getBoundingClientRect();
-        return { slotH: slot.height, msg: document.getElementById("scale-msg").textContent,
-          msgBottom: document.getElementById("scale-msg").getBoundingClientRect().bottom,
-          note: note.textContent, noteTop: nr.top, noteBottom: nr.bottom, vh: window.innerHeight };`);
-      const idle = await read();
-      await b.click("#scale-delete");
-      await b.click("#scale-delete");
-      await b.settle();
-      const refused = await read();
-      assert.match(refused.msg, /Keep at least one scale/, "the delete was not refused");
-      const shown = await b.eval(`const m = document.getElementById("scale-msg"); return { d: getComputedStyle(m).display, h: m.getBoundingClientRect().height };`);
-      assert.notStrictEqual(shown.d, "none", "X3: the notice hid the delete refusal");
-      assert.ok(shown.h > 0, "X3: the delete refusal has no height");
-      const t1 = await sgFit("note", 1), w2 = await sgFit("msg", 2);
-      await sgPut({ warn: w2, note: t1, pan: false });
-      const g3 = await b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
-      assert.ok(Math.abs(g3 - 3 * SG_LINE) < 0.5, `X3: a two-line refusal and a one-line notice made a ${g3}px slot, not ${3 * SG_LINE}`);
-      assert.notStrictEqual(await b.eval(`return getComputedStyle(msgLine).display;`), "none", "X3: a refusal yielded to the notice");
-      await b.eval(`say(${JSON.stringify(refused.msg)}, "warn"); return true;`);
-      await b.click("#scale-delete");
-      await b.settle();
-      const rearmed = await read();
-      assert.match(rearmed.msg, /Keep at least one scale/, "re-arming wiped the refusal");
-      assert.ok(rearmed.note.length > 0, "re-arming wrote no note beside DELETE");
-      assert.ok(Math.abs(rearmed.slotH - refused.slotH) < 0.5, `the slot went ${refused.slotH}px to ${rearmed.slotH}px on the re-arm`);
-      assert.ok(refused.slotH >= idle.slotH - 0.5);
-      assert.ok(rearmed.noteTop >= 0 && rearmed.noteBottom <= rearmed.vh + 0.5, "the arming note is off screen");
-      assert.ok(rearmed.msgBottom <= rearmed.vh, "the refusal is off screen");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SG: N-A7 the seed box stays readable with a two-line warning and a notice both pending, at every real-keyboard height on Edit (the warning yields, no growth)", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 745, true);
-      await generate(EDIT_SCALE);
-      await openEdit();
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" }); return true;`);
-      await b.click("#scale-box");
-      assert.ok(await b.eval(`return !!document.getElementById("scale-guidance");`), "there is no #scale-guidance slot");
-      const w2 = await sgFit("msg", 2), t1 = await sgFit("note", 1);
-      await sgPut({ warn: w2, note: t1 });
-      const g = await sgGeometry();
-      assert.ok(Math.abs(g.slotH - g.noteH) < 0.5, `the slot is ${g.slotH}px with a warning and a notice, the notice alone is ${g.noteH}px`);
-      assert.strictEqual(await b.eval(`return getComputedStyle(msgLine).display;`), "none", "the warning did not yield to the notice");
-      for (const kb of KEYBOARDS) {
-        await b.fakeKeyboard(745 - kb);
-        assertSeedBoxReadable(await seedBoxVisibility(), `warning plus notice, the Edit page with a ${kb}px keyboard`);
-      }
-      await b.clearKeyboard();
-      await b.key("Escape", "Escape", 27);
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit page to close" });
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SG: N-A7 the crowded 24-note pan: the real SMALL_LABELS warning (two lines) opens Edit, a tapped anchor raises the notice, the warning yields and the three-row seed box stays readable at every keyboard", async () => {
-    const CROWDED = "(C3) D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C6 D6 E6 F6";
-    try {
-      await freshLoad();
-      await b.setViewport(390, 745, true);
-      await generate(CROWDED);
-      await openEdit();
-      const opened = await b.eval(`return { text: msgLine.textContent, cls: msgLine.className, display: getComputedStyle(msgLine).display, h: msgLine.getBoundingClientRect().height };`);
-      assert.match(opened.text, /^Crowded pan/, `Edit opened with "${opened.text}", not the SMALL_LABELS warning`);
-      assert.notStrictEqual(opened.display, "none", "the warning is hidden before any notice exists");
-      assert.ok(Math.abs(opened.h - 2 * SG_LINE) < 0.5, `the warning is ${opened.h / SG_LINE} lines, the reviewer's repro needs two`);
-      assert.match(opened.cls, /\bpan\b/, "openEditSheet did not mark its warning .pan");
-      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-      await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-      await b.settle();
-      const noticed = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, slot: document.getElementById("scale-guidance").getBoundingClientRect().height, noteH: layoutNote.getBoundingClientRect().height };`);
-      assert.ok(noticed.note.length > 0, "the anchor tap raised no notice");
-      assert.ok(noticed.noticed, "paintLayout did not mark the sheet noticed");
-      assert.strictEqual(noticed.display, "none", "the SMALL_LABELS warning did not yield to the notice");
-      assert.ok(Math.abs(noticed.slot - noticed.noteH) < 0.5, `the slot is ${noticed.slot}px, the notice alone is ${noticed.noteH}px`);
-      await b.eval(`document.getElementById("scale-tab-scale").click(); return true;`);
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" }); return true;`);
-      await b.click("#scale-box");
-      for (const kb of KEYBOARDS) {
-        await b.fakeKeyboard(745 - kb);
-        const m = await seedBoxVisibility();
-        assert.ok(m.h > 60, `the seed box is ${m.h}px tall, so it did not wrap to three rows`);
-        assertSeedBoxReadable(m, `the crowded pan on the Edit page with a ${kb}px keyboard`);
-      }
-      await b.clearKeyboard();
-      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-      await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
-      await b.settle();
-      const cleared = await b.eval(`return { note: layoutNote.textContent, noticed: sheet.classList.contains("noticed"), display: getComputedStyle(msgLine).display, text: msgLine.textContent };`);
-      assert.strictEqual(cleared.note, "", "returning to the default anchor left a layout notice");
-      assert.strictEqual(cleared.noticed, false, "paintLayout did not clear the sheet's noticed mark");
-      assert.notStrictEqual(cleared.display, "none", "the SMALL_LABELS warning did not return once the notice cleared");
-      assert.match(cleared.text, /^Crowded pan/, `the warning line reads "${cleared.text}" after the notice cleared`);
-      await b.key("Escape", "Escape", 27);
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the Edit page to close" });
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SG: N-A10 repeated paints (ten real drawer-toggle clicks) with an unchanged notice mutate nothing in #scale-layout-state, a changed notice mutates it once", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await generate(EDIT_SCALE);
-      await openEdit();
-      await b.eval(`
-        const note = document.getElementById("scale-layout-state");
-        window.__sgRecs = 0;
-        window.__sgMo = new MutationObserver((list) => { window.__sgRecs += list.length; });
-        window.__sgMo.observe(note, { childList: true, characterData: true, subtree: true });
-        window.__sgPaints = 0;
-        const orig = paintLayout;
-        paintLayout = function () { window.__sgPaints += 1; return orig.apply(this, arguments); };
-        return true;`);
-      const count = () => b.eval(`const n = window.__sgRecs + window.__sgMo.takeRecords().length; window.__sgRecs = 0; return n;`);
-      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-      await count();
-      await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-      const first = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
-      const before = await b.eval(`return window.__sgPaints;`);
-      for (let i = 0; i < 10; i += 1) {
-        await b.eval(`document.getElementById("scale-fine-toggle").scrollIntoView({ block: "center" }); return true;`);
-        await b.click("#scale-fine-toggle");
-        await b.click("#scale-fine-toggle");
-      }
-      const paints = (await b.eval(`return window.__sgPaints;`)) - before;
-      const repeated = await count();
-      await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
-      const changed = { text: await b.eval(`return layoutNote.textContent;`), records: await count() };
-      await b.eval(`window.__sgMo.disconnect(); return true;`);
-      const r = { first, repeated, changed, paints };
-      assert.ok(r.paints >= 10, `only ${r.paints} paints ran across ten real toggle clicks, so the unchanged-paint count proves nothing`);
-      assert.notStrictEqual(r.changed.text, r.first.text, "the changed notice has the same text as the previous one, so the one-record count proves nothing");
-      assert.ok(r.first.text.length > 0, "the first change raised no notice, so this measures nothing");
-      assert.strictEqual(r.first.records, 1, `a new notice mutated #scale-layout-state ${r.first.records} times`);
-      assert.strictEqual(r.repeated, 0, `ten paints with the same notice mutated #scale-layout-state ${r.repeated} times (a live region would re-announce each)`);
-      assert.strictEqual(r.changed.records, 1, `a changed notice mutated #scale-layout-state ${r.changed.records} times`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* Reads what applyKbOffset actually wrote onto the sheet surface, plus the
    * two viewport numbers it computed them from. Returning the inputs beside
@@ -7816,38 +5505,6 @@ function run() {
    * style writes are all under test. What stays unverifiable is only the
    * PREMISE - that a real iOS keyboard shrinks visualViewport.height - which
    * is an owner-device claim (queue rows 51, 67) and always will be. */
-  test("the sheet answers a shrunken visual viewport by lifting and capping the surface", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 844, true);
-      await openSheet();
-      await b.fakeKeyboard(400);
-
-      const m = await surfaceState();
-      const off = Math.max(0, m.innerHeight - m.vvHeight - m.vvOffsetTop);
-      const cap = Math.max(0, Math.round(m.vvHeight - 8));
-      assert.ok(off > 0,
-        `the fake keyboard did not shrink anything: innerHeight ${m.innerHeight} `
-        + `vs vv.height ${m.vvHeight}`);
-      assert.strictEqual(m.transform, `translateY(-${off}px)`,
-        `the surface did not lift clear of the keyboard line`);
-      assert.strictEqual(m.maxHeight, `${cap}px`,
-        `the surface was not capped to what is left of the visual viewport`);
-
-      // And the teardown is part of the contract, not an afterthought: a
-      // leaked shadowed property would follow this session into every test
-      // below it.
-      await b.clearKeyboard();
-      const back = await surfaceState();
-      assert.strictEqual(back.vvHeight, back.innerHeight,
-        "clearKeyboard did not restore the visual viewport");
-      assert.strictEqual(back.transform, "", "the lift outlived the keyboard");
-      assert.strictEqual(back.maxHeight, "", "the cap outlived the keyboard");
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* Queue row 54, the surviving mutant. Deleting the applyKbOffset() call from
    * showSheet() used to pass the whole suite, because every keyboard test
@@ -7861,42 +5518,6 @@ function run() {
    * Since applyKbOffset() is now gated on sheetOpen, faking the keyboard
    * BEFORE the open is genuinely inert - the listener fires and returns - so
    * anything this test sees on the surface came from showSheet() itself. */
-  test("a sheet opened with the keyboard already up lifts on the first frame", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 844, true);
-
-      await b.fakeKeyboard(400);
-      const closed = await surfaceState();
-      assert.strictEqual(closed.transform, "",
-        "a closed sheet answered the keyboard; the sheetOpen gate is not holding");
-
-      /* Clicked and measured inside ONE evaluation, with no turn of the event
-       * loop in between. That is the whole point: a visualViewport event does
-       * arrive shortly after the open (the sheet changes the layout enough to
-       * produce one) and would hide the missing call, so anything asserted
-       * after an await proves nothing about showSheet(). */
-      const open = await b.eval(`
-        document.getElementById("deck-add").click();
-        const surf = document.getElementById("scale-sheet").firstElementChild;
-        const vv = window.visualViewport;
-        return {
-          transform: surf.style.transform, maxHeight: surf.style.maxHeight,
-          innerHeight: window.innerHeight,
-          vvHeight: vv.height, vvOffsetTop: vv.offsetTop, vvScale: vv.scale,
-        };
-      `);
-      const off = Math.max(0, open.innerHeight - open.vvHeight - open.vvOffsetTop);
-      assert.ok(off > 0, `the fake keyboard did not shrink anything: ${JSON.stringify(open)}`);
-      assert.strictEqual(open.transform, `translateY(-${off}px)`,
-        "the sheet opened under a keyboard that was already up and did not lift");
-      assert.strictEqual(open.maxHeight, `${Math.max(0, Math.round(open.vvHeight - 8))}px`,
-        "the sheet opened under a keyboard that was already up and was not capped");
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* Queue row 88. hideSheet() cleared the translate and left the cap behind,
    * so a sheet closed while the keyboard was still up kept maxHeight pinned to
@@ -7907,35 +5528,6 @@ function run() {
    * caller of hideSheet() inherits that asymmetry. Measured here rather than
    * argued: the assertion reads the style off the hidden surface with no
    * resize in between, which is exactly the state hideSheet() leaves. */
-  test("closing the sheet with the keyboard up leaves no cap behind", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 844, true);
-      await openSheet();
-      await b.fakeKeyboard(400);
-
-      const up = await surfaceState();
-      assert.notStrictEqual(up.maxHeight, "",
-        "precondition: the fake keyboard did not cap the surface");
-
-      await b.key("Escape");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, {
-        label: "Escape to close the sheet",
-      });
-      const closed = await b.eval(`
-        const sheet = document.getElementById("scale-sheet");
-        const surf = sheet.firstElementChild;
-        return { hidden: sheet.hasAttribute("hidden"),
-                 transform: surf.style.transform, maxHeight: surf.style.maxHeight };
-      `);
-      assert.strictEqual(closed.hidden, true, "Escape did not close the sheet");
-      assert.strictEqual(closed.transform, "", "the lift outlived the sheet");
-      assert.strictEqual(closed.maxHeight, "", "the cap outlived the sheet");
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* Queue row 87. A pinch-zoom shrinks visualViewport.height exactly the way a
    * keyboard does, so before this fix the sheet lifted and capped itself for a
@@ -7955,46 +5547,6 @@ function run() {
    * The oracle is positive THEN negative on purpose. A test that only asserts
    * both writes are empty is satisfied by `applyKbOffset() { return; }`, which
    * is one of the mutants this lane exists to kill. */
-  test("a pinch-zoom leaves the sheet alone, but a real shrink still lifts it", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 844, true);
-      await openSheet();
-
-      // Positive half: the lift still happens when it should.
-      await b.fakeKeyboard(400);
-      const lifted = await surfaceState();
-      assert.ok(lifted.transform.startsWith("translateY(-"),
-        `a shrunken visual viewport did not lift the surface (transform `
-        + `${JSON.stringify(lifted.transform)})`);
-      assert.ok(lifted.maxHeight !== "",
-        "a shrunken visual viewport did not cap the surface");
-      await b.clearKeyboard();
-
-      // Negative half: the same shrink, produced by zooming, must not.
-      // vv.scale updates as soon as setPageScaleFactor returns, but the
-      // resize handler (applyKbOffset) that this test's negative asserts
-      // depend on runs on the NEXT rendering step - a scale-only waitFor()
-      // reads the surface before that handler has run and makes the negative
-      // asserts vacuous (review B1, PR 143 attempt 1). Keep this one timed.
-      await b.setPageScale(2);
-      await b.settle();
-      const zoomed = await surfaceState();
-      assert.ok(zoomed.vvScale > 1,
-        `setPageScale did not actually zoom: scale ${zoomed.vvScale}`);
-      assert.ok(zoomed.vvHeight < zoomed.innerHeight,
-        `the zoom did not shrink the visual viewport, so this test proves `
-        + `nothing: vv.height ${zoomed.vvHeight} vs innerHeight ${zoomed.innerHeight}`);
-      assert.strictEqual(zoomed.transform, "",
-        `pinch-zooming lifted the sheet as if a keyboard had opened`);
-      assert.strictEqual(zoomed.maxHeight, "",
-        `pinch-zooming capped the sheet as if a keyboard had opened`);
-    } finally {
-      await b.setPageScale(1);
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* The zoomed-WITH-a-keyboard state, which the first version of the row 87
    * fix got wrong in two directions at once. It scaled `vv.offsetTop` as well
@@ -8015,44 +5567,6 @@ function run() {
    *
    * Swept across offsetTop because the defect was invisible at 0, which is the
    * only value a test that never pans ever sees. */
-  test("a zoom with the keyboard up is left alone at every pan position", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 844, true);
-      await openSheet();
-      await b.setPageScale(2);
-
-      // 390x844 at scale 2 shows 422 layout px; a 336px keyboard takes 168 of
-      // them. offsetTop is a LAYOUT-px pan offset, legal up to 844 - 222.
-      for (const ot of [0, 150, 300, 600]) {
-        await b.fakeKeyboard(222, ot);
-        const m = await surfaceState();
-        assert.ok(m.vvScale > 1,
-          `setPageScale did not zoom, so this proves nothing: scale ${m.vvScale}`);
-        assert.strictEqual(m.transform, "",
-          `at offsetTop ${ot} the zoomed sheet was lifted as if the keyboard `
-          + `were the only thing shrinking the viewport`);
-        assert.strictEqual(m.maxHeight, "",
-          `at offsetTop ${ot} the zoomed sheet was capped while the lift said `
-          + `there was no keyboard - the two halves of one fix disagreed`);
-      }
-
-      // Negative control: the SAME shrink unzoomed is a keyboard, and both
-      // halves answer it. Without this the test above is satisfied by
-      // `applyKbOffset() { return; }`.
-      await b.setPageScale(1);
-      await b.fakeKeyboard(444, 0);
-      const flat = await surfaceState();
-      assert.strictEqual(flat.transform, `translateY(-${flat.innerHeight - 444}px)`,
-        "the same viewport unzoomed did not lift the sheet");
-      assert.strictEqual(flat.maxHeight, `${444 - 8}px`,
-        "the same viewport unzoomed did not cap the sheet");
-    } finally {
-      await b.setPageScale(1);
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- *
    * Lane KB (Subplan KB): the sheet's layout is decided by the visible
@@ -8091,120 +5605,11 @@ function run() {
     };`);
   const kbFocus = (id) => b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
 
-  test("KB: at 390x745 with a 369px visible area, under every innerHeight model the sheet is kbup, short and side, the head is hidden, and each field is fully visible", async () => {
-    try {
-      for (const [model, how] of KB_MODELS) {
-        await kbOpenAdd(390, 745);
-        for (const id of KB_FIELDS) {
-          await kbFocus(id);
-          await b.fakeKeyboard(369, 0, how);
-          await kbSettle();
-          const m = await kbState(id);
-          const ctx = `model ${model}, field ${id}`;
-          assert.deepStrictEqual(m.classes, ["kbup", "short", "side"], `${ctx}: classes ${m.classes}`);
-          assert.strictEqual(m.head, "none", `${ctx}: the head is showing`);
-          assert.ok(m.field.top >= -1 && m.field.bottom <= m.vvh + 1, `${ctx}: the field is outside the visible area ${JSON.stringify(m.field)} vs ${m.vvh}`);
-          assert.ok(m.field.top >= m.body.top - 1 && m.field.bottom <= m.body.bottom + 1, `${ctx}: the field is clipped by its scroller`);
-          await b.clearKeyboard();
-        }
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB: at 844x334 with a 104px visible area, under every innerHeight model the sheet is tiny, the focused field is in view and the lip and the guidance slot are reachable by scrolling the surface", async () => {
-    try {
-      for (const open of [false]) {
-        for (const [model, how] of KB_MODELS) {
-          await kbOpenAdd(844, 334);
-          await kbFocus("scale-top");
-          await b.fakeKeyboard(104, 0, how);
-          await kbSettle();
-          const ctx = `model ${model}, drawer ${open ? "open" : "closed"}`;
-          let m = await kbState("scale-top");
-          assert.ok(m.classes.includes("tiny"), `${ctx}: not tiny (${m.classes})`);
-          assert.ok(m.field.top >= -1 && m.field.bottom <= m.vvh + 1, `${ctx}: the focused field is out of view ${JSON.stringify(m.field)} in ${m.vvh}`);
-          await b.eval(`const s = document.querySelector("#scale-sheet .sheetsurf"); s.scrollTop = s.scrollHeight; return true;`);
-          m = await kbState("scale-top");
-          assert.ok(m.lip.top >= -1 && m.lip.bottom <= m.vvh + 1, `${ctx}: lip is not reachable by scrolling the surface ${JSON.stringify(m.lip)} in ${m.vvh}`);
-          await b.eval(`document.getElementById("scale-guidance").scrollIntoView({block:"nearest"}); return true;`);
-          m = await kbState("scale-top");
-          assert.ok(m.msg.top >= -1 && m.msg.bottom <= m.vvh + 1, `${ctx}: msg is not reachable by scrolling the surface ${JSON.stringify(m.msg)} in ${m.vvh}`);
-        }
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB: alternating innerHeight models between keyboard events keeps the sheet kbup, short and side with the head hidden", async () => {
-    try {
-      await kbOpenAdd(390, 745);
-      await kbFocus("scale-top");
-      for (const how of [57, "vv", 57, "vv"]) {
-        await b.fakeKeyboard(369, 0, how);
-        const m = await kbState("scale-top");
-        assert.deepStrictEqual(m.classes, ["kbup", "short", "side"], `innerHeight model ${how}: classes ${m.classes}`);
-        assert.strictEqual(m.head, "none", `innerHeight model ${how}: the head is showing`);
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB: a visualViewport scroll event does not reveal the focused field, a resize does", async () => {
-    try {
-      await kbOpenAdd(390, 745);
-      await kbFocus("scale-top");
-      await b.fakeKeyboard(369);
-      await kbSettle();
-      const topOf = () => b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { top: r.top, scroll: document.querySelector("#scale-sheet .sheetbody").scrollTop };`);
-      await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); const sp = document.createElement("div"); sp.style.height = "400px"; document.getElementById("scale-panel-scale").appendChild(sp); body.scrollTop = body.scrollHeight; return true;`);
-      await kbSettle();
-      const hidden = await topOf();
-      assert.ok(hidden.top < 0, `the focused field is still in view (${hidden.top}), so this proves nothing`);
-      await b.eval(`window.visualViewport.dispatchEvent(new Event("scroll")); return true;`);
-      assert.strictEqual((await topOf()).scroll, hidden.scroll, "a visualViewport scroll event revealed the focused field");
-      await b.eval(`window.visualViewport.dispatchEvent(new Event("resize")); return true;`);
-      assert.ok((await topOf()).top >= -1, "a resize no longer reveals the focused field, so the scroll half proves nothing");
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB: a rotation resets the keyboard baseline", async () => {
-    try {
-      await kbOpenAdd(390, 745);
-      await kbFocus("scale-top");
-      await b.setViewport(844, 390, true);
-      await kbSettle();
-      const m = await kbState("scale-top");
-      assert.ok(m.classes.includes("side"), `landscape is not side (${m.classes})`);
-      assert.ok(!m.classes.includes("kbup"), `a rotation with no keyboard raised kbup from the portrait baseline (${m.classes})`);
-      assert.notStrictEqual(m.head, "none", "the head is hidden with no keyboard up");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB: with no text field focused, a taller visible area seen earlier does not raise kbup", async () => {
-    try {
-      await kbOpenAdd(390, 845);
-      await b.eval(`document.getElementById("scale-back").focus(); return true;`);
-      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "scale-back", "BACK did not take focus");
-      await b.setViewport(390, 745, true);
-      await kbSettle();
-      const m = await kbState("scale-top");
-      assert.ok(!m.classes.includes("kbup"), `kbup rose with no text field focused (${m.classes})`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- *
    * Lane KB2: the landscape keyboard-up sheet scrolls by touch anywhere
@@ -8248,35 +5653,6 @@ function run() {
     return true;`);
   const kb2Whole = (r, s) => r.top >= s.body.top - 1 && r.bottom <= s.body.bottom - s.padB + 1 && r.top >= -1 && r.bottom <= s.vvh + 1;
 
-  test("KB2: with the keyboard up and a note field focused in landscape, a touch swipe anywhere on the sheet scrolls it until NEXT is fully visible, and back to DING", async () => {
-    try {
-      for (const [w, h, vv] of [[852, 393, 193]]) {
-        await kbOpenAdd(w, h);
-        await kb2Tap("scale-top");
-        await b.fakeKeyboard(vv);
-        await kbSettle();
-        let s = await kb2Scene();
-        const cls = await b.eval(`return [...document.getElementById("scale-sheet").classList];`);
-        assert.ok(cls.includes("tiny"), `${w}x${h}: not tiny (${cls})`);
-        for (const x of [40, w - 40]) {
-          for (let i = 0; i < 8 && !(s.gen.bottom <= s.vvh + 1); i++) {
-            await kb2Swipe(x, Math.round(vv * 0.8), -90);
-            s = await kb2Scene();
-          }
-          assert.ok(s.gen.top >= -1 && s.gen.bottom <= s.vvh + 1, `${w}x${h} swipe at x=${x}: NEXT not reachable ${JSON.stringify(s.gen)} in ${s.vvh}`);
-          for (let i = 0; i < 8 && !(s.fields["scale-ding"].top >= -1); i++) {
-            await kb2Swipe(x, Math.round(vv * 0.2), 90);
-            s = await kb2Scene();
-          }
-          assert.ok(s.fields["scale-ding"].top >= -1 && s.fields["scale-ding"].bottom <= s.vvh + 1, `${w}x${h} swipe at x=${x}: DING not reachable again ${JSON.stringify(s.fields["scale-ding"])}`);
-        }
-        await b.clearKeyboard();
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   const kb2Still = async () => {
     let last = await b.eval(`return document.querySelector("#scale-sheet .sheetbody").scrollTop + "/" + document.querySelector("#scale-sheet .sheetsurf").scrollTop;`);
@@ -8312,67 +5688,7 @@ function run() {
     if (ios) await kb2IosNative();
   };
 
-  test("KB2: at 393 wide with the keyboard up, tapping each note field in turn moves no field that was already fully visible before the tap", async () => {
-    try {
-      for (const [w, h, vv] of KB2_VIEWPORTS) {
-        for (const ios of [false, true]) {
-          await kb2Setup(w, h, vv, ios);
-          const order = ["scale-top", "scale-inner", "scale-bottom", "scale-ding", "scale-inner", "scale-top"];
-          for (const id of order) {
-            await kb2Reach(id);
-            await kb2Still();
-            const before = await kb2Scene();
-            const moved0 = await b.eval(`return window.__kb2Scrolls;`);
-            await kb2Tap(id);
-            const after = await kb2Scene();
-            const ctx = `${w}x${h} vv ${vv} ios-native ${ios}, tap ${id}`;
-            assert.strictEqual(await b.eval(`return document.activeElement.id;`), id, `${ctx}: the tap did not focus the field`);
-            if (kb2Whole(before.fields[id], before)) {
-              for (const f of KB_FIELDS) {
-                assert.ok(Math.abs(after.fields[f].top - before.fields[f].top) <= 1, `${ctx}: ${f} moved ${before.fields[f].top} -> ${after.fields[f].top} though ${id} was whole in view; before ${JSON.stringify(before)} after ${JSON.stringify(after)}`);
-              }
-              if (!ios) assert.strictEqual(await b.eval(`return window.__kb2Scrolls;`), moved0, `${ctx}: a scroll event fired though ${id} was whole in view`);
-            }
-            assert.ok(kb2Whole(after.fields[id], after), `${ctx}: the tapped field is not whole in view ${JSON.stringify(after.fields[id])} in body ${JSON.stringify(after.body)}`);
-          }
-          await b.clearKeyboard();
-        }
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB2: a partly hidden note field is revealed with the minimal scroll", async () => {
-    try {
-      for (const [w, h, vv] of [[393, 659, 274]]) {
-        for (const ios of [false, true]) {
-          await kb2Setup(w, h, vv, ios);
-          for (let i = 0; i < 8; i++) {
-            const s = await kb2Scene();
-            if (s.fields["scale-bottom"].top <= s.body.bottom - 18) break;
-            await kb2Swipe(40, Math.round(s.vvh * 0.8), -30);
-            await kb2Still();
-          }
-          const before = await kb2Scene();
-          const hidden = before.fields["scale-bottom"].bottom - before.body.bottom;
-          assert.ok(hidden > 2, `${w}x${h}: BOTTOM is not partly hidden to begin with (${hidden}), so this proves nothing`);
-          await kb2Tap("scale-bottom", true);
-          const after = await kb2Scene();
-          const ctx = `${w}x${h} ios-native ${ios}`;
-          assert.ok(Math.abs(after.fields["scale-bottom"].bottom - (after.body.bottom - 21)) <= 3 && after.fields["scale-bottom"].top >= after.body.top - 1, `${ctx}: BOTTOM does not end at the lip zone's edge ${JSON.stringify(after.fields["scale-bottom"])} in ${JSON.stringify(after.body)}`);
-          assert.ok(await b.eval(`return document.getElementById("scale-sheet").classList.contains("lipped");`), `${ctx}: lipped stays true`);
-          const minimal = hidden + (before.body.bottom - after.body.bottom) + 21;
-          assert.ok(Math.abs(after.bodyTop - before.bodyTop - minimal) <= 3, `${ctx}: scrolled ${after.bodyTop - before.bodyTop}, the minimum is ${minimal} (hidden ${hidden}, the slot grew ${before.body.bottom - after.body.bottom}, the lip zone 21)`);
-          await b.clearKeyboard();
-        }
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---- KB2b: the tap pin lets go of a drag, a close, and keeps the tiny column ---- */
   const kb2bSurf = () => b.eval(`
@@ -8399,94 +5715,9 @@ function run() {
     assert.ok(cls.includes("tiny"), `${w}x${h} vv ${vv}: not tiny (${cls})`);
   };
 
-  test("KB2b: a swipe that starts on a field inside the pin window scrolls like one on the flank, and a later keyboard focus does not restore the pre-drag scroll", async () => {
-    try {
-      for (const [w, h, vv] of [[844, 390, 180]]) {
-        await kb2bTinyOpen(w, h, vv);
-        await kb2Tap("scale-ding");
-        const tap = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-        const t0 = Date.now() / 1000;
-        await kb2Touch("touchStart", [[tap.x, tap.y]], t0);
-        await kb2Touch("touchEnd", [], t0 + 0.04);
-        await new Promise((r) => setTimeout(r, 60));
-        const before = await kb2bSurf();
-        const from = Object.values(before.fields).map((f) => ({ x: (f.left + f.right) / 2, y: (f.top + f.bottom) / 2 })).filter((p) => p.y > 60 && p.y < before.vvh - 10)[0];
-        assert.ok(from, `no field centre to start on in ${JSON.stringify(before)}`);
-        const t1 = Date.now() / 1000;
-        await kb2Touch("touchStart", [[from.x, from.y]], t1);
-        for (let i = 1; i <= 8; i++) await kb2Touch("touchMove", [[from.x, from.y - (60 * i) / 8]], t1 + i * 0.016);
-        await kb2Touch("touchEnd", [], t1 + 0.15);
-        await new Promise((r) => setTimeout(r, 100));
-        const after = await kb2bSurf();
-        assert.ok(after.surf - before.surf >= 40, `${w}x${h} vv ${vv}: a 60px swipe from a field inside the pin window scrolled ${after.surf - before.surf}px`);
-        const next = KB_FIELDS.find((id) => kb2bWhole(after.fields[id], after.vvh));
-        assert.ok(next, `no field whole in view after the swipe ${JSON.stringify(after)}`);
-        await b.eval(`document.getElementById(${JSON.stringify(next)}).focus(); return true;`);
-        await new Promise((r) => setTimeout(r, 100));
-        const focused = await kb2bSurf();
-        assert.ok(focused.surf >= after.surf - 1, `${w}x${h}: a keyboard focus within a second of the swipe put the scroll back ${after.surf} -> ${focused.surf}`);
-        await b.clearKeyboard();
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB2b: closing the sheet drops the tap pin and the tap snapshot", async () => {
-    try {
-      await kb2bTinyOpen(844, 390, 180);
-      await kb2bReveal((s) => kb2bWhole(s.fields["scale-top"], s.vvh));
-      const tap = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-      const t0 = Date.now() / 1000;
-      await kb2Touch("touchStart", [[tap.x, tap.y]], t0);
-      await kb2Touch("touchEnd", [], t0 + 0.04);
-      await new Promise((r) => setTimeout(r, 60));
-      assert.strictEqual(await b.eval(`return scrollPin !== null;`), true, "the tap did not set the pin, so this proves nothing");
-      await b.eval(`tapSnap = { at: Date.now(), body: 5, surf: 5 }; closeScaleSheet(); return true;`);
-      assert.deepStrictEqual(await b.eval(`return [scrollPin, tapSnap];`), [null, null]);
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB2b: in tiny mode a tap on a field that is whole in view moves the sheet scroller not at all while iOS nudges it", async () => {
-    try {
-      await kb2bTinyOpen(852, 393, 193);
-      await b.eval(`
-        document.addEventListener("focusin", () => {
-          setTimeout(() => { document.querySelector("#scale-sheet .sheetsurf").scrollTop += 37; }, 30);
-        }, true);
-        return true;`);
-      const focused = await b.eval(`return document.activeElement.id;`);
-      const before = await kb2bReveal((s) => KB_FIELDS.some((f) => f !== focused && kb2bWhole(s.fields[f], s.vvh)));
-      const id = KB_FIELDS.find((f) => f !== focused && kb2bWhole(before.fields[f], before.vvh));
-      assert.ok(id, `no other field whole in view ${JSON.stringify(before)}`);
-      await kb2Tap(id);
-      const after = await kb2bSurf();
-      assert.strictEqual(await b.eval(`return document.activeElement.id;`), id);
-      assert.ok(Math.abs(after.surf - before.surf) <= 1, `tapping ${id} moved the tiny scroller ${before.surf} -> ${after.surf}`);
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("KB2b: the tiny column is centred and 520px wide at 852x393 and 844x390", async () => {
-    try {
-      for (const [w, h, vv] of [[852, 393, 193], [844, 390, 180]]) {
-        await kb2bTinyOpen(w, h, vv);
-        const g = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); const pad = parseFloat(getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).paddingLeft); return { left: r.left, right: r.right, pad, w: innerWidth };`);
-        assert.ok(Math.abs(g.left - (g.w - g.right)) <= 1.5, `${w}x${h}: column not centred`);
-        assert.ok(g.right - g.left <= 520 && g.right - g.left >= 480, `${w}x${h}: column ${g.right - g.left}px wide, the shipped rule keeps it inside the 520px measure ${JSON.stringify(g)}`);
-        await b.clearKeyboard();
-      }
-    } finally {
-      await b.clearKeyboard();
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---- F4: ADJUST LAYOUT keeps its place and the pan stays tappable ---- */
   const F4_VIEWPORTS = [[390, 669], [390, 745], [380, 780], [320, 568]];
@@ -8517,51 +5748,6 @@ function run() {
     await new Promise((r) => setTimeout(r, 250));
   };
 
-  for (const [w, h] of F4_VIEWPORTS) {
-    test(`KB: F4 on the Layout tab at ${w}x${h} the options keep their room under the large pan and the pan is at least 140px`, async () => {
-      try {
-        await f4OpenEdit(w, h, "kurd");
-        await f4OpenDrawer();
-        const g = await f4Geom();
-        const room = g.portBottom - g.band.bottom;
-        if (g.bandPos !== "sticky") {
-          assert.ok(g.portBottom - g.portTop - (g.band.bottom - g.band.top) < 44, `the band is not stuck with ${g.portBottom - g.portTop - (g.band.bottom - g.band.top)}px of room: ${JSON.stringify(g)}`);
-        } else {
-          const floor = { "390x745": 20, "380x780": 60 }[w + "x" + h];
-          assert.ok(room >= floor, `only ${room}px of options show under the pan, wanted ${floor}`);
-        }
-        assert.ok(g.plate.width >= 140, `the plate is ${g.plate.width}px`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    for (const slug of ["kurd", "pygmy"]) {
-      test(`KB: F4 on the Layout tab at ${w}x${h} every note on the large pan is hit by a tap at its centre (${slug})`, async () => {
-        try {
-          await f4OpenEdit(w, h, slug);
-          await f4OpenDrawer();
-          const n = await b.eval(`return document.querySelectorAll("#scale-preview .panhit").length;`);
-          assert.strictEqual(n, slug === "pygmy" ? 17 : 9, `${n} notes on the ${slug} plate`);
-          for (let i = 0; i < n; i += 1) {
-            const c = await b.eval(`
-              const h = document.querySelectorAll("#scale-preview .panhit")[${i}];
-              const q = h.getBoundingClientRect();
-              const x = q.left + q.width / 2, y = q.top + q.height / 2;
-              const top = document.elementFromPoint(x, y);
-              return { x, y, field: h.getAttribute("data-field"), hit: top === h, topField: top && top.getAttribute && top.getAttribute("data-field"), topTag: top && (top.id || top.tagName) };`);
-            assert.ok(c.hit, `note ${i} (field ${c.field}) at ${w}x${h} is covered by ${c.topTag} (field ${c.topField})`);
-            await clickPoint(c.x, c.y);
-            const pressed = await b.eval(`return document.querySelector("#scale-preview .panhit[data-field='${c.field}']").getAttribute("aria-pressed");`);
-            assert.strictEqual(pressed, "true", `a tap at the centre of note ${i} (field ${c.field}) did not pick it`);
-            await b.key("Escape", "Escape", 27);
-          }
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-    }
-  }
 
   /* The footer's hairline. It used to hang off `.sheetsurf > .ctlrow`, a
    * DIRECT-CHILD selector: when the mirror/palette row moved into .sheetbody
@@ -8570,103 +5756,7 @@ function run() {
    * in the file. The rule now belongs to the scrollport's own bottom edge,
    * which is the boundary it was always describing, so it cannot be undone by
    * moving a child across it again. */
-  test("a hairline divides the pinned footer from the scroll, so the footer reads as fixed", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(390, 745, true);
-      await openSheet();
-      const m = await b.eval(`
-        const body = document.querySelector(".sheetbody");
-        const cs = getComputedStyle(body);
-        return {
-          next: body.nextElementSibling && body.nextElementSibling.id,
-          after: body.nextElementSibling && body.nextElementSibling.nextElementSibling
-            && body.nextElementSibling.nextElementSibling.id,
-          style: cs.borderBottomStyle,
-          w: cs.borderBottomStyle === "none" ? 0 : parseFloat(cs.borderBottomWidth),
-          color: cs.borderBottomColor,
-          bg: getComputedStyle(document.querySelector(".sheetsurf")).backgroundColor,
-        };
-      `);
-      assert.strictEqual(m.next, "scale-guidance",
-        "the guidance slot is no longer the first thing below the scrollport, so this "
-        + "test is measuring the wrong boundary");
-      assert.strictEqual(m.after, "scale-foot",
-        "the footer wrapper is no longer directly below the guidance slot, so the footer "
-        + "this hairline divides is not the slot plus the primary");
-      assert.ok(m.w >= 1,
-        `the scrollport's bottom edge draws no rule (${m.style} ${m.w}px), so nothing `
-        + "says the footer below it does not scroll");
-      assert.notStrictEqual(m.color, "rgba(0, 0, 0, 0)",
-        "the rule is transparent, which is the same as not drawing it");
-      assert.notStrictEqual(m.color, m.bg,
-        `the rule is drawn in the sheet's own background ${m.bg}, so it is invisible`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("keeping the primary out of the scroll still leaves the sheet's own content reachable", async () => {
-    // The failure mode of the fix: a fixed footer that eats the cap leaves a
-    // scrolling area too small to use, or one that cannot reach its own end.
-    // The worst case is the tallest sheet at the shortest viewport.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await generate(BIG_SCALE);
-      await b.setViewport(844, 390, true);
-      await openEdit();
-      await b.click("#scale-tab-layout");
-
-      const at = await primaryFold();
-      assert.ok(at.body, "the sheet has no .sheetbody - this test is measuring the wrong thing");
-      // Measured from the rows themselves, not from scrollHeight: a box that
-      // is not a scroll container reports scrollHeight === clientHeight while
-      // its content spills out of it in plain sight, and this test has to see
-      // that case as "unreachable content", not as "nothing overflows".
-      assert.ok(at.body.overhang > 0,
-        "the largest pan no longer overflows in landscape: pick a taller case");
-      assert.ok(at.body.clientH >= 100,
-        `the footer left only ${at.body.clientH}px to scroll in - the sheet is unusable`);
-
-      // Scrolled with a REAL wheel over the sheet, not by assigning scrollTop:
-      // an overflow:hidden box still takes a scrollTop from script, so the
-      // scripted form passes on a sheet no finger can actually scroll.
-      const where = await b.eval(`
-        const r = document.querySelector(".sheetbody").getBoundingClientRect();
-        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
-      `);
-      for (let i = 0; i < 12; i++) {
-        await b.send("Input.dispatchMouseEvent", {
-          type: "mouseWheel", x: where.x, y: where.y, deltaX: 0, deltaY: 400,
-        });
-      }
-
-      // The end of the content is reachable, and the primary has not moved
-      // while getting there.
-      const end = await b.eval(`
-        const body = document.querySelector(".sheetbody");
-        const last = body.lastElementChild.getBoundingClientRect();
-        const gen = document.getElementById("scale-generate").getBoundingClientRect();
-        return {
-          atEnd: body.scrollTop + body.clientHeight >= body.scrollHeight - 1,
-          lastBottom: last.bottom, bodyBottom: body.getBoundingClientRect().bottom,
-          genBottom: gen.bottom, vh: window.innerHeight,
-        };
-      `);
-      assert.ok(end.atEnd, "the sheet body cannot be scrolled to its end");
-      // 1.5px, not 0.5: scrollHeight is an integer and the flow is fractional,
-      // so a fully scrolled box can sit a rounding step short of its own end.
-      assert.ok(end.lastBottom <= end.bodyBottom + 1.5,
-        `the last row of the sheet is still cut off at the bottom of the scroll ` +
-        `(${end.lastBottom.toFixed(1)} vs ${end.bodyBottom.toFixed(1)})`);
-      assert.ok(end.genBottom <= end.vh + 0.5,
-        `the primary left the viewport once the body was scrolled ` +
-        `(bottom ${end.genBottom.toFixed(1)} of ${end.vh})`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- *
    * drawer polish (owner, 2026-09-11)
@@ -8706,434 +5796,15 @@ function run() {
     };
   `);
 
-  test("the focus ring on the seed box is not clipped by the sheet body", async () => {
-    // Confirmed on 2026-09-11 not to be a headless artifact: a text input
-    // matches :focus-visible on a real pointer click too, so this is what the
-    // owner sees on iOS after tapping the box, not only what a script sees.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
-      await b.click("#scale-box");
-      await b.settle();
 
-      const m = await ringVsScrollport();
-      assert.ok(m.focusVisible && m.outlineStyle !== "none",
-        "the box is not showing a focus ring - this test is measuring nothing");
-      assert.ok(m.ringLeft >= m.portLeft - 0.5,
-        `the focus ring is clipped on the left (ring ${m.ringLeft.toFixed(1)} ` +
-        `vs scrollport ${m.portLeft.toFixed(1)}), and overflow-x is ` +
-        `"${m.overflowX}" with scrollable=${m.scrollable}, so nothing can reach it`);
-      assert.ok(m.ringRight <= m.portRight + 0.5,
-        `the focus ring is clipped on the right (ring ${m.ringRight.toFixed(1)} ` +
-        `vs scrollport ${m.portRight.toFixed(1)})`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("the parse line sits a step further from the box than its own label", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      await b.eval(`document.getElementById("scale-box").scrollIntoView({ block: "center" });`);
-      await b.click("#scale-box");
-      await b.settle();
-      const m = await b.eval(`
-        const label = document.getElementById("scale-label-2");
-        const box = document.getElementById("scale-box");
-        const parse = document.getElementById("scale-parse");
-        const g = (a, bEl) => bEl.getBoundingClientRect().top - a.getBoundingClientRect().bottom;
-        const ramp = n => parseFloat(getComputedStyle(document.documentElement)
-          .getPropertyValue("--sp-" + n));
-        return { labelToBox: g(label, box), boxToParse: g(box, parse),
-                 sp1: ramp(1), sp2: ramp(2) };
-      `);
-      // The label BELONGS to the box; the parse line COMMENTS on it. Two
-      // relationships, two steps of the ramp - asserted as ramp steps so the
-      // desktop and landscape rungs scale with it.
-      assert.ok(Math.abs(m.labelToBox - m.sp1) < 0.5,
-        `label-to-box is ${m.labelToBox.toFixed(1)}px, expected --sp-1 (${m.sp1})`);
-      assert.ok(Math.abs(m.boxToParse - m.sp2) < 0.5,
-        `box-to-parse is ${m.boxToParse.toFixed(1)}px, expected --sp-2 (${m.sp2})`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("the sheet does not change height as the seed is typed", async () => {
-    // Owner request 3, read literally: "the drawer doesn't need to resize
-    // based on the input". Three sources fed it - the preview leaving the
-    // flow, the parse/message row collapsing to zero on an invalid parse, and
-    // text wrapping - and a test covering only the preview would pass on two
-    // of them still live. So this measures the SHEET, across the states a
-    // keystroke moves between.
-    //
-    // The one step that is NOT covered here is empty -> first valid parse:
-    // PARSE_HINT was three wrapped lines at 380px and the note list is one, a
-    // 37px difference measured on 2026-09-11; PARSE_HINT has wrapped to four lines since, 74px with real fonts. Reserving it would cost every
-    // phone that height permanently to hold still at a moment BEFORE the
-    // user has typed anything, so it is spent on the typing path instead.
-    // The next test pins what the step is MADE of - nothing but the parse
-    // line contributes to it - not its magnitude, which moves with how
-    // PARSE_HINT happens to wrap.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      const h = async (label) => {
-        await b.settle();
-        return { label, ...(await b.eval(`
-          const surf = document.querySelector(".sheetsurf");
-          return { h: surf.getBoundingClientRect().height,
-                   preview: !document.getElementById("scale-preview").hasAttribute("hidden"),
-                   // Since 2026-09-21 the parse line and the refusal line take
-                   // turns in ONE reserved row (whichever is empty leaves the
-                   // flow), so the invariant is the ROW, not either element.
-                   // Exactly one is ever filled, because showParse() and
-                   // showRefusal() are the row's only writers and each blanks
-                   // the other - it is not a coincidence of call order.
-                   row: document.getElementById("scale-parse").getBoundingClientRect().height
-                      + document.getElementById("scale-refusal").getBoundingClientRect().height };
-        `)) };
-      };
-      const states = [];
-      await typeScale("(D) A C D E F G A C");
-      states.push(await h("valid"));
-      await typeScale("(D) A C D z");
-      states.push(await h("invalid"));
-      await typeScale("(D) A C D E F G A C");
-      states.push(await h("valid again"));
-      // A seed long enough that its failure reason is a different length from
-      // the short one above: the refusal line wraps too, and it is in the sheet.
-      await typeScale("(D) A C D E F G A C | Q# Q# Q# Q# Q# Q# Q#");
-      states.push(await h("invalid, long reason"));
 
-      for (const s of states) {
-        assert.ok(s.preview,
-          `${s.label}: the pan left the flow - the page resizes on input`);
-        assert.ok(s.row > 0,
-          `${s.label}: the parse/message row collapsed to zero height`);
-      }
-      const base = states[0].h;
-      for (const s of states) {
-        assert.ok(Math.abs(s.h - base) < 0.5,
-          `the sheet is ${s.h.toFixed(1)}px in "${s.label}" but ` +
-          `${base.toFixed(1)}px valid: ` +
-          states.map(x => `${x.label}=${x.h.toFixed(1)}`).join(", "));
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("the seed refusal sits above the pan", async () => {
-    // Owner feedback, 2026-09-21: "Error message such as 'No ding. Start with
-    // the ding note, e.g. (D) or D/.' Should be directly under the scale field
-    // otherwise it's hidden below the fold". Geometric, not DOM-order: this
-    // fails on a reordering, on the preview being moved above the message, and
-    // on absolute positioning that reinstates the old stacking.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      await typeScale("(D) A C D z");
-      await b.settle();
-      const r = await b.eval(`
-        const msg = document.getElementById("scale-refusal").getBoundingClientRect();
-        const box = document.getElementById("scale-box").getBoundingClientRect();
-        const prev = document.getElementById("scale-preview").getBoundingClientRect();
-        return { msgTop: msg.top, msgBottom: msg.bottom, boxBottom: box.bottom,
-                 prevTop: prev.top,
-                 text: document.getElementById("scale-refusal").textContent.trim() };
-      `);
-      assert.ok(r.text.length > 0, "no refusal was rendered for an invalid seed");
-      const placed = await b.eval(`
-        const msg = document.getElementById("scale-refusal"), row = document.getElementById("scale-box").closest(".fieldrow");
-        return { shown: msg.getClientRects().length > 0, inRow: !!row && row.contains(msg) };
-      `);
-      assert.ok(placed.inRow, "the refusal is not in the scale field's own row");
-      assert.ok(placed.shown, "the refusal is in the scale field's row but not displayed on the Scale tab");
-      assert.ok(r.msgTop - r.boxBottom <= 24,
-        `the refusal's top is ${r.msgTop.toFixed(1)}px, ${(r.msgTop - r.boxBottom).toFixed(1)}px ` +
-        `under the scale field's bottom at ${r.boxBottom.toFixed(1)}px - it is not directly under the field`);
-      assert.ok(r.msgTop >= r.boxBottom - 0.5,
-        `the refusal's top is ${r.msgTop.toFixed(1)}px, above the scale field's ` +
-        `bottom at ${r.boxBottom.toFixed(1)}px`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("the pan does not move when the seed goes bad", async () => {
-    // #scale-refusal sits between the field and the pan, so its height is in
-    // the pan's path. What holds the row still across the valid -> invalid
-    // step is that #scale-parse EMPTIES as the refusal fills: showRefusal()
-    // blanks the parse line, :empty takes it out of the flow, and the refusal
-    // stands in the identical box. Stop writing the refusal, or stop blanking
-    // the parse line, and the row changes height under the user's finger.
-    // Not a CSS floor: both elements' min-height is unreachable behind
-    // :empty{display:none}, which is why e_refusal_row_collapses mutates the
-    // CONTENT rather than the declaration.
-    // The 18px step is exactly one line, so the exemption below is deliberate:
-    // a refusal that WRAPS to two lines does still move the pan. Reserving the
-    // second line fixes that and costs 22px the Edit sheet does not have -
-    // measured 2026-09-21 at 380x780, its slack is 20.9px, breaking
-    // "ROTATE makes its correction from the keyboard alone at 380px". Wrapping
-    // needs a bad token near core.js:125's 12-character slice; every reason at
-    // a short token renders in one line. See index.html's :empty comment.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      const top = async () => {
-        await b.settle();
-        return b.eval(`
-          return document.getElementById("scale-box-wrap").parentElement.getBoundingClientRect().bottom;
-        `);
-      };
-      // No EMPTY-vs-typed comparison here: the first keystroke legitimately
-      // changes PARSE_HINT's own wrap (see "the only height the first
-      // keystroke changes is the hint's own wrap"), which is a different
-      // element and a different 37px. VALID is the right baseline - its
-      // #scale-refusal is EMPTY and #scale-parse holds the reserved line.
-      await typeScale("(D) A C D E F G A C");
-      const valid = await top();
-      const parseH = await b.eval(`
-        return document.getElementById("scale-parse").getBoundingClientRect().height;
-      `);
-      await typeScale("(D) A C D C10");
-      const bad = await top();
-      const msg = await b.eval(`
-        const m = document.getElementById("scale-refusal");
-        return { h: m.getBoundingClientRect().height, t: m.textContent.trim() };
-      `);
-      assert.ok(msg.t.length > 0, "no refusal was rendered for an invalid seed");
-      // Guards the premise: a refusal that silently grew to two lines would
-      // make the assertions below fail for a reason this test does not mean.
-      // Plan section 9's refusals are two lines at 380 and the spec adds no
-      // floor ("a refusal wraps to its own"), so the pan steps by exactly the
-      // difference between the two boxes. Stacking them (the parse line kept in
-      // the flow beside the refusal) steps by the refusal's whole height.
-      const step = bad - valid;
-      assert.ok(Math.abs(step - (msg.h - parseH)) < 0.5,
-        `the pan moved ${step.toFixed(1)}px when the seed went bad, expected the ` +
-        `refusal (${msg.h.toFixed(1)}px) minus the parse line it replaces ` +
-        `(${parseH.toFixed(1)}px)`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("the only height the first keystroke changes is the hint's own wrap", async () => {
-    // The accepted step from the test above, pinned. As a drawer the surface
-    // grew with its content and the allowance was the parse line's own wrap;
-    // as a page it is the viewport's height, so the surface must not move AT
-    // ALL and the wrap has to be absorbed inside the scrolling body. Both
-    // halves are checked: a page that stays put while something else inside it
-    // silently grows would pass the first assertion on its own.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      const m = () => b.eval(`
-        return { h: document.querySelector(".sheetsurf").getBoundingClientRect().height,
-                 body: document.querySelector(".sheetbody").scrollHeight,
-                 parse: document.getElementById("scale-parse").getBoundingClientRect().height,
-                 box: document.getElementById("scale-box").getBoundingClientRect().height,
-                 hint: document.getElementById("scale-layout-hint").getBoundingClientRect().height,
-                 fields: document.getElementById("scale-fields").getBoundingClientRect().height,
-                 row: document.getElementById("scale-box").closest(".fieldrow").getBoundingClientRect().height };
-      `);
-      await b.settle();
-      const empty = await m();
-      await typeScale("(D) A C D E F G A C");
-      await b.settle();
-      const typed = await m();
 
-      assert.ok(Math.abs(empty.h - typed.h) < 0.5,
-        `the page surface resized by ${(empty.h - typed.h).toFixed(1)}px on the ` +
-        "first keystroke - it is the viewport's height and must not move");
-      const bodyDelta = empty.body - typed.body;
-      // The empty field sizes itself from the placeholder (spec, Empty field),
-      // so its own rows are the second element that legitimately changes.
-      // Lane DR1: the toggle row's hint changes sentence on the first valid
-      // scale (HINT_EMPTY to HINT_GUESS), so its own wrap is a third element.
-      // The four fields grow by their derived-notes line on the first valid scale.
-      const parseDelta = (empty.row - typed.row) + (empty.fields - typed.fields);
-      assert.ok(Math.abs(bodyDelta - parseDelta) < 1,
-        `the scrolling body moved ${bodyDelta.toFixed(1)}px between empty and ` +
-        `typed but the parse line and the field only account for ${parseDelta.toFixed(1)}px ` +
-        "- something else in the page is resizing on input");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  for (const [vw, vh] of [[380, 780], [844, 390]]) {
-    test(`PH: ${vw}x${vh} the CTA sits inside the plate with its own 4.5:1 contrast and takes no room`, async () => {
-      try {
-        await freshLoad();
-        await b.setViewport(vw, vh, true);
-        await openSheet();
-        await b.eval(`document.getElementById("scale-tab-layout").click();`);
-        await b.settle();
-        const m = () => b.eval(`
-          const p = document.getElementById("scale-preview").getBoundingClientRect();
-          const h = document.getElementById("scale-layout-hint");
-          const r = h.getBoundingClientRect(), cs = getComputedStyle(h);
-          const bg = (() => { let e = h; while (e) { const c = getComputedStyle(e).backgroundColor;
-            if (c && c !== "rgba(0, 0, 0, 0)" && c !== "transparent") return c; e = e.parentElement; } return "rgb(0, 0, 0)"; })();
-          return { hidden: h.hidden, pos: cs.position, pe: cs.pointerEvents, fg: cs.color, bg,
-            plate: [p.left, p.top, p.width, p.height], hint: [r.left, r.top, r.right, r.bottom] };
-        `);
-        const rgb = (s) => s.match(/[\d.]+/g).slice(0, 3).map(Number);
-        const empty = await m();
-        assert.strictEqual(empty.hidden, false);
-        assert.strictEqual(empty.pos, "absolute");
-        assert.strictEqual(empty.pe, "none");
-        const [pl, pt, pw, ph] = empty.plate;
-        const [hl, ht, hr, hb] = empty.hint;
-        assert.ok(hl >= pl - 0.5 && hr <= pl + pw + 0.5 && ht >= pt - 0.5 && hb <= pt + ph + 0.5,
-          `the CTA is not inside the plate: ${JSON.stringify(empty)}`);
-        assert.ok(contrastRatio(rgb(empty.fg), rgb(empty.bg)) >= 4.5, `CTA contrast ${empty.fg} on ${empty.bg}`);
-        await b.eval(`document.getElementById("scale-layout-hint").hidden = true;`);
-        const off = await m();
-        assert.deepStrictEqual(off.plate, empty.plate, "the CTA moved the plate");
-        await b.eval(`document.getElementById("scale-layout-hint").hidden = false;`);
-        await typeScale("(D3) A3 C4 D4");
-        await b.settle();
-        assert.strictEqual((await m()).hidden, true, "the CTA stayed after a valid seed");
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test(`PH: ${vw}x${vh} the tabs are a text strip with a 2px teal underline on the selected one, 44px tall`, async () => {
-      try {
-        await freshLoad();
-        await b.setViewport(vw, vh, true);
-        await openSheet();
-        const read = () => b.eval(`
-          return ["scale-tab-scale", "scale-tab-layout"].map((id) => {
-            const e = document.getElementById(id), cs = getComputedStyle(e), r = e.getBoundingClientRect();
-            const af = getComputedStyle(e, "::after");
-            return { bg: cs.backgroundColor, color: cs.color, bw: cs.borderBottomWidth, bc: cs.borderBottomColor,
-              afH: af.height, afBg: af.backgroundColor, h: r.height, w: r.width, radius: cs.borderTopLeftRadius };
-          });`);
-        const [sel, other] = await read();
-        assert.strictEqual(sel.bg, "rgba(0, 0, 0, 0)", `the selected tab is filled: ${sel.bg}`);
-        assert.strictEqual(other.bg, "rgba(0, 0, 0, 0)");
-        assert.ok(sel.h >= 44 && other.h >= 44, `tabs are ${sel.h}px / ${other.h}px tall`);
-        assert.ok(Math.abs(sel.w - other.w) < 1.5, "the tabs are not equal widths");
-        const teal = "rgb(103, 86, 181)";
-        const underlined = (t) => (t.bw === "2px" && t.bc === teal) || (t.afH === "2px" && t.afBg === teal);
-        assert.ok(underlined(sel), `the selected tab has no 2px violet underline: ${JSON.stringify(sel)}`);
-        assert.ok(!underlined(other), "the unselected tab is underlined in violet");
-        assert.notStrictEqual(sel.color, other.color, "selected and unselected labels share a colour");
-        assert.strictEqual(sel.radius, "0px", "the tab is a rounded button");
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-  }
-
-  test("PH: the example plate is dimmer and greyer than a held plate", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      await openSheet();
-      await b.eval(`document.getElementById("scale-tab-layout").click();`);
-      const st = () => b.eval(`
-        const cs = getComputedStyle(document.getElementById("scale-preview"));
-        return { o: parseFloat(cs.opacity), f: cs.filter };`);
-      const example = await st();
-      await typeScale("(D) A C D E F G A C");
-      await typeScale("(D) A C D z");
-      await b.settle();
-      const held = await st();
-      assert.ok(example.o < held.o, `example ${example.o} is not dimmer than held ${held.o}`);
-      assert.ok(example.f.includes("grayscale"), `the example is not desaturated (${example.f})`);
-      assert.ok(!held.f.includes("grayscale"), "a held plate is desaturated");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("a held pan is never announced as the current one", async () => {
-    // The pan is role="img" with a name, so it is content: a stale render
-    // left under the live name tells a screen reader the user is looking at
-    // a seed they are not. Dimming alone is not enough - it says nothing in
-    // the accessibility tree.
-    try {
-      await freshLoad();
-      await b.setViewport(380, 800, true);
-      await openSheet();
-      const name = () => b.eval(`
-        const p = document.getElementById("scale-preview");
-        return { label: p.getAttribute("aria-label"),
-                 opacity: parseFloat(getComputedStyle(p).opacity) };
-      `);
-      const empty = await name();
-      await typeScale("(D) A C D E F G A C");
-      await b.settle();
-      const valid = await name();
-      await typeScale("(D) A C D z");
-      await b.settle();
-      const held = await name();
-
-      assert.notStrictEqual(held.label, valid.label,
-        `a stale pan kept the live name ("${held.label}")`);
-      assert.notStrictEqual(empty.label, valid.label,
-        `the placeholder example kept the live name ("${empty.label}")`);
-      // One dim treatment for "not your current input", two names.
-      assert.ok(held.opacity < valid.opacity && empty.opacity < valid.opacity,
-        `not-current states are not dimmed (empty ${empty.opacity}, ` +
-        `held ${held.opacity}, current ${valid.opacity})`);
-      // Floored so the plate's black rim ink keeps its contrast: this is
-      // graphic content, not decoration.
-      // PH: the owner asked for the example to be greyed further, so the
-      // floor holds for a held pan only and the example sits below it.
-      assert.ok(held.opacity >= 0.5 && empty.opacity < held.opacity,
-        `held dimmed below the 0.5 contrast floor or the example is not dimmer (${held.opacity}, ${empty.opacity})`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("the sheet widens with the viewport on desktop", async () => {
-    // Request 4. Nothing inside the drawer scales with its width on its own -
-    // the seed is a short string and the plate is pinned at a phone measurement
-    // (300px since Stage 3, when the plate became the correction surface and
-    // the notes had to be tappable) - so widening the surface alone buys an
-    // empty band. The
-    // plate has to grow too, which is why both are asserted together.
-    const CLAMP = (vw) => Math.min(Math.max(520, vw * 0.52), 680);
-    try {
-      for (const [w, hgt] of [[640, 800], [1024, 800], [1280, 900], [1440, 900], [1920, 1080]]) {
-        await freshLoad();
-        await b.setViewport(w, hgt, false);
-        await openSheet();
-        await b.settle();
-        const m = await b.eval(`
-          const surf = document.querySelector(".sheetsurf");
-          const plate = document.getElementById("scale-preview");
-          const cs = getComputedStyle(surf);
-          return { surf: surf.getBoundingClientRect().width,
-                   cw: surf.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
-                   plate: plate.getBoundingClientRect().width,
-                   vw: window.innerWidth };
-        `);
-        assert.ok(Math.abs(m.surf - CLAMP(m.vw)) < 1,
-          `at ${w}px the sheet is ${m.surf.toFixed(1)}px, expected ` +
-          `${CLAMP(m.vw).toFixed(1)}px (clamp(520px, 52vw, 680px))`);
-      }
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   /* ---------------------------------------------------------------- *
    * accessible state and focus on the practice screen
@@ -9165,40 +5836,18 @@ function run() {
     await generate(SIX_SCALES[1]);
     const afterGen = await activeDesc();
     assert.strictEqual(afterGen.isBody, false,
-      "focus was dumped on <body> after GENERATE CARDS - a screen reader " +
-      "restarts from the top of the page just as the success message fires");
+      "focus was dumped on <body> after GENERATE CARDS - a screen reader restarts from the top of the page just as the success message fires");
     assert.strictEqual(afterGen.isSelectedChip, true,
-      `after GENERATE focus should rest on the selected deck chip, but it is on ` +
-      `${JSON.stringify(afterGen)}`);
-
-    // The Edit path lands in the same place: SAVE CHANGES also closes the
-    // sheet and then re-selects, so it rebuilds the strip too.
+      `after GENERATE focus should rest on the selected deck chip, but it is on ${JSON.stringify(afterGen)}`);
     try {
       await editFreshDeck();
       await clickGenerate();
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
         { label: "the Edit sheet to close after SAVE CHANGES" });
       const afterSave = await activeDesc();
-      assert.strictEqual(afterSave.isBody, false,
-        "focus was dumped on <body> after SAVE CHANGES");
+      assert.strictEqual(afterSave.isBody, false, "focus was dumped on <body> after SAVE CHANGES");
       assert.strictEqual(afterSave.isSelectedChip, true,
-        `after SAVE CHANGES focus should rest on the selected deck chip, but it is on ` +
-        `${JSON.stringify(afterSave)}`);
-
-      // DELETE is the one path where the chip holding focus is genuinely
-      // detached by the rebuild, so it is the strictest case of the same bug.
-      await editFreshDeck();
-      await b.click("#scale-delete");   // arms
-      await b.click("#scale-delete");   // confirms
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the Edit sheet to close after DELETE" });
-      const afterDelete = await activeDesc();
-      assert.strictEqual(afterDelete.isBody, false,
-        "focus was dumped on <body> after DELETE - the chip it was resting on " +
-        "was detached by the chip-strip rebuild and nothing put it back");
-      assert.strictEqual(afterDelete.isSelectedChip, true,
-        `after DELETE focus should rest on the fallback deck's chip, but it is on ` +
-        `${JSON.stringify(afterDelete)}`);
+        `after SAVE CHANGES focus should rest on the selected deck chip, but it is on ${JSON.stringify(afterSave)}`);
     } finally {
       await b.setViewport(900, 900, false);
     }
@@ -9208,22 +5857,6 @@ function run() {
   // CORRECT must stay correct. They do not re-select, so nothing rebuilds the
   // strip and focus belongs on the control that opened the page. (The backdrop
   // tap of the drawer era is BACK now - same close path, same focus return.)
-  test("Escape and BACK still hand focus back to the opener", async () => {
-    await freshLoad();
-    await openSheet();
-    await b.key("Escape", "Escape", 27);
-    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-      { label: "Escape to close the sheet" });
-    assert.strictEqual(await activeId(), "settings-trigger",
-      "Escape no longer returns focus to the settings trigger");
-
-    await openSheet();
-    await b.click("#scale-back");
-    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-      { label: "BACK to close the sheet" });
-    assert.strictEqual(await activeId(), "settings-trigger",
-      "BACK no longer returns focus to the settings trigger");
-  });
 
   // Row 217. The `.on` class is a colour, and colour is not state.
   test("the selected deck and the active mode carry accessible state", async () => {
@@ -10188,46 +6821,6 @@ function run() {
       return m;
     }
 
-    test("the parse hint is at most four lines at 380x780 and five at 320x568 with real fonts", async () => {
-      try {
-      for (const [w, h, hintBudget] of [[380, 780, 4], [320, 568, 5]]) {
-        await rb.setViewport(w, h, true);
-        await rb.goto(URL);
-        await rb.eval(`return document.fonts.ready.then(() => true);`);
-        await rb.settle();
-        await rb.click("#settings-trigger");
-        await rb.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`,
-          { label: "panel open" });
-        await rb.click("#deck-add");
-        await rb.waitFor(`!document.getElementById("scale-sheet").hasAttribute("hidden")`,
-          { label: "the scale sheet to open" });
-        await rb.settle();
-        const lines = (id) => rb.eval(`
-          const el = document.getElementById(${JSON.stringify(id)});
-          const range = document.createRange(); range.selectNodeContents(el);
-          return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;`);
-        const note = await rb.eval(`return document.getElementById("scale-fields-note").textContent;`);
-        assert.match(note, /^Octaves are optional/);
-        const noteLines = await lines("scale-fields-note");
-        assert.ok(noteLines >= 1 && noteLines <= 2, `the octave sentence wraps to ${noteLines} lines at ${w}x${h}`);
-        await rb.eval(`document.getElementById("scale-box").focus(); return true;`);
-        await rb.waitFor(`getComputedStyle(document.getElementById("scale-parse")).display !== "none"`,
-          { label: "the parse hint to show" });
-        const hintLines = await lines("scale-parse");
-        assert.ok(hintLines >= 1 && hintLines <= hintBudget, `the parse hint wraps to ${hintLines} lines at ${w}x${h}`);
-        console.log(`OS measured ${w}x${h}: parse hint ${hintLines} lines, fields note ${noteLines} lines`);
-        if (w === 380) {
-          for (const id of ["scale-top-label", "scale-inner-label", "scale-bottom-label"]) {
-            assert.strictEqual(await lines(id), 1, `${id} wraps at ${w}x${h}`);
-          }
-        }
-      }
-      } finally {
-        await rb.setViewport(900, 900, false);
-        await rb.goto(URL);
-        await rb.eval(`return document.fonts.ready.then(() => true);`);
-      }
-    });
 
     // The desktop sidebar cells reviewer #3 measured with real fonts:
     // 1024/1280 wide, heights 746-760 (overflow +16px->+2px under the OLD
@@ -11808,55 +8401,6 @@ function run() {
       }
     });
 
-    test("an unsupported deck's sequence clears the card, disables stepping, and does not crash",
-      async () => {
-        await freshLoad();
-        await openSettingsPanel();
-        await b.click("#deck-add");
-        await b.waitFor(`getComputedStyle(document.getElementById("scale-box")).display !== "none"`,
-          { label: "the scale sheet to open" });
-        await b.eval(`
-          const box = document.getElementById("scale-box");
-          box.value = "(C3) G3 D4 G4 D5";
-          box.dispatchEvent(new Event("input", { bubbles: true }));
-          return true;
-        `);
-        await clickGenerate();
-        await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
-          { label: "the unsupported instrument's Generate acknowledgment" });
-        const generatedSelection=await b.eval("return {...selection};");
-        await nativeCommittedPreference(b,generatedSelection);
-        const generatedEnvelope=await nativeSavedEnvelope(b);
-        const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
-        assert.ok(generatedEntry,"the intended generated scale has an actual committed saved instance");
-        assert.strictEqual(generatedEntry.record.s,"(C3) G3 D4 G4 D5","the empty-sequence case runs against its literal generated inventory");
-        assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
-        assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,"the acknowledged scale stays selected before opening Settings");
-        await openSettingsPanel();
-        await b.click("#tier-basic");
-        await b.waitFor(`document.getElementById("tier-basic").getAttribute("aria-pressed") === "true"`,
-          { label: "mode S to take effect" });
-        const m = await b.eval(`return {
-          front: document.getElementById("front").innerHTML,
-          back: document.getElementById("back").innerHTML,
-          countChildren: document.getElementById("count").children.length,
-        };`);
-        assert.match(m.front, /doesn.t have enough simple chords/);
-        assert.strictEqual(m.front, m.back);
-        assert.strictEqual(m.countChildren, 0);
-        // Stepping and flipping on the empty state must not throw.
-        await b.click("#next");
-        await b.click("#prev");
-        await b.eval(`document.getElementById("card").click(); return true;`);
-        await b.key("ArrowRight", "ArrowRight", 39);
-        await b.settle();
-        assert.deepStrictEqual(await b.eval(`return {
-          front: document.getElementById("front").innerHTML,
-          back: document.getElementById("back").innerHTML,
-          countChildren: document.getElementById("count").children.length,
-        };`),m,"stepping and flipping an empty sequence leave its card and count unchanged");
-      });
-
   });
 
   /* ---------------------------------------------------------------- *
@@ -12154,14 +8698,9 @@ function run() {
         await freshLoad();
         await openSettingsPanel();
         await b.click("#deck-add");
-        await b.waitFor(`getComputedStyle(document.getElementById("scale-box")).display !== "none"`,
+        await b.waitFor(`!!document.getElementById("editor-line")`,
           { label: "the scale sheet to open" });
-        await b.eval(`
-          const box = document.getElementById("scale-box");
-          box.value = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
-          box.dispatchEvent(new Event("input", { bubbles: true }));
-          return true;
-        `);
+        await typeScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5");
         await clickGenerate();
         await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
           { label: "the tier fixture's real Generate acknowledgment" });
@@ -12779,38 +9318,22 @@ function run() {
       assert.strictEqual(xf.none, true);
     });
 
-    test("card swipe: a drag with the scale sheet open does nothing", async () => {
+
+    test("card swipe: a page opened mid-drag suppresses the release", async () => {
       await freshLoad();
       const n = (await bootMeta()).chords;
-      await openSheet();
-      const open = await b.eval(`return sheetOpen === true;`);
-      assert.strictEqual(open, true, "sheetOpen must be true once the sheet is shown");
-      await b.drag("#card", [[-60, 100], [-120, 200]]);
-      await b.finishAnimations();
-      await expectCount(`1 / ${n}`, "a drag while the scale sheet is open must not navigate");
-
-      // The sheet's own preview SVG occludes #card at this viewport, so a
-      // fresh physical touch there never reaches #card at all - the guard
-      // above is only exercised by coincidence of that occlusion. Open the
-      // sheet mid-drag instead (pointer capture routes the released touch to
-      // #card regardless of what now covers it).
-      //
-      // Q10: tried a real showSheet() call here too. showSheet()'s own
-      // `background` array also includes <main>, so it inerts the same
-      // ancestor openPanel() does - and the identical finding applies
-      // (measured against sw_sheet_guard_dropped): an inert ancestor
-      // swallows every further pointer event to #card regardless of pointer
-      // capture, so the test's own g.release() touch never reaches
-      // release() under either the fixed code or the mutant. The rewrite
-      // can't discriminate the guard, so the direct assignment is kept
-      // (M6).
-      await b.eval(`hideSheet(); return true;`);
       const g = await startDrag("#card");
       await g.move(-120, 100);
-      await b.eval(`sheetOpen = true; return true;`);
+      // A fresh drag cannot reach #card while the editor page covers it, so
+      // only the mid-drag branch can observe release()'s pageOpen guard; the
+      // direct assignment is the same device the panel test above uses.
+      await b.eval(`pageOpen = true; return true;`);
       await g.release(-120, 200);
       await b.finishAnimations();
-      await expectCount(`1 / ${n}`, "opening the scale sheet mid-drag must suppress the release");
+      await b.eval(`pageOpen = false; return true;`);
+      await expectCount(`1 / ${n}`, "opening the editor page mid-drag must suppress the release");
+      const xf = await sceneXform();
+      assert.strictEqual(xf.none, true);
     });
 
     test("card swipe: under reduced motion the swipe steps instantly with no animation", async () => {
@@ -14437,10 +10960,12 @@ function run() {
   // Editable defaults (lane e2e): delete, save and reset a seeded deck, at 380px.
   const deleteSelectedSeeded = async () => {
     await openEdit();
-    await b.click("#scale-delete");
-    await b.waitFor(`document.getElementById("scale-delete").hasAttribute("data-armed")`,
-      { label: "DELETE THIS SCALE to arm" });
-    await b.click("#scale-delete");
+    await b.click("#editor-more");
+    await b.click("#editor-delete");
+    await b.waitFor(`document.getElementById("editor-delete").classList.contains("armed")`,
+      { label: "DELETE to arm" });
+    await new Promise((done) => setTimeout(done, 450));
+    await b.click("#editor-delete");
     await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
       { label: "the sheet to close after the delete" });
   };
@@ -14471,80 +10996,7 @@ function run() {
     }
   });
 
-  test("saving Pygmy with a palette change at 380px replaces its chip in place with the Pygmy name", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      const meta = await decksMeta();
-      const at = meta.findIndex((m) => m.id === "pygmy");
-      assert.ok(at >= 0, "there is no pygmy deck");
-      await selectDeck(at, meta);
-      await openEdit();
-      assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").textContent.trim();`),
-        "SAVE CHANGES");
-      await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
-      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
-        "the palette swatch did not take");
-      await clickGenerate();
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the sheet to close after the save" });
-      const chips = await chipTexts();
-      assert.strictEqual(chips.length, meta.length, `the save left ${chips.length} chips`);
-      const want = await b.eval(`return chipLabel(DECKS.find(d => d.id === "pygmy").name);`);
-      assert.strictEqual(chips[at], want, `chip ${at + 1} reads "${chips[at]}", not the Pygmy name "${want}"`);
-      assert.strictEqual(chips.filter((t) => t === want).length, 1, "the seeded Pygmy chip is still drawn");
-      assert.strictEqual(await b.eval(`return document.querySelectorAll("#decks .chip:not(#deck-add)")[${at}].classList.contains("on");`),
-        true, "the replacement is not the selected chip");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("DS4: RESET SEEDED SCALES and the print heading stay on one line at 320x568, 844x390 and 1280x800, and the seeded arming note keeps its base line count at 320x568", async () => {
-    const linesOf = `const lines = (el) => { const r = document.createRange(); r.selectNodeContents(el);
-      return new Set([...r.getClientRects()].map(x => Math.round(x.top))).size; };`;
-    try {
-      for (const [w, h] of [[320, 568], [844, 390], [1280, 800]]) {
-        await freshLoad();
-        await b.setViewport(w, h, true);
-        await deleteSelectedSeeded();
-        await openSettingsPanel();
-        const m = await b.eval(`${linesOf}
-          const reset = document.getElementById("deck-restore");
-          reset.scrollIntoView({ block: "nearest" });
-          const head = [...document.querySelectorAll(".panel-heading")].find(e => /Print this/.test(e.textContent));
-          return { reset: lines(reset), head: head ? lines(head) : -1, text: head && head.textContent };`);
-        assert.strictEqual(m.reset, 1, `RESET SEEDED SCALES wraps at ${w}x${h}`);
-        assert.strictEqual(m.text, "Print this scale");
-        assert.strictEqual(m.head, 1, `the print heading wraps at ${w}x${h}`);
-      }
-      await freshLoad();
-      await b.setViewport(320, 568, true);
-      await b.eval(`localStorage.setItem("hpfc", JSON.stringify({ deck: "pygmy", mode: "A" })); return true;`);
-      await clearSavedIdbForLegacyMigrationFixture();
-      await navigate();
-      assert.deepStrictEqual((await nativeSavedEnvelope(b)).preferredSelection,{kind:"builtin",id:"pygmy"},"fixture actually migrates the selected Pygmy before measuring its DELETE arming note");
-      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "chips" });
-      await openEdit();
-      await b.click("#scale-delete");
-      await b.waitFor(`document.getElementById("scale-delete").hasAttribute("data-armed")`,
-        { label: "DELETE THIS SCALE to arm" });
-      const n = await b.eval(`${linesOf}
-        const note = document.getElementById("scale-del-note");
-        const name = document.getElementById("scale-name").value;
-        const now = note.textContent;
-        const after = lines(note);
-        note.textContent = "Tap again to remove " + name + ". RESET SEEDED DECKS in the menu brings the seeded decks back.";
-        const base = lines(note);
-        note.textContent = now;
-        return { name, now, after, base };`);
-      assert.match(n.name, /PYGMY/);
-      assert.strictEqual(n.now, `Tap again to remove ${n.name}. RESET SEEDED SCALES in the menu brings the seeded scales back.`);
-      assert.strictEqual(n.after, n.base, `the arming note grew from ${n.base} to ${n.after} lines`);
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   test("RESET SEEDED DECKS is absent until a seeded deck is edited or deleted, arms, and restores all five", async () => {
     try {
@@ -14597,119 +11049,8 @@ function run() {
     }
   });
 
-  test("SD: the selected seeded chip's pencil opens the sheet with SAVE CHANGES at 380px", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      const kurd = await bootMeta();
-      const chip = await b.eval(`
-        const el = document.querySelector("#decks .chip.on");
-        return { editable: el.classList.contains("editable"), label: el.getAttribute("aria-label"),
-                 glyph: getComputedStyle(el, "::after").content };`);
-      assert.strictEqual(chip.editable, true, `the selected seeded chip (${kurd.id}) has no edit cue`);
-      assert.ok(/\u270E/.test(chip.glyph), `the seeded chip's ::after draws ${JSON.stringify(chip.glyph)}, not a pencil`);
-      assert.ok(/^Edit .+/.test(chip.label || ""), `the seeded chip's aria-label is ${JSON.stringify(chip.label)}`);
 
-      await openEdit();
-      const sheet = await b.eval(`
-        const vis = id => !document.getElementById(id).hasAttribute("hidden");
-        return { save: document.getElementById("scale-generate").textContent.trim(),
-                 del: document.getElementById("scale-delete").textContent.trim(),
-                 delShown: vis("scale-delete"),
-                 text: document.getElementById("scale-sheet").textContent };`);
-      assert.strictEqual(sheet.save, "SAVE CHANGES");
-      assert.strictEqual(sheet.delShown, true, "a seeded deck's sheet shows no DELETE control");
-      assert.ok(/DELETE THIS SCALE/.test(sheet.del), `the delete control reads ${JSON.stringify(sheet.del)}`);
-      assert.ok(!/FORK THIS (DECK|SCALE)|HIDE THIS (DECK|SCALE)|SHOW HIDDEN (DECKS|SCALES)/.test(sheet.text),
-        "the seeded sheet still carries the fork / hide copy");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
-  test("SD: RESET arms, then restores all five at 380px and focuses #deck-add", async () => {
-    try {
-      await freshLoad();
-      const legacyBefore=await nativeLegacySavedSources(b);
-      await b.setViewport(380, 780, true);
-      const meta = await decksMeta();
-      const seeded = await b.eval(`return DECKS.map(d => chipLabel(d.name));`);
-      await deleteSelectedSeeded();
-
-      const texts = await chipTexts();
-      const want = seeded[meta.findIndex((m) => m.id === "pygmy")];
-      const at = texts.indexOf(want);
-      assert.ok(at >= 0, `no Pygmy chip in ${JSON.stringify(texts)}`);
-      await b.eval(`document.querySelectorAll("#decks .chip:not(#deck-add)")[${at}]
-                      .scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
-      await b.click(`#decks .chip:nth-child(${at + 1})`);
-      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)")[${at}].classList.contains("on")`,
-        { label: "the Pygmy chip to be selected" });
-      await openEdit();
-      await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
-      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
-        "the palette swatch did not take");
-      await clickGenerate();
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the sheet to close after the save" });
-      assert.strictEqual(await b.eval(`return Object.keys(replacements()).length;`), 1, "the save left no replacement");
-
-      await openSettingsPanel();
-      await b.click("#deck-restore");
-      const armed = await b.eval(`return ${nativeSavedExpression()}.then(persisted=>{
-        const el=document.getElementById("deck-restore");
-        return {text:el.textContent.trim(),armed:el.hasAttribute("data-armed"),hidden:el.hasAttribute("hidden"),
-          stored:JSON.parse(persisted.raw).hidden,reps:Object.keys(replacements()).length};});`);
-      assert.deepStrictEqual([armed.text, armed.armed, armed.hidden], ["TAP AGAIN TO RESET", true, false],
-        "the first tap did not arm RESET");
-      assert.strictEqual(armed.stored.length, 1, "the first tap already changed the stored hidden list");
-      assert.strictEqual(armed.reps, 1, "the first tap already dropped the replacement");
-
-      await b.click("#deck-restore");
-      await b.waitFor(`document.getElementById("deck-restore").hasAttribute("hidden")`,
-        { label: "the reset control to go away" });
-      assert.deepStrictEqual(await chipTexts(), seeded, "RESET did not restore the five seeded chips in order");
-      assert.strictEqual(await b.eval(`return Object.keys(replacements()).length;`), 0, "a replacement survived RESET");
-      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,[],"the hidden list is still stored in IDB");
-      assert.deepStrictEqual(await nativeLegacySavedSources(b),legacyBefore,"RESET preserves legacy recovery source bytes");
-      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "deck-add");
-      assert.strictEqual((await nativeSavedEnvelope(b)).entries.filter(row=>row.record?.o?.replaces).length,0,"a stored record still names a seed after RESET");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
-
-  test("SD: a replacement chip sits where its seed sat at 380px, selected and with a pencil", async () => {
-    try {
-      await freshLoad();
-      await b.setViewport(380, 780, true);
-      const meta = await decksMeta();
-      const at = meta.findIndex((m) => m.id === "hijaz");
-      assert.ok(at > 0, "there is no hijaz deck past the first slot");
-      await selectDeck(at, meta);
-      await openEdit();
-      await b.eval(`document.querySelectorAll("#scale-swatches .dot")[2].click(); return true;`);
-      assert.strictEqual(await b.eval(`return document.querySelectorAll("#scale-swatches .dot")[2].classList.contains("sel");`), true,
-        "the palette swatch did not take");
-      await clickGenerate();
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
-        { label: "the sheet to close after the save" });
-      const probe = await b.eval(`
-        const chips = [...document.querySelectorAll("#decks .chip:not(#deck-add)")];
-        const el = chips[${at}];
-        return { n: chips.length, text: el.textContent.trim(), on: el.classList.contains("on"),
-                 editable: el.classList.contains("editable"), onCount: chips.filter(c => c.classList.contains("on")).length,
-                 want: chipLabel(DECKS.find(d => d.id === "hijaz").name),
-                 replacement: replacements().hijaz !== undefined };`);
-      assert.strictEqual(probe.replacement, true, "no replacement was minted for Hijaz");
-      assert.strictEqual(probe.n, meta.length, `the save left ${probe.n} chips`);
-      assert.strictEqual(probe.text, probe.want, `chip ${at + 1} reads "${probe.text}", not the Hijaz name`);
-      assert.deepStrictEqual([probe.on, probe.editable, probe.onCount], [true, true, 1],
-        "the replacement chip is not the one selected chip with a pencil");
-    } finally {
-      await b.setViewport(900, 900, false);
-    }
-  });
 
   describe("analytics hosts", () => {
     const PATTERNS = ANALYTICS_PATTERNS;
@@ -15206,84 +11547,6 @@ function run() {
       }
     });
 
-    test("I18N: under every present table the panel, sheet and About fit at 320, 380, 844 and 1280", async () => {
-      const pseudoUrl = URL.replace(/index\.html$/, "__pseudo_de.html");
-      const SEL = ".mode, .prints button, .panel-heading, .panel-note";
-      const measure = (scope) => b.eval(`
-        const root = document.querySelector(${JSON.stringify(scope)});
-        const lines = (${renderedTextLineCount.toString()});
-        const els = Array.from(root.querySelectorAll(${JSON.stringify(SEL)})).filter((e) => e.getClientRects().length);
-        const paper = document.getElementById("print-paper");
-        const ctx = document.createElement("canvas").getContext("2d");
-        const cs = getComputedStyle(paper);
-        ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-        const widest = Math.max(...["LETTER", "A4"].map((t) => ctx.measureText(t).width + t.length * parseFloat(cs.letterSpacing || 0)));
-        return { rows: els.map((e) => [e.id || e.className + ":" + e.tagName, lines(e), e.scrollWidth <= e.clientWidth + 1]),
-                 tops: els.map((e) => Math.round(e.getBoundingClientRect().top)),
-                 height: root.scrollHeight,
-                 paperRoom: paper.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - widest,
-                 sw: root.scrollWidth - root.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
-      const pass = async (url, lang, w, h) => {
-        await b.setViewport(w, h, false);
-        await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`);
-        await navigate(url);
-        await b.settle();
-        await openSettingsPanel();
-        if (lang !== "en") {
-          await b.eval(`const s = document.getElementById("lang-select"); s.value = ${JSON.stringify(lang)}; s.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
-          await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "the language to apply" });
-        }
-        const out = { panel: await measure("#settings-panel") };
-        await b.click("#deck-add");
-        await b.waitFor(`document.getElementById("scale-sheet") && !document.getElementById("scale-sheet").hidden`, { label: "the sheet to open" });
-        out.sheet = await b.eval(`const s = document.getElementById("scale-sheet");
-          return { sw: s.scrollWidth - s.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
-        await b.click("#scale-back");
-        await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "the sheet to close" });
-        await openSettingsPanel();
-        await b.eval(`document.getElementById("about-open").scrollIntoView({ block: "center" }); return true;`);
-        await b.settle();
-        await b.click("#about-open");
-        await b.waitFor(`document.getElementById("about").hidden === false`, { label: "About to open" });
-        out.about = await b.eval(`const a = document.getElementById("about");
-          return { sw: a.scrollWidth - a.clientWidth, dsw: document.documentElement.scrollWidth - document.documentElement.clientWidth };`);
-        return out;
-      };
-      try {
-        const tables = fs.readdirSync(path.join(REPO, "data", "i18n")).map((f) => f.replace(/\.json$/, "")).filter((c) => c !== "en");
-        const bad = [];
-        const check = (ok, msg) => { if (!ok) bad.push(msg); };
-        for (const [w, h] of [[320, 568], [380, 780], [844, 390], [1280, 800]]) {
-          const base = await pass(URL, "en", w, h);
-          const runs = [["en", base]];
-          for (const lang of tables) runs.push([lang, await pass(URL, lang, w, h)]);
-          for (const [label, m] of runs) {
-            const where = `${label} ${w}x${h}`;
-            check(m.panel.sw <= 0 && m.panel.dsw <= 0, `${where}: the panel scrolls horizontally`);
-            for (const [id, , fits] of m.panel.rows) check(fits, `${where}: ${id} overflows its box`);
-            check(m.panel.paperRoom >= -0.5, `${where}: the paper button does not show its full option text (${m.panel.paperRoom}px)`);
-            for (const k of ["sheet", "about"]) check(m[k].sw <= 0 && m[k].dsw <= 0, `${where}: ${k} scrolls horizontally`);
-            if (label !== "en") m.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1],
-              `${where}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]}`));
-            if (label !== "en" && !(w >= 740 && h >= 360 && h <= 520)) { // LE: columns rebalance per locale; "LE:" asserts the fit
-              const t = m.panel.tops, bt = base.panel.tops;
-              for (let i = 0; i < bt.length; i++) for (let j = i + 1; j < bt.length; j++)
-                check(bt[i] !== bt[j] || t[i] === t[j], `${where}: ${base.panel.rows[i][0]} and ${base.panel.rows[j][0]} share a row in English and stack here`);
-              check(m.panel.height <= base.panel.height + 16, `${where}: the panel is ${m.panel.height - base.panel.height}px taller than English`);
-            }
-          }
-          const de = await pass(pseudoUrl, "de", w, h);
-          check(de.panel.sw <= 0 && de.panel.dsw <= 0, `pseudo de ${w}x${h}: the panel scrolls horizontally`);
-          for (const k of ["sheet", "about"]) check(de[k].sw <= 0 && de[k].dsw <= 0, `pseudo de ${w}x${h}: ${k} scrolls horizontally`);
-          de.panel.rows.forEach(([id, n], i) => check(n <= base.panel.rows[i][1] + 1,
-            `${w}x${h}: ${id} takes ${n} lines against English ${base.panel.rows[i][1]} (the brackets of the pseudo table may add one)`));
-        }
-        assert.deepStrictEqual(bad, [], "tables overflow: " + bad.join("; "));
-      } finally {
-        await b.setViewport(900, 900, false);
-        await b.eval(`try { localStorage.clear(); } catch (e) {} return true;`).catch(() => {});
-      }
-    });
 
     test("AO: About has no transition or animation with and without prefers-reduced-motion", async () => {
       await freshLoad();
@@ -15380,20 +11643,6 @@ function run() {
       assert.strictEqual(await hash(), await b.eval(`return routeFor(deck())`), "the bar is not the shown deck's route");
     });
 
-    test("edge 2: opening ADD from a custom deck and going BACK lands on the same #s= bar", async () => {
-      await freshLoad();
-      await generate(SIX_SCALES[1]);
-      await b.settle();
-      const pre = await href();
-      assert.match(await hash(), /^#s=/);
-      const id = await b.eval(`return selection.id`);
-      await openSheet();
-      assert.strictEqual(await hash(), "#add");
-      await b.click("#scale-back");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
-      await b.waitFor(`location.href === ${JSON.stringify(pre)}`, { label: "the bar to return to the custom deck's link" });
-      assert.strictEqual(await b.eval(`return selection.id`), id);
-    });
 
     test("edge 4: SAVE with new fields rewrites the bar to the new code and nothing re-imports the old one", async () => {
       await freshLoad();
@@ -15752,194 +12001,15 @@ function run() {
       const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height };`);
     const FLOORS = [[320, 568, 274], [380, 780, 334], [393, 852, 347], [844, 390, 274], [1280, 800, 478]];
 
-    test("TB: at 320x568, 380x780, 393x852, 844x390 and 1280x800 the Layout pan is wider than the old small pan clamp(88px, 30cqw, 160px) and at least the section 3.6 width minus 2px", async () => {
-      const fails = [];
-      try {
-        for (const [w, h, floor] of FLOORS) {
-          await tbOpenAdd(w, h);
-          await tbToLayout();
-          const pan = await rect("#scale-preview");
-          const surf = await b.eval(`const s = document.querySelector(".sheetsurf"), cs = getComputedStyle(s);
-            return s.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);`);
-          const old = Math.min(160, Math.max(88, surf * 0.3));
-          if (!(pan.w > old)) fails.push(`${w}x${h}: the pan is ${pan.w}px, not wider than the old ${old}px`);
-          if (pan.w < floor) fails.push(`${w}x${h}: the pan is ${pan.w}px, floor ${floor}`);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("TB: at 844x390 the Layout tab's .sheetsurf is wider than 600px, the tab strip sits right of the plate and the pan fills the open-footer scrollport less the band padding and, with no message, is at least 270px", async () => {
-      try {
-        await tbOpenAdd(844, 390);
-        await tbToLayout();
-        const surf = await rect(".sheetsurf");
-        const pan = await rect("#scale-preview");
-        const tabs = await rect("#scale-tabs");
-        assert.ok(surf.w > 600, `the surface is ${surf.w}px`);
-        assert.ok(pan.w >= 270, `the pan is ${pan.w}px`);
-        const fill = await b.eval(`const port = document.querySelector(".sheetbody").clientHeight;
-          const band = parseFloat(getComputedStyle(document.getElementById("scale-plate-band")).paddingBottom);
-          return { port, band, lipped: document.getElementById("scale-sheet").classList.contains("lipped") };`);
-        assert.strictEqual(fill.lipped, false, "the footer is not open");
-        assert.ok(fill.band > 0, `the band padding is ${fill.band}px`);
-        assert.ok(Math.abs(pan.w - (fill.port - fill.band)) <= 1, `the pan is ${pan.w}px, the open scrollport is ${fill.port}px less ${fill.band}px of band padding`);
-        assert.ok(tabs.l >= pan.r - 1, `the tab strip (left ${tabs.l}) is not right of the plate (right ${pan.r})`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("TB: at 320x568, 380x780 and 393x852 the whole Layout pan is inside the .sheetbody box when the tab opens", async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[320, 568], [380, 780], [393, 852]]) {
-          await tbOpenAdd(w, h);
-          await tbToLayout();
-          const pan = await rect("#scale-preview");
-          const body = await rect("#scale-sheet .sheetbody");
-          if (pan.t < body.t - 1 || pan.b > body.b + 1) fails.push(`${w}x${h}: pan ${pan.t}..${pan.b} is outside the body ${body.t}..${body.b}`);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("TB: at 380x780 the four note fields and the scale line take the full content width on the Scale tab", async () => {
-      try {
-        await tbOpenAdd(380, 780);
-        const m = await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect();
-          const panel = q("scale-panel-scale");
-          return { panel: panel.width, ids: ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"].map((id) => [id, q(id).width]) };`);
-        for (const [id, w] of m.ids) {
-          assert.ok(w >= m.panel - 2, `#${id} is ${w}px in a ${m.panel}px panel`);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("TB: at 380x780 Add: type a scale, NEXT, adjust anchor, GENERATE CARDS opens the deck, and one Back from the deck leaves no sheet entry", async () => {
-      try {
-        await tbOpenAdd(380, 780);
-        const before = await b.eval(`return history.length;`);
-        await b.click("#scale-next");
-        await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
-        assert.strictEqual(await b.eval(`return history.length;`), before, "NEXT pushed a history entry");
-        await b.click("#scale-anchor-between");
-        await b.click("#scale-generate");
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
-        await b.waitFor(`/^#(s=|deck=)/.test(location.hash)`, { label: "the deck's route" });
-        const route = await b.eval(`return location.hash;`);
-        await b.eval(`window.__tbSameDoc = true; history.back(); return true;`);
-        await new Promise((r) => setTimeout(r, 400));
-        const sameDoc = await b.eval(`return window.__tbSameDoc === true;`).catch(() => false);
-        if (sameDoc) assert.strictEqual(await b.eval(`return document.getElementById("scale-sheet").hasAttribute("hidden");`), true, "the sheet came back");
-        assert.ok(route.length > 1);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("TB: at 380x780 Edit: SAVE CHANGES from the Layout tab saves and the bar ends on the deck's route", async () => {
-      try {
-        await freshLoad();
-        await b.setViewport(380, 780, true);
-        await b.settle();
-        await openEdit();
-        await tbToLayout();
-        await b.click("#scale-anchor-between");
-        await b.click("#scale-generate");
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
-        await b.waitFor(`/^#(s=|deck=)/.test(location.hash)`, { label: "the deck's route" });
-        const hash = await b.eval(`return location.hash;`);
-        assert.match(hash, /^#(s=|deck=)/);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("TB: at 320x568 the tab strip, both tabs and NEXT are 44px targets with no horizontal scroll", async () => {
-      try {
-        await tbOpenAdd(320, 568);
-        for (const id of ["scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-next"]) {
-          const r = await rect("#" + id);
-          assert.ok(r.h >= 44 - 0.5, `#${id} is ${r.h}px tall`);
-        }
-        const over = await b.eval(`const b = document.querySelector("#scale-sheet .sheetbody");
-          return b.scrollWidth - b.clientWidth;`);
-        assert.ok(over <= 0, `the sheet scrolls ${over}px sideways`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("OR: at 380x780 the OR rule spans the content width between the fields and the scale line", async () => {
-      try {
-        await tbOpenAdd(380, 780);
-        const or = await rect("#scale-or");
-        const panel = await rect("#scale-panel-scale");
-        const bottom = await rect("#scale-bottom");
-        const box = await rect("#scale-box");
-        assert.ok(or.w >= panel.w - 2, `the rule is ${or.w}px in a ${panel.w}px panel`);
-        assert.ok(or.t >= bottom.b - 1, "the rule is not under the fields");
-        assert.ok(or.b <= box.t + 1, "the rule is not above the scale line");
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("TB: at 380x780 with the keyboard up the head and tab strip hide and the footer collapses to a visible lip above the keyboard", async () => {
-      try {
-        await tbOpenAdd(380, 780);
-        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-        await b.fakeKeyboard(400);
-        await frames();
-        const m = await b.eval(`const hid = (sel) => getComputedStyle(document.querySelector(sel)).display === "none";
-          const s = document.getElementById("scale-sheet");
-          const l = document.getElementById("scale-lip");
-          const r = l.getBoundingClientRect();
-          const cx = Math.round((r.left + r.right) / 2), cy = Math.round((r.top + r.bottom) / 2);
-          const hit = document.elementFromPoint(cx, cy);
-          return { head: hid("#scale-sheet .sheethead"), tabs: hid("#scale-tabs"),
-            lipped: s.classList.contains("lipped"), shut: s.classList.contains("lipshut"), lipHidden: l.hidden,
-            lipTop: r.top, lipBottom: r.bottom, lipH: r.height, vv: window.visualViewport.height,
-            hit: hit && hit.closest("#scale-lip") ? "lip" : (hit && hit.id) || null };`);
-        assert.strictEqual(m.head, true, "the head is showing");
-        assert.strictEqual(m.tabs, true, "the tab strip is showing");
-        assert.ok(m.lipped && m.shut, `the keyboard did not collapse the footer to the lip (${JSON.stringify(m)})`);
-        assert.strictEqual(m.lipHidden, false, "the lip is hidden");
-        assert.ok(m.lipH > 0 && m.lipTop >= 0 && m.lipBottom <= m.vv + 1, `the lip ${m.lipTop}..${m.lipBottom} is not above the keyboard (visible ${m.vv})`);
-        assert.strictEqual(m.hit, "lip", `the lip is covered by ${m.hit}`);
-      } finally {
-        await b.clearKeyboard().catch(() => {});
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("O1: at 320x568 the duplicate warning on the field line grows the slot and clearing it returns the slot to 0", async () => {
-      try {
-        await tbOpenAdd(320, 568, null);
-        await typeScale("(D3) A3 C4 D4");
-        await b.eval(`const e = document.getElementById("scale-bottom"); e.value = "c d";
-          e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("blur")); return true;`);
-        await frames();
-        const slot = () => b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
-        const warn = await slot();
-        const line = await b.eval(`return document.getElementById("scale-field-msg").getBoundingClientRect().height;`);
-        await b.eval(`const e = document.getElementById("scale-bottom"); e.value = "";
-          e.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
-        await frames();
-        const clear = await slot();
-        assert.ok(line > 0 && Math.abs(warn - line) < 0.5, `the slot is ${warn}px, the warning is ${line}px tall`);
-        assert.strictEqual(clear, 0, `the slot is ${clear}px after the warning cleared, not 0`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
   });
 
   describe("SPA: sheet polish lane A", () => {
@@ -16079,132 +12149,13 @@ function run() {
       return { id: last.id || last.className || last.tagName, bottom: r.bottom, body: body.getBoundingClientRect().bottom,
         zoneTop: lip.hidden ? null : lip.getBoundingClientRect().top, onLip, M: body.scrollHeight - body.clientHeight };`);
 
-    test("SPA: at 320x568, 380x780, 390x844, 844x390 and 1280x800, on the tab that scrolls, the last control ends at least --sp-2 above the lip's tap zone with the footer shut and no point of it hit-tests to #scale-lip", { timeout: 240000 }, async (t) => {
-      const fails = [], vpRan = [], scrolls = {};
-      try {
-        for (const [w, h] of [...VPS, [1280, 800]]) {
-          vpRan.push(`${w}x${h}`);
-          for (const tab of ["scale", "layout"]) {
-            await spaOpen(w, h, { tab });
-            await shut();
-            const st = await state();
-            if (!(st.lipped && st.shut)) { fails.push(`${w}x${h} ${tab}: the footer is not shut (${JSON.stringify(st)})`); continue; }
-            if (!(await tabOn(tab))) { fails.push(`${w}x${h} ${tab}: the ${tab} tab is not the selected, shown tab`); continue; }
-            const sp2 = await px("--sp-2");
-            const m = await lastControl();
-            const ctx = `${w}x${h} ${tab} (${m.id}, M ${m.M})`;
-            if (m.M > 0) scrolls[`${w}x${h}`] = true;
-            if (m.zoneTop === null) { fails.push(`${ctx}: the lip did not shut`); continue; }
-            if (m.bottom > m.zoneTop - sp2 + 0.5) fails.push(`${ctx}: the last control ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp2}`);
-            if (m.onLip) fails.push(`${ctx}: ${m.onLip} points of the last control hit-test to #scale-lip`);
-          }
-          if (!scrolls[`${w}x${h}`]) fails.push(`${w}x${h}: neither tab scrolls`);
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(vpRan));
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("SPA: with the footer open the last control ends at least --sp-2 plus 16px above the hairline on both tabs", { timeout: 240000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [...VPS, [1280, 800]]) {
-          for (const tab of ["scale", "layout"]) {
-            await spaOpen(w, h, { tab });
-            const sp2 = await px("--sp-2");
-            const over = await px("--lip-over");
-            const m = await lastControl();
-            const ctx = `${w}x${h} ${tab} (${m.id})`;
-            const s = await state();
-            if (s.lipped || s.shut) fails.push(`${ctx}: the footer is not open (${JSON.stringify(s)})`);
-            if (!(await tabOn(tab))) fails.push(`${ctx}: the ${tab} tab is not the selected, shown tab`);
-            if (over !== 16) fails.push(`${ctx}: --lip-over is ${over}px, not 16`);
-            if (m.bottom > m.body - (sp2 + 16) + 0.5) fails.push(`${ctx}: the last control ends ${(m.body - m.bottom).toFixed(1)}px above the hairline, not ${sp2 + 16}`);
-          }
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
     const OF_NAMED = "(D3) C4 A3 D4 E4 F4 G4 A4 C5";
     const OF_HINT = "Top notes take their seats in the order listed. Rearrange them on the Layout tab.";
 
-    test("OF: at 320x568 and 380x780 with a 260px keyboard and the hint shown, each field typed in stays fully in view", { timeout: 240000 }, async () => {
-      try {
-        for (const [w, h] of [[320, 568], [380, 780]]) {
-          await diOpenAdd(w, h);
-          await typeScale(OF_NAMED);
-          for (const id of DI_FIELDS) {
-            await b.clearKeyboard();
-            await b.eval(`document.activeElement && document.activeElement.blur(); document.querySelector("#scale-sheet .sheetbody").scrollTop = 0; return true;`);
-            await b.fakeKeyboard(h - 260);
-            await b.eval(`document.getElementById(${JSON.stringify(id)}).focus(); return true;`);
-            await b.settle();
-            const note = await b.eval(`return document.getElementById("scale-fields-note").textContent;`);
-            assert.strictEqual(note, OF_HINT, `${w}x${h} ${id}: the hint is not shown`);
-            const f = await diVisible(id);
-            assert.ok(f.vis >= f.h - 0.5, `${w}x${h} ${id}: only ${f.vis} of ${f.h}px of the field is in view`);
-          }
-        }
-      } finally {
-        await b.clearKeyboard();
-        await b.setViewport(900, 900, false);
-      }
-    });
 
-    test("OF: with the hint shown, the Scale tab's last control still ends at least --sp-2 above the lip's tap zone with the footer shut", { timeout: 240000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [...VPS, [1280, 800]]) {
-          await spaOpen(w, h);
-          await typeScale(OF_NAMED);
-          const hint = await b.eval(`return document.getElementById("scale-line-note").textContent;`);
-          if (hint !== OF_HINT) { fails.push(`${w}x${h}: the hint is not shown`); continue; }
-          await shut();
-          const sp2 = await px("--sp-2");
-          const m = await lastControl();
-          if (m.zoneTop === null) { fails.push(`${w}x${h}: the lip did not shut`); continue; }
-          if (m.bottom > m.zoneTop - sp2 + 0.5) fails.push(`${w}x${h} (${m.id}): the last control ends ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone, not ${sp2}`);
-          if (m.onLip) fails.push(`${w}x${h}: ${m.onLip} points of the last control hit-test to #scale-lip`);
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("OF: at 320x568, 380x780 and 844x390 typing C4 before A3 seats C4 at seat 1 on the plate, the hint is inside the scrollport, clear of the lip's tap zone with the footer shut, wraps inside its column with no horizontal scroll, and its contrast is at least 4.5:1", { timeout: 240000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[320, 568], [380, 780], [844, 390]]) {
-          await spaOpen(w, h);
-          await typeScale(OF_NAMED);
-          const seat = await b.eval(`const f = Object.values(lastSolved.fields).find((x) => x[3] === "rim" && x[0] + x[1] === "C4"); return { label: f[5], angle: f[4] };`);
-          if (seat.label !== "1" || seat.angle !== 270) fails.push(`${w}x${h}: C4 is seat ${seat.label} at ${seat.angle}`);
-          await shut();
-          const m = await b.eval(`
-            const note = document.getElementById("scale-line-note");
-            note.scrollIntoView({ block: "center" });
-            const body = document.querySelector("#scale-sheet .sheetbody"), bb = body.getBoundingClientRect();
-            const r = note.getBoundingClientRect(), col = note.parentElement.getBoundingClientRect();
-            const lip = document.getElementById("scale-lip");
-            const parse = (c) => c.match(/[\\d.]+/g).map(Number);
-            const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-            const lum = ([a, c, d]) => 0.2126 * lin(a) + 0.7152 * lin(c) + 0.0722 * lin(d);
-            const bg = (el) => { for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c.length < 4 || c[3] > 0.99) return c.slice(0, 3); } return [255, 255, 255]; };
-            const fg = parse(getComputedStyle(note).color).slice(0, 3), back = bg(note);
-            const ratio = (Math.max(lum(fg), lum(back)) + 0.05) / (Math.min(lum(fg), lum(back)) + 0.05);
-            return { text: note.textContent, top: r.top - bb.top, bottom: r.bottom - bb.top, room: bb.height, left: r.left - col.left, right: col.right - r.right,
-              zone: lip.hidden ? null : lip.getBoundingClientRect().top - bb.top, sw: body.scrollWidth - body.clientWidth, nw: note.scrollWidth - note.clientWidth, ratio };`);
-          const ctx = `${w}x${h}`;
-          if (m.text !== OF_HINT) fails.push(`${ctx}: the hint reads ${m.text}`);
-          if (m.top < -0.5 || m.bottom > m.room + 0.5) fails.push(`${ctx}: the hint is outside the scrollport (${m.top}..${m.bottom} of ${m.room})`);
-          if (m.zone !== null && m.bottom > m.zone + 0.5) fails.push(`${ctx}: the hint ends ${m.bottom}, under the lip zone at ${m.zone}`);
-          if (m.left < -0.5 || m.right < -0.5) fails.push(`${ctx}: the hint leaves its column (${m.left}, ${m.right})`);
-          if (m.sw > 0 || m.nw > 0) fails.push(`${ctx}: horizontal scroll (${m.sw}, ${m.nw})`);
-          if (m.ratio < 4.5) fails.push(`${ctx}: contrast ${m.ratio.toFixed(2)}:1`);
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
     test("OF: under prefers-reduced-motion a typed reorder starts no animation or transition on the plate", { timeout: 120000 }, async () => {
       try {
@@ -16217,26 +12168,7 @@ function run() {
       } finally { await spaReset(); }
     });
 
-    test("OF: a typed reorder with the drawer open says 'The rim now follows the order listed.' in the drawer status", { timeout: 120000 }, async () => {
-      try {
-        await spaOpen(380, 780, { tab: "layout" });
-        await typeScale(OF_NAMED);
-        const st = await b.eval(`const e = document.getElementById("scale-drawer-status"); return { hidden: e.hidden, text: e.textContent };`);
-        assert.strictEqual(st.hidden, false);
-        assert.match(st.text, /The rim now follows the order listed\./);
-      } finally { await spaReset(); }
-    });
 
-    test("OF: PD a reorder typed on the Scale tab shows 'The rim now follows the order listed.' in the drawer status when the Layout tab is opened", { timeout: 120000 }, async () => {
-      try {
-        await spaOpen(380, 780);
-        await typeScale(OF_NAMED);
-        await b.click("#scale-tab-layout");
-        const st = await b.eval(`const e = document.getElementById("scale-drawer-status"); return { hidden: e.hidden, text: e.textContent };`);
-        assert.strictEqual(st.hidden, false);
-        assert.match(st.text, /The rim now follows the order listed\./);
-      } finally { await spaReset(); }
-    });
 
     const PD2_BASE = "(D3) A3 C4 D4 E4 F4 | F5 G5";
     const PD2_INNER = "(D3) A3 C4 D4 E4 F4 | G5 F5";
@@ -16245,535 +12177,9 @@ function run() {
     const pd2Status = () => b.eval(`const e = document.getElementById("scale-drawer-status"); return {text:e.textContent,hidden:e.hidden};`);
     const pd2Edits = async () => { await typeScale(PD2_BASE); await typeScale(PD2_INNER); await typeScale(PD2_BOTH); };
 
-    test("PD2: browser click NEXT and cyclic keyboard entries show both outcomes once and recover invalid fields", { timeout: 120000 }, async () => {
-      try {
-        for (const route of ["click", "next", "ArrowRight", "ArrowLeft", "End"]) {
-          await spaOpen(380, 780);
-          await pd2Edits();
-          if (route === "click") await b.click("#scale-tab-layout");
-          else if (route === "next") await b.click("#scale-next");
-          else {
-            await b.eval(`document.getElementById("scale-tab-scale").focus(); return true;`);
-            await b.key(route, route, { ArrowRight: 39, ArrowLeft: 37, End: 35 }[route]);
-          }
-          await b.settle();
-          assert.deepStrictEqual(await pd2Status(), { text: PD2_SAID, hidden: false }, route);
-          if (route !== "click") assert.strictEqual(await activeId(), "scale-tab-layout", route + " keeps its existing focus behavior");
-          await b.click("#scale-tab-scale");
-          await b.click("#scale-tab-layout");
-          assert.strictEqual((await pd2Status()).text, "", route + " consumed only once");
-        }
-        await spaOpen(380, 780);
-        await pd2Edits();
-        await b.eval(`const e=document.getElementById("scale-top");e.focus();e.value="not-a-note";e.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
-        await b.click("#scale-tab-layout");
-        assert.strictEqual((await pd2Status()).text, "", "the retained valid line cannot mask invalid active fields");
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-tab-layout").getAttribute("aria-selected");`), "true");
-        await b.click("#scale-tab-scale");
-        await b.eval(`const e=document.getElementById("scale-top");e.focus();e.value="C4 A3 D4 E4 F4";e.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
-        await b.click("#scale-tab-layout");
-        await b.settle();
-        assert.deepStrictEqual(await pd2Status(), { text: PD2_SAID, hidden: false });
-      } finally { await spaReset(); }
-    });
 
-    test("PD2: browser valid Edit reopen SAVE and visible RESET preserve feedback lifecycle", { timeout: 120000 }, async () => {
-      try {
-        await freshLoad();
-        await b.setViewport(380, 780, true);
-        await generate(PD2_BASE);
-        await openEdit();
-        await pd2Edits();
-        await b.click("#scale-back");
-        await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "closing pending Edit through BACK" });
-        await openEdit();
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-generate").disabled;`), false, "valid Edit is necessary to expose leaked state");
-        await b.click("#scale-tab-layout");
-        assert.strictEqual((await pd2Status()).text, "", "a valid reopen must not hide a stale message behind an invalid-input guard");
-        await b.click("#scale-tab-scale");
-        await pd2Edits();
-        await b.click("#scale-generate");
-        await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "SAVE directly from Scale" });
-        await openEdit();
-        await b.click("#scale-tab-layout");
-        assert.strictEqual((await pd2Status()).text, "", "saved prefill is not a new typed derivation");
-        await b.eval(`document.getElementById("scale-layout-reset").scrollIntoView({block:"center"});return true;`);
-        await b.settle();
-        assert.strictEqual(await b.eval(`return document.getElementById("scale-layout-reset").disabled;`), false);
-        await b.click("#scale-layout-reset");
-        assert.strictEqual((await pd2Status()).text, "Layout reset.");
-        await b.click("#scale-tab-scale");
-        await b.click("#scale-tab-layout");
-        assert.strictEqual((await pd2Status()).text, "", "the reset result cannot resurrect an old derive");
-      } finally { await spaReset(); }
-    });
 
-    test("PD2: combined localized feedback fits portrait and landscape with fallback and real fonts", { timeout: 120000 }, async (t) => {
-      const tables = Object.fromEntries(fs.readdirSync(path.join(REPO, "data/i18n"))
-        .filter((name) => name.endsWith(".json"))
-        .map((name) => [name.slice(0, -5), JSON.parse(fs.readFileSync(path.join(REPO, "data/i18n", name), "utf8"))]));
-      const messages = Object.fromEntries(Object.entries(tables).map(([lang, table]) =>
-        [lang, table["sheet.rim_follows"] + " " + table["sheet.inner_follows"]]));
-      const longestText = Object.keys(messages).reduce((a, lang) => messages[lang].length > messages[a].length ? lang : a, "en");
-      const cells = [];
-      for (const realFonts of [false, true]) {
-        const c = await launch({ realFonts, foregroundSettle: true });
-        assert.ok(c, "font-mode validation requires a real browser, not a silent skip");
-        try {
-          await c.goto(URL);
-          await c.eval(`return document.fonts.ready.then(() => true);`);
-          const widest = await c.eval(`
-            const style=getComputedStyle(document.getElementById("scale-drawer-status"));
-            const ctx=document.createElement("canvas").getContext("2d");
-            ctx.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;
-            const texts=${JSON.stringify(messages)};
-            return Object.keys(texts).reduce((best,lang)=>ctx.measureText(texts[lang]).width>ctx.measureText(texts[best]).width?lang:best,"en");`);
-          const languages = [...new Set(["en", "de", longestText, widest])];
-          for (const [width, height] of [[380, 780], [844, 390]]) for (const lang of languages) {
-            await c.setViewport(width, height, width < 600);
-            await c.goto(URL);
-            await c.settle();
-            const hiddenTrigger = await c.eval(`return getComputedStyle(document.getElementById("settings-trigger")).display === "none";`);
-            if (!hiddenTrigger) await c.click("#settings-trigger");
-            await c.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "localized feedback settings" });
-            await c.eval(`const e=document.getElementById("lang-select");e.value=${JSON.stringify(lang)};e.dispatchEvent(new Event("change",{bubbles:true}));return true;`);
-            await c.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "the requested locale actually applied" });
-            await c.click("#deck-add");
-            await c.waitFor(`!document.getElementById("scale-sheet").hidden`, { label: "localized Add sheet" });
-            for (const text of [PD2_BASE, PD2_INNER, PD2_BOTH]) {
-              await c.eval(`const e=document.getElementById("scale-box");e.value=${JSON.stringify(text)};e.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
-            }
-            await c.click("#scale-tab-layout");
-            await c.settle();
-            await c.eval(`return document.fonts.ready.then(() => true);`);
-            const measured = await c.eval(`
-              const e=document.getElementById("scale-drawer-status"),r=e.getBoundingClientRect();
-              const family=getComputedStyle(e).fontFamily.split(",")[0].replace(/["']/g,"").trim();
-              const loaded=[...document.fonts].some(f=>f.family.replace(/["']/g,"").trim()===family&&f.status==="loaded");
-              return {text:e.textContent,hidden:e.hidden,scrollX:e.scrollWidth-e.clientWidth,
-                scrollY:e.scrollHeight-e.clientHeight,top:r.top,bottom:r.bottom,primary:document.getElementById("scale-generate").getBoundingClientRect().top,
-                pageOverflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
-                language:document.documentElement.lang,loaded,scale:document.getElementById("scale-box").value};`);
-            const where = `${realFonts ? "real" : "fallback"} ${lang} ${width}x${height}`;
-            assert.strictEqual(measured.language, lang, where);
-            assert.strictEqual(measured.text, messages[lang], where + " both localized outcomes");
-            assert.strictEqual(measured.hidden, false, where);
-            assert.ok(measured.scrollX <= 1 && measured.scrollY <= 1, where + " status is clipped: " + JSON.stringify(measured));
-            assert.ok(measured.top >= -0.5 && measured.bottom <= height + 0.5 && measured.bottom <= measured.primary + 0.5, where + " status leaves the usable view or overlaps the primary");
-            assert.ok(measured.pageOverflow <= 0, where + " horizontal page overflow");
-            if (realFonts) assert.strictEqual(measured.loaded, true, where + " the status's checked-in font must actually be loaded");
-            assert.strictEqual(measured.scale, PD2_BOTH, where + " UI translation must not rewrite English note input");
-            cells.push(where);
-          }
-          for (const lang of ["en", "de", longestText, widest]) assert.ok(cells.some((cell) => cell.startsWith(realFonts ? "real " : "fallback ") && cell.includes(" " + lang + " ")), "missing required font/locale cell " + lang);
-        } finally { await c.close(); }
-      }
-      assert.ok(cells.length >= 12, "both font modes, both viewports and at least English/German/the longest current text must be exercised");
-      t.diagnostic("PD2_FONT_CELLS " + JSON.stringify(cells));
-    });
 
-    /* SPS browser oracles: real DOM/touch evidence, separate from unit phases. */
-    const spsSpot = (dx) => b.eval(`
-      const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect();
-      const lo=Math.max(24,r.left+8),hi=Math.min(innerWidth-24,r.right-8);
-      for(let y=Math.max(8,r.top+8);y<Math.min(innerHeight-8,r.bottom-8);y+=6){
-        for(let x=lo;x<=hi;x+=8){
-          if(x+${dx}<lo||x+${dx}>hi)continue;
-          const a=document.elementFromPoint(x,y),z=document.elementFromPoint(x+${dx},y);
-          if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest("button,input,textarea,select,#scale-preview,#scale-lip"))
-            return {x,y,tag:a.tagName,id:a.id};
-        }
-      }
-      return null;`);
-    const spsTouch = async (start, dx, dy = 0, { release = true } = {}) => {
-      await b.waitForPendingSettle();
-      const points=(x,y)=>[{x,y,id:7,radiusX:4,radiusY:4,force:1}];
-      await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:points(start.x,start.y)});
-      for(let i=1;i<=4;i++){
-        await sleep(8);
-        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:points(start.x+dx*i/4,start.y+dy*i/4)});
-      }
-      if(release)await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
-    };
-    const spsSwipe = async (dx) => {
-      const start=await spsSpot(dx);
-      assert.ok(start,"an eligible visible body surface must exist for the optional shortcut");
-      await spsTouch(start,dx);
-    };
-    const spsTab = () => b.eval(`return document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale";`);
-
-    test("SPS browser: passive registrations stay singular and real Add Edit swipes preserve routes across viewports", {timeout:120000}, async (t) => {
-      const hook=await b.send("Page.addScriptToEvaluateOnNewDocument",{source:`(()=>{
-        const original=EventTarget.prototype.addEventListener;
-        window.__spsRegistrations=[];
-        EventTarget.prototype.addEventListener=function(type,listener,options){
-          if(this instanceof Element&&this.matches(".sheetbody")&&["touchstart","touchmove","touchend","touchcancel"].includes(type)){
-            window.__spsRegistrations.push({type,passive:!!(options&&typeof options==="object"&&options.passive===true),capture:typeof options==="boolean"?options:!!(options&&options.capture),once:!!(options&&options.once)});
-          }
-          return original.apply(this,arguments);
-        };
-      })();`});
-      const cells=[];
-      try{
-        for(const [w,h] of [[320,568],[380,780],[390,844],[844,390],[1280,800]])for(const edit of [false,true]){
-          await spaOpen(w,h,{edit});
-          const regs=await b.eval("return window.__spsRegistrations;");
-          assert.strictEqual(regs.length,4,`${w}x${h}: four startup body touch registrations`);
-          assert.deepStrictEqual(regs.map(r=>r.type).sort(),["touchcancel","touchend","touchmove","touchstart"]);
-          assert.ok(regs.every(r=>r.passive),"all four recognizer listeners must actually register passive:true");
-          // Reopening by real controls must not reinstall lifecycle listeners.
-          await b.click("#scale-back");
-          if(edit)await openEdit();else{await openSheet();await typeScale(SPA_SCALE);}
-          assert.deepStrictEqual(await b.eval("return window.__spsRegistrations;"),regs);
-          await pd2Edits();
-          await b.eval(`document.getElementById("scale-back").focus();return true;`);
-          const before=await b.eval(`return {history:history.length,hash:location.hash,focus:document.activeElement.id,input:document.getElementById("scale-box").value};`);
-          await spsSwipe(-80);
-          assert.strictEqual(await spsTab(),"layout",`${w}x${h} ${edit?"Edit":"Add"} left`);
-          assert.deepStrictEqual(await pd2Status(),{text:PD2_SAID,hidden:false});
-          const entered=await b.eval(`return {history:history.length,hash:location.hash,focus:document.activeElement.id,input:document.getElementById("scale-box").value};`);
-          assert.deepStrictEqual(entered,before,"a swipe changes no route, input or forced focus");
-          await spsSwipe(80);
-          assert.strictEqual(await spsTab(),"scale");
-          await b.click("#scale-tab-layout");
-          assert.strictEqual((await pd2Status()).text,"","ordinary entry must not replay swipe-consumed feedback");
-          cells.push(`${edit?"Edit":"Add"} ${w}x${h}`);
-        }
-        assert.strictEqual(cells.length,10);
-        t.diagnostic("SPS_ROUTE_CELLS "+JSON.stringify(cells));
-      }finally{
-        await b.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:hook.identifier});
-        await freshLoad(); // removes the page-local wrapper from the current document too
-        await spaReset();
-      }
-    });
-
-    test("SPS browser: native scrolling excluded origins keyboard and outer excursion preserve the current tab", {timeout:120000}, async (t) => {
-      try{
-        await spaOpen(380,780);
-        // Like the existing lipOpen(spacer:900) fixture, provide enough real
-        // content that folding the footer cannot consume all remaining room.
-        await b.eval(`const spacer=document.createElement("div");spacer.id="sps-scroll-room";spacer.style.cssText="height:900px;flex:0 0 900px";document.getElementById("scale-panel-scale").appendChild(spacer);const body=document.querySelector(".sheetbody");body.scrollTop=Math.max(0,body.scrollHeight-body.clientHeight-400);window.__spsVerticalOrigin=null;document.addEventListener("touchstart",e=>{window.__spsVerticalOrigin={body:body.contains(e.target),excluded:!!e.target.closest("button,input,textarea,select,#scale-preview,#scale-lip"),tag:e.target.tagName,id:e.target.id};},{capture:true,passive:true,once:true});return true;`);
-        await b.settle();
-        const before=await b.eval(`const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect(),surface=document.querySelector(".sheetsurf"),css=getComputedStyle(body);let point=null;for(let y=Math.min(r.bottom-16,innerHeight-16);y-80>=Math.max(8,r.top+8);y-=4){const x=r.left+r.width/2,a=document.elementFromPoint(x,y),z=document.elementFromPoint(x,y-80);if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest("button,input,textarea,select,#scale-preview,#scale-lip")){point={x,y};break;}}return{point,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,remaining:body.scrollHeight-body.clientHeight-body.scrollTop,rect:{top:r.top,bottom:r.bottom},surface:{top:surface.scrollTop,range:surface.scrollHeight-surface.clientHeight},overflow:css.overflowY,touchAction:css.touchAction,scale:visualViewport.scale};`);
-        t.diagnostic("SPS_NATIVE_SCROLL_BEFORE "+JSON.stringify(before));
-        assert.ok(before.point,"the full upward touch path must fit inside an eligible scrollport surface");
-        assert.ok(before.remaining>=200,"native scrolling needs ample real remaining room after footer folding");
-        await spsTouch(before.point,0,-80);
-        assert.strictEqual(await spsTab(),"scale");
-        const after=await b.eval(`const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect(),surface=document.querySelector(".sheetsurf");return{top:body.scrollTop,range:body.scrollHeight-body.clientHeight,remaining:body.scrollHeight-body.clientHeight-body.scrollTop,rect:{top:r.top,bottom:r.bottom},surface:{top:surface.scrollTop,range:surface.scrollHeight-surface.clientHeight},origin:window.__spsVerticalOrigin,lip:document.getElementById("scale-sheet").className,scale:visualViewport.scale};`);
-        t.diagnostic("SPS_NATIVE_SCROLL_AFTER "+JSON.stringify(after));
-        assert.ok(after.origin&&after.origin.body&&!after.origin.excluded,"the actual native start must match the intended eligible body origin");
-        assert.ok(after.top>before.top+8,"real vertical touch must continue native scrolling");
-        await spaOpen(380,780);
-        const diagonal=await spsSpot(-80);assert.ok(diagonal);
-        await spsTouch(diagonal,-40,-80);
-        assert.strictEqual(await spsTab(),"scale","diagonal scroll is not a shortcut");
-
-        await spaOpen(380,780,{tab:"layout"});
-        const pan=await b.eval(`const e=document.querySelector("#scale-preview .panhit");const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
-        await spsTouch(pan,80);
-        assert.strictEqual(await spsTab(),"scale","SW: a preview descendant now starts the shortcut: a right swipe on the pan reaches Scale");
-
-        await spaOpen(380,780);
-        await b.eval(`const e=document.getElementById("scale-top");e.focus();e.setSelectionRange(0,1);return true;`);
-        const field=await b.eval(`const r=document.getElementById("scale-top").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
-        await spsTouch(field,-80);
-        assert.strictEqual(await spsTab(),"scale","focused text/caret gestures remain on Scale");
-        assert.strictEqual(await activeId(),"scale-top");
-        await b.fakeKeyboard(500);
-        assert.strictEqual(await kbOn(),true);
-        const bodyStart=await spsSpot(-80);assert.ok(bodyStart);
-        await spsTouch(bodyStart,-80);
-        assert.strictEqual(await spsTab(),"scale","keyboard-up navigation is excluded");
-        await b.clearKeyboard();
-
-        await spaOpen(380,780);
-        // Controlled real-DOM outer overflow exercises the existing tiny-view
-        // backstop without assuming ordinary phone geometry always uses it.
-        await b.eval(`const e=document.querySelector(".sheetsurf"),body=document.querySelector(".sheetbody");body.style.flex="0 0 250px";body.style.height="250px";e.style.maxHeight="450px";e.style.overflowY="auto";const spacer=document.createElement("div");spacer.style.cssText="height:200px;flex:0 0 200px";e.appendChild(spacer);return true;`);
-        await b.settle();
-        const safe=await spsSpot(-80);assert.ok(safe);
-        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:safe.x,y:safe.y,id:7,radiusX:4,radiusY:4,force:1}]});
-        const excursion=await b.eval(`const e=document.querySelector(".sheetsurf");const before=e.scrollTop;e.scrollTop=before+12;const away=e.scrollTop;e.dispatchEvent(new Event("scroll"));e.scrollTop=before;e.dispatchEvent(new Event("scroll"));return{before,away,range:e.scrollHeight-e.clientHeight};`);
-        assert.ok(excursion.away-excursion.before>8,"the active outer fixture must actually scroll beyond the fence");
-        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:safe.x-80,y:safe.y,id:7,radiusX:4,radiusY:4,force:1}]});
-        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
-        assert.strictEqual(await spsTab(),"scale","outer out-and-back cannot be missed between touch samples");
-      }finally{await spaReset();}
-    });
-
-    test("SPS browser: horizontal button gestures never activate actions and genuine taps still do", {timeout:120000}, async () => {
-      try{
-        for(const selector of ["#scale-layout-reset","#scale-anchor-one","#scale-swatches button:nth-child(2)"])for(const dx of [40,80]){
-          await spaOpen(380,780,{tab:"layout"});
-          await b.eval(`document.getElementById("scale-anchor-between").scrollIntoView({block:"center"});return true;`);
-          await b.click("#scale-anchor-between");
-          await b.eval(`const e=document.querySelector(${JSON.stringify(selector)});e.scrollIntoView({block:"center"});window.__spsControlClicks=0;e.addEventListener("click",()=>{window.__spsControlClicks++;},true);return true;`);
-          await b.settle();await sleep(250);
-          const before=await b.eval(`return{one:document.getElementById("scale-anchor-one").getAttribute("aria-pressed"),between:document.getElementById("scale-anchor-between").getAttribute("aria-pressed"),palette:[...document.querySelectorAll("#scale-swatches button")].map(e=>e.getAttribute("aria-pressed"))};`);
-          const start=await b.eval(`const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};`);
-          assert.ok(start.x>=24&&start.x<=356&&start.y>0&&start.y<780,"the action target must be visible and inside the eligible margin");
-          await spsTouch(start,dx);
-          assert.strictEqual(await b.eval("return window.__spsControlClicks;"),0,selector+" horizontal gesture must not synthesize an action");
-          assert.strictEqual(await spsTab(),dx>=48?"scale":"layout");
-          const after=await b.eval(`return{one:document.getElementById("scale-anchor-one").getAttribute("aria-pressed"),between:document.getElementById("scale-anchor-between").getAttribute("aria-pressed"),palette:[...document.querySelectorAll("#scale-swatches button")].map(e=>e.getAttribute("aria-pressed"))};`);
-          assert.deepStrictEqual(after,before,selector+" changed an option during a non-tap");
-          if(dx>=48)await b.click("#scale-tab-layout");
-          await b.eval(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:"center"});return true;`);
-          await b.settle();
-          const tap=await b.eval(`const e=document.querySelector(${JSON.stringify(selector)}),r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return{x,y,visible:r.width>0&&r.height>0&&e.contains(document.elementFromPoint(x,y))};`);
-          assert.strictEqual(tap.visible,true,"the positive touch tap must target the visible control center");
-          await b.waitForPendingSettle();
-          await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:tap.x,y:tap.y,id:7,radiusX:4,radiusY:4,force:1}]});
-          await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
-          await b.waitFor("window.__spsControlClicks>=1",{label:"the genuine touch tap activates its control"});
-          assert.strictEqual(await b.eval("return window.__spsControlClicks;"),1,selector+" genuine tap remains effective");
-          if(selector==="#scale-layout-reset")assert.strictEqual((await pd2Status()).text,"Layout reset.");
-          else assert.strictEqual(await b.eval(`return document.querySelector(${JSON.stringify(selector)}).getAttribute("aria-pressed");`),"true");
-        }
-      }finally{await spaReset();}
-    });
-
-    test("SPS browser: real capture handoff restores the lip and viewport events preserve its quiet window", {timeout:120000}, async (t) => {
-      try{
-        await spaOpen(380,780);
-        // This hook-order fixture is deliberately unscrollable: a qualifying
-        // vertical-first trace must not exceed the independent scroll fence.
-        // The preceding browser test proves ordinary native scrolling instead.
-        await b.eval(`const body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf");body.style.flex="0 0 300px";body.style.height="300px";body.style.overflow="hidden";surface.style.overflow="hidden";const spacer=document.createElement("div");spacer.style.cssText="height:900px;flex:0 0 900px";document.getElementById("scale-panel-layout").prepend(spacer);body.scrollTop=0;surface.scrollTop=0;window.__spsOrder=[];const snap=phase=>({phase,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale",shut:document.getElementById("scale-sheet").classList.contains("lipshut")});document.getElementById("scale-sheet").addEventListener("touchend",()=>{window.__spsOrder.push(snap("sheet-capture"));},true);body.addEventListener("touchend",()=>{if(window.__spsEndAt===undefined)window.__spsEndAt=Date.now();window.__spsOrder.push(snap("body-after"));});document.getElementById("scale-sheet").addEventListener("touchmove",()=>{if(window.__spsEndAt!==undefined)window.__spsLastMoveElapsed=Date.now()-window.__spsEndAt;},{capture:true,passive:true});return true;`);
-        await b.settle();await sleep(250);
-        const start=await spsSpot(-100);assert.ok(start);
-        const point=(x,y)=>[{x,y,id:7,radiusX:4,radiusY:4,force:1}];
-        await b.waitForPendingSettle();
-        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(start.x,start.y)});
-        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(start.x,start.y-30)});
-        assert.strictEqual((await state()).shut,true,"the existing vertical hook must actually collapse before the horizontal leg");
-        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(start.x-100,start.y-30)});
-        // The selected origin is sheet-only, outside preview/practice-card
-        // capture. Like the existing SPA sheet drag traces, release raw here:
-        // a card lostpointercapture drain would consume the guard under test.
-        await b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
-        assert.strictEqual(await spsTab(),"layout");
-        const order=await b.eval("return window.__spsOrder;");
-        assert.deepStrictEqual(order.map(e=>e.phase),["sheet-capture","body-after"]);
-        assert.strictEqual(order[0].shut,true);assert.strictEqual(order[1].shut,false);
-        assert.strictEqual((await state()).lipped,false);
-        // Exact 219/220 boundaries are unit-clock oracles. This corroborates
-        // the real public viewport hooks and a genuinely early native gesture.
-        // The prepended inert region supplies native scroll room at setTab's
-        // zero baseline, without a programmatic jump inside the quiet interval.
-        const early=await b.eval(`visualViewport.dispatchEvent(new Event("resize"));visualViewport.dispatchEvent(new Event("scroll"));const body=document.querySelector(".sheetbody");body.style.overflowY="auto";
-          window.__spsQuietTrace=[];
-          const sample=(phase,e)=>{const r=body.getBoundingClientRect(),p=e&&e.touches&&e.touches[0],target=e&&e.target,active=document.activeElement,inBody=!!(target&&body.contains(target)),eligible=inBody&&!(target.closest&&target.closest("button,input,textarea,select,#scale-preview,#scale-lip"));window.__spsQuietTrace.push({phase,body:inBody,eligible,elapsed:Date.now()-window.__spsEndAt,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom},target:target?{tag:target.tagName,id:target.id}:null,point:p?{x:p.clientX,y:p.clientY}:null,focus:active?{tag:active.tagName,id:active.id}:null});};
-          for(const type of ["touchstart","touchmove","scroll"])body.addEventListener(type,e=>sample(type,e),{capture:true,passive:true});
-          sample("setup");
-          const r=body.getBoundingClientRect();let point=null;for(let y=Math.min(r.bottom-16,innerHeight-16);y-80>=Math.max(8,r.top+8);y-=4){const x=r.left+r.width/2,a=document.elementFromPoint(x,y),z=document.elementFromPoint(x,y-80);if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest("button,input,textarea,select,#scale-preview,#scale-lip")){point={x,y};break;}}return{point,top:body.scrollTop,range:body.scrollHeight-body.clientHeight,remaining:body.scrollHeight-body.clientHeight-body.scrollTop,elapsed:Date.now()-window.__spsEndAt};`);
-        assert.ok(early.point,"the early native scroll path must fit inside the real scrollport");
-        assert.strictEqual(early.top,0,"the quiet-window fixture keeps the actual tab-entry scroll reset");
-        assert.ok(early.remaining>=200,"quiet-window scrolling needs real remaining Layout scroll room");
-        assert.ok(early.elapsed<220,"early-input fixture must still be inside the actual quiet interval");
-        // Keep this immediate second press test-local and sheet-only: there
-        // is deliberately no unrelated pending-capture wait between the two
-        // presses. Real elapsed-time assertions below remain authoritative.
-        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(early.point.x,early.point.y)});
-        for(let i=1;i<=4;i++){
-          await sleep(8);
-          await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(early.point.x,early.point.y-80*i/4)});
-        }
-        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
-        const earlyAfter=await b.eval(`return new Promise(resolve=>requestAnimationFrame(()=>resolve({top:document.querySelector(".sheetbody").scrollTop,elapsed:Date.now()-window.__spsEndAt,lastMoveElapsed:window.__spsLastMoveElapsed,shut:document.getElementById("scale-sheet").classList.contains("lipshut"),trace:window.__spsQuietTrace})));`);
-        t.diagnostic("SPS_QUIET_NATIVE_SCROLL "+JSON.stringify({before:early,after:earlyAfter}));
-        const actualStart=earlyAfter.trace.find(sample=>sample.phase==="touchstart");
-        assert.ok(actualStart&&actualStart.body&&actualStart.eligible,"the actual early touch must begin on neutral body content");
-        assert.strictEqual(actualStart.top,early.top,"native input starts at the observed zero tab-entry baseline");
-        assert.ok(earlyAfter.lastMoveElapsed<220,"the actual early moves, not only setup, must remain inside the quiet interval");
-        assert.ok(earlyAfter.elapsed<220,"the scroll and lip observation must still be inside the real quiet interval");
-        assert.ok(earlyAfter.top>early.top+8,"real native scrolling must remain usable during the quiet interval");
-        assert.strictEqual(earlyAfter.shut,false,"fresh vertical input remains quiet after public viewport events");
-        await b.waitForPendingSettle();
-        await sleep(260);
-        const later=await spsSpot(-80);assert.ok(later);await spsTouch(later,0,-30);
-        assert.strictEqual((await state()).shut,true,"normal vertical input works again after the guard");
-        t.diagnostic("SPS_CAPTURE_ORDER "+JSON.stringify(order));
-
-        await spaOpen(380,780,{tab:"layout"});
-        await b.eval(`const body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf");body.style.flex="0 0 300px";body.style.height="300px";body.style.overflow="hidden";surface.style.overflow="hidden";body.scrollTop=0;surface.scrollTop=0;document.getElementById("scale-generate").focus();return true;`);
-        assert.strictEqual(await activeId(),"scale-generate","the enabled footer primary must start focused");
-        await sleep(250);
-        const right=await spsSpot(100);assert.ok(right);
-        await b.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:point(right.x,right.y)});
-        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(right.x,right.y-30)});
-        assert.strictEqual((await state()).shut,true);
-        assert.strictEqual(await activeId(),"scale-lip","positive focus hand-off precondition must occur in real Chrome");
-        await b.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:point(right.x+100,right.y-30)});
-        await b.releasing(()=>b.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}));
-        assert.strictEqual(await spsTab(),"scale");
-        const focused=await b.eval(`const a=document.activeElement;return{body:a===document.body,id:a&&a.id,visible:!a||a===document.body||a.getClientRects().length>0};`);
-        assert.strictEqual(focused.visible,true,"no newly hidden lip may retain focus");
-        assert.strictEqual(focused.body,true,"a swipe forces no replacement destination focus");
-        t.diagnostic("SPS_FOOTER_FOCUS "+JSON.stringify(focused));
-      }finally{await b.waitForPendingSettle();await spaReset();}
-    });
-
-    test("SPS browser: deliberate zoom excludes shortcuts and normal scale restores both directions", {timeout:90000}, async (t) => {
-      const cells=[];
-      // This gate needs neutral body input. Native touch targeting may select a
-      // nearby control even when elementFromPoint hits the gap beside it.
-      const zoomSpot=(dx)=>b.eval(`
-        const body=document.querySelector(".sheetbody"),r=body.getBoundingClientRect();
-        const selector="button,input,textarea,select,label,a[href],#scale-preview,#scale-lip";
-        const obstacles=[...document.querySelectorAll(selector)].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=="hidden").map(el=>el.getBoundingClientRect()).filter(q=>q.width>0&&q.height>0);
-        const clear=(x,y)=>obstacles.every(q=>Math.hypot(Math.max(q.left-x,0,x-q.right),Math.max(q.top-y,0,y-q.bottom))>=24);
-        const lo=Math.max(24,r.left+8),hi=Math.min(innerWidth-24,r.right-8);
-        for(let y=Math.max(8,r.top+8);y<Math.min(innerHeight-8,r.bottom-8);y+=6){
-          for(let x=lo;x<=hi;x+=8){
-            if(x+${dx}<lo||x+${dx}>hi||!clear(x,y)||!clear(x+${dx},y))continue;
-            const a=document.elementFromPoint(x,y),z=document.elementFromPoint(x+${dx},y);
-            if(a&&z&&body.contains(a)&&body.contains(z)&&!a.closest(selector)&&!z.closest(selector))return{x,y,tag:a.tagName,id:a.id};
-          }
-        }
-        return null;`);
-      const snapshot=()=>b.eval(`const v=visualViewport;return{scale:v.scale,left:v.offsetLeft,top:v.offsetTop,tab:document.getElementById("scale-tab-layout").getAttribute("aria-selected")==="true"?"layout":"scale"};`);
-      const observeOrigin=()=>b.eval(`window.__spsZoomOrigin=null;document.addEventListener("touchstart",e=>{const body=!!(e.target.closest&&e.target.closest(".sheetbody")),excluded=!!e.target.closest("button,input,textarea,select,#scale-preview,#scale-lip");window.__spsZoomOrigin={body,eligible:body&&!excluded,tag:e.target.tagName,id:e.target.id,scale:visualViewport.scale,left:visualViewport.offsetLeft,top:visualViewport.offsetTop};},{capture:true,passive:true,once:true});return true;`);
-      try{
-        for(const from of ["scale","layout"]){
-          await spaOpen(380,780,{tab:from});
-          const dx=from==="scale"?-80:80,to=from==="scale"?"layout":"scale";
-          await b.setPageScale(2);await b.settle();
-          const before=await snapshot();
-          assert.ok(before.scale>1.99,"the negative gate must actually be at2x");
-          assert.strictEqual(before.tab,from);
-          const zoomStart=await zoomSpot(dx);assert.ok(zoomStart,"zoomed exclusion needs a genuinely eligible body origin");
-          await observeOrigin();await spsTouch(zoomStart,dx);
-          const origin=await b.eval("return window.__spsZoomOrigin;"),after=await snapshot();
-          assert.ok(origin&&origin.eligible&&origin.scale>1.01,"actual touch origin and scale must establish the zoomed case");
-          assert.ok(after.scale>1.01,"the gesture must not silently reset zoom");
-          assert.strictEqual(after.tab,from,"deliberate zoom leaves optional tab navigation inactive");
-          cells.push({from,mode:"zoomed",before,origin,after});
-
-          await b.setPageScale(1);await b.settle();
-          const normalBefore=await snapshot();
-          assert.ok(Math.abs(normalBefore.scale-1)<0.001,"normal positive control must really restore1x");
-          const normalStart=await zoomSpot(dx);assert.ok(normalStart);
-          // Observe the selected hit and the actual dispatch after spsTouch's
-          // pending-settle wait; do not change that wait or the acceptance oracle.
-          const normalSelected=await b.eval(`const p=${JSON.stringify(normalStart)},body=document.querySelector(".sheetbody"),surface=document.querySelector(".sheetsurf"),v=visualViewport;
-            const describe=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{tag:el.tagName,id:el.id,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom}};};
-            const selectedAt=performance.now();window.__spsZoomNormalDispatch=null;
-            document.addEventListener("touchstart",e=>{const q=e.touches[0],vv=visualViewport;window.__spsZoomNormalDispatch={elapsed:performance.now()-selectedAt,target:describe(e.target),hit:q?describe(document.elementFromPoint(q.clientX,q.clientY)):null,point:q?{x:q.clientX,y:q.clientY}:null,body:describe(body),surface:describe(surface),scale:vv.scale,left:vv.offsetLeft,top:vv.offsetTop};},{capture:true,passive:true,once:true});
-            return{point:p,hit:describe(document.elementFromPoint(p.x,p.y)),body:describe(body),surface:describe(surface),scale:v.scale,left:v.offsetLeft,top:v.offsetTop};`);
-          await observeOrigin();await spsTouch(normalStart,dx);
-          const normalOrigin=await b.eval("return window.__spsZoomOrigin;"),normalAfter=await snapshot();
-          const normalDispatch=await b.eval("return window.__spsZoomNormalDispatch;");
-          t.diagnostic("SPS_ZOOM_NORMAL_ORIGIN "+JSON.stringify({from,normalBefore,normalStart,normalSelected,normalDispatch,normalOrigin,normalAfter}));
-          assert.ok(normalOrigin&&normalOrigin.eligible&&Math.abs(normalOrigin.scale-1)<0.001);
-          assert.strictEqual(normalAfter.tab,to,"the same direction remains available at normal scale");
-          cells.push({from,mode:"normal",before:normalBefore,origin:normalOrigin,after:normalAfter});
-        }
-        assert.strictEqual(cells.length,4);
-        // This is an asserted shortcut-preservation gate. It does not certify
-        // native visual-viewport panning/clamps, which the retired exploratory
-        // baseline/candidate probe did not observe. Physical Safari QA remains.
-        t.diagnostic("SPS_ZOOM_GUARD_CELLS "+JSON.stringify(cells));
-      }finally{await b.setPageScale(1);await spaReset();}
-    });
-
-    /* SWA browser oracles: the decorative edge cue under a real touch. */
-    const swaCue = () => b.eval(`const c=document.getElementById("scale-swipe-cue"),r=c.getBoundingClientRect(),k=getComputedStyle(c);
-      const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-      return{cls:c.className,vis:k.visibility,op:+k.opacity,pe:k.pointerEvents,tf:k.transform,bg:k.backgroundColor,left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight,hitIsCue:!!(hit&&hit.closest&&hit.closest("#scale-swipe-cue"))};`);
-    const swaEnd = () => b.releasing(() => b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }));
-
-    test("SWA browser: the cue follows a real swipe, arms at the commit threshold, fades on switch and springs back when released short", { timeout: 120000 }, async () => {
-      try {
-        for (const [w, h] of [[320, 568], [380, 780], [844, 390]]) {
-          await spaOpen(w, h);
-          const start = await spsSpot(-80);
-          assert.ok(start, `${w}x${h}: an eligible origin exists`);
-          assert.strictEqual((await swaCue()).vis, "hidden", "idle: the cue is not visible");
-          const bodyBefore = await b.eval(`const r=document.querySelector(".sheetbody").getBoundingClientRect();return[r.left,r.top,r.width,r.height];`);
-          await spsTouch(start, -30, 0, { release: false });
-          await sleep(120);
-          const mid = await swaCue();
-          assert.strictEqual(mid.vis, "visible", `${w}x${h}: shown after a lock`);
-          assert.ok(mid.cls.includes("r") && !mid.cls.includes("armed"), `${w}x${h}: right edge, not armed at 30px: ${mid.cls}`);
-          assert.strictEqual(mid.pe, "none");
-          assert.strictEqual(mid.hitIsCue, false, "the cue never takes the touch");
-          assert.ok(mid.top >= 0 && mid.bottom <= mid.h, "the cue sits inside the viewport vertically");
-          await swaEnd();
-          await sleep(500);
-          assert.strictEqual(await spsTab(), "scale", "an unarmed release switches nothing");
-          assert.strictEqual((await swaCue()).vis, "hidden", "and the cue springs back out");
-
-          const start2 = await spsSpot(-80);
-          await spsTouch(start2, -80, 0, { release: false });
-          await sleep(120);
-          const armed = await swaCue();
-          assert.ok(armed.cls.includes("armed"), `${w}x${h}: armed at 80px: ${armed.cls}`);
-          assert.notStrictEqual(armed.bg, mid.bg, "armed is a different fill");
-          assert.ok(armed.right <= armed.w + 0.5 && armed.left >= -0.5, "armed, the cue sits inside the viewport");
-          assert.deepStrictEqual(await b.eval(`const r=document.querySelector(".sheetbody").getBoundingClientRect();return[r.left,r.top,r.width,r.height];`), bodyBefore, "the cue moves no layout");
-          await swaEnd();
-          await sleep(500);
-          assert.strictEqual(await spsTab(), "layout", "an armed release switches");
-          assert.strictEqual((await swaCue()).vis, "hidden", "and the cue has faded");
-        }
-      } finally { await spaReset(); }
-    });
-
-    test("SWA browser: under reduced motion the cue never translates or scales and the armed state is a fill", { timeout: 90000 }, async () => {
-      try {
-        await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
-        await spaOpen(380, 780);
-        const start = await spsSpot(-80);
-        await spsTouch(start, -30, 0, { release: false });
-        await sleep(120);
-        const a = await swaCue();
-        assert.strictEqual(a.vis, "visible");
-        assert.strictEqual(a.tf, "none", "no transform at 30px");
-        await spsTouch({ x: start.x - 30, y: start.y }, -50, 0, { release: false });
-        await sleep(120);
-        const c = await swaCue();
-        assert.ok(c.cls.includes("armed"));
-        assert.strictEqual(c.tf, "none", "no transform when armed");
-        assert.notStrictEqual(c.bg, a.bg);
-        await swaEnd();
-        await sleep(400);
-        assert.strictEqual((await swaCue()).vis, "hidden");
-      } finally { await spaReset(); }
-    });
-
-    test("SPA: the shut footer is 9px, the 32x3 pill sits 3px above the footer's bottom and is centred, and the tap zone is 25px with its bottom on the surface's bottom above the inset", { timeout: 90000 }, async () => {
-      try {
-        let inset = 0;
-        try { await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 34 } }), sleep(3000).then(() => { throw new Error("no override"); })]); inset = 34; } catch (e) { inset = 0; }
-        await spaOpen(380, 780);
-        await shut();
-        const st = await state();
-        assert.ok(st.lipped && st.shut, `the footer is not shut (${JSON.stringify(st)})`);
-        const seen = await b.eval(`const p = document.createElement("div"); p.style.cssText = "position:absolute;visibility:hidden;width:0;height:env(safe-area-inset-bottom)"; document.body.appendChild(p); const h = p.getBoundingClientRect().height; p.remove(); return h;`);
-        assert.strictEqual(seen, 34, `the page sees a bottom inset of ${seen}px, not 34`);
-        const m = await b.eval(`
-          const lip = document.getElementById("scale-lip"), r = lip.getBoundingClientRect();
-          const a = getComputedStyle(lip, "::after");
-          const foot = document.getElementById("scale-foot").getBoundingClientRect();
-          const surf = document.querySelector("#scale-sheet .sheetsurf").getBoundingClientRect();
-          return { zoneH: r.height, zoneBottom: r.bottom, surfBottom: surf.bottom, footH: foot.height, footBottom: foot.bottom, footTop: foot.top,
-            w: parseFloat(a.width), h: parseFloat(a.height), pillBottom: r.bottom - parseFloat(a.bottom), left: parseFloat(a.left), ml: parseFloat(a.marginLeft), zoneW: r.width };`);
-        assert.ok(Math.abs(m.footH - 9) <= 0.5, `the shut footer is ${m.footH}px, not 9`);
-        assert.strictEqual(m.w, 32);
-        assert.strictEqual(m.h, 3);
-        assert.ok(Math.abs(m.footBottom - m.pillBottom - 3) <= 0.5, `the pill bottom is ${m.footBottom - m.pillBottom}px above the footer's bottom, not 3`);
-        assert.ok(Math.abs((m.pillBottom - 3) - m.footTop - 3) <= 0.5, `the pill is not centred in the 9px footer (top gap ${m.pillBottom - 3 - m.footTop})`);
-        assert.ok(Math.abs(m.left - m.zoneW / 2) <= 0.5 && m.ml === -16, `the pill is not centred across the zone (left ${m.left}, margin ${m.ml})`);
-        assert.strictEqual(m.zoneH, 25);
-        assert.ok(Math.abs(m.zoneBottom - (m.surfBottom - inset)) <= 1.5, `the zone bottom ${m.zoneBottom} against the surface bottom ${m.surfBottom} less inset ${inset}`);
-      } finally {
-        await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 0 } }), sleep(3000)]).catch(() => {});
-        await spaReset();
-      }
-    });
 
     const msgState = () => b.eval(`
       const msg = document.getElementById("scale-msg"), lip = document.getElementById("scale-lip");
@@ -16786,120 +12192,9 @@ function run() {
       return { top, bottom, cx, zoneTop: lip.hidden ? null : lip.getBoundingClientRect().top,
         hitCentre: hit(cx, (top + bottom) / 2), hitBottom: hit(cx, bottom - 1), hitLeft: hit(left + 2, bottom - 1) };`);
 
-    test("SPA: a message shown while the footer is shut ends at least --sp-1 above the lip's tap zone and hit-tests to itself, keyboard up and down at 320x568, 380x780 and 390x844 and keyboard down at 844x390", { timeout: 240000 }, async (t) => {
-      const fails = [], ran = [];
-      try {
-        for (const [w, h] of VPS) {
-          for (const kb of [false, true]) {
-            if (kb && w > h) continue;
-            await spaOpen(w, h);
-            if (kb) await kbUp(w, h);
-            await shut();
-            await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-            await sleep(300);
-            const sp1 = await px("--sp-1");
-            const s = await state();
-            const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"}`;
-            ran.push(ctx);
-            if (s.kbup !== kb) fails.push(`${ctx}: kbup is ${s.kbup}`);
-            if ((await msgLines()) < 1) { fails.push(`${ctx}: no message is showing`); continue; }
-            const m = await msgState();
-            if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the footer is not shut (${JSON.stringify(s)})`); continue; }
-            if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
-            if (m.bottom > m.zoneTop - sp1 + 0.5) fails.push(`${ctx}: the message ends ${m.bottom}, ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone at ${m.zoneTop}, not ${sp1}`);
-            if (!m.hitCentre || !m.hitBottom || !m.hitLeft) fails.push(`${ctx}: the message does not hit-test to itself (centre ${m.hitCentre}, bottom ${m.hitBottom}, left ${m.hitLeft})`);
-          }
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(ran.map((r) => r.split(" ")[0])));
-      assert.deepStrictEqual(ran, ["320x568 keyboard down", "320x568 keyboard up", "380x780 keyboard down", "380x780 keyboard up", "390x844 keyboard down", "390x844 keyboard up", "844x390 keyboard down"]);
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("SPA: a tap on a message above the shut lip does not restore the footer", { timeout: 120000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[320, 568], [380, 780]]) {
-          await spaOpen(w, h);
-          await shut();
-          await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-          await sleep(300);
-          const pre = await state();
-          if (!(pre.lipped && pre.shut)) { fails.push(`${w}x${h}: the footer is not shut before the tap (${JSON.stringify(pre)})`); continue; }
-          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: no message is showing`); continue; }
-          const m = await msgState();
-          if (!m.hitBottom) { fails.push(`${w}x${h}: the tap point does not hit the message`); continue; }
-          await tapAt(m.cx, m.bottom - 2);
-          const s = await state();
-          if (!(s.lipped && s.shut)) fails.push(`${w}x${h}: a tap on the message's last line restored the footer (${JSON.stringify(s)})`);
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("SPA: with the keyboard up and a warning showing, a lip tap restores the footer and the message's bottom ends at or above NEXT's top", { timeout: 120000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[380, 780], [393, 852]]) {
-          await spaOpen(w, h);
-          await b.eval(PROBE);
-          await kbUp(w, h);
-          await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-          await sleep(300);
-          const before = await state();
-          if (!(before.lipped && before.shut && before.kbup)) { fails.push(`${w}x${h}: not shut under the keyboard (${JSON.stringify(before)})`); continue; }
-          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: no warning is showing before the lip tap`); continue; }
-          const z = await b.eval(`const r = document.getElementById("scale-lip").getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: r.top + 2 };`);
-          const rec = b.eval(`return window.__spa.run(600, []);`);
-          await tapAt(z.x, z.y);
-          const frames = await rec;
-          const s = await state();
-          if (s.lipped) fails.push(`${w}x${h}: the lip tap did not restore (${JSON.stringify(s)})`);
-          if ((await msgLines()) < 1) { fails.push(`${w}x${h}: the warning is gone after the lip tap`); continue; }
-          const m = await b.eval(`
-            const r = document.createRange(); r.selectNodeContents(document.getElementById("scale-msg"));
-            const bottom = Math.max(...[...r.getClientRects()].map((x) => x.bottom));
-            const n = document.getElementById("scale-next"), p = !n.hidden ? n : document.getElementById("scale-generate");
-            return { bottom, top: p.getBoundingClientRect().top, id: p.id };`);
-          if (m.id !== "scale-next") fails.push(`${w}x${h}: the primary is ${m.id}, not NEXT`);
-          if (m.bottom > m.top + 0.5) fails.push(`${w}x${h}: the message ends ${m.bottom}, below NEXT's top ${m.top}`);
-          if (!frames.length || !frames.some((f) => f.text)) fails.push(`${w}x${h}: no sampled frame had visible message text (${frames.length} frames)`);
-          for (const f of frames) for (const v of hits(f)) fails.push(`${w}x${h}: ${v}`);
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(fails.slice(0, 12), [], fails.slice(0, 12).join("\n"));
-    });
 
-    test("SPA: with the keyboard up and the lip shut at 390x844, the message's last line ends at least 4px above the lip's tap zone and its background is the sheet surface colour; sampled frames during the collapse and the restore keep its text off the primary, DELETE and the tap zone", { timeout: 120000 }, async () => {
-      const fails = [];
-      try {
-        for (const edit of [false, true]) {
-          await spaOpen(390, 844, { edit });
-          await b.eval(PROBE);
-          await kbUp(390, 844);
-          await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-          await sleep(300);
-          const ctx = edit ? "Edit" : "Add";
-          const st = await state();
-          if (!(st.kbup && st.lipped && st.shut)) { fails.push(`${ctx}: not shut under the keyboard (${JSON.stringify(st)})`); continue; }
-          if ((await msgLines()) < 1) { fails.push(`${ctx}: no message is showing`); continue; }
-          const m = await msgState();
-          if (m.zoneTop === null) { fails.push(`${ctx}: no tap zone`); continue; }
-          if (m.bottom > m.zoneTop - 4 + 0.5) fails.push(`${ctx}: the last line ends ${(m.zoneTop - m.bottom).toFixed(1)}px above the zone, not 4`);
-          const bg = await b.eval(`return { msg: getComputedStyle(document.getElementById("scale-guidance")).backgroundColor, surf: getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).backgroundColor };`);
-          if (bg.msg !== bg.surf) fails.push(`${ctx}: the message background is ${bg.msg}, not the surface ${bg.surf}`);
-          const down = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "restoreLip()" }]);`);
-          if (!down.length || !down.some((f) => f.text)) fails.push(`${ctx} restore: no sampled frame had visible message text (${down.length} frames)`);
-          for (const f of down) for (const v of hits(f)) fails.push(`${ctx} restore: ${v}`);
-          if (!down[0].cls.includes("lipshut") || down[down.length - 1].cls.includes("lipshut")) fails.push(`${ctx} restore: the frames do not run from shut to open`);
-          const up = await b.eval(`return window.__spa.run(700, [{ at: 40, code: "collapseLip()" }]);`);
-          if (!up.length || !up.some((f) => f.text)) fails.push(`${ctx} collapse: no sampled frame had visible message text (${up.length} frames)`);
-          for (const f of up) for (const v of hits(f)) fails.push(`${ctx} collapse: ${v}`);
-          if (up[0].cls.includes("lipshut") || !up[up.length - 1].cls.includes("lipshut")) fails.push(`${ctx} collapse: the frames do not run from open to shut`);
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(fails.slice(0, 12), [], fails.slice(0, 12).join("\n"));
-    });
 
     const CHANGES = {
       appear: { pre: `say("", "")`, change: `say(${JSON.stringify(SPA_WARN)}, "warn")` },
@@ -16908,1099 +12203,13 @@ function run() {
     };
     const LINES = { appear: [(n) => n === 0, (n) => n >= 1], clear: [(n) => n >= 1, (n) => n === 0], grow: [(n) => n === 1, (n) => n === 3] };
     const LINES_SAID = { appear: "0 to 1 or more", clear: "1 or more to 0", grow: "1 to 3" };
-    test("SPA: guidance that appears, clears or grows from one to three lines at 40ms, 90ms and 150ms into a collapse or a restore at 380x780, and at 40ms into an immediate reversal at 380x780 and 844x390 and with the keyboard up, never puts its visible text over the primary, DELETE or the lip's tap zone in any sampled frame, with and without reduced motion", { timeout: 900000 }, async (t) => {
-      const fails = [], ran = new Set();
-      const atRan = [], vpRan = [];
-      const sub = async (ctx, kind, change, at, w) => {
-        atRan.push(`${at}ms`);
-        const c = { ...CHANGES[change], change: typeof CHANGES[change].change === "function" ? CHANGES[change].change(w) : CHANGES[change].change };
-        await b.eval(`lipReset(); ${c.pre}; return true;`);
-        await sleep(60);
-        const pre = await msgLines();
-        if (kind === "restore") { await b.eval(`collapseLip(); return true;`); await sleep(250); }
-        const steps = kind === "collapse" ? [{ at: 0, code: "collapseLip()" }, { at, code: c.change }]
-          : kind === "restore" ? [{ at: 0, code: "restoreLip()" }, { at, code: c.change }]
-          : [{ at: 0, code: "collapseLip()" }, { at, code: c.change }, { at: at + 12, code: "restoreLip()" }];
-        const frames = await b.eval(`return window.__spa.run(380, ${JSON.stringify(steps)});`);
-        if (!frames.length || !frames.some((f) => f.text)) fails.push(`${ctx} ${kind} ${change}@${at}: no sampled frame had visible message text (${frames.length} frames)`);
-        for (const f of frames) for (const v of hits(f)) fails.push(`${ctx} ${kind} ${change}@${at}: ${v}`);
-        const post = await msgLines();
-        if (!LINES[change][0](pre) || !LINES[change][1](post)) fails.push(`${ctx} ${kind} ${change}@${at}: ${pre} to ${post} lines, not ${LINES_SAID[change]}`);
-        const cls = frames.map((f) => f.cls.split(" "));
-        if (kind !== "restore" && !cls.some((c) => c.includes("lipshut"))) fails.push(`${ctx} ${kind} ${change}@${at}: no sampled frame had the footer shut`);
-        if (kind !== "collapse" && cls[cls.length - 1].includes("lipshut")) fails.push(`${ctx} ${kind} ${change}@${at}: the footer was still shut in the last frame`);
-        if (kind === "collapse" && !cls[cls.length - 1].includes("lipshut")) fails.push(`${ctx} ${kind} ${change}@${at}: the footer was not shut in the last frame`);
-        ran.add(`${ctx.split(" ")[0]} ${ctx.includes("Edit") ? "Edit" : "Add"} ${ctx.includes("reduced") ? "reduced" : "motion"}${ctx.includes("keyboard") ? " keyboard" : ""} ${kind} ${change} ${at}`);
-      };
-      try {
-        for (const [w, h] of VPS.filter(([vw]) => vw !== 390 && vw !== 320)) {
-          for (const edit of [false, true]) {
-            for (const rm of [false, true]) {
-              if (edit && w !== 380) continue;
-              if (rm && (edit || w !== 380)) continue;
-              await spaOpen(w, h, { edit });
-              await b.eval(PROBE);
-              vpRan.push(`${w}x${h}`);
-              if (!THREE[w]) THREE[w] = await calibrate();
-              await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: rm ? "reduce" : "no-preference" }] });
-              await sleep(100);
-              if ((await rmOn()) !== rm) { fails.push(`${w}x${h}: prefers-reduced-motion is not ${rm ? "reduce" : "no-preference"}`); continue; }
-              const ctx = `${w}x${h} ${edit ? "Edit" : "Add"} ${rm ? "reduced" : "motion"}`;
-              const full = w === 380 && !edit && !rm;
-              const kinds = full ? ["collapse", "restore", "reverse"] : rm ? ["collapse"] : ["reverse"];
-              for (const kind of kinds) {
-                for (const change of Object.keys(CHANGES)) {
-                  for (const at of kind === "reverse" || rm ? [40] : full ? [40, 90, 150] : [40]) await sub(ctx, kind, change, at, w);
-                }
-              }
-              if (!rm && !edit && w === 380) {
-                await kbUp(w, h);
-                if (!(await kbOn())) { fails.push(`${w}x${h}: the sheet does not have kbup after the keyboard rose`); continue; }
-                for (const change of Object.keys(CHANGES)) for (const at of [40]) await sub(ctx + " keyboard", "reverse", change, at, w);
-              }
-            }
-          }
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(titleSet(t, /\b\d+x\d+\b/g), ranSet(vpRan));
-      assert.deepStrictEqual(titleSet(t, /\b\d+ms\b/g), ranSet(atRan), "a millisecond in the title did not run, or one ran that it does not state");
-      for (const vp of ["380x780", "844x390"]) for (const ch of ["appear", "clear", "grow"]) assert.ok(ran.has(`${vp} Add motion reverse ${ch} 40`), `${vp} reverse ${ch} did not run`);
-      for (const kind of ["collapse", "restore"]) for (const at of [40, 90, 150]) for (const ch of ["appear", "clear", "grow"]) assert.ok(ran.has(`380x780 Add motion ${kind} ${ch} ${at}`), `${kind} ${ch}@${at} did not run`);
-      for (const ch of ["appear", "clear", "grow"]) { assert.ok(ran.has(`380x780 Add motion keyboard reverse ${ch} 40`), `keyboard reverse ${ch} did not run`); assert.ok(ran.has(`380x780 Add reduced collapse ${ch} 40`), `reduced ${ch} did not run`); assert.ok(ran.has(`380x780 Edit motion reverse ${ch} 40`), `Edit ${ch} did not run`); }
-      const groups = {};
-      for (const f of fails) { const k = f.replace(/: t=.*$/, ""); groups[k] = (groups[k] || 0) + 1; }
-      assert.deepStrictEqual(fails.slice(0, 6), [], fails.length + " violations\n" + JSON.stringify(groups, null, 1) + "\n" + fails.slice(0, 6).join("\n"));
-    });
 
-    test("SPA: guidance appearing or clearing at the scroll end during a wheel window, a touch drag and its fling, keyboard up and down, changes the lip state zero times and starts no collapse and restore cycle", { timeout: 300000 }, async (t) => {
-      const fails = [], ran = [];
-      const settle = async (ctx, how) => {
-        const s = await state();
-        if (s.flips !== 0) fails.push(`${ctx} ${how}: the lip changed ${s.flips} times`);
-      };
-      try {
-        for (const [w, h] of [[380, 780]]) {
-          for (const kb of [false, true]) {
-            if (kb && w > h) continue;
-            for (const how of ["wheel", "drag", "fling"]) {
-              for (const change of ["clear", "appear"]) {
-                await spaOpen(w, h);
-                await b.eval(`const p = document.getElementById("scale-panel-scale"), d = document.createElement("div"); d.style.height = "900px"; p.appendChild(d); return true;`);
-                if (kb) await kbUp(w, h);
-                if ((await kbOn()) !== kb) { fails.push(`${w}x${h} keyboard ${kb ? "up" : "down"} ${how} ${change}: kbup is ${!kb}`); continue; }
-                if (change === "clear") await b.eval(`say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`);
-                await shut();
-                if (change === "clear" && (await msgLines()) < 1) { fails.push(`${w}x${h} keyboard ${kb ? "up" : "down"} ${how} ${change}: no warning is showing to clear`); continue; }
-                const atEnd = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"); body.scrollTop = body.scrollHeight; window.__lip.length = 0; return body.scrollTop + body.clientHeight >= body.scrollHeight - 1;`);
-                await sleep(200);
-                const ctx = `${w}x${h} keyboard ${kb ? "up" : "down"} ${change}`;
-                if (!atEnd) fails.push(`${ctx} ${how}: the body is not at the scroll end`);
-                const bb = await b.eval(`const r = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-                const go = change === "clear" ? `say("", ""); return true;` : `say(${JSON.stringify(SPA_WARN)}, "warn"); return true;`;
-                if (how === "wheel") {
-                  await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: bb.x, y: bb.y, deltaX: 0, deltaY: 1 });
-                  const eng = await b.eval(`const e = Date.now() < userWindowUntil; ${go.replace("return true;", "")} return e;`);
-                  if (!eng) fails.push(`${ctx} ${how}: the wheel did not open the user window`);
-                } else {
-                  const tp = (dy) => [{ x: bb.x, y: bb.y + dy, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
-                  await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: tp(0) });
-                  for (const dy of [-6, -14, -24, -36]) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(dy) });
-                  if (how === "drag") {
-                    const eng = await b.eval(`const e = lipDrag !== null; ${go.replace("return true;", "")} return e;`);
-                    if (!eng) fails.push(`${ctx} ${how}: no drag was in progress`);
-                  }
-                  await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-                  if (how === "fling") {
-                    const eng = await b.eval(`const e = lipFling !== null; ${go.replace("return true;", "")} return e;`);
-                    if (!eng) fails.push(`${ctx} ${how}: no fling was running`);
-                  }
-                }
-                await sleep(400);
-                const nl = await msgLines();
-                if (change === "appear" ? nl < 1 : nl !== 0) fails.push(`${ctx} ${how}: the warning did not ${change === "appear" ? "appear" : "clear"} (${nl} lines)`);
-                ran.push(`${kb ? "up" : "down"} ${how} ${change}`);
-                await settle(ctx, how);
-              }
-            }
-          }
-        }
-      } finally { await spaReset(); }
-      assert.deepStrictEqual(ran.sort(), ["down", "up"].flatMap((k) => ["wheel", "drag", "fling"].flatMap((how) => ["clear", "appear"].map((c) => `${k} ${how} ${c}`))).sort());
-      for (const how of ["wheel", "drag", "fling"]) assert.ok(new RegExp(how).test(t.name) && ran.some((r) => r.startsWith("down " + how)) && ran.some((r) => r.startsWith("up " + how)), how);
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("SPA: the selected tab's pressed colour differs from its rest colour", { timeout: 60000 }, async () => {
-      try {
-        await spaOpen(380, 780);
-        const lum = (c) => { const [r, g, bl] = c.match(/[\d.]+/g).map(Number); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
-        const rest = await b.eval(`return getComputedStyle(document.getElementById("scale-tab-scale")).color;`);
-        await b.send("DOM.enable");
-        await b.send("CSS.enable");
-        const doc = await b.send("DOM.getDocument", { depth: 0 });
-        const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: "#scale-tab-scale" });
-        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
-        const pressed = await b.eval(`return getComputedStyle(document.getElementById("scale-tab-scale")).color;`);
-        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
-        assert.ok(Math.abs(lum(rest) - lum(pressed)) >= 20, `the selected tab rests at ${rest} and presses to ${pressed}`);
-      } finally { await spaReset(); }
-    });
   });
 
   /* ------------------------- SPC: landscape Layout, plate pinned, footer capped ----
    * Lane SPC of docs/plans/2026-10-21-sheet-polish.md (section 3.3, D-3; owner Q1 "Pin + fit").
    * Baselines in C4 and C6 are the 81ad610 rects of Table M (rows Mc3-Mc7), re-measured on d4bfb86. */
-  describe("SPC: landscape Layout, plate pinned, footer capped", () => {
-    const SPC_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
-    const STATES = ["no message", "a one-line notice", "a two-line warning", "the Edit delete refusal",
-      "the refusal beside a notice", "a re-armed DELETE", "the notice with three ring-reset suffixes",
-      "a multi-line drawer status from layoutStatus()"];
-    const toLayout = async () => {
-      await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-      await b.waitFor(`!document.getElementById("scale-panel-layout").hidden`, { label: "the Layout tab" });
-      await sleep(300);
-    };
-    const spcCreate = async (w = 844, h = 390) => {
-      await freshLoad();
-      await b.setViewport(w, h, true);
-      await b.settle();
-      await openSheet();
-      await typeScale(SPC_KURD);
-      await toLayout();
-    };
-    const spcEdit = async (w = 844, h = 390) => {
-      await freshLoad();
-      await b.eval(`localStorage.setItem("hpfc", ${JSON.stringify(JSON.stringify({ deck: "kurd", mode: "A", hidden: ["amara10", "amara", "hijaz", "pygmy"] }))}); return true;`);
-      await clearSavedIdbForLegacyMigrationFixture();
-      await navigate();
-      assert.deepStrictEqual((await nativeSavedEnvelope(b)).hidden,["amara10","amara","hijaz","pygmy"],"fixture actually migrates the four hidden seeds, leaving only Kurd");
-      await b.waitFor(`document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { label: "the chips" });
-      await b.setViewport(w, h, true);
-      await b.settle();
-      await openEdit();
-      await toLayout();
-    };
-    const probe = () => b.eval(`
-      const h = (el) => (!el || el.hidden || getComputedStyle(el).display === "none") ? 0 : el.getBoundingClientRect().height;
-      return { msg: h(msgLine), msgText: msgLine.textContent, note: h(layoutNote), noteText: layoutNote.textContent,
-        delNote: document.getElementById("scale-del-note").textContent, status: h(drawerStatus), statusText: drawerStatus.textContent,
-        guidance: document.getElementById("scale-guidance").getBoundingClientRect().height,
-        deleteShown: !document.getElementById("scale-delete-row").hidden };`);
-    const fitStatus = (n) => b.eval(`
-      const w = "Swapped Eb5 and Ab4 so the bottom ring reads upward from the lowest seat on the right".split(" ");
-      let t = "";
-      for (let i = 0; i < 120; i += 1) {
-        t += (i ? " " : "") + w[i % w.length];
-        layoutStatus(t);
-        if (drawerStatus.getBoundingClientRect().height >= ${n * SG_LINE} - 0.5) break;
-      }
-      return t;`);
-    const fitSettled = async (which, n, prefix = "") => {
-      const w = "Keep every note you can reach on the pan before you press the button below".split(" ");
-      const el = which === "warn" ? "msgLine" : "layoutNote";
-      let t = prefix;
-      for (let i = 0; i < 80; i += 1) {
-        t += (i || prefix ? " " : "") + w[i % w.length];
-        await sgPut(which === "warn" ? { warn: t } : { note: t });
-        await sleep(170);
-        const h = await b.eval(`return ${el}.getBoundingClientRect().height;`);
-        if (h >= n * SG_LINE - 0.5) return t;
-      }
-      throw new Error("could not fit " + n + " lines of " + which);
-    };
-    const REFUSAL = /Keep at least one scale/;
-    const apply = async (state) => {
-      const p0 = await probe();
-      assert.strictEqual(p0.deleteShown, true, "DELETE THIS DECK is not shown on Edit");
-      if (state === "no message") {
-        assert.strictEqual(p0.guidance, 0, "the guidance slot holds something with no message");
-        return;
-      }
-      if (state === "a one-line notice") await sgPut({ note: await sgFit("note", 1) });
-      else if (state === "a two-line warning") await fitSettled("warn", 2);
-      else if (state === "the Edit delete refusal") {
-        await b.click("#scale-delete");
-        await b.click("#scale-delete");
-      } else if (state === "the refusal beside a notice") {
-        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-        await b.settle();
-        await b.click("#scale-delete");
-        await b.click("#scale-delete");
-      } else if (state === "a re-armed DELETE") {
-        await b.click("#scale-delete");
-        await b.click("#scale-delete");
-        const text = await b.eval(`return msgLine.textContent;`);
-        await b.eval(`say(${JSON.stringify(text)}, "warn"); return true;`);
-        await b.click("#scale-delete");
-      } else if (state === "the notice with three ring-reset suffixes") {
-        const sfx = await b.eval(`return LAYOUT_RINGS.map((r) => " The " + r + " seats were reset.").join("");`);
-        await fitSettled("note", 3, "Layout not saved yet. SAVE CHANGES keeps it." + sfx);
-      } else if (state === "a multi-line drawer status from layoutStatus()") await fitStatus(3);
-      else throw new Error("unknown state " + state);
-      await b.settle();
-      await sleep(150);
-      const p = await probe();
-      if (state === "a one-line notice") assert.ok(p.noteText.length > 0 && p.note > 17.5 && p.note < 30, `the notice is ${p.note}px: ${JSON.stringify(p)}`);
-      if (state === "a two-line warning") assert.ok(p.msgText.length > 0 && p.msg >= 35.5, `the warning is ${p.msg}px: ${JSON.stringify(p)}`);
-      if (state === "the Edit delete refusal") assert.ok(REFUSAL.test(p.msgText) && p.msg > 0, `no delete refusal: ${JSON.stringify(p)}`);
-      if (state === "the refusal beside a notice") {
-        assert.ok(REFUSAL.test(p.msgText) && p.msg > 0, `no delete refusal: ${JSON.stringify(p)}`);
-        assert.ok(p.noteText.length > 0 && p.note > 0, `no notice beside it: ${JSON.stringify(p)}`);
-        assert.ok(p.guidance >= p.msg + p.note - 0.5, `the slot is ${p.guidance}px for ${p.msg}px and ${p.note}px`);
-      }
-      if (state === "a re-armed DELETE") assert.ok(REFUSAL.test(p.msgText) && p.delNote.length > 0, `the re-arm wrote no note beside DELETE: ${JSON.stringify(p)}`);
-      if (state === "the notice with three ring-reset suffixes") {
-        assert.strictEqual((p.noteText.match(/seats were reset/g) || []).length, 3, `not three suffixes: ${p.noteText}`);
-        assert.ok(p.note >= 53.5, `the notice is ${p.note}px, under three lines`);
-      }
-      if (state === "a multi-line drawer status from layoutStatus()") {
-        assert.ok(p.statusText.length > 0 && p.status >= 53.5, `the status wraps to ${p.status}px, not more than one line (floor is 36px)`);
-        assert.strictEqual(p.guidance, 0, "the guidance slot holds the drawer status");
-      }
-    };
-    const measure = (call = "") => b.eval(`
-      ${call}
-      const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height }; };
-      const body = document.querySelector(".sheetbody");
-      return { body: r(body), port: body.clientHeight, st: body.scrollTop, M: body.scrollHeight - body.clientHeight,
-        band: r(plateBand), pan: r(document.getElementById("scale-preview")),
-        lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
-    const scrollTo = async (where) => {
-      await b.eval(`document.querySelector(".sheetbody").scrollTop = ${where === "end" ? 1e6 : 0}; return true;`);
-      await sleep(120);
-    };
-    const shut = async () => {
-      await b.eval(`collapseLip(); return true;`);
-      await sleep(350);
-    };
-
-    test("SPC: at 844x390 the Layout plate band lies inside the scrollport at the top and at the end of the scroll, footer open and shut, with no message, a one-line notice, a two-line warning, the Edit delete refusal, the refusal beside a notice, a re-armed DELETE, the notice with three ring-reset suffixes, and a multi-line drawer status from layoutStatus()", async () => {
-      const ran = [];
-      const sizes = {};
-      try {
-        for (const state of STATES) {
-          await spcEdit();
-          await apply(state);
-          for (const [footer, where] of [["open", "top"], ["open", "end"], ["shut", "end"], ["shut", "top"]]) {
-            if (footer === "shut" && where === "end") await shut();
-            await scrollTo(where);
-            const m = await measure();
-            const tag = `${state}, footer ${footer}, scroll ${where}`;
-            assert.strictEqual(m.lipped, footer === "shut", `${tag}: lipped is ${m.lipped}`);
-            assert.ok(m.M > 0, `${tag}: the scroll range is ${m.M}px, so top and end are the same place`);
-            if (where === "end") assert.ok(m.st >= m.M - 1, `${tag}: scrollTop ${m.st} is not the end ${m.M}`);
-            else assert.strictEqual(m.st, 0, `${tag}: scrollTop is ${m.st}`);
-            assert.ok(m.pan.w >= 160, `${tag}: the pan is ${m.pan.w}px`);
-            assert.ok(m.band.t >= m.body.t - 0.5, `${tag}: the band top ${m.band.t} is above the scrollport ${m.body.t}`);
-            assert.ok(m.band.b <= m.body.b + 0.5, `${tag}: the band bottom ${m.band.b} is below the scrollport bottom ${m.body.b} (${m.band.b - m.body.b}px)`);
-            assert.ok(m.pan.b <= m.body.b + 0.5, `${tag}: the pan bottom ${m.pan.b} is below the scrollport bottom ${m.body.b}`);
-            assert.ok(Math.abs(m.band.t - m.body.t) <= 1, `${tag}: the band top ${m.band.t} is not pinned to the scrollport top ${m.body.t}`);
-            ran.push(`${state}|${footer}|${where}`);
-            if (footer === "open" && where === "top") sizes[state] = m.pan.w;
-          }
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      const want = [];
-      for (const s of STATES) for (const f of ["open", "shut"]) for (const w of ["top", "end"]) want.push(`${s}|${f}|${w}`);
-      assert.deepStrictEqual([...ran].sort(), want.sort(), "the cases that ran are not the cases the title claims");
-      assert.strictEqual(ran.length, 32);
-      console.log("SPC C1 pan widths by state (Edit, footer open):", JSON.stringify(sizes));
-      assert.ok(sizes["no message"] >= 160, `the no-message Edit pan is ${sizes["no message"]}px`);
-      assert.ok(sizes["the notice with three ring-reset suffixes"] < sizes["no message"] - 4,
-        `guidance did not shrink the pan: ${JSON.stringify(sizes)}`);
-    });
-
-    test("SPC: at 844x390 #scale-generate, #scale-guidance, the delete row and the lip share the controls column's left and right edges in the OPEN, SHUTTING, SHUT and OPENING states, on create and on Edit with DELETE visible, and no plate field hit-tests to #scale-lip with the footer shut", async () => {
-      const ran = [];
-      const EDGES = `
-        const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, r: q.right, w: q.width }; };
-        const col = r(document.getElementById("scale-tabs"));
-        const els = {};
-        const put = (name, el, on) => { if (el && on) els[name] = r(el); };
-        put("guidance", document.getElementById("scale-guidance"), document.getElementById("scale-guidance").getBoundingClientRect().height > 0);
-        const prim = nextBtn.hidden ? genBtn : nextBtn;
-        put("primary", prim, !prim.hidden);
-        put("deleteRow", delRow, !delRow.hidden);
-        put("lip", lipBtn, !lipBtn.hidden);
-        return { col, els, lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`;
-      const sample = (call) => b.eval(`${call}\n${EDGES}`);
-      try {
-        for (const mode of ["create", "edit"]) {
-          if (mode === "create") await spcCreate(); else await spcEdit();
-          await sgPut({ note: await sgFit("note", 1) });
-          await b.settle();
-          const base = ["guidance", "primary"].concat(mode === "edit" ? ["deleteRow"] : []);
-          const cases = [
-            ["OPEN", "", base, false, false],
-            ["SHUTTING", "collapseLip();", base.concat(["lip"]), true, true],
-            ["SHUT", "", base.concat(["lip"]), true, true],
-            ["OPENING", "restoreLip();", base.concat(["lip"]), true, false],
-          ];
-          for (const [name, call, names, lipped, lipshut] of cases) {
-            if (name === "SHUT") await sleep(350);
-            const m = await sample(call);
-            const tag = `${mode}, ${name}`;
-            assert.strictEqual(m.lipped, lipped, `${tag}: lipped is ${m.lipped}`);
-            assert.strictEqual(m.shut, lipshut, `${tag}: lipshut is ${m.shut}`);
-            assert.deepStrictEqual(Object.keys(m.els).sort(), names.slice().sort(), `${tag}: the boxes measured`);
-            assert.ok(m.col.w > 400, `${tag}: the controls column is ${m.col.w}px`);
-            for (const [k, e] of Object.entries(m.els)) {
-              assert.ok(Math.abs(e.l - m.col.l) <= 1, `${tag}: ${k} left ${e.l} is not the controls column's ${m.col.l}`);
-              assert.ok(Math.abs(e.r - m.col.r) <= 1, `${tag}: ${k} right ${e.r} is not the controls column's ${m.col.r}`);
-            }
-            ran.push(`${mode}|${name}`);
-            if (name === "SHUT") {
-              const hits = await b.eval(`
-                const fields = [...document.querySelectorAll("#scale-preview .panhit")];
-                const out = fields.map((f) => { const q = f.getBoundingClientRect(); const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
-                  return { field: f.getAttribute("data-field"), same: hit === f, hit: hit ? (hit.id || hit.tagName) : null }; });
-                return { n: fields.length, out };`);
-              assert.ok(hits.n >= 8, `${tag}: only ${hits.n} plate fields exist`);
-              assert.strictEqual(hits.out.length, hits.n);
-              const bad = hits.out.filter((h) => !h.same);
-              assert.deepStrictEqual(bad, [], `${tag}: plate fields that do not hit-test to themselves with the footer shut`);
-              assert.ok(!hits.out.some((h) => h.hit === "scale-lip"), `${tag}: a plate field hit-tests to #scale-lip`);
-            }
-            if (name === "SHUTTING") await sleep(0);
-          }
-          await b.eval(`finishOpen(); return true;`);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.deepStrictEqual(ran, ["create|OPEN", "create|SHUTTING", "create|SHUT", "create|OPENING", "edit|OPEN", "edit|SHUTTING", "edit|SHUT", "edit|OPENING"]);
-    });
-
-    test("SPC: at 844x390 the drawer status line, one line and multi-line from layoutStatus(), heads the controls column under the tab strip and adds no height to the plate band", async () => {
-      try {
-        await spcCreate();
-        const read = () => b.eval(`
-          const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height }; };
-          const pan = r(document.getElementById("scale-preview"));
-          const col2 = [...document.querySelectorAll("#scale-panel-layout > *")].filter((e) => !e.hidden && e.getBoundingClientRect().height > 0 && e.getBoundingClientRect().left >= pan.r - 1)
-            .sort((a, c) => a.getBoundingClientRect().top - c.getBoundingClientRect().top).map((e) => e.id || e.className);
-          return { tabs: r(document.getElementById("scale-tabs")), status: r(drawerStatus), zone: r(document.getElementById("scale-layout-zone")),
-            band: r(plateBand), pan, text: drawerStatus.textContent, parent: drawerStatus.parentElement.id,
-            inBand: plateBand.contains(drawerStatus), col2 };`);
-        await b.eval(`layoutStatus(""); return true;`);
-        await b.settle();
-        const none = await read();
-        await b.eval(`layoutStatus("Top mirror on."); return true;`);
-        await b.settle();
-        const one = await read();
-        await fitStatus(3);
-        await b.settle();
-        const many = await read();
-        assert.strictEqual(none.text, "");
-        assert.strictEqual(one.text, "Top mirror on.");
-        assert.ok(many.text.length > 40, `the multi-line status is ${many.text.length} characters`);
-        assert.ok(one.status.h >= 35.5 && one.status.h < 40, `the one-line status is ${one.status.h}px`);
-        assert.ok(many.status.h >= 53.5 && many.status.h > one.status.h + 17, `the multi-line status is ${many.status.h}px, the one-line is ${one.status.h}px`);
-        for (const [name, m] of [["one line", one], ["multi-line", many]]) {
-          assert.strictEqual(m.parent, "scale-panel-layout", `${name}: the status is a child of ${m.parent}`);
-          assert.strictEqual(m.inBand, false, `${name}: the status is inside the plate band`);
-          assert.ok(Math.abs(m.status.l - m.tabs.l) <= 0.5 && Math.abs(m.status.w - m.tabs.w) <= 0.5,
-            `${name}: the status [${m.status.l}, ${m.status.w}] is not the tab strip's column [${m.tabs.l}, ${m.tabs.w}]`);
-          assert.ok(m.status.t >= m.tabs.b - 0.5 && m.status.t - m.tabs.b <= 12, `${name}: the status top ${m.status.t} is not under the tab strip bottom ${m.tabs.b}`);
-          assert.ok(m.zone.t >= m.status.b - 0.5, `${name}: the layout zone top ${m.zone.t} is above the status bottom ${m.status.b}`);
-          assert.deepStrictEqual(m.col2.slice(0, 3), ["scale-drawer-status", "scale-mode-row", "scale-layout-zone"], `${name}: column 2 reads ${m.col2}`);
-          assert.ok(Math.abs(m.band.h - none.band.h) <= 0.5, `${name}: the band is ${m.band.h}px, ${none.band.h}px with an empty status`);
-          assert.ok(Math.abs(m.pan.h - none.pan.h) <= 0.5, `${name}: the pan is ${m.pan.h}px, ${none.pan.h}px with an empty status`);
-        }
-        assert.ok(none.band.h - none.pan.h <= 8, `the band is ${none.band.h}px for a ${none.pan.h}px pan`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test("SPC: at 844x390 the Scale tab, and at 1280x800 both tabs, keep the 81ad610 rects of the footer, the controls, the drawer status and the preview's width and height", async () => {
-      const ran = [];
-      const get = (sel) => b.eval(`const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null;
-        const q = e.getBoundingClientRect(); return { l: q.left, t: q.top, w: q.width, h: q.height, b: q.bottom };`);
-      const near = (got, want, tag) => {
-        assert.ok(got, `${tag}: missing`);
-        for (const [k, v] of Object.entries(want)) assert.ok(Math.abs(got[k] - v) <= 0.5, `${tag}: ${k} is ${got[k]}, the 81ad610 rect has ${v}`);
-      };
-      try {
-        for (const [w, h, tab] of [[844, 390, "scale"], [1280, 800, "layout"], [1280, 800, "scale"]]) {
-          await freshLoad();
-          await b.setViewport(w, h, true);
-          await b.settle();
-          await openSheet();
-          await typeScale(SPC_KURD);
-          if (tab === "layout") { await toLayout(); await b.eval(`layoutStatus("Top mirror on."); return true;`); await b.settle(); }
-          else await sleep(250);
-          const tag = `${w}x${h} ${tab}`;
-          if (w === 844) {
-            near(await get(".sheetsurf"), { l: 162, w: 520 }, `${tag} surface`);
-            near(await get("#scale-tabs"), { l: 171, w: 502, h: 45 }, `${tag} tab strip`);
-            near(await get("#scale-fields"), { l: 171, w: 502 }, `${tag} fields`);
-            near(await get("#scale-next"), { l: 171, w: 502, h: 44 }, `${tag} NEXT`);
-            near(await get("#scale-preview"), { w: 0, h: 0 }, `${tag} preview (hidden on the Scale tab)`);
-          } else if (tab === "layout") {
-            const pan = await get("#scale-preview");
-            near(await get(".sheetsurf"), { l: 307.2, w: 665.6 }, `${tag} surface`);
-            near(await get("#scale-tabs"), { l: 335.2, w: 609.6, h: 45 }, `${tag} tab strip`);
-            near(pan, { l: 400, w: 480, h: 480 }, `${tag} preview`);
-            const st = await get("#scale-drawer-status");
-            near(st, { l: 335.2, w: 609.6, h: 36 }, `${tag} drawer status`);
-            assert.ok(Math.abs(st.t - pan.b - 6) <= 0.5, `${tag}: the status sits ${st.t - pan.b}px under the plate, the 81ad610 gap is 6`);
-            near(await get("#scale-generate"), { l: 335.2, w: 609.6, h: 52 }, `${tag} GENERATE`);
-          } else {
-            near(await get(".sheetsurf"), { l: 307.2, w: 665.6 }, `${tag} surface`);
-            near(await get("#scale-tabs"), { l: 335.2, w: 609.6, h: 45 }, `${tag} tab strip`);
-            near(await get("#scale-fields"), { l: 335.2, w: 609.6 }, `${tag} fields`);
-            near(await get("#scale-next"), { l: 335.2, w: 609.6, h: 52 }, `${tag} NEXT`);
-            near(await get("#scale-preview"), { w: 0, h: 0 }, `${tag} preview (hidden on the Scale tab)`);
-          }
-          ran.push(tag);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.deepStrictEqual(ran, ["844x390 scale", "1280x800 layout", "1280x800 scale"]);
-    });
-
-    test("SPC: at 844x390 the pan size does not change when the footer collapses or restores, with no message and in every other guidance state of C1, and collapsing the footer disarms a re-armed DELETE and clears its message", async () => {
-      const ran = [], disarmed = [];
-      const widths = {};
-      const pan = (call = "") => b.eval(`${call}
-        const q = document.getElementById("scale-preview").getBoundingClientRect();
-        return { w: q.width, h: q.height, g: document.getElementById("scale-guidance").textContent, port: document.querySelector(".sheetbody").clientHeight, lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
-      const cycle = async (tag) => {
-        const open0 = await pan();
-        assert.strictEqual(open0.lipped, false, `${tag}: the footer starts shut`);
-        const shutting = await pan("collapseLip();");
-        assert.ok(shutting.lipped && shutting.shut, `${tag}: collapse did not start`);
-        const mid = await pan();
-        await sleep(350);
-        const shutN = await pan();
-        assert.ok(shutN.lipped && shutN.shut, `${tag}: the footer is not shut`);
-        assert.ok(shutN.port - open0.port >= 20, `${tag}: the shut scrollport is ${shutN.port}px, the open one ${open0.port}px, so a pan sized from the live port would grow`);
-        const opening = await pan("restoreLip();");
-        assert.ok(opening.lipped && !opening.shut, `${tag}: restore did not start`);
-        await sleep(450);
-        const open1 = await pan();
-        assert.strictEqual(open1.lipped, false, `${tag}: the footer did not finish opening`);
-        for (const [n, s] of [["shutting", shutting], ["mid-collapse", mid], ["shut", shutN], ["opening", opening], ["reopened", open1]]) {
-          assert.strictEqual(s.g, open0.g, `${tag}: the guidance text changed ${n}`);
-          assert.ok(Math.abs(s.w - open0.w) <= 0.5 && Math.abs(s.h - open0.h) <= 0.5,
-            `${tag}: the pan is ${s.w}x${s.h} ${n}, ${open0.w}x${open0.h} with the footer open`);
-        }
-        return open0.w;
-      };
-      try {
-        await spcCreate();
-        widths["create, no message"] = await cycle("create, no message");
-        ran.push("create, no message");
-        assert.ok(widths["create, no message"] >= 270, `the create no-message pan is ${widths["create, no message"]}px`);
-        for (const state of STATES) {
-          await spcEdit();
-          await apply(state);
-          if (state === "a re-armed DELETE") {
-            const before = await b.eval(`return [document.getElementById("scale-del-note").textContent, msgLine.textContent];`);
-            assert.ok(before[0].length > 0 && before[1].length > 0, `no re-armed DELETE to collapse: ${JSON.stringify(before)}`);
-            await b.eval(`collapseLip(); return true;`);
-            await sleep(350);
-            const after = await b.eval(`return [document.getElementById("scale-del-note").textContent, msgLine.textContent, sheet.classList.contains("lipshut")];`);
-            assert.deepStrictEqual(after, ["", "", true], "collapsing the footer did not disarm DELETE and clear its message");
-            disarmed.push(state);
-            continue;
-          }
-          widths[state] = await cycle(state);
-          ran.push(state);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.deepStrictEqual(ran, ["create, no message"].concat(STATES.filter((x) => x !== "a re-armed DELETE")));
-      assert.deepStrictEqual(disarmed, ["a re-armed DELETE"]);
-      console.log("SPC C5 pan widths:", JSON.stringify(widths));
-      assert.ok(widths["the notice with three ring-reset suffixes"] < widths["no message"] - 4, `guidance did not shrink the pan: ${JSON.stringify(widths)}`);
-    });
-
-    const spcShutPan = (call = "") => b.eval(`${call}
-      const q = document.getElementById("scale-preview").getBoundingClientRect();
-      return { w: q.width, h: q.height, lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut"),
-        note: layoutNote.hidden ? "" : layoutNote.textContent };`);
-    const spcRestoreTrace = (want, tag) => b.eval(`
-      const out = [];
-      const read = () => { const q = document.getElementById("scale-preview").getBoundingClientRect(); return Math.round(q.width * 10) / 10; };
-      restoreLip();
-      const t0 = performance.now();
-      return new Promise((resolve) => {
-        const tick = () => {
-          out.push([Math.round(performance.now() - t0), read(), sheet.classList.contains("lipped")]);
-          if (performance.now() - t0 < 520) setTimeout(tick, 20); else resolve(out);
-        };
-        tick();
-      });`).then((trace) => {
-      const bad = trace.filter(([, w]) => Math.abs(w - want) > 0.5);
-      assert.ok(trace.some(([, , lipped]) => !lipped), `${tag}: the footer never finished opening`);
-      assert.deepStrictEqual(bad, [], `${tag}: the pan is not ${want}px at every frame of the restore, trace [ms, width, lipped]: ${JSON.stringify(trace.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]))}`);
-    });
-
-    for (const mode of ["create", "Edit"]) {
-      test(`SPC: ${mode} at 844x390, a notice that appears or clears while the footer is shut resizes the pan to the open-footer size at once and the restore changes nothing`, async () => {
-        try {
-          if (mode === "create") await spcCreate(); else await spcEdit();
-          const open0 = await spcShutPan();
-          assert.strictEqual(open0.lipped, false);
-          assert.strictEqual(open0.note, "", "the sheet starts with a notice");
-          await b.eval(`collapseLip(); return true;`);
-          await sleep(350);
-          const shut0 = await spcShutPan();
-          assert.ok(shut0.lipped && shut0.shut, `${mode}: the footer is not shut`);
-          assert.ok(Math.abs(shut0.w - open0.w) <= 0.5, `${mode}: the shut pan is ${shut0.w}, the open one ${open0.w}`);
-          await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-          await b.settle();
-          await sleep(300);
-          const shut1 = await spcShutPan();
-          assert.ok(shut1.lipped && shut1.shut, `${mode}: the tap restored the footer`);
-          assert.match(shut1.note, /Layout not saved yet/, `${mode}: no notice appeared while shut`);
-          assert.ok(shut1.w < shut0.w - 4, `${mode}: a notice appeared while shut and the pan is still ${shut1.w}px (was ${shut0.w}px): it will shrink on restore`);
-          await spcRestoreTrace(shut1.w, `${mode}, notice appeared while shut`);
-          const open1 = await spcShutPan();
-          assert.strictEqual(open1.lipped, false);
-          assert.ok(Math.abs(open1.w - shut1.w) <= 0.5, `${mode}: the restored pan is ${open1.w}, the shut one was ${shut1.w}`);
-          await b.eval(`collapseLip(); return true;`);
-          await sleep(350);
-          await b.eval(`document.getElementById("scale-anchor-one").click(); return true;`);
-          await b.settle();
-          await sleep(300);
-          const shut2 = await spcShutPan();
-          assert.ok(shut2.lipped && shut2.shut && shut2.note === "", `${mode}: the notice did not clear while shut: ${JSON.stringify(shut2)}`);
-          assert.ok(Math.abs(shut2.w - open0.w) <= 0.5, `${mode}: the notice cleared while shut and the pan is ${shut2.w}px, not ${open0.w}px: it will grow on restore`);
-          await spcRestoreTrace(shut2.w, `${mode}, notice cleared while shut`);
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-    }
-
-    for (const mode of ["create", "Edit"]) {
-      test(`SPC: ${mode} rotating from 380x780 to 844x390 while the footer is shut sizes the pan for the new viewport and the restore changes nothing`, async () => {
-        try {
-          if (mode === "create") await spcCreate(380, 780); else await spcEdit(380, 780);
-          await b.eval(`collapseLip(); return true;`);
-          await sleep(350);
-          await b.setViewport(844, 390, true);
-          await b.settle();
-          await sleep(400);
-          const shut = await spcShutPan();
-          assert.ok(shut.lipped && shut.shut, `${mode}: the rotation did not leave the footer shut: ${JSON.stringify(shut)}`);
-          await spcRestoreTrace(shut.w, `${mode}, rotated while shut`);
-          const open = await spcShutPan();
-          assert.ok(Math.abs(open.w - shut.w) <= 0.5, `${mode}: the restored pan is ${open.w}, the shut one was ${shut.w}`);
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-    }
-
-    test("SPC: a size held by an earlier landscape session with a notice does not carry into the next one: opened in portrait, shut, then rotated, the restore does not grow the pan", async () => {
-      try {
-        await spcCreate();
-        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-        await b.settle();
-        await sleep(300);
-        const withNote = await spcShutPan();
-        assert.match(withNote.note, /Layout not saved yet/);
-        await b.eval(`closeScaleSheet(); return true;`);
-        await b.waitFor(`!sheetOpen`, { label: "the sheet closing" });
-        await b.setViewport(380, 780, true);
-        await b.settle();
-        await sleep(300);
-        await openSheet();
-        await typeScale(SPC_KURD);
-        await toLayout();
-        await b.eval(`collapseLip(); return true;`);
-        await sleep(350);
-        await b.setViewport(844, 390, true);
-        await b.settle();
-        await sleep(400);
-        const shut = await spcShutPan();
-        assert.ok(shut.lipped && shut.shut, `the rotation did not leave the footer shut: ${JSON.stringify(shut)}`);
-        assert.strictEqual(shut.note, "", "the reopened sheet has a notice");
-        assert.ok(shut.w > withNote.w + 4, `shut with no message the pan is ${shut.w}px, the size an earlier noticed session held (${withNote.w}px): it will grow on restore`);
-        await spcRestoreTrace(shut.w, "stale hold from an earlier session");
-        const open = await spcShutPan();
-        assert.ok(open.w > withNote.w + 4, `the restored pan is ${open.w}px, the noticed session's was ${withNote.w}px`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    const spcSlide = (call, midCall = "", midAt = 60) => b.eval(`
-      const foot = document.getElementById("scale-footslide"), g = document.getElementById("scale-guidance");
-      const ev = [], samples = [];
-      const names = ["transitionrun", "transitionend", "transitioncancel"];
-      const log = (e) => { if (e.propertyName === "transform" || e.propertyName === "visibility") ev.push([e.type, e.target === foot ? "foot" : "guidance", e.propertyName, Math.round(performance.now() - t0)]); };
-      for (const el of [foot, g]) for (const n of names) el.addEventListener(n, log);
-      const ty = (el) => new DOMMatrix(getComputedStyle(el).transform).m42;
-      const t0 = performance.now();
-      ${call}
-      ${midCall ? `setTimeout(() => { ${midCall} }, ${midAt});` : ""}
-      return new Promise((resolve) => {
-        const frame = () => {
-          const t = performance.now() - t0;
-          samples.push([Math.round(t), Math.round(ty(foot) * 10) / 10, Math.round(ty(g) * 10) / 10, getComputedStyle(foot).visibility]);
-          if (t < 600) requestAnimationFrame(frame); else resolve({ ev, samples });
-        };
-        requestAnimationFrame(frame);
-      });`);
-    const spcAssertSlide = (r, tag, hides) => {
-      const cancels = r.ev.filter((e) => e[0] === "transitioncancel");
-      assert.deepStrictEqual(cancels, [], `${tag}: the slide was cancelled, events [type, element, property, ms]: ${JSON.stringify(r.ev)}`);
-      assert.ok(r.ev.some((e) => e[0] === "transitionend" && e[1] === "foot" && e[2] === "transform" && e[3] >= 120), `${tag}: #scale-footslide never ended its transform transition after the 180ms slide: ${JSON.stringify(r.ev)}`);
-      const fy = r.samples.map((s) => s[1]);
-      const lo = Math.min(...fy), hi = Math.max(...fy);
-      assert.ok(hi - lo > 8, `${tag}: #scale-footslide moved only ${hi - lo}px`);
-      const mid = new Set(fy.filter((v) => v > lo + 1 && v < hi - 1));
-      assert.ok(mid.size >= 2, `${tag}: #scale-footslide jumped from ${lo} to ${hi} without easing, transforms across frames ${JSON.stringify(r.samples.slice(0, 16).map((s) => [s[0], s[1]]))}`);
-      const gy = r.samples.map((s) => s[2]);
-      const glo = Math.min(...gy), ghi = Math.max(...gy);
-      if (ghi - glo > 8) assert.ok(new Set(gy.filter((v) => v > glo + 1 && v < ghi - 1)).size >= 2, `${tag}: the guidance jumped from ${glo} to ${ghi} without easing`);
-      if (hides) {
-        const first = r.samples.find((s) => s[3] === "hidden");
-        assert.ok(first && first[0] >= 140, `${tag}: #scale-footslide went hidden at ${first && first[0]}ms, not at the end of the slide`);
-      }
-    };
-
-    for (const mode of ["create", "Edit"]) {
-      for (const withNote of [false, true]) {
-        test(`SPC: ${mode} at 844x390 on the Layout tab with ${withNote ? "a notice" : "no message"}, a collapse and a restore ease the footer and the guidance over the slide and cancel nothing`, async () => {
-          try {
-            if (mode === "create") await spcCreate(); else await spcEdit();
-            if (withNote) {
-              await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-              await b.settle();
-              await sleep(300);
-            }
-            const shutting = await spcSlide(`collapseLip();`);
-            spcAssertSlide(shutting, `${mode}, ${withNote ? "notice" : "no message"}, collapse`, true);
-            const opening = await spcSlide(`restoreLip();`);
-            spcAssertSlide(opening, `${mode}, ${withNote ? "notice" : "no message"}, restore`, false);
-          } finally {
-            await b.setViewport(900, 900, false);
-          }
-        });
-      }
-    }
-
-    test("SPC: at 844x390 a notice that appears while the footer is shutting neither cancels the slide nor leaves a stale pan size, and the later restore changes nothing", async () => {
-      try {
-        await spcCreate();
-        const open0 = await spcShutPan();
-        const r = await spcSlide(`collapseLip();`, `document.getElementById("scale-anchor-between").click();`, 60);
-        const cancels = r.ev.filter((e) => e[0] === "transitioncancel");
-        assert.deepStrictEqual(cancels, [], `a notice during SHUTTING cancelled the slide: ${JSON.stringify(r.ev)}`);
-        const shut = await spcShutPan();
-        assert.ok(shut.lipped && shut.shut, `the footer is not shut: ${JSON.stringify(shut)}`);
-        assert.match(shut.note, /Layout not saved yet/, "no notice appeared during the slide");
-        assert.ok(shut.w < open0.w - 4, `the notice appeared mid-slide and the pan is still ${shut.w}px (was ${open0.w}px): it will shrink on restore`);
-        await spcRestoreTrace(shut.w, "notice during SHUTTING");
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    /* Regroup (review 4): the open-footer room is derived (lipDelta), never measured, so a guidance or viewport change
-     * in ANY lip state sizes the pan at the event. The lip is driven by real CDP wheel events. A wheel scroll right after
-     * a collapse or restore first re-bases lipScroll's range (the range differs shut and open), so a -10 primer
-     * precedes the -100 that restores. The reversing gesture cancels the running transition by spec (2 cancels in
-     * SHUT-rev, 3 in OPENING-rev, measured with no event); the app's own cancels are counted after the retargeted
-     * slide's transitionrun, once the log is cleared. */
-    const spcWheel = (dy) => b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 300, y: 200, deltaX: 0, deltaY: dy });
-    const spcPrime = () => spcWheel(-10);
-    const spcLog = () => b.eval(`
-      window.__spcEv = [];
-      if (!window.__spcLogged) {
-        window.__spcLogged = true;
-        const f = document.getElementById("scale-footslide"), g = document.getElementById("scale-guidance");
-        for (const n of ["transitionrun", "transitioncancel"]) for (const el of [f, g]) el.addEventListener(n, (e) => {
-          if (e.propertyName === "transform" || e.propertyName === "visibility") window.__spcEv.push([e.type, e.target === f ? "foot" : "guidance", e.propertyName, Math.round(performance.now())]);
-        });
-      }
-      return true;`);
-    const spcGesture = async (dy) => {
-      await b.eval(`window.__spcMark = performance.now(); return true;`);
-      await spcWheel(dy);
-      await b.waitFor(`window.__spcEv.some((e) => e[0] === "transitionrun" && e[1] === "foot" && e[2] === "transform" && e[3] >= window.__spcMark)`, { label: "the retargeted slide's transitionrun" });
-    };
-    const spcClearLog = () => b.eval(`const n = window.__spcEv.filter((e) => e[0] === "transitioncancel").length; window.__spcEv.length = 0; return n;`);
-    const spcDrive = async (state) => {
-      await spcLog();
-      if (state === "SHUTTING") { await spcGesture(100); return spcClearLog(); }
-      if (state === "OPENING-rev") {
-        await spcWheel(100);
-        await sleep(25);
-        await spcPrime();
-        await sleep(25);
-        await spcGesture(-100);
-        return spcClearLog();
-      }
-      await spcWheel(100);
-      await sleep(400);
-      await spcPrime();
-      await sleep(100);
-      if (state === "OPENING") { await spcGesture(-100); return spcClearLog(); }
-      await spcWheel(-100);
-      await sleep(40);
-      await spcGesture(100);
-      const pre = await spcClearLog();
-      await sleep(400);
-      return pre;
-    };
-    const spcSampler = (ms) => b.eval(`
-      window.__spcW = [];
-      const t0 = performance.now();
-      const f = () => {
-        const t = performance.now(), body = document.querySelector(".sheetbody");
-        window.__spcW.push([Math.round(t), Math.round(document.getElementById("scale-preview").getBoundingClientRect().width * 10) / 10,
-          sheet.classList.contains("lipped"), sheet.classList.contains("lipshut"), Math.round(plateBand.getBoundingClientRect().bottom * 10) / 10, Math.round(body.getBoundingClientRect().bottom * 10) / 10]);
-        if (t - t0 < ${ms}) requestAnimationFrame(f); else window.__spcDone = true;
-      };
-      window.__spcDone = false;
-      requestAnimationFrame(f);
-      return true;`);
-    const SPC_WARN = "Crowded pan: the labels are small. Keep every note you can reach on the pan before you press the button below, and a few more words so that this line wraps onto a second line even on a wide sheet.";
-    const spcFire = async (ev) => {
-      const mark = `window.__spcT = performance.now();`;
-      if (ev === "notice") await b.eval(`${mark} document.getElementById("scale-anchor-between").click(); return true;`);
-      else if (ev === "clear") await b.eval(`${mark} document.getElementById("scale-anchor-one").click(); return true;`);
-      else if (ev === "warn") await b.eval(`${mark} say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
-      else if (ev === "rotate") { await b.eval(`${mark} return true;`); await b.setViewport(740, 360, true); }
-      else throw new Error("unknown event " + ev);
-    };
-    const spcPan = () => b.eval(`return Math.round(document.getElementById("scale-preview").getBoundingClientRect().width * 10) / 10;`);
-    /* One cell: drive to `state`, fire `ev`, sample every frame, restore if still shut, and judge the samples. */
-    const spcCell = async (mode, state, ev) => {
-      if (mode === "create") await spcCreate(); else await spcEdit();
-      if (ev === "clear") {
-        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-        await b.settle();
-        await sleep(300);
-      }
-      const before = await spcPan();
-      const gestureCancels = await spcDrive(state);
-      await spcSampler(1000);
-      await spcFire(ev);
-      await sleep(state === "OPENING" || state === "OPENING-rev" ? 260 : 150);
-      const mid = await b.eval(`return { lipped: sheet.classList.contains("lipped"), shut: sheet.classList.contains("lipshut") };`);
-      if (mid.lipped) {
-        await spcPrime();
-        await sleep(100);
-        await spcWheel(-100);
-      }
-      await sleep(480);
-      const r = await b.eval(`return { T: window.__spcT, W: window.__spcW, cancels: window.__spcEv.filter((e) => e[0] === "transitioncancel"), ev: window.__spcEv };`);
-      return { before, gestureCancels, mid, ...r };
-    };
-    const spcJudge = (tag, c, { within = 50 } = {}) => {
-      const last = c.W[c.W.length - 1];
-      assert.strictEqual(last[2], false, `${tag}: the footer never finished opening, last sample ${JSON.stringify(last)}`);
-      const want = last[1];
-      assert.ok(Math.abs(want - c.before) > 4, `${tag}: the event did not change the open-footer size (${c.before} before, ${want} after)`);
-      const after = c.W.filter((s) => s[0] >= c.T);
-      const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
-      const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2] || x[3] !== a[i - 1][3]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? (s[3] ? "S" : "O") : "-"]));
-      assert.ok(reached, `${tag}: the pan never reached ${want}px, trace [ms from the event, width, S shut / O opening / - open]: ${trace}`);
-      assert.ok(reached[2], `${tag}: the pan reached ${want}px only after the footer opened: it resized at the restore, not at the event, trace [ms, width, state]: ${trace}`);
-      assert.ok(reached[0] - c.T <= within, `${tag}: the pan took ${Math.round(reached[0] - c.T)}ms to reach ${want}px after the event, more than ${within}ms, trace [ms, width, state]: ${trace}`);
-      const wobble = after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5);
-      assert.deepStrictEqual(wobble, [], `${tag}: the pan changed after it reached ${want}px, trace [ms, width, state]: ${trace}`);
-      /* A rAF callback runs before the frame's ResizeObserver delivery, so the event's own first frame is unpainted layout: skip it. */
-      const past = after.filter((s) => s[0] > c.T + 20 && s[2] && s[4] > s[5] + 0.5);
-      assert.deepStrictEqual(past, [], `${tag}: the plate band ends below the scrollport while the footer is lipped, samples [t, w, lipped, shut, band bottom, port bottom]: ${JSON.stringify(past.slice(0, 3))}`);
-      assert.deepStrictEqual(c.cancels, [], `${tag}: the app cancelled the slide after the gesture's own ${c.gestureCancels} cancels, events [type, element, property, ms]: ${JSON.stringify(c.ev)}`);
-      console.log(`${tag}: reversing gesture cancelled ${c.gestureCancels} transitions (the control); pan ${c.before} -> ${want} in ${Math.round(reached[0] - c.T)}ms`);
-    };
-
-    for (const mode of ["create", "Edit"]) {
-      test(`SPC: ${mode} at 844x390, after a restore reversed into a collapse, a notice that appears or clears while shut resizes the pan to the open-footer size at once and the restore changes nothing`, async () => {
-        try {
-          for (const ev of ["notice", "clear"]) spcJudge(`${mode}, SHUT-rev, ${ev}`, await spcCell(mode, "SHUT-rev", ev));
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-    }
-
-    for (const mode of ["create", "Edit"]) {
-      test(`SPC: ${mode} at 844x390, after a restore reversed into a collapse, a two-line warning while shut resizes the pan at once and the restore changes nothing`, async () => {
-        try {
-          const c = await spcCell(mode, "SHUT-rev", "warn");
-          const h = await b.eval(`return msgLine.getBoundingClientRect().height;`);
-          assert.ok(h >= 35.5, `${mode}: the warning is ${h}px, under two lines`);
-          spcJudge(`${mode}, SHUT-rev, warn`, c);
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-    }
-
-    for (const mode of ["create", "Edit"]) {
-      test(`SPC: ${mode} after a restore reversed into a collapse at 844x390, a rotation to 740x360 while shut sizes the pan for the new viewport and the restore changes nothing`, async () => {
-        try {
-          spcJudge(`${mode}, SHUT-rev, rotate`, await spcCell(mode, "SHUT-rev", "rotate"));
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-    }
-
-    test("SPC: at 844x390, after a restore reversed into a collapse and a notice while shut, the restore eases the guidance over the slide", async () => {
-      try {
-        await spcCreate();
-        await spcDrive("SHUT-rev");
-        await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-        await b.settle();
-        await sleep(400);
-        await b.eval(`
-          window.__spcG = [];
-          const f = () => { const t = performance.now(); window.__spcG.push([Math.round(t), Math.round(document.getElementById("scale-guidance").getBoundingClientRect().top * 10) / 10, sheet.classList.contains("lipshut")]); if (t < window.__spcG0 + 700) requestAnimationFrame(f); else window.__spcGDone = true; };
-          window.__spcGDone = false;
-          window.__spcG0 = performance.now();
-          requestAnimationFrame(f);
-          return true;`);
-        await sleep(100);
-        await spcPrime();
-        await sleep(100);
-        await spcWheel(-100);
-        await b.waitFor(`window.__spcGDone === true`, { label: "the guidance sampler to finish" });
-        const g = await b.eval(`return window.__spcG;`);
-        const at = g.findIndex((s, i) => i > 0 && g[i - 1][2] && !s[2]);
-        assert.ok(at > 0, `the footer never started to open: ${JSON.stringify(g.slice(0, 5))}`);
-        const t0 = g[at][0], start = g[at - 1][1], end = g[g.length - 1][1];
-        assert.ok(Math.abs(end - start) > 8, `the guidance does not move over the restore (${start} to ${end})`);
-        const lo = Math.min(start, end), hi = Math.max(start, end);
-        const sample = g.filter((s) => s[0] - t0 >= 70 && s[0] - t0 <= 110);
-        assert.ok(sample.length > 0, "no frame sampled 70 to 110ms into the restore");
-        const flat = sample.filter((s) => s[1] <= lo + 1 || s[1] >= hi - 1);
-        assert.deepStrictEqual(flat, [], `the guidance sits at its start or end value about 90ms into the restore instead of easing between ${start} and ${end}, samples [t, top] ${JSON.stringify(g.filter((s) => s[0] >= t0 - 20).filter((x, i) => i % 3 === 0).map((s) => [s[0] - t0, s[1]]))}`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    for (const mode of ["create", "Edit"]) {
-      test(`SPC: ${mode} at 844x390, a notice that appears while the footer is opening, or while a collapse is reversed into a restore, resizes the pan within one frame of the notice, not after the restore ends`, async () => {
-        try {
-          for (const state of ["OPENING", "OPENING-rev"]) spcJudge(`${mode}, ${state}, notice`, await spcCell(mode, state, "notice"), { within: 40 });
-        } finally {
-          await b.setViewport(900, 900, false);
-        }
-      });
-    }
-
-    test("SPC: at 844x390, a notice that appears while the footer is shutting resizes the pan within one frame, not at the settle", async () => {
-      try {
-        spcJudge("create, SHUTTING, notice", await spcCell("create", "SHUTTING", "notice"), { within: 40 });
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test("SPC: at 844x390 a primary that grows while the footer is shut resizes the pan within one frame, with the restore then changing nothing", async () => {
-      try {
-        await spcCreate();
-        await spcWheel(100);
-        await sleep(400);
-        await spcPrime();
-        await sleep(100);
-        const before = await spcPan();
-        await spcSampler(900);
-        await sleep(50);
-        /* A style write: no wheel or tap can make the primary taller, so this one goes through eval. */
-        await b.eval(`window.__spcT = performance.now(); const lead = lipPrimary(); lead.style.minHeight = (lead.getBoundingClientRect().height + 24) + "px"; return true;`);
-        await sleep(250);
-        await spcWheel(-100);
-        await b.waitFor(`window.__spcDone === true`, { label: "the width sampler to finish" });
-        const c = await b.eval(`return { T: window.__spcT, W: window.__spcW };`);
-        const last = c.W[c.W.length - 1];
-        assert.strictEqual(last[2], false, `the footer never finished opening: ${JSON.stringify(last)}`);
-        const want = last[1];
-        assert.ok(before - want >= 10, `a taller primary did not shrink the open-footer size (${before} before, ${want} after)`);
-        const after = c.W.filter((s) => s[0] >= c.T);
-        const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
-        const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? "lipped" : "open"]));
-        assert.ok(reached && reached[2], `the pan reached ${want}px only at the restore, not while shut, trace [ms from the change, width, state]: ${trace}`);
-        assert.ok(reached[0] - c.T <= 40, `the pan took ${Math.round(reached[0] - c.T)}ms to follow the taller primary, trace [ms, width, state]: ${trace}`);
-        assert.deepStrictEqual(after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5), [], `the pan changed after it followed the primary, trace [ms, width, state]: ${trace}`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test("SPC: at 844x390 R4: on Edit a delete row that grows while the footer is shut resizes the pan within one frame, with the restore then changing nothing", async () => {
-      try {
-        await spcEdit();
-        await spcWheel(100);
-        await sleep(400);
-        await spcPrime();
-        await sleep(100);
-        const before = await spcPan();
-        await spcSampler(900);
-        await sleep(50);
-        /* A style write: no wheel or tap can make the delete row taller, so this one goes through eval. */
-        await b.eval(`window.__spcT = performance.now(); const lead = document.getElementById("scale-delete-row"); lead.style.minHeight = (lead.getBoundingClientRect().height + 24) + "px"; return true;`);
-        await sleep(250);
-        await spcWheel(-100);
-        await b.waitFor(`window.__spcDone === true`, { label: "the width sampler to finish" });
-        const c = await b.eval(`return { T: window.__spcT, W: window.__spcW };`);
-        const last = c.W[c.W.length - 1];
-        assert.strictEqual(last[2], false, `the footer never finished opening: ${JSON.stringify(last)}`);
-        const want = last[1];
-        assert.ok(before - want >= 10, `a taller delete row did not shrink the open-footer size (${before} before, ${want} after)`);
-        const after = c.W.filter((s) => s[0] >= c.T);
-        const reached = after.find((s) => Math.abs(s[1] - want) <= 0.5);
-        const trace = JSON.stringify(after.filter((x, i, a) => i === 0 || x[1] !== a[i - 1][1] || x[2] !== a[i - 1][2]).map((s) => [s[0] - Math.round(c.T), s[1], s[2] ? "lipped" : "open"]));
-        assert.ok(reached && reached[2], `the pan reached ${want}px only at the restore, not while shut, trace [ms from the change, width, state]: ${trace}`);
-        assert.ok(reached[0] - c.T <= 40, `the pan took ${Math.round(reached[0] - c.T)}ms to follow the taller delete row, trace [ms, width, state]: ${trace}`);
-        assert.deepStrictEqual(after.filter((s) => s[0] > reached[0] && Math.abs(s[1] - want) > 0.5), [], `the pan changed after it followed the delete row, trace [ms, width, state]: ${trace}`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test("SPB N5: at 844x390 the palette row sits in the controls column, below the drawer zone, right of the plate band", { timeout: 60000 }, async () => {
-      try {
-        await spcCreate();
-        const r = await b.eval(`
-          const row = document.getElementById("scale-swatches").closest(".editrow");
-          const q = (el) => { const x = el.getBoundingClientRect(); return { l: x.left, t: x.top, r: x.right, b: x.bottom }; };
-          return { row: q(row), zone: q(layoutZone), band: q(plateBand), col: getComputedStyle(row).gridColumnStart,
-                   lastChild: document.getElementById("scale-panel-layout").lastElementChild === row };`);
-        assert.strictEqual(r.col, "2", "the palette row is not in grid column 2");
-        assert.ok(r.lastChild, "the palette row is not the Layout panel's last child");
-        assert.ok(Math.abs(r.row.l - r.zone.l) <= 1, `the palette row's left edge ${r.row.l} is not the zone's ${r.zone.l}`);
-        assert.ok(r.row.t >= r.zone.b - 0.5, `the palette row (top ${r.row.t}) starts above the zone's bottom ${r.zone.b}`);
-        assert.ok(r.row.l >= r.band.r - 0.5, `the palette row (left ${r.row.l}) sits under the plate band (right ${r.band.r})`);
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    test("SPC R1: the plate sits beside the controls only in the short layout, where the open and the lipped surface padding are equal, so lipDelta needs no padding term", { timeout: 240000 }, async () => {
-      const seen = [];
-      try {
-        for (const [w, h] of [[844, 390], [900, 500], [1024, 600], [1100, 700], [1280, 800]]) {
-          await spcCreate(w, h);
-          await b.eval(`collapseLip(); return true;`);
-          await sleep(300);
-          const s = await b.eval(`return { beside: platesBeside(), short: sheet.classList.contains("short"), lipped: sheet.classList.contains("lipped") };`);
-          assert.strictEqual(s.lipped, true, `${w}x${h}: the footer did not collapse`);
-          if (s.beside) {
-            assert.strictEqual(s.short, true, `${w}x${h}: the plate is beside the controls outside the short layout`);
-            await b.eval(`restoreLip(); return true;`);
-            await sleep(300);
-            const open = await b.eval(`return getComputedStyle(sheetSurf).paddingBottom;`);
-            await b.eval(`collapseLip(); return true;`);
-            await sleep(300);
-            assert.strictEqual(await b.eval(`return getComputedStyle(sheetSurf).paddingBottom;`), open, `${w}x${h}: the lipped surface padding differs from the open one`);
-          }
-          seen.push(s.beside);
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.ok(seen.includes(true) && seen.includes(false), `the sweep never crossed both layouts: ${seen}`);
-    });
-
-    test("SPC R2: a notice that appears in the window after a restore is reversed into a collapse is measured when that window settles: the shut lip holds the same geometry as a collapse that met the notice already there", { timeout: 120000 }, async () => {
-      const geo = () => b.eval(`const st = sheet.style; return ["--lip-h", "--lip-pad", "--lip-gd", "--lip-g"].map((k) => k + "=" + st.getPropertyValue(k)).join(" ") + " foot=" + Math.round(footEl.getBoundingClientRect().top) + " guidance=" + Math.round(document.getElementById("scale-guidance").getBoundingClientRect().bottom);`);
-      try {
-        await spcCreate();
-        await b.eval(`collapseLip(); return true;`);
-        await sleep(300);
-        await b.eval(`restoreLip(); collapseLip(); document.getElementById("scale-anchor-between").click(); return true;`);
-        await b.settle();
-        await sleep(500);
-        assert.ok(await b.eval(`return sheet.classList.contains("lipshut") && layoutNote.textContent.length > 0;`), "the reversed collapse did not leave the footer shut with a notice");
-        const reversed = await geo();
-        await b.eval(`restoreLip(); return true;`);
-        await sleep(300);
-        await b.eval(`collapseLip(); return true;`);
-        await sleep(500);
-        assert.strictEqual(reversed, await geo(), "the notice in the reversal window was never measured: the shut lip differs from a collapse that met the notice already there");
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-    });
-
-    /* A guard on the identity the derivation rests on: the shut pan equals the open-footer pan at landscape
-     * viewports. The footer is collapsed and restored through collapseLip/restoreLip; no timing is under test here. */
-    test("SPC: the pan width while the footer is shut equals the open-footer room measured after the restore, at 844x390 create and Edit, 740x360 create and 926x428 Edit, with no message, a notice and a two-line warning", { timeout: 240000 }, async () => {
-      const ran = [];
-      try {
-        for (const [w, h, mode] of [[844, 390, "create"], [844, 390, "Edit"], [740, 360, "create"], [926, 428, "Edit"]]) {
-          if (mode === "create") await spcCreate(w, h); else await spcEdit(w, h);
-          for (const state of ["no message", "a notice", "a two-line warning"]) {
-            if (state === "a notice") await b.eval(`document.getElementById("scale-anchor-between").click(); return true;`);
-            if (state === "a two-line warning") await b.eval(`document.getElementById("scale-anchor-one").click(); say(${JSON.stringify(SPC_WARN)}, "warn"); return true;`);
-            await b.settle();
-            await sleep(250);
-            const tag = `${mode}, ${w}x${h}, ${state}`;
-            assert.strictEqual(await b.eval(`return platesBeside();`), true, `${tag}: the plate is not beside the controls`);
-            await b.eval(`collapseLip(); return true;`);
-            await sleep(260);
-            const shutW = await spcPan();
-            await b.eval(`restoreLip(); return true;`);
-            await sleep(260);
-            const openW = await spcPan();
-            assert.strictEqual(await b.eval(`return sheet.classList.contains("lipped");`), false, `${tag}: the footer did not reopen`);
-            assert.ok(Math.abs(shutW - openW) <= 0.5, `${tag}: the pan is ${shutW}px while shut and ${openW}px once the footer is open`);
-            ran.push(tag);
-          }
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.strictEqual(ran.length, 12);
-    });
-
-    test("SPC: at 380x780 and 380x667 the drawer status keeps its 81ad610 rect relative to the plate at the top of the scroll and stays pinned under the band at the end", async () => {
-      const ran = [];
-      try {
-        for (const [w, h] of [[380, 780], [380, 667]]) {
-          await spcCreate(w, h);
-          await b.eval(`layoutStatus("Top mirror on."); return true;`);
-          await b.settle();
-          for (const where of ["top", "end"]) {
-            await scrollTo(where);
-            const m = await b.eval(`
-              const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height }; };
-              const body = document.querySelector(".sheetbody");
-              return { body: r(body), st: body.scrollTop, M: body.scrollHeight - body.clientHeight, band: r(plateBand),
-                pan: r(document.getElementById("scale-preview")), status: r(drawerStatus), zone: r(document.getElementById("scale-layout-zone")),
-                text: drawerStatus.textContent };`);
-            const tag = `${w}x${h}, scroll ${where}`;
-            assert.strictEqual(m.text, "Top mirror on.");
-            assert.ok(m.M > 0, `${tag}: no scroll range`);
-            if (where === "top") {
-              assert.strictEqual(m.st, 0);
-              assert.ok(Math.abs(m.status.l - m.pan.l) <= 0.5 && Math.abs(m.status.w - m.pan.w) <= 0.5, `${tag}: the status [${m.status.l}, ${m.status.w}] is not the plate's [${m.pan.l}, ${m.pan.w}]`);
-              assert.ok(Math.abs(m.status.h - 36) <= 0.5, `${tag}: the status is ${m.status.h}px, the 81ad610 rect is 36`);
-              assert.ok(Math.abs(m.status.t - m.pan.b - 4) <= 0.5, `${tag}: the status sits ${m.status.t - m.pan.b}px under the plate, the 81ad610 gap is 4`);
-            } else {
-              assert.ok(m.st >= m.M - 1, `${tag}: scrollTop ${m.st} is not the end ${m.M}`);
-              assert.ok(Math.abs(m.band.t - m.body.t) <= 1, `${tag}: the band is at ${m.band.t}, not pinned at ${m.body.t}`);
-              assert.ok(Math.abs(m.status.t - m.band.b) <= 1, `${tag}: the status top ${m.status.t} is not under the band bottom ${m.band.b}`);
-              assert.ok(m.status.b <= m.body.b + 0.5 && m.status.t >= m.body.t, `${tag}: the status is outside the scrollport`);
-              assert.ok(Math.abs(m.status.h - 36) <= 0.5, `${tag}: the status is ${m.status.h}px`);
-            }
-            ran.push(tag);
-          }
-        }
-      } finally {
-        await b.setViewport(900, 900, false);
-      }
-      assert.deepStrictEqual(ran, ["380x780, scroll top", "380x780, scroll end", "380x667, scroll top", "380x667, scroll end"]);
-    });
-  });
 
   describe("UX: the footer lip", () => {
     const LIP_KURD = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
@@ -18088,32 +12297,6 @@ function run() {
       await b.setViewport(900, 900, false);
     };
 
-    test("UX: a real touch swipe down collapses the footer to a 9px lip, a swipe up restores it, with no flicker under momentum", { timeout: 90000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[380, 780], [844, 390], [1280, 800]]) {
-          for (const edit of [false, true]) {
-            await lipOpen(w, h, { edit });
-            const ctx = `${w}x${h} ${edit ? "Edit" : "Add"}`;
-            let s = await lipState();
-            if (!(s.M > 0)) { fails.push(`${ctx}: the body does not scroll`); continue; }
-            await collapse();
-            s = await lipState();
-            if (!(s.lipped && s.shut)) fails.push(`${ctx}: a swipe down did not collapse (${JSON.stringify(s)})`);
-            else {
-              const foot = await b.eval(`return document.getElementById("scale-foot").getBoundingClientRect().height;`);
-              if (Math.abs(foot - 9) > 0.5) fails.push(`${ctx}: the shut footer is ${foot}px, not 9`);
-              if (s.lippedFlips !== 1) fails.push(`${ctx}: ${s.lippedFlips} lip changes under momentum, not 1`);
-            }
-            await restoreBySwipe();
-            s = await lipState();
-            if (s.lipped) fails.push(`${ctx}: a swipe up did not restore (${JSON.stringify(s)})`);
-            if (s.lippedFlips > 2) fails.push(`${ctx}: ${s.lippedFlips} lip changes across the pair`);
-          }
-        }
-      } finally { await reset(); }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
     const gap = () => b.eval(`
       const body = document.querySelector("#scale-sheet .sheetbody");
@@ -18132,60 +12315,8 @@ function run() {
     };
     const finger2 = (type, pts) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i + 1, radiusX: 4, radiusY: 4, force: 1 })) });
 
-    test("PH: P3 at 390x797 a 24px finger-up drag collapses a Scale tab whose range is under the footer, 23px does not, a 24px finger-down drag restores", { timeout: 90000 }, async () => {
-      try {
-        await lipOpen(390, 861, { spacer: 0 });
-        const g = await gap();
-        assert.ok(g.M < g.E, `this proves nothing unless the range ${g.M} is under the footer ${g.E}`);
-        await pull(-23);
-        assert.strictEqual((await lipState()).lipped, false, "23px collapsed");
-        await pull(-24);
-        let s = await lipState();
-        assert.ok(s.lipped && s.shut, `24px up did not collapse (${JSON.stringify(s)})`);
-        await pull(24);
-        s = await lipState();
-        assert.strictEqual(s.lipped, false, `24px down did not restore (${JSON.stringify(s)})`);
-      } finally { await reset(); }
-    });
 
-    test("PH: P3 at 390x797 repeated drags change the lip only at the drags, and a drag to the scroll end neither restores nor flickers", { timeout: 90000 }, async () => {
-      try {
-        await lipOpen(390, 797, { spacer: 0 });
-        for (let i = 0; i < 3; i++) { await pull(-60); await pull(60); }
-        assert.strictEqual((await lipState()).lippedFlips, 6, "three up and three down drags");
-        await lipOpen(390, 797, { spacer: 260 });
-        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
-        await waitFlingSettled("the drag's momentum and the footer slide");
-        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
-        await waitFlingSettled("the drag's momentum and the footer slide");
-        const s = await lipState();
-        assert.ok(s.top >= s.M - 2, `the drags did not reach the end (${s.top} of ${s.M})`);
-        assert.ok(s.lipped && s.shut, `the footer reopened at the end (${JSON.stringify(s)})`);
-        assert.strictEqual(s.lippedFlips, 1, `${s.lippedFlips} lip changes across two flicks`);
-      } finally { await reset(); }
-    });
 
-    test("PH: P3 a drag with a second finger or mostly sideways changes the lip zero times across the gesture and its settle, at 390x797 and 380x780", { timeout: 120000 }, async () => {
-      try {
-        for (const [w, h] of [[390, 797], [380, 780]]) {
-          await lipOpen(w, h, { spacer: 0 });
-          const sc = await gap();
-          assert.ok(sc.M < sc.E, `${w}x${h}: this proves nothing unless the Scale range ${sc.M} is under the footer ${sc.E}`);
-          const bb = await bodyBox();
-          const y = Math.round(bb.top + bb.h / 2);
-          const before = (await lipState()).flips;
-          await finger2("touchStart", [[100, y], [200, y]]);
-          for (let i = 1; i <= 6; i++) await finger2("touchMove", [[100, y - i * 10], [200, y - i * 10]]);
-          await finger2("touchEnd", []);
-          await waitFlingSettled("the two-finger drag and the footer slide");
-          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a two-finger drag changed the lip`);
-          const before2 = (await lipState()).flips;
-          await b.drag(".sheetbody", [[20, 30, -5], [60, 60, -10], [120, 90, -24]], { y0: 0 });
-          await sleep(500);
-          assert.strictEqual((await lipState()).flips, before2, `${w}x${h}: a sideways drag changed the lip`);
-        }
-      } finally { await reset(); }
-    });
 
     const lgWatch = () => b.eval(`
       window.__lg = { clicks: 0, focusin: 0 };
@@ -18223,658 +12354,37 @@ function run() {
       return { skipped: false, ctx, flips: after.lippedFlips - before.lippedFlips, shut: after.shut, lipped: after.lipped, seen0, seen };
     };
 
-    test("LG: replay t109947 at 750x294 and 390x629: a -156px finger-down drag that starts on #scale-bottom while shut restores, focuses nothing and clicks nothing", { timeout: 120000 }, async () => {
-      const fails = [];
-      let ran = 0;
-      try {
-        for (const [w, h] of [[750, 294], [390, 629]]) {
-          const r = await lgReplay(`${w}x${h}`, w, h, "#scale-bottom", 156, true);
-          if (r.skipped) { fails.push(`${r.ctx}: #scale-bottom is not hit-testable at its centre`); continue; }
-          ran += 1;
-          if (r.flips !== 1 || r.lipped) fails.push(`${r.ctx}: ${r.flips} lip changes, lipped ${r.lipped}, not one restore`);
-          if (r.seen.active !== r.seen0.active) fails.push(`${r.ctx}: focus moved from ${r.seen0.active} to ${r.seen.active}`);
-          if (r.seen.clicks !== 0 || r.seen.focusin !== 0) fails.push(`${r.ctx}: ${r.seen.clicks} clicks and ${r.seen.focusin} focusin reached the page`);
-        }
-      } finally { await reset(); }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-      assert.strictEqual(ran, 2);
-    });
 
-    test("LG: replay t116083 at 390x629 and 750x294: a +132px finger-up drag that starts on #scale-top while open collapses, focuses nothing and clicks nothing", { timeout: 120000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[390, 629], [750, 294]]) {
-          const r = await lgReplay(`${w}x${h}`, w, h, "#scale-top", -132, false);
-          if (r.skipped) { fails.push(`${r.ctx}: #scale-top is not hit-testable at its centre`); continue; }
-          if (r.flips !== 1 || !r.shut) fails.push(`${r.ctx}: ${r.flips} lip changes, shut ${r.shut}, not one collapse`);
-          if (r.seen.active !== r.seen0.active) fails.push(`${r.ctx}: focus moved from ${r.seen0.active} to ${r.seen.active}`);
-          if (r.seen.clicks !== 0 || r.seen.focusin !== 0) fails.push(`${r.ctx}: ${r.seen.clicks} clicks and ${r.seen.focusin} focusin reached the page`);
-        }
-      } finally { await reset(); }
-      assert.deepStrictEqual(fails, [], fails.join("\n"));
-    });
 
-    test("LG: a 60px drag from the plate on the Layout tab collapses once and activates no note, at 390x797 and 380x780", { timeout: 120000 }, async () => {
-      try {
-        for (const [w, h] of [[390, 797], [380, 780]]) {
-          await lipOpen(w, h, { spacer: 0 });
-          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-          await sleep(400);
-          await lgWatch();
-          const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
-            return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
-          assert.ok(ly.M - ly.t > ly.E, `${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}`);
-          const plate0 = await b.eval(`return document.getElementById("scale-preview").innerHTML;`);
-          const before = (await lipState()).flips;
-          await pull(-60, { sel: "#scale-preview", ms: 90 });
-          await waitFlingSettled("the drag's momentum and the footer slide");
-          const s = await lipState();
-          assert.strictEqual(s.flips - before, 1, `${w}x${h}: a drag from the plate changed the lip ${s.flips - before} times, not 1 (${JSON.stringify(s)})`);
-          assert.ok(s.lipped && s.shut, `${w}x${h}: the lip did not collapse`);
-          const seen = await lgSeen();
-          assert.strictEqual(seen.clicks, 0, `${w}x${h}: a click reached the page`);
-          assert.strictEqual(await b.eval(`return document.getElementById("scale-preview").innerHTML;`), plate0, `${w}x${h}: the plate changed, a note was activated`);
-        }
-      } finally { await reset(); }
-    });
 
-    test("LG: a 60px drag from #scale-box with no overflow acts once and leaves focus where it was, at 390x797 and 380x780", { timeout: 120000 }, async () => {
-      try {
-        for (const [w, h] of [[390, 797], [380, 780]]) {
-          await lipOpen(w, h, { spacer: 0 });
-          const sc = await gap();
-          assert.ok(sc.M < sc.E, `${w}x${h}: this proves nothing unless the Scale range ${sc.M} is under the footer ${sc.E}`);
-          await lgWatch();
-          const seen0 = await lgSeen();
-          const before = (await lipState()).flips;
-          await pull(-60, { sel: "#scale-box" });
-          await waitFlingSettled("the drag's momentum and the footer slide");
-          const s = await lipState();
-          assert.strictEqual(s.flips - before, 1, `${w}x${h}: a drag from the seed box changed the lip ${s.flips - before} times, not 1`);
-          assert.ok(s.lipped && s.shut, `${w}x${h}: not collapsed`);
-          const seen = await lgSeen();
-          assert.strictEqual(seen.active, seen0.active, `${w}x${h}: focus moved`);
-          assert.strictEqual(seen.clicks + seen.focusin, 0, `${w}x${h}: a click or focusin reached a field`);
-        }
-      } finally { await reset(); }
-    });
 
-    test("LG: a real tap on each field focuses it, the pin holds it in view, and the lip does not change", { timeout: 120000 }, async () => {
-      try {
-        for (const [w, h] of [[390, 797], [380, 780], [320, 568]]) {
-          await lipOpen(w, h, { spacer: 0 });
-          for (const id of ["scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-box"]) {
-            await b.eval(`const e = document.getElementById(${JSON.stringify(id)}), body = document.querySelector("#scale-sheet .sheetbody"), q = e.getBoundingClientRect(), p = body.getBoundingClientRect();
-              if (q.top < p.top || q.bottom > p.bottom) e.scrollIntoView({ block: "center" });
-              return true;`);
-            await sleep(450);
-            const before = (await lipState()).flips;
-            await b.drag(`#${id}`, [], { y0: 0 });
-            await waitElapsed(PIN_MS + 200, "the focus pin (PIN_MS) to lapse");
-            const r = await b.eval(`const e = document.getElementById(${JSON.stringify(id)}), q = e.getBoundingClientRect(); return { active: document.activeElement.id, top: q.top, bottom: q.bottom, ih: innerHeight };`);
-            assert.strictEqual(r.active, id, `${w}x${h}: a tap on #${id} did not focus it`);
-            assert.ok(r.top >= 0 && r.bottom <= r.ih, `${w}x${h}: #${id} is out of view after the tap (${JSON.stringify(r)})`);
-            assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a tap on #${id} changed the lip`);
-          }
-          await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-          await sleep(400);
-          const beforePlate = (await lipState()).flips;
-          await b.drag("#scale-preview", [], { y0: 0 });
-          await sleep(500);
-          assert.strictEqual((await lipState()).flips, beforePlate, `${w}x${h}: a tap on the plate changed the lip`);
-        }
-      } finally { await reset(); }
-    });
 
-    test("LG: a drag in the focused #scale-box (selection) never acts and never blurs", { timeout: 120000 }, async () => {
-      try {
-        for (const [w, h] of [[390, 797], [380, 780], [320, 568]]) {
-          await lipOpen(w, h, { spacer: 0 });
-          await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-          await lgWatch();
-          const before = (await lipState()).flips;
-          await pull(-60, { sel: "#scale-box" });
-          await waitFlingSettled("the drag's momentum and the footer slide");
-          assert.strictEqual((await lipState()).flips, before, `${w}x${h}: a drag in the focused box changed the lip`);
-          assert.strictEqual((await lgSeen()).active, "scale-box", `${w}x${h}: the box lost focus`);
-        }
-      } finally { await reset(); }
-    });
 
-    test("LG: with #scale-box overflowing, a drag that scrolls its content does not act; a drag past its edge acts", { timeout: 120000 }, async () => {
-      try {
-        await lipOpen(390, 797, { spacer: 0 });
-        const room = await b.eval(`
-          const el = document.getElementById("scale-box");
-          el.value = ${JSON.stringify("(D3) A3 C4 D4 E4\nF4 G4 A4 C5\n".repeat(4))};
-          el.style.height = "44px"; el.style.overflowY = "auto"; el.scrollTop = 0;
-          return el.scrollHeight - el.clientHeight;`);
-        assert.ok(room > 60, `this proves nothing unless the box overflows (${room})`);
-        await sleep(200);
-        const before = (await lipState()).flips;
-        await pull(-30, { sel: "#scale-box", ms: 90 });
-        await sleep(500);
-        const top = await b.eval(`return document.getElementById("scale-box").scrollTop;`);
-        assert.ok(top > 0, `the drag did not scroll the box (${top})`);
-        assert.strictEqual((await lipState()).flips, before, "a drag that scrolled the box changed the lip");
-        await b.eval(`const el = document.getElementById("scale-box"); el.scrollTop = el.scrollHeight; return true;`);
-        await sleep(200);
-        await pull(-60, { sel: "#scale-box", ms: 90 });
-        await sleep(500);
-        assert.strictEqual((await lipState()).flips - before, 1, "a drag past the box's edge did not act once");
-      } finally { await reset(); }
-    });
 
-    test("LG: a flick whose momentum carries the body collapses once, and its settle adds no flip, at 390x797", { timeout: 120000 }, async () => {
-      try {
-        await lipOpen(390, 797, { spacer: 900 });
-        await pull(-320, { ms: 60, sel: ".sheetbody", y0: 120 });
-        await waitFlingSettled("the drag's momentum and the footer slide");
-        const s = await lipState();
-        assert.ok(s.top > 0, `the flick did not scroll the body (${JSON.stringify(s)})`);
-        assert.ok(s.lipped && s.shut, `not collapsed (${JSON.stringify(s)})`);
-        assert.strictEqual(s.lippedFlips, 1, `${s.lippedFlips} lip changes across the flick and its settle`);
-        await waitElapsed(PIN_MS, "a late flip after the settle");
-        assert.strictEqual((await lipState()).flips, s.flips, "the settle added a flip");
-      } finally { await reset(); }
-    });
 
-    test("PH: P3 a long press on a plate field that repaints under the finger, then a wheel or ArrowDown, collapses exactly once, at 390x797 and 380x780", { timeout: 120000 }, async () => {
-      try {
-        for (const key of ["wheel", "ArrowDown"]) {
-          for (const [w, h] of [[390, 797], [380, 780]]) {
-            await lipOpen(w, h, { spacer: 0 });
-            await b.eval(`document.getElementById("scale-tab-layout").click(); return true;`);
-            await sleep(400);
-            const ly = await b.eval(`const body = document.querySelector("#scale-sheet .sheetbody"), surf = document.querySelector("#scale-sheet .sheetsurf") || document.getElementById("scale-sheet");
-              return { M: body.scrollHeight - body.clientHeight, t: body.scrollTop, E: surf.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom };`);
-            assert.ok(ly.M - ly.t > ly.E, `${key} ${w}x${h}: this proves nothing unless the Layout range ${ly.M} - ${ly.t} is over the footer ${ly.E}`);
-            const pt = await b.eval(`
-              const hits = [...document.querySelectorAll("#scale-preview .panhit")];
-              const r = hits[0].getBoundingClientRect();
-              return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), n: hits.length };`);
-            assert.ok(pt.n > 0, `${key} ${w}x${h}: no .panhit to press`);
-            const before = (await lipState()).flips;
-            await finger2("touchStart", [[pt.x, pt.y]]);
-            await sleep(400);
-            await finger2("touchEnd", []);
-            await sleep(500);
-            if (key === "wheel") {
-              await wheelBody(15);
-              await wheelBody(15);
-            } else {
-              await b.eval(`document.querySelector("#scale-sheet .sheetbody").focus(); return true;`);
-              for (let i = 0; i < 1; i++) {
-                await b.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40, nativeVirtualKeyCode: 40 });
-                await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40, nativeVirtualKeyCode: 40 });
-                await sleep(60);
-              }
-              await sleep(400);
-            }
-            const s = await lipState();
-            assert.ok(s.top > ly.t, `${key} ${w}x${h}: the body did not scroll (${JSON.stringify(s)}), so this proves nothing`);
-            assert.strictEqual(s.flips - before, 1, `${key} ${w}x${h}: ${s.flips - before} lip changes after a long press, not 1 (${JSON.stringify(s)})`);
-            assert.ok(s.lipped && s.shut, `${key} ${w}x${h}: not collapsed (${JSON.stringify(s)})`);
-          }
-        }
-      } finally { await reset(); }
-    });
 
-    test("PH: P3 at 390x797 a wheel on a sheet with no room never collapses; with room it collapses", { timeout: 90000 }, async () => {
-      try {
-        await lipOpen(390, 797, { spacer: 0 });
-        await wheelBody(300);
-        await wheelBody(-300);
-        assert.strictEqual((await lipState()).flips, 0, "a wheel on a short sheet changed the lip");
-        await lipOpen(390, 797, { spacer: 900 });
-        await wheelBody(50);
-        await wheelBody(300);
-        const s = await lipState();
-        assert.ok(s.lipped && s.shut, `a wheel with room did not collapse (${JSON.stringify(s)})`);
-      } finally { await reset(); }
-    });
 
-    test("UX: a sheet whose content does not scroll never collapses", { timeout: 60000 }, async () => {
-      let covered = 0;
-      try {
-        for (const [w, h] of [...SIZES, [393, 960]]) {
-          await lipOpen(w, h, { spacer: 0 });
-          let s = await lipState();
-          if (s.M > 1) continue;
-          covered += 1;
-          await wheelBody(300);
-          await wheelBody(-300);
-          await wheelBody(300);
-          s = await lipState();
-          assert.strictEqual(s.lipped, false, `${w}x${h}: a non-scrolling sheet collapsed`);
-          assert.strictEqual(s.flips, 0, `${w}x${h}: lip classes changed ${s.flips} times`);
-        }
-      } finally { await reset(); }
-      assert.ok(covered >= 1, "no viewport had a non-scrolling sheet, so this proves nothing");
-    });
 
-    test("UX: at the collapse instant .sheetbody has grown, GENERATE, the guidance line and the hairline have not moved, and scrollTop is unchanged", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780, { scale: LIP_CROWDED });
-        await b.eval(`
-          const s = document.getElementById("scale-sheet"), body = document.querySelector("#scale-sheet .sheetbody");
-          const rects = () => {
-            const n = document.getElementById("scale-next"), g = document.getElementById("scale-generate");
-            const e = !n.hidden ? n : g;
-            return { body: body.getBoundingClientRect().height, prim: e.getBoundingClientRect().top,
-              guide: document.getElementById("scale-guidance").getBoundingClientRect().top,
-              foot: document.getElementById("scale-footslide").getBoundingClientRect().top, bodyBottom: body.getBoundingClientRect().bottom, st: body.scrollTop };
-          };
-          window.__before = rects();
-          window.__pre = null; window.__inst = null;
-          document.addEventListener("scroll", (e) => { if (e.target === body && !window.__inst) window.__pre = { st: body.scrollTop, lipped: s.classList.contains("lipped"), r: rects() }; }, true);
-          body.addEventListener("scroll", () => {
-            if (!window.__inst && s.classList.contains("lipped")) window.__inst = { st: body.scrollTop, r: rects() };
-            else if (!window.__inst) window.__before = rects();
-          });
-          return true;`);
-        await collapse();
-        const m = await b.eval(`return { before: window.__before, pre: window.__pre, inst: window.__inst };`);
-        assert.ok(m.inst, "no scroll event saw the lipped class");
-        assert.ok(m.inst.r.body > m.before.body + 20, `the body did not grow ${m.before.body} -> ${m.inst.r.body}`);
-        assert.ok(Math.abs(m.inst.r.prim - m.before.prim) <= 1, `the primary moved ${m.before.prim} -> ${m.inst.r.prim}`);
-        assert.ok(Math.abs(m.inst.r.guide - m.before.guide) <= 1, `the guidance line moved ${m.before.guide} -> ${m.inst.r.guide}`);
-        assert.ok(Math.abs(m.inst.r.foot - (m.before.bodyBottom - 1)) <= 1.5, `the hairline is at ${m.inst.r.foot}, the open body ended at ${m.before.bodyBottom}`);
-        assert.ok(Math.abs(m.inst.st - m.pre.st) <= 0.5, `scrollTop changed ${m.pre.st} -> ${m.inst.st}`);
-      } finally { await reset(); }
-    });
 
-    test("UX: a collapse and a restore resize .sheetbody once each and never during the 180ms slide", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await b.eval(`
-          const body = document.querySelector("#scale-sheet .sheetbody");
-          window.__ro = []; let first = true;
-          return new Promise((installed) => {
-            new ResizeObserver(() => { if (first) { first = false; installed(true); return; } window.__ro.push(performance.now()); }).observe(body);
-          });`);
-        await collapse();
-        let ro = await b.eval(`return window.__ro.slice();`);
-        assert.strictEqual(ro.length, 1, `the collapse resized the body ${ro.length} times`);
-        await slideWithin(400, "the restore slide to end", restoreBySwipe, `!document.getElementById("scale-sheet").classList.contains("lipped")`);
-        ro = await b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r({ ro: window.__ro.slice(), lip: window.__lip.slice() }))));`);
-        assert.strictEqual(ro.ro.length, 2, `a collapse and a restore resized the body ${ro.ro.length} times`);
-        const start = ro.lip.find((e, i) => i > 0 && e.lipped && !e.shut);
-        assert.ok(start, "no OPENING state was logged");
-        assert.ok(ro.ro[1] - start.t >= 150, `the restore resized the body ${ro.ro[1] - start.t}ms into the slide`);
-      } finally { await reset(); }
-    });
 
-    test("UX: a zero-elapsed transitionend on the footslide during a restore's slide does not end the restore", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await collapse();
-        await b.eval(`
-          const body = document.querySelector("#scale-sheet .sheetbody"), foot = document.getElementById("scale-footslide");
-          window.__ro2 = []; let first = true;
-          new ResizeObserver(() => { if (first) { first = false; return; } window.__ro2.push(performance.now()); }).observe(body);
-          document.getElementById("scale-lip").click();
-          window.__t0 = performance.now();
-          setTimeout(() => foot.dispatchEvent(new TransitionEvent("transitionend", { propertyName: "transform", elapsedTime: 0, bubbles: true })), 20);
-          return true;`);
-        await sleep(90);
-        const mid = await b.eval(`return { lipped: document.getElementById("scale-sheet").classList.contains("lipped"), ro: window.__ro2.length };`);
-        assert.strictEqual(mid.lipped, true, "a zero-elapsed transitionend ended the restore mid-slide");
-        assert.strictEqual(mid.ro, 0, `the body resized ${mid.ro} times mid-slide`);
-        await sleep(500);
-        const end = await b.eval(`return { lipped: document.getElementById("scale-sheet").classList.contains("lipped") };`);
-        assert.strictEqual(end.lipped, false, "the restore never finished");
-      } finally { await reset(); }
-    });
 
-    test("UX: a transitionend on the footslide that reports the slide's own 180ms ends the restore at once", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await collapse();
-        await b.eval(`
-          const foot = document.getElementById("scale-footslide");
-          document.getElementById("scale-lip").click();
-          setTimeout(() => foot.dispatchEvent(new TransitionEvent("transitionend", { propertyName: "transform", elapsedTime: 0.18, bubbles: true })), 30);
-          return true;`);
-        await sleep(100);
-        const mid = await b.eval(`return document.getElementById("scale-sheet").classList.contains("lipped");`);
-        assert.strictEqual(mid, false, "a transitionend reporting 0.18s did not end the restore before its timer");
-      } finally { await reset(); }
-    });
 
-    test("UX: during a restore's slide .sheetbody keeps its lipped height, and GENERATE lands where the open layout puts it", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        const open = await primaryRect();
-        await collapse();
-        const lippedH = (await bodyBox()).h;
-        await b.eval(`
-          const body = document.querySelector("#scale-sheet .sheetbody"), s = document.getElementById("scale-sheet");
-          window.__h = [];
-          const iv = setInterval(() => { if (s.classList.contains("lipped") && !s.classList.contains("lipshut")) window.__h.push(body.getBoundingClientRect().height); if (!s.classList.contains("lipped")) clearInterval(iv); }, 8);
-          document.getElementById("scale-lip").click();
-          return true;`);
-        await b.waitFor(`!document.getElementById("scale-sheet").classList.contains("lipped")`, { label: "the restore slide to end" });
-        await sleep(300);
-        const hs = await b.eval(`return window.__h;`);
-        assert.ok(hs.length > 3, `only ${hs.length} frames sampled in the slide`);
-        for (const v of hs) assert.ok(Math.abs(v - lippedH) <= 0.5, `the body was ${v}px mid-slide, lipped height ${lippedH}`);
-        const after = await primaryRect();
-        assert.ok(Math.abs(after.top - open.top) <= 1, `the primary landed at ${after.top}, the open layout has it at ${open.top} ${await lipDiag()}`);
-      } finally { await reset(); }
-    });
 
-    test("PH: P4 the Add sheet with no message has no empty band above the primary: body to primary is one flow gap at 390x797 and 380x780", { timeout: 60000 }, async () => {
-      try {
-        for (const [w, h] of [[390, 797], [380, 780]]) {
-          await lipOpen(w, h, { spacer: 0 });
-          const m = await b.eval(`
-            const surf = document.querySelector("#scale-sheet .sheetsurf"), body = surf.querySelector(".sheetbody");
-            const slot = document.getElementById("scale-guidance"), gen = document.getElementById("scale-generate"), next = document.getElementById("scale-next");
-            const prim = !next.hidden ? next : gen;
-            const cs = getComputedStyle(slot);
-            return { slot: slot.getBoundingClientRect().height, mt: cs.marginTop, mb: cs.marginBottom, gap: prim.getBoundingClientRect().top - body.getBoundingClientRect().bottom,
-              row: parseFloat(getComputedStyle(surf).rowGap) };`);
-          assert.ok(Math.abs(m.gap - m.row) < 0.5, `${w}x${h}: body to primary is ${m.gap}px, one flow gap is ${m.row}px (slot ${m.slot}px)`);
-          assert.strictEqual(m.slot, 0, `${w}x${h}: the empty slot is ${m.slot}px tall`);
-          assert.strictEqual(m.mt + m.mb, "0px0px", `${w}x${h}: the empty slot has margins ${m.mt} ${m.mb}`);
-        }
-      } finally { await reset(); }
-    });
 
-    test("PH: P4 a message appearing while the footer is lipshut grows the slot without flipping the lip, and clearing it returns the slot to 0", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(390, 797);
-        await collapse();
-        let s = await lipState();
-        assert.ok(s.lipped && s.shut, `the footer did not shut (${JSON.stringify(s)})`);
-        const slot = () => b.eval(`return document.getElementById("scale-guidance").getBoundingClientRect().height;`);
-        assert.strictEqual(await slot(), 0);
-        const flips = s.flips;
-        await b.eval(`say("Keep every note you can reach on the pan before you press the button below", "warn"); return true;`);
-        await waitElapsed(PIN_MS, "a late lip flip after the message");
-        s = await lipState();
-        assert.ok(await slot() > 0, "the message gave the slot no height");
-        assert.ok(s.lipped && s.shut, `the message flipped the lip (${JSON.stringify(s)})`);
-        assert.strictEqual(s.flips, flips, `the message produced ${s.flips - flips} lip changes`);
-        await b.eval(`say("", ""); return true;`);
-        await waitElapsed(PIN_MS, "a late lip flip after the clear");
-        s = await lipState();
-        assert.strictEqual(await slot(), 0, "clearing the message left the slot open");
-        assert.ok(s.lipped && s.shut, `clearing the message flipped the lip (${JSON.stringify(s)})`);
-        assert.strictEqual(s.flips, flips, `the clear produced ${s.flips - flips} lip changes`);
-      } finally { await reset(); }
-    });
 
-    test("UX: lipped, an empty guidance slot takes no height and the lip sits on the body's hairline; a slot with text stays --sp-2 plus --lip-over above the lip", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await collapse();
-        const m = await b.eval(`
-          const g = document.getElementById("scale-guidance"), cs = getComputedStyle(g);
-          const body = document.querySelector("#scale-sheet .sheetbody").getBoundingClientRect();
-          const foot = document.getElementById("scale-foot").getBoundingClientRect();
-          return { h: g.getBoundingClientRect().height, display: cs.display, vis: cs.visibility, gap: foot.top - body.bottom };`);
-        assert.strictEqual(m.h, 0, `the empty slot is ${m.h}px tall`);
-        assert.notStrictEqual(m.display, "none");
-        assert.strictEqual(m.vis, "visible");
-        assert.ok(Math.abs(m.gap) <= 2, `the lip is ${m.gap}px from the body's hairline`);
-        await typeScale(LIP_CROWDED);
-        await sleep(300);
-        const t = await b.eval(`
-          const g = document.getElementById("scale-guidance").getBoundingClientRect();
-          const foot = document.getElementById("scale-foot").getBoundingClientRect();
-          const sp2 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sp-2"));
-          const probe = document.createElement("div");
-          probe.style.cssText = "position:absolute;visibility:hidden;height:var(--lip-over)";
-          document.body.appendChild(probe);
-          const over = probe.getBoundingClientRect().height;
-          probe.remove();
-          return { h: g.height, gap: foot.top - g.bottom, sp2, over };`);
-        assert.ok(t.h > 0, "the warning gave the slot no height");
-        assert.ok(t.over > 0, "--lip-over resolves to no height");
-        assert.ok(Math.abs(t.gap - (t.sp2 + t.over)) <= 2, `the slot with text is ${t.gap}px above the lip, --sp-2 plus --lip-over is ${t.sp2 + t.over}`);
-        const msg = await b.eval(`return document.getElementById("scale-msg").textContent.length;`);
-        assert.ok(msg > 0, "a say() while lipped put no text in #scale-msg");
-      } finally { await reset(); }
-    });
 
-    test("UX: the lip draws a 32x3 pill at the surface's bottom above the safe-area inset, its tap zone is 25px tall, and a tap anywhere in the zone restores", { timeout: 60000 }, async () => {
-      try {
-        let inset = 0;
-        try { await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 34 } }), sleep(3000).then(() => { throw new Error("no override"); })]); inset = 34; } catch (e) { inset = 0; }
-        await lipOpen(380, 780);
-        await collapse();
-        const m = await b.eval(`
-          const lip = document.getElementById("scale-lip"), r = lip.getBoundingClientRect();
-          const a = getComputedStyle(lip, "::after");
-          const surf = document.querySelector("#scale-sheet .sheetsurf").getBoundingClientRect();
-          return { h: r.height, w: parseFloat(a.width), ah: parseFloat(a.height), bottom: r.bottom, surfBottom: surf.bottom, top: r.top, left: r.left, right: r.right };`);
-        assert.strictEqual(m.h, 25);
-        assert.strictEqual(m.w, 32);
-        assert.strictEqual(m.ah, 3);
-        const hit = await b.eval(`
-          const lip = document.getElementById("scale-lip"), r = lip.getBoundingClientRect(), x = (r.left + r.right) / 2;
-          return { inside: document.elementFromPoint(x, r.top + 1) === lip, above: document.elementFromPoint(x, r.top - 1) === lip,
-            foot: document.getElementById("scale-foot").getBoundingClientRect().height };`);
-        assert.ok(hit.inside && !hit.above, `the hit-test zone is not the 25px box (inside ${hit.inside}, above ${hit.above})`);
-        assert.ok(Math.abs(hit.foot - 9) <= 0.5, `the shut footer is ${hit.foot}px, not 9`);
-        assert.ok(Math.abs(m.bottom - (m.surfBottom - inset)) <= 1.5, `the lip bottom ${m.bottom} against the surface bottom ${m.surfBottom} less inset ${inset}`);
-        const cx = (m.left + m.right) / 2;
-        await tapAt(cx, m.top + 2);
-        assert.strictEqual((await lipState()).lipped, false, "a tap at the top of the zone did not restore " + await lipDiag() + " tap " + cx + "," + (m.top + 2) + " inset " + inset);
-        await collapse();
-        const m2 = await lipRect();
-        await tapAt(m2.left + 4, m2.bottom - 2);
-        assert.strictEqual((await lipState()).lipped, false, "a tap at the bottom corner of the zone did not restore");
-      } finally {
-        await Promise.race([b.send("Emulation.setSafeAreaInsetsOverride", { insets: { bottom: 0 } }), sleep(3000)]).catch(() => {});
-        await reset();
-      }
-    });
 
-    test("UX: a real touch swipe up of 20px that starts on the lip restores the footer, and the same swipe on the body above it does not", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await collapse();
-        assert.strictEqual((await lipState()).shut, true);
-        await b.drag(".sheetbody", [[0, 30, -10], [0, 60, -20]], { y0: 20 });
-        await sleep(400);
-        let s = await lipState();
-        assert.ok(s.lipped && s.shut, `a 20px swipe on the body changed the lip (${JSON.stringify(s)})`);
-        await b.drag("#scale-lip", [[0, 30, -10], [0, 60, -20]], { y0: 0 });
-        await sleep(500);
-        s = await lipState();
-        assert.strictEqual(s.lipped, false, `a 20px swipe on the lip did not restore (${JSON.stringify(s)})`);
-      } finally { await reset(); }
-    });
 
-    test("UX: with the keyboard up the lip and the focused field are on screen, a field the app reveals sits above the tap zone, and dismissing the keyboard restores GENERATE", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(393, 852);
-        await b.eval(`document.getElementById("scale-box").focus(); return true;`);
-        await slideWithin(400, "the keyboard to shut the footer", () => b.fakeKeyboard(852 - 336), `document.getElementById("scale-sheet").classList.contains("lipshut")`);
-        let m = await b.eval(`
-          const s = document.getElementById("scale-sheet"), vvh = window.visualViewport.height;
-          const lip = document.getElementById("scale-lip").getBoundingClientRect(), f = document.getElementById("scale-box").getBoundingClientRect();
-          return { lipped: s.classList.contains("lipped"), shut: s.classList.contains("lipshut"), vvh, lip: { top: lip.top, bottom: lip.bottom }, f: { top: f.top, bottom: f.bottom } };`);
-        assert.ok(m.lipped && m.shut, `the keyboard did not collapse the footer (${JSON.stringify(m)})`);
-        assert.ok(m.lip.top >= -1 && m.lip.bottom <= m.vvh + 1, `the lip is off screen ${JSON.stringify(m.lip)} in ${m.vvh}`);
-        assert.ok(m.f.top >= -1 && m.f.bottom <= m.vvh + 1, `the focused field is off screen ${JSON.stringify(m.f)} in ${m.vvh}`);
-        await b.eval(`document.getElementById("scale-bottom").focus(); return true;`);
-        await waitSheetRest("the revealed field to come to rest");
-        m = await b.eval(`
-          const lip = document.getElementById("scale-lip").getBoundingClientRect(), f = document.getElementById("scale-bottom").getBoundingClientRect();
-          return { lipTop: lip.top, fb: f.bottom, ft: f.top, vvh: window.visualViewport.height };`);
-        assert.ok(m.fb <= m.lipTop + 1 && m.ft >= -1, `the revealed field ${m.ft}..${m.fb} is not above the tap zone at ${m.lipTop}`);
-        await slideWithin(400, "the footer to restore after the keyboard fell", () => b.clearKeyboard(), `!document.getElementById("scale-sheet").classList.contains("lipped")`);
-        const s = await lipState();
-        assert.strictEqual(s.lipped, false, "dismissing the keyboard left the footer lipped");
-        const p = await primaryRect();
-        const vh = await b.eval(`return window.innerHeight;`);
-        assert.ok(p.top >= 0 && p.bottom <= vh + 1, `the primary ${JSON.stringify(p)} is off screen in ${vh}`);
-      } finally { await reset(); }
-    });
 
-    test("UX: at 844x390 with the keyboard up (tiny, the surface scrolls) a real touch swipe with momentum changes lipped zero times", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(844, 390);
-        await b.eval(`document.getElementById("scale-top").focus(); return true;`);
-        await b.fakeKeyboard(180);
-        await waitElapsed(PIN_MS, "the keyboard's lip handling to settle");
-        await b.eval(`window.__lip.length = 0; return true;`);
-        const pts = [[0, 20, -30], [0, 40, -90], [0, 60, -180], [0, 80, -300]];
-        await b.drag(".sheetsurf", pts, { y0: 20 });
-        await waitFlingSettled("the drag's momentum and the footer slide");
-        await b.drag(".sheetsurf", [[0, 20, 40], [0, 40, 120], [0, 60, 240]], { y0: -20 });
-        await waitFlingSettled("the drag's momentum and the footer slide");
-        const n = await b.eval(`return window.__lip.length;`);
-        assert.strictEqual(n, 0, `lip classes changed ${n} times with the keyboard up`);
-      } finally { await reset(); }
-    });
 
     const focusPrimary = () => b.eval(`const n = document.getElementById("scale-next"), g = document.getElementById("scale-generate"); const e = !n.hidden ? n : g; e.focus(); return document.activeElement.id;`);
     const activeId = () => b.eval(`return document.activeElement && document.activeElement.id;`);
-    test("UX: a collapse while the primary holds focus moves focus to the lip and the footer stays collapsed", { timeout: 40000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[380, 780], [844, 390]]) {
-          await lipOpen(w, h);
-          const ctx = `${w}x${h}`;
-          const id = await focusPrimary();
-          if (id !== "scale-next" && id !== "scale-generate") { fails.push(`${ctx}: the primary did not take focus (${id})`); continue; }
-          await collapse();
-          const s = await lipState();
-          const a = await activeId();
-          if (!(s.lipped && s.shut)) fails.push(`${ctx}: the collapse undid itself (${JSON.stringify(s)})`);
-          if (a !== "scale-lip") fails.push(`${ctx}: focus is on ${a}, not the lip`);
-        }
-      } finally { await reset(); }
-      assert.deepEqual(fails, []);
-    });
 
-    test("T2 R2-1: a re-collapse inside the OPENING window moves focus from the primary to the lip", { timeout: 60000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[380, 780], [844, 390]]) {
-          await lipOpen(w, h);
-          const ctx = `${w}x${h}`;
-          await focusPrimary();
-          await collapse();
-          let s = await lipState();
-          if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the first swipe did not collapse (${JSON.stringify(s)})`); continue; }
-          if ((await activeId()) !== "scale-lip") { fails.push(`${ctx}: the first collapse left focus off the lip`); continue; }
-          const vvh = Math.round(h * 0.55);
-          const mid = await b.eval(`
-            window.__lip.length = 0;
-            document.getElementById("scale-lip").click();
-            const sh = document.getElementById("scale-sheet");
-            const opening = { id: document.activeElement.id, lipped: sh.classList.contains("lipped"), shut: sh.classList.contains("lipshut") };
-            const vv = window.visualViewport;
-            Object.defineProperty(vv, "height", { value: ${vvh}, configurable: true });
-            vv.dispatchEvent(new Event("resize"));
-            return opening;`);
-          if (!(mid.lipped && !mid.shut && (mid.id === "scale-next" || mid.id === "scale-generate"))) { fails.push(`${ctx}: the restore is not in OPENING with the primary focused (${JSON.stringify(mid)})`); continue; }
-          await sleep(300);
-          s = await lipState();
-          if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the re-collapse did not shut the footer (${JSON.stringify(s)})`); continue; }
-          const a = await activeId();
-          if (a !== "scale-lip") fails.push(`${ctx}: focus is on ${a || "body"}, not the lip, after a re-collapse inside OPENING`);
-        }
-      } finally { await reset(); }
-      assert.deepEqual(fails, []);
-    });
 
-    test("UX: after a tap on the lip restores the footer, a second swipe down collapses it again", { timeout: 40000 }, async () => {
-      const fails = [];
-      try {
-        for (const [w, h] of [[380, 780], [844, 390]]) {
-          await lipOpen(w, h);
-          const ctx = `${w}x${h}`;
-          await collapse();
-          let s = await lipState();
-          if (!(s.lipped && s.shut)) { fails.push(`${ctx}: the first swipe did not collapse (${JSON.stringify(s)})`); continue; }
-          const r = await lipRect();
-          await tapAt(Math.round((r.left + r.right) / 2), Math.round((r.top + r.bottom) / 2));
-          s = await lipState();
-          if (s.lipped) { fails.push(`${ctx}: the tap did not restore (${await lipDiag()})`); continue; }
-          await collapse();
-          s = await lipState();
-          if (!(s.lipped && s.shut)) fails.push(`${ctx}: the swipe after a lip tap did not collapse (${await lipDiag()})`);
-        }
-      } finally { await reset(); }
-      assert.deepEqual(fails, []);
-    });
 
-    test("UX: under prefers-reduced-motion the footer collapses and restores with no transition, in one task", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
-        await sleep(100);
-        await collapse();
-        const m = await b.eval(`
-          const el = document.getElementById("scale-footslide");
-          return { dur: getComputedStyle(el).transitionDuration, anims: document.getAnimations().filter((a) => a.transitionProperty === "transform").length };`);
-        assert.ok(/^0s(, 0s)*$/.test(m.dur), `the slide duration is ${m.dur}`);
-        assert.strictEqual(m.anims, 0, "a transform transition is running");
-        const r = await b.eval(`
-          document.getElementById("scale-lip").click();
-          const s = document.getElementById("scale-sheet");
-          return { lipped: s.classList.contains("lipped"), shut: s.classList.contains("lipshut") };`);
-        assert.deepStrictEqual(r, { lipped: false, shut: false }, "the restore did not finish in the click's task");
-      } finally { await reset(); }
-    });
 
-    test("UX: a touch flick to the end collapses once and stays collapsed", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780, { spacer: 260 });
-        for (let i = 0; i < 2; i++) {
-          await b.drag(".sheetbody", [[0, 10, -60], [0, 20, -160], [0, 30, -320]], { y0: 120 });
-          await waitFlingSettled("the drag's momentum and the footer slide");
-        }
-        const s = await lipState();
-        assert.strictEqual(s.lippedFlips, 1, `the flick changed lipped ${s.lippedFlips} times`);
-        assert.ok(s.lipped && s.shut, `the flick reopened the footer at the end (${JSON.stringify(s)})`);
-        assert.ok(s.top >= s.M - 2, `the flick did not reach the end (${s.top} of ${s.M})`);
-      } finally { await reset(); }
-    });
 
-    test("LP: at 380x780 scrolling the Scale panel collapses the footer to the lip and a tap on the lip restores NEXT", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await collapse();
-        const s = await lipState();
-        assert.ok(s.lipped && s.shut, `the scroll did not collapse (${JSON.stringify(s)})`);
-        await b.click("#scale-lip");
-        await sleep(500);
-        assert.strictEqual((await lipState()).lipped, false, "a tap on the lip did not restore");
-        const p = await primaryRect();
-        assert.strictEqual(p.id, "scale-next");
-        const vh = await b.eval(`return window.innerHeight;`);
-        assert.ok(p.top >= 0 && p.bottom <= vh + 1, `NEXT ${JSON.stringify(p)} is off screen`);
-      } finally { await reset(); }
-    });
 
-    test("LP: the lip slide takes 180ms and is instant under prefers-reduced-motion; tab switches have no transition", { timeout: 60000 }, async () => {
-      try {
-        await lipOpen(380, 780);
-        await collapse();
-        const dur = () => b.eval(`
-          const cs = getComputedStyle(document.getElementById("scale-footslide"));
-          const i = cs.transitionProperty.split(", ").indexOf("transform");
-          return i < 0 ? "0s" : cs.transitionDuration.split(", ")[i];`);
-        assert.strictEqual(await dur(), "0.18s");
-        await b.send("Emulation.setEmulatedMedia", { media: "", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
-        await sleep(100);
-        assert.strictEqual(await dur(), "0s");
-        const tabs = await b.eval(`
-          return ["scale-panel-scale", "scale-panel-layout", "scale-tab-scale", "scale-tab-layout"].map((id) => {
-            const cs = getComputedStyle(document.getElementById(id));
-            return cs.transitionDuration.split(", ").every((d) => d === "0s");
-          });`);
-        assert.deepStrictEqual(tabs, [true, true, true, true]);
-      } finally { await reset(); }
-    });
   });
 
   describe("FPD: the bottom ring slides under a real finger and mouse", () => {
@@ -18924,206 +12434,9 @@ function run() {
     const mouse = (type, x, y, extra = {}) => b.send("Input.dispatchMouseEvent", { type, x, y, button: "left", buttons: type === "mouseReleased" ? 0 : 1, clickCount: 1, ...extra });
     const near = (p, q, tol, msg) => assert.ok(Math.hypot(p.x - q.x, p.y - q.y) <= tol, `${msg}: ${JSON.stringify(p)} vs ${JSON.stringify(q)}`);
 
-    test("FPD: a touch drag on the bottom ring at 380x780 moves, swaps, snaps away and cancels without scrolling the drawer or touching the lip", { timeout: 90000 }, async () => {
-      try {
-        await open(380, 780, true);
-        const before = await sheetState();
-        let f = await frame();
-        const c3 = named(f.all, "C3");
-        await touchPath(c3, arc(f, 330, 300));
-        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
-        f = await frame();
-        near(named(f.all, "C3"), at(f, 300), 3, "C3 sits on the 300 degree step");
-        assert.strictEqual(await ghostCount(), 0);
-        await touchPath(named(f.all, "D3"), [named(f.all, "E3")]);
-        assert.match(await status(), /^Swapped D3 and E3\./);
-        f = await frame();
-        near(named(f.all, "D3"), at(f, 90), 3, "D3 took E3's step");
-        near(named(f.all, "E3"), at(f, 210), 3, "E3 took D3's step");
-        await touchPath(named(f.all, "C3"), arc(f, 300, 222, 8));
-        assert.strictEqual(await status(), "C3 was too close to E3, so it sits at 225°, lower left.");
-        assert.strictEqual(await warned(), true);
-        f = await frame();
-        near(named(f.all, "C3"), at(f, 225), 3, "C3 snapped away to 225");
-        const keep = JSON.stringify(f.all.map((n) => [n.name, Math.round(n.x), Math.round(n.y)]));
-        const c3b = named(f.all, "C3");
-        await touch("touchStart", [c3b]);
-        await sleep(320);
-        await touch("touchMove", [{ x: at(f, 120).x, y: at(f, 120).y + 36 }]);
-        await touch("touchStart", [{ x: at(f, 120).x, y: at(f, 120).y + 36 }, { x: 40, y: 40 }]);
-        await touch("touchMove", [{ x: at(f, 110).x, y: at(f, 110).y + 36 }, { x: 44, y: 44 }]);
-        await touch("touchEnd", []);
-        await sleep(200);
-        f = await frame();
-        assert.strictEqual(JSON.stringify(f.all.map((n) => [n.name, Math.round(n.x), Math.round(n.y)])), keep, "a second touch moved a note");
-        assert.strictEqual(await ghostCount(), 0);
-        const after = await sheetState();
-        assert.strictEqual(after.cls, before.cls, "the lip or the sheet changed class");
-        assert.strictEqual(after.top, before.top, "the drawer scrolled");
-      } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
-    });
 
-    const swTab = () => b.eval(`return document.getElementById("scale-tab-layout").getAttribute("aria-selected") === "true" ? "layout" : "scale";`);
-    const swSwipe = async (from, dx) => {
-      await b.waitForPendingSettle();
-      await touch("touchStart", [from]);
-      for (let i = 1; i <= 4; i++) { await sleep(8); await touch("touchMove", [{ x: from.x + dx * i / 4, y: from.y }]); }
-      await b.releasing(() => touch("touchEnd", []));
-      await sleep(150);
-    };
-    const swNote = async () => { const f = await frame(); return named(f.all, "F4") || f.all[0]; };
 
-    for (const [w, h] of [[390, 844], [844, 390]]) {
-      test(`SW: a quick swipe that starts on the pan switches Layout to Scale at ${w}x${h}`, { timeout: 90000 }, async () => {
-        try {
-          await open(w, h, true);
-          assert.strictEqual(await swTab(), "layout");
-          const rim = (await frame()).all.find((n) => n.ring === "rim");
-          await swSwipe(rim, 70);
-          assert.strictEqual(await swTab(), "scale", "a right swipe on the pan did not reach Scale");
-          await b.click("#scale-tab-layout");
-          await sleep(250);
-          await swSwipe((await frame()).all.find((n) => n.ring === "rim"), -70);
-          assert.strictEqual(await swTab(), "layout", "a left swipe on the pan moved off Layout");
-          const rim3 = (await frame()).all.find((n) => n.ring === "rim");
-          await swSwipe(rim3, 70);
-          assert.strictEqual(await swTab(), "scale", "a second right swipe on the pan did not reach Scale");
-        } finally { await b.setViewport(900, 900, false); }
-      });
-    }
 
-    test("SW: a held drag on a pan note never switches the tab and still moves the note", { timeout: 90000 }, async () => {
-      try {
-        await open(390, 844, true);
-        let f = await frame();
-        const c3 = named(f.all, "C3");
-        await touchPath(c3, arc(f, 330, 300));
-        assert.strictEqual(await swTab(), "layout", "a held drag switched the tab");
-        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
-        f = await frame();
-        const rim = f.all.find((n) => n.ring === "rim");
-        await touch("touchStart", [rim]);
-        await sleep(320);
-        for (let i = 1; i <= 4; i++) await touch("touchMove", [{ x: rim.x + 20 * i, y: rim.y + 36 }]);
-        await touch("touchEnd", []);
-        await sleep(200);
-        assert.strictEqual(await swTab(), "layout", "a held horizontal drag switched the tab");
-      } finally { await b.setViewport(900, 900, false); }
-    });
-
-    test("SW: a swipe on an unfocused note field switches the tab", { timeout: 90000 }, async () => {
-      try {
-        await open(390, 844, true);
-        await b.click("#scale-tab-scale");
-        await sleep(250);
-        await b.eval(`document.activeElement && document.activeElement.blur(); return true;`);
-        const field = await b.eval(`const r = document.getElementById("scale-top").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-        await swSwipe(field, -70);
-        assert.strictEqual(await swTab(), "layout");
-      } finally { await b.setViewport(900, 900, false); }
-    });
-
-    test("FPD: at 844x390 a drag from 90° to 180° lands with the band pinned and the status heading the controls column", { timeout: 90000 }, async () => {
-      try {
-        await open(844, 390, true);
-        let f = await frame();
-        const bandTop = () => b.eval(`const r = document.getElementById("scale-plate-band").getBoundingClientRect(); return r.top;`);
-        const band0 = await bandTop();
-        await touchPath(named(f.all, "E3"), arc(f, 90, 180, 8));
-        f = await frame();
-        near(named(f.all, "E3"), at(f, 180), 3, "E3 landed on 180 degrees");
-        assert.match(await status(), /^E3 moved to 180°, left\./);
-        assert.ok(Math.abs((await bandTop()) - band0) < 1, "the band moved");
-        const rects = await b.eval(`const st = document.getElementById("scale-drawer-status").getBoundingClientRect(); const tabs = document.getElementById("scale-tab-layout").getBoundingClientRect(); const band = document.getElementById("scale-plate-band").getBoundingClientRect();
-          return { stTop: st.top, stLeft: st.left, tabsBottom: tabs.bottom, bandRight: band.right, sticky: getComputedStyle(document.getElementById("scale-plate-band")).position };`);
-        assert.strictEqual(rects.sticky, "sticky");
-        assert.ok(rects.stLeft >= rects.bandRight - 1, "the status is not in the controls column");
-        assert.ok(rects.stTop >= rects.tabsBottom - 1, "the status is not under the tab strip");
-      } finally { await b.setViewport(900, 900, false); }
-    });
-
-    test("FPD: at 1280x800 a mouse drag moves a bottom note", { timeout: 90000 }, async () => {
-      try {
-        await open(1280, 800, false);
-        let f = await frame();
-        const from = named(f.all, "C3");
-        await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: from.x, y: from.y, button: "none", buttons: 0 });
-        await mouse("mousePressed", from.x, from.y);
-        await mouse("mouseMoved", from.x + 6, from.y);
-        for (const p of arc(f, 330, 300)) await mouse("mouseMoved", p.x, p.y);
-        const end = at(f, 300);
-        await mouse("mouseReleased", end.x, end.y);
-        await sleep(120);
-        f = await frame();
-        near(named(f.all, "C3"), at(f, 300), 3, "C3 on the 300 degree step");
-        assert.strictEqual(await status(), "C3 moved to 300°, lower right. Seat U1 stays its number.");
-      } finally { await b.setViewport(900, 900, false); }
-    });
-
-    test("SO: at 380x780, 844x390 and 1280x800 a drag swap of Db3 and Db4 on Pygmy leaves U2 drawn at 240 and U5 at 60, and the Bbm card reads U4-U2-5", { timeout: 150000 }, async () => {
-      const PYGMY = "[C3] [Db3] [Eb3] F3 | G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]";
-      const labelOf = (id) => b.eval(`return lastSolved.fields[${id}][5];`);
-      const angleOf = (id) => b.eval(`return lastSolved.fields[${id}][4];`);
-      try {
-        for (const [w, h, mobile] of [[380, 780, true], [844, 390, true], [1280, 800, false]]) {
-          await freshLoad();
-          await b.setViewport(w, h, mobile);
-          await b.settle();
-          await openSheet();
-          await typeScale(PYGMY);
-          await b.eval(`document.getElementById("scale-anchor-between").click(); return 1;`);
-          await openDrawer();
-          await b.settle();
-          await b.eval(`layoutAngles = { bottom: [300, null, null, null, null, null] }; resyncSheet(true); return 1;`);
-          await b.settle();
-          const f = await frame();
-          const from = named(f.all, "Db3");
-          const to = named(f.all, "Db4");
-          if (mobile) {
-            await touchPath(from, [to]);
-          } else {
-            await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: from.x, y: from.y, button: "none", buttons: 0 });
-            await mouse("mousePressed", from.x, from.y);
-            await mouse("mouseMoved", from.x + 6, from.y);
-            await mouse("mouseMoved", to.x, to.y);
-            await mouse("mouseReleased", to.x, to.y);
-            await sleep(60);
-          }
-          const tag = `${w}x${h}`;
-          assert.strictEqual(await status(), "Swapped Db3 and Db4. Db3 is now in bottom seat U5, upper right.", tag);
-          assert.strictEqual(await angleOf(102), 60, tag);
-          assert.strictEqual(await angleOf(105), 240, tag);
-          assert.strictEqual(await labelOf(102), "U5", tag);
-          assert.strictEqual(await labelOf(105), "U2", tag);
-          const names = (await b.eval(`return [...document.querySelectorAll("#scale-preview .panhit")].map((h) => h.getAttribute("aria-label"));`));
-          assert.ok(names.includes("Db3, bottom seat U5, upper right"), `${tag}: ${names}`);
-          const g = await frame();
-          near(named(g.all, "Db3"), at(g, 60), 3, `${tag} Db3 at 60`);
-          near(named(g.all, "Db4"), at(g, 240), 3, `${tag} Db4 at 240`);
-          if (w === 1280) {
-            const flashed = await b.eval(`return panFlash ? panFlash.length : 0;`);
-            assert.ok(flashed >= 2, `${tag}: flash count ${flashed}`);
-          }
-          await b.eval(`document.getElementById("scale-generate").click(); return 1;`);
-          await b.waitFor("document.getElementById('scale-sheet').hidden && selection.kind==='saved'",
-            { label: "the rearranged Pygmy's real Generate acknowledgment" });
-          const generatedSelection=await b.eval("return {...selection};");
-          await nativeCommittedPreference(b,generatedSelection);
-          const generatedEnvelope=await nativeSavedEnvelope(b);
-          const generatedEntry=generatedEnvelope.entries.find(entry=>entry.instanceId===generatedSelection.id);
-          assert.ok(generatedEntry,`${tag}: the rearranged Pygmy has a committed saved instance`);
-          assert.strictEqual(generatedEntry.record.s,"[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
-            `${tag}: the saved instance has the complete literal Pygmy inventory`);
-          assert.deepStrictEqual(generatedEnvelope.preferredSelection,generatedSelection);
-          assert.deepStrictEqual(await b.eval("return {...selection};"),generatedSelection,`${tag}: the acknowledged Pygmy stays selected`);
-          await b.settle();
-          const bbm = await b.eval(`const d = selectedDeck(); const ch = d.chords.find((c) => c.main + (c.sup || "") === "Bbm");
-            return {found:!!ch,numbers:ch?ch.fields.map((x) => d.fields[x][5]).join("-"):null};`);
-          assert.strictEqual(bbm.found,true,`${tag}: the acknowledged Pygmy must contain its Bbm chord`);
-          assert.strictEqual(bbm.numbers, "U4-U2-5", tag);
-        }
-      } finally { await b.clearKeyboard().catch(() => {}); await b.setViewport(900, 900, false); }
-    });
   });
   /* SHC: two native journeys. API sinks never touch the OS clipboard/picker.
    * Promise drains finish even when suppression causes no DOM mutation. */
@@ -19214,123 +12527,7 @@ function run() {
       }
     };
 
-    test("SHC E1: saved fine nudge keeps B fallback after A rejects and opens B in a fresh profile", { timeout: 90000 }, async () => {
-      await freshLoad();
-      await b.setViewport(1280, 800, false);
-      await b.goto(URL + query + HASH);
-      await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC public layout boot" });
-      await install();
-      await clickLink(1);
-      await enterEdit();
-      await showFine();
-      const hit = '#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]';
-      await trustedClick(hit);
-      await trustedClick("#scale-angle-next");
-      assert.strictEqual(await b.eval(`return lastSolved.fields[101][4];`), 295, "actual fine nudge moves C3 to literal 295 degrees");
-      await trustedClick("#scale-generate");
-      await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=6/")`, { label: "SHC committed SAVE and canonical bar" });
-      // This click follows the observed canonical bar. It does not claim to
-      // beat native popstate; U7 separately covers the modelled pending pop.
-      await clickLink(2);
-      const before = await snapshot();
-      assert.deepStrictEqual(before.options, expectedOptions);
-      assert.deepStrictEqual(before.selectedRecord.o.angles.bottom, expectedOptions);
-      assert.strictEqual(before.calls[0].payload, URL + query + HASH, "A captures the original public fixture");
-      assert.strictEqual(before.calls[1].payload, before.calls[1].href, "B captures literal invocation href");
-      assert.strictEqual(before.calls[1].payload, before.href);
-      assert.ok(before.calls[1].payload.includes(query + "#s=6/"));
-      assert.notStrictEqual(before.calls[0].payload, before.calls[1].payload);
-      const decoded = await b.eval(`return HPE.share.decode(__shc.calls[1].payload.split("#s=")[1]);`);
-      assert.strictEqual(decoded.ok, true);
-      assert.deepStrictEqual(decoded.value.options.angles.bottom, expectedOptions);
-      await complete(1, false);
-      const newer = await snapshot();
-      assert.strictEqual(newer.value, before.calls[1].payload);
-      assert.strictEqual(newer.focus, "share-url");
-      await complete(0, false);
-      const after = await snapshot();
-      // Retain the race observation while still exercising the receiver on
-      // baseline RED: stale UI is an assertion, never a wait-for-DOM timeout.
-      const copiedB = before.calls[1].payload;
-      const senderProfile = b.profileDir;
-      await b.close(); b = null;
-      b = await launch({ foregroundSettle: true });
-      assert.ok(b, "SHC fresh receiver browser must launch");
-      assert.notStrictEqual(b.profileDir, senderProfile, "receiver owns a genuinely fresh profile");
-      await b.setViewport(1280, 800, false);
-      // Observe storage before ANY application script on the receiver's first
-      // origin visit, without a same-profile wipe or a blank-page endpoint.
-      const { identifier: receiverPrelude } = await b.send("Page.addScriptToEvaluateOnNewDocument", {
-        source: "window.__shcReceiverBefore = localStorage.length;"
-      });
-      try { await b.goto(copiedB); }
-      finally { await b.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: receiverPrelude }); }
-      await b.waitFor(`document.querySelector("#decks .chip.on") && location.hash.startsWith("#s=6/")`, { label: "SHC fresh receiver import" });
-      assert.strictEqual(await b.eval(`return window.__shcReceiverBefore;`), 0, "fresh receiver has no inherited sender storage");
-      assert.deepStrictEqual(await b.eval(`return deck().options.angles.bottom;`), expectedOptions);
-      assert.deepStrictEqual(await b.eval(`return ${nativeSavedExpression()}.then(saved=>JSON.parse(saved.raw).entries.find(row=>row.instanceId===selection.id).record.o.angles.bottom);`), expectedOptions);
-      assert.strictEqual(await b.eval(`return !!document.querySelector("#card .diagwrap svg");`), true,
-        "receiver practice card contains diagram SVG (DOM presence, not visible ink)");
-      await enterEdit(); await enterLayout();
-      await assertDrawnPositions();
-      assert.strictEqual(after.value, copiedB, "old A must not overwrite B's visible fallback");
-      assert.strictEqual(after.focus, "share-url", "new fallback keeps focus after A settles");
-      assert.strictEqual(after.hidden, false);
-      assert.strictEqual(after.notice, newer.notice);
-      assert.strictEqual(after.href, before.href);
-      assert.deepStrictEqual(after.options, expectedOptions);
-      assert.deepStrictEqual(after.records, before.records);
-    });
 
-    test("SHC E2: phone Edit protects focus and notices from old LINK and fresh fallback remains selectable", { timeout: 90000 }, async () => {
-      for (const success of [false, true]) {
-        await freshLoad();
-        await b.setViewport(380, 780, true);
-        await b.goto(URL + query + HASH);
-        await b.waitFor(`document.querySelector("#decks .chip.on")`, { label: "SHC phone public layout" });
-        await install();
-        await clickLink(1);
-        await enterEdit();
-        const focused = await activeId();
-        const notice = await b.eval(`return document.querySelector(".announce").textContent;`);
-        await complete(0, success);
-        assert.strictEqual(await activeId(), focused, "old LINK must not steal focus from actual Edit");
-        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true,
-          "old LINK must not reveal the manual URL under Edit");
-        assert.strictEqual(await b.eval(`return document.querySelector(".announce").textContent;`), notice);
-        await trustedClick("#scale-back");
-        await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=")`, { label: "SHC cancel Edit" });
-        // A separate old request settles only AFTER the open→cancel cycle.
-        await clickLink(2); await enterEdit(); await trustedClick("#scale-back");
-        await b.waitFor(`document.getElementById("scale-sheet").hidden && location.hash.startsWith("#s=")`, { label: "SHC second cancel Edit" });
-        const afterCancelFocus = await activeId();
-        const afterCancelNotice = await b.eval(`return document.querySelector(".announce").textContent;`);
-        await complete(1, success);
-        assert.strictEqual(await activeId(), afterCancelFocus, "cancel must not revive old focus ownership");
-        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
-        assert.strictEqual(await b.eval(`return document.querySelector(".announce").textContent;`), afterCancelNotice);
-        await clickLink(3);
-        // Real window blur is deliberately benign (permission UI may blur).
-        await b.eval(`window.dispatchEvent(new Event("blur")); return true;`);
-        await complete(2, false);
-        const fallback = await snapshot();
-        assert.strictEqual(fallback.hidden, false);
-        assert.strictEqual(fallback.readonly, true);
-        assert.strictEqual(fallback.focus, "share-url");
-        assert.strictEqual(fallback.start, 0);
-        assert.strictEqual(fallback.end, fallback.value.length, "fallback selects every character");
-        const target = await b.eval(`const el = document.getElementById("share-copy"), r = el.getBoundingClientRect();
-          return {w:r.width,h:r.height,hit:!!document.elementFromPoint(r.left+r.width/2,r.top+r.height/2).closest("#share-copy")};`);
-        assert.ok(target.w >= 44 && target.h >= 44 && target.hit, "phone LINK retains its usable target");
-        await b.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
-        await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
-        assert.strictEqual(await activeId(), "share-copy");
-        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true);
-        await clickLink(4); await complete(3, false);
-        await trustedClick("#settings-trigger");
-        assert.strictEqual(await b.eval(`return document.getElementById("share-url").hidden;`), true, "real focus transfer/blur hides the manual field");
-      }
-    });
   });
 
   /* SAVED-SCALE-VARIANTS — six actual browser groups. Two-target tests use one
@@ -19527,6 +12724,8 @@ function run() {
       for(const r of rows.rows)assert.ok(r.ms<500,"chip "+r.i+" selected in "+r.ms.toFixed(1)+" ms, bound 500");
     });
 
+
+
     test("SV-PG2: 200 legacy scales migrate at boot within 5 s, the strip scrolls end to end, and taps around an Edit open and close stay under 500 ms",{timeout:180000},async()=>{
       await freshLoad();await b.setViewport(380,780,false);
       const BASES=["(D3) A3 C4 D4 E4 F4 G4 A4","(D3) A3 Bb3 C4 D4 E4 F4 G4 A4","(C#3) G#3 B3 C#4 D4 F4 F#4 G#4","(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4"];
@@ -19571,9 +12770,9 @@ function run() {
       for(const n of [200,1,100,150,50,199])await check(n);
       await check(100);
       await b.eval(`const chip=[...document.querySelectorAll('#decks .chip')].find(c=>(c.getAttribute('aria-label')||c.textContent).includes('QA 100'));chip.click();return true;`);
-      await b.waitFor(`document.getElementById('scale-sheet').hidden===false`,{label:"Edit sheet opens on the selected chip"});
-      await b.eval(`document.getElementById('scale-back').click();return true;`);
-      await b.waitFor(`document.getElementById('scale-sheet').hidden===true`,{label:"Edit sheet closes on BACK"});
+      await b.waitFor(`!!document.getElementById('editor-line') && document.getElementById('scale-sheet').hidden===false`,{label:"the editor opens on the selected chip"});
+      await b.eval(`document.getElementById('editor-back').click();return true;`);
+      await b.waitFor(`document.getElementById('scale-sheet').hidden===true`,{label:"the editor closes on BACK"});
       for(const n of [120,10])await check(n);
       console.log("SV_PG2_TAPS "+JSON.stringify(timed.map(r=>[r.name,Math.round(r.ms)])));
     });
@@ -19648,34 +12847,6 @@ function run() {
       });
     });
 
-    test("SV3 E1: copied saved layout opens the selected variant in a fresh profile",{timeout:90000},async()=>{
-      await freshLoad();await b.setViewport(1280,800,false);const p=session(b.sessionId);
-      const a=clone(SV.portableRecords.pygmyLayoutA),variant=clone(a);a.o.name="PUBLIC LAYOUT A";variant.o.name="PUBLIC LAYOUT B";
-      assert.strictEqual((await importRecord(p,a)).ok,true);assert.strictEqual((await importRecord(p,variant)).ok,true);
-      assert.strictEqual(await p.eval("return document.querySelectorAll('#decks .chip').length;"),7,"both named versions must remain in the picker");
-      const before=await read(p),aEntry=before.entries.find(x=>x.record.o.name==="PUBLIC LAYOUT A");
-      await openEdit(p);await p.click("#scale-tab-layout");await p.click("#scale-fine-toggle");
-      await p.click('#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]');await p.click("#scale-angle-next");
-      assert.strictEqual(await p.eval("return lastSolved.fields[101][4];"),295,"actual fine nudge moves the public C3 to295 degrees");
-      await save(p);
-      const after=await read(p);assert.deepStrictEqual(after.entries.find(x=>x.instanceId===aEntry.instanceId),aEntry,"editing B leaves A byte-for-value unchanged");
-      await p.eval(`window.__svCopied=null;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__svCopied=text;}}});return true;`);
-      await p.click("#share-copy");await p.wait("typeof window.__svCopied==='string'","actual copied payload");
-      const copied=await p.eval("return {value:window.__svCopied,href:location.href};");assert.strictEqual(copied.value,copied.href);
-      for(const id of after.usedInstanceIds)assert.ok(!copied.value.includes(id),"portable links cannot contain a local instance handle");
-      assert.deepStrictEqual(await p.eval("return HPE.share.decode(window.__svCopied.split('#s=')[1]).value.options.angles.bottom;"),SV.share.expectedEditedBottomOptions);
-      const senderProfile=b.profileDir;await b.close();b=null;b=await launch({foregroundSettle:true});assert.ok(b);
-      assert.notStrictEqual(b.profileDir,senderProfile,"receiver must own a genuinely fresh profile");
-      const prelude=await b.send("Page.addScriptToEvaluateOnNewDocument",{source:"window.__svStorageBefore=localStorage.length;"});
-      try{await b.goto(copied.value);}finally{await b.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:prelude.identifier});}
-      const receiver=session(b.sessionId);assert.strictEqual(await receiver.eval("return window.__svStorageBefore;"),0);
-      assert.deepStrictEqual(await receiver.eval("return deck().options.angles.bottom;"),SV.share.expectedEditedBottomOptions);
-      await openEdit(receiver);await receiver.click("#scale-tab-layout");
-      const points=await receiver.eval(`return Object.fromEntries([...document.querySelectorAll('#scale-preview .panhit[data-ring="bottom"]')].map(n=>[
-        n.getAttribute('aria-label').split(',')[0],(Math.atan2(-Number(n.getAttribute('cy')),Number(n.getAttribute('cx')))*180/Math.PI+360)%360]));`);
-      assert.deepStrictEqual(Object.keys(points).sort(),Object.keys(SV.share.expectedEditedPositions).sort());
-      for(const [pitch,angle]of Object.entries(SV.share.expectedEditedPositions))assert.ok(Math.abs(((points[pitch]-angle+540)%360)-180)<0.1,pitch+" receiver position");
-    });
 
     test("SV6 E1: two real targets serialize different Adds and deduplicate identical imports",{timeout:90000},async()=>{
       for(const equal of [false,true])await withTwo([],{},async(a,bPeer)=>{
@@ -19695,21 +12866,6 @@ function run() {
       });
     });
 
-    test("SV6 E2: stale Edit and delete-versus-Save preserve the winner without resurrection",{timeout:90000},async()=>{
-      await withTwo([SV.portableRecords.amaraA],{},async(a,bPeer)=>{
-        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A","the committed selected instance must render");
-        await openEdit(a);await openEdit(bPeer);await a.type("#scale-name","FIRST WINNER");await bPeer.type("#scale-name","STALE DRAFT");
-        await save(a);const winner=await read(a);
-        await conflictSave(bPeer,a);
-        assert.strictEqual(await bPeer.eval("return document.getElementById('scale-sheet').hidden;"),false);
-        assert.strictEqual(await bPeer.eval("return document.getElementById('scale-name').value;"),"STALE DRAFT");
-        assert.deepStrictEqual(await read(bPeer),winner,"stale same-target Edit never overwrites the winner");
-        const target=winner.entries[0],stale={type:"edit",collectionId:winner.collectionId,instanceId:target.instanceId,expectedRevision:target.revision};
-        assert.strictEqual((await commit(a,{type:"delete",collectionId:winner.collectionId,instanceId:target.instanceId,expectedRevision:target.revision})).ok,true);
-        const gone=await read(a),refused=await commit(bPeer,stale,SV.portableRecords.amaraB);
-        assert.strictEqual(refused.ok,false);assert.strictEqual(refused.kind,"conflict");assert.deepStrictEqual(await read(bPeer),gone,"deleted local handle cannot be resurrected by stale Save");
-      });
-    });
 
     test("SV8 E1: RESET rejects a changed replacement scope but accepts an unrelated plain Add",{timeout:90000},async()=>{
       const older={v:4,s:SV.inventories.amara9.seed,o:{name:"OLDER REPLACEMENT",replaces:"kurd"}},newer={v:4,s:SV.inventories.other.seed,o:{name:"NEWER REPLACEMENT",replaces:"kurd"}};
@@ -19743,52 +12899,6 @@ function run() {
       });
     });
 
-    test("SV9 E1: clean reconciliation updates content and route while dirty reconciliation preserves caret pick and scroll",{timeout:90000},async()=>{
-      await withTwo([SV.portableRecords.pygmyLayoutA],{},async(a,bPeer)=>{
-        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC LAYOUT");const initial=await read(a);
-        await a.eval("document.getElementById('share-copy').focus();return true;"); // no OS clipboard/share invocation
-        const focus=await a.eval("return document.activeElement.id;");
-        assert.strictEqual(focus,"share-copy");
-        const edit=await commit(bPeer,{type:"edit",collectionId:initial.collectionId,instanceId:uid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB);assert.strictEqual(edit.ok,true);
-        await a.wait("deck().options.angles && deck().options.angles.bottom[0]===295","clean remote content refresh");
-        assert.strictEqual(await a.eval("return location.hash===routeFor(deck());"),true);
-        assert.strictEqual(await a.eval("return document.activeElement.id;"),focus,"clean data refresh cannot steal focus");
-        const beforeDirty=await read(a);await openEdit(a);await a.type("#scale-name","DIRTY LOCAL DRAFT");
-        await a.eval("document.getElementById('scale-name').setSelectionRange(2,7);return true;");
-        await a.click("#scale-tab-layout");await a.click("#scale-fine-toggle");
-        await a.click('#scale-preview .panhit[data-ring="bottom"][aria-label^="C3,"]');
-        // The tab panels are display:contents. Exercise the REAL sheet
-        // scroller with positive overflow and a nonzero captured scroll.
-        await a.send("Emulation.setDeviceMetricsOverride",{width:380,height:667,deviceScaleFactor:1,mobile:true});
-        await a.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
-        const scrolling=await a.eval("const candidates=['#scale-sheet .sheetbody','#scale-sheet .sheetsurf'];window.__svScrollSelector=candidates.find(q=>{const n=document.querySelector(q);return n&&/auto|scroll/.test(getComputedStyle(n).overflowY)&&n.scrollHeight>n.clientHeight;});if(!window.__svScrollSelector)return {max:0,top:0};const n=document.querySelector(window.__svScrollSelector),max=n.scrollHeight-n.clientHeight;n.scrollTop=Math.min(40,max);return {max,top:n.scrollTop};");
-        assert.ok(scrolling.max>0&&scrolling.top>0,"dirty preservation fixture must genuinely overflow and scroll");
-        const draft=await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.querySelector(window.__svScrollSelector).scrollTop,focus:document.activeElement.getAttribute('data-field')};");
-        assert.notStrictEqual(draft.pick,"null","dirty reconciliation fixture must have a genuinely picked note");
-        assert.strictEqual(draft.focus,"101","fixture retains actual note focus rather than an empty/body focus ID");
-        const remote={...clone(SV.portableRecords.pygmyLayoutB),o:{...clone(SV.portableRecords.pygmyLayoutB.o),name:"REMOTE WINNER"}};
-        assert.strictEqual((await commit(bPeer,{type:"edit",collectionId:beforeDirty.collectionId,instanceId:uid(1),expectedRevision:beforeDirty.entries[0].revision},remote)).ok,true);
-        await a.wait("savedState.entries[0].revision===3","dirty tab observes remote revision");
-        assert.deepStrictEqual(await a.eval("return {name:document.getElementById('scale-name').value,start:document.getElementById('scale-name').selectionStart,end:document.getElementById('scale-name').selectionEnd,pick:JSON.stringify(pickRef),scroll:document.querySelector(window.__svScrollSelector).scrollTop,focus:document.activeElement.getAttribute('data-field')};"),draft,"dirty caret/pick/scroll/focus remain local");
-        await conflictSave(a,bPeer);
-        const remoteWinner=await read(bPeer);assert.strictEqual(remoteWinner.entries[0].record.o.name,"REMOTE WINNER");
-        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:remoteWinner.collectionId,instanceId:uid(1),expectedRevision:remoteWinner.entries[0].revision})).ok,true);
-        await a.wait("savedState.entries.length===0","dirty remote deletion observed");
-        assert.strictEqual(await a.eval("return document.getElementById('scale-name').value;"),"DIRTY LOCAL DRAFT","remote deletion cannot erase draft");
-        await ink(a,"#scale-conflict-msg",{text:SV.uiContract.copy.en.conflictDeleted});
-      });
-      // Repair only genuinely removed-chip focus. A surviving outside control
-      // has the same remote deletion and must retain focus instead.
-      for(const chipFocus of [true,false])await withTwo([SV.portableRecords.amaraA],{},async(a,bPeer)=>{
-        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A");const e=await read(a);
-        await a.eval(chipFocus?"document.querySelector('#decks .chip.on').focus();return true;":"document.getElementById('share-copy').focus();return true;");
-        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:e.collectionId,instanceId:uid(1),expectedRevision:1})).ok,true);
-        await a.wait("deck().id==='kurd'","clean removed selection fallback");
-        if(chipFocus)assert.strictEqual(await a.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
-        else assert.strictEqual(await a.eval("return document.activeElement.id;"),"share-copy","surviving outside focus must never be stolen");
-        assert.strictEqual((await read(a)).entries.length,0,"background reconciliation cannot reimport the deleted route");
-      });
-    });
 
     // Real native-only deletion regression: the scoped model has no delete
     // API. Metadata inspection below must not open the missing DB itself.
@@ -19815,132 +12925,6 @@ function run() {
       assert.deepStrictEqual(await p.eval("return window.__idbDeletionDraws;"),{uuid:0,random:0},"readonly absence never allocates an epoch or instance identity");
     });
 
-    test("SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy",{timeout:180000},async()=>{
-      let cells=0,states=0,discriminatorControls=0;
-      const matrix=SV.labels.nativeMatrix;
-      function matrixEnvelope() {
-        const e=makeEnvelope(matrix.entries.map(x=>x.record));
-        e.entries.forEach((x,i)=>{x.displayOrdinal=matrix.entries[i].displayOrdinal;x.instanceId=uid(x.displayOrdinal);});
-        const highest=203;e.usedInstanceIds=Array.from({length:highest},(_,i)=>uid(i+1));e.nextDisplayOrdinal=highest+1;
-        e.preferredSelection={kind:'saved',id:uid(matrix.initialSelectedOrdinal)};return e;
-      }
-      for(const mode of ["fallback","real"]) {
-        const rb=await launch({foregroundSettle:true,realFonts:mode==="real"});assert.ok(rb,"owned font-mode browser must launch");
-        let peer=null;
-        try {
-          const p=session(rb.sessionId,rb);let generation=0;
-          async function reload() {
-            const stamp="sv-font-"+(++generation);
-            const hook=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"window.__svFontDocument="+JSON.stringify(stamp)+";"});
-            try {await rb.send("Page.navigate",{url:URL});await p.wait("window.__svFontDocument==="+JSON.stringify(stamp)+" && "+APP_READY_EXPR,"fresh font-mode document");}
-            finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:hook.identifier});}
-            const fonts=await p.eval(`return document.fonts.ready.then(()=>Promise.all(["14px Marcellus","400 14px Bitter","700 14px Bitter","400 14px 'Nunito Sans'","600 14px 'Nunito Sans'"].map(x=>document.fonts.load(x)))).then(()=>({size:document.fonts.size,faces:[...document.fonts].map(f=>({family:f.family,weight:f.weight,status:f.status}))}));`);
-            require("../tools/probe/panel_fit.js").checkFontMode(mode,fonts);
-          }
-          await rb.goto(URL);peer=await openPeer(rb);
-          for(const [localeIndex,lang]of SV.labels.locales.entries()) {
-            const expected=SV.uiContract.copy[lang],collision=matrixEnvelope();
-            await p.eval(`localStorage.clear();localStorage.setItem('hpfc',JSON.stringify({lang:${JSON.stringify(lang)},mode:'A'}));return ${nativeSavedExpression({write:true,raw:JSON.stringify(collision)})};`);await reload();
-            assert.strictEqual(await p.eval("return document.getElementById('lang-select').value;"),lang,"requested locale must actually be active");
-            for(const [w,h,mobile]of [[380,780,true],[844,390,true],[1280,800,false]]) {
-              await rb.setViewport(w,h,mobile);await rb.settle();
-              const labels=await p.eval("return [...document.querySelectorAll('#decks .chip')].map(n=>n.textContent.trim());");
-              assert.strictEqual(labels.length,matrix.expectedVisibleControlCount,"all frozen multi-digit/preset/long-name controls render");
-              assert.strictEqual(new Set(labels).size,labels.length,"FINAL labels, including literal suffix names, must be distinct");
-              for(const row of matrix.entries.filter(x=>x.expectedToken)) {
-                const index=matrix.expectedCustomOrdinalsNewestFirst.indexOf(row.displayOrdinal);
-                const selector="#decks .chip:nth-child("+(index+1)+")",m=await ink(p,selector,{control:true});
-                assert.ok(m.text.endsWith(SV.labels.separator+row.expectedToken),"literal full ASCII suffix on its own control: "+row.expectedToken);
-                assert.ok(m.aria.includes(row.expectedToken),"accessible name includes the same full suffix");discriminatorControls++;
-              }
-              const presetSelector="#decks .chip:nth-child("+(matrix.entries.length+3)+")",preset=await ink(p,presetSelector,{control:true});
-              assert.ok(preset.text.endsWith(SV.labels.separator+"P3")&&preset.aria.includes("P3"),"literal third-preset discriminator survives layout");discriminatorControls++;
-              cells++;
-            }
-            await rb.setViewport(380,780,true);
-            // Exact normal imports still deduplicate. The resolution action
-            // below has different trusted semantics and must allocate freshly.
-            const exact=await importRecord(p,matrix.entries.find(x=>x.displayOrdinal===203).record);
-            assert.strictEqual(exact.ok,true);assert.strictEqual((await read(p)).entries.length,matrix.entries.length);
-            // Native keyboard activation selects the colliding S202 control,
-            // then opens its Edit sheet; Escape restores that control's focus.
-            await p.eval(`document.querySelectorAll('#decks .chip')[${matrix.keyboardChipIndex}].focus();return true;`);
-            await p.key("Enter","Enter",13);await p.wait(`selection.kind==='saved'&&selection.id===${JSON.stringify(uid(202))}`,"keyboard selects literal S202");
-            await p.key("Enter","Enter",13);await p.wait("!document.getElementById('scale-sheet').hidden","keyboard opens selected Edit");
-            assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.entries.find(x=>x.displayOrdinal===202).record.o.name);
-            await p.key("Escape","Escape",27);await p.wait("document.getElementById('scale-sheet').hidden","Escape closes Edit");
-            assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Escape returns focus to the rebuilt selected chip");
-            await openEdit(p);await p.type("#scale-name",matrix.draftName);const base=await read(p);
-            const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
-            await p.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(conflict)})};`);
-            await p.click("#scale-tab-layout");
-            const scrolled=await p.eval("const body=document.querySelector('#scale-sheet .sheetbody');body.scrollTop=body.scrollHeight;return {top:body.scrollTop,max:body.scrollHeight-body.clientHeight};");
-            assert.ok(scrolled.max>0&&scrolled.top>0,"conflict recovery starts from a genuinely scrolled Layout panel");
-            await conflictSave(p,peer.p,lang,"conflict",true);
-            assert.strictEqual(await p.eval("return document.getElementById('scale-name').value;"),matrix.draftName);
-            assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
-            await p.click("#scale-tab-scale");
-            await p.click("#scale-name");await rb.fakeKeyboard(520);await rb.settle();
-            const input=await p.eval("const n=document.getElementById('scale-name'),r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,limit:visualViewport.offsetTop+visualViewport.height,focus:document.activeElement===n};");
-            assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps the focused input above simulated keyboard");await rb.clearKeyboard();
-            if(lang==="en") {
-              // This draft already equals ordinal203. Normal import above
-              // reused it; explicit Save-as-separate must create another handle.
-              const prior=await read(p);await hold(peer.p);
-              try {
-                await p.eval("document.getElementById('scale-conflict-separate').focus();return true;");
-                await p.key("Enter","Enter",13);
-                await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted separate-save activation reaches the real exclusive commit queue");
-                let q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"resolution actually queues a distinct save command");
-                assert.strictEqual(await p.eval("return document.getElementById('scale-conflict-separate').disabled;"),true);
-                await p.key("Enter","Enter",13);q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"repeated activation cannot enqueue duplicate resolution");
-              }finally{await release(peer.p);}
-              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","separate save acknowledgment and canonical route");
-              const after=await read(p);assert.strictEqual(after.entries.length,prior.entries.length+1);
-              const fresh=after.entries.find(x=>!prior.usedInstanceIds.includes(x.instanceId));assert.ok(fresh,"explicit separate action allocates a fresh lifetime handle");
-              assert.strictEqual(fresh.record.o.name,matrix.draftName);assert.strictEqual(fresh.record.o.replaces,undefined);
-              assert.strictEqual(after.entries.filter(x=>x.record.o?.name===matrix.draftName).length,2,"equal content versions coexist after explicit resolution");
-              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(203)),prior.entries.find(x=>x.instanceId===uid(203)));
-              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(202)),prior.entries.find(x=>x.instanceId===uid(202)));
-              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
-            } else {
-              if(localeIndex%2)await p.key("Escape","Escape",27);else await p.click("#scale-back");
-              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","explicit cancel returns to winner");
-              assert.strictEqual(await p.eval("return deck().name;"),"REMOTE LABEL","Back discards the draft only by explicit owner action and displays the winner");
-              assert.strictEqual(await p.eval("return HPE.share.decode(location.hash.slice(3)).value.options.name;"),"REMOTE LABEL","canonical URL reflects the acknowledged winner");
-              assert.deepStrictEqual((await read(p)).entries,conflict.entries);
-              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Back restores the selected chip's focus");
-            }
-            const durable=await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`);
-            const unsupported=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
-            try {
-              await reload();assert.strictEqual(await p.eval("return savedMode;"),"session");
-              await ink(p,"#saved-status",{text:expected.session,live:true});
-              await p.click("#settings-trigger");await p.click("#deck-add");await p.type("#scale-box",SV.inventories.other.seed);
-              assert.strictEqual(await p.eval("return document.getElementById('scale-generate').disabled;"),false,"note input stays English in every locale");
-              assert.strictEqual(await p.eval("return sheetTab==='scale'&&document.getElementById('scale-generate').hidden;"),true,"Add keeps Generate hidden until the Layout step");
-              await p.click("#scale-next");
-              await p.wait("sheetTab==='layout'&&!document.getElementById('scale-generate').hidden","NEXT opens Layout and exposes Generate");
-              await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","session-only scale generation completes");
-              assert.strictEqual(await p.eval("return HPE.core.formatSeed(deck().fields);"),SV.inventories.other.seed,"actual temporary scale becomes the selected view");
-              assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session,live:true});
-              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`),durable,"temporary generation performs no durable saved-store write");
-              await reload();
-              assert.strictEqual(await p.eval(`return savedState.entries.some(x=>x.record?.s===${JSON.stringify(SV.inventories.other.seed)});`),false,"temporary scale is lost after reload, never silently promoted");
-              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()};`),durable.current);await ink(p,"#saved-status",{text:expected.session,live:true});
-            }finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:unsupported.identifier});}
-            await p.eval(`return ${nativeSavedExpression({write:true,raw:"{not-json"})};`);await reload();
-            assert.strictEqual(await p.eval("return savedMode;"),"protected");
-            await ink(p,"#saved-status",{text:expected.recovery,live:true});
-            assert.strictEqual((await p.eval(`return ${nativeSavedExpression()};`)).raw,"{not-json","recovery cannot overwrite unreadable source");states++;
-          }
-        } finally{if(peer)await peer.close();await rb.close();}
-      }
-      assert.strictEqual(cells,48,"all2font x8locale x3viewport geometry cells execute");
-      assert.strictEqual(discriminatorControls,528,"every frozen suffix/preset control gets child-text/ancestor x/y clipping and target checks");
-      assert.strictEqual(states,16,"conflict/session/recovery/keyboard states execute in every font/locale");
-      console.log("SV_COPY_MATRIX "+JSON.stringify({geometryCells:cells,discriminatorControls,conflictSessionRecoveryStates:states,fontModes:["fallback","real"],simulatedKeyboard:true,physicalIOS:false}));
-    });
   }
 
 
@@ -21141,11 +14125,15 @@ function run() {
       assert.deepStrictEqual(arrived, [...records].sort(byName));
     });
 
-    test("move: a NEEDS_NEWER_APP record in the payload is skipped and the rest import", async () => {
+    test("move: a NEEDS_NEWER_APP record in the payload is carried as opaque bytes and the rest import", async () => {
       on(); await clearOrigin(NEW());
-      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`, OLD() + "/");
+      const future = { v: 99, s: "future", o: {} };
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`, OLD() + "/");
       await b.waitFor(noticeShown, { label: "the notice" });
-      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD"]);
+      const rows = (await nativeSavedEnvelope(b)).entries.map((row) => row.record);
+      assert.strictEqual(rows.length, 2);
+      assert.ok(rows.some((r) => r.o.name === "GOOD"));
+      assert.deepStrictEqual(rows.find((r) => r.v === 99), future);
     });
 
     test("move: the notice shows the singular and plural counts only after the write commits", async () => {

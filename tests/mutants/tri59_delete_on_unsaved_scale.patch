@@ -1,0 +1,15 @@
+# kills: TRI59 delete is offered on an edited scale only, as a 44px item in the ... menu
+# suite: node --test --test-name-pattern ^TRI59.delete.is.offered tests/editor_e2e.test.js
+# fault: DELETE appears on a scale that is not yet saved.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15954,7 +15954,7 @@ function editorOpen(edit) {
+       editorNode("button", { id: "editor-more", type: "button", class: "mode", text: "\u2026", "aria-label": t("editor.more.aria"), "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "editor-menu" }),
+       editorNode("div", { id: "editor-menu", role: "menu", tabindex: "-1", "aria-label": t("editor.more.aria"), hidden: true },
+         editorMenuItem("editor-redo", "editor.redo"), editorMenuItem("editor-remove", "editor.remove"), editorMenuItem("editor-reset", "editor.reset"),
+-        ...(edit ? [editorNode("div", { class: "menu-sep", role: "separator" }), editorDeleteButton()] : []))),
++        editorNode("div", { class: "menu-sep", role: "separator" }), editorDeleteButton())),
+     editorNode("div", { id: "editor-dialog", role: "alertdialog", "aria-modal": "true", "aria-labelledby": "editor-dlg-title", hidden: true },
+       editorNode("div", { class: "dlg" },
+         editorNode("h3", { id: "editor-dlg-title", text: t("editor.dlg.title") }),

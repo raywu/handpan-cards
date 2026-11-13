@@ -1,0 +1,15 @@
+# kills: TRI59d A1: neoSlotPoint puts an empty tonefield at the turned angle
+# suite: node --test --test-name-pattern ^TRI59d.A1..neoSlotPoint tests/app.test.js
+# why: neoSlotPoint ignores the turn, so an empty tonefield is drawn at the frozen angle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14913,7 +14913,7 @@ function neoInputCheck() {
+ function neoSlotPoint(slot, placed, turn) {
+   const P = HPE.layout.PROFILE, R = 100;
+   const i = slot % NEO_MAIN;
+-  const a = HPE.layout.profileAngles(turn)[i] * Math.PI / 180;
++  const a = HPE.layout.profileAngles()[i] * Math.PI / 180;
+   const mutant = slot >= NEO_MAIN;
+   if (placed) {
+     const orbit = mutant ? placed[4] : placed[1];

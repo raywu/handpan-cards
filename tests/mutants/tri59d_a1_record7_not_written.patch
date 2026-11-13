@@ -1,0 +1,15 @@
+# kills: TRI59d savedCandidate stages a between profile as record 7 and refuses the wrong pairings
+# suite: node --test --test-name-pattern ^TRI59d.savedCandidate.stages tests/persist.test.js
+# why: A profile carrying between is staged as record 5, so a turned scale saves unturned.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11546,7 +11546,7 @@ const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
+ const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+ const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
+   o.angles.inner.some(a => a !== null && a !== undefined);
+-const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
++const recordVersionFor = (o, profiled) => profiled ? PROFILE_RECORD_VERSION : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
+ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
+ // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
+ // its own version check on the wire format (share.js step 2), so this is the

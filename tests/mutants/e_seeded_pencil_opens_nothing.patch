@@ -1,5 +1,5 @@
-# kills: SD: the selected seeded chip's pencil opens the sheet with SAVE CHANGES at 380px
-# suite: node --test --test-name-pattern SD:.the.selected.seeded.chip tests/e2e.test.js
+# kills: the selected chip carries a pencil on every deck; no unselected chip does
+# suite: node --test --test-name-pattern ^the.selected.chip.carries.a.pencil.on.every.deck tests/e2e.test.js
 # Tapping the selected seeded chip no longer opens the Edit sheet.
 # Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html

@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13428,8 +13428,7 @@ window.addEventListener("popstate", () => {
+@@ -14793,8 +14793,7 @@ window.addEventListener("popstate", () => {
    if (aboutOpen) { hideAbout(); return; }
    if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
-   if (!sheetOpen) return;
+   if (!pageOpen) return;
 -  sheetRouted = false;
 -  hideSheet();
 +  closeScaleSheet();
