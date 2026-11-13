@@ -1,0 +1,15 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# per-form-loss: one plural form of a German message drops its {n}.
+diff --git a/data/i18n/de.json b/data/i18n/de.json
+--- a/data/i18n/de.json
++++ b/data/i18n/de.json
+@@ -134,7 +134,7 @@
+   "saved.sessionImportAckPending": "Diese geteilte Skala ist vorübergehend, und ihre Ansicht konnte nicht aktualisiert werden. Lass diesen Tab offen und behalte den eingehenden Link. Beim Neuladen oder Schließen gehen vorübergehende Änderungen verloren.",
+   "move.notice": {
+     "one": "Deine gespeicherte Skala ist hierher umgezogen.",
+-    "other": "Deine {n} gespeicherten Skalen sind hierher umgezogen."
++    "other": "Deine  gespeicherten Skalen sind hierher umgezogen."
+   },
+   "move.failed": "Deine gespeicherten Skalen sind noch unter der alten Adresse. Öffne die alte Adresse erneut, um sie zu verschieben.",
+   "move.banner": {

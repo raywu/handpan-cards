@@ -1,0 +1,16 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# extra-form: a Japanese plural message grows a "one" form the language does not have.
+diff --git a/data/i18n/ja.json b/data/i18n/ja.json
+--- a/data/i18n/ja.json
++++ b/data/i18n/ja.json
+@@ -77,7 +77,8 @@
+   "sheet.del_note_custom": "もう一度タップすると{name}を削除します。元に戻せません。",
+   "sheet.del_refusal": "スケールは最低1つ必要です。{name}を削除する前に、別のスケールを追加してください。",
+   "sheet.generated": {
+-    "other": "カードを{n}枚作成しました。"
++    "other": "カードを{n}枚作成しました。",
++    "one": "カードを{n}枚作成しました。"
+   },
+   "sheet.updated": "{name}を更新しました",
+   "card.shuffle_on": "シャッフル：オン",

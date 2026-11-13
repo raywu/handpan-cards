@@ -1,0 +1,15 @@
+# kills: the editor's Tab list stops on a disabled button or a control with no layout box
+# suite: node --test --test-name-pattern ^Tab.brings.every.stop tests/editor_e2e.test.js
+# editorTabStops drops isStop. Re-anchored 2026-11-12 on the editor panel.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14482,7 +14482,7 @@
+ }
+ function editorTabStops() {
+   const scope = editorEl(editorSession.dialog ? "editor-dialog" : "editor");
+-  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]"));
++  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && !el.closest("[inert],[hidden]"));
+ }
+ function editorSetPanType(kind) {
+   if (!editorDo((m) => editorPanType(m, kind))) return;

@@ -1,0 +1,15 @@
+# kills: Tab lands on the next stop without scrolling it into view, so a stop below the fold stays outside the scrollport
+# suite: node --test --test-name-pattern ^Tab.brings.every.stop tests/editor_e2e.test.js
+# cycleTabStops focuses with preventScroll. Re-anchored 2026-11-12 on the editor panel.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15115,7 +15115,7 @@
+   const i = stops.indexOf(document.activeElement);
+   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+   e.preventDefault();
+-  stops[next].focus();
++  stops[next].focus({ preventScroll: true });
+ }
+ 
+ /* ---------------- interaction ---------------- */

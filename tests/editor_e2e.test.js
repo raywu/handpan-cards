@@ -1886,6 +1886,15 @@ function run() {
       assert.strictEqual(await b.eval(`return document.querySelector('#editor-swatches [data-palette="9"]').getAttribute("aria-pressed");`), "true", "undo moves the mark");
     });
 
+    test("EPF: the page layer paints an opaque ground and a disabled mode control dims", async () => {
+      await setup(BOTTOM);
+      const seen = await b.eval(`const bg = getComputedStyle(document.getElementById("scale-sheet")).backgroundColor;
+        const x = document.createElement("button"); x.className = "mode"; x.disabled = true; document.getElementById("settings-panel").appendChild(x);
+        const dim = getComputedStyle(x).color; x.remove();
+        return { bg, dim };`);
+      assert.deepStrictEqual(seen, { bg: "rgb(246, 244, 237)", dim: "rgb(138, 132, 123)" });
+    });
+
     test("EPF: picking the current palette adds no Undo step and keeps the dots shown", async () => {
       await setup(BOTTOM);
       const past = await pastLen();
@@ -2183,6 +2192,28 @@ function run() {
       await b.eval(`document.getElementById("editor-back").focus(); return true;`);
       await press("Tab", "Tab", 9, 8);
       assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Shift+Tab wraps backward");
+    });
+
+    test("Tab brings every stop into the panel's scrollport on a short screen", async () => {
+      await fresh(375, 360);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-tab-layout");
+      assert.deepStrictEqual(await b.eval(`const root = document.getElementById("editor");
+        const off = root.appendChild(document.createElement("button")); off.id = "zz-off"; off.disabled = true;
+        const none = root.appendChild(document.createElement("button")); none.id = "zz-none"; none.style.display = "none";
+        const ids = editorTabStops().map((e) => e.id); off.remove(); none.remove();
+        return ids.filter((id) => id.startsWith("zz-"));`), [], "a disabled or unlaid-out control is no Tab stop");
+      const stops = await b.eval(`return editorTabStops().length;`);
+      await b.eval(`document.getElementById("editor-back").focus(); return true;`);
+      const outside = [];
+      for (let k = 0; k < stops; k += 1) {
+        await press("Tab", "Tab", 9);
+        const out = await b.eval(`const q = document.activeElement.getBoundingClientRect(), p = document.getElementById("editor").getBoundingClientRect();
+          return q.top < p.top - 1 || q.bottom > p.bottom + 1 ? (document.activeElement.id || document.activeElement.className) : null;`);
+        if (out) outside.push(out);
+      }
+      assert.deepStrictEqual(outside, []);
     });
   });
 

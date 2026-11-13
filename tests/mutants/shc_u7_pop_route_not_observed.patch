@@ -1,0 +1,14 @@
+# kills: a back or forward pop does not retire the old LINK request
+# suite: node --test --test-name-pattern ^SHC.U7: tests/app.test.js
+# popstate listener drops observeLinkRoute()
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14802,7 +14802,6 @@
+   // SAVE already selected and synced the committed scale. Observe the final
+   // route after this app-owned pop, not its temporary pre-SAVE destination.
+   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+-  observeLinkRoute();
+   if (aboutOpen) { hideAbout(); return; }
+   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
+   if (!pageOpen) return;

@@ -1,0 +1,15 @@
+# kills: a disabled mode control paints like an enabled one
+# suite: node --test --test-name-pattern ^EPF..the.page.layer.paints tests/editor_e2e.test.js
+# A disabled mode control paints like an enabled one (disabled colour dropped). Re-anchored 2026-11-12.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1172,7 +1172,7 @@
+   background:#6756B5; color:#FFFFFF; border-color:#6756B5}
+ #settings-panel .mode.on:active, #scale-sheet .mode.on:active{background:#5A49A6}
+ #settings-panel .mode:disabled, #scale-sheet .mode:disabled, #settings-panel .prints button:disabled{
+-  background:#F6F4ED; color:#8A847B; border-color:#8A847B; opacity:1}
++  background:#F6F4ED; color:#242424; border-color:#8A847B; opacity:1}
+ 
+ #scale-sheet .sheetlabel,#scale-sheet .sheethint {color:#5E5850}
+ 

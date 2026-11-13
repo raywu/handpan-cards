@@ -1,0 +1,16 @@
+# kills: a LINK copy from an old route still owns the new route
+# suite: node --test --test-name-pattern ^SHC.U tests/app.test.js
+# copyLink current() drops generation and href checks
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15866,8 +15866,7 @@
+   const href = location.href;
+   const deck_kind = deckKind(deck());
+   let noticeRevision = announcementRevision;
+-  const current = () => generation === linkUIGeneration && href === location.href &&
+-    !shareCopy.disabled && !pageOpen && !aboutOpen &&
++  const current = () => !shareCopy.disabled && !pageOpen && !aboutOpen &&
+     !(panelOpen && !desktopMQ.matches) && !document.hidden;
+   if (!current()) return;
+   const done = (text, method) => {

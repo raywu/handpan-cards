@@ -1,0 +1,15 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# repeat-loss: a French message that repeats {A} keeps it only once.
+diff --git a/data/i18n/fr.json b/data/i18n/fr.json
+--- a/data/i18n/fr.json
++++ b/data/i18n/fr.json
+@@ -96,7 +96,7 @@
+   "reason.BAD_NOTE.barEmpty": "Un | exige des notes du dessus avant lui et des notes intérieures après, p. ex. (D) A C D | E F.",
+   "reason.BAD_NOTE.barFirst": "Le | vient après le ding et les notes du dessus, p. ex. (D) A C D | E F.",
+   "reason.NOTE_OUT_OF_RANGE": "{A} est hors du clavier : une note doit se situer entre C-1 et G9.",
+-  "reason.NOTE_OUT_OF_ORDER": "{A} n’est pas plus aiguë que {B}, alors que la ligne va du grave à l’aigu. Donnez à {A} une octave supérieure ou placez-la plus tôt dans la ligne, p. ex. (D3) A3 C4 D4.",
++  "reason.NOTE_OUT_OF_ORDER": "{A} n’est pas plus aiguë que {B}, alors que la ligne va du grave à l’aigu. Donnez à A une octave supérieure ou placez-la plus tôt dans la ligne, p. ex. (D3) A3 C4 D4.",
+   "reason.NOTE_OUT_OF_ORDER.ding": "{A} est à la même hauteur que le ding {B} ou plus grave. Les notes du dessus sont plus aiguës que le ding ; une note plus grave est une note du dessous et s’écrit avant le ding, entre crochets, p. ex. [C3] (D3) A3.",
+   "reason.NOTE_REPEATED": "{B} et {A} sont la même note : une note ne peut apparaître qu’une fois par coque. La même note sur la coque du dessous prend des crochets et son octave, p. ex. (D3) A3 [C4] C4.",
+   "reason.NEEDS_NEWER_APP": "Ce lien demande une version plus récente de l’application. Rechargez la page.",

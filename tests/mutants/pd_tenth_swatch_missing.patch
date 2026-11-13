@@ -1,0 +1,15 @@
+# kills: the Layout tab renders only nine palette dots
+# suite: node --test --test-name-pattern ^EPF tests/editor_e2e.test.js
+# editorRenderPalette drops the tenth palette
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13651,7 +13651,7 @@
+   const current = m.options.palette || 0;
+   const box = editorEl("editor-swatches");
+   if (!box.children.length) {
+-    HPE.select.PALETTES.forEach((p, i) => {
++    HPE.select.PALETTES.slice(0, 9).forEach((p, i) => {
+       const b = editorNode("button", { type: "button", class: "dot", "aria-label": t("editor.palette_n", { n: i + 1 }), "data-palette": String(i) });
+       b.style.setProperty("--dga", p.root);
+       b.style.setProperty("--dgb", p.tone);

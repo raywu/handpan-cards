@@ -1,0 +1,15 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# edge-tab: a German message starts with a tab where the English one has no edge whitespace.
+diff --git a/data/i18n/de.json b/data/i18n/de.json
+--- a/data/i18n/de.json
++++ b/data/i18n/de.json
+@@ -80,7 +80,7 @@
+     "one": "{n} Karte erstellt",
+     "other": "{n} Karten erstellt"
+   },
+-  "sheet.updated": "{name} aktualisiert",
++  "sheet.updated": "\t{name} aktualisiert",
+   "card.shuffle_on": "Mischen: ein",
+   "card.shuffle_off": "Mischen: aus",
+   "sheet.edit_aria": "{name} bearbeiten",

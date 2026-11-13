@@ -4509,6 +4509,42 @@ describe("tab stops follow rendering", () => {
     assert.strictEqual(child.getClientRects().length, 1);
   });
 
+  test("Shift+Tab from the sheet's first stop wraps to the last, not off the front", async () => {
+    const app = boot();
+    const stops = ["a", "b", "c"].map(() => app.get("document.createElement('button')"));
+    let prevented = 0;
+    const key = (shiftKey) => app.get("cycleTabStops")(stops, { shiftKey, preventDefault() { prevented += 1; } });
+    stops[0].focus();
+    key(true);
+    assert.strictEqual(app.get("document.activeElement"), stops[2], "Shift+Tab off the first stop did not wrap to the last");
+    key(false);
+    assert.strictEqual(app.get("document.activeElement"), stops[0], "Tab off the last stop did not wrap to the first");
+    key(false);
+    assert.strictEqual(app.get("document.activeElement"), stops[1]);
+    assert.strictEqual(prevented, 3);
+  });
+
+  test("SB-5 Tab in an empty ADD sheet never lands on the disabled GENERATE", async () => {
+    const app = boot();
+    const live = app.get("document.createElement('button')");
+    const dead = app.get("document.createElement('button')");
+    dead.disabled = true;
+    assert.strictEqual(app.get("isStop")(live), true);
+    assert.strictEqual(app.get("isStop")(dead), false, "a disabled control was offered as a Tab stop");
+    assert.strictEqual(app.get("isStop")(null), false);
+  });
+
+  test("SB-5 Tab in the ADD sheet skips a control inside a hidden row", async () => {
+    const app = boot();
+    const row = app.get("document.createElement('div')");
+    const inside = app.get("document.createElement('button')");
+    row.appendChild(inside);
+    row.hidden = true;
+    assert.strictEqual(app.get("isStop")(inside), false, "a control inside a hidden row was offered as a Tab stop");
+    row.hidden = false;
+    assert.strictEqual(app.get("isStop")(inside), true);
+  });
+
   test("Tab with no stops neither throws nor swallows the key", async () => {
     const app = boot();
     let prevented = false;
@@ -5171,6 +5207,21 @@ const mnNumberLine = (deck, main) => {
   const chord = deck.chords.find((c) => c.main === main && !c.sup);
   return chord.fields.map((f) => deck.fields[f][5]).join("-");
 };
+
+test("MN: the title card omits the TONEFIELD NUMBERS line when the top is mirrored, and keeps it unmirrored or with only the bottom mirrored", () => {
+  const E = require("./helpers/engine.js").loadEngine(["core", "fontdata", "pdf", "pdfdeck", "pdfcards"]);
+  const lines = (seed, opts) => {
+    const app = boot();
+    const made = app.generate(seed, opts);
+    assert.strictEqual(made.ok, true, made.reason);
+    return E.pdfdeck.fromGenerated({ deck: savedViews(app)[made.instanceId] }).legend_lines;
+  };
+  const has = (l) => l.some((x) => x.startsWith("TONEFIELD NUMBERS RUN 1 - "));
+  assert.strictEqual(has(lines(W1_BOTTOM, {})), true);
+  assert.strictEqual(has(lines(W1_BOTTOM, { mirrorBottom: true })), true);
+  assert.strictEqual(has(lines(W1_BOTTOM, { mirror: true })), false);
+  assert.strictEqual(has(lines(MN_KURD, { mirror: true })), false);
+});
 
 
 
@@ -8872,6 +8923,14 @@ describe("FPD: seats, sole note, hint, nudge, notices and records", () => {
     assert.deepStrictEqual(stored2[0].o.angles.bottom, [null, 225, null, 20, null, 130]);
   });
 
+  test("SV3 E1: a copied saved layout's share code keeps its custom bottom angles", async () => {
+    const link = "#s=6/uC3_uDb3_uEb3_(F3)_G3_Ab3_uBb3_C4_uDb4_Eb4_F4_G4_Ab4_C5_Eb5_-_F5_G5_uAb5/*F+AEOLIAN+12/between/at-,225,,20,,130/5af123";
+    const app = await durableBoot({ href: "https://example.test/index.html" + link });
+    const res = JSON.parse(JSON.stringify(app.get("shareCode(deck())")));
+    assert.strictEqual(res.ok, true);
+    assert.match(res.value, /\/between\/at-,225,,20,,130\/[0-9a-f]{6}$/);
+  });
+
 
 
 
@@ -9115,6 +9174,15 @@ describe("I18N", () => {
     assert.strictEqual(app.get('t("sheet.next")'), "⟦NEXT⟧");
     assert.strictEqual(app.get('t("sheet.generate")'), en["sheet.generate"], "absent in de: en answers");
     assert.strictEqual(app.get('t("no.such.key")'), "no.such.key", "absent in both: the key itself");
+  });
+
+  test("I18N: the English DOM of the app equals the base: card text carries lang=en only under another UI language", async () => {
+    const face = (languages) => {
+      const app = boot({ languages });
+      return app.get("headerHTML(DECKS[0], DECKS[0].chords[0], 1, false)") + app.get("nameHTML(DECKS[0].chords[0], false)");
+    };
+    assert.ok(!/lang="en"/.test(face(["en-US", "en"])), "English UI marked its own text as an island");
+    assert.ok(/lang="en"/.test(face(["de"])), "a German UI left the English card text unmarked");
   });
 
   test("I18N: under every present table the card face differs from English only in the .hint text", async () => {
@@ -9479,6 +9547,16 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
 
+  test("SHC U2: reselecting the current scale, or A to B to A, retires the old LINK", async () => {
+    const app = fresh(), calls = sink(app), id = app.get("selection.id");
+    for (const select of [() => app.select(id), () => { app.clickChip("D AMARA 10"); app.select(id); }]) {
+      const old = await copy(app, calls);
+      select();
+      await settle(old);
+      hidden(app, "selection must retire the old LINK and A to B to A must not revive ownership");
+    }
+  });
+
   test("SHC U3: Add Edit About and mobile settings retire LINK through open and cancel", async () => {
     for (const modal of ["add", "edit", "about", "panel"]) for (const success of [false, true]) {
       const app = fresh(), calls = sink(app), pre = app.location.href;
@@ -9618,6 +9696,17 @@ describe("SHC asynchronous LINK ownership", () => {
     }
   });
 
+
+  test("SHC U7: a Back or Forward pop retires the old LINK, even when the route comes back", async () => {
+    const app = fresh(), calls = sink(app), home = app.location.href;
+    const old = await copy(app, calls);
+    app.location.href = PAGE;
+    app.popstate();
+    app.location.href = home;
+    app.popstate();
+    await settle(old);
+    hidden(app, "a pop away and back must not revive the old LINK request");
+  });
 
   test("SHC U8: hidden and refused LINK consume stale UI without replay and analytics stay nonsecret", async () => {
     for (const success of [false, true]) {
@@ -10141,6 +10230,16 @@ describe("SHC asynchronous LINK ownership", () => {
     const after=snapshot(app),plain=after.entries.find(x=>x.instanceId===res.instanceId);
     assert.strictEqual(plain.record.o.replaces,undefined,"ordinary import must strip replacement authority");
     assert.deepStrictEqual(after.slots,{kurd:iid(1)}); assert.deepStrictEqual(after.entries[0],e.entries[0]);
+  });
+
+  test("SV8 U1b: a replacement keeps its seed's slot in the strip, after the plain saved scales", async () => {
+    const rep={...copy(SV.portableRecords.amaraA),o:{name:"SLOT OWNER",replaces:"hijaz",palette:2}};
+    const plainRec={...copy(SV.portableRecords.amaraB),o:{name:"PLAIN SAVED",palette:3}};
+    const {app}=await seeded([rep,plainRec],{slots:{hijaz:iid(1)},slotStateRevision:1});
+    const order=app.get("allDeckViews().map(v=>(v.slotId||'')+':'+v.selection.kind)");
+    const builtins=app.get("DECKS.map(d=>d.id)");
+    const want=[":saved",...builtins.map(id=>id+(id==="hijaz"?":saved":":builtin"))];
+    assert.deepStrictEqual(plain(order),want,"the replacement must sit where its seed sat, not jump to the front");
   });
 
   test("SV8 U2: deleting a slot owner promotes the newest recognized survivor", async () => {

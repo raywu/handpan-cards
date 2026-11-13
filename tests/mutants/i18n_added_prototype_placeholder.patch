@@ -1,0 +1,15 @@
+# kills: I18N: every table has the keys of en and keeps every placeholder
+# suite: node --test --test-name-pattern ^I18N:.every.table.has.the.keys.of.en.and.keeps.every.placeholder$ tests/app.test.js
+# prototype: a German message invents a {__proto__} placeholder the English one lacks.
+diff --git a/data/i18n/de.json b/data/i18n/de.json
+--- a/data/i18n/de.json
++++ b/data/i18n/de.json
+@@ -77,7 +77,7 @@
+   "sheet.del_note_custom": "Tippe noch einmal, um {name} zu entfernen. Das lässt sich nicht rückgängig machen.",
+   "sheet.del_refusal": "Behalte mindestens eine Skala. Füge eine Skala hinzu, bevor Du {name} löschst.",
+   "sheet.generated": {
+-    "one": "{n} Karte erstellt",
++    "one": "{n} Karte erstellt {__proto__}",
+     "other": "{n} Karten erstellt"
+   },
+   "sheet.updated": "{name} aktualisiert",

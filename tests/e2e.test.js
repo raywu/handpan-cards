@@ -897,6 +897,83 @@ function run() {
     );
   });
 
+  test("every scrolling surface contains its overscroll", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    const seen = await b.eval(`
+      const out = {};
+      for (const sel of [".decks", "#about"]) {
+        const el = document.querySelector(sel);
+        out[sel] = el ? getComputedStyle(el).overscrollBehavior : "MISSING";
+      }
+      return out;
+    `);
+    for (const sel of Object.keys(seen)) {
+      assert.strictEqual(seen[sel], "contain",
+        `${sel} has overscroll-behavior: ${seen[sel]} - a flick past its end chains to the page behind it and drags the whole app (row 223e)`);
+    }
+  });
+
+  test("every interactive control has a press state", async () => {
+    await freshLoad();
+    await b.setViewport(380, 780, true);
+    const swept = new Set();
+    const mute = [];
+    for (const state of ["home", "panel"]) {
+    if (state === "panel") {
+      await b.click("#settings-trigger");
+      await b.waitFor(`!document.getElementById("settings-panel").hasAttribute("hidden")`, { label: "the settings panel to open" });
+    }
+    const names = await b.eval(`
+      const name = (el) => el.id ? "#" + el.id
+        : el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim()
+          ? "." + el.className.trim().split(/\\s+/).join(".") : "");
+      const out = [];
+      const seen = new Set();
+      for (const el of document.querySelectorAll('button, [role="button"]')) {
+        if (el.closest("[hidden]")) continue;
+        const n = name(el);
+        if (seen.has(n)) continue;
+        seen.add(n);
+        el.setAttribute("data-press-probe", String(out.length));
+        out.push(n);
+      }
+      return out;
+    `);
+    if (state === "home") assert.ok(names.some((n) => n.includes("chip")), "the sweep did not reach a deck chip");
+    await b.send("DOM.enable");
+    await b.send("CSS.enable");
+    const paint = (i) => b.eval(`
+      const el = document.querySelector('[data-press-probe="${i}"]');
+      const cs = getComputedStyle(el);
+      const own = [cs.color, cs.backgroundColor, cs.borderTopColor, cs.boxShadow, cs.filter, cs.transform, cs.opacity, cs.outlineColor, cs.textDecorationLine].join("|");
+      const kids = [...el.querySelectorAll("*")].map((k) => { const c = getComputedStyle(k); return [c.color, c.fill, c.stroke, c.opacity].join(","); }).join("|");
+      return own + "||" + kids;
+    `);
+    for (let i = 0; i < names.length; i++) {
+      if (swept.has(names[i])) continue;
+      swept.add(names[i]);
+      await b.eval(`document.querySelector('[data-press-probe="${i}"]').scrollIntoView({ block: "nearest", inline: "nearest" }); return true;`);
+      const rest = await paint(i);
+      const doc = await b.send("DOM.getDocument", { depth: 0 });
+      const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: `[data-press-probe="${i}"]` });
+      await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
+      let pressed;
+      try {
+        await b.settle();
+        pressed = await paint(i);
+      } finally {
+        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
+      }
+      if (pressed === rest) mute.push(names[i]);
+    }
+    }
+    assert.ok(swept.size > 10, `the sweep found only ${swept.size} controls, so it is broken: ${JSON.stringify([...swept])}`);
+    assert.deepStrictEqual(mute, [],
+      "these controls paint the same pressed as at rest, so on iOS - which has no hover and whose tap highlight this app turns off - a press gives no feedback at all " +
+      `(row 223f). Controls swept: ${JSON.stringify([...swept])}`);
+  });
+
   /* ---------------------------------------------------------------- *
    * 5. persistence
    *
@@ -5754,6 +5831,27 @@ function run() {
   // Row 213. closeScaleSheet() restores focus correctly, and then the deck
   // switch rebuilds the chip strip underneath it - so the fix has to survive
   // buildChips(), not merely run before it.
+  test("GENERATE and SAVE CHANGES leave focus on the deck that was just made", async () => {
+    await freshLoad();
+    await generate(SIX_SCALES[1]);
+    const afterGen = await activeDesc();
+    assert.strictEqual(afterGen.isBody, false,
+      "focus was dumped on <body> after GENERATE CARDS - a screen reader restarts from the top of the page just as the success message fires");
+    assert.strictEqual(afterGen.isSelectedChip, true,
+      `after GENERATE focus should rest on the selected deck chip, but it is on ${JSON.stringify(afterGen)}`);
+    try {
+      await editFreshDeck();
+      await clickGenerate();
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`,
+        { label: "the Edit sheet to close after SAVE CHANGES" });
+      const afterSave = await activeDesc();
+      assert.strictEqual(afterSave.isBody, false, "focus was dumped on <body> after SAVE CHANGES");
+      assert.strictEqual(afterSave.isSelectedChip, true,
+        `after SAVE CHANGES focus should rest on the selected deck chip, but it is on ${JSON.stringify(afterSave)}`);
+    } finally {
+      await b.setViewport(900, 900, false);
+    }
+  });
 
   // Regression guard for the same row: the two closes that were measured
   // CORRECT must stay correct. They do not re-select, so nothing rebuilds the

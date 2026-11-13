@@ -1,0 +1,15 @@
+# kills: MN: the title card omits the TONEFIELD NUMBERS line when the top is mirrored, and keeps it unmirrored or with only the bottom mirrored
+# suite: node --test --test-name-pattern ^MN..the.title.card.omits.the.TONEFIELD.NUMBERS.line.when.the.top.is.mirrored..and.keeps.it.unmirrored.or.with.only.the.bottom.mirrored$ tests/app.test.js
+# The numbers line is kept under a top mirror.
+diff --git a/src/engine/pdfdeck.js b/src/engine/pdfdeck.js
+--- a/src/engine/pdfdeck.js
++++ b/src/engine/pdfdeck.js
+@@ -131,7 +131,7 @@
+                  ": BOTTOM NOTES, X-RAY VIEW (SEEN FROM ABOVE)");
+     }
+     lines.push("NOTE NAME + OCTAVE INSIDE EACH TONEFIELD");
+-    if (!topMirrored) {
++    if (true) {
+       lines.push("TONEFIELD NUMBERS RUN 1 - " + tops.length + " FROM THE LOWEST " +
+                  (hasBottom ? "TOP " : "") + "NOTE");
+     }
