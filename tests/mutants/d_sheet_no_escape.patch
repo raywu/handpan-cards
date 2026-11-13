@@ -15,12 +15,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18946,7 +18946,7 @@
-   if (sheetOpen) {
+@@ -15392,7 +15392,7 @@ document.addEventListener("keydown", e => {
+   if (pageOpen) {
      const undoKey = editorUndoAllowed(editorSession, editorDrag) ? editorUndoKey(e) : null;
      if (undoKey) { e.preventDefault(); if (undoKey === "undo") editorUndoStep(); else editorRedoStep(); return; }
 -    if (e.key === "Escape") {
 +    if (e.key === "Escape" && false) {
        e.preventDefault();
-       if (drawerOpen && pickRef) putDownPick();
-       else if (editorSession) editorEscape();
+       if (editorSession) editorEscape();
+       else closeScaleSheet();
