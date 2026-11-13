@@ -1,0 +1,15 @@
+# kills: U2e2-8b (FPD): an anchor toggle the solver cannot hold is refused with the plain reason, changes nothing and adds no Undo step
+# suite: node --test --test-name-pattern ^U2e2-8b. tests/editor_shell.test.js
+# editorSetAnchor stops checking the solver, so an anchor toggle that would put a moved inner note too close to another is accepted and the model is left unbuildable.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12972,7 +12972,7 @@
+   if (m.options.profile || editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
+   const next = editorClone(m);
+   next.options.anchor = to;
+-  return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();
++  return { ok: true, value: next };
+ }
+ /* ---- the tray and tap placement (U2c) ---- */
+ const EDITOR_VIEW = { flats: false, oct: 4 };

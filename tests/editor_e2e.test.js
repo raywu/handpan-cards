@@ -188,6 +188,8 @@ function run() {
     test("read-only until tapped; Enter on the focused line also starts editing", async () => {
       await fresh();
       await openBuiltin();
+      assert.deepStrictEqual(await b.eval(`return ["editor-line", "editor-name"].map((id) => document.getElementById(id)?.getAttribute("spellcheck"));`), ["false", "false"],
+        "the note line and the name field switch spellcheck off, so note names are not red-underlined");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-line").readOnly;`), true);
       await b.click("#editor-line");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-line").readOnly;`), false);

@@ -1,0 +1,15 @@
+# kills: card swipe: a drag with the settings panel open, or opened mid-drag, does nothing
+# suite: node --test --test-name-pattern ^card.swipe:.a.drag.with.the.settings.panel.open,.or.opened.mid-drag,.does.nothing$ tests/e2e.test.js
+# Drops the panelOpen check from release()'s blocked expression: a drag released while the settings panel is open now steps the card.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15570,7 +15570,7 @@
+   const dx = drag.last;
+   const mouse = pointerType === "mouse";
+   const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
+-    blocked: cancelled || panelOpen || pageOpen, reducedMotion: reducedMotion.matches });
++    blocked: cancelled || pageOpen, reducedMotion: reducedMotion.matches });
+   drag = null;
+   if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
+   if (d.kind === "rest") {

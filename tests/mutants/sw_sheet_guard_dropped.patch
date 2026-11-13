@@ -1,0 +1,15 @@
+# kills: card swipe: a page opened mid-drag suppresses the release
+# suite: node --test --test-name-pattern ^card.swipe:.a.page.opened.mid-drag.suppresses.the.release$ tests/e2e.test.js
+# Drops the pageOpen check from release()'s blocked expression: a drag released while the editor page is open now steps the card. Only the mid-drag branch observes it, because the page covers #card. The canStartGesture half of the guard is killed by AP1-1 (ap1_cangesture_ignores_sheet).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15570,7 +15570,7 @@
+   const dx = drag.last;
+   const mouse = pointerType === "mouse";
+   const d = releaseDecision({ dx, dy: drag.lastY, vx, moved: drag.moved, cancelled,
+-    blocked: cancelled || panelOpen || pageOpen, reducedMotion: reducedMotion.matches });
++    blocked: cancelled || panelOpen, reducedMotion: reducedMotion.matches });
+   drag = null;
+   if (d.eatClick) setEatClick(true, mouse ? 400 : 0);
+   if (d.kind === "rest") {

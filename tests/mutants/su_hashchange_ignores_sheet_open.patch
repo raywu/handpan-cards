@@ -1,0 +1,15 @@
+# kills: SU: a typed #deck= route while the Add/Edit sheet is open changes neither the deck nor history
+# suite: node --test --test-name-pattern ^SU:.a.typed..deck tests/app.test.js
+# The hashchange listener acts on a typed route while the editor page is open. Re-anchored on pageOpen (was sheetOpen).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15940,7 +15940,7 @@
+ 
+ window.addEventListener("hashchange", async () => {
+   observeLinkRoute();
+-  if (pageOpen || aboutOpen) return;
++  if (aboutOpen) return;
+   if (location.hash === routeFor(deck())) {
+     lastAcknowledgedRouteHash = location.hash;
+     return;

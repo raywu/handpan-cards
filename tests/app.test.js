@@ -2536,8 +2536,9 @@ test("closing a page that is already closed changes nothing", async () => {
 
   // Move focus somewhere the close path would not have put it, so a second
   // hideSheet() has something to visibly steal.
-  app.run("document.getElementById('scale-box').focus()");
+  app.run("document.getElementById('settings-trigger').focus()");
   const parked = app.activeId();
+  assert.strictEqual(parked, "settings-trigger", "the parking element did not take focus");
   app.run("closeScaleSheet()");
   app.run("closeScaleSheet()");
 
@@ -4791,6 +4792,25 @@ test("US-3 wheel is ignored mid-flight", async () => {
 
 
 /* ------------------------------------------------ AP1-1 / AP1-2: gesture guard and release decision */
+
+test("AP1-1 canStartGesture guard table", async () => {
+  const app = boot({ layout: true });
+  const base = { drag: null, panelOpen: false, pageOpen: false, orderLength: 3 };
+  const ev = { isPrimary: true, button: 0 };
+  const can = (e, s) => app.get(`canStartGesture(${JSON.stringify(e)}, ${JSON.stringify(s)})`);
+  const rows = [
+    ["all clear", ev, base, true],
+    ["a live drag", ev, { ...base, drag: { id: 1 } }, false],
+    ["a non-primary pointer", { ...ev, isPrimary: false }, base, false],
+    ["a non-main button", { ...ev, button: 2 }, base, false],
+    ["the middle button", { ...ev, button: 1 }, base, false],
+    ["the panel open", ev, { ...base, panelOpen: true }, false],
+    ["the editor page open", ev, { ...base, pageOpen: true }, false],
+    ["an empty deck", ev, { ...base, orderLength: 0 }, false],
+    ["a one-card deck", ev, { ...base, orderLength: 1 }, true],
+  ];
+  for (const [name, e, s, want] of rows) assert.strictEqual(can(e, s), want, name);
+});
 
 test("AP1-2 releaseDecision table", async () => {
   const app = boot({ layout: true });

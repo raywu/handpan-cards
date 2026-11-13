@@ -9319,6 +9319,23 @@ function run() {
     });
 
 
+    test("card swipe: a page opened mid-drag suppresses the release", async () => {
+      await freshLoad();
+      const n = (await bootMeta()).chords;
+      const g = await startDrag("#card");
+      await g.move(-120, 100);
+      // A fresh drag cannot reach #card while the editor page covers it, so
+      // only the mid-drag branch can observe release()'s pageOpen guard; the
+      // direct assignment is the same device the panel test above uses.
+      await b.eval(`pageOpen = true; return true;`);
+      await g.release(-120, 200);
+      await b.finishAnimations();
+      await b.eval(`pageOpen = false; return true;`);
+      await expectCount(`1 / ${n}`, "opening the editor page mid-drag must suppress the release");
+      const xf = await sceneXform();
+      assert.strictEqual(xf.none, true);
+    });
+
     test("card swipe: under reduced motion the swipe steps instantly with no animation", async () => {
       await freshLoad();
       const n = (await bootMeta()).chords;
