@@ -1,6 +1,6 @@
 // Scale editor lane U2b, the logic half of the shell: the pure primitives the
 // panel is built on (text commit, pan type, the opening model, the dirty check),
-// run in the sandbox with ONE_PANEL on. The DOM half is tests/editor_e2e.test.js.
+// run in the sandbox. The DOM half is tests/editor_e2e.test.js.
 // Assertions derive from docs/plans/2026-11-06-scale-editor-u2-split.md (U2b),
 // D10, D12, SE-2, SE-15 and D15 in docs/plans/2026-11-05-scale-editor-reinvent.md.
 const { test, describe } = require("node:test");
@@ -9,7 +9,7 @@ const { boot } = require("./helpers/sandbox.js");
 
 const plain = (v) => JSON.parse(JSON.stringify(v));
 const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
-const app = () => boot({ onePanel: true });
+const app = () => boot();
 const withModel = (a, text, options = "undefined") => a.run(`globalThis.__m = editorLoad(${JSON.stringify(text)}, ${options}).value; true`);
 
 test("U2b-1: the empty model has no notes and Save is not allowed on it", () => {
@@ -158,12 +158,6 @@ test("U2b-14: the save command is separate for a built-in, an edit for a saved s
   assert.deepStrictEqual(plain(a.get(`editorSaveCommand(null, false)`)).type, "import");
   assert.deepStrictEqual(plain(a.get(`editorSaveCommand({ selection: { kind: "saved", id: "u1" }, revision: 3 }, true, true)`)), { type: "save-as-separate" },
     "a Neotone conversion of a scale that owns a built-in slot saves separately");
-});
-
-test("U2b-15: flag off, opening the sheet builds no editor session", () => {
-  const a = boot({ onePanel: false });
-  a.run(`openScaleSheet(addChip); true`);
-  assert.strictEqual(a.get("editorSession"), null);
 });
 
 // ---- U2c: the tray, tap placement, ding rules and the carried nits ----

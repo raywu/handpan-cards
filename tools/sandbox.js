@@ -29,56 +29,15 @@ const APP = path.join(__dirname, "..", "index.html");
 // names. Serving an id costs nothing when no element in index.html uses it yet.
 // Ids that older shipped clients (the fixture bytes) still look up but the current markup no longer serves.
 const LEGACY_IDS = ["print-paper-select"];
-const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
-  "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
-  "scale-mirror-bottom", "scale-box-wrap", "scale-swatches", "scale-generate", "deck-add", "deck-restore",
-  "backup-open", "backup-panel", "backup-intro", "backup-session", "backup-restore", "backup-text", "backup-share", "backup-copy",
-  "backup-download", "backup-status", "backup-last",
-  // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
-  "scale-name-row", "scale-name", "scale-name-label",
-  "scale-delete-row", "scale-delete", "scale-del-note",
-  // Phase 5 LAYOUT section, additive like the two before it.
-  "scale-layout-reset",
-  // Lane DR1: the layout drawer shell.
-  "scale-layout-zone", "scale-plate-band", "scale-layout-hint",
-  "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status",
-  "scale-anchor-one", "scale-anchor-between",
-  // Lane DR2a: the seat controls that replace the old rot/move group.
-  "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
-  // Lane FP-D: the bottom note's 5 degree nudge.
-  "scale-angle-prev", "scale-angle-next",
-  // Lane DR3: the disclosure over the finer controls.
-  "scale-fine-toggle", "scale-fine",
-  // Neotone: the Layout switch, its hints, and the Scale-form checkbox.
-  "scale-mode-row", "scale-mode-label", "scale-mode-standard", "scale-mode-neotone", "scale-standard",
-  "scale-neotone-pair", "scale-neotone-extra", "scale-neotone-unused", "scale-neotone-rearrange",
-  "scale-neotone-builtin", "scale-neotone-name-hint", "scale-neotone", "scale-neotone-wrap", "scale-neotone-text", "scale-neotone-msg",
-  // The pan-layout preview, additive like every row above it.
-  "scale-preview",
-  // Stage 2: the page header. The sheet became a full-screen page, so it has a
-  // BACK control and a visible title where the drawer had neither.
-  "scale-back", "scale-title",
-  // The sheet's tabs, their panels and the NEXT button (plan 2026-10-19-sheet-tabs).
-  "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next",
-  // The footer lip (plan 2026-10-19-sheet-tabs 3.7).
-  "scale-foot", "scale-footslide", "scale-lip", "scale-swipe-cue",
-  // Lane M1: the settings panel that now hosts the mode toggle and print
-  // controls, plus its header trigger and scrim.
-  "settings-trigger", "settings-scrim", "settings-panel",
-  "print-paper", "print-paper-menu", "print-paper-letter", "print-paper-a4", "print-download", "print-menu", "print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all",
-  "lang-select",
-  // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
-  "panel-seq-note", "seq-source-link",
-  "seq-style", "seq-style-name", "seq-style-tip", "foot",
-  // sequence-difficulty D2: the three tier buttons of the five-button Practice
-  // group (they replaced "modeS" and the Difficulty group).
-  "tier-basic", "tier-intermediate", "tier-advanced",
-  // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
-  "share-copy", "share-url", "about", "about-open", "about-close",
-  "scale-fields", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-ding-label", "scale-top-label",
-  "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note",
-  // Saved variants: the reviewed status, conflict action and explicit temporary-use controls.
-  "saved-status", "scale-conflict", "scale-conflict-msg", "scale-conflict-separate", "saved-temporary-use"];
+const ELEMENT_IDS = [
+  "decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB", "scale-sheet", "deck-add",
+  "deck-restore", "backup-open", "backup-panel", "backup-intro", "backup-session", "backup-restore", "backup-text",
+  "backup-share", "backup-copy", "backup-download", "backup-status", "backup-last", "scale-swipe-cue",
+  "settings-trigger", "settings-scrim", "settings-panel", "print-paper", "print-paper-menu", "print-paper-letter",
+  "print-paper-a4", "print-download", "print-menu", "print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all",
+  "lang-select", "panel-seq-note", "seq-source-link", "seq-style", "seq-style-name", "seq-style-tip", "foot",
+  "tier-basic", "tier-intermediate", "tier-advanced", "share-copy", "share-url", "about", "about-open",
+  "about-close", "saved-status", "saved-temporary-use"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
@@ -599,8 +558,7 @@ function makeLocation(href) {
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
- *   html           - boot this markup instead of reading index.html (onePanel still applies when it holds the ONE_PANEL line)
- *   onePanel       - boot index.html with the ONE_PANEL constant forced on or off (length-preserving)
+ *   html           - boot this markup instead of reading index.html
  *   sheetBody      - with layout, expose the anonymous sheet body and its markup ancestry;
  *                    event capture/bubble and native focus/selection remain unsimulated
  *   origin         - explicit shared handle (createOrigin() or {}), partitioned by URL origin
@@ -617,9 +575,7 @@ const JS_TYPES = new Set([
 ]);
 
 function boot(opts = {}) {
-  const base = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
-  const html = opts.onePanel !== undefined && /const ONE_PANEL = (?:true |false);/.test(base)
-    ? require("../tests/helpers/editor_flag.js").apply(base, !!opts.onePanel) : base;
+  const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
   // A script whose type is not JavaScript (application/ld+json, a template) is data.
@@ -659,53 +615,6 @@ function boot(opts = {}) {
     return opts.layout ? addLayout(el) : el;
   };
   for (const id of ELEMENT_IDS) els[id] = bindFocus(makeElement(id));
-  // Lane DR2a: the plate's hit layer. The stub has no DOM parser, so the
-  // `.panhit` circles the app wrote into #scale-preview are read back into real
-  // stub nodes (cached per markup string, so a node keeps its identity and its
-  // focus until the plate is repainted) and the plate answers the three
-  // selectors the app uses. Focusing one fires `focusin` on the plate, as a
-  // browser does.
-  const preview = els["scale-preview"];
-  const hitCache = { html: null, nodes: [] };
-  // Lane DR2b: where the plate sits on the screen. A hit circle's box is its
-  // viewBox circle scaled by k about (x0, y0), its radius by a further rk (the
-  // ring-mode growth sizePanHits does in a browser); the stub has no layout to ask.
-  const plate = { x0: 200, y0: 200, k: 1, rk: 1, gx: 0, gy: 0 };
-  preview.setPointerCapture = (id) => { preview._captured = id; };
-  preview.releasePointerCapture = (id) => { if (preview._captured === id) preview._captured = null; };
-  preview.hasPointerCapture = (id) => preview._captured === id;
-  const unesc = (v) => v.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-  const hitNodes = () => {
-    const html = String(preview.innerHTML || "");
-    if (hitCache.html === html) return hitCache.nodes;
-    hitCache.html = html;
-    hitCache.nodes = [...html.matchAll(/<circle class="panhit"[^>]*\/>/g)].map((m) => {
-      const n = bindFocus(makeElement("", "circle"));
-      for (const a of m[0].matchAll(/([\w:-]+)="([^"]*)"/g)) n.setAttribute(a[1], unesc(a[2]));
-      n.classList.add("panhit");
-      n.parentNode = preview;
-      n.getBoundingClientRect = () => {
-        const r = Number(n.getAttribute("r")) * plate.k * plate.rk;
-        const x = plate.x0 + Number(n.getAttribute("cx")) * plate.k;
-        const y = plate.y0 + Number(n.getAttribute("cy")) * plate.k;
-        return { left: x - r, right: x + r, top: y - r, bottom: y + r, width: 2 * r, height: 2 * r };
-      };
-      n.closest = (sel) => (/(^|,\s*)\.panhit/.test(String(sel)) ? n : null);
-      n.focus = (opts) => { n.focusOpts = opts; focusState.active = n; preview.dispatchEvent({ type: "focusin", target: n }); };
-      return n;
-    });
-    return hitCache.nodes;
-  };
-  const queryHits = (sel) => {
-    const s = String(sel);
-    if (!s.startsWith(".panhit")) return [];
-    const field = /\[data-field="(\d+)"\]/.exec(s);
-    const tab = /\[tabindex="(-?\d+)"\]/.exec(s);
-    return hitNodes().filter((n) => (!field || n.getAttribute("data-field") === field[1]) &&
-      (!tab || n.getAttribute("tabindex") === tab[1]));
-  };
-  preview.querySelectorAll = queryHits;
-  preview.querySelector = (sel) => queryHits(sel)[0] || null;
   /** Deliver an event the way a browser would: to the target, then up the
    *  markup chain, then to the document. Returns the event. */
   const fire = (el, ev, pending) => {
@@ -918,7 +827,7 @@ function boot(opts = {}) {
         const e = bindFocus(makeElement("dyn", tag || "div"));
         e.getBoundingClientRect = () => {
           const w = parseFloat(e.style.width) || 0, h = parseFloat(e.style.height) || 0;
-          const l = (parseFloat(e.style.left) || 0) + plate.gx, t = (parseFloat(e.style.top) || 0) + plate.gy;
+          const l = (parseFloat(e.style.left) || 0), t = (parseFloat(e.style.top) || 0);
           return { left: l, top: t, right: l + w, bottom: t + h, width: w, height: h };
         };
         created.push(e);
@@ -1169,7 +1078,7 @@ function boot(opts = {}) {
   }
 
   return {
-    idb: idb?.control, els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance, plate,
+    idb: idb?.control, els, store, sandbox, created, head: headEl, location, history, blocks, flushTimers, advance,
     /** Evaluate an expression inside the app's scope. */
     get: (expr) => vm.runInContext(expr, sandbox),
     getAsync, waitFor,
@@ -1219,11 +1128,6 @@ function boot(opts = {}) {
      * Drives the sheet the way a person does - typing into the box, clicking
      * the controls, pressing a key - so a unit test never reaches past the UI
      * into the app's internals. */
-    /** Type into #scale-box and fire the input event the app listens for. */
-    type: (text) => {
-      els["scale-box"].value = String(text);
-      els["scale-box"].dispatchEvent({ type: "input" });
-    },
     /** Dispatch a document-level keydown, as a real key press would. */
     keydown: (key) => {
       let defaultPrevented = false;
@@ -1231,10 +1135,6 @@ function boot(opts = {}) {
       for (const fn of sandbox.document._l.keydown || []) fn(ev);
       return defaultPrevented;
     },
-    /** The plate's hit nodes, in markup order, and the data-field of the focused one. */
-    hits: () => hitNodes(),
-    activeHit: () => (focusState.active && hitNodes().includes(focusState.active)
-      ? focusState.active.getAttribute("data-field") : null),
     /** Deliver a click or a key to an element, bubbling like a browser. */
     click: (el, init = {}) => fire(el, { type: "click", ...init }),
     clickAsync: async (el, { until, timeout = 1000, ...init } = {}) => {
@@ -1244,15 +1144,6 @@ function boot(opts = {}) {
       return bounded(Promise.all(pending).then(() => waitFor(until, { timeout })), timeout);
     },
     press: (el, key, init = {}) => fire(el, { type: "keydown", key, shiftKey: false, ...init }),
-    /** A pointer event. Once the plate has captured the pointer the event goes
-     *  to the plate, as a browser would deliver it; `el` is where it would have
-     *  gone otherwise. */
-    pointer: (el, type, init = {}) => {
-      const id = init.pointerId === undefined ? 1 : init.pointerId;
-      const to = type !== "pointerdown" && preview._captured === id ? preview : el;
-      return fire(to, { type, pointerId: id, pointerType: "touch", isPrimary: true, button: 0, buttons: 1,
-        clientX: 0, clientY: 0, ...init });
-    },
     /** A touchmove, to the node the touch began on. */
     touchmove: (el, init = {}) => fire(el, { type: "touchmove", touches: [{}], cancelable: true, ...init }),
     contextmenu: (el) => fire(el, { type: "contextmenu" }),

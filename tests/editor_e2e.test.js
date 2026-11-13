@@ -1,4 +1,4 @@
-// Scale editor lane U2b: the one-panel shell in a real browser, flag on. The
+// Scale editor lane U2b: the one-panel shell in a real browser. The
 // assertions derive from docs/plans/2026-11-06-scale-editor-u2-split.md (U2b)
 // and the decisions it cites: D10 (states, Back prompt), D12/SE-2/SE-15 (the
 // text line), D13 (layout), D15 (a built-in saves a new scale), D21 (the pan).
@@ -10,7 +10,6 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { launch, findBrowser, APP_READY_EXPR, assertNoUncaught } = require("./helpers/cdp.js");
-const { apply } = require("./helpers/editor_flag.js");
 
 const REPO = path.resolve(__dirname, "..");
 const BROWSER = findBrowser();
@@ -24,7 +23,6 @@ function run() {
   let server = null;
   let b = null;
   let base = "";
-  let flagOn = true;
   let dragTouch = true;
   let magPinned = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
@@ -39,7 +37,7 @@ function run() {
         if (err) { res.writeHead(404).end(); return; }
         const html = rel === "index.html";
         res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+        res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
       });
     });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -60,8 +58,7 @@ function run() {
   });
   afterEach(() => assertNoUncaught());
 
-  async function fresh(width = 375, height = 667, on = true, touchDrag = true) {
-    flagOn = on;
+  async function fresh(width = 375, height = 667, touchDrag = true) {
     dragTouch = touchDrag;
     await b.setViewport(width, height, width < 700);
     await b.send("Storage.clearDataForOrigin", { origin: new URL(base).origin, storageTypes: "indexeddb,local_storage" });
@@ -930,7 +927,7 @@ function run() {
           });
 
           test("U2f move at 375x667: a placed cyclops note dragged along its arc moves to the drop angle, pinned, in one Undo step", async () => {
-            await fresh(375, 667, true, true);
+            await fresh(375, 667, true);
             await openAdd();
             await typeLine(SCALE);
             await b.click("#editor-oct-up");
@@ -945,7 +942,7 @@ function run() {
           });
 
           test("U2f move at 375x667: a placed bottom note dragged around the bottom ring moves to the drop angle, pinned, in one Undo step", async () => {
-            await fresh(375, 667, true, true);
+            await fresh(375, 667, true);
             await openAdd();
             await typeLine(SCALE);
             await b.click("#editor-oct-down");
@@ -1155,7 +1152,7 @@ function run() {
       });
 
       test("DRAG_ON_TOUCH off: touch drags do nothing and touch taps still place and swap; mouse drag is unaffected; touch-action is not none", async () => {
-        await fresh(375, 667, true, false);
+        await fresh(375, 667, false);
         await openAdd();
         await typeLine(SCALE);
         const ta = (sel) => b.eval(`return getComputedStyle(document.querySelector(${JSON.stringify(sel)})).touchAction;`);
@@ -2197,7 +2194,7 @@ function run() {
       await touch("touchStart", from);
       for (const k of [0.15, 0.3]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
     };
-    const setup = async (line, width = 390, height = 844, touchOn = true) => { await fresh(width, height, true, touchOn); await openAdd(); await typeLine(line); };
+    const setup = async (line, width = 390, height = 844, touchOn = true) => { await fresh(width, height, touchOn); await openAdd(); await typeLine(line); };
     const SCALE_ = SCALE;
 
     for (const [w, h, minMag] of [[390, 844, 1.1], [390, 664, 1.1], [375, 667, 1]]) {
@@ -2659,7 +2656,7 @@ function run() {
     });
 
     test("TRI59b a drop restores the panel even when a new press has already begun, but not while that press is a live drag", async () => {
-      await fresh(390, 844, true, true);
+      await fresh(390, 844, true);
       await openAdd();
       await typeLine(SCALE);
       const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
@@ -3519,16 +3516,6 @@ function run() {
       assert.strictEqual(r.rows.length, 2 * pf.EDITOR_CELLS.length * 2, "lang x cell x profile");
       assert.deepStrictEqual(r.failures, []);
       assert.ok(r.panelH > 100 && r.panelH < 400, "the panel height measurement is a real number: " + r.panelH);
-    });
-  });
-
-  describe("flag off", () => {
-    test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
-      await fresh(375, 667, false);
-      await b.eval(`openScaleSheet(addChip); return true;`);
-      const r = await b.eval(`return { editor: !!document.getElementById("editor"), line: !!document.getElementById("editor-line"),
-        legacy: getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).display !== "none", cls: document.getElementById("scale-sheet").classList.contains("onepanel") };`);
-      assert.deepStrictEqual(r, { editor: false, line: false, legacy: true, cls: false });
     });
   });
 }
