@@ -12703,9 +12703,7 @@ function neoSlotPoint(slot, placed) {
  * (the input is never touched) and answers {ok, value, notice?} or the engine's
  * own refusal. A note is named by { ring, i }: its ring and its index among the
  * ring's notes by ascending field id, the same address the legacy sheet uses.
- * The model never trims: a scale over a cap loads and exports unchanged. The flag
- * is scaffolding for the editor lanes; with it off the app is the legacy sheet. */
-const ONE_PANEL = true ;
+ * The model never trims: a scale over a cap loads and exports unchanged. */
 const DRAG_ON_TOUCH = true;
 const EDITOR_RINGS = ["rim", "inner", "bottom"];
 const EDITOR_PINNABLE = ["inner", "bottom"];

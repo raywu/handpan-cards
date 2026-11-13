@@ -569,8 +569,7 @@ function makeLocation(href) {
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
- *   html           - boot this markup instead of reading index.html (onePanel still applies when it holds the ONE_PANEL line)
- *   onePanel       - boot index.html with the ONE_PANEL constant forced on or off (length-preserving)
+ *   html           - boot this markup instead of reading index.html
  *   sheetBody      - with layout, expose the anonymous sheet body and its markup ancestry;
  *                    event capture/bubble and native focus/selection remain unsimulated
  *   origin         - explicit shared handle (createOrigin() or {}), partitioned by URL origin
@@ -587,9 +586,7 @@ const JS_TYPES = new Set([
 ]);
 
 function boot(opts = {}) {
-  const base = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
-  const html = opts.onePanel !== undefined && /const ONE_PANEL = (?:true |false);/.test(base)
-    ? require("../tests/helpers/editor_flag.js").apply(base, !!opts.onePanel) : base;
+  const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
   // A script whose type is not JavaScript (application/ld+json, a template) is data.

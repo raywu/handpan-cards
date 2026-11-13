@@ -10,7 +10,6 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { launch, findBrowser, APP_READY_EXPR, assertNoUncaught } = require("./helpers/cdp.js");
-const { apply } = require("./helpers/editor_flag.js");
 
 const REPO = path.resolve(__dirname, "..");
 const BROWSER = findBrowser();
@@ -24,7 +23,6 @@ function run() {
   let server = null;
   let b = null;
   let base = "";
-  let flagOn = true;
   let dragTouch = true;
   let magPinned = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
@@ -39,7 +37,7 @@ function run() {
         if (err) { res.writeHead(404).end(); return; }
         const html = rel === "index.html";
         res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+        res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
       });
     });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -61,7 +59,6 @@ function run() {
   afterEach(() => assertNoUncaught());
 
   async function fresh(width = 375, height = 667, on = true, touchDrag = true) {
-    flagOn = on;
     dragTouch = touchDrag;
     await b.setViewport(width, height, width < 700);
     await b.send("Storage.clearDataForOrigin", { origin: new URL(base).origin, storageTypes: "indexeddb,local_storage" });

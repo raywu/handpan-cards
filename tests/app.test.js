@@ -6406,7 +6406,7 @@ test("RD: a record stored with a non-inferred parent is displayed with it and re
 
 
 test("RD: an older explicit-parent link creates a separate variant after inferred-parent Edit", async () => {
-  const maker=boot(),made=maker.generate(RD_STRING,{palette:0,parent:2});assert.strictEqual(made.ok,true);
+  const maker=boot(),made=maker.generate(RD_STRING,{palette:1,parent:2});assert.strictEqual(made.ok,true);
   const text=payload(link(maker,made.instanceId).value),app=await rdBoot({palette:0,parent:2});
   const id=Object.keys(savedViews(app))[0];openEdit(app,savedViews(app)[id]);app.els["scale-swatches"].children[1].click();await generateClick(app);
   const inferred=savedEnvelope(app).entries.find(row=>row.instanceId===id);assert.ok(inferred.record.o.parent==null);assert.strictEqual(savedViews(app)[id].degrees["7"],"iv");

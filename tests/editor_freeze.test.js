@@ -83,7 +83,7 @@ const stateJs = (state) => ({
 // ---- Pan oracle (sandbox): sha256 of editorWithOverlay(pan(...)) -------------------------------
 
 test("T0 pan hash: editorWithOverlay(pan(...)) is byte-identical for every frozen model and state", () => {
-  const a = boot({ onePanel: true });
+  const a = boot();
   for (const spec of specs) {
     a.run(`globalThis.__m = ${modelJs(spec)}; true`);
     for (const state of SANDBOX_STATES) {
@@ -139,7 +139,7 @@ const PLAN_JS = `(function (m) {
 })(__m)`;
 
 test("T0 drop plans: editorDropPlan and editorNeoDropPlan results are frozen for every source and target kind", () => {
-  const a = boot({ onePanel: true });
+  const a = boot();
   for (const spec of specs) {
     a.run(`globalThis.__m = ${modelJs(spec)}; true`);
     const plans = JSON.parse(a.get(PLAN_JS));
@@ -167,12 +167,6 @@ test("T0 source hash: the drag, hit and drop functions and their constants are b
     assert.ok(line, `index.html has no const ${name}`);
     expectFrozen("source", name, sha(line));
   }
-});
-
-test("T0 ONE_PANEL line: const ONE_PANEL = true ; appears once, byte-identical", () => {
-  const hits = indexLines.filter((l) => /const ONE_PANEL = (?:true |false);/.test(l));
-  assert.deepStrictEqual(hits, ["const ONE_PANEL = true ;"]);
-  assert.strictEqual(require("./helpers/editor_flag.js").ON, hits[0]);
 });
 
 // ---- Behavioural oracle: the pinned test counts ---------------------------------------------------

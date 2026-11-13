@@ -449,11 +449,9 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   toolbar buttons only. Tests: "every label in the tabs, the count row and the toolbar fits
   its button", "TRI59 octave label and delete fit in all
   eight locales".
-- **Legacy sheet editor: removed.** Once lane U2j-2 lands, the editor above is the only way
-  to add or edit a scale, and the `ONE_PANEL` flag, the sheet tabs, drawer and its swipe are
-  gone (U2j-1 removed the sheet swipe; its tab swipe is the editor's). PENDING lane U2j-2:
-  until it merges, `ONE_PANEL` is still present and the test "with the flag off no editor
-  panel is ever built and the legacy sheet opens" still exists; the RC gate is zero hits of
+- **Legacy sheet editor: removed.** The editor above is the only way to add or edit a
+  scale; the `ONE_PANEL` flag, the sheet tabs, drawer and its swipe are gone (U2j-1
+  removed the sheet swipe; its tab swipe is the editor's). The RC gate is zero hits of
   `ONE_PANEL` in `index.html`.
 
 ### Planned (lane W5a, not yet built)

@@ -168,33 +168,14 @@ test("SE-R4-1: a v6 record round-trips byte-equal through moveUrl and moveImport
 // ---- U2a: the editor model, its edit primitives, Undo/Redo and the flag ----
 // docs/plans/2026-11-06-scale-editor-u2-split.md section 3 (U2a); the oracles are
 // the golden parity fixture, the share fixtures and the engine itself.
-const flagHelper = require("./helpers/editor_flag.js");
 const GOLDEN = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "engine_parity_golden_v1.json"), "utf8"));
 const CORPUS = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "engine_corpus_v1.json"), "utf8"));
 const js = (v) => JSON.stringify(v);
 const model = (app) => (text, options) => plain(app.get(`(() => { const r = editorLoad(${js(text)}, ${js(options)}); return r; })()`));
 
-test("U2a-F1: the flag helper substitutes the one ONE_PANEL line, length-preserving, and refuses any other count", () => {
-  assert.strictEqual((HTML.match(/const ONE_PANEL = (?:true |false);/g) || []).length, 1);
-  const on = flagHelper.apply(HTML, true);
-  assert.strictEqual(on.length, HTML.length);
-  assert.ok(on.includes("const ONE_PANEL = true ;"));
-  assert.strictEqual(flagHelper.apply(flagHelper.apply(on, false), true), HTML);
-  assert.throws(() => flagHelper.apply("no flag here", true), /exactly one/);
-  assert.throws(() => flagHelper.apply("const ONE_PANEL = false;\nconst ONE_PANEL = false;", true), /exactly one/);
-});
-
-test("U2a-F2: the flag ships on (U2h), and boot({onePanel}) flips it without moving a byte", () => {
-  assert.strictEqual(appBoot().get("ONE_PANEL"), true);
-  assert.strictEqual(appBoot({ onePanel: false }).get("ONE_PANEL"), false);
-  assert.strictEqual(appBoot({ onePanel: true }).get("ONE_PANEL"), true);
-});
-
 // The suites that name index.html themselves, enumerated from the tree (not by one
-// grep of a call shape). Wrapping each loader in editor_flag.apply belongs to the lane
-// that turns the flag on (U2h): until then a NEW direct reader fails here, so the
-// inventory cannot grow silently, and every default boot() is already covered by
-// boot({onePanel}).
+// grep of a call shape). A NEW direct reader fails here, so the inventory cannot
+// grow silently.
 const DIRECT_READERS = [
   "tests/app.test.js", "tests/coverage_merge.test.js", "tests/e2e.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/editor_shell.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
   "tests/helpers/dump_app_render.js", "tests/layout.test.js", "tests/link_corpus.test.js",
@@ -205,7 +186,7 @@ test("U2a-F3: no suite starts reading index.html directly without joining the in
   const root = path.join(__dirname, "..");
   const files = [...fs.readdirSync(__dirname).filter((f) => f.endsWith(".js")).map((f) => "tests/" + f),
     ...fs.readdirSync(path.join(__dirname, "helpers")).filter((f) => f.endsWith(".js")).map((f) => "tests/helpers/" + f)];
-  const named = files.filter((f) => !/editor_model\.test\.js$|editor_flag\.js$/.test(f) &&
+  const named = files.filter((f) => !/editor_model\.test\.js$/.test(f) &&
     fs.readFileSync(path.join(root, f), "utf8").includes("index.html")).sort();
   assert.deepStrictEqual(named, [...DIRECT_READERS].sort());
 });
