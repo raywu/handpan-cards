@@ -1,0 +1,14 @@
+# kills: T0 drop plans: editorDropPlan and editorNeoDropPlan results are frozen for every source and target kind
+# suite: node --test --test-name-pattern ^T0.drop.plans: tests/editor_freeze.test.js
+# The not-a-spot snap guard moves ahead of the note/ding trade branch, so a drop on a note or the ding snaps instead of trading.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16382,6 +16382,7 @@ function editorDropPlan(m, src, target) {
+     if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+     return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
+   }
++  if (target.kind !== "spot" || ref.ring === "ding") return snap;
+   if (target.kind === "note" || target.kind === "ding") {
+     const to = target.kind === "ding" ? { ring: "ding", i: 0 } : { ring: target.ring, i: target.i };
+     return to.ring === ref.ring && to.i === ref.i ? snap : { trade: [ref, to] };

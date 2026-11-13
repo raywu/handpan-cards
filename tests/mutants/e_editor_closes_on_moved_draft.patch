@@ -1,0 +1,16 @@
+# kills: SV12 U3: a draft becoming invalid during pending Save stays disabled after completion
+# suite: node --test --test-name-pattern ^SV12.U3..a.draft.becoming.invalid.during.pending.Save.stays.disabled.after.completion$ tests/app.test.js
+# A completed pending Save closes the editor even though the draft moved on while it was pending.
+#
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14643,7 +14643,7 @@ async function editorSave() {
+     if (result.published === false) { s.error = savedPublicationText(result); return; }
+     const d = savedEntries.get(result.instanceId).deck;
+     const warned = (d.warnings || []).map((w) => reasonText(w));
+-    if (editorSession === s && editorDraftMoved(s, m)) {
++    if (false && editorSession === s && editorDraftMoved(s, m)) {
+       s.base = m;
+       editingBase = { selection: { kind: "saved", id: result.instanceId }, deck: d, collectionId: savedState.collectionId,
+         revision: savedEntries.get(result.instanceId).revision, slotStateRevision: savedState.slotStateRevision,

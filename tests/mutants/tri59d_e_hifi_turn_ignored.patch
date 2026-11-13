@@ -1,0 +1,15 @@
+# kills: test_a_turned_card_places_main_and_mutant_at_the_turned_angle
+# suite: python3 -m unittest -k test_a_turned_card_places_main_and_mutant tests.test_print
+# why: hifi ignores geom.turn when keying tonefields.
+diff --git a/tools/hifi.py b/tools/hifi.py
+--- a/tools/hifi.py
++++ b/tools/hifi.py
+@@ -481,7 +481,7 @@
+         return BLUE if s == "root" else GREEN
+ 
+     if has_mut:
+-        turn = g.get("turn", 0)
++        turn = 0
+         tones = [((a + turn) % 360, pd["main"]["orbit"], pd["main"]["r"],
+                   main.get((a + turn) % 360), mut.get((a + turn) % 360))
+                  for a in pd["angles"]]

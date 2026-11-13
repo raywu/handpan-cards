@@ -1,15 +1,16 @@
-# kills: DR3 Tab order on Add and Edit, finer controls closed and open
-# suite: node --test --test-name-pattern ^DR3.Tab.order.on.Add.and.Edit..finer.controls.closed.and.open$ tests/app.test.js
-# The sheet's Tab list stops on buttons inside the closed disclosure.
+# kills: Tab brings every stop into the panel's scrollport on a short screen
+# suite: node --test --test-name-pattern ^Tab.brings.every.stop tests/editor_e2e.test.js
+# the editor's Tab list stops on a disabled button or a control with no layout box
+# editorTabStops drops isStop. Re-anchored 2026-11-12 on the editor panel.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14358,7 +14358,7 @@ sheet.addEventListener("keydown", e => {
-        scaleBox,
-        shut ? lipBtn : editingId ? genBtn : nextBtn,
-        editingId && !shut ? delBtn : null])
--    .filter(isStop);
-+    .filter((el) => !!el && !el.disabled);
-   if (isHit(document.activeElement) && pickRef && lastSolved) setRover(pickRef);
-   cycleTabStops(stops, e);
- });
+@@ -14482,7 +14482,7 @@
+ }
+ function editorTabStops() {
+   const scope = editorEl(editorSession.dialog ? "editor-dialog" : "editor");
+-  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]"));
++  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && !el.closest("[inert],[hidden]"));
+ }
+ function editorSetPanType(kind) {
+   if (!editorDo((m) => editorPanType(m, kind))) return;

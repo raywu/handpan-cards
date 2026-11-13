@@ -1,0 +1,15 @@
+# kills: U2c-12b (FPD): moving a bottom note to an angle inside another note's floor is refused as NO_ROOM, with the note and angle in the words, and changes nothing
+# suite: node --test --test-name-pattern ^U2c-12b. tests/editor_shell.test.js
+# editorSetAngle hands back the solver's BAD_NOTE refusal (is not a note) instead of NO_ROOM, which names the note and the angle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12913,7 +12913,7 @@
+   const next = editorWithAngle(base, ring, i, angle === null ? null : stepOf(angle));
+   const solved = editorSolve(next);
+   if (solved.ok) return { ok: true, value: next };
+-  return angle !== null && solved.code === "BAD_NOTE" ? editorNoRoom(m, ring, i, angle) : solved;
++  return angle !== null && solved.code === "BAD_NOTE" ? solved : solved;
+ }
+ function editorSwapSeats(m, ring, i, j) {
+   if (m.options.profile) return editorProfileConflict();

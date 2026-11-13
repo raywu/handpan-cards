@@ -1,0 +1,15 @@
+# kills: a name typed while Save is pending keeps the editor open and the typed text
+# suite: node --test --test-name-pattern ^a.name.typed.while.Save.is.pending.keeps.the.editor.open.and.the.typed.text$ tests/editor_e2e.test.js
+# A completed pending Save closes the editor although a name was typed while it was pending.
+#
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14609,7 +14609,6 @@ function editorWireSwipe() {
+ }
+ function editorDraftMoved(s, saved) {
+   if (s.history.present !== saved) return true;
+-  if (s.naming && editorSetName(saved, editorEl("editor-name").value).value !== saved) return true;
+   return editorEl("editor-line").value.trim() !== editorLineText(saved);
+ }
+ async function editorSave() {
