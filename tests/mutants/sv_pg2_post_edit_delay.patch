@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11606,7 +11606,7 @@ function buildChips() {
+@@ -12479,7 +12479,7 @@ function buildChips() {
        accessible+=". "+t(saved?"saved.savedToken":"saved.presetToken",{token});
      }
      b.setAttribute("aria-label",accessible);
@@ -13,8 +13,8 @@ diff --git a/index.html b/index.html
      nav.appendChild(b);if(on)active=b;
    });
    restoreBtn.hidden=!(hiddenDecks().length || Object.keys(replacements()).length);
-@@ -13728,7 +13728,7 @@ function closeScaleSheet() {
-   if (!sheetOpen) return;
+@@ -14790,7 +14790,7 @@ function closeScaleSheet() {
+   if (!pageOpen) return;
    const routed = sheetRouted;
    sheetRouted = false;
 -  hideSheet();

@@ -13,12 +13,17 @@
 //
 // Known failures on main are `todo: "<fixing PR>"`: node:test reports them
 // without failing, and the fixing PR removes the todo, which is its proof.
-const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename);
+const { test } = require("node:test");
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 const { boot: sandboxBoot } = require("./helpers/sandbox.js");
-const boot = (opts = {}) => sandboxBoot({ onePanel: onePanelFor(), ...opts });
+const editorShim = require("./helpers/editor_shim.js");
+/* The shipped clients under test still run the retired sheet; this branch runs the editor, whose DOM-free half the shim drives. */
+const boot = (opts = {}) => {
+  const app = sandboxBoot(opts);
+  return app.get("typeof editorOpen") === "function" ? editorShim.install(app) : app;
+};
 
 const APP_ROOT = process.env.HPFC_APP_ROOT || path.join(__dirname, "..");
 const HTML = fs.readFileSync(path.join(APP_ROOT, "index.html"), "utf8");

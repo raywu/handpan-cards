@@ -1,15 +1,16 @@
 # kills: SV11 U2: remote replacement keeps a clean built-in editor target and fields coherent
-# suite: node --test --test-name-pattern=^SV11.U2: tests/app.test.js
-# fault: Binds a replacement target to the raw built-in fields during clean remote editor reconciliation.
+# suite: node --test --test-name-pattern ^SV11.U2: tests/app.test.js
+# a clean editor refreshed by a remote replacement mixes the raw built-in with the saved target
+# savedSnapshotListener prefers the raw built-in over the saved entry
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16323,7 +16323,7 @@ savedSnapshotListener=event=>{
-   if(sheetOpen && editingBase && event.source==="remote" && !dirty && !savePending && !editorSession){
+@@ -14873,7 +14873,7 @@
+   if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
      const target=savedResolve(editingBase.selection,savedState,savedEntries);
      const entry=target.kind==="saved"?savedEntries.get(target.id):null;
 -    const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);
-+    const latest=DECKS.find(d=>d.id===editingBase.selection.id) || entry?.deck;
++    const latest=DECKS.find(d=>d.id===editingBase.selection.id)||entry?.deck;
      const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
-     if(changed && latest){const opener=sheetOpener;resetSheetState(latest,target);sheetOpener=opener;resyncSheet(false);}
-   }
+     if(changed && latest){
+       const tab=session.tab;

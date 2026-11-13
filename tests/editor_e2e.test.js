@@ -10,7 +10,6 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { launch, findBrowser, APP_READY_EXPR, assertNoUncaught } = require("./helpers/cdp.js");
-const { apply } = require("./helpers/editor_flag.js");
 
 const REPO = path.resolve(__dirname, "..");
 const BROWSER = findBrowser();
@@ -24,7 +23,6 @@ function run() {
   let server = null;
   let b = null;
   let base = "";
-  let flagOn = true;
   let dragTouch = true;
   let magPinned = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
@@ -39,7 +37,7 @@ function run() {
         if (err) { res.writeHead(404).end(); return; }
         const html = rel === "index.html";
         res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+        res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
       });
     });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -61,7 +59,6 @@ function run() {
   afterEach(() => assertNoUncaught());
 
   async function fresh(width = 375, height = 667, on = true, touchDrag = true) {
-    flagOn = on;
     dragTouch = touchDrag;
     await b.setViewport(width, height, width < 700);
     await b.send("Storage.clearDataForOrigin", { origin: new URL(base).origin, storageTypes: "indexeddb,local_storage" });
@@ -191,6 +188,8 @@ function run() {
     test("read-only until tapped; Enter on the focused line also starts editing", async () => {
       await fresh();
       await openBuiltin();
+      assert.deepStrictEqual(await b.eval(`return ["editor-line", "editor-name"].map((id) => document.getElementById(id)?.getAttribute("spellcheck"));`), ["false", "false"],
+        "the note line and the name field switch spellcheck off, so note names are not red-underlined");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-line").readOnly;`), true);
       await b.click("#editor-line");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-line").readOnly;`), false);
@@ -417,6 +416,30 @@ function run() {
       assert.strictEqual(after.n, before.n);
       assert.ok(after.revision > before.revision);
       assert.match(after.s, /E5/);
+    });
+  });
+
+  describe("D15 Save while a name is typed", () => {
+    test("a name typed while Save is pending keeps the editor open and the typed text", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the first save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "PENDING VALID";
+        n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+      await b.eval(`navigator.locks.request("handpan-cards:saved-scales:v1", () => new Promise((r) => { window.__rel = r; })); return true;`);
+      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
+      await b.eval(`document.getElementById("editor-save").click(); return true;`);
+      await b.waitFor(`!!savePending`, { label: "Save to wait on the lock" });
+      await b.eval(`const n = document.getElementById("editor-name"); n.dispatchEvent(new Event("focus")); n.value = "TYPED DURING SAVE";
+        n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      await b.eval(`window.__rel(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the pending Save to finish" });
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "TYPED DURING SAVE");
     });
   });
 
@@ -1865,6 +1888,15 @@ function run() {
       assert.strictEqual(await b.eval(`return document.querySelector('#editor-swatches [data-palette="9"]').getAttribute("aria-pressed");`), "true", "undo moves the mark");
     });
 
+    test("EPF: the page layer paints an opaque ground and a disabled mode control dims", async () => {
+      await setup(BOTTOM);
+      const seen = await b.eval(`const bg = getComputedStyle(document.getElementById("scale-sheet")).backgroundColor;
+        const x = document.createElement("button"); x.className = "mode"; x.disabled = true; document.getElementById("settings-panel").appendChild(x);
+        const dim = getComputedStyle(x).color; x.remove();
+        return { bg, dim };`);
+      assert.deepStrictEqual(seen, { bg: "rgb(246, 244, 237)", dim: "rgb(138, 132, 123)" });
+    });
+
     test("EPF: picking the current palette adds no Undo step and keeps the dots shown", async () => {
       await setup(BOTTOM);
       const past = await pastLen();
@@ -2162,6 +2194,28 @@ function run() {
       await b.eval(`document.getElementById("editor-back").focus(); return true;`);
       await press("Tab", "Tab", 9, 8);
       assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Shift+Tab wraps backward");
+    });
+
+    test("Tab brings every stop into the panel's scrollport on a short screen", async () => {
+      await fresh(375, 360);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-tab-layout");
+      assert.deepStrictEqual(await b.eval(`const root = document.getElementById("editor");
+        const off = root.appendChild(document.createElement("button")); off.id = "zz-off"; off.disabled = true;
+        const none = root.appendChild(document.createElement("button")); none.id = "zz-none"; none.style.display = "none";
+        const ids = editorTabStops().map((e) => e.id); off.remove(); none.remove();
+        return ids.filter((id) => id.startsWith("zz-"));`), [], "a disabled or unlaid-out control is no Tab stop");
+      const stops = await b.eval(`return editorTabStops().length;`);
+      await b.eval(`document.getElementById("editor-back").focus(); return true;`);
+      const outside = [];
+      for (let k = 0; k < stops; k += 1) {
+        await press("Tab", "Tab", 9);
+        const out = await b.eval(`const q = document.activeElement.getBoundingClientRect(), p = document.getElementById("editor").getBoundingClientRect();
+          return q.top < p.top - 1 || q.bottom > p.bottom + 1 ? (document.activeElement.id || document.activeElement.className) : null;`);
+        if (out) outside.push(out);
+      }
+      assert.deepStrictEqual(outside, []);
     });
   });
 
@@ -3512,15 +3566,16 @@ function run() {
     });
   });
 
-  describe("flag off", () => {
-    test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
-      await fresh(375, 667, false);
-      await b.eval(`openScaleSheet(addChip); return true;`);
-      const r = await b.eval(`return { editor: !!document.getElementById("editor"), line: !!document.getElementById("editor-line"),
-        legacy: getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).display !== "none", cls: document.getElementById("scale-sheet").classList.contains("onepanel") };`);
-      assert.deepStrictEqual(r, { editor: false, line: false, legacy: true, cls: false });
+  describe("Editor RC I1 fit probe, absolute mode", () => {
+    test("panel_fit --absolute: the editor cell runs for ja and de at 375 and 320 and reports no failure", async () => {
+      const pf = require("../tools/probe/panel_fit.js");
+      const r = await pf.runEditorAbsolute({ html: fs.readFileSync(path.join(REPO, "index.html"), "utf8"), fontMode: "fallback", langs: ["ja", "de"], log: () => {} });
+      assert.strictEqual(r.rows.length, 2 * pf.EDITOR_CELLS.length * 2, "lang x cell x profile");
+      assert.deepStrictEqual(r.failures, []);
+      assert.ok(r.panelH > 100 && r.panelH < 400, "the panel height measurement is a real number: " + r.panelH);
     });
   });
+
 }
 
 function DECK_IDS_HAVE(builtinJson, id) {

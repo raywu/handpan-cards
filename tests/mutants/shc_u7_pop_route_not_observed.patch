@@ -1,14 +1,15 @@
-# kills: SHC U7: route transitions retire LINK but no-op sync and pending SAVE pop keep fresh intent
-# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U7: tests/app.test.js
-# A real pop away and back resurrects ownership at the original URL.
+# kills: SHC U7: a Back or Forward pop retires the old LINK, even when the route comes back
+# suite: node --test --test-name-pattern ^SHC.U7: tests/app.test.js
+# a back or forward pop does not retire the old LINK request
+# popstate listener drops observeLinkRoute()
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13424,7 +13424,6 @@ window.addEventListener("popstate", () => {
+@@ -14802,7 +14802,6 @@
    // SAVE already selected and synced the committed scale. Observe the final
    // route after this app-owned pop, not its temporary pre-SAVE destination.
    if (pendingPop) { pendingPop = false; syncRoute(); return; }
 -  observeLinkRoute();
    if (aboutOpen) { hideAbout(); return; }
    if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
-   if (!sheetOpen) return;
+   if (!pageOpen) return;

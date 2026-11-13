@@ -28,41 +28,14 @@ const APP = path.join(__dirname, "..", "index.html");
 // a boot never throws on the sheet markup and e2e and the units target the same
 // names. Serving an id costs nothing when no element in index.html uses it yet.
 // Ids that older shipped clients (the fixture bytes) still look up but the current markup no longer serves.
-const LEGACY_IDS = ["print-paper-select"];
+const LEGACY_IDS = ["print-paper-select", "scale-box", "scale-name", "scale-generate", "scale-delete", "scale-back", "scale-swatches", "scale-neotone", "scale-msg", "scale-refusal", "scale-parse", "scale-mirror", "scale-mirror-bottom", "scale-box-wrap", "scale-name-row", "scale-name-label", "scale-delete-row", "scale-del-note", "scale-layout-reset", "scale-layout-zone", "scale-plate-band", "scale-layout-hint", "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status", "scale-anchor-one", "scale-anchor-between", "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-angle-prev", "scale-angle-next", "scale-fine-toggle", "scale-fine", "scale-mode-row", "scale-mode-label", "scale-mode-standard", "scale-mode-neotone", "scale-standard", "scale-neotone-pair", "scale-neotone-extra", "scale-neotone-unused", "scale-neotone-rearrange", "scale-neotone-builtin", "scale-neotone-name-hint", "scale-neotone-wrap", "scale-neotone-text", "scale-neotone-msg", "scale-preview", "scale-title", "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next", "scale-foot", "scale-footslide", "scale-lip", "scale-fields", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-ding-label", "scale-top-label", "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note", "scale-conflict", "scale-conflict-msg", "scale-conflict-separate"];
 const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
-  "scale-sheet", "scale-box", "scale-parse", "scale-msg", "scale-refusal", "scale-mirror",
-  "scale-mirror-bottom", "scale-box-wrap", "scale-swatches", "scale-generate", "deck-add", "deck-restore",
+  "scale-sheet",
+  "deck-add", "deck-restore",
   "backup-open", "backup-panel", "backup-intro", "backup-session", "backup-restore", "backup-text", "backup-share", "backup-copy",
   "backup-download", "backup-status", "backup-last",
-  // Phase 4 Edit state, registered here the same way the Phase 3 ids were.
-  "scale-name-row", "scale-name", "scale-name-label",
-  "scale-delete-row", "scale-delete", "scale-del-note",
-  // Phase 5 LAYOUT section, additive like the two before it.
-  "scale-layout-reset",
-  // Lane DR1: the layout drawer shell.
-  "scale-layout-zone", "scale-plate-band", "scale-layout-hint",
-  "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status",
-  "scale-anchor-one", "scale-anchor-between",
-  // Lane DR2a: the seat controls that replace the old rot/move group.
-  "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next",
-  // Lane FP-D: the bottom note's 5 degree nudge.
-  "scale-angle-prev", "scale-angle-next",
-  // Lane DR3: the disclosure over the finer controls.
-  "scale-fine-toggle", "scale-fine",
-  // Neotone: the Layout switch, its hints, and the Scale-form checkbox.
-  "scale-mode-row", "scale-mode-label", "scale-mode-standard", "scale-mode-neotone", "scale-standard",
-  "scale-neotone-pair", "scale-neotone-extra", "scale-neotone-unused", "scale-neotone-rearrange",
-  "scale-neotone-builtin", "scale-neotone-name-hint", "scale-neotone", "scale-neotone-wrap", "scale-neotone-text", "scale-neotone-msg",
-  // The pan-layout preview, additive like every row above it.
-  "scale-preview",
-  // Stage 2: the page header. The sheet became a full-screen page, so it has a
-  // BACK control and a visible title where the drawer had neither.
-  "scale-back", "scale-title",
-  // The sheet's tabs, their panels and the NEXT button (plan 2026-10-19-sheet-tabs).
-  "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next",
   // The footer lip (plan 2026-10-19-sheet-tabs 3.7).
-  "scale-foot", "scale-footslide", "scale-lip", "scale-swipe-cue",
-  // Lane M1: the settings panel that now hosts the mode toggle and print
+  "scale-swipe-cue",
   // controls, plus its header trigger and scrim.
   "settings-trigger", "settings-scrim", "settings-panel",
   "print-paper", "print-paper-menu", "print-paper-letter", "print-paper-a4", "print-download", "print-menu", "print-pdf-easy", "print-pdf-easy_medium", "print-pdf-all",
@@ -70,15 +43,12 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   // Lane S2: the sequence-mode toggle, its credit paragraph and source link.
   "panel-seq-note", "seq-source-link",
   "seq-style", "seq-style-name", "seq-style-tip", "foot",
-  // sequence-difficulty D2: the three tier buttons of the five-button Practice
   // group (they replaced "modeS" and the Difficulty group).
   "tier-basic", "tier-intermediate", "tier-advanced",
   // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
   "share-copy", "share-url", "about", "about-open", "about-close",
-  "scale-fields", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-ding-label", "scale-top-label",
-  "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note",
   // Saved variants: the reviewed status, conflict action and explicit temporary-use controls.
-  "saved-status", "scale-conflict", "scale-conflict-msg", "scale-conflict-separate", "saved-temporary-use"];
+  "saved-status", "saved-temporary-use"];
 
 /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
 const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
@@ -599,8 +569,7 @@ function makeLocation(href) {
  *   maxTouchPoints - navigator.maxTouchPoints (default 0)
  *   webdriver      - navigator.webdriver (default true, as under automation)
  *   languages      - navigator.languages (default ["en-US", "en"]); navigator.language is its first entry
- *   html           - boot this markup instead of reading index.html (onePanel still applies when it holds the ONE_PANEL line)
- *   onePanel       - boot index.html with the ONE_PANEL constant forced on or off (length-preserving)
+ *   html           - boot this markup instead of reading index.html
  *   sheetBody      - with layout, expose the anonymous sheet body and its markup ancestry;
  *                    event capture/bubble and native focus/selection remain unsimulated
  *   origin         - explicit shared handle (createOrigin() or {}), partitioned by URL origin
@@ -617,9 +586,7 @@ const JS_TYPES = new Set([
 ]);
 
 function boot(opts = {}) {
-  const base = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
-  const html = opts.onePanel !== undefined && /const ONE_PANEL = (?:true |false);/.test(base)
-    ? require("../tests/helpers/editor_flag.js").apply(base, !!opts.onePanel) : base;
+  const html = opts.html !== undefined ? String(opts.html) : fs.readFileSync(APP, "utf8");
   // Every inline block, in document order; <script src=...> is skipped (the app
   // is single-file by contract, so there should never be one).
   // A script whose type is not JavaScript (application/ld+json, a template) is data.
@@ -665,7 +632,7 @@ function boot(opts = {}) {
   // focus until the plate is repainted) and the plate answers the three
   // selectors the app uses. Focusing one fires `focusin` on the plate, as a
   // browser does.
-  const preview = els["scale-preview"];
+  const preview = makeElement("scale-preview");
   const hitCache = { html: null, nodes: [] };
   // Lane DR2b: where the plate sits on the screen. A hit circle's box is its
   // viewBox circle scaled by k about (x0, y0), its radius by a further rk (the

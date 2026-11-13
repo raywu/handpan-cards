@@ -1,6 +1,6 @@
 // Scale editor lane U2b, the logic half of the shell: the pure primitives the
 // panel is built on (text commit, pan type, the opening model, the dirty check),
-// run in the sandbox with ONE_PANEL on. The DOM half is tests/editor_e2e.test.js.
+// run in the sandbox. The DOM half is tests/editor_e2e.test.js.
 // Assertions derive from docs/plans/2026-11-06-scale-editor-u2-split.md (U2b),
 // D10, D12, SE-2, SE-15 and D15 in docs/plans/2026-11-05-scale-editor-reinvent.md.
 const { test, describe } = require("node:test");
@@ -9,7 +9,7 @@ const { boot } = require("./helpers/sandbox.js");
 
 const plain = (v) => JSON.parse(JSON.stringify(v));
 const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
-const app = () => boot({ onePanel: true });
+const app = () => boot();
 const withModel = (a, text, options = "undefined") => a.run(`globalThis.__m = editorLoad(${JSON.stringify(text)}, ${options}).value; true`);
 
 test("U2b-1: the empty model has no notes and Save is not allowed on it", () => {
@@ -160,12 +160,6 @@ test("U2b-14: the save command is separate for a built-in, an edit for a saved s
     "a Neotone conversion of a scale that owns a built-in slot saves separately");
 });
 
-test("U2b-15: flag off, opening the sheet builds no editor session", () => {
-  const a = boot({ onePanel: false });
-  a.run(`openScaleSheet(addChip); true`);
-  assert.strictEqual(a.get("editorSession"), null);
-});
-
 // ---- U2c: the tray, tap placement, ding rules and the carried nits ----
 // Assertions derive from the U2c row of docs/plans/2026-11-06-scale-editor-u2-split.md
 // and D2, D4, D9, D22, D23, SE-4, SE-9, SE-11, SE-12, SE-14, SE-15 of
@@ -296,6 +290,20 @@ test("U2c-11 (D4): a cross-zone swap trades zones and keeps each seat when both 
   assert.deepStrictEqual([sol.C5.zone, sol.C5.angle], ["rim", 315]);
   assert.strictEqual(sol.C4.zone, "inner");
   assert.strictEqual(sol.C4.angle, 128);
+});
+
+test("U2c-12b (FPD): moving a bottom note to an angle inside another note's floor is refused as NO_ROOM, with the note and angle in the words, and changes nothing", () => {
+  const a = app();
+  withModel(a, "[C3] [D3] [E3] [F3] [G3] (A3) C4 D4 E4 F4");
+  a.run(`globalThis.__m = editorSetAngle(__m, "bottom", 4, 90, true).value; true`);
+  for (const [i, angle, name] of [[0, 90, "C3"], [1, 95, "D3"], [2, 85, "E3"]]) {
+    const res = plain(a.get(`editorSetAngle(__m, "bottom", ${i}, ${angle}, true)`));
+    assert.strictEqual(res.ok, false, name);
+    assert.strictEqual(res.code, "NO_ROOM", name);
+    assert.strictEqual(res.reason, a.get(`t("editor.say.no_room", { name: ${JSON.stringify(name)}, angle: ${angle} })`), name);
+    assert.ok(res.reason.includes(name) && res.reason.includes(String(angle)), name + ": the words name the note and the angle");
+  }
+  assert.deepStrictEqual(plain(a.get(`__m.options.angles`)), { bottom: [null, null, null, null, 90] }, "a refusal leaves the model alone");
 });
 
 test("U2c-12 (SE-11): a bottom exchange that would clash a third note is refused by the engine", () => {
@@ -980,6 +988,20 @@ describe("U2e-2 palette, mirror and anchor", () => {
     const neo = `editorSetAnchor(__m, "between")`;
     assert.strictEqual(plain(a.get(neo)).ok, true, neo);
     assert.strictEqual(a.get(`${neo}.value === __m`), true, neo + " changes nothing on Neotone");
+  });
+
+  test("U2e2-8b (FPD): an anchor toggle the solver cannot hold is refused with the plain reason, changes nothing and adds no Undo step", () => {
+    const a = app();
+    load(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5");
+    a.run(`globalThis.__m = editorSetAngle(__m, "inner", 2, 120, true).value; globalThis.__h = editorHistoryNew(__m); true`);
+    const res = plain(a.get(`editorSetAnchor(__m, "between")`));
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.code, "TOGGLE_REFUSED");
+    assert.match(res.reason, /too close/);
+    assert.strictEqual(res.reason, a.get(`t("sheet.toggle_refused")`));
+    assert.strictEqual(plain(a.get(`editorSolve(editorSetAnchor(editorClone(__m), "one").value)`)).ok, true, "the model itself still solves");
+    assert.strictEqual(a.get(`editorApply(__h, (m) => editorSetAnchor(m, "between")).history.past.length`), 0, "a refused toggle is not an Undo step");
+    assert.strictEqual(a.get(`(__m.options.anchor || "one")`), "one", "the model keeps its anchor");
   });
 
   const RIM_ONLY = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
