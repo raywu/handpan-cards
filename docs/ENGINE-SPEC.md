@@ -1424,6 +1424,12 @@ seed has a profile and `anchor` `"between"`. Rule I1 applies unchanged; a versio
 record with `replaces` is read as opaque. A client that does not know 7 keeps the
 record opaque, byte-for-byte.
 
+Rule I1 also covers `INNER_RECORD_VERSION = 6` (pinned inner angles): a version 6
+record with `replaces` is read as opaque, `savedCandidate` refuses a version 6
+candidate for `replace-builtin`, an `edit` that would make a slot owner a version 6
+row is refused, and the editor saves a slot owner with pinned inner angles as a
+separate scale (tests SE-I1-1 to SE-I1-5 in `tests/editor_model.test.js`).
+
 ### 18.7 Fixtures that pin the contract
 
 `tests/fixtures/paired_profile_v4.json` (fixture rev 4; v1, v2 and v3 are superseded

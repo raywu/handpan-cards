@@ -11093,6 +11093,7 @@ function readSavedRecord(record) {
     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
     const pinned = !profiled && innerPinned(record.o);
     const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+    if (record.v === INNER_RECORD_VERSION && savedOwn(record.o, "replaces")) return savedFailure("protected", "opaque-record");
     if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
     let canonical = record.s;
@@ -11394,6 +11395,7 @@ function savedCandidate(command) {
   if (candidate.record.v !== recordVersionFor(candidate.deck.options, profiled) ||
       (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)))
     return savedFailure("invalid", "staged-candidate");
+  if (candidate.record.v === INNER_RECORD_VERSION && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
   const record = savedClone(candidate.record);
   const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
   if (command.type === "import" || command.type === "save-as-separate") {
@@ -11430,6 +11432,8 @@ function applySavedCommand(staged, command, candidate) {
   // that staged value, never invokes parse/build/layout work in the commit.
   const attachCandidate = (row, deckValue = candidate.deck) => views.set(row.instanceId,
     { ...row, deck: deckValue, meaning: candidate.meaning, identity: candidate.identity });
+  const held = command.type === "edit" && candidate && candidate.ok ? existing() : null;
+  if (held && candidate.record.v === INNER_RECORD_VERSION && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
   if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
     if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
     const inventoryIdentity = staged.identities.get(candidate.deck.id);
@@ -13326,9 +13330,9 @@ function editorCommitOptions(m) {
   return kept;
 }
 // A built-in never takes its own slot: it saves a new scale (D15).
-function editorSaveCommand(base, neotone, ownsSlot) {
+function editorSaveCommand(base, unreadable, ownsSlot) {
   if (!base) return { type: "import", selectedInstanceId: selection.kind === "saved" ? selection.id : null };
-  if (base.selection.kind === "builtin" || (neotone && ownsSlot)) return { type: "save-as-separate" };
+  if (base.selection.kind === "builtin" || (unreadable && ownsSlot)) return { type: "save-as-separate" };
   return { type: "edit", instanceId: base.selection.id, expectedRevision: base.revision };
 }
 
@@ -14636,7 +14640,7 @@ async function editorSave() {
     if (!built.ok) { s.error = reasonText(built); return; }
     const candidate = { record: scaleRecord(seedOf(built.value)), deck: built.value };
     const ownsSlot = !!base && base.selection.kind === "saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;
-    const command = editorSaveCommand(base, editorKindOf(m) === "neotone", ownsSlot);
+    const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
     const result = await commitSaved({ ...command, collectionId: base ? base.collectionId : savedState?.collectionId, candidate }, { signal: controller.signal });
     if (generation !== sheetGeneration || !pageOpen) return;
     if (!result.ok) {
