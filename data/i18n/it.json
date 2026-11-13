@@ -249,5 +249,8 @@
   "editor.count.bottom": "Fondo {n}/{max}",
   "editor.count.ding": "Ding {n}/{max}",
   "editor.count.main": "Principali {n}/{max}",
-  "editor.count.mutant": "Mutant {n}/{max}"
+  "editor.count.mutant": "Mutant {n}/{max}",
+  "sheet.neotone_check": "Neotone",
+  "sheet.mode_neotone": "NEOTONE",
+  "sheet.layout_mode": "DISPOSIZIONE"
 }

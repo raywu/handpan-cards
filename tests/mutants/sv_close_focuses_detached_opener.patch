@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13402,7 +13402,7 @@ function hideSheet() {
-   const openerTag=sheetOpenerSelection;
+@@ -14764,7 +14764,7 @@ function hideSheet() {
+   const openerTag=pageOpenerSelection;
    if(savedState){selection=savedResolve(selection,savedState,savedEntries);setOrder();buildChips();render();}
-   const liveOpener=openerTag?[...document.getElementById("decks").children].find(chip=>chip.getAttribute("data-selection-kind")===openerTag.kind && chip.getAttribute("data-selection-id")===openerTag.id):sheetOpener;
+   const liveOpener=openerTag?[...document.getElementById("decks").children].find(chip=>chip.getAttribute("data-selection-kind")===openerTag.kind && chip.getAttribute("data-selection-id")===openerTag.id):pageOpener;
 -  (liveOpener || document.querySelector("#decks .chip.on") || addChip).focus();
 +  (sheetOpener || addChip).focus();
-   sheetOpener = null;sheetOpenerSelection=null;
+   pageOpener = null;pageOpenerSelection=null;
  }
  // The app's own way out: BACK, Escape, or a save that finishes. It pops the

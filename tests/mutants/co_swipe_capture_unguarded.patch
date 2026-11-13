@@ -7,7 +7,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14877,8 +14877,7 @@ function swipeMove(e) {
+@@ -15580,8 +15580,7 @@ function swipeMove(e) {
  function startDrag(e) {
    scene.getAnimations().forEach(a => a.cancel());
    drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, last: 0, lastY: 0, moved: false, pts: [{ x: e.clientX, t: e.timeStamp }], pointerType: e.pointerType };
@@ -16,4 +16,4 @@ diff --git a/index.html b/index.html
 +  card.setPointerCapture(e.pointerId);
  }
  function canStartGesture(e, state) {
-   return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.sheetOpen && state.orderLength > 0;
+   return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.pageOpen && state.orderLength > 0;

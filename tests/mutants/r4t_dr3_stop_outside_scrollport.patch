@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14340,7 +14340,7 @@ function cycleTabStops(stops, e) {
+@@ -15085,7 +15085,7 @@ function cycleTabStops(stops, e) {
    const i = stops.indexOf(document.activeElement);
    const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
    e.preventDefault();
 -  stops[next].focus();
 +  stops[next].focus({ preventScroll: true });
  }
- // Tab is trapped inside: the sheet's own controls, in visual order.
- sheet.addEventListener("keydown", e => {
+ 
+ /* ---------------- interaction ---------------- */

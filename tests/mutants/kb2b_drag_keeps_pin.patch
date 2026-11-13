@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13797,7 +13797,7 @@ sheet.addEventListener("pointerdown", (e) => {
-   tapSnap = onField ? { at: Date.now(), body: bandPort.scrollTop, surf: sheetSurf ? sheetSurf.scrollTop : 0 } : null;
-   if (!onField) releasePin();
- }, true);
+@@ -12576,7 +12576,7 @@ const sheetZoomed = () => !!(window.visualViewport && window.visualViewport.scal
+ 
+ let tapSnap = null, scrollPin = null;
+ const releasePin = () => { scrollPin = null; };
 -const dropTap = () => { scrollPin = null; tapSnap = null; };
 +const dropTap = () => {};
  let touchFrom = null;

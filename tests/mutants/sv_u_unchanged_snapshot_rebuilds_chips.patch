@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13547,8 +13547,8 @@ savedSnapshotListener=event=>{
+@@ -14861,7 +14861,7 @@ savedSnapshotListener=event=>{
      !savedEqual(event.previous.slots, savedState.slots) ||
      !savedEqual(event.previous.hidden, savedState.hidden) ||
      !savedEqual(oldSelection, selection);
@@ -12,5 +12,4 @@ diff --git a/index.html b/index.html
 +  buildChips();
    if (chipsChanged && !backupPanel.hasAttribute("hidden")) paintBackup();
    updateSavedStatus();
-   if(!dirty && !sheetOpen){
-     if(!savedEqual(oldSelection,selection) || beforeRow?.revision!==afterRow?.revision){setOrder();render();}
+   if(!pageOpen){

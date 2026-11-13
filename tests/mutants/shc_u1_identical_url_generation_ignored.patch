@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15106,7 +15106,7 @@ function copyLink() {
+@@ -15836,7 +15836,7 @@ function copyLink() {
    const href = location.href;
    const deck_kind = deckKind(deck());
    let noticeRevision = announcementRevision;
 -  const current = () => generation === linkUIGeneration && href === location.href &&
 +  const current = () => href === location.href &&
-     !shareCopy.disabled && !sheetOpen && !aboutOpen &&
+     !shareCopy.disabled && !pageOpen && !aboutOpen &&
      !(panelOpen && !desktopMQ.matches) && !document.hidden;
    if (!current()) return;

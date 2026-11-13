@@ -246,5 +246,8 @@
   "editor.count.bottom": "ボトム {n}/{max}",
   "editor.count.ding": "ディング {n}/{max}",
   "editor.count.main": "メイン {n}/{max}",
-  "editor.count.mutant": "ミュータント {n}/{max}"
+  "editor.count.mutant": "ミュータント {n}/{max}",
+  "sheet.neotone_check": "Neotone",
+  "sheet.mode_neotone": "NEOTONE",
+  "sheet.layout_mode": "レイアウト"
 }

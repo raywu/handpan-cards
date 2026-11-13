@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15416,7 +15416,7 @@ function updateSavedStatus() {
+@@ -14811,7 +14811,7 @@ function updateSavedStatus() {
    let text=protectedData?t("saved.recovery"):savedMode === "session"?t("saved.session"):"";
    if(!text && savedIssue?.detail==="acknowledged-publication-pending")text=t("saved.ackPending");
    if(legacyBranchStatus==="changed")text+=(text?" ":"")+t("saved.legacy");
 -  if(el.textContent!==text)el.textContent=text;
 +  el.textContent=text;
    el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");
-   document.getElementById("scale-conflict-separate").textContent=t("saved.separate");
    refreshMoveBanner();
+ }

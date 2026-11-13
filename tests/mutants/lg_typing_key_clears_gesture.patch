@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12196,7 +12196,7 @@ const lipDragStop = (e) => {
- for (const ev of ["touchend", "touchcancel"]) sheet.addEventListener(ev, lipDragStop, { passive: true, capture: true });
+@@ -12605,7 +12605,7 @@ sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipUser(); }, tr
+ let lipDrag = null, lipDragEnd = 0, lipTouching = false, lipParked = null;
  const lipTouchClear = () => { if (lipDrag) lipParked = lipDrag; lipFling = null; lipTouching = false; lipDrag = null; lipDragEnd = 0; };
  sheet.addEventListener("wheel", lipTouchClear, { passive: true, capture: true });
 -sheet.addEventListener("keydown", (e) => { if (lipScrollKey(e)) lipTouchClear(); }, { capture: true });
 +sheet.addEventListener("keydown", () => { lipTouchClear(); }, { capture: true });
- let lipTouch = null;
- lipBtn.addEventListener("touchstart", (e) => {
-   const p = e.touches && e.touches[0];
+ 
+ 
+ function ringSizes(fields) {

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17468,7 +17468,7 @@
+@@ -16092,7 +16092,7 @@ function placeMoveBanner() {
  }
  
  /* ---------------- go ---------------- */
 -loadAnalytics();
 +if (!MOVE_ON_OLD) loadAnalytics();
- sheet.setAttribute("hidden", "");buildSwatches();paintLayout();resyncSheet(true);
+ sheet.setAttribute("hidden", "");
  // Only a newly migrated legacy selection can be missing. Once the collection
  // exists, its tagged preference is authoritative; immutable recovery bytes must

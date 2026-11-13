@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13702,7 +13702,7 @@ restoreBtn.onclick = () => {
+@@ -15055,7 +15055,7 @@ restoreBtn.onclick = () => {
  };
  restoreBtn.onblur = disarmReset;
  document.addEventListener("pointerdown", (e) => {
 -  if (e.target !== restoreBtn) disarmReset();
 +  if (e.target === restoreBtn) disarmReset();
  }, true);
- // The mirror is the choice the pan preview exists to make visible, so each
- // button re-solves the preview through the same parse path a keystroke uses.
+ /* ---- the drag (Lane DR2b, spec section 7) ----
+    One gesture at a time. A press on a note starts it; what it becomes depends

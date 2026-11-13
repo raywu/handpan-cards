@@ -249,5 +249,8 @@
   "editor.count.bottom": "Inferior {n}/{max}",
   "editor.count.ding": "Ding {n}/{max}",
   "editor.count.main": "Principal {n}/{max}",
-  "editor.count.mutant": "Mutante {n}/{max}"
+  "editor.count.mutant": "Mutante {n}/{max}",
+  "sheet.neotone_check": "Neotone",
+  "sheet.mode_neotone": "NEOTONE",
+  "sheet.layout_mode": "DISPOSICIÓN"
 }

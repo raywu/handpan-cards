@@ -6,12 +6,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13537,7 +13537,7 @@ function showSheet(opener) {
+@@ -14691,7 +14691,7 @@ function showSheet(opener) {
+   pageOpenerSelection=[...document.getElementById("decks").children].includes(pageOpener)?{kind:pageOpener.getAttribute("data-selection-kind"),id:pageOpener.getAttribute("data-selection-id")}:null;
    sheet.removeAttribute("hidden");
-   sheetOpen = true;
-   setLip(false, { instant: true });
+   pageOpen = true;
 -  setInert(true, background);
 +
-   resyncSheet(true);
-   applyKbOffset();
    if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
+   else history.pushState({ scalePage: true }, "", sheetRoute());
+   reuseEntry = false;
