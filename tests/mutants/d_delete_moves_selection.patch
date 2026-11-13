@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14855,7 +14855,7 @@ savedSnapshotListener=event=>{
+@@ -14869,7 +14869,7 @@ savedSnapshotListener=event=>{
    const beforeRow=event.previous?.entries.find(row=>row.instanceId===oldSelection.id);
    const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
    const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
 -  selection=savedResolve(selection,savedState,savedEntries);
 +  selection=savedFallback(savedState,savedEntries);
-   // Preference ACKs and unchanged rereads must not detach an active pointer
-   // target. Rebuild only when the visible collection or local selection changes.
-   const chipsChanged = !event.previous ||
+   const session=editorSession;
+   if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
+     const target=savedResolve(editingBase.selection,savedState,savedEntries);

@@ -8303,6 +8303,20 @@ function run() {
       }
     });
 
+  });
+
+  /* ---------------------------------------------------------------- *
+   * progression rail scroll continuity (D2 follow-up). Real fonts, NO forced
+   * reduced motion: the lurch only exists with smooth scrolling on.
+   * ---------------------------------------------------------------- */
+  describe("progression rail scroll continuity", () => {
+    let rb = null;
+    before(async () => {
+      rb = await launch({ realFonts: true });
+      assert.ok(rb);
+      await rb.goto(URL);
+      await rb.eval(`return document.fonts.ready.then(() => true);`);
+    });
     after(async () => { if (rb) await rb.close(); });
 
     const sampleFrames = (action) => `
