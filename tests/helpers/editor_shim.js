@@ -68,6 +68,7 @@ const SHIM = `(() => {
   }, set() {} });
   Object.defineProperty(el("scale-refusal"), "textContent", { configurable: true, get() { return editorSession ? editorSession.error || "" : ""; }, set() {} });
   Object.defineProperty(el("scale-msg"), "textContent", { configurable: true, get() { return editorSession ? editorSession.error || "" : ""; }, set() {} });
+  el("scale-box").addEventListener("input", () => { if (editorSession) editorSession.editing = true; });
   el("scale-back").onclick = function () { closeScaleSheet(); };
 })();`;
 

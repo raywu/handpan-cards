@@ -1,0 +1,16 @@
+# kills: SV11 U2: remote replacement keeps a clean built-in editor target and fields coherent
+# suite: node --test --test-name-pattern ^SV11.U2..remote.replacement.keeps.a.clean.built.in.editor.target.and.fields.coherent$ tests/app.test.js
+# A clean open editor ignores a remote replacement of the scale it is editing, so it stays bound to the stale built-in.
+#
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14871,7 +14871,7 @@ savedSnapshotListener=event=>{
+   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
+   selection=savedResolve(selection,savedState,savedEntries);
+   const session=editorSession;
+-  if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.dialog && !editorIsDirty(session.base,session.history.present)){
++  if(false && pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.dialog && !editorIsDirty(session.base,session.history.present)){
+     const target=savedResolve(editingBase.selection,savedState,savedEntries);
+     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
+     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);

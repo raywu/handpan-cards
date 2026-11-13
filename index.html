@@ -12957,7 +12957,9 @@ function editorSetPalette(m, palette) {
 }
 const EDITOR_NAME_MAX = 40;
 function editorSetName(m, text) {
-  const name = Array.from(String(text).trim()).slice(0, EDITOR_NAME_MAX).join("").trim();
+  const folded = String(text).replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-").replace(/\u2026/g, "...");
+  const name = Array.from(folded.trim()).slice(0, EDITOR_NAME_MAX).join("").trim();
   if ((m.options.name || "") === name) return { ok: true, value: m };
   const next = editorClone(m);
   if (name) next.options.name = name; else delete next.options.name;
@@ -14607,6 +14609,10 @@ function editorWireSwipe() {
     el.addEventListener("touchcancel", stop, { passive: true });
   }
 }
+function editorDraftMoved(s, saved) {
+  if (s.history.present !== saved) return true;
+  return s.editing && editorEl("editor-line").value.trim() !== editorLineText(saved);
+}
 async function editorSave() {
   const s = editorSession;
   if (!s || s.saving || savePending) return;
@@ -14637,6 +14643,14 @@ async function editorSave() {
     if (result.published === false) { s.error = savedPublicationText(result); return; }
     const d = savedEntries.get(result.instanceId).deck;
     const warned = (d.warnings || []).map((w) => reasonText(w));
+    if (editorSession === s && editorDraftMoved(s, m)) {
+      s.base = m;
+      editingBase = { selection: { kind: "saved", id: result.instanceId }, deck: d, collectionId: savedState.collectionId,
+        revision: savedEntries.get(result.instanceId).revision, slotStateRevision: savedState.slotStateRevision,
+        ownerId: savedState.slots[result.instanceId] || null, scope: savedScope(savedState, savedEntries) };
+      editingId = result.instanceId;
+      return;
+    }
     closeScaleSheet();
     selectDeck({ kind: "saved", id: result.instanceId }, false);
     track("scale_create", { note_count: Object.keys(d.fields).length, has_bottom: Object.values(d.fields).some((f) => f[3] === "bottom") ? 1 : 0 });
@@ -14856,6 +14870,20 @@ savedSnapshotListener=event=>{
   const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
   selection=savedResolve(selection,savedState,savedEntries);
+  const session=editorSession;
+  if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.dialog && !editorIsDirty(session.base,session.history.present)){
+    const target=savedResolve(editingBase.selection,savedState,savedEntries);
+    const entry=target.kind==="saved"?savedEntries.get(target.id):null;
+    const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);
+    const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
+    if(changed && latest){
+      const tab=session.tab;
+      beginSheetSession(latest,target);
+      editorClose();
+      editorOpen(latest);
+      if(editorSession && tab!=="scale")editorSetTab(tab,false);
+    }
+  }
   // Preference ACKs and unchanged rereads must not detach an active pointer
   // target. Rebuild only when the visible collection or local selection changes.
   const chipsChanged = !event.previous ||

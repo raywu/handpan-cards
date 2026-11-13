@@ -1487,6 +1487,24 @@ test("changing the FIELDS on save mints a new deck id", async () => {
     app.get("HPE.core.deckId(deck().fields)"));
 });
 
+test("a name containing a curly apostrophe (U+2019) saves, normalised to ASCII", async () => {
+  const app=await durableBoot(),d=await makeCustom(app);openEdit(app,d);
+  app.els["scale-name"].value="RAY\u2019S PAN";app.els["scale-name"].dispatchEvent({type:"input"});await generateClick(app);
+  assert.strictEqual(app.get("selection.id"),d.instanceId,"the curly-quote rename moved the id");
+  assert.ok(chipRow(app).some(c=>c.label==="RAY'S PAN"&&c.on),JSON.stringify(chipRow(app).map(c=>c.label)));
+  const again=await durableBoot({origin:app.fixtureOrigin});
+  assert.strictEqual(savedViews(again)[d.instanceId].name,"RAY'S PAN","the curly-quote name was not stored, or was stored un-normalised");
+});
+
+test("a name typed with iOS dashes and ellipsis saves, normalised to ASCII", async () => {
+  const app=await durableBoot(),d=await makeCustom(app);openEdit(app,d);
+  app.els["scale-name"].value="A \u2013 B \u2014 C\u2026";app.els["scale-name"].dispatchEvent({type:"input"});await generateClick(app);
+  assert.strictEqual(app.get("selection.id"),d.instanceId,"the dash/ellipsis rename moved the id");
+  assert.ok(chipRow(app).some(c=>c.label==="A - B - C..."&&c.on),JSON.stringify(chipRow(app).map(c=>c.label)));
+  const again=await durableBoot({origin:app.fixtureOrigin});
+  assert.strictEqual(savedViews(again)[d.instanceId].name,"A - B - C...","the dash/ellipsis name was not stored, or was stored un-normalised");
+});
+
 test("renaming keeps both identities, relabels its chip and survives a reload", async () => {
   const app=await durableBoot(),d=await makeCustom(app);openEdit(app,d);app.els["scale-name"].value="RAY'S PAN";app.els["scale-name"].dispatchEvent({type:"input"});await generateClick(app);
   assert.strictEqual(app.get("selection.id"),d.instanceId);assert.strictEqual(app.currentDeck().id,d.id);
@@ -8681,6 +8699,19 @@ describe("CN: SCALE NAME on the Add sheet", () => {
 
 
 
+
+  test("CN3: Add with a typed name, NEXT, GENERATE CARDS: the deck, its chip and the share code carry the normalised name", async () => {
+    const app = boot();
+    const d = await addAndGenerate(app, "RAY\u2019S \u2013 PAN");
+    assert.strictEqual(d.name, "RAY'S - PAN");
+    assert.ok(chipRow(app).some((c) => c.label === "RAY'S - PAN" && c.on),
+      JSON.stringify(chipRow(app).map((c) => c.label)));
+    const url = link(app, d.instanceId || d.id);
+    assert.strictEqual(url.ok, true, url.reason);
+    const again = boot();
+    openShare(again, payload(url.value));
+    assert.strictEqual(savedViews(again)[again.get("selection.id")].name, "RAY'S - PAN");
+  });
 
   test("CN4: Add with the box empty takes the auto label and writes no options.name", async () => {
     const app = boot();
