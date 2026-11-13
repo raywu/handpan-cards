@@ -1,0 +1,15 @@
+# kills: menu: Delete is in the menu only on an edited scale; one press arms it, a press inside the 400ms guard does nothing, a second deletes
+# suite: node --test --test-name-pattern ^menu:.Delete.is.in.the.menu tests/editor_e2e.test.js
+# fault: A second Delete press inside the guard window deletes the scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15878,7 +15878,7 @@ function editorDeleteTap() {
+   if (!s || s.dialog || s.editing || !editingId) return;
+   const b = editorEl("editor-delete");
+   if (s.delArmed) {
+-    if (Date.now() - s.delArmedAt < EDITOR_DELETE_GUARD_MS) return;
++    
+     s.delArmed = false;
+     if (wouldEmpty(editingId)) {
+       editorResetDeleteButton(b);

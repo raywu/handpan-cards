@@ -1,0 +1,14 @@
+# kills: U2a-H3: an action that changes nothing adds no Undo step
+# suite: node --test --test-name-pattern ^U2a-H3:.an.action.that.changes.nothing.adds.no.Undo.step$ tests/editor_model.test.js
+# fault: An action that changes nothing still adds an Undo step.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15171,7 +15171,6 @@ const editorCanRedo = (h) => h.future.length > 0;
+ function editorApply(h, step) {
+   const res = step(h.present);
+   if (!res.ok) return { ...res, history: h };
+-  if (JSON.stringify(res.value) === JSON.stringify(h.present)) return { ok: true, history: h, notice: res.notice };
+   return { ok: true, history: { past: [...h.past, h.present], present: res.value, future: [] }, notice: res.notice };
+ }
+ const editorUndo = (h) => (editorCanUndo(h)

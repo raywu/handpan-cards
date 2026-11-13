@@ -10,9 +10,10 @@
 // Everything asserted here is user-observable through the sheet: what a person
 // typing into #scale-box sees before pressing GENERATE CARDS. No chord is
 // selected, so the preview is the bare pan.
-const { test } = require("node:test");
+const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename);
 const assert = require("node:assert");
-const { boot } = require("./helpers/sandbox.js");
+const { boot: sandboxBoot } = require("./helpers/sandbox.js");
+const boot = (opts = {}) => sandboxBoot({ onePanel: onePanelFor(), ...opts });
 
 /* ------------------------------------------------------------------ helpers */
 
