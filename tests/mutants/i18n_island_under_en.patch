@@ -1,5 +1,6 @@
-# kills: I18N: the English DOM of the app equals the base
+# kills: I18N: the English DOM of the app equals the base: card text carries lang=en only under another UI language
 # suite: node --test --test-name-pattern ^I18N:.the.English.DOM tests/app.test.js
+# I18N: the English DOM of the app equals the base
 # English-only islands carry lang=en even when the UI is English.
 diff --git a/index.html b/index.html
 --- a/index.html

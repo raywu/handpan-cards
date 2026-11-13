@@ -1,5 +1,6 @@
-# kills: a LINK copy from an old route still owns the new route
-# suite: node --test --test-name-pattern ^SHC.U tests/app.test.js
+# kills: SHC U1: latest LINK owns fallback in both completion orders and at identical URLs
+# suite: node --test --test-name-pattern ^SHC.U1: tests/app.test.js
+# a LINK copy from an old route still owns the new route
 # copyLink current() drops generation and href checks
 diff --git a/index.html b/index.html
 --- a/index.html

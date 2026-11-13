@@ -1,5 +1,6 @@
-# kills: a clean editor refreshed by a remote replacement mixes the raw built-in with the saved target
+# kills: SV11 U2: remote replacement keeps a clean built-in editor target and fields coherent
 # suite: node --test --test-name-pattern ^SV11.U2: tests/app.test.js
+# a clean editor refreshed by a remote replacement mixes the raw built-in with the saved target
 # savedSnapshotListener prefers the raw built-in over the saved entry
 diff --git a/index.html b/index.html
 --- a/index.html

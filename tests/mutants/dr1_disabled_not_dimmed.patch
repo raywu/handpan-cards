@@ -1,5 +1,6 @@
-# kills: a disabled mode control paints like an enabled one
+# kills: EPF: the page layer paints an opaque ground and a disabled mode control dims
 # suite: node --test --test-name-pattern ^EPF..the.page.layer.paints tests/editor_e2e.test.js
+# a disabled mode control paints like an enabled one
 # A disabled mode control paints like an enabled one (disabled colour dropped). Re-anchored 2026-11-12.
 diff --git a/index.html b/index.html
 --- a/index.html

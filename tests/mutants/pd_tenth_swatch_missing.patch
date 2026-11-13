@@ -1,5 +1,6 @@
-# kills: the Layout tab renders only nine palette dots
-# suite: node --test --test-name-pattern ^EPF tests/editor_e2e.test.js
+# kills: EPF: the Layout tab shows ten 44px palette dots under a visible label with no chip, with no scroll at 375x667, and one tap picks
+# suite: node --test --test-name-pattern ^EPF..the.Layout.tab.shows.ten tests/editor_e2e.test.js
+# the Layout tab renders only nine palette dots
 # editorRenderPalette drops the tenth palette
 diff --git a/index.html b/index.html
 --- a/index.html

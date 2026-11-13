@@ -1,5 +1,6 @@
-# kills: the page layer goes fully transparent and the practice screen shows through the flanks beside the page
+# kills: EPF: the page layer paints an opaque ground and a disabled mode control dims
 # suite: node --test --test-name-pattern ^EPF..the.page.layer.paints tests/editor_e2e.test.js
+# the page layer goes fully transparent and the practice screen shows through the flanks beside the page
 # The sheet layer ground goes transparent. Re-anchored 2026-11-12 on the editor page.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,6 @@
-# kills: the scale page opens without making the background inert
+# kills: AP2-2 setInert applies each caller's own background set
 # suite: node --test --test-name-pattern ^AP2-2 tests/app.test.js
+# the scale page opens without making the background inert
 # showSheet drops setInert(true, background)
 diff --git a/index.html b/index.html
 --- a/index.html

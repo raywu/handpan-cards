@@ -1,5 +1,6 @@
-# kills: Tab lands on the next stop without scrolling it into view, so a stop below the fold stays outside the scrollport
+# kills: Tab brings every stop into the panel's scrollport on a short screen
 # suite: node --test --test-name-pattern ^Tab.brings.every.stop tests/editor_e2e.test.js
+# Tab lands on the next stop without scrolling it into view, so a stop below the fold stays outside the scrollport
 # cycleTabStops focuses with preventScroll. Re-anchored 2026-11-12 on the editor panel.
 diff --git a/index.html b/index.html
 --- a/index.html
