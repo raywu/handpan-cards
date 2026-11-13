@@ -526,18 +526,8 @@ test("U2a-H3: an action that changes nothing adds no Undo step", () => {
   assert.strictEqual(r.real, 1, "a real change still adds its step");
 });
 
-// The legacy sheet's own functions are the oracle: the same scale and options are put in the
-// sheet's globals, the sheet's function runs, and the model must land on the same lists.
-const LEGACY = (text, opts) => `
-  const seed = HPE.core.parseSeed(${js(text)}).value;
-  const opts = ${js(opts || {})};
-  lastSeed = seed;
-  layoutSeats = opts.seats ? JSON.parse(JSON.stringify(opts.seats)) : null;
-  layoutAngles = opts.angles ? JSON.parse(JSON.stringify(opts.angles)) : null;
-  lastSolved = HPE.layout.solve({ fields: seed.fields, options: { ...seed.options, ...opts } }).value;
-  resyncSheet = () => {}; paintLayout = () => {};`;
-const legacy = (app, text, opts, call) => run(app, `${LEGACY(text, opts)}
-  const ok = ${call}; return { ok, angles: (layoutAngles && layoutAngles.bottom) || null, seats: layoutSeats };`);
+// The retired sheet's own functions were the oracle: each expected value below is what its
+// swapSeats and slideNote returned for the same scale and options, recorded before it was removed.
 const modelRun = (app, text, opts, call) => run(app, `${LOAD(text, opts)}
   const r = ${call};
   if (!r.ok) return { ok: false, code: r.code, kept: JSON.stringify(m0) === JSON.stringify(m0) };
@@ -551,14 +541,12 @@ test("U2a-X1: exchanging two bottom notes trades their solved angles exactly as 
   const app = appBoot();
   const cases = [
     { opts: { angles: { bottom: [null, 240, null] } }, i: 0, j: 1, expect: [240, 330, null] },
-    { opts: { angles: { bottom: [null, null, 240] } }, i: 0, j: 1, expect: null },
+    { opts: { angles: { bottom: [null, null, 240] } }, i: 0, j: 1, expect: [210, 330, 240] },
     { opts: { angles: { bottom: [60, 240, null] } }, i: 1, j: 0, expect: [240, 60, null] },
   ];
   for (const c of cases) {
     const label = js(c.opts) + " " + c.i + "," + c.j;
-    const want = legacy(app, BOTTOM3, c.opts, `swapSeats("bottom", ${c.i}, ${c.j})`);
-    assert.strictEqual(want.ok, true, label);
-    if (c.expect) assert.deepStrictEqual(want.angles, c.expect, label + " the sheet's own result");
+    const want = { angles: c.expect, seats: null };
     const viaExchange = modelRun(app, BOTTOM3, c.opts, `editorExchangeAngles(m0, "bottom", ${c.i}, ${c.j})`);
     const viaSwap = modelRun(app, BOTTOM3, c.opts, `editorSwapSeats(m0, "bottom", ${c.i}, ${c.j})`);
     for (const got of [viaExchange, viaSwap]) {
@@ -581,9 +569,6 @@ test("U2a-X2: an exchange the 5 degree steps cannot hold is refused as the sheet
   const text = notes + " (A3) C4 D4 E4 F4";
   const opts = { angles: { bottom: Array.from({ length: n }, (_, k) => (k === 22 ? 90 : null)) } };
   for (const [a, b] of [[0, 2], [2, 0]]) {
-    const want = legacy(app, text, opts, `swapSeats("bottom", ${a}, ${b})`);
-    assert.strictEqual(want.ok, false, "the sheet refuses " + a + "," + b);
-    assert.deepStrictEqual(want.angles, opts.angles.bottom, "and moves nothing");
     for (const fn of ["editorExchangeAngles", "editorSwapSeats"]) {
       const got = modelRun(app, text, opts, `${fn}(m0, "bottom", ${a}, ${b})`);
       assert.strictEqual(got.ok, false, fn + " " + a + "," + b);
@@ -594,16 +579,16 @@ test("U2a-X2: an exchange the 5 degree steps cannot hold is refused as the sheet
 test("U2a-X3: a seat swap follows the sheet: seats without bottom pins, the angle trade with them", () => {
   const app = appBoot();
   const cases = [
-    { text: BASE, opts: {}, ring: "rim", i: 0, j: 3 },
-    { text: WITH_BOTTOM, opts: { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, ring: "rim", i: 1, j: 2 },
-    { text: BOTTOM3, opts: {}, ring: "bottom", i: 0, j: 2 },
-    { text: BOTTOM3, opts: { seats: { bottom: [1, 0, 2] } }, ring: "bottom", i: 0, j: 1 },
+    { text: BASE, opts: {}, ring: "rim", i: 0, j: 3, seats: { rim: [3, 1, 2, 0, 4, 5, 6, 7] } },
+    { text: WITH_BOTTOM, opts: { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, ring: "rim", i: 1, j: 2, seats: { rim: [1, 2, 0, 3, 4, 5, 6, 7] } },
+    { text: BOTTOM3, opts: {}, ring: "bottom", i: 0, j: 2, seats: { bottom: [2, 1, 0] } },
+    { text: BOTTOM3, opts: { seats: { bottom: [1, 0, 2] } }, ring: "bottom", i: 0, j: 1, seats: null },
   ];
   for (const c of cases) {
     const label = c.ring + " " + c.i + "," + c.j + " " + js(c.opts);
-    const want = legacy(app, c.text, c.opts, `swapSeats(${js(c.ring)}, ${c.i}, ${c.j})`);
+    const want = { seats: c.seats, angles: null };
     const got = modelRun(app, c.text, c.opts, `editorSwapSeats(m0, ${js(c.ring)}, ${c.i}, ${c.j})`);
-    assert.strictEqual(got.ok, want.ok, label);
+    assert.strictEqual(got.ok, true, label);
     assert.deepStrictEqual(got.seats, want.seats, label + " seats");
     assert.deepStrictEqual(got.angles, want.angles, label + " angles");
   }
@@ -615,17 +600,13 @@ test("U2a-X3: a seat swap follows the sheet: seats without bottom pins, the angl
 test("U2a-X4: pinning a bottom note on a ring with a custom seat order first pins every note where it sits, as the sheet does", () => {
   const app = appBoot();
   const seated = { seats: { bottom: [1, 0, 2] } };
-  const want = legacy(app, BOTTOM3, seated, `slideNote({ ring: "bottom", i: 2 }, 95, "nudge", 1)`);
-  assert.deepStrictEqual(want.angles, [210, 330, 95], "the sheet's own result");
-  assert.strictEqual(want.seats, null, "the seat order is folded into the angles");
+  const want = { angles: [210, 330, 95] };
   const got = modelRun(app, BOTTOM3, seated, 'editorSetAngle(m0, "bottom", 2, 95)');
   assert.strictEqual(got.ok, true);
   assert.deepStrictEqual(got.angles, want.angles);
   assert.strictEqual(got.seats, null);
   assert.strictEqual(got.solved, true);
   const plain3 = modelRun(app, BOTTOM3, {}, 'editorSetAngle(m0, "bottom", 1, 300)');
-  const plainWant = legacy(app, BOTTOM3, {}, `slideNote({ ring: "bottom", i: 1 }, 300, "nudge", 1)`);
-  assert.deepStrictEqual(plain3.angles, plainWant.angles, "no seat order: only the one note is pinned");
   assert.deepStrictEqual(plain3.angles, [null, 300, null]);
 });
 
@@ -634,8 +615,6 @@ test("U2a-X5: pinning a note where it already sits changes nothing unless a seat
   const solvedAt = run(app, `${LOAD(BOTTOM3)}
     const s = HPE.layout.solve({ fields: m0.fields, options: m0.options }).value;
     return ringIds(s.fields, "bottom").map((id) => s.fields[id][4]);`);
-  const want = legacy(app, BOTTOM3, {}, `slideNote({ ring: "bottom", i: 1 }, ${solvedAt[1]}, "nudge", 1)`);
-  assert.strictEqual(want.angles, null, "the sheet pins nothing");
   const got = modelRun(app, BOTTOM3, {}, `editorSetAngle(m0, "bottom", 1, ${solvedAt[1]})`);
   assert.strictEqual(got.ok, true);
   assert.strictEqual(got.noop, true);

@@ -160,12 +160,6 @@ test("U2b-14: the save command is separate for a built-in, an edit for a saved s
     "a Neotone conversion of a scale that owns a built-in slot saves separately");
 });
 
-test("U2b-15: flag off, opening the sheet builds no editor session", () => {
-  const a = boot({ onePanel: false });
-  a.run(`openScaleSheet(addChip); true`);
-  assert.strictEqual(a.get("editorSession"), null);
-});
-
 // ---- U2c: the tray, tap placement, ding rules and the carried nits ----
 // Assertions derive from the U2c row of docs/plans/2026-11-06-scale-editor-u2-split.md
 // and D2, D4, D9, D22, D23, SE-4, SE-9, SE-11, SE-12, SE-14, SE-15 of
