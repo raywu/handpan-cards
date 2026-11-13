@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13329,7 +13329,7 @@
+@@ -13332,7 +13332,7 @@
  // A built-in never takes its own slot: it saves a new scale (D15).
  function editorSaveCommand(base, unreadable, ownsSlot) {
    if (!base) return { type: "import", selectedInstanceId: selection.kind === "saved" ? selection.id : null };

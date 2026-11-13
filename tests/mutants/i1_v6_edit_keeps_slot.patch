@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11449,7 +11449,7 @@
-   } else if (command.type === "edit") {
-     const row = existing();
-     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
--    if ((candidate.deck.options.profile || candidate.record.v === INNER_RECORD_VERSION) && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
-+    if (candidate.deck.options.profile && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
-     const record = savedEditedRecord(row.record, candidate);
-     if (!savedEqual(record, row.record)) {
-       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+@@ -11433,7 +11433,7 @@
+   const attachCandidate = (row, deckValue = candidate.deck) => views.set(row.instanceId,
+     { ...row, deck: deckValue, meaning: candidate.meaning, identity: candidate.identity });
+   const held = command.type === "edit" && candidate && candidate.ok ? existing() : null;
+-  if (held && candidate.record.v === INNER_RECORD_VERSION && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
++  if (false && candidate.record.v === INNER_RECORD_VERSION && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
+   if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
+     if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
+     const inventoryIdentity = staged.identities.get(candidate.deck.id);
