@@ -417,6 +417,30 @@ function run() {
     });
   });
 
+  describe("D15 Save while a name is typed", () => {
+    test("a name typed while Save is pending keeps the editor open and the typed text", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the first save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "PENDING VALID";
+        n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+      await b.eval(`navigator.locks.request("handpan-cards:saved-scales:v1", () => new Promise((r) => { window.__rel = r; })); return true;`);
+      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
+      await b.eval(`document.getElementById("editor-save").click(); return true;`);
+      await b.waitFor(`!!savePending`, { label: "Save to wait on the lock" });
+      await b.eval(`const n = document.getElementById("editor-name"); n.dispatchEvent(new Event("focus")); n.value = "TYPED DURING SAVE";
+        n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      await b.eval(`window.__rel(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the pending Save to finish" });
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "TYPED DURING SAVE");
+    });
+  });
+
   describe("U2c the tray and tap placement", () => {
     const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
     const rimNames = () => b.eval(`return editorNames(editorSession.history.present, "rim");`);

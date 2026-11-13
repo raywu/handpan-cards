@@ -14609,6 +14609,7 @@ function editorWireSwipe() {
 }
 function editorDraftMoved(s, saved) {
   if (s.history.present !== saved) return true;
+  if (s.naming && editorSetName(saved, editorEl("editor-name").value).value !== saved) return true;
   return editorEl("editor-line").value.trim() !== editorLineText(saved);
 }
 async function editorSave() {

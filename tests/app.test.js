@@ -6411,7 +6411,7 @@ test("RD: an older explicit-parent link creates a separate variant after inferre
   const id=Object.keys(savedViews(app))[0];openEdit(app,savedViews(app)[id]);app.els["scale-swatches"].children[1].click();await generateClick(app);
   const inferred=savedEnvelope(app).entries.find(row=>row.instanceId===id);assert.ok(inferred.record.o.parent==null);assert.strictEqual(savedViews(app)[id].degrees["7"],"iv");
   const imported=await app.getAsync(`openShare(${JSON.stringify(text)})`);assert.strictEqual(imported.ok,true);assert.notStrictEqual(imported.instanceId,id);
-  assert.strictEqual(records(app).length,2);assert.deepStrictEqual(savedEnvelope(app).entries.find(row=>row.instanceId===id),inferred,"older portable content must not roll back the edited variant");
+  assert.strictEqual(records(app).length,2);assert.deepStrictEqual(savedEnvelope(app).entries.find(row=>row.instanceId===id),inferred,"importing the older link leaves the edited variant untouched");
   assert.strictEqual(savedEnvelope(app).entries.find(row=>row.instanceId===imported.instanceId).record.o.parent,2);assert.strictEqual(app.currentDeck().degrees["7"],"IV");assert.strictEqual(savedViews(app)[id].degrees["7"],"iv");
 });
 

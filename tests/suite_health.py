@@ -54,7 +54,7 @@ FLOORS = {
     "tests/test_ci_scope.py": 36,
     # node
     "tests/app.test.js": 634,
-    "tests/e2e.test.js": 397,
+    "tests/e2e.test.js": 398,
     "tests/harness.test.js": 67,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 103,
@@ -68,7 +68,7 @@ FLOORS = {
     "tests/link_corpus.test.js": 7,
     "tests/editor_model.test.js": 36,
     "tests/editor_shell.test.js": 51,
-    "tests/editor_e2e.test.js": 129,
+    "tests/editor_e2e.test.js": 130,
     "tests/editor_freeze.test.js": 8,
     "tests/storage_corpus.test.js": 18,
     "tests/preview.test.js": 2,
