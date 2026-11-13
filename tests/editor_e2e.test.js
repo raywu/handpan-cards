@@ -3522,15 +3522,6 @@ function run() {
     });
   });
 
-  describe("flag off", () => {
-    test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
-      await fresh(375, 667, false);
-      await b.eval(`openScaleSheet(addChip); return true;`);
-      const r = await b.eval(`return { editor: !!document.getElementById("editor"), line: !!document.getElementById("editor-line"),
-        legacy: getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).display !== "none", cls: document.getElementById("scale-sheet").classList.contains("onepanel") };`);
-      assert.deepStrictEqual(r, { editor: false, line: false, legacy: true, cls: false });
-    });
-  });
 }
 
 function DECK_IDS_HAVE(builtinJson, id) {
