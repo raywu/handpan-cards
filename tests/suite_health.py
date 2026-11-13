@@ -66,7 +66,7 @@ FLOORS = {
     "tests/select.test.js": 55,
     "tests/share.test.js": 149,
     "tests/link_corpus.test.js": 7,
-    "tests/editor_model.test.js": 36,
+    "tests/editor_model.test.js": 41,
     "tests/editor_shell.test.js": 53,
     "tests/editor_e2e.test.js": 132,
     "tests/editor_freeze.test.js": 8,

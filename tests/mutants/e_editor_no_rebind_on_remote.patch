@@ -5,7 +5,56 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14871,7 +14871,7 @@ savedSnapshotListener=event=>{
+@@ -11093,7 +11093,7 @@ function readSavedRecord(record) {
+     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
+     const pinned = !profiled && innerPinned(record.o);
+     const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+-    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
++    if ((record.v === INNER_RECORD_VERSION ? !pinned || profiled || savedOwn(record.o, "replaces") : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned)) ||
+         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
+     let canonical = record.s;
+     if (record.v < SHARE_VERSION) {
+@@ -11392,7 +11392,8 @@ function savedCandidate(command) {
+     return savedFailure("invalid", "staged-candidate");
+   const profiled = !!candidate.deck.options.profile;
+   if (candidate.record.v !== recordVersionFor(candidate.deck.options, profiled) ||
+-      (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)))
++      (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)) ||
++      (candidate.record.v === INNER_RECORD_VERSION && command.type === "replace-builtin"))
+     return savedFailure("invalid", "staged-candidate");
+   const record = savedClone(candidate.record);
+   const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
+@@ -11448,7 +11449,7 @@ function applySavedCommand(staged, command, candidate) {
+   } else if (command.type === "edit") {
+     const row = existing();
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+-    if (candidate.deck.options.profile && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
++    if ((candidate.deck.options.profile || candidate.record.v === INNER_RECORD_VERSION) && row.record.o && savedOwn(row.record.o, "replaces")) return savedFailure("invalid", "profile-owns-slot");
+     const record = savedEditedRecord(row.record, candidate);
+     if (!savedEqual(record, row.record)) {
+       if (row.revision >= Number.MAX_SAFE_INTEGER) return savedFailure("invalid", "revision-overflow");
+@@ -13326,9 +13327,9 @@ function editorCommitOptions(m) {
+   return kept;
+ }
+ // A built-in never takes its own slot: it saves a new scale (D15).
+-function editorSaveCommand(base, neotone, ownsSlot) {
++function editorSaveCommand(base, unreadable, ownsSlot) {
+   if (!base) return { type: "import", selectedInstanceId: selection.kind === "saved" ? selection.id : null };
+-  if (base.selection.kind === "builtin" || (neotone && ownsSlot)) return { type: "save-as-separate" };
++  if (base.selection.kind === "builtin" || (unreadable && ownsSlot)) return { type: "save-as-separate" };
+   return { type: "edit", instanceId: base.selection.id, expectedRevision: base.revision };
+ }
+ 
+@@ -14636,7 +14637,7 @@ async function editorSave() {
+     if (!built.ok) { s.error = reasonText(built); return; }
+     const candidate = { record: scaleRecord(seedOf(built.value)), deck: built.value };
+     const ownsSlot = !!base && base.selection.kind === "saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;
+-    const command = editorSaveCommand(base, editorKindOf(m) === "neotone", ownsSlot);
++    const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
+     const result = await commitSaved({ ...command, collectionId: base ? base.collectionId : savedState?.collectionId, candidate }, { signal: controller.signal });
+     if (generation !== sheetGeneration || !pageOpen) return;
+     if (!result.ok) {
+@@ -14875,7 +14876,7 @@ savedSnapshotListener=event=>{
    const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
    selection=savedResolve(selection,savedState,savedEntries);
    const session=editorSession;

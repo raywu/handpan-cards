@@ -726,3 +726,85 @@ test("N1-M7: a profiled model keeps its name through the save options, and the p
     return { kept: editorCommitOptions(model).name, profile: !!editorCommitOptions(model).profile, back: back.options.name };`);
   assert.deepStrictEqual(r, { kept: "Mine", profile: true, back: "Mine" });
 });
+
+const MAIN_A4 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_a4ecfc2e.html.txt"), "utf8");
+
+// docs/ENGINE-SPEC.md 18.6 rule I1: a record the shipped client cannot read never owns a seeded slot.
+test("SE-I1-1: readSavedRecord refuses a v6 record that carries replaces, and still reads a v6 record without it", () => {
+  const app = appBoot();
+  assert.strictEqual(read(app, { v: 6, s: SCALE, o: { ...PIN, replaces: "kurd" } }).ok, false);
+  assert.strictEqual(read(app, { v: 6, s: SCALE, o: { ...PIN } }).ok, true);
+});
+
+test("SE-I1-2: savedCandidate refuses a pinned (v6) candidate for replace-builtin, and accepts it for save-as-separate", () => {
+  const app = appBoot();
+  const run = (type) => plain(app.get(`(() => { const b = buildGenerated(${JSON.stringify(SCALE)}, ${JSON.stringify(PIN)});
+    const c = savedCandidate({ type: ${JSON.stringify(type)}, candidate: { record: scaleRecord(seedOf(b.value)), deck: b.value } });
+    return { ok: c.ok, v: c.record && c.record.v }; })()`));
+  assert.strictEqual(run("replace-builtin").ok, false);
+  const sep = run("save-as-separate");
+  assert.strictEqual(sep.ok, true);
+  assert.strictEqual(sep.v, 6);
+});
+
+test("SE-I1-3: editorSaveCommand sends a slot owner with an unreadable (pinned or Neotone) record to save-as-separate", () => {
+  const app = appBoot();
+  assert.deepStrictEqual(plain(app.get(`editorSaveCommand({ selection: { kind: "saved", id: "u1" }, revision: 3 }, true, true)`)), { type: "save-as-separate" });
+  assert.strictEqual(app.get(`editorSaveCommand({ selection: { kind: "saved", id: "u1" }, revision: 3 }, false, true).type`), "edit");
+});
+
+test("SE-I1-4: main a4ecfc2e writes a slot owner; the RC saves it with pinned inner angles; the owner row stays v4, the pinned save is a separate row, and a4ecfc2e is not protected", async () => {
+  const origin = createOrigin({ storage: {} });
+  const m = await sharedBoot(origin, MAIN_A4);
+  await m.getAsync(`generateDeck(${JSON.stringify("(D3) A3 C4 D4 E4 F4 G4 A4 C5")}, { name: "ACOUSTIC" })`);
+  await settle();
+  const r1 = await m.getAsync(`(async () => { const b = buildGenerated(${JSON.stringify(SCALE)}, { name: "MYKURD" });
+    const c = savedCandidate({ type: "replace-builtin", candidate: { record: scaleRecord(seedOf(b.value)), deck: b.value } });
+    const r = await commitSaved({ type: "replace-builtin", collectionId: savedState.collectionId, seedId: DEFAULT_DECK,
+      expectedSlotStateRevision: savedState.slotStateRevision, expectedOwnerId: savedState.slots[DEFAULT_DECK] || null, candidate: c });
+    return { ok: r.ok }; })()`);
+  assert.strictEqual(r1.ok, true);
+  await settle();
+  const e0 = envelopeOf(m);
+  const ownerId = e0.slots[Object.keys(e0.slots)[0]];
+  const ownerRow = e0.entries.find((e) => e.instanceId === ownerId);
+  const rc = await sharedBoot(origin, HTML);
+  const res = await rc.getAsync(`(async () => {
+    const owner = savedEntries.get(${JSON.stringify(ownerId)});
+    const b = buildGenerated(${JSON.stringify(SCALE)}, { angles: { inner: [125, 55] }, name: "MYKURD" });
+    const base = { selection: { kind: "saved", id: ${JSON.stringify(ownerId)} }, revision: owner.revision };
+    const command = editorSaveCommand(base, innerPinned(b.value.options), true);
+    const candidate = { record: scaleRecord(seedOf(b.value)), deck: b.value };
+    const r = await commitSaved({ ...command, collectionId: savedState.collectionId, candidate });
+    return { ok: r.ok, type: command.type };
+  })()`);
+  await settle();
+  assert.deepStrictEqual(plain(res), { ok: true, type: "save-as-separate" });
+  const e1 = envelopeOf(rc);
+  assert.deepStrictEqual(e1.entries.find((e) => e.instanceId === ownerId).record, ownerRow.record, "the slot owner row is untouched");
+  const v6 = e1.entries.filter((e) => e.record.v === 6);
+  assert.strictEqual(v6.length, 1);
+  assert.strictEqual(v6[0].record.o.replaces, undefined, "the pinned row owns no slot");
+  const m2 = await sharedBoot(origin, MAIN_A4);
+  assert.notStrictEqual(m2.get("savedMode"), "protected", "a4ecfc2e is not protected");
+  assert.ok(m2.get("savedEntries.size") > 0, "a4ecfc2e still shows saved scales");
+});
+
+test("SE-I1-5: an edit command that would turn a slot owner into a v6 row is refused", async () => {
+  const origin = createOrigin({ storage: {} });
+  const rc = await sharedBoot(origin, HTML);
+  await rc.getAsync(`generateDeck(${JSON.stringify("(D3) A3 C4 D4 E4 F4 G4 A4 C5")}, { name: "ACOUSTIC" })`);
+  await settle();
+  const res = await rc.getAsync(`(async () => { const b = buildGenerated(${JSON.stringify(SCALE)}, { name: "MYKURD" });
+    const c = savedCandidate({ type: "replace-builtin", candidate: { record: scaleRecord(seedOf(b.value)), deck: b.value } });
+    const r = await commitSaved({ type: "replace-builtin", collectionId: savedState.collectionId, seedId: DEFAULT_DECK,
+      expectedSlotStateRevision: savedState.slotStateRevision, expectedOwnerId: savedState.slots[DEFAULT_DECK] || null, candidate: c });
+    const id = r.instanceId, rev = savedEntries.get(id).revision;
+    const p = buildGenerated(${JSON.stringify(SCALE)}, { angles: { inner: [125, 55] }, name: "MYKURD" });
+    const e = await commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: rev,
+      candidate: { record: scaleRecord(seedOf(p.value)), deck: p.value } });
+    return { placed: r.ok, ok: e.ok, v: savedEntries.get(id).record.v }; })()`);
+  assert.strictEqual(res.placed, true);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.v, 4);
+});

@@ -1,0 +1,14 @@
+# kills: SE-I1-3
+# suite: node --test --test-name-pattern ^SE-I1-3..editorSaveCommand.sends.a.slot.owner.with.an.unreadable..pinned.or.Neotone..record.to.save-as-separate$ tests/editor_model.test.js
+# fault: A slot owner with an unreadable record is saved as an edit, not separately.
+--- a/index.html
++++ b/index.html
+@@ -13329,7 +13329,7 @@
+ // A built-in never takes its own slot: it saves a new scale (D15).
+ function editorSaveCommand(base, unreadable, ownsSlot) {
+   if (!base) return { type: "import", selectedInstanceId: selection.kind === "saved" ? selection.id : null };
+-  if (base.selection.kind === "builtin" || (unreadable && ownsSlot)) return { type: "save-as-separate" };
++  if (base.selection.kind === "builtin" || false) return { type: "save-as-separate" };
+   return { type: "edit", instanceId: base.selection.id, expectedRevision: base.revision };
+ }
+ 

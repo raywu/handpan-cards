@@ -1,0 +1,14 @@
+# kills: SE-I1-1
+# suite: node --test --test-name-pattern ^SE-I1-1..readSavedRecord.refuses.a.v6.record.that.carries.replaces.and.still.reads.a.v6.record.without.it$ tests/editor_model.test.js
+# fault: A v6 record that carries replaces is read as a normal row instead of opaque.
+--- a/index.html
++++ b/index.html
+@@ -11093,7 +11093,7 @@
+     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
+     const pinned = !profiled && innerPinned(record.o);
+     const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+-    if ((record.v === INNER_RECORD_VERSION ? !pinned || profiled || savedOwn(record.o, "replaces") : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned)) ||
++    if ((record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned)) ||
+         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
+     let canonical = record.s;
+     if (record.v < SHARE_VERSION) {
