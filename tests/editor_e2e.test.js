@@ -2587,7 +2587,7 @@ function run() {
       await b.click("#editor-type-neotone");
     };
 
-    test("PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are gone, and the Neotone pair is hidden, never disabled", async () => {
+    test("PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are gone, and the Neotone pair is shown like Standard's", async () => {
       for (const [w, h] of [[320, 568], [375, 667], [820, 1180]]) {
         await fresh(w, h);
         await openAdd();
@@ -2605,7 +2605,7 @@ function run() {
         await b.click("#editor-type-neotone");
         await b.click("#editor-tab-layout");
         const neo = await row();
-        assert.deepStrictEqual([neo.ids, neo.gone, neo.greyed], [[], [true, true, true, true], 0], "Neotone " + w + ": the pair is hidden, not disabled");
+        assert.deepStrictEqual([neo.ids, neo.gone, neo.greyed], [["editor-anchor-one", "editor-anchor-between"], [true, true, true, true], 0], "Neotone " + w + ": the pair is shown and enabled");
         await b.click("#editor-type-standard");
         await b.click("#editor-tab-layout");
         assert.deepStrictEqual((await row()).ids, ["editor-anchor-one", "editor-anchor-between"], "back on Standard");
@@ -3388,6 +3388,47 @@ function run() {
       const blank = await lastSaved();
       assert.strictEqual(blank.profile, true);
       assert.ok(!blank.name, "a blank the user chose is not re-seeded");
+    });
+
+    test("TRI59d A2: on Neotone, with and without mutant notes, both anchor buttons are shown and enabled, aria-pressed follows, and between turns the pan", async () => {
+      const NEO_LINE = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+      const MUTANT_LINE = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]";
+      for (const line of [NEO_LINE, MUTANT_LINE]) {
+        await fresh();
+        await openAdd();
+        await typeLine(line);
+        await b.click("#editor-type-neotone");
+        await b.click("#editor-tab-layout");
+        const read = () => b.eval(`const g = (id) => document.getElementById(id);
+          return { shown: ["editor-anchor-one", "editor-anchor-between"].map((id) => !g(id).hidden && g(id).offsetParent !== null),
+            off: ["editor-anchor-one", "editor-anchor-between"].map((id) => g(id).disabled || g(id).hasAttribute("aria-disabled")),
+            pressed: ["editor-anchor-one", "editor-anchor-between"].map((id) => g(id).getAttribute("aria-pressed")),
+            anchor: editorSession.history.present.options.anchor || "one",
+            turn: editorSolve(editorSession.history.present).value.geom.turn || 0,
+            map: editorSession.history.present.options.profile.map.slice() };`);
+        const before = await read();
+        assert.deepStrictEqual([before.shown, before.off, before.pressed], [[true, true], [false, false], ["true", "false"]], line);
+        await b.click("#editor-anchor-between");
+        const after = await read();
+        assert.deepStrictEqual([after.shown, after.off, after.pressed, after.anchor], [[true, true], [false, false], ["false", "true"], "between"], line);
+        assert.deepStrictEqual(after.map, before.map, "the arrangement is untouched");
+        if (line === MUTANT_LINE) assert.deepStrictEqual([before.turn, after.turn, (await (async () => { await b.click("#editor-anchor-one"); return (await read()).turn; })())], [0, 20, 0], "between turns a pan with mutants");
+        if (line === MUTANT_LINE) await b.click("#editor-anchor-between");
+        await b.click("#editor-anchor-one");
+        const back = await read();
+        assert.deepStrictEqual([back.pressed, back.anchor], [["true", "false"], "one"], line);
+      }
+    });
+
+    test("TRI59d A2: Pygmy to Neotone with between, SAVE writes record 7", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]");
+      await b.click("#editor-tab-layout");
+      await b.click("#editor-anchor-between");
+      await b.click("#editor-type-neotone");
+      assert.strictEqual(await b.eval(`return editorSession.history.present.options.anchor;`), "between", "the pan type switch carries between");
+      assert.strictEqual(await b.eval(`return editorCommitOptions(editorSession.history.present).anchor;`), "between");
     });
 
     test("PLa-N2: with no notes both anchor buttons are disabled on each pan type, and with notes they are enabled on Standard", async () => {

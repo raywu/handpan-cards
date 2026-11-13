@@ -5,9 +5,9 @@ diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -16201,7 +16201,7 @@ function editorRenderLayout(m) {
-     el.hidden = neo;
-     el.classList.toggle("on", on && !neo);
-     if (neo) el.removeAttribute("aria-pressed"); else el.setAttribute("aria-pressed", String(on));
+     el.hidden = false;
+     el.classList.toggle("on", on);
+     el.setAttribute("aria-pressed", String(on));
 -    el.disabled = off;
 +    el.disabled = false;
    }
