@@ -14513,7 +14513,7 @@ function editorEscape() {
   if (editorDrag && editorDrag.live) editorDragEnd(null);
   else if (s.menu) editorCloseMenu(true);
   else if (s.dialog) editorShowDialog(false);
-  else if (s.hint) editorSetAreas(false);
+  else if (s.hint) { editorSetAreas(false); editorEl("editor-hint-toggle").focus(); }
   else if (s.naming) editorCancelName();
   else if (s.editing) editorCancelEdit();
   else if (s.held) editorCancelHold();

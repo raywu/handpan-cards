@@ -4091,6 +4091,10 @@ function run() {
       await b.click("#editor-hint-close");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "x closes");
       assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "focus returns to the info button");
+      await b.click("#editor-hint-toggle");
+      await b.key("Escape", "Escape", 27);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "Escape closes");
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "Escape returns focus to the info button");
     });
 
     for (const [w, h] of [[390, 844], [390, 664]]) {
