@@ -302,12 +302,13 @@ function run() {
           [true, false, false, false, false, false, false, false, false]);
         await b.click('.tray-note[data-name="E"]');
         const slot9 = await slotAt(9);
-        await b.eval(`window.__tapLog = []; for (const type of ["pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "click"]) window.addEventListener(type, (e) => window.__tapLog.push(Math.round(performance.now()) + " " + type + (e.defaultPrevented ? " PREVENTED" : "") + " " + Math.round(e.clientX || 0) + "," + Math.round(e.clientY || 0) + " " + (e.target.id || (e.target.className && e.target.className.baseVal) || e.target.className || e.target.tagName)), true); return true;`);
+        await b.eval(`window.__ev = []; const ab = { pointerdown: "pd", pointerup: "pu", touchstart: "ts", touchend: "te", mousedown: "md", click: "ck" };
+          for (const type of Object.keys(ab)) window.addEventListener(type, (e) => window.__ev.push({ n: ab[type] + (e.defaultPrevented ? "!" : ""), t: Math.round(performance.now()) }), true); return true;`);
         await tapPoint(slot9, kind === "touch");
         await b.waitFor(`editorSession.history.present.options.profile.map[9] !== null`, { timeout: 2000, label: "slot 10 to take the mutant" }).catch(async (err) => {
-          const dump = await b.eval(`const pt = ${JSON.stringify(slot9)}; const hit = document.elementFromPoint(pt.x, pt.y); const r = document.querySelector("#editor-pan svg").getBoundingClientRect();
-            return JSON.stringify({ pt, hit: hit && (hit.id || hit.getAttribute("class") || hit.tagName), pan: [r.left, r.top, r.width, r.height], vv: [innerWidth, innerHeight, devicePixelRatio], held: !!editorSession.held, drag: !!editorDrag, cls: document.getElementById("editor").className, log: window.__tapLog, status: document.getElementById("editor-status").textContent });`);
-          throw new Error("slot 10 tap diagnostic " + dump + " :: " + err.message);
+          const s = await b.eval(`const ev = window.__ev, pu = ev.find((x) => x.n.startsWith("pu")), ck = ev.find((x) => x.n.startsWith("ck"));
+            return "ev=" + ev.map((x) => x.n).join(",") + " ck=" + (ck ? (pu ? ck.t - pu.t : "?") + "ms" : "none") + " held=" + +!!editorSession.held + " st=" + document.getElementById("editor-status").textContent.slice(0, 12);`);
+          throw new Error(s);
         });
         assert.strictEqual(await b.eval(`return editorSession.history.present.options.profile.map[9] !== null;`), true, await statusText());
       });
