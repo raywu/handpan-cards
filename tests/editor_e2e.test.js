@@ -3917,13 +3917,13 @@ function run() {
 
     // Targets: the plan's S1 formula with the option B sticky strip (tray beats the 200 floor, 120 is the hard floor),
     // derived by rect probe on this lane's build. 0.95 x target is the floor each test enforces.
-    const STACKED = [[390, 844, 362], [430, 932, 402], [375, 667, 203], [360, 640, 176], [375, 548, 120], [320, 568, 120], [768, 1024, 480]];
-    for (const [w, h, target] of STACKED) {
-      test(`P0 ${w}x${h}: the drawn pan is at least 0.95 x ${target}px, the page never scrolls and the toolbar is in view`, async () => {
+    const STACKED = [[390, 844, 362, 380], [430, 932, 402, 422], [375, 667, 203, 212, 200], [360, 640, 176, 186], [375, 548, 120, 126], [320, 568, 120, 126], [768, 1024, 480, 504]];
+    for (const [w, h, target, upper, lower = 0.95 * target] of STACKED) {
+      test(`P0 ${w}x${h}: the drawn pan holds its sized height (${lower} to ${upper}px, so a zero flex basis fails), the page never scrolls and the toolbar is in view`, async () => {
         await open(w, h);
         const r = await rects(w, h);
-        assert.ok(Math.min(r.svg.w, r.svg.h) >= 0.95 * target, `${w}x${h}: drawn pan ${r.svg.w}x${r.svg.h}, wanted >= ${0.95 * target}`);
-        if (w === 375 && h === 667) assert.ok(Math.min(r.svg.w, r.svg.h) >= 200 && Math.min(r.svg.w, r.svg.h) <= 212, `${w}x${h}: the pan holds its sized 200-212px height, got ${Math.min(r.svg.w, r.svg.h)}`);
+        const side = Math.min(r.svg.w, r.svg.h);
+        assert.ok(side >= lower && side <= upper, `${w}x${h}: drawn pan ${r.svg.w}x${r.svg.h}, wanted ${lower} to ${upper}`);
         assert.ok(r.page, "no page scroll");
         assert.ok(r.bar.top >= 0 && r.bar.bottom <= h, "toolbar in view " + JSON.stringify(r.bar));
       });
@@ -3976,6 +3976,14 @@ function run() {
       await pause(100);
       const l = await rects(375, 548);
       assert.strictEqual(l.region.st, 0, "a tab switch opens the chosen panel from the top of the region");
+    });
+
+    test("P0 tabs: a tap near the Layout tab's right edge lands on the tab, not the Hint info button (the strip reserves 44px)", async () => {
+      await open(375, 667);
+      const hit = await b.eval(`const t = document.getElementById("editor-tab-layout").getBoundingClientRect(), h = document.getElementById("editor-hint-toggle").getBoundingClientRect();
+        const e = document.elementFromPoint(t.right - 2, t.top + t.height / 2), m = e && e.closest("[role=tab], #editor-hint-toggle");
+        return { id: m ? m.id : null, clear: t.right <= h.left + 1 };`);
+      assert.deepStrictEqual(hit, { id: "editor-tab-layout", clear: true });
     });
 
     test("P0 hint: counts and hint sit in a collapsed block, a 44px info button in the tab strip with aria-expanded toggles it in place, and the pan does not move", async () => {
