@@ -1,4 +1,4 @@
-# kills: QA1 design parity with main
+# kills: QA1 design parity with main's drawer: muted text is #5E5850 and a disabled control is grey ink on the sheet ground at full opacity
 # suite: node --test --test-name-pattern QA1.design.parity tests/editor_e2e.test.js
 # Disabled toolbar buttons are faded to .45 on top of the grey disabled ink.
 diff --git a/index.html b/index.html

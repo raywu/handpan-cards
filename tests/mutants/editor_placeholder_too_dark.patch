@@ -1,4 +1,4 @@
-# kills: QA1 every editor input with placeholder text paints it lighter
+# kills: QA1 every editor input with placeholder text paints it lighter than typed text, in main's drawer placeholder grey (#8A847B)
 # suite: node --test --test-name-pattern QA1.every.editor.input tests/editor_e2e.test.js
 # The name placeholder goes back to the darker #6B665E, so the suggestion reads like typed text.
 diff --git a/index.html b/index.html
