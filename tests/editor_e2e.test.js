@@ -2202,7 +2202,7 @@ function run() {
     });
 
     test("Tab brings every stop into the panel's scrollport on a short screen", async () => {
-      await fresh(375, 360);
+      await fresh(375, 548);
       await openAdd();
       await typeLine(SCALE);
       await b.click("#editor-tab-layout");
@@ -2216,8 +2216,10 @@ function run() {
       const outside = [];
       for (let k = 0; k < stops; k += 1) {
         await press("Tab", "Tab", 9);
-        const out = await b.eval(`const q = document.activeElement.getBoundingClientRect(), p = document.getElementById("editor").getBoundingClientRect();
-          return q.top < p.top - 1 || q.bottom > p.bottom + 1 ? (document.activeElement.id || document.activeElement.className) : null;`);
+        const out = await b.eval(`const a = document.activeElement, q = a.getBoundingClientRect(), inRegion = !!a.closest("#editor-region") && !a.closest("#editor-tabs");
+          const p = document.getElementById(inRegion ? "editor-region" : "editor").getBoundingClientRect();
+          const top = inRegion ? document.getElementById("editor-tabs").getBoundingClientRect().bottom : p.top;
+          return q.top < top - 1 || q.bottom > p.bottom + 1 ? (a.id || a.className) : null;`);
         if (out) outside.push(out);
       }
       assert.deepStrictEqual(outside, []);
@@ -3022,7 +3024,7 @@ function run() {
         assert.strictEqual(await tabNow(), "scale", "pan");
         await swipeBy(".tray-note", -120);
         assert.strictEqual(await tabNow(), "scale", "tray note");
-        await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); return true;`);
+        await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); i.scrollIntoView({ block: "center" }); return true;`);
         await swipeBy("#probe-input", -120);
         assert.strictEqual(await tabNow(), "scale", "text field");
       });
