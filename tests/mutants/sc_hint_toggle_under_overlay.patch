@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  #editor .editor-statusrow{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
  #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
  @media (max-width:420px){#editor-status{min-height:56px}}
--#editor-hint-toggle{position:absolute; z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
-+#editor-hint-toggle{position:absolute; z-index:1; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+-#editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
++#editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:1; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
    display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#5E5A53}
  #editor-hint-toggle[hidden]{display:none}
  #editor-hint-toggle .ico{display:flex; align-items:center; justify-content:center; width:24px; height:24px; box-sizing:border-box; border:2px solid currentColor; border-radius:50%; font:700 14px/1 Bitter, serif; font-style:italic}

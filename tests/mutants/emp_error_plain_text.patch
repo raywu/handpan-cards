@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -916,7 +916,7 @@
- #editor-hint-toggle[aria-expanded="true"] .chev{display:inline-block; transform:rotate(180deg)}
+@@ -920,7 +920,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-hint-toggle[aria-expanded="true"] .ico{background:#242424; color:#F6F4ED; border-color:#242424}
  #editor.dragging .editor-statusrow{transform:translateY(var(--ed-status-shift,0px))}
  #editor.dragging #editor-hint-toggle{visibility:hidden}
 -#editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:8px 12px}
