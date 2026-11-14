@@ -1,0 +1,15 @@
+# kills: empty stage: options and the view are carried across the commit
+# suite: node --test --test-name-pattern empty.stage..options.and.the.view.are.carried.across.the.commit tests/editor_shell.test.js
+# fault: The commit of a staged model drops the view the model carried.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12889,7 +12889,7 @@
+     built = editorNeoBuild(staged, { rim: stage.main, inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
+   }
+   if (!built.ok) return built.code === "NO_FIFTH" ? { ok: true, value: staged } : built;
+-  return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
++  return built;
+ }
+ const editorStageRepeat = (a, b) => ({ ok: false, code: "NOTE_REPEATED", reason: HPE.core.REASONS.NOTE_REPEATED.reason.split("<A>").join(a).split("<B>").join(b) });
+ // Placing a note in a ring the stage already holds, or on the rim and cyclops together, is

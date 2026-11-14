@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  const editorAreaRefusal = (code, reason) => ({ ok: false, code, reason });
  function editorPlace(m, ring, name, angle) {
    const capped = !m.options.profile && EDITOR_CAPS[ring] !== undefined;
--  if (capped && ringIds(m.fields, ring).length >= EDITOR_CAPS[ring]) {
-+  if (capped && ringIds(m.fields, ring).length > EDITOR_CAPS[ring]) {
+-  if (capped && editorNames(m, ring).length >= EDITOR_CAPS[ring]) {
++  if (capped && editorNames(m, ring).length > EDITOR_CAPS[ring]) {
      return editorAreaRefusal("AREA_FULL", t("editor.full." + ring, { max: EDITOR_CAPS[ring] }));
    }
    const placed = editorPlaceAt(m, ring, name, angle);
