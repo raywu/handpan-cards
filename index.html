@@ -890,7 +890,7 @@ footer.seq{row-gap:var(--sp-1)}
 body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #scale-sheet.onepanel #editor{width:100%; max-width:520px; height:100dvh; margin:0 auto; box-sizing:border-box;
   padding:var(--sp-2) var(--sp-3) max(var(--sp-2), env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:var(--sp-1);
-  background:#F6F4ED; color:#242424; overflow:hidden; position:relative; container-type:inline-size; --ed-row:56px; --ed-k:calc(352px + var(--ed-row))}
+  background:#F6F4ED; color:#242424; overflow:hidden; position:relative; container-type:inline-size; --ed-row:48px; --ed-k:calc(416px + var(--ed-row))}
 @media (min-width:421px){#scale-sheet.onepanel #editor{--ed-row:44px}}
 @media (max-height:520px){#scale-sheet.onepanel #editor{--ed-k:calc(343px + var(--ed-row))}}
 @media (min-width:640px) and (min-height:700px){#scale-sheet.onepanel #editor{--ed-k:calc(370px + var(--ed-row))}}
@@ -911,12 +911,16 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-name::placeholder{color:#6B665E; opacity:1}
 #editor .editor-statusrow{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
 #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
-@media (max-width:420px){#editor-status{min-height:56px}}
-#editor-hint-toggle{flex:0 0 auto; min-width:44px; min-height:44px; gap:var(--sp-1)}
-#editor-hint-toggle[aria-expanded="true"] .chev{display:inline-block; transform:rotate(180deg)}
+@media (max-width:420px){#editor-status{min-height:48px}}
+#editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+  display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#5E5A53}
+#editor-hint-toggle[hidden]{display:none}
+#editor-hint-toggle .ico{display:flex; align-items:center; justify-content:center; width:24px; height:24px; box-sizing:border-box; border:2px solid currentColor; border-radius:50%; font:700 14px/1 Bitter, serif; font-style:italic}
+#editor-hint-toggle[aria-expanded="true"]{color:#242424}
+#editor-hint-toggle[aria-expanded="true"] .ico{background:#242424; color:#F6F4ED; border-color:#242424}
 #editor.dragging .editor-statusrow{transform:translateY(var(--ed-status-shift,0px))}
 #editor.dragging #editor-hint-toggle{visibility:hidden}
-#editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:8px 12px}
+#editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:4px 12px}
 #editor-status[data-kind="error"]::before{content:"\26A0"}
 #editor-status.arrive{animation:editor-arrive 180ms cubic-bezier(.2,.8,.2,1)}
 @keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}
@@ -938,7 +942,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-region::-webkit-scrollbar{display:none}
 @media (max-height:420px){#editor-region{margin-top:0}}
 #editor.dragging #editor-region{overflow:hidden}
-#editor-tabs{flex:0 0 auto; display:flex; gap:0; border-bottom:1px solid #8A847B; margin-bottom:var(--sp-1); position:sticky; top:0; z-index:3; background:#F6F4ED}
+#editor-tabs{flex:0 0 auto; display:flex; padding-right:44px; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:var(--sp-1); position:sticky; top:0; z-index:3; background:#F6F4ED}
 #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5A53; font-weight:600;
   border-bottom:3px solid transparent; margin-bottom:-1px}
 #scale-sheet #editor-tabs .edtab{background:none; color:#5E5A53; border-color:transparent}
@@ -1055,6 +1059,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid;
     grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr); grid-template-rows:auto 1fr auto auto auto auto auto auto 1fr;
     grid-template-areas:"head head" "pan ." "pan line" "pan status" "pan counts" "pan tabs" "pan panel" "pan bar" "pan ."}
+  #editor-hint-toggle{right:var(--sp-4)}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
   #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:contents} #editor-tabs{grid-area:tabs; position:static} #editor-panels{grid-area:panel} #editor .editor-toolbar{grid-area:bar}
 }
@@ -1065,6 +1070,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid;
     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar"}
+  #editor-hint-toggle{right:var(--sp-4)}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
   #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:flex; grid-area:region; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto} #editor .editor-toolbar{grid-area:bar}
 }
@@ -13671,15 +13677,15 @@ function editorOpen(edit) {
     editorNode("div", { class: "editor-panbox" },
       editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") })),
     editorNode("div", { class: "editor-statusrow" },
-      editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" }),
-      editorNode("button", { id: "editor-hint-toggle", type: "button", class: "mode", "aria-expanded": "false", "aria-controls": "editor-areas",
-        "aria-label": t("editor.hint.toggle.aria") },
-        editorNode("span", { text: t("editor.hint.toggle") }), editorNode("span", { class: "chev", "aria-hidden": "true", text: "\u25BE" }))),
+      editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" })),
     editorNode("div", { id: "editor-areas", hidden: true },
       editorNode("div", { id: "editor-counts" },
         ...EDITOR_COUNTS.map((zone) => editorNode("span", { class: "zc", "data-zone": zone }))),
       editorNode("p", { id: "editor-hint" },
         editorNode("span", { text: t("editor.hint.place") }), editorNode("span", { text: t("editor.hint.ding") }))),
+    editorNode("button", { id: "editor-hint-toggle", type: "button", class: "mode", "aria-expanded": "false", "aria-controls": "editor-areas",
+      "aria-label": t("editor.hint.toggle.aria"), title: t("editor.hint.toggle") },
+      editorNode("span", { class: "ico", "aria-hidden": "true", text: "i" })),
     editorNode("div", { id: "editor-region" },
     editorNode("div", { id: "editor-tabs", role: "tablist", "aria-label": t("editor.tabs.aria") },
       ...EDITOR_TABS.map((tab) => editorNode("button", { id: "editor-tab-" + tab, type: "button", role: "tab", class: "mode edtab",
@@ -13995,10 +14001,13 @@ function editorRegionPin() {
 }
 // The hint block overlays the controls area (region, or tabs plus panels where the region is display:contents) and never moves the layout.
 function editorPlaceAreas() {
-  const areas = editorEl("editor-areas"), rg = editorEl("editor-region"), ed = editorEl("editor");
-  if (!areas || areas.hidden || !rg) return;
+  const areas = editorEl("editor-areas"), rg = editorEl("editor-region"), ed = editorEl("editor"), tog = editorEl("editor-hint-toggle");
+  if (!areas || !rg || !tog) return;
+  const strip = editorEl("editor-tabs").getBoundingClientRect(), ebox = ed.getBoundingClientRect();
+  tog.style.top = strip.top - ebox.top - ed.clientTop + "px";
+  if (areas.hidden) return;
   const parts = getComputedStyle(rg).display === "contents" ? [editorEl("editor-tabs"), editorEl("editor-panels")] : [rg];
-  const rs = parts.map((e) => e.getBoundingClientRect()), box = ed.getBoundingClientRect();
+  const rs = parts.map((e) => e.getBoundingClientRect()), box = ebox;
   const top = Math.min(...rs.map((r) => r.top)), bottom = Math.max(...rs.map((r) => r.bottom)), left = Math.min(...rs.map((r) => r.left)), right = Math.max(...rs.map((r) => r.right));
   const st = areas.style;
   st.top = top - box.top - ed.clientTop + "px";
@@ -14841,6 +14850,7 @@ function editorWire() {
   const del = editorEl("editor-delete");
   if (del) del.onclick = editorMenuPick(editorDeleteTap);
   editorEl("editor").addEventListener("pointerdown", (e) => {
+    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target)) editorSetAreas(false);
     const menu = editorEl("editor-menu");
     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();

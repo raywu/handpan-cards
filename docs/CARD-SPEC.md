@@ -337,6 +337,16 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   palette. A held note survives a tab switch. Tests: "tabs: tablist semantics",
   "tabs: Scale holds the notes, octave and Sharps|Flats", "tabs: a held note survives a tab
   switch", "counts: both hint lines render under the counts on both tabs".
+- **Hint.** An info-glyph button (`#editor-hint-toggle`, 44px target, `aria-expanded`,
+  `aria-controls="editor-areas"`, `aria-label` from `editor.hint.toggle.aria`, `title` from
+  `editor.hint.toggle`) sits at the right end of the tab strip, positioned absolutely by
+  `editorPlaceAreas`; it takes no layout height and the strip reserves its width. It opens
+  the counts-and-hint overlay over the whole tabs-plus-panels area, above the sticky strip
+  and never moving anything; the button stays above the overlay. A second tap on the button, a
+  pointer-down outside the overlay, or Escape closes it. The `--ed-k` reserve leaves the
+  control region tall enough for the Scale tab (strip, Name, tray) to show whole at 390x664,
+  so its first row is never scrolled under the strip. Tests: "SC 390x844", "SC 390x664", "P0
+  hint: counts and hint sit in a collapsed block", "PF 390x844: the Hint block is an overlay".
 - **Swipe between tabs.** A horizontal swipe on the Scale panel, the tab strip, the counts
   row, the hint or the Layout panel switches tabs. A swipe that starts on the pan, a note
   chip or a text field, starts within 24px of a screen edge, is held past the hold time, is

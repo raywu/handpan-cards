@@ -5,17 +5,14 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13668,13 +13668,13 @@ function editorOpen(edit) {
+@@ -13674,10 +13674,10 @@
      editorNode("div", { class: "editor-line" },
        editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off", spellcheck: "false",
          "aria-label": t("editor.line.aria") })),
 -    editorNode("div", { class: "editor-panbox" },
 -      editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") })),
      editorNode("div", { class: "editor-statusrow" },
-       editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" }),
-       editorNode("button", { id: "editor-hint-toggle", type: "button", class: "mode", "aria-expanded": "false", "aria-controls": "editor-areas",
-         "aria-label": t("editor.hint.toggle.aria") },
-         editorNode("span", { text: t("editor.hint.toggle") }), editorNode("span", { class: "chev", "aria-hidden": "true", text: "\u25BE" }))),
+       editorNode("p", { id: "editor-status", role: "status", "aria-live": "polite", "aria-atomic": "true" })),
 +    editorNode("div", { class: "editor-panbox" },
 +      editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") })),
      editorNode("div", { id: "editor-areas", hidden: true },

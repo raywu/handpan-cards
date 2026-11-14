@@ -4,9 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16957,6 +16957,7 @@ function editorWire() {
+@@ -16957,7 +16957,8 @@ function editorWire() {
    if (del) del.onclick = editorMenuPick(editorDeleteTap);
    editorEl("editor").addEventListener("pointerdown", (e) => {
+     if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target)) editorSetAreas(false);
      const menu = editorEl("editor-menu");
 +    if (true) return;
      if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
