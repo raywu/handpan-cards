@@ -1871,7 +1871,7 @@ function run() {
           tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), names: dots.slice(0, 2).map((d) => d.getAttribute("aria-label")),
           labelled: g.getAttribute("aria-labelledby") === "editor-palette-label", ownLabel: g.hasAttribute("aria-label"), labelShown: lq.width > 0 && lq.height > 0, labelText: label.textContent,
           notes: document.getElementById("editor-panel-scale").hasAttribute("hidden") };`);
-      assert.deepStrictEqual(flat, { chip: null, n: 10, shown: true, tall: true, names: ["Card palette 1", "Card palette 2"], labelled: true, ownLabel: false, labelShown: true, labelText: "Card palette", notes: true });
+      assert.deepStrictEqual(flat, { chip: null, n: 10, shown: true, tall: true, names: ["Palette 1", "Palette 2"], labelled: true, ownLabel: false, labelShown: true, labelText: "Palette", notes: true });
       assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "dots always shown");
       assert.deepStrictEqual(await inView(["editor-palette-label", "editor-swatches", "editor-save", "editor-anchor-one"], 375, 667), []);
       const past = await pastLen();
