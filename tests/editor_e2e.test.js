@@ -207,7 +207,7 @@ function run() {
         for (const k of [0.25, 0.5, 0.75, 1]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at(k), button: "left", buttons: 1 });
         await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...to, button: "left", buttons: 0, clickCount: 1 });
       }
-      await new Promise((done) => setTimeout(done, 320));
+      await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the pan to finish settling after the drag" });
     };
     const targets = () => b.eval(`const hits = [...document.querySelectorAll("#editor-pan .etarget")];
       const small = hits.filter((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height) < 24; }).length;
