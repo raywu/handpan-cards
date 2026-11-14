@@ -3767,7 +3767,7 @@ function run() {
         const [obg, ounder, ocolor] = await b.eval(`const c = getComputedStyle(document.getElementById("editor-tab-${other}")); return [c.backgroundColor, c.borderBottomColor, c.color];`);
         assert.strictEqual(obg, "rgba(0, 0, 0, 0)");
         assert.strictEqual(ounder, "rgba(0, 0, 0, 0)");
-        assert.strictEqual(ocolor, "rgb(94, 90, 83)", "the unselected tab is muted");
+        assert.strictEqual(ocolor, "rgb(94, 88, 80)", "the unselected tab is muted");
       }
       const at = await b.eval(`const q = document.getElementById("editor-tab-scale").getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 };`);
       await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at });
@@ -3953,6 +3953,45 @@ function run() {
         assert.ok(r.bar.top >= 0 && r.bar.bottom <= h, "toolbar in view " + JSON.stringify(r.bar));
       });
     }
+
+    test("QA1 every editor input with placeholder text paints it lighter than typed text, in main's drawer placeholder grey (#8A847B)", async () => {
+      await open(390, 844);
+      const r = await b.eval(`const out = [];
+        for (const el of document.querySelectorAll("#editor input, #editor textarea")) {
+          if (!el.placeholder) continue;
+          out.push({ id: el.id, ph: getComputedStyle(el, "::placeholder").color, ink: getComputedStyle(el).color, op: getComputedStyle(el, "::placeholder").opacity });
+        }
+        return out;`);
+      assert.ok(r.some((x) => x.id === "editor-name"), "the name field carries a placeholder: " + JSON.stringify(r));
+      for (const x of r) {
+        assert.notStrictEqual(x.ph, x.ink, x.id + " placeholder must differ from typed text");
+        assert.strictEqual(x.ph, "rgb(138, 132, 123)", x.id + " placeholder colour");
+        assert.strictEqual(x.op, "1", x.id + " placeholder opacity");
+      }
+    });
+
+    test("QA1 design parity with main's drawer: muted text is #5E5850 and a disabled control is grey ink on the sheet ground at full opacity", async () => {
+      await open(390, 844);
+      const r = await b.eval(`const c = (s, p) => getComputedStyle(document.querySelector(s))[p];
+        return { undoOff: document.getElementById("editor-undo").disabled, tab: c("#editor-tab-layout", "color"), label: c("#editor-palette-label", "color"),
+          op: c("#editor-undo", "opacity"), ink: c("#editor-undo", "color"), bg: c("#editor-undo", "backgroundColor") };`);
+      assert.strictEqual(r.undoOff, true, "undo starts disabled");
+      assert.strictEqual(r.tab, "rgb(94, 88, 80)", "inactive tab muted ink");
+      assert.strictEqual(r.label, "rgb(94, 88, 80)", "palette label muted ink");
+      assert.strictEqual(r.op, "1", "disabled controls are not faded a second time");
+      assert.strictEqual(r.ink, "rgb(138, 132, 123)", "disabled ink");
+      assert.strictEqual(r.bg, "rgb(246, 244, 237)", "disabled ground");
+    });
+
+    test("QA1 390x844: at least 12px between the tab strip and the first row on both tabs", async () => {
+      await open(390, 844);
+      const gap = (first) => b.eval(`const t = document.getElementById("editor-tabs").getBoundingClientRect(), f = document.querySelector(${JSON.stringify(first)}).getBoundingClientRect(); return f.top - t.bottom;`);
+      const scale = await gap("#editor-name");
+      assert.ok(scale >= 12 - 0.01, "scale tab gap " + scale);
+      await b.click("#editor-tab-layout");
+      const layout = await gap("#editor-layout");
+      assert.ok(layout >= 12 - 0.01, "layout tab gap " + layout);
+    });
 
     test("P0 guards: 1280x800 keeps its grid pan (574) and 375x360, 360x330 and 540x400 stay stacked with a pan of at least 120", async () => {
       await open(1280, 800);
