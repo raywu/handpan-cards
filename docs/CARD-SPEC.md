@@ -468,7 +468,7 @@ exist yet, so re-check this block after W5a merges and delete the PLANNED marks.
   `tests/editor_e2e.test.js` (to be added; mutant `ets_tab_filled_on_select`).
 - **PLANNED (W5a): flat card palette**.
   The `#editor-palette` chip is removed; `#editor-swatches` is always shown on Layout under a
-  visible label (`editor.palette`, "Card palette") as a 5x2 grid of 44px dots with
+  visible label (`editor.palette`, "Palette") as a 5x2 grid of 44px dots with
   `aria-labelledby`; one tap picks, the group stays open, Undo covers it, the palette is
   absent from the Scale tab, a pick during a dialog is refused. The ten chip tests in
   `tests/editor_e2e.test.js` are rewritten to the flat behaviour (to be added; mutants

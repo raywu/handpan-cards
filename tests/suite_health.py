@@ -53,7 +53,7 @@ FLOORS = {
     "tests/test_site_files.py": 14,
     "tests/test_ci_scope.py": 36,
     # node
-    "tests/app.test.js": 644,
+    "tests/app.test.js": 645,
     "tests/e2e.test.js": 402,
     "tests/harness.test.js": 67,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
