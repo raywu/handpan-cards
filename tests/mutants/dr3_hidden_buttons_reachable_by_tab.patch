@@ -1,5 +1,5 @@
-# kills: Tab brings every stop into the panel's scrollport on a short screen
-# suite: node --test --test-name-pattern ^Tab.brings.every.stop tests/editor_e2e.test.js
+# kills: Tab brings every stop into the panel's scrollport on a short screen 375x548
+# suite: node --test --test-name-pattern ^Tab.brings.every.stop.*375x548 tests/editor_e2e.test.js
 # the editor's Tab list stops on a disabled button or a control with no layout box
 # editorTabStops drops isStop. Re-anchored 2026-11-12 on the editor panel.
 diff --git a/index.html b/index.html
