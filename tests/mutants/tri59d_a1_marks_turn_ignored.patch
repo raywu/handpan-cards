@@ -4,12 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16213,7 +16213,7 @@ function editorNeoMarks(m, fields, geom) {
-   if (mutants) {
-     map.forEach((key, slot) => {
-       if (key !== null) return;
--      const at = neoSlotPoint(slot, null, geom.turn);
-+      const at = neoSlotPoint(slot, null);
-       out += `<circle class="eslot" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}" aria-hidden="true"/>`;
-     });
-   }
+@@ -13866,5 +13866,5 @@
+   map.forEach((key, slot) => {
+     if (key !== null || (!mutants && slot < NEO_MAIN)) return;
+-    const at = neoSlotPoint(slot, null, geom.turn);
++    const at = neoSlotPoint(slot, null);
+     out += `<circle class="eslot" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}"${slot >= NEO_MAIN ? ' data-mut="1"' : ""} aria-hidden="true"/>`;
+   });

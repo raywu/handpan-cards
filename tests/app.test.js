@@ -11646,6 +11646,34 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.notDeepStrictEqual(want(20), want(0));
   });
 
+  test("NEO-OUTLINE: every empty mutant tonefield carries an orange outline ring, with or without mutants filled", async () => {
+    const app = boot();
+    const NOMUT = "(F3) G3 Ab3 C4 Eb4 F4 G4 Ab4 C5 Eb5";
+    const marks = (text) => app.get(`(() => {
+      const m = editorLoad(${JSON.stringify(text)}, ${JSON.stringify(profileOf(app, text))}).value;
+      const s = editorSolve(m).value;
+      return editorNeoMarks(m, s.fields, s.geom) + "|" + JSON.stringify(m.options.profile.map);
+    })()`);
+    const ringsOf = (out) => [...String(out).split("|")[0].matchAll(/<circle class="eslot" data-slot="(\d+)" cx="([-0-9.]+)" cy="([-0-9.]+)" r="([-0-9.]+)"( data-mut="1")? aria-hidden/g)]
+      .map((x) => ({ mutant: !!x[5], slot: Number(x[1]), cx: Number(x[2]), cy: Number(x[3]), r: Number(x[4]) }));
+    const check = (text, label) => {
+      const out = marks(text);
+      const map = JSON.parse(String(out).split("|")[1]);
+      const rings = ringsOf(out).filter((x) => x.mutant);
+      const emptyMutants = map.map((k, i) => (i >= 9 && k === null ? i : -1)).filter((i) => i !== -1);
+      assert.deepStrictEqual(rings.map((x) => x.slot), emptyMutants, label + ": exactly the empty mutant slots");
+      assert.ok(rings.length > 0, label);
+      for (const x of rings) {
+        const p = plain(app.get(`(() => { const p = neoSlotPoint(${x.slot}, null, 0); return [+p.x.toFixed(2), +p.y.toFixed(2), +p.r.toFixed(2)]; })()`));
+        assert.deepStrictEqual([x.cx + 0, x.cy + 0, x.r], p.map((v) => v + 0), label + ": mutant tonefield geometry");
+      }
+      assert.ok(ringsOf(out).filter((x) => !x.mutant).every((x) => x.slot < 9), label + ": no other ring is marked mutant");
+    };
+    check(NOMUT, "no mutants filled");
+    check(MUTANT_PYGMY, "some mutants filled");
+    assert.match(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), /#editor-pan \.eslot\[data-mut\]\{[^}]*stroke:#E27005/);
+  });
+
   test("TRI59d A1: the drop ring on a turned pan lands on the turned slot", async () => {
     const app = boot();
     const ring = (extra) => plain(app.get(`(() => {
