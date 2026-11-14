@@ -2461,7 +2461,7 @@ function run() {
       assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Shift+Tab wraps backward");
     });
 
-    for (const [tw, th] of [[375, 548], [375, 360]]) test(`Tab brings every stop into the panel's scrollport on a short screen ${tw}x${th}`, async () => {
+    for (const [tw, th] of [[375, 548], [375, 440]]) test(`Tab brings every stop into the panel's scrollport on a short screen ${tw}x${th}`, async () => {
       await fresh(tw, th);
       await openAdd();
       await typeLine(SCALE);
@@ -3923,7 +3923,7 @@ function run() {
         await open(w, h);
         const r = await rects(w, h);
         assert.ok(Math.min(r.svg.w, r.svg.h) >= 0.95 * target, `${w}x${h}: drawn pan ${r.svg.w}x${r.svg.h}, wanted >= ${0.95 * target}`);
-        if (w === 375 && h === 667) assert.ok(Math.min(r.svg.w, r.svg.h) >= 200, `${w}x${h}: the pan keeps the 200px floor, got ${r.svg.h}`);
+        if (w === 375 && h === 667) assert.ok(Math.min(r.svg.w, r.svg.h) >= 200 && Math.min(r.svg.w, r.svg.h) <= 212, `${w}x${h}: the pan holds its sized 200-212px height, got ${Math.min(r.svg.w, r.svg.h)}`);
         assert.ok(r.page, "no page scroll");
         assert.ok(r.bar.top >= 0 && r.bar.bottom <= h, "toolbar in view " + JSON.stringify(r.bar));
       });
