@@ -930,13 +930,15 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}
 #editor-empty{position:absolute; inset:0; margin:0; display:flex; align-items:center; justify-content:center; text-align:center;
   font:500 14px/1.4 "Nunito Sans"; padding:var(--sp-3)}
-#editor-areas{flex:0 0 auto; display:flex; flex-direction:column; gap:var(--sp-1)}
+#editor-areas{position:absolute; z-index:4; box-sizing:border-box; display:flex; flex-direction:column; gap:var(--sp-2); overflow-y:auto; overscroll-behavior:contain;
+  padding:var(--sp-3); background:#F6F4ED; color:#242424; border:1px solid #8A847B; border-radius:8px}
 #editor-areas[hidden]{display:none}
 #editor-counts{display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); font:500 13px/20px "Nunito Sans"}
 #editor-counts .zc.full{font-weight:700}
-#editor-region{flex:1 1 0; min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; padding-inline:4px; margin-inline:-4px;
+#editor-region{flex:1 1 0; min-height:0; margin-top:6px; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; padding-inline:4px; margin-inline:-4px;
   scrollbar-width:none; scroll-padding-top:48px}
 #editor-region::-webkit-scrollbar{display:none}
+@media (max-height:420px){#editor-region{margin-top:0}}
 #editor.dragging #editor-region{overflow:hidden}
 #editor-tabs{flex:0 0 auto; display:flex; gap:0; border-bottom:1px solid #8A847B; margin-bottom:var(--sp-1); position:sticky; top:0; z-index:3; background:#F6F4ED}
 #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5A53; font-weight:600;
@@ -1053,7 +1055,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr); grid-template-rows:auto 1fr auto auto auto auto auto auto 1fr;
     grid-template-areas:"head head" "pan ." "pan line" "pan status" "pan counts" "pan tabs" "pan panel" "pan bar" "pan ."}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
-  #editor .editor-panbox{grid-area:pan; height:auto} #editor-areas{grid-area:counts} #editor-region{display:contents} #editor-tabs{grid-area:tabs; position:static} #editor-panels{grid-area:panel} #editor .editor-toolbar{grid-area:bar}
+  #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:contents} #editor-tabs{grid-area:tabs; position:static} #editor-panels{grid-area:panel} #editor .editor-toolbar{grid-area:bar}
 }
 /* Phone landscape (S4): a short, wide screen takes the two-column grid so the pan never collapses; the pan column
    takes the full height under the head and the control column scrolls on its own region with the toolbar pinned.
@@ -1063,7 +1065,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar"}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
-  #editor .editor-panbox{grid-area:pan; height:auto} #editor-areas{grid-area:counts} #editor-region{display:flex; grid-area:region; min-height:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto} #editor .editor-toolbar{grid-area:bar}
+  #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:flex; grid-area:region; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto} #editor .editor-toolbar{grid-area:bar}
 }
 /* Keyboard-open short portrait (R5/R6): while Name has focus the 120px floor gives way so Name and the toolbar stay in view. */
 @media (max-height:420px) and (max-width:559.98px){
@@ -13532,6 +13534,7 @@ function editorClose() {
 function editorRender() {
   const rg = editorEl("editor-region"), pin = !rg || editorRegionAtEnd();
   editorRenderBody();
+  editorPlaceAreas();
   if (pin && !(rg && rg.contains(document.activeElement))) editorRegionPin();
 }
 function editorRenderBody() {
@@ -13773,7 +13776,27 @@ function editorRenderTabs() {
 // The region rests scrolled to its end so the tray sits above the toolbar; a render re-pins only when it was already there.
 function editorRegionPin() {
   const rg = editorEl("editor-region");
-  if (rg) rg.scrollTop = rg.scrollHeight;
+  if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = rg.scrollHeight;
+}
+// The hint block overlays the controls area (region, or tabs plus panels where the region is display:contents) and never moves the layout.
+function editorPlaceAreas() {
+  const areas = editorEl("editor-areas"), rg = editorEl("editor-region"), ed = editorEl("editor");
+  if (!areas || areas.hidden || !rg) return;
+  const parts = getComputedStyle(rg).display === "contents" ? [editorEl("editor-tabs"), editorEl("editor-panels")] : [rg];
+  const rs = parts.map((e) => e.getBoundingClientRect()), box = ed.getBoundingClientRect();
+  const top = Math.min(...rs.map((r) => r.top)), bottom = Math.max(...rs.map((r) => r.bottom)), left = Math.min(...rs.map((r) => r.left)), right = Math.max(...rs.map((r) => r.right));
+  const st = areas.style;
+  st.top = top - box.top - ed.clientTop + "px";
+  st.left = left - box.left - ed.clientLeft + "px";
+  st.width = right - left + "px";
+  st.height = bottom - top + "px";
+}
+function editorCloseAreas() {
+  const areas = editorEl("editor-areas");
+  if (!areas || areas.hidden) return false;
+  areas.hidden = true;
+  editorEl("editor-hint-toggle").setAttribute("aria-expanded", "false");
+  return true;
 }
 function editorRegionAtEnd() {
   const rg = editorEl("editor-region");
@@ -13782,6 +13805,7 @@ function editorRegionAtEnd() {
 function editorRegionResize() {
   const rg = editorSession && editorEl("editor-region");
   if (!rg) return;
+  editorPlaceAreas();
   if (rg.contains(document.activeElement)) {
     if (document.activeElement.id === "editor-name") requestAnimationFrame(() => document.activeElement.scrollIntoView({ block: "nearest" }));
     return;
@@ -13794,7 +13818,7 @@ function editorSetTab(tab, focus) {
   editorCloseMenu();
   s.tab = tab;
   editorRenderTabs();
-  editorRegionPin();
+  editorEl("editor-region").scrollTop = 0;
   if (focus) editorEl("editor-tab-" + tab).focus();
   return true;
 }
@@ -14245,6 +14269,7 @@ function editorEscape() {
   if (editorDrag && editorDrag.live) editorDragEnd(null);
   else if (s.menu) editorCloseMenu(true);
   else if (s.dialog) editorShowDialog(false);
+  else if (editorCloseAreas()) return;
   else if (s.naming) editorCancelName();
   else if (s.editing) editorCancelEdit();
   else if (s.held) editorCancelHold();
@@ -14584,7 +14609,7 @@ function editorWire() {
     const areas = editorEl("editor-areas"), btn = editorEl("editor-hint-toggle"), open = areas.hidden;
     areas.hidden = !open;
     btn.setAttribute("aria-expanded", open ? "true" : "false");
-    editorRegionPin();
+    editorPlaceAreas();
   };
   nameBox.addEventListener("focusin", () => requestAnimationFrame(() => nameBox.scrollIntoView({ block: "nearest" })));
   window.addEventListener("resize", editorRegionResize);
