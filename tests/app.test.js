@@ -9313,6 +9313,29 @@ describe("I18N", () => {
     }
   });
 
+  test("I18N: no editor.* value is left in English in a translated table", async () => {
+    const en = readEn();
+    const sameOk = new Set(["editor.neotone", "editor.count.ding", "editor.count.inner", "editor.count.mutant", "editor.note.aria_ding"]);
+    const sameOkByLang = {
+      de: ["editor.palette", "editor.palette_n", "editor.standard"],
+      fr: ["editor.palette", "editor.palette_n", "editor.standard", "editor.tray.aria", "editor.octave", "editor.octave_label"],
+      it: ["editor.standard"],
+    };
+    const left = [];
+    for (const l of ALL) {
+      const table = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "i18n", l + ".json"), "utf8"));
+      for (const k of Object.keys(en).filter((x) => x.startsWith("editor.") && !sameOk.has(x) && !(sameOkByLang[l] || []).includes(x))) {
+        if (JSON.stringify(table[k]) === JSON.stringify(en[k])) left.push(l + " " + k);
+      }
+    }
+    assert.deepStrictEqual(left, []);
+  });
+
+  test("I18N: the Neotone refusal names the pan type through a table key, not a literal", async () => {
+    assert.ok(!/editorRefusal\("Neotone"\)/.test(INDEX_HTML()));
+    assert.ok(/editorRefusal\(t\("editor\.neotone"\)\)/.test(INDEX_HTML()));
+  });
+
   test("I18N: no table value says deck", async () => {
     const dir = path.join(ROOT, "data", "i18n");
     for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".json"))) {

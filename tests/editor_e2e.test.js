@@ -416,6 +416,31 @@ function run() {
       assert.ok(de[0][1] !== en[0][1] && de[1][1] !== en[1][1], "the ding and rim stops are renamed in German: " + JSON.stringify(de));
     });
 
+    test("I18N: under a pseudo table no visible editor text is English, panel and unsaved-changes dialog", async () => {
+      await fresh();
+      await b.eval(`const wrap = (v) => typeof v === "string" ? "\\u27e6" + v + "\\u27e7" : Object.fromEntries(Object.entries(v).map(([k, s]) => [k, "\\u27e6" + s + "\\u27e7"]));
+        I18N.de = Object.fromEntries(Object.entries(I18N.en).map(([k, v]) => [k, wrap(v)]));
+        const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+      await b.waitFor(`document.documentElement.lang === "de"`, { label: "pseudo German" });
+      await openAdd();
+      const scan = (label) => b.eval(`const out = [];
+        const words = (s) => { let v = String(s), p; do { p = v; v = v.replace(/\\u27e6[^\\u27e6\\u27e7]*\\u27e7/g, ""); } while (v !== p); return /[A-Za-z]{3,}/.test(v); };
+        const root = document.getElementById("editor");
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) { if (n.parentElement.closest("textarea, script, style")) continue; if (words(n.nodeValue)) out.push("text:" + n.nodeValue); }
+        for (const el of root.querySelectorAll("*")) for (const a of ["aria-label", "title", "placeholder"]) { if (el.id === "editor-name" && a === "placeholder") continue; const v = el.getAttribute(a); if (v && words(v)) out.push(el.id + "@" + a + ":" + v); }
+        return out;`).then((left) => assert.deepStrictEqual(left, [], label + ": " + JSON.stringify(left.slice(0, 8))));
+      await scan("empty");
+      await typeLine(SCALE);
+      await scan("typed");
+      await b.eval(`editorSession.held = { name: "C4" }; editorRender(); return true;`);
+      await scan("a note held");
+      await b.click("#editor-type-neotone");
+      await scan("neotone");
+      await b.eval(`editorShowDialog(true); return true;`);
+      await scan("unsaved-changes dialog");
+    });
+
     test("the empty prompt fits the status row in all eight locales at 390, 375 and 360 with the real fonts", async () => {
       const prev = b;
       b = await launch({ foregroundSettle: true, realFonts: true });
