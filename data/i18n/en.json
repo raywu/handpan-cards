@@ -238,6 +238,8 @@
   "backup.file_hidden": "Hidden seeded scales (note only, no link): {names}",
   "editor.hint.place": "Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.",
   "editor.hint.ding": "Drop or tap a note on the ding to swap it with the root.",
+  "editor.hint.toggle": "Hint",
+  "editor.hint.toggle.aria": "Hint and note counts",
   "editor.tabs.aria": "Editor sections",
   "editor.accidentals.aria": "Note names",
   "editor.sharps": "Sharps",

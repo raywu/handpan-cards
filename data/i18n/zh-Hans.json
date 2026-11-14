@@ -235,6 +235,8 @@
   "backup.file_hidden": "被隐藏的内置音阶（仅备注，无链接）：{names}",
   "editor.hint.place": "点按一个音来拿起它，再点按盘上的一圈，或把它拖到盘上。",
   "editor.hint.ding": "把音放到或点按在 Ding 上，即可与根音互换。",
+  "editor.hint.toggle": "提示",
+  "editor.hint.toggle.aria": "提示与音数",
   "editor.tabs.aria": "编辑器分区",
   "editor.accidentals.aria": "音名",
   "editor.sharps": "Sharps",

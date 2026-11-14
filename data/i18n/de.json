@@ -238,6 +238,8 @@
   "backup.file_hidden": "Ausgeblendete Standardskalen (nur Hinweis, kein Link): {names}",
   "editor.hint.place": "Tippe eine Note an, um sie zu halten, und tippe dann einen Ring auf der Pan an, oder ziehe sie auf die Pan.",
   "editor.hint.ding": "Lege eine Note auf dem Ding ab oder tippe sie dort an, um sie mit dem Grundton zu tauschen.",
+  "editor.hint.toggle": "Hilfe",
+  "editor.hint.toggle.aria": "Hilfe und Notenanzahl",
   "editor.tabs.aria": "Bereiche des Editors",
   "editor.accidentals.aria": "Notennamen",
   "editor.sharps": "Sharps",

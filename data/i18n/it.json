@@ -238,6 +238,8 @@
   "backup.file_hidden": "Scale predefinite nascoste (solo nota, senza link): {names}",
   "editor.hint.place": "Tocca una nota per tenerla, poi tocca un anello del pan, oppure trascinala sul pan.",
   "editor.hint.ding": "Rilascia o tocca una nota sul ding per scambiarla con la fondamentale.",
+  "editor.hint.toggle": "Aiuto",
+  "editor.hint.toggle.aria": "Aiuto e conteggio delle note",
   "editor.tabs.aria": "Sezioni dell’editor",
   "editor.accidentals.aria": "Nomi delle note",
   "editor.sharps": "Sharps",
