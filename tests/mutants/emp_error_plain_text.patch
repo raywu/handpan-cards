@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1290,7 +1290,7 @@
- #editor-status{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
- @media (max-width:420px){#editor-status{min-height:56px}}
- #editor.dragging #editor-status{transform:translateY(var(--ed-status-shift,0px))}
+@@ -916,7 +916,7 @@
+ #editor-hint-toggle[aria-expanded="true"] .chev{display:inline-block; transform:rotate(180deg)}
+ #editor.dragging .editor-statusrow{transform:translateY(var(--ed-status-shift,0px))}
+ #editor.dragging #editor-hint-toggle{visibility:hidden}
 -#editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:8px 12px}
 +#editor-status[data-kind="error"]{background:none; color:#242424; font-size:14px; border-radius:8px; padding:8px 12px}
  #editor-status[data-kind="error"]::before{content:"\26A0"}
