@@ -1,4 +1,4 @@
-# kills: P0 375x667: the drawn pan is at least 0.95 x 259px, the page never scrolls and the toolbar is in view
+# kills: P0 375x667: the drawn pan is at least 0.95 x 203px, the page never scrolls and the toolbar is in view
 # suite: node --test --test-name-pattern ^P0.375x667..the.drawn.pan tests/editor_e2e.test.js
 # fault: The pan box shrinks to a flex basis of zero and loses its sized height.
 diff --git a/index.html b/index.html
