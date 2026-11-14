@@ -4087,6 +4087,16 @@ function run() {
 
     // The Name field: a real tap focuses it at a tall viewport, then the soft keyboard shrinks the viewport (Android resize), as on the phone.
     // At the short size itself the region is a few px tall, so Name cannot be tapped there unfocused (plan R4 H1: pan floor 120 beats tray-in-view).
+    test("P0 hint resize: an open Hint block is re-placed over the controls area when the viewport rotates", async () => {
+      await open(375, 667);
+      await b.click("#editor-hint-toggle");
+      await b.setViewport(844, 390, true);
+      await pause(500);
+      const covers = await b.eval(`const a = document.getElementById("editor-areas").getBoundingClientRect(), rg = document.getElementById("editor-region").getBoundingClientRect();
+        return !document.getElementById("editor-areas").hidden && a.top <= rg.top + 1 && a.bottom >= rg.bottom - 1 && a.left <= rg.left + 1 && a.right >= rg.right - 1 && a.width <= rg.width + 2;`);
+      assert.strictEqual(covers, true, "the overlay tracks the region after rotation");
+    });
+
     for (const [w, h, kh] of [[375, 667, 360], [360, 640, 330]]) {
       test(`P0 name focus ${w}x${kh}: focused by a real tap, Name is fully in view with the toolbar; unfocused the pan is at least 120 and the toolbar stays in view`, async () => {
         await open(w, h);
