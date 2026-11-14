@@ -1,0 +1,15 @@
+# kills: SC 390x664: the first row of the Scale tab is fully visible under the strip, and the Hint info button takes no layout height
+# suite: node --test --test-name-pattern ^SC.390x664 tests/editor_e2e.test.js
+# fault: The status row reserves 56px again, so the pan falls under 200px at 390x664.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -911,7 +911,7 @@
+ #editor-name::placeholder{color:#6B665E; opacity:1}
+ #editor .editor-statusrow{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
+ #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
+-@media (max-width:420px){#editor-status{min-height:48px}}
++@media (max-width:420px){#editor-status{min-height:56px}}
+ #editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+   display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#5E5A53}
+ #editor-hint-toggle[hidden]{display:none}

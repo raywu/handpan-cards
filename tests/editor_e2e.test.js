@@ -3828,11 +3828,28 @@ function run() {
         const before = await rect("#editor .editor-panbox");
         const long = await b.eval(`return I18N.de[${JSON.stringify(key)}].replace("{max}", "12");`);
         await b.eval(`editorSession.error = ${JSON.stringify(long)}; editorRender(); return true;`);
-        const lines = await b.eval(`const st = document.getElementById("editor-status"); return Math.round((st.getBoundingClientRect().height - 16) / 20);`);
+        const lines = await b.eval(`const st = document.getElementById("editor-status"); return Math.round((st.getBoundingClientRect().height - 8) / 20);`);
         assert.ok(lines >= 1);
         const after = await rect("#editor .editor-panbox");
         assert.ok(Math.abs(after.height - before.height) <= 1, `pan height ${before.height} -> ${after.height} (${lines} lines)`);
         assert.deepStrictEqual(await b.eval(`const ed = document.getElementById("editor"), st = document.getElementById("editor-status"); return [ed.scrollWidth <= ed.clientWidth, st.scrollWidth <= st.clientWidth + 1];`), [true, true]);
+      });
+    }
+
+    for (const w of [375, 390]) {
+      test(`SC ${w} wide: a two-line German error fits the status row without clipping, and the status row keeps its height`, async () => {
+        await setup(FULL, w, 700);
+        await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+        await b.eval(`editorRender(); return true;`);
+        const row = () => b.eval(`const r = document.querySelector("#editor .editor-statusrow").getBoundingClientRect(), st = document.getElementById("editor-status"); return { h: r.height, sh: st.scrollHeight, ch: st.clientHeight, sth: st.getBoundingClientRect().height };`);
+        const before = await row();
+        const long = await b.eval(`return I18N.de["editor.crowded"].replace("{max}", "12");`);
+        await b.eval(`editorSession.error = ${JSON.stringify(long)}; editorRender(); return true;`);
+        const after = await row();
+        assert.ok(after.sth >= 48 - 1 && after.sth > 40, "the banner holds two lines: " + JSON.stringify(after));
+        assert.ok(after.sh <= after.ch + 1, "no clipped text: " + JSON.stringify(after));
+        assert.strictEqual(after.h, before.h, "the status row does not grow: " + JSON.stringify([before, after]));
       });
     }
 
@@ -3900,7 +3917,7 @@ function run() {
 
     // Targets: the plan's S1 formula with the option B sticky strip (tray beats the 200 floor, 120 is the hard floor),
     // derived by rect probe on this lane's build. 0.95 x target is the floor each test enforces.
-    const STACKED = [[390, 844, 362], [430, 932, 402], [375, 667, 195], [360, 640, 168], [375, 548, 120], [320, 568, 120], [768, 1024, 480]];
+    const STACKED = [[390, 844, 362], [430, 932, 402], [375, 667, 203], [360, 640, 176], [375, 548, 120], [320, 568, 120], [768, 1024, 480]];
     for (const [w, h, target] of STACKED) {
       test(`P0 ${w}x${h}: the drawn pan is at least 0.95 x ${target}px, the page never scrolls and the toolbar is in view`, async () => {
         await open(w, h);
@@ -3986,6 +4003,7 @@ function run() {
         const r = await read();
         assert.ok(r.name.top >= r.tabs.bottom - 1 && r.name.top >= r.region.top - 0.5, `${w}x${h} the Name row is not clipped: ` + JSON.stringify(r));
         assert.ok(r.tray.bottom <= r.region.bottom + 1, `${w}x${h} the tray is fully in the region: ` + JSON.stringify(r));
+        assert.ok(r.pan.bottom - r.pan.top >= 199, `${w}x${h} the pan keeps the 200px floor: ` + JSON.stringify(r.pan));
         assert.ok(r.h >= 44 && r.w >= 44 && r.onTop, "a 44px target above the overlay: " + JSON.stringify(r));
         assert.ok(Math.abs(r.top - r.tabs.top) <= 1, "the info button sits in the tab strip");
         await b.click("#editor-hint-toggle");
