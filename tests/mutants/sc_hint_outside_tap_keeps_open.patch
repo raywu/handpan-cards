@@ -1,0 +1,15 @@
+# kills: SC 390x664: the first row of the Scale tab is fully visible under the strip, and the Hint info button takes no layout height
+# suite: node --test --test-name-pattern ^SC.390x664 tests/editor_e2e.test.js
+# fault: A tap outside the Hint overlay leaves it open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14849,7 +14849,7 @@
+   const del = editorEl("editor-delete");
+   if (del) del.onclick = editorMenuPick(editorDeleteTap);
+   editorEl("editor").addEventListener("pointerdown", (e) => {
+-    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target)) editorSetAreas(false);
++    if (false && editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target)) editorSetAreas(false);
+     const menu = editorEl("editor-menu");
+     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
+     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();
