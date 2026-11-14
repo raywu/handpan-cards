@@ -1,0 +1,14 @@
+# kills: empty stage: the pan type of an empty model keeps the ding
+# suite: node --test --test-name-pattern empty.stage..the.pan.type.of.an.empty.model.keeps.the.ding tests/editor_shell.test.js
+# fault: Switching the pan type of an empty model forgets the staged ding.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12974,7 +12974,6 @@
+ function editorStagePanType(m, kind) {
+   const old = editorStageOf(m);
+   const next = editorBlankStage(kind);
+-  if (old.ding) next.ding = old.ding;
+   const had = Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean));
+   const moved = editorWithStage(m, next);
+   return { ok: true, value: moved, ...(had ? { notice: { stageCleared: true } } : {}) };

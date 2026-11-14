@@ -1,0 +1,15 @@
+# kills: empty stage: Neotone stages main notes densely
+# suite: node --test --test-name-pattern empty.stage..Neotone.stages.main.notes.densely tests/editor_shell.test.js
+# fault: A Neotone main drop on a far field is staged at that field, leaving a gap in the main row.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12950,7 +12950,7 @@
+   if (clash) return clash;
+   if (slot < NEO_MAIN) {
+     if (here) st.main[slot] = String(name);
+-    else st.main.push(String(name));
++    else st.main[slot] = String(name);
+   } else {
+     st.mutant = Array.from({ length: st.main.length }, (_, k) => st.mutant[k] || null);
+     st.mutant[slot - NEO_MAIN] = String(name);

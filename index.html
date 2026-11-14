@@ -12776,8 +12776,8 @@ function editorExport(m) {
   return { s: HPE.core.formatSeed(m.fields), options: m.options, record: scaleRecord(seed), solve: HPE.layout.solve(seed),
     code: code.ok ? code.value : undefined, link: shareLink(seed) };
 }
-const editorNames = (m, ring) => ringIds(m.fields, ring).map((id) => m.fields[id][0] + m.fields[id][1]);
-const editorDingOf = (m) => Object.keys(m.fields).filter((id) => m.fields[id][3] === "ding").map((id) => m.fields[id][0] + m.fields[id][1])[0];
+const editorNames = (m, ring) => (editorIsEmpty(m) ? editorStageNames(m, ring) : ringIds(m.fields, ring).map((id) => m.fields[id][0] + m.fields[id][1]));
+const editorDingOf = (m) => (editorIsEmpty(m) ? editorStageOf(m).ding || "" : Object.keys(m.fields).filter((id) => m.fields[id][3] === "ding").map((id) => m.fields[id][0] + m.fields[id][1])[0]);
 function editorText(m, parts, ding) {
   return [parts.bottom.map((n) => "[" + n + "]").join(" "), "(" + (ding || editorDingOf(m)) + ")", parts.rim.join(" "),
     parts.inner.length ? "| " + parts.inner.join(" ") : ""].filter(Boolean).join(" ");
@@ -12835,17 +12835,209 @@ function editorResize(m, ring, parts, change) {
   editorTidy(o, "angles");
   return editorSettle(next, had ? { seatsReset: ring } : {});
 }
+/* ---- the empty-state stage (TRI-59, lane G1) ----
+ * An empty pan keeps its notes on the model's in-memory `stage`: Standard
+ * {kind, ding?, rim, inner, bottom} or Neotone {kind, ding?, main, mutant} (main dense,
+ * mutant aligned to its main field, null for a gap). Every stage edit settles at once:
+ * a ding and a first rim or main note the engine accepts become the real model in the
+ * same step, anything short of a fifth stays staged, any other refusal is returned and
+ * the stage is left as it was. The stage is never saved, shared or exported; editorBare
+ * ignores it, and editorCanSave stays false until the commit. */
+const EDITOR_NAME_RE = /^([A-G][#b]?)(-?\d)$/;
+const EDITOR_GHOST = {
+  rim: "A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5".split(" "),
+  inner: "F5 G5 A5 B5 C6 D6".split(" "),
+  bottom: "A2 B2 C3 D3 E3 F3 G3 A3 B3 C4 D4 E4".split(" "),
+};
+const editorBlankStage = (kind) => (kind === "neotone" ? { kind, main: [], mutant: [] } : { kind: "standard", rim: [], inner: [], bottom: [] });
+function editorStageOf(m) {
+  const kind = editorKindOf(m);
+  return m.stage && m.stage.kind === kind ? m.stage : editorBlankStage(kind);
+}
+function editorStageNames(m, ring) {
+  const st = editorStageOf(m);
+  if (st.kind === "standard") return st[ring];
+  return ring === "rim" ? st.main : ring === "bottom" ? st.mutant.filter(Boolean) : [];
+}
+function editorStageMap(st) {
+  const map = new Array(NEO_SLOTS).fill(null);
+  st.main.forEach((n, k) => { map[k] = editorNeoKeyOfName("rim", n).key; });
+  st.mutant.forEach((n, k) => { if (n) map[NEO_MAIN + k] = editorNeoKeyOfName("bottom", n).key; });
+  return map;
+}
+function editorWithStage(m, stage) {
+  const options = { ...m.options };
+  if (stage.kind === "neotone") options.profile = { ...(m.options.profile || { id: "paired", rev: 2 }), map: editorStageMap(stage) };
+  else delete options.profile;
+  return { ...m, options, stage };
+}
+// A stage edit: the edit may refuse (a result with ok false) or change the cloned stage.
+function editorStageEdit(m, edit, landedKey) {
+  const stage = editorClone(editorStageOf(m));
+  const res = edit(stage);
+  return res && res.ok === false ? res : editorStageCommit(m, stage, landedKey);
+}
+function editorStageCommit(m, stage, landedKey) {
+  const std = stage.kind === "standard";
+  const staged = editorWithStage(m, stage);
+  if (!stage.ding || !(std ? stage.rim.length : stage.main.length)) return { ok: true, value: staged };
+  let built;
+  if (std) {
+    const loaded = editorLoad(editorText(m, stage, stage.ding), { ...m.options, seats: null, angles: null });
+    built = loaded.ok ? editorSettle(loaded.value, {}) : loaded;
+  } else {
+    built = editorNeoBuild(staged, { rim: stage.main, inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
+  }
+  if (!built.ok) return built.code === "NO_FIFTH" ? { ok: true, value: staged } : built;
+  return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
+}
+const editorStageRepeat = (a, b) => ({ ok: false, code: "NOTE_REPEATED", reason: HPE.core.REASONS.NOTE_REPEATED.reason.split("<A>").join(a).split("<B>").join(b) });
+// Placing a note in a ring the stage already holds, or on the rim and cyclops together, is
+// the engine's NOTE_REPEATED; a bottom copy of a top note is allowed.
+function editorStageClash(st, ring, name, except) {
+  const top = st.kind === "standard" ? [...st.rim, ...st.inner] : st.main;
+  const list = ring === "bottom" ? (st.kind === "standard" ? st.bottom : st.mutant.filter(Boolean)) : top;
+  return list.some((n) => n === String(name) && n !== except) ? editorStageRepeat(name, name) : null;
+}
+const editorStageNameOk = (name) => (EDITOR_NAME_RE.test(String(name)) ? null : editorRefusal(name));
+function editorStagePush(st, ring, name) {
+  return editorStageNameOk(name) || editorStageClash(st, ring, name) || void st[ring].push(String(name));
+}
+// A ring's i-th note, in the list it lives in (a Neotone bottom note is the i-th non-null mutant).
+function editorStageAt(st, ring, i) {
+  if (st.kind === "standard" || ring === "rim") return { list: st.kind === "standard" ? st[ring] : st.main, at: i };
+  const holes = st.mutant.map((n, k) => (n ? k : -1)).filter((k) => k >= 0);
+  return { list: st.mutant, at: holes[i] };
+}
+function editorStageSet(st, ref, name) {
+  const bad = editorStageNameOk(name);
+  if (bad) return bad;
+  if (ref.ring === "ding") { st.ding = String(name); return null; }
+  const { list, at } = editorStageAt(st, ref.ring, ref.i);
+  const clash = editorStageClash(st, ref.ring, name, list[at]);
+  if (clash && list[at] !== String(name)) return clash;
+  list[at] = String(name);
+  return null;
+}
+function editorStageSwap(st, a, b) {
+  const slot = (r) => (r.ring === "ding" ? null : editorStageAt(st, r.ring, r.i));
+  const get = (r) => (r.ring === "ding" ? st.ding || "" : slot(r).list[slot(r).at]);
+  const [na, nb] = [get(a), get(b)];
+  if (!na || !nb) return editorRefusal("swap");
+  const put = (r, n) => (r.ring === "ding" ? void (st.ding = n) : void (slot(r).list[slot(r).at] = n));
+  put(a, nb);
+  put(b, na);
+  return null;
+}
+function editorStageNeoRemove(st, ring, i) {
+  if (ring === "rim") {
+    st.main.splice(i, 1);
+    st.mutant.splice(i, 1);
+  } else {
+    st.mutant[editorStageAt(st, "bottom", i).at] = null;
+  }
+  return null;
+}
+function editorStageNeoRef(st, slot) {
+  if (slot < NEO_MAIN) return st.main[slot] === undefined ? null : { ring: "rim", i: slot };
+  return st.mutant[slot - NEO_MAIN] ? { ring: "bottom", i: st.mutant.slice(0, slot - NEO_MAIN).filter(Boolean).length } : null;
+}
+const editorStageNeoSlotOf = (st, ref) => (ref.ring === "rim" ? ref.i : editorStageAt(st, "bottom", ref.i).at + NEO_MAIN);
+function editorStageNeoPut(st, slot, name) {
+  const ring = slot < NEO_MAIN ? "rim" : "bottom";
+  const here = editorStageNeoRef(st, slot);
+  const clash = editorStageClash(st, ring, name, here ? editorStageAt(st, ring, here.i).list[editorStageAt(st, ring, here.i).at] : undefined);
+  if (clash) return clash;
+  if (slot < NEO_MAIN) {
+    if (here) st.main[slot] = String(name);
+    else st.main.push(String(name));
+  } else {
+    st.mutant = Array.from({ length: st.main.length }, (_, k) => st.mutant[k] || null);
+    st.mutant[slot - NEO_MAIN] = String(name);
+  }
+  return null;
+}
+// Moving a note along its row: the main row swaps notes (a move to a gap changes nothing, the
+// row being dense), the mutant row swaps its fields.
+function editorStageNeoMove(st, from, to) {
+  if (from < NEO_MAIN) {
+    if (st.main[to] === undefined) return null;
+    [st.main[from], st.main[to]] = [st.main[to], st.main[from]];
+    return null;
+  }
+  const row = Array.from({ length: st.main.length }, (_, k) => st.mutant[k] || null);
+  [row[from - NEO_MAIN], row[to - NEO_MAIN]] = [row[to - NEO_MAIN], row[from - NEO_MAIN]];
+  st.mutant = row;
+  return null;
+}
+// The pan type of an empty model: the ding survives, the other kind's staged notes do not.
+function editorStagePanType(m, kind) {
+  const old = editorStageOf(m);
+  const next = editorBlankStage(kind);
+  if (old.ding) next.ding = old.ding;
+  const had = Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean));
+  const moved = editorWithStage(m, next);
+  return { ok: true, value: moved, ...(had ? { notice: { stageCleared: true } } : {}) };
+}
+function editorNameEntry(name, zone, label) {
+  const at = EDITOR_NAME_RE.exec(String(name));
+  const midi = 12 * (Number(at[2]) + 1) + EDITOR_SEMITONE[at[1][0]] + (at[1][1] === "#" ? 1 : at[1][1] === "b" ? -1 : 0);
+  return [at[1], Number(at[2]), midi, zone, null, label];
+}
+// The empty pan's solve: the ghost of a real model sized to the staged notes, wearing the
+// staged names. Only the ding and the staged notes are fields; the filler notes that give the
+// geometry its shape never show. value.hasDing says whether the ding has been chosen.
+function editorGhostSolve(m) {
+  const st = editorStageOf(m);
+  const std = st.kind === "standard";
+  const rim = std ? st.rim : st.main;
+  const inner = std ? st.inner : [];
+  const bottom = std ? st.bottom : st.mutant;
+  const hasDing = !!st.ding;
+  const ding = st.ding || "D3";
+  const ours = (k) => Math.min(k, 12);
+  const shape = (entry, name) => { const [l, o, midi] = editorNameEntry(name, entry[3], entry[5]); return [l, o, midi, entry[3], entry[4], entry[5]]; };
+  if (!std && !rim.length) {
+    const bare = HPE.layout.solve({ fields: {}, options: m.options });
+    if (!bare.ok) return bare;
+    return { ok: true, value: { ...bare.value, fields: { 0: editorNameEntry(ding, "ding", "Ding") }, staged: true, hasDing } };
+  }
+  const fillRim = EDITOR_GHOST.rim.slice(0, Math.max(1, ours(rim.length)));
+  const fillBottom = std ? EDITOR_GHOST.bottom.slice(0, ours(bottom.length)) : bottom.map((n, k) => (n ? EDITOR_GHOST.bottom[k] : null));
+  const text = [fillBottom.filter(Boolean).map((n) => "[" + n + "]").join(" "), "(D3)", fillRim.join(" "),
+    inner.length ? "| " + EDITOR_GHOST.inner.slice(0, ours(inner.length)).join(" ") : ""].filter(Boolean).join(" ");
+  let options = { ...m.options, seats: null, angles: null };
+  if (!std) {
+    const map = new Array(NEO_SLOTS).fill(null);
+    fillRim.forEach((n, k) => { map[k] = editorNeoKeyOfName("rim", n).key; });
+    fillBottom.forEach((n, k) => { if (n) map[NEO_MAIN + k] = editorNeoKeyOfName("bottom", n).key; });
+    options = { ...options, profile: { ...options.profile, map } };
+  }
+  const loaded = editorLoad(text, options);
+  if (!loaded.ok) return loaded;
+  const solved = HPE.layout.solve({ fields: loaded.value.fields, options: loaded.value.options });
+  if (!solved.ok) return solved;
+  const f = solved.value.fields;
+  const out = { 0: shape(f[0], ding) };
+  const take = (zone, names) => ringIds(f, zone).forEach((id, k) => { if (names[k]) out[id] = shape(f[id], names[k]); });
+  take("rim", rim);
+  take("inner", inner);
+  take("bottom", bottom.filter(Boolean));
+  return { ok: true, value: { ...solved.value, fields: out, staged: true, hasDing } };
+}
 const editorPartsOf = (m) => Object.fromEntries(EDITOR_RINGS.map((ring) => [ring, editorNames(m, ring)]));
 function editorAdd(m, ring, name) {
   if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
   if (m.options.profile) return editorNeoInsert(m, ring, name);
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStagePush(st, ring, name));
   const parts = editorPartsOf(m);
   parts[ring].push(String(name));
   return editorResize(m, ring, parts, { add: true });
 }
 function editorRemove(m, ring, i) {
-  if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= ringIds(m.fields, ring).length) return editorRefusal(ring + i);
+  if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
   if (m.options.profile) return editorRemoveNeotone(m, ring, i);
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { st[ring].splice(i, 1); });
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
   return editorResize(m, ring, parts, { remove: i });
@@ -12854,13 +13046,15 @@ function editorRemove(m, ring, i) {
 // 9 mutant fields (D19): an edit fills or empties a field and never moves the others.
 const editorNeoRingOf = (slot) => (slot < NEO_MAIN ? "rim" : "bottom");
 function editorNeoRef(m, slot) {
+  if (editorIsEmpty(m)) return editorStageNeoRef(editorStageOf(m), slot);
   const key = m.options.profile.map[slot];
   if (key === null || key === undefined) return null;
   const ring = editorNeoRingOf(slot);
   const i = ringIds(m.fields, ring).findIndex((id) => profileKeyOf(m.fields[id]) === key);
   return i === -1 ? null : { ring, i };
 }
-const editorNeoSlotOf = (m, ref) => m.options.profile.map.indexOf(profileKeyOf(m.fields[ringIds(m.fields, ref.ring)[ref.i]]));
+const editorNeoSlotOf = (m, ref) => (editorIsEmpty(m) ? editorStageNeoSlotOf(editorStageOf(m), ref)
+  : m.options.profile.map.indexOf(profileKeyOf(m.fields[ringIds(m.fields, ref.ring)[ref.i]])));
 const editorNeoEmptyField = (n) => editorAreaRefusal("FIELD_EMPTY", t("editor.neo.field_empty", { n }));
 const editorNeoOwnRow = () => editorAreaRefusal("OWN_ROW", t("editor.neo.own_row"));
 function editorNeoBuild(m, parts, map, landedKey) {
@@ -12885,6 +13079,7 @@ function editorNeoPut(m, slot, name) {
   const ring = editorNeoRingOf(slot);
   const keyed = editorNeoKeyOfName(ring, name);
   if (!keyed.ok) return keyed;
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoPut(st, slot, name), keyed.key);
   const parts = editorPartsOf(m);
   const old = editorNeoRef(m, slot);
   if (old) parts[ring].splice(old.i, 1);
@@ -12906,19 +13101,21 @@ function editorNeoMove(m, from, to) {
   if (editorNeoRingOf(from) !== editorNeoRingOf(to)) return editorNeoOwnRow();
   if (from === to) return { ok: true, value: m };
   if (to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoMove(st, from, to));
   const next = map.slice();
   [next[from], next[to]] = [next[to], next[from]];
   return editorNeoBuild(m, editorPartsOf(m), next, map[from]);
 }
 function editorRemoveNeotone(m, ring, i) {
-  if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= ringIds(m.fields, ring).length) return editorRefusal(ring + i);
+  if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoRemove(st, ring, i));
   const key = profileKeyOf(m.fields[ringIds(m.fields, ring)[i]]);
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
   return editorNeoBuild(m, parts, m.options.profile.map.map((entry) => (entry === key ? null : entry)));
 }
-const editorInRing = (m, ring, ...ks) => ks.every((k) => Number.isInteger(k) && k >= 0 && k < ringIds(m.fields, ring).length);
-const editorSolve = (m) => HPE.layout.solve({ fields: m.fields, options: m.options });
+const editorInRing = (m, ring, ...ks) => ks.every((k) => Number.isInteger(k) && k >= 0 && k < editorNames(m, ring).length);
+const editorSolve = (m) => (editorIsEmpty(m) ? editorGhostSolve(m) : HPE.layout.solve({ fields: m.fields, options: m.options }));
 const editorAnglesOf = (solved, ring) => ringIds(solved.value.fields, ring).map((id) => solved.value.fields[id][4]);
 // The sheet's first slide on a seated ring pins every note where it sits, on its
 // 5 degree step, and drops the seat order, so no other note moves.
@@ -12936,6 +13133,7 @@ function editorSetAngle(m, ring, i, angle, pin) {
   if (m.options.profile) return editorProfileConflict();
   if (!EDITOR_PINNABLE.includes(ring) || !editorInRing(m, ring, i)) return editorRefusal(ring + i);
   if (angle !== null && !Number.isFinite(angle)) return editorRefusal(angle);
+  if (editorIsEmpty(m)) return { ok: true, value: m };
   const here = editorSolve(m);
   if (!here.ok) return here;
   let base = m;
@@ -12957,7 +13155,7 @@ function editorSetAngle(m, ring, i, angle, pin) {
 function editorSwapSeats(m, ring, i, j) {
   if (m.options.profile) return editorProfileConflict();
   if (!EDITOR_RINGS.includes(ring) || !editorInRing(m, ring, i, j)) return editorRefusal(ring + i);
-  if (i === j) return { ok: true, value: m };
+  if (i === j || editorIsEmpty(m)) return { ok: true, value: m };
   if (EDITOR_PINNABLE.includes(ring) && m.options.angles && m.options.angles[ring]) return editorExchangeAngles(m, ring, i, j);
   const next = editorClone(m);
   const seats = (next.options.seats && next.options.seats[ring]) || identityOrder(ringIds(m.fields, ring).length);
@@ -13083,12 +13281,14 @@ function editorRebuild(m, entries) {
 }
 function editorReplace(m, ring, i, name) {
   if (!EDITOR_RINGS.includes(ring) || !editorInRing(m, ring, i)) return editorRefusal(ring + i);
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageSet(st, { ring, i }, name));
   const entries = editorEntries(m);
   if (entries[ring][i].name === String(name)) return { ok: true, value: m };
   entries[ring][i].name = String(name);
   return editorRebuild(m, entries);
 }
 function editorReplaceDing(m, name) {
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageSet(st, { ring: "ding" }, name));
   if (editorDingOf(m) === String(name)) return { ok: true, value: m };
   const entries = editorEntries(m);
   entries.ding = String(name);
@@ -13098,6 +13298,7 @@ function editorReplaceDing(m, name) {
 function editorSwapNames(m, a, b) {
   const refs = [a, b];
   if (refs.some((r) => !r || (r.ring !== "ding" && (!EDITOR_RINGS.includes(r.ring) || !editorInRing(m, r.ring, r.i))))) return editorRefusal("swap");
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageSwap(st, a, b));
   const entries = editorEntries(m);
   const get = (r) => (r.ring === "ding" ? entries.ding : entries[r.ring][r.i].name);
   const set = (r, name) => { if (r.ring === "ding") entries.ding = name; else entries[r.ring][r.i].name = name; };
@@ -13108,7 +13309,7 @@ function editorSwapNames(m, a, b) {
 }
 function editorPlaceAt(m, ring, name, angle) {
   const added = editorAdd(m, ring, name);
-  if (!added.ok || angle === undefined || !EDITOR_PINNABLE.includes(ring) || m.options.profile) return added;
+  if (!added.ok || angle === undefined || !EDITOR_PINNABLE.includes(ring) || m.options.profile || editorIsEmpty(added.value)) return added;
   const at = editorNames(added.value, ring).indexOf(String(name));
   const pinned = editorSetAngle(added.value, ring, at, angle, true);
   return pinned.ok && (added.notice || pinned.notice) ? { ...pinned, notice: { ...pinned.notice, ...added.notice } } : pinned;
@@ -13121,11 +13322,11 @@ const EDITOR_CAPS = { rim: 12, inner: 6, bottom: 12 };
 const editorAreaRefusal = (code, reason) => ({ ok: false, code, reason });
 function editorPlace(m, ring, name, angle) {
   const capped = !m.options.profile && EDITOR_CAPS[ring] !== undefined;
-  if (capped && ringIds(m.fields, ring).length >= EDITOR_CAPS[ring]) {
+  if (capped && editorNames(m, ring).length >= EDITOR_CAPS[ring]) {
     return editorAreaRefusal("AREA_FULL", t("editor.full." + ring, { max: EDITOR_CAPS[ring] }));
   }
   const placed = editorPlaceAt(m, ring, name, angle);
-  if (!placed.ok || !capped) return placed;
+  if (!placed.ok || !capped || editorIsEmpty(placed.value)) return placed;
   const floor = HPE.layout.labelFloor(editorSolve(placed.value).value.geom);
   if (!(floor < HPE.layout.LABEL_FLOOR_PT)) return placed;
   return editorAreaRefusal("TOO_CROWDED", t("editor.crowded", { pt: (Math.floor(floor * 100) / 100).toFixed(2), floor: HPE.layout.LABEL_FLOOR_PT }));
@@ -13249,8 +13450,9 @@ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
 const editorCanSave = (m) => !editorIsEmpty(m);
 const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
 const editorBare = (m) => {
-  const { view, ...rest } = m;
+  const { view, stage, ...rest } = m;
   const o = { ...rest.options };
+  if (editorIsEmpty(m)) delete o.profile;
   if (o.anchor === "one") delete o.anchor;
   if (o.mirrorBottom === !!o.mirror) delete o.mirrorBottom;
   if (!o.name) delete o.name;
@@ -13333,7 +13535,8 @@ function editorCommitText(m, text) {
 // The pan type is one model change: Neotone proposes the profile and sets the
 // placement options aside, Standard removes the profile.
 function editorPanType(m, kind) {
-  if (editorKindOf(m) === kind || editorIsEmpty(m)) return { ok: true, value: m };
+  if (editorKindOf(m) === kind) return { ok: true, value: m };
+  if (editorIsEmpty(m)) return editorStagePanType(m, kind);
   const next = editorClone(m);
   if (kind === "standard") {
     delete next.options.profile;
@@ -13452,7 +13655,7 @@ function editorOpen(edit) {
   const model = editorModelFor(edit, kind);
   const failed = model.ok === false;
   const start = failed ? editorEmptyModel() : model;
-  editorSession = { history: editorHistoryNew(start), base: start, editing: false, error: failed ? reasonText(model) : "",
+  editorSession = { history: editorHistoryNew(start), base: failed ? { ...start, failed: true } : start, editing: false, error: failed ? reasonText(model) : "",
     notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", tab: "scale", menu: false, naming: false, nameTouched: false };
   sheet.classList.add("onepanel");
   const button = (id, key, cls) => editorNode("button", { id, type: "button", class: cls || "mode", text: t(key) });
@@ -13751,7 +13954,7 @@ function editorCountRows(m) {
     const used = (from) => map.slice(from, from + NEO_MAIN).filter((k) => k !== null).length;
     return [["main", used(0), NEO_MAIN, false], ["mutant", used(NEO_MAIN), NEO_MAIN, false], ["ding", ding, 1, false]];
   }
-  return [...["rim", "inner", "bottom"].map((ring) => [ring, ringIds(m.fields, ring).length, EDITOR_CAPS[ring], true]), ["ding", ding, 1, true]];
+  return [...["rim", "inner", "bottom"].map((ring) => [ring, editorNames(m, ring).length, EDITOR_CAPS[ring], true]), ["ding", ding, 1, true]];
 }
 function editorRenderCounts(m) {
   const box = editorEl("editor-counts");
@@ -13928,7 +14131,7 @@ function editorKeyHit(fk) {
   if (ring === "ding") return { kind: "ding" };
   return ring === "zone" ? { kind: "spot", ring: i } : { kind: "note", ring, i: Number(i) };
 }
-const editorAreaLabel = (m, ring) => t("editor.area.aria." + ring, { n: ringIds(m.fields, ring).length, max: EDITOR_CAPS[ring] });
+const editorAreaLabel = (m, ring) => t("editor.area.aria." + ring, { n: editorNames(m, ring).length, max: EDITOR_CAPS[ring] });
 function editorRover(m) {
   const keys = editorFocusKeys(m);
   const s = editorSession;

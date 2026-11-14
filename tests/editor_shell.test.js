@@ -1207,3 +1207,240 @@ describe("drag ux: the magnify factor and the placed-note flash", () => {
     assert.deepStrictEqual(plain(a.get(`editorFlashOf({ fields: {}, options: { profile: {} }, pins: [] }, __b)`)), []);
   });
 });
+
+// Empty-state staging (TRI-59, plan 2026-11-13-editor-empty-state.md, lane G1): an empty pan
+// holds its notes on the model's in-memory `stage` until a ding and a fifth make a scale.
+describe("empty-state staging", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const CORPUS = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "engine_corpus_v1.json"), "utf8"));
+  const NEO_MAP = (entries) => { const map = new Array(18).fill(null); for (const [k, v] of Object.entries(entries)) map[k] = v; return map; };
+  const js = (v) => JSON.stringify(v);
+  const put = (a, expr) => { a.run(`globalThis.__r = ${expr}; true`); return plain(a.get("__r")); };
+  const stagedStd = (a) => a.run(`globalThis.__m = editorEmptyModel(); true`);
+  const names = (a, expr, ring) => plain(a.get(`editorNames(${expr}, ${js(ring)})`));
+
+  test("empty stage: a ding then a fifth on the rim commit in one history step, and undo returns to the staged model", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__h = editorHistoryNew(__m);
+      for (const step of [(m) => editorPlace(m, "rim", "A3"), (m) => editorReplaceDing(m, "D3")]) { const r = editorApply(__h, step); __h = r.history; }
+      true`);
+    assert.strictEqual(a.get("__h.past.length"), 2);
+    assert.strictEqual(a.get("editorIsEmpty(__h.present)"), false);
+    assert.strictEqual(a.get("editorLineText(__h.present)"), "(D3) A3");
+    assert.strictEqual(a.get(`"stage" in __h.present`), false);
+    assert.strictEqual(a.get("editorIsEmpty(editorUndo(__h).present)"), true);
+    assert.deepStrictEqual(names(a, "editorUndo(__h).present", "rim"), ["A3"]);
+  });
+
+  test("empty stage: the rim with no ding stays staged, a note that is no fifth stays staged, and so do inner and bottom before the ding", () => {
+    const a = app();
+    stagedStd(a);
+    const rim = put(a, `editorPlace(__m, "rim", "A3")`);
+    assert.strictEqual(rim.ok, true);
+    assert.deepStrictEqual(rim.value.fields, {});
+    assert.deepStrictEqual(rim.value.stage.rim, ["A3"]);
+    const noFifth = put(a, `editorReplaceDing(editorPlace(__m, "rim", "B3").value, "D3")`);
+    assert.strictEqual(noFifth.ok, true);
+    assert.deepStrictEqual(noFifth.value.fields, {});
+    assert.strictEqual(noFifth.value.stage.ding, "D3");
+    const fifth = put(a, `editorPlace(editorReplaceDing(editorPlace(__m, "rim", "B3").value, "D3").value, "rim", "A3")`);
+    assert.strictEqual(Object.keys(fifth.value.fields).length, 3);
+    const inner = put(a, `editorPlace(editorReplaceDing(__m, "D3").value, "inner", "E4")`);
+    assert.deepStrictEqual([inner.value.fields, inner.value.stage.inner], [{}, ["E4"]]);
+    const bottom = put(a, `editorPlace(editorReplaceDing(__m, "D3").value, "bottom", "A2")`);
+    assert.deepStrictEqual([bottom.value.fields, bottom.value.stage.bottom], [{}, ["A2"]]);
+  });
+
+  test("empty stage: notes placed before the ding are kept and all land when the ding arrives", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorPlace(editorPlace(__m, "rim", "A3").value, "inner", "E4").value, "bottom", "A2").value;
+      globalThis.__c = editorReplaceDing(__s, "D3"); true`);
+    assert.strictEqual(a.get("__c.ok"), true);
+    assert.strictEqual(a.get("editorLineText(__c.value)"), "[A2] (D3) A3 | E4");
+  });
+
+  test("empty stage: an engine refusal is returned and the staged model it came from is unchanged", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(__m, "rim", "A3").value; globalThis.__before = JSON.stringify(__s); true`);
+    const same = put(a, `editorReplaceDing(__s, "A3")`);
+    assert.strictEqual(same.ok, false);
+    assert.strictEqual(same.code, "NOTE_OUT_OF_ORDER");
+    const bad = put(a, `editorPlace(__s, "rim", "H9")`);
+    assert.deepStrictEqual([bad.ok, bad.code], [false, "BAD_NOTE"]);
+    const dupe = put(a, `editorPlace(__s, "rim", "A3")`);
+    assert.strictEqual(dupe.ok, false);
+    assert.strictEqual(a.get("JSON.stringify(__s) === __before"), true);
+  });
+
+  test("empty stage: Neotone stages main notes densely, a mutant waits for its main field, and the commit equals the engine's own build", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__n = editorPanType(__m, "neotone").value; true`);
+    const dense = put(a, `editorNeoPut(__n, 3, "A3")`);
+    assert.deepStrictEqual(dense.value.stage.main, ["A3"]);
+    assert.strictEqual(dense.value.options.profile.map[0], "r57");
+    const refused = put(a, `editorNeoPut(__n, 9, "A2")`);
+    assert.deepStrictEqual([refused.ok, refused.code], [false, "FIELD_EMPTY"]);
+    a.run(`globalThis.__s = editorNeoPut(editorNeoPut(__n, 0, "A3").value, 9, "A2").value; true`);
+    assert.deepStrictEqual(plain(a.get("__s.stage")), { kind: "neotone", main: ["A3"], mutant: ["A2"] });
+    const done = put(a, `editorReplaceDing(__s, "D3")`);
+    assert.strictEqual(done.ok, true);
+    const want = put(a, `editorLoad("[A2] (D3) A3", { profile: { id: "paired", rev: 2, map: ${js(NEO_MAP({ 0: "r57", 9: "b45" }))} } })`);
+    assert.deepStrictEqual(done.value.fields, want.value.fields);
+    assert.deepStrictEqual(done.value.options.profile, want.value.options.profile);
+    assert.strictEqual("stage" in done.value, false);
+  });
+
+  test("empty stage: Neotone staging with mutants first keeps main fields dense after a removal", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__n = editorPanType(__m, "neotone").value;
+      globalThis.__s = editorNeoPut(editorNeoPut(editorNeoPut(editorNeoPut(__n, 0, "A3").value, 1, "B3").value, 9, "A2").value, 10, "B2").value; true`);
+    assert.deepStrictEqual(plain(a.get("__s.stage")), { kind: "neotone", main: ["A3", "B3"], mutant: ["A2", "B2"] });
+    assert.deepStrictEqual(plain(a.get(`editorRemove(__s, "rim", 0).value.stage`)), { kind: "neotone", main: ["B3"], mutant: ["B2"] });
+    assert.deepStrictEqual(plain(a.get(`editorRemove(__s, "bottom", 0).value.stage`)), { kind: "neotone", main: ["A3", "B3"], mutant: [null, "B2"] });
+  });
+
+  test("empty stage: editorStageOf is a blank stage of the model's kind when none is stored", () => {
+    const a = app();
+    stagedStd(a);
+    assert.deepStrictEqual(plain(a.get("editorStageOf(__m)")), { kind: "standard", rim: [], inner: [], bottom: [] });
+    assert.deepStrictEqual(plain(a.get(`editorStageOf(editorPanType(__m, "neotone").value)`)), { kind: "neotone", main: [], mutant: [] });
+    assert.deepStrictEqual(plain(a.get(`editorStageOf({ ...__m, stage: { kind: "neotone", main: ["A3"], mutant: [] } })`)), { kind: "standard", rim: [], inner: [], bottom: [] });
+  });
+
+  test("empty stage: options and the view are carried across the commit", () => {
+    const a = app();
+    a.run(`globalThis.__m = { ...editorEmptyModel(), options: { palette: 3 }, view: { zoom: 2 } };
+      globalThis.__c = editorReplaceDing(editorPlace(__m, "rim", "A3").value, "D3"); true`);
+    assert.strictEqual(a.get("__c.value.options.palette"), 3);
+    assert.deepStrictEqual(plain(a.get("__c.value.view")), { zoom: 2 });
+  });
+
+  test("empty stage: the stage never reaches the export, and a staged model cannot be saved", () => {
+    const a = app();
+    let n = 0;
+    for (const row of CORPUS.corpus.synthetic) {
+      if (!row.parse || !row.parse.ok || n >= 20) continue;
+      n += 1;
+      const same = a.get(`(() => {
+        const m = editorLoad(HPE.core.formatSeed(${js(row.parse.fields)}));
+        if (!m.ok) return true;
+        const staged = { ...m.value, stage: { kind: "standard", rim: ["A3"], inner: [], bottom: [] } };
+        return JSON.stringify(editorExport(m.value)) === JSON.stringify(editorExport(staged));
+      })()`);
+      assert.strictEqual(same, true, row.name);
+    }
+    assert.ok(n >= 10);
+    stagedStd(a);
+    assert.strictEqual(a.get(`editorCanSave(editorReplaceDing(editorPlace(__m, "rim", "B3").value, "D3").value)`), false);
+    assert.strictEqual(a.get(`editorCanSave(editorPanType(__m, "neotone").value)`), false);
+  });
+
+  test("empty stage: staging and the pan type of an empty model do not make it dirty", () => {
+    const a = app();
+    stagedStd(a);
+    assert.strictEqual(a.get(`editorIsDirty(__m, editorPlace(__m, "rim", "A3").value)`), false);
+    assert.strictEqual(a.get(`editorIsDirty(__m, editorPanType(__m, "neotone").value)`), false);
+    assert.strictEqual(a.get(`editorIsDirty(__m, editorPlace(editorReplaceDing(__m, "D3").value, "rim", "A3").value)`), true);
+  });
+
+  test("empty stage: the pan type of an empty model keeps the ding, clears the other kind's notes with a notice, and is a no-op on the same kind", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorReplaceDing(__m, "D3").value, "inner", "E4").value; true`);
+    assert.strictEqual(a.get(`editorPanType(__s, "standard").value === __s`), true);
+    const neo = put(a, `editorPanType(__s, "neotone")`);
+    assert.strictEqual(neo.ok, true);
+    assert.deepStrictEqual(neo.value.stage, { kind: "neotone", ding: "D3", main: [], mutant: [] });
+    assert.deepStrictEqual(neo.notice, { stageCleared: true });
+    assert.strictEqual(neo.value.options.profile.map.every((k) => k === null), true);
+    const back = put(a, `editorPanType(editorPanType(__s, "neotone").value, "standard")`);
+    assert.strictEqual(back.value.options.profile, undefined);
+    assert.deepStrictEqual(back.value.stage, { kind: "standard", ding: "D3", rim: [], inner: [], bottom: [] });
+    assert.strictEqual(put(a, `editorPanType(editorPanType(__m, "neotone").value, "standard")`).notice, undefined);
+  });
+
+  test("empty stage: the pan type of a non-empty model behaves as before", () => {
+    const a = app();
+    withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+    const neo = put(a, `editorPanType(__m, "neotone")`);
+    assert.strictEqual(neo.ok, true);
+    assert.ok(neo.value.options.profile.map.some((k) => k !== null));
+    assert.strictEqual("stage" in neo.value, false);
+    assert.strictEqual(a.get(`editorPanType(editorPanType(__m, "neotone").value, "standard").value.options.profile`), undefined);
+  });
+
+  test("empty stage: every primitive reads and writes the stage, and no say string reads undefined", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorPlace(editorPlace(__m, "rim", "A3").value, "rim", "B3").value, "inner", "E4").value; true`);
+    assert.deepStrictEqual(names(a, "__s", "rim"), ["A3", "B3"]);
+    assert.strictEqual(a.get("editorDingOf(__s)"), "");
+    assert.strictEqual(a.get(`editorNameAt(__s, { ring: "rim", i: 1 })`), "B3");
+    assert.strictEqual(a.get(`editorNameAt(__s, { ring: "ding", i: 0 })`), "");
+    assert.deepStrictEqual(names(a, "editorReplace(__s, 'rim', 0, 'C4').value", "rim"), ["C4", "B3"]);
+    assert.deepStrictEqual(names(a, "editorRemove(__s, 'rim', 0).value", "rim"), ["B3"]);
+    assert.deepStrictEqual(names(a, "editorSwapNames(__s, { ring: 'rim', i: 0 }, { ring: 'inner', i: 0 }).value", "inner"), ["A3"]);
+    assert.deepStrictEqual(names(a, "editorSwapNames(__s, { ring: 'rim', i: 0 }, { ring: 'inner', i: 0 }).value", "rim"), ["E4", "B3"]);
+    assert.strictEqual(a.get(`editorSwapSeats(__s, "rim", 0, 1).ok`), true);
+    assert.strictEqual(a.get(`editorSetAngle(__s, "inner", 0, 90, true).ok`), true);
+    assert.strictEqual(a.get(`editorRemove(__s, "rim", 5).ok`), false);
+    assert.strictEqual(a.get(`editorPlace(__s, "bottom", "A2").value.stage.bottom[0]`), "A2");
+    assert.strictEqual(a.get(`editorPlace(__s, "rim", "B3").ok`), false);
+    assert.strictEqual(a.get(`editorDingOf(editorReplaceDing(__s, "D3").value)`), "D3");
+    assert.strictEqual(a.get(`String(editorNameAt(__s, { ring: "ding", i: 0 })).includes("undefined")`), false);
+  });
+
+  test("empty stage: the rim cap counts staged notes", () => {
+    const a = app();
+    const full = a.get(`(() => { let m = editorEmptyModel(); const n = "A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5".split(" ");
+      for (const x of n) m = editorPlace(m, "rim", x).value; const r = editorPlace(m, "rim", "F5"); return { ok: r.ok, code: r.code }; })()`);
+    assert.deepStrictEqual(plain(full), { ok: false, code: "AREA_FULL" });
+  });
+
+  test("empty stage: a Neotone empty pan places, replaces, moves and removes through the same primitives", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__n = editorPanType(__m, "neotone").value;
+      globalThis.__s = editorAdd(editorAdd(editorAdd(__n, "rim", "A3").value, "rim", "B3").value, "rim", "C4").value; true`);
+    assert.deepStrictEqual(names(a, "__s", "rim"), ["A3", "B3", "C4"]);
+    assert.strictEqual(a.get(`editorAdd(__s, "inner", "E4").code`), "PROFILE_FULL");
+    assert.deepStrictEqual(names(a, `editorNeoMove(__s, 0, 2).value`, "rim"), ["C4", "B3", "A3"]);
+    assert.deepStrictEqual(names(a, `editorNeoMove(__s, 0, 5).value`, "rim"), ["A3", "B3", "C4"]);
+    assert.strictEqual(a.get(`editorNeoMove(__s, 0, 9).code`), "OWN_ROW");
+    a.run(`globalThis.__t = editorNeoPut(__s, 10, "B2").value; true`);
+    assert.deepStrictEqual(names(a, "__t", "bottom"), ["B2"]);
+    assert.strictEqual(a.get(`editorNeoSlotOf(__t, { ring: "bottom", i: 0 })`), 10);
+    assert.strictEqual(a.get(`editorNeoSlotOf(__t, { ring: "rim", i: 2 })`), 2);
+    assert.deepStrictEqual(names(a, `editorRemove(__t, "rim", 1).value`, "rim"), ["A3", "C4"]);
+    assert.deepStrictEqual(names(a, `editorRemove(__t, "bottom", 0).value`, "bottom"), []);
+    assert.deepStrictEqual(names(a, `editorReplace(__t, "bottom", 0, "C3").value`, "bottom"), ["C3"]);
+  });
+
+  test("empty stage: the empty Standard solve is the ghost geometry with only the ding and the staged notes", () => {
+    const a = app();
+    stagedStd(a);
+    const bare = plain(a.get(`(() => { const s = editorSolve(__m); return { ok: s.ok, ids: Object.keys(s.value.fields), rim: s.value.geom.rim, hasDing: s.value.hasDing }; })()`));
+    assert.deepStrictEqual([bare.ok, bare.ids, bare.hasDing], [true, ["0"], false]);
+    assert.ok(bare.rim > 0.7 && bare.rim < 0.8);
+    const lone = plain(a.get(`(() => { const m = editorPlace(editorPlace(editorReplaceDing(__m, "G3").value, "rim", "A4").value, "inner", "E4").value; const s = editorSolve(m); return { ids: Object.keys(s.value.fields).length, ding: s.value.fields["0"].slice(0, 3), hasDing: s.value.hasDing }; })()`));
+    assert.deepStrictEqual([lone.ids, lone.ding, lone.hasDing], [3, ["G", 3, 55], true]);
+  });
+
+  test("empty stage: the ghost hit table resolves the ding, a rim spot, an inner spot and the outside", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__g = editorSolve(editorPlace(editorPlace(__m, "inner", "E4").value, "bottom", "A2").value).value; true`);
+    const hit = (pt) => plain(a.get(`editorHitAt(__g, ${js(pt)}, true, __m)`));
+    const geom = plain(a.get("__g.geom"));
+    assert.deepStrictEqual(hit([0, 0]), { kind: "ding" });
+    assert.deepStrictEqual(hit([geom.rim, 0]), { kind: "spot", ring: "rim" });
+    assert.strictEqual(hit([0, 0.3]).ring, "inner");
+    assert.strictEqual(hit([2, 2]).kind, "off");
+  });
+});

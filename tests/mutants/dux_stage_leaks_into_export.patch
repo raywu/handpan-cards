@@ -1,0 +1,15 @@
+# kills: empty stage: the stage never reaches the export
+# suite: node --test --test-name-pattern empty.stage..the.stage.never.reaches.the.export tests/editor_shell.test.js
+# fault: editorBare keeps the stage, so it reaches the export and the dirty check.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13450,7 +13450,7 @@
+ const editorCanSave = (m) => !editorIsEmpty(m);
+ const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
+ const editorBare = (m) => {
+-  const { view, stage, ...rest } = m;
++  const { view, ...rest } = m;
+   const o = { ...rest.options };
+   if (editorIsEmpty(m)) delete o.profile;
+   if (o.anchor === "one") delete o.anchor;
