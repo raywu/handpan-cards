@@ -1,0 +1,15 @@
+# kills: PF 375x667: the Hint block is an overlay on the whole controls area, nothing moves when it toggles, and a second tap or Escape closes it
+# suite: node --test --test-name-pattern ^PF.375x667..the.Hint.block.is.an.overlay tests/editor_e2e.test.js
+# fault: The hint block is back in the flow, so opening it pushes the tabs down.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -930,7 +930,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}
+ #editor-empty{position:absolute; inset:0; margin:0; display:flex; align-items:center; justify-content:center; text-align:center;
+   font:500 14px/1.4 "Nunito Sans"; padding:var(--sp-3)}
+-#editor-areas{position:absolute; z-index:4; box-sizing:border-box; display:flex; flex-direction:column; gap:var(--sp-2); overflow-y:auto; overscroll-behavior:contain;
++#editor-areas{position:static; z-index:4; box-sizing:border-box; display:flex; flex-direction:column; gap:var(--sp-2); overflow-y:auto; overscroll-behavior:contain;
+   padding:var(--sp-3); background:#F6F4ED; color:#242424; border:1px solid #8A847B; border-radius:8px}
+ #editor-areas[hidden]{display:none}
+ #editor-counts{display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); font:500 13px/20px "Nunito Sans"}

@@ -1,0 +1,14 @@
+# kills: PF 375x667: selecting a tab shows its panel from the top of the region, and Scale rests at its end only when first shown
+# suite: node --test --test-name-pattern ^PF.375x667..selecting.a.tab.shows.its.panel.from.the.top tests/editor_e2e.test.js
+# fault: Switching tabs keeps the region's scroll position, so Layout opens part-way down.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13818,7 +13818,6 @@ function editorSetTab(tab, focus) {
+   editorCloseMenu();
+   s.tab = tab;
+   editorRenderTabs();
+-  editorEl("editor-region").scrollTop = 0;
+   if (focus) editorEl("editor-tab-" + tab).focus();
+   return true;
+ }
