@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15710,7 +15710,7 @@ function editorPanType(m, kind) {
-   if (!profile) return editorRefusal("Neotone");
+@@ -13552,7 +13552,7 @@ function editorPanType(m, kind) {
+   if (!profile) return editorRefusal(t("editor.neotone"));
    const hadPins = next.pins.length > 0;
    next.options.profile = profile;
 -  if (next.options.anchor === "one") delete next.options.anchor;
