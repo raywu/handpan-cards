@@ -238,6 +238,8 @@
   "backup.file_hidden": "Escalas iniciales ocultas (solo nota, sin enlace): {names}",
   "editor.hint.place": "Toca una nota para sostenerla y luego toca un anillo del pan, o arrástrala al pan.",
   "editor.hint.ding": "Suelta o toca una nota en el ding para cambiarla por la tónica.",
+  "editor.hint.toggle": "Ayuda",
+  "editor.hint.toggle.aria": "Ayuda y recuento de notas",
   "editor.tabs.aria": "Secciones del editor",
   "editor.accidentals.aria": "Nombres de notas",
   "editor.sharps": "Sharps",

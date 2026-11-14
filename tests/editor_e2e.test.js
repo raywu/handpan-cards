@@ -49,6 +49,7 @@ function run() {
       const need = /^#editor-(redo|remove|reset|delete)\b/.test(selector) ? ["editor-menu", "editor-more"]
         : /^#editor-(palette|swatches|anchor-)/.test(selector) ? ["editor-panel-layout", "editor-tab-layout"] : null;
       if (need && await b.eval(`const e = document.getElementById(${JSON.stringify(need[0])}); return !!e && e.hidden;`)) await rawClick("#" + need[1]);
+      await b.eval(`const e = document.querySelector(${JSON.stringify(selector)}); if (e && e.closest && e.closest("#editor-region") && !e.closest("#editor-tabs")) e.scrollIntoView({ block: "nearest" }); return true;`);
       return rawClick(selector, ...rest);
     };
   });
@@ -92,7 +93,7 @@ function run() {
     editorRender(); return editorSession.history.present.pins.length;`);
 
   describe("D13 layout", () => {
-    const IDS = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
+    const IDS = ["editor-back", "editor-line", "editor-pan", "editor-hint-toggle", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
       "editor-save", "editor-tray"];
 
     test("375x667: header, line, pan, area slot, toolbar and tray slot are all reachable with no scroll", async () => {
@@ -111,8 +112,9 @@ function run() {
       for (const id of ["editor-back", "editor-undo", "editor-more", "editor-save", "editor-tab-scale", "editor-tab-layout"]) {
         assert.ok(r.boxes[id].h >= 44 && r.boxes[id].w >= 44, id + " is a 44px target: " + JSON.stringify(r.boxes[id]));
       }
-      const order = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-tabs", "editor-panels", "editor-undo"].map((id) => r.boxes[id].top);
-      assert.deepStrictEqual([...order].sort((x, y) => x - y), order, "header, line, pan, counts, tabs, panel, toolbar read top to bottom");
+      const order = ["editor-back", "editor-line", "editor-pan", "editor-hint-toggle", "editor-tabs", "editor-undo"].map((id) => r.boxes[id].top);
+      assert.deepStrictEqual([...order].sort((x, y) => x - y), order, "header, line, pan, status row, tabs, toolbar read top to bottom (the panels scroll under the pinned strip)");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "the counts and hint start collapsed");
     });
 
     test("1280x800 renders clean: nothing overflows and every part is in view", async () => {
@@ -1713,7 +1715,7 @@ function run() {
           await typeLine(SCALE);
           const r = await b.eval(`const ed = document.getElementById("editor"); const svg = document.querySelector(".editor-panbox svg").getBoundingClientRect();
             const cs = getComputedStyle(ed); const col = ed.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-            const below = [...ed.querySelectorAll("#editor-areas, .editor-toolbar, #editor-tray")].map((e) => e.getBoundingClientRect().top);
+            const below = [...ed.querySelectorAll("#editor-tabs, .editor-toolbar, #editor-tray")].map((e) => e.getBoundingClientRect().top);
             const panBox = document.querySelector(".editor-panbox").getBoundingClientRect();
             return { size: Math.min(svg.width, svg.height), top: Math.min(...below), panBottom: svg.bottom, want: Math.min(col, panBox.width, panBox.height), scrollOk: document.documentElement.scrollWidth <= document.documentElement.clientWidth, edw: ed.getBoundingClientRect().width };`);
           assert.ok(r.top >= r.panBottom - 1, w + ": controls start at " + r.top + " under the pan bottom " + r.panBottom);
@@ -1983,8 +1985,11 @@ function run() {
             await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
             await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
             const bad = await b.eval(`const out = [];
-              for (const btn of document.querySelectorAll("#editor-tabs button, #editor .editor-toolbar button")) {
+              for (const btn of document.querySelectorAll("#editor-tabs button, #editor .editor-toolbar button, #editor-hint-toggle")) {
                 if (!btn.offsetParent) continue;
+                if (btn.id === "editor-hint-toggle" && (btn.getBoundingClientRect().height < 44 || btn.getBoundingClientRect().width < 44)) out.push("hint toggle under 44px");
+                const row = document.querySelector("#editor .editor-statusrow").getBoundingClientRect();
+                if (btn.id === "editor-hint-toggle" && (btn.getBoundingClientRect().right > row.right + 0.5 || document.documentElement.scrollWidth > innerWidth)) out.push("hint toggle overflows");
                 const box = btn.getBoundingClientRect();
                 const range = document.createRange(); range.selectNodeContents(btn);
                 for (const r of range.getClientRects()) {
@@ -2848,6 +2853,8 @@ function run() {
       await setup(SCALE);
       const hint = () => b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent + ":" + (e.offsetParent !== null));`);
       const want = ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.:true", "Drop or tap a note on the ding to swap it with the root.:true"];
+      assert.ok((await hint()).every((x) => x.endsWith(":false")), "collapsed until the Hint button is pressed");
+      await b.click("#editor-hint-toggle");
       assert.deepStrictEqual(await hint(), want);
       await b.click("#editor-tab-layout");
       assert.deepStrictEqual(await hint(), want);
@@ -2966,6 +2973,7 @@ function run() {
         assert.strictEqual(await tabNow(), "layout", "tab strip");
         await swipeBy("#editor-panel-layout", 120);
         assert.strictEqual(await tabNow(), "scale", "Layout panel");
+        await b.click("#editor-hint-toggle");
         await swipeBy("#editor-counts", -120);
         assert.strictEqual(await tabNow(), "layout", "counts row");
         await b.eval(`editorSetTab("scale"); return true;`);
@@ -3488,7 +3496,8 @@ function run() {
         await refuse();
         const r = await b.eval(`const pb = document.querySelector("#editor .editor-panbox"); const st = document.getElementById("editor-status");
           const de = document.documentElement, ed = document.getElementById("editor");
-          return { order: pb.nextElementSibling === st && st.nextElementSibling.id === "editor-areas", gap: st.getBoundingClientRect().top - pb.getBoundingClientRect().bottom,
+          const row = st.parentNode;
+          return { order: pb.nextElementSibling === row && row.className === "editor-statusrow" && row.nextElementSibling.id === "editor-areas", gap: st.getBoundingClientRect().top - pb.getBoundingClientRect().bottom,
             inView: st.getBoundingClientRect().top >= 0 && st.getBoundingClientRect().bottom <= ${h} && st.getBoundingClientRect().right <= ${w},
             page: de.scrollHeight === ${h} && de.scrollWidth === ${w}, panel: ed.scrollHeight <= ed.clientHeight && ed.scrollWidth <= ed.clientWidth };`);
         assert.strictEqual(r.order, true, w + " DOM order");
@@ -3500,6 +3509,7 @@ function run() {
     test("EMP: landscape 1280x800 puts the status in the right column between the line and the counts", async () => {
       await setup(FULL, 1280, 800);
       await refuse();
+      await b.click("#editor-hint-toggle");
       const r = await b.eval(`const q = (s) => document.querySelector(s).getBoundingClientRect(); const pan = q("#editor .editor-panbox"), st = q("#editor-status");
         return { right: st.left >= pan.right - 1, belowLine: st.top >= q("#editor-line").bottom - 1, aboveCounts: st.bottom <= q("#editor-areas").top + 1, aboveTabs: st.bottom <= q("#editor-tabs").top + 1 };`);
       assert.deepStrictEqual(r, { right: true, belowLine: true, aboveCounts: true, aboveTabs: true });
@@ -3511,7 +3521,7 @@ function run() {
       const [bg, color, size] = await style("#editor-status", ["backgroundColor", "color", "fontSize"]);
       assert.deepStrictEqual([bg, color, size], ["rgb(36, 36, 36)", "rgb(255, 255, 255)", "14px"]);
       assert.deepStrictEqual(await style("#editor-status", ["cursor", "borderTopLeftRadius"]), ["auto", "8px"]);
-      const wide = await b.eval(`const q = document.getElementById("editor-status").getBoundingClientRect(), e = document.getElementById("editor").getBoundingClientRect(); return q.width / e.width > 0.8;`);
+      const wide = await b.eval(`const q = document.getElementById("editor-status").getBoundingClientRect(), e = document.querySelector("#editor .editor-statusrow").getBoundingClientRect(); return q.width / e.width > 0.8;`);
       assert.strictEqual(wide, true, "full-width banner");
       await b.eval(`editorSession.error = ""; editorSession.held = null; editorSession.say = "Pins reset."; editorSession.plainSay = "Pins reset."; editorRender(); return true;`);
       assert.strictEqual((await style("#editor-status", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "a notice has no banner");
@@ -3614,6 +3624,147 @@ function run() {
       assert.strictEqual(r.rows.length, 2 * pf.EDITOR_CELLS.length * 2, "lang x cell x profile");
       assert.deepStrictEqual(r.failures, []);
       assert.ok(r.panelH > 100 && r.panelH < 400, "the panel height measurement is a real number: " + r.panelH);
+    });
+  });
+
+  describe("Editor pan size (TRI-59 pan lane)", () => {
+    const rects = (w, h) => b.eval(`const q = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: r.width, h: r.height }; };
+      const de = document.documentElement, ed = document.getElementById("editor"), rg = document.getElementById("editor-region");
+      return { svg: q("#editor-pan svg"), box: q(".editor-panbox"), bar: q(".editor-toolbar"), tray: q("#editor-tray"), name: q("#editor-name"), tabs: q("#editor-tabs"),
+        page: de.scrollHeight === ${h} && de.scrollWidth === ${w}, panel: ed.scrollHeight <= ed.clientHeight && ed.scrollWidth <= ed.clientWidth,
+        grid: getComputedStyle(ed).display === "grid", region: rg ? { top: rg.getBoundingClientRect().top, h: rg.clientHeight, sh: rg.scrollHeight, st: rg.scrollTop, oy: getComputedStyle(rg).overflowY } : null };`);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const open = async (w, h) => { await fresh(w, h); await openBuiltin(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
+
+    // Targets: the plan's S1 formula with the option B sticky strip (tray beats the 200 floor, 120 is the hard floor),
+    // derived by rect probe on this lane's build. 0.95 x target is the floor each test enforces.
+    const STACKED = [[390, 844, 362], [430, 932, 402], [375, 667, 259], [360, 640, 232], [375, 548, 140], [320, 568, 160], [768, 1024, 480]];
+    for (const [w, h, target] of STACKED) {
+      test(`P0 ${w}x${h}: the drawn pan is at least 0.95 x ${target}px, the page never scrolls and the toolbar is in view`, async () => {
+        await open(w, h);
+        const r = await rects(w, h);
+        assert.ok(Math.min(r.svg.w, r.svg.h) >= 0.95 * target, `${w}x${h}: drawn pan ${r.svg.w}x${r.svg.h}, wanted >= ${0.95 * target}`);
+        assert.ok(r.page, "no page scroll");
+        assert.ok(r.bar.top >= 0 && r.bar.bottom <= h, "toolbar in view " + JSON.stringify(r.bar));
+      });
+    }
+
+    test("P0 guards: 1280x800 keeps its grid pan (574) and 375x360, 360x330 and 540x400 stay stacked with a pan of at least 120", async () => {
+      await open(1280, 800);
+      let r = await rects(1280, 800);
+      assert.ok(r.grid && Math.min(r.svg.w, r.svg.h) >= 0.95 * 574 && Math.min(r.svg.w, r.svg.h) <= 574 + 2, "1280x800 grid pan " + r.svg.h);
+      for (const [w, h] of [[375, 360], [360, 330], [540, 400]]) {
+        await open(w, h);
+        r = await rects(w, h);
+        assert.strictEqual(r.grid, false, `${w}x${h} stays stacked`);
+        assert.ok(r.svg.h >= 120 - 1, `${w}x${h} pan ${r.svg.h}`);
+        assert.ok(r.page && r.bar.top >= 0 && r.bar.bottom <= h, `${w}x${h} toolbar in view, no page scroll`);
+      }
+    });
+
+    for (const [w, h, target] of [[926, 428, 347], [844, 390, 309], [667, 375, 294], [568, 320, 206]]) {
+      test(`P0 phone landscape ${w}x${h}: the pan does not collapse (>= 0.95 x ${target}), the grid is on, toolbar in view, controls scroll in their own region`, async () => {
+        await open(w, h);
+        const r = await rects(w, h);
+        assert.ok(r.grid, "two-column grid");
+        assert.ok(r.svg.h >= 0.95 * target && r.svg.h >= 200, `drawn pan ${r.svg.h}`);
+        assert.ok(r.page, "no page scroll");
+        assert.ok(r.bar.top >= 0 && r.bar.bottom <= h && r.tabs.top >= 0 && r.tabs.bottom <= h, "toolbar and tabs in view");
+        assert.ok(r.region && r.region.oy === "auto" && r.region.h > 0, "the region is a scroll box: " + JSON.stringify(r.region));
+        assert.ok(r.svg.right <= r.tabs.left + 1 || r.svg.left >= r.tabs.right - 1, "the pan and the controls do not overlap");
+      });
+    }
+
+    test("P0 landscape phone: no magnification when a note is dragged (the pan already reaches the editor bottom)", async () => {
+      await open(844, 390);
+      const before = await rects(844, 390);
+      assert.ok(before.svg.h >= 0.95 * 309);
+      const mag = await b.eval(`return editorDragMeasure();`);
+      assert.ok(mag <= 1.02, "magnification " + mag);
+    });
+
+    test("P0 region: the controls scroll inside #editor-region, the tab strip stays pinned, the region rests at its end, and the page does not scroll", async () => {
+      await open(375, 667);
+      const r = await rects(375, 667);
+      assert.ok(r.region && r.region.oy === "auto" && r.region.sh > r.region.h, "375x667 region overflows: " + JSON.stringify(r.region));
+      assert.ok(Math.abs(r.region.st - (r.region.sh - r.region.h)) <= 2, "rests at its end: " + JSON.stringify(r.region));
+      assert.ok(r.tray.bottom <= r.bar.top + 1 && r.tray.top >= r.region.top, "the tray is in view at rest");
+      assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor-tabs")).position;`), "sticky");
+      assert.ok(Math.abs(r.tabs.top - r.region.top) <= 1, "the strip is pinned at the region top");
+      assert.ok(r.page && r.panel, "neither the page nor #editor scrolls");
+      await b.click("#editor-tab-layout");
+      await pause(100);
+      const l = await rects(375, 667);
+      assert.ok(Math.abs(l.region.st - (l.region.sh - l.region.h)) <= 2 || l.region.sh <= l.region.h, "a tab switch re-pins the region to its end");
+    });
+
+    test("P0 hint: counts and hint sit in a collapsed block under the status, a 44px Hint button with aria-expanded toggles it in place, and the pan does not move", async () => {
+      await open(375, 667);
+      const st = () => b.eval(`const bt = document.getElementById("editor-hint-toggle"), a = document.getElementById("editor-areas"), r = bt.getBoundingClientRect(), s = document.getElementById("editor-status").getBoundingClientRect();
+        return { exp: bt.getAttribute("aria-expanded"), ctl: bt.getAttribute("aria-controls"), hidden: a.hidden, h: r.height, w: r.width, sameRow: Math.abs((r.top + r.bottom) / 2 - (s.top + s.bottom) / 2) < 14 && r.left >= s.left,
+          pan: document.querySelector("#editor-pan svg").getBoundingClientRect().height, label: bt.textContent.trim(), inRegion: document.getElementById("editor-region").contains(a) };`);
+      const a = await st();
+      assert.deepStrictEqual([a.exp, a.ctl, a.hidden, a.inRegion], ["false", "editor-areas", true, false]);
+      assert.ok(a.h >= 44 && a.w >= 44 && a.sameRow && a.label.length > 0, JSON.stringify(a));
+      await b.click("#editor-hint-toggle");
+      const o = await st();
+      assert.deepStrictEqual([o.exp, o.hidden], ["true", false]);
+      assert.ok(Math.abs(o.pan - a.pan) < 1, "the pan keeps its size");
+      assert.ok(await b.eval(`const r = document.getElementById("editor-areas").getBoundingClientRect(); return r.top >= document.getElementById("editor-status").getBoundingClientRect().bottom - 1 && r.bottom <= document.getElementById("editor-region").getBoundingClientRect().top + 1;`), "the block opens between the status and the region");
+    });
+
+    // The Name field: a real tap focuses it at a tall viewport, then the soft keyboard shrinks the viewport (Android resize), as on the phone.
+    // At the short size itself the region is a few px tall, so Name cannot be tapped there unfocused (plan R4 H1: pan floor 120 beats tray-in-view).
+    for (const [w, h, kh] of [[375, 667, 360], [360, 640, 330]]) {
+      test(`P0 name focus ${w}x${kh}: focused by a real tap, Name is fully in view with the toolbar; unfocused the pan is at least 120 and the toolbar stays in view`, async () => {
+        await open(w, h);
+        await b.eval(`document.getElementById("editor-region").scrollTop = 0; return true;`);
+        await b.click("#editor-name");
+        assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-name");
+        await b.setViewport(w, kh, true);
+        await pause(500);
+        const f = await rects(w, kh);
+        assert.ok(f.name.top >= 0 && f.name.bottom <= kh && f.name.h >= 44, `${w}x${kh} Name in view: ` + JSON.stringify(f.name));
+        assert.ok(f.bar.top >= f.name.bottom - 1 && f.bar.bottom <= kh, "toolbar in view below Name");
+        assert.ok(await b.eval(`const t = document.getElementById("editor-tabs").getBoundingClientRect(), n = document.getElementById("editor-name").getBoundingClientRect(); return n.top >= t.bottom - 1;`), "Name is not covered by the pinned tab strip");
+        await b.eval(`document.activeElement.blur(); return true;`);
+        await pause(300);
+        const u = await rects(w, kh);
+        assert.ok(u.svg.h >= 119 && u.bar.top >= 0 && u.bar.bottom <= kh && u.page, `${w}x${kh} unfocused pan ${u.svg.h}`);
+        assert.ok(u.svg.h > f.svg.h, "focus released pan room to Name");
+      });
+    }
+
+    test("P0 name focus 844x390 (landscape phone): focusing Name leaves the pan unchanged", async () => {
+      await open(844, 390);
+      const a = await rects(844, 390);
+      await b.click("#editor-name");
+      if (await b.eval(`return document.activeElement.id !== "editor-name";`)) await b.eval(`document.getElementById("editor-name").focus(); return true;`);
+      await pause(300);
+      const f = await rects(844, 390);
+      assert.ok(Math.abs(f.svg.h - a.svg.h) < 1, `pan ${a.svg.h} -> ${f.svg.h}`);
+    });
+
+    test("P0 Tab at 375x360: Tab from the tab strip lands inside the region or the toolbar and the page never scrolls", async () => {
+      await open(375, 360);
+      await b.eval(`document.getElementById("editor-tab-scale").focus(); return true;`);
+      await b.key("Tab", "Tab", 9);
+      await pause(200);
+      const r = await b.eval(`const a = document.activeElement; return { id: a.id, inEditor: document.getElementById("editor").contains(a), page: document.documentElement.scrollTop === 0 && document.getElementById("editor").scrollTop === 0 };`);
+      assert.ok(r.inEditor && r.page, JSON.stringify(r));
+    });
+
+    test("P0 editorWireSwipe: a region scroll cancels the tab swipe (the scrollTop check points at the region)", async () => {
+      const src = fs.readFileSync(path.join(REPO, "index.html"), "utf8");
+      const m = src.slice(src.indexOf("function editorWireSwipe()"), src.indexOf("function editorDraftMoved"));
+      assert.ok(/const body = editorEl\("editor-region"\)/.test(m), "the swipe's scroll reference is the region");
+    });
+
+    test("P0 drag keeps E3: the drag magnification at 390x844 (a pan as wide as the column) stays inside the viewport width", async () => {
+      await open(390, 844);
+      const rest = (await rects(390, 844)).svg.w;
+      const mag = await b.eval(`return editorDragMeasure();`);
+      assert.ok(mag >= 1 && mag * rest * 250 / 278 <= 390 - 16 + 1, `mag ${mag} stays inside the viewport width`);
     });
   });
 

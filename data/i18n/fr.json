@@ -238,6 +238,8 @@
   "backup.file_hidden": "Gammes d’origine masquées (note seulement, sans lien) : {names}",
   "editor.hint.place": "Touchez une note pour la tenir, puis touchez un anneau du pan, ou faites-la glisser sur le pan.",
   "editor.hint.ding": "Déposez ou touchez une note sur le ding pour l’échanger avec la fondamentale.",
+  "editor.hint.toggle": "Aide",
+  "editor.hint.toggle.aria": "Aide et nombre de notes",
   "editor.tabs.aria": "Sections de l’éditeur",
   "editor.accidentals.aria": "Noms des notes",
   "editor.sharps": "Sharps",

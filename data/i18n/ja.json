@@ -235,6 +235,8 @@
   "backup.file_hidden": "非表示の標準スケール（メモのみ、リンクなし）: {names}",
   "editor.hint.place": "音をタップして持ち、パンのリングをタップするか、パンへドラッグします。",
   "editor.hint.ding": "ディングに音をドロップまたはタップすると、ルートと入れ替わります。",
+  "editor.hint.toggle": "ヒント",
+  "editor.hint.toggle.aria": "ヒントと音の数",
   "editor.tabs.aria": "エディターの項目",
   "editor.accidentals.aria": "音名",
   "editor.sharps": "Sharps",

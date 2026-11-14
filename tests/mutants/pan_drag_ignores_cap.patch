@@ -1,0 +1,15 @@
+# kills: P0 drag keeps E3: the drag magnification at 390x844 (a pan as wide as the column) stays inside the viewport width
+# suite: node --test --test-name-pattern ^P0.drag.keeps.E3 tests/editor_e2e.test.js
+# fault: The drag magnification ignores the viewport width term, so a pan as wide as the column grows past the screen edge.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14262,7 +14262,7 @@
+ const EDITOR_MAG_MAX = 1.35, EDITOR_MAG_PAD = 14, EDITOR_MAG_EDGE = 8;
+ function editorMagnify(panRect, freedPx, viewport) {
+   if (!(panRect.height > 0) || !(panRect.width > 0)) return 1;
+-  return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
++  return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height));
+ }
+ function editorStatusBelow() {
+   const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();
