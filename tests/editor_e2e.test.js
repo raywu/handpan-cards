@@ -4065,6 +4065,38 @@ function run() {
       assert.ok(await b.eval(`const r = document.getElementById("editor-areas").getBoundingClientRect(); return r.top >= document.getElementById("editor-status").getBoundingClientRect().bottom - 1 && r.bottom >= document.getElementById("editor-region").getBoundingClientRect().bottom - 1 && getComputedStyle(document.getElementById("editor-areas")).position === "absolute";`), "the block opens under the status as an overlay spanning the region");
     });
 
+    test("QA2 hint 390x844: the info button shares the name field's right edge and sits inside the strip; the open overlay is clear of the button and has an x at its top right that closes it", async () => {
+      await open(390, 844);
+      const geo = () => b.eval(`const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
+        const bt = document.getElementById("editor-hint-toggle"), x = document.getElementById("editor-hint-close"), a = document.getElementById("editor-areas");
+        const texts = []; if (!a.hidden) { const w = document.createTreeWalker(a, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) { if (!n.textContent.trim()) continue; const rg = document.createRange(); rg.selectNodeContents(n); for (const q of rg.getClientRects()) texts.push({ l: q.left, t: q.top, r: q.right, b: q.bottom }); } }
+        return { bt: R(bt), btVis: getComputedStyle(bt).visibility !== "hidden" && !bt.hidden && bt.getClientRects().length > 0, x: x ? R(x) : null, xVis: !!x && x.getClientRects().length > 0, a: R(a), name: R(document.getElementById("editor-name")), tabs: R(document.getElementById("editor-tabs")), texts };`);
+      const hit = (p, q) => p.l < q.r && p.r > q.l && p.t < q.b && p.b > q.t;
+      const c = await geo();
+      assert.ok(Math.abs(c.bt.r - c.name.r) <= 0.5, "button right edge == name right edge: " + JSON.stringify([c.bt, c.name]));
+      assert.ok(c.bt.b <= c.tabs.b + 0.5 && c.bt.t >= c.tabs.t - 0.5, "button within the strip: " + JSON.stringify([c.bt, c.tabs]));
+      assert.ok(await b.eval(`return Math.abs(document.querySelector("#editor-hint-toggle .ico").getBoundingClientRect().right - document.getElementById("editor-name").getBoundingClientRect().right) <= 0.5;`), "the circle itself lines up with the name field's right edge");
+      assert.ok(c.bt.w >= 44 && c.bt.h >= 40, "button keeps a usable target: " + JSON.stringify(c.bt));
+      await b.click("#editor-hint-toggle");
+      const o = await geo();
+      assert.ok(o.xVis && o.x, "the overlay has an x button");
+      assert.ok(!o.btVis || o.bt.l >= o.a.r || o.bt.r <= o.a.l || o.bt.b <= o.a.t || o.bt.t >= o.a.b, "the info button is not shown over the overlay");
+      assert.ok(o.x.r <= o.a.r + 0.5 && o.x.t >= o.a.t - 0.5 && o.x.r >= o.a.r - 24 && o.x.t <= o.a.t + 24, "x sits at the overlay top right: " + JSON.stringify([o.x, o.a]));
+      assert.ok(o.texts.length > 0);
+      for (const t of o.texts) {
+        assert.ok(!hit(t, o.x), "no overlay text under the x: " + JSON.stringify([t, o.x]));
+        if (o.btVis) assert.ok(!hit(t, o.bt), "no overlay text under the info button");
+      }
+      assert.ok(await b.eval(`const x = document.getElementById("editor-hint-close"), p = x.getBoundingClientRect(); return !!x.getAttribute("aria-label") && document.elementFromPoint(p.left + p.width / 2, p.top + p.height / 2).closest("#editor-hint-close") === x;`), "x is labelled and tappable");
+      await b.click("#editor-hint-close");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "x closes");
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "focus returns to the info button");
+      await b.click("#editor-hint-toggle");
+      await b.key("Escape", "Escape", 27);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "Escape closes");
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "Escape returns focus to the info button");
+    });
+
     for (const [w, h] of [[390, 844], [390, 664]]) {
       test(`SC ${w}x${h}: the first row of the Scale tab is fully visible under the strip, and the Hint info button takes no layout height`, async () => {
         await open(w, h);
@@ -4081,10 +4113,10 @@ function run() {
         assert.ok(Math.abs(r.top - r.tabs.top) <= 1, "the info button sits in the tab strip");
         await b.click("#editor-hint-toggle");
         const o = await read();
-        assert.deepStrictEqual([o.exp, o.hidden, o.onTop], ["true", false, true], "open, and the button stays reachable above the overlay");
+        assert.deepStrictEqual([o.exp, o.hidden, o.onTop], ["true", false, false], "open, and the info button gives way to the overlay's x");
         for (const k of ["name", "tabs", "region", "tray", "status", "pan", "bar"]) assert.deepStrictEqual(o[k], r[k], `${k} does not move when the hint opens`);
-        await b.click("#editor-hint-toggle");
-        assert.strictEqual((await read()).hidden, true, "a second tap closes");
+        await b.click("#editor-hint-close");
+        assert.strictEqual((await read()).hidden, true, "the x closes");
         await b.click("#editor-hint-toggle");
         await b.key("Escape", "Escape", 27);
         assert.strictEqual((await read()).hidden, true, "Escape closes");

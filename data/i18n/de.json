@@ -245,6 +245,7 @@
   "editor.hint.ding": "Lege eine Note auf dem Ding ab oder tippe sie dort an, um sie mit dem Grundton zu tauschen.",
   "editor.hint.toggle": "Hilfe",
   "editor.hint.toggle.aria": "Hilfe und Notenanzahl",
+  "editor.hint.close": "Hilfe schließen",
   "editor.tabs.aria": "Bereiche des Editors",
   "editor.accidentals.aria": "Notennamen",
   "editor.sharps": "Kreuze",

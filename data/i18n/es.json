@@ -245,6 +245,7 @@
   "editor.hint.ding": "Suelta o toca una nota en el ding para cambiarla por la tónica.",
   "editor.hint.toggle": "Ayuda",
   "editor.hint.toggle.aria": "Ayuda y recuento de notas",
+  "editor.hint.close": "Cerrar la ayuda",
   "editor.tabs.aria": "Secciones del editor",
   "editor.accidentals.aria": "Nombres de notas",
   "editor.sharps": "Sostenidos",

@@ -245,6 +245,7 @@
   "editor.hint.ding": "Rilascia o tocca una nota sul ding per scambiarla con la fondamentale.",
   "editor.hint.toggle": "Aiuto",
   "editor.hint.toggle.aria": "Aiuto e conteggio delle note",
+  "editor.hint.close": "Chiudi l'aiuto",
   "editor.tabs.aria": "Sezioni dell’editor",
   "editor.accidentals.aria": "Nomi delle note",
   "editor.sharps": "Diesis",

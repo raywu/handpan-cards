@@ -1,0 +1,15 @@
+# kills: QA2 hint 390x844: the info button shares the name field's right edge and sits inside the strip; the open overlay is clear of the button and has an x at its top right that closes it
+# suite: node --test --test-name-pattern QA2.hint tests/editor_e2e.test.js
+# fault: The info button stays visible over the open overlay.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -918,7 +918,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-hint-close{position:absolute; z-index:6; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+   display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#242424; font:500 28px/1 "Nunito Sans"}
+ #editor-hint-toggle .ico{display:flex; align-items:center; justify-content:center; width:24px; height:24px; box-sizing:border-box; border:2px solid currentColor; border-radius:50%; font:700 14px/1 Bitter, serif; font-style:italic}
+-#editor-hint-toggle[aria-expanded="true"]{visibility:hidden}
++#editor-hint-toggle[aria-expanded="true"]{visibility:visible}
+ #editor.dragging .editor-statusrow{transform:translateY(var(--ed-status-shift,0px))}
+ #editor.dragging #editor-hint-toggle{visibility:hidden}
+ #editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:4px 12px}
