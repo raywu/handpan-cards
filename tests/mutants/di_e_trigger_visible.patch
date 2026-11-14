@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:visible}
  #scale-sheet.onepanel #editor{width:100%; max-width:520px; height:100dvh; margin:0 auto; box-sizing:border-box;
    padding:var(--sp-2) var(--sp-3) max(var(--sp-2), env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:var(--sp-1);
-   background:#F6F4ED; color:#242424; overflow:hidden; position:relative; container-type:inline-size; --ed-row:56px; --ed-k:calc(416px + var(--ed-row))}
+   background:#F6F4ED; color:#242424; overflow:hidden; position:relative; container-type:inline-size; --ed-row:48px; --ed-k:calc(416px + var(--ed-row))}
