@@ -220,7 +220,7 @@
   "editor.full.rim": "Der Rand ist mit {max} Noten voll. Entferne zuerst eine.",
   "editor.full.inner": "Der Cyclops ist mit {max} Noten voll. Entferne zuerst eine.",
   "editor.full.bottom": "Der Boden ist mit {max} Noten voll. Entferne zuerst eine.",
-  "editor.crowded": "Zu eng: Beschriftungen würden mit {pt} pt gedruckt, unter {floor} pt. Entferne zuerst eine Note.",
+  "editor.crowded": "Zu eng: Schrift nur {pt} pt, unter {floor} pt. Entferne erst eine Note.",
   "editor.reset.inner": "Abstände am Cyclops zurücksetzen",
   "editor.reset.bottom": "Abstände am Boden zurücksetzen",
   "editor.reset_both": "Abstände zurücksetzen ({n})",
