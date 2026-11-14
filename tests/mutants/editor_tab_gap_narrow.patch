@@ -1,5 +1,5 @@
 # kills: QA1 390x844: at least 12px between the tab strip and the first row
-# suite: node --test --test-name-pattern QA1.390x844.at.least.12px tests/editor_e2e.test.js
+# suite: node --test --test-name-pattern QA1.390x844..at.least.12px tests/editor_e2e.test.js
 # The strip-to-first-row gap falls back to the 4px sp-1 step.
 diff --git a/index.html b/index.html
 --- a/index.html
