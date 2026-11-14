@@ -1,5 +1,5 @@
-# kills: empty stage: the pan type of an empty model keeps the ding
-# suite: node --test --test-name-pattern empty.stage..the.pan.type.of.an.empty.model.keeps.the.ding tests/editor_shell.test.js
+# kills: empty stage: the pan type of an empty model keeps the ding, clears the other kind's notes with a notice, and is a no-op on the same kind
+# suite: node --test --test-name-pattern empty.stage..the.pan.type.of.an.empty.model.keeps.the.ding..clears.the.other.kind.s.notes.with.a.notice..and.is.a.no.op.on.the.same.kind tests/editor_shell.test.js
 # fault: A Standard stage keeps the Neotone profile the previous kind left in the options, so it would reach the export.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,5 +1,5 @@
-# kills: empty stage: Neotone stages main notes densely
-# suite: node --test --test-name-pattern empty.stage..Neotone.stages.main.notes.densely tests/editor_shell.test.js
+# kills: empty stage: Neotone stages main notes densely, a mutant waits for its main field, and the commit equals the engine's own build
+# suite: node --test --test-name-pattern empty.stage..Neotone.stages.main.notes.densely..a.mutant.waits.for.its.main.field..and.the.commit.equals.the.engine.s.own.build tests/editor_shell.test.js
 # fault: A Neotone main drop on a far field is staged at that field, leaving a gap in the main row.
 diff --git a/index.html b/index.html
 --- a/index.html

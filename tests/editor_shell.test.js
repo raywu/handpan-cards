@@ -1403,6 +1403,16 @@ describe("empty-state staging", () => {
     assert.deepStrictEqual(plain(full), { ok: false, code: "AREA_FULL" });
   });
 
+  test("empty stage: a staged angle edit leaves the model unchanged, and a bottom note repeated in the bottom is refused", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorPlace(__m, "inner", "E4").value, "bottom", "A2").value; true`);
+    assert.strictEqual(a.get(`JSON.stringify(editorSetAngle(__s, "inner", 0, 90, true).value) === JSON.stringify(__s)`), true);
+    assert.strictEqual(a.get(`editorPlace(__s, "bottom", "A2").code`), "NOTE_REPEATED");
+    assert.strictEqual(a.get(`editorPlace(__s, "bottom", "E4").ok`), true);
+    assert.strictEqual(a.get(`editorPlace(__s, "rim", "E4").code`), "NOTE_REPEATED");
+  });
+
   test("empty stage: a Neotone empty pan places, replaces, moves and removes through the same primitives", () => {
     const a = app();
     stagedStd(a);
