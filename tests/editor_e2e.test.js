@@ -177,12 +177,237 @@ function run() {
   });
 
   describe("D10 empty scale", () => {
-    test("a new scale opens empty: the empty copy shows and Save is disabled", async () => {
+    const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+    const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+    const geomOf = (key) => b.eval(`return editorSolve(editorSession.history.present).value.geom[${JSON.stringify(key)}];`);
+    const spotAt = async (ring, deg) => clientOf(...polar(await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`), deg));
+    const dingAt = async () => clientOf(0, -(await geomOf("ding_dy")));
+    const slotAt = (slot) => b.eval(`const g = editorSolve(editorSession.history.present).value.geom; const p = neoSlotPoint(${slot}, null, g.turn);
+      const q = new DOMPoint(p.x, p.y).matrixTransform(document.querySelector("#editor-pan svg").getScreenCTM()); return { x: q.x, y: q.y };`);
+    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const statusText = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+    const stageOf = () => b.eval(`return JSON.parse(JSON.stringify(editorStageOf(editorSession.history.present)));`);
+    const octave = () => b.eval(`return editorView(editorSession.history.present).oct;`);
+    const stillEmpty = () => b.eval(`return editorIsEmpty(editorSession.history.present);`);
+    const saveDisabled = () => b.eval(`return document.getElementById("editor-save").disabled;`);
+    const tapPoint = async (pt, touch) => {
+      if (touch) {
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y, id: 1 }] });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      } else for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
+    };
+    const gesture = async (from, to, kind) => {
+      const at = (k) => ({ x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+      if (kind === "touch") {
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...from, id: 1 }] });
+        for (const k of [0.25, 0.5, 0.75, 1]) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...at(k), id: 1 }] });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      } else {
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...from, button: "left", buttons: 1, clickCount: 1 });
+        for (const k of [0.25, 0.5, 0.75, 1]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at(k), button: "left", buttons: 1 });
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...to, button: "left", buttons: 0, clickCount: 1 });
+      }
+      await new Promise((done) => setTimeout(done, 320));
+    };
+    const targets = () => b.eval(`const hits = [...document.querySelectorAll("#editor-pan .etarget")];
+      const small = hits.filter((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height) < 24; }).length;
+      return { rings: hits.map((e) => e.dataset.ring).sort(), small, slots: document.querySelectorAll("#editor-pan .eslot").length,
+        mut: document.querySelectorAll("#editor-pan .eslot[data-mut]").length, wait: document.querySelectorAll("#editor-pan .eslot.unavailable").length };`);
+
+    test("a new scale opens as an empty pan: both type buttons enabled, Standard pressed, the ding and every zone drawn, the prompt in the status, Save disabled", async () => {
       await fresh();
       await openAdd();
-      const r = await b.eval(`const e = document.getElementById("editor-empty"); return { shown: !!e && !e.hasAttribute("hidden") && e.textContent.trim().length > 0,
-        save: document.getElementById("editor-save").disabled };`);
-      assert.deepStrictEqual(r, { shown: true, save: true });
+      const r = await b.eval(`const q = (id) => document.getElementById(id);
+        return { std: [q("editor-type-standard").disabled, q("editor-type-standard").getAttribute("aria-pressed")], neo: [q("editor-type-neotone").disabled, q("editor-type-neotone").getAttribute("aria-pressed")],
+          save: q("editor-save").disabled, overlay: !!q("editor-empty"), prompt: q("editor-status").textContent.startsWith(t("editor.empty")) };`);
+      assert.deepStrictEqual(r, { std: [false, "true"], neo: [false, "false"], save: true, overlay: false, prompt: true });
+      const t1 = await targets();
+      assert.deepStrictEqual(t1.rings, ["bottom", "ding", "inner", "rim"]);
+      assert.strictEqual(t1.small, 0, "every drawn target is at least 24px across");
+      assert.strictEqual(t1.slots, 0);
+    });
+
+    test("Neotone is one tap away while empty: the ding and 18 slots, the 9 mutant slots waiting for a main field; Standard switches back", async () => {
+      await fresh();
+      await openAdd();
+      await b.click("#editor-type-neotone");
+      const on = await b.eval(`const q = (id) => document.getElementById(id); return [q("editor-type-neotone").getAttribute("aria-pressed"), q("editor-type-standard").getAttribute("aria-pressed"), q("editor-save").disabled];`);
+      assert.deepStrictEqual(on, ["true", "false", true]);
+      const t1 = await targets();
+      assert.deepStrictEqual([t1.rings, t1.slots, t1.mut, t1.wait], [["ding"], 18, 9, 9]);
+      await b.click("#editor-type-standard");
+      const t2 = await targets();
+      assert.deepStrictEqual([t2.rings, t2.slots], [["bottom", "ding", "inner", "rim"], 0]);
+    });
+
+    for (const kind of ["mouse", "touch"]) {
+      test(`${kind} tap on the empty Standard pan: the ding first (no leading space), then a fifth on the rim commits the scale`, async () => {
+        await fresh();
+        await openAdd();
+        const o = await octave();
+        await b.click('.tray-note[data-name="D"]');
+        await tapPoint(await dingAt(), kind === "touch");
+        assert.match(await statusText(), new RegExp(`^D${o} is the ding\\.`));
+        assert.strictEqual((await stageOf()).ding, "D" + o);
+        assert.strictEqual(await saveDisabled(), true);
+        await b.click('.tray-note[data-name="A"]');
+        await tapPoint(await spotAt("rim", 45), kind === "touch");
+        assert.strictEqual(await text(), `(D${o}) A${o}`, await statusText());
+        assert.strictEqual(await saveDisabled(), false);
+        assert.strictEqual(await b.eval(`return "stage" in editorSession.history.present;`), false);
+      });
+
+      test(`${kind} drag on the empty Standard pan: rim, inner and bottom notes stage before the ding, the ding drop commits`, async () => {
+        await fresh();
+        await openAdd();
+        const o = await octave();
+        await gesture(await chipAt("A"), await spotAt("rim", 45), kind);
+        assert.deepStrictEqual((await stageOf()).rim, ["A" + o], await statusText());
+        assert.match(await statusText(), /ding/i);
+        await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
+        assert.deepStrictEqual((await stageOf()).inner, ["E" + o]);
+        await gesture(await chipAt("G"), await spotAt("bottom", 200), kind);
+        assert.deepStrictEqual((await stageOf()).bottom, ["G" + o]);
+        await gesture(await chipAt("D"), await dingAt(), kind);
+        assert.strictEqual(await stillEmpty(), false, await statusText());
+        assert.deepStrictEqual(await b.eval(`const m = editorSession.history.present; return [editorNames(m, "rim"), editorNames(m, "inner"), editorNames(m, "bottom"), editorDingOf(m)];`),
+          [["A" + o], ["E" + o], ["G" + o], "D" + o]);
+      });
+
+      test(`${kind} tap and drag on the empty Neotone pan: the ding, then a main note dropped on field 5 lands in field 1, then a mutant on slot 10`, async () => {
+        await fresh();
+        await openAdd();
+        await b.click("#editor-type-neotone");
+        const o = await octave();
+        await b.click('.tray-note[data-name="D"]');
+        await tapPoint(await dingAt(), kind === "touch");
+        assert.match(await statusText(), new RegExp(`^D${o} is the ding\\.`));
+        await gesture(await chipAt("A"), await slotAt(4), kind);
+        assert.strictEqual(await stillEmpty(), false, await statusText());
+        assert.deepStrictEqual(await b.eval(`return editorSession.history.present.options.profile.map.slice(0, 9).map((k) => k !== null);`),
+          [true, false, false, false, false, false, false, false, false]);
+        await b.click('.tray-note[data-name="E"]');
+        await tapPoint(await slotAt(9), kind === "touch");
+        assert.strictEqual(await b.eval(`return editorSession.history.present.options.profile.map[9] !== null;`), true, await statusText());
+      });
+    }
+
+    test("Neotone: a main note before the ding stages, a mutant slot with no main field takes nothing, the ding drop commits", async () => {
+      await fresh();
+      await openAdd();
+      await b.click("#editor-type-neotone");
+      const o = await octave();
+      await gesture(await chipAt("E"), await slotAt(9), "mouse");
+      assert.deepStrictEqual((await stageOf()).mutant, [], await statusText());
+      await gesture(await chipAt("A"), await slotAt(2), "mouse");
+      assert.deepStrictEqual((await stageOf()).main, ["A" + o]);
+      assert.match(await statusText(), /ding/i);
+      await gesture(await chipAt("D"), await dingAt(), "mouse");
+      assert.strictEqual(await stillEmpty(), false, await statusText());
+    });
+
+    test("390x844: committing the scale moves the pan by at most 1px (A4 measurement)", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      const probe = () => b.eval(`const svg = document.querySelector("#editor-pan svg"); const r = svg.getBoundingClientRect(); const m = svg.getScreenCTM();
+        const g = editorSolve(editorSession.history.present).value.geom; const ding = new DOMPoint(0, g.ding_dy * 100).matrixTransform(m);
+        return { left: r.left, top: r.top, w: r.width, h: r.height, dx: ding.x, dy: ding.y };`);
+      await gesture(await chipAt("E"), await spotAt("inner", 90), "mouse");
+      await gesture(await chipAt("G"), await spotAt("bottom", 200), "mouse");
+      await gesture(await chipAt("A"), await spotAt("rim", 45), "mouse");
+      const before = await probe();
+      await gesture(await chipAt("D"), await dingAt(), "mouse");
+      assert.strictEqual(await stillEmpty(), false, await statusText());
+      const after = await probe();
+      const shift = Math.max(...Object.keys(before).map((k) => Math.abs(after[k] - before[k])));
+      console.log("A4 commit shift at 390x844 (px):", shift.toFixed(2), JSON.stringify({ before, after }));
+      assert.ok(shift <= 1, "the pan moved " + shift + "px on commit: " + JSON.stringify({ before, after }));
+    });
+
+    test("a ding placed on the empty pan says it is the ding, never ' removed.'; replacing it later keeps the replace wording", async () => {
+      await fresh();
+      await openAdd();
+      await b.click('.tray-note[data-name="D"]');
+      await tapPoint(await dingAt());
+      const first = await statusText();
+      assert.doesNotMatch(first, /removed/);
+      assert.strictEqual(first.startsWith(" "), false);
+      await b.click('.tray-note[data-name="C"]');
+      await tapPoint(await dingAt());
+      assert.match(await statusText(), /^D\d removed\. C\d is the ding\./);
+    });
+
+    test("Back with only staged notes closes with no prompt; Back after a committed scale with an edit still asks", async () => {
+      await fresh();
+      await openAdd();
+      await gesture(await chipAt("A"), await spotAt("rim", 45), "mouse");
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), false);
+      assert.strictEqual(await sheetHidden(), true);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true);
+    });
+
+    test("a saved scale that fails to decode opens on the empty pan with its error and keeps the dirty guard: Back asks with nothing staged", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection));
+        openEditSheet({ ...view.deck, options: { ...view.deck.options, profile: { id: "bogus", rev: 2, map: [] } } }, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the broken scale" });
+      const r = await b.eval(`const s = editorSession; return { error: !!s.error, empty: editorIsEmpty(s.history.present), failed: s.base.failed === true };`);
+      assert.deepStrictEqual(r, { error: true, empty: true, failed: true });
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true, "Back on a failed-decode session prompts");
+    });
+
+    test("keyboard: the empty pan is one roving tab stop over the ding and each zone, each with a localised name", async () => {
+      await fresh();
+      await openAdd();
+      const keys = () => b.eval(`return [...document.querySelectorAll("#editor-pan [data-fk]")].map((e) => [e.dataset.fk, e.getAttribute("aria-label"), e.getAttribute("tabindex")]);`);
+      const en = await keys();
+      assert.deepStrictEqual(en.map((k) => k[0]), ["ding:0", "zone:rim", "zone:inner", "zone:bottom"]);
+      assert.strictEqual(en.filter((k) => k[2] === "0").length, 1);
+      assert.ok(en.every((k) => k[1] && k[1].length > 3), JSON.stringify(en));
+      await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+      await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+      await b.eval(`editorRender(); return true;`);
+      const de = await keys();
+      assert.deepStrictEqual(de.map((k) => k[0]), en.map((k) => k[0]));
+      assert.ok(de[0][1] !== en[0][1] && de[1][1] !== en[1][1], "the ding and rim stops are renamed in German: " + JSON.stringify(de));
+    });
+
+    test("the empty prompt fits the status row in all eight locales at 390, 375 and 360 with the real fonts", async () => {
+      const prev = b;
+      b = await launch({ foregroundSettle: true, realFonts: true });
+      try {
+        for (const width of [390, 375, 360]) {
+          await fresh(width, 844);
+          await openAdd();
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          const langs = await b.eval(`return [...document.getElementById("lang-select").options].map((o) => o.value).filter((v) => v !== "auto");`);
+          assert.strictEqual(langs.length, 8);
+          for (const lang of langs) {
+            await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            for (const kind of ["standard", "neotone"]) {
+              await b.click("#editor-type-" + kind);
+              const bad = await b.eval(`const out = []; const st = document.getElementById("editor-status"); const ed = document.getElementById("editor");
+                const q = st.getBoundingClientRect(); if (st.scrollWidth > st.clientWidth + 0.5 || q.right > innerWidth || q.bottom > innerHeight) out.push("status");
+                if (ed.scrollWidth > ed.clientWidth || ed.scrollHeight > ed.clientHeight) out.push("panel scroll");
+                return out;`);
+              assert.deepStrictEqual(bad, [], width + " " + lang + " " + kind);
+            }
+          }
+        }
+      } finally {
+        await b.close();
+        b = prev;
+      }
     });
   });
 
