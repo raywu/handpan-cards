@@ -964,6 +964,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-pan .etarget.picked{stroke:#242424; stroke-width:4; stroke-dasharray:none; opacity:1}
 #editor-pan .epin{fill:none; stroke:#242424; stroke-width:2; stroke-dasharray:1.5 4; stroke-linecap:round; pointer-events:none}
 #editor-pan .eslot{fill:none; stroke:#8a8a8a; stroke-width:1; stroke-dasharray:3 3; pointer-events:none}
+#editor-pan .eslot[data-mut]{stroke:#E27005; stroke-width:1.5}
 #editor-pan .ekey{fill:none; stroke:none; pointer-events:none}
 #editor-pan .ehit:focus-visible, #editor-pan .ekey:focus-visible{outline:none; stroke:#242424; stroke-width:3; stroke-dasharray:6 4}
 #editor-pan .esel{fill:none; stroke:#242424; stroke-width:3; pointer-events:none}
@@ -13862,13 +13863,11 @@ function editorNeoMarks(m, fields, geom) {
   const map = m.options.profile.map;
   const mutants = map.slice(NEO_MAIN).some((k) => k !== null);
   let out = "";
-  if (mutants) {
-    map.forEach((key, slot) => {
-      if (key !== null) return;
-      const at = neoSlotPoint(slot, null, geom.turn);
-      out += `<circle class="eslot" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}" aria-hidden="true"/>`;
-    });
-  }
+  map.forEach((key, slot) => {
+    if (key !== null || (!mutants && slot < NEO_MAIN)) return;
+    const at = neoSlotPoint(slot, null, geom.turn);
+    out += `<circle class="eslot" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}"${slot >= NEO_MAIN ? ' data-mut="1"' : ""} aria-hidden="true"/>`;
+  });
   const landed = editorSession && editorSession.landed;
   if (Number.isInteger(landed) && map[landed]) {
     const id = Object.keys(fields).find((k) => fields[k][3] !== "ding" && profileKeyOf(fields[k]) === map[landed]);
