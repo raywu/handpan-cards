@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13422,7 +13422,7 @@
+@@ -13666,7 +13666,7 @@ function editorOpen(edit) {
        editorNode("div", { class: "editor-type", role: "group", "aria-label": t("editor.pantype") },
          button("editor-type-standard", "editor.standard"), button("editor-type-neotone", "editor.neotone"))),
      editorNode("div", { class: "editor-line" },
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +      editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off",
          "aria-label": t("editor.line.aria") })),
      editorNode("div", { class: "editor-panbox" },
-       editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") }),
+       editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") })),

@@ -1,0 +1,15 @@
+# kills: a ding placed on the empty pan says it is the ding, never ' removed.'; replacing it later keeps the replace wording
+# suite: node --test --test-name-pattern ^a.ding.placed.on.the.empty.pan.says.it.is.the.ding tests/editor_e2e.test.js
+# fault: A first ding keeps the replace wording with an empty old name.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13875,7 +13875,7 @@ function editorDo(step, say, mark) {
+   s.flash = mark ? editorFlashOf(prev, res.history.present) : null;
+   s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
+   s.notice = !!(res.notice && res.notice.pinsReset);
+-  const firstDing = say && !editorDingOf(prev) ? editorFirstDingSay(say) : say;
++  const firstDing = say;
+   s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : firstDing || "";
+   return true;
+ }

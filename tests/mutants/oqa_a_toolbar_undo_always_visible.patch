@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15722,7 +15722,7 @@ function editorRender() {
+@@ -13787,7 +13787,7 @@ function editorRenderBody() {
    const toolbarUndo = editorEl("editor-undo");
    if (chip) {
      if (document.activeElement === toolbarUndo) chip.focus();
 -    toolbarUndo.classList.add("covered");
 +    toolbarUndo.classList.remove("covered");
    } else toolbarUndo.classList.remove("covered");
-   const solved = empty ? null : editorSolve(m);
+   const solved = editorSolve(m);
    const box = editorEl("editor-pan");

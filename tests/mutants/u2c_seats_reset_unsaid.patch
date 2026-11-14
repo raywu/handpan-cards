@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16008,7 +16008,7 @@ function editorDo(step, say, mark) {
-   s.flash = mark ? editorFlashOf(prev, res.history.present) : null;
+@@ -13876,7 +13876,7 @@ function editorDo(step, say, mark) {
    s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
    s.notice = !!(res.notice && res.notice.pinsReset);
--  s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : say || "";
-+  s.say = false ? t("editor.seats_reset") : say || "";
+   const firstDing = say && !editorDingOf(prev) ? editorFirstDingSay(say) : say;
+-  s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : firstDing || "";
++  s.say = false ? t("editor.seats_reset") : firstDing || "";
    return true;
  }
  const EDITOR_TRAY = { sharps: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"], flats: ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"] };

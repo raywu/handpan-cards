@@ -1,0 +1,15 @@
+# kills: Neotone is one tap away while empty: the ding and 18 slots, the 9 mutant slots waiting for a main field; Standard switches back
+# suite: node --test --test-name-pattern ^Neotone.is.one.tap.away.while.empty tests/editor_e2e.test.js
+# fault: Mutant slots whose main field is empty are not marked as waiting.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14104,7 +14104,7 @@ function editorNeoMarks(m, fields, geom) {
+   map.forEach((key, slot) => {
+     if (key !== null || (!mutants && slot < NEO_MAIN)) return;
+     const at = neoSlotPoint(slot, null, geom.turn);
+-    const waiting = empty && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null;
++    const waiting = false;
+     out += `<circle class="eslot${waiting ? " unavailable" : ""}" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}"${slot >= NEO_MAIN ? ' data-mut="1"' : ""} aria-hidden="true"/>`;
+   });
+   const landed = editorSession && editorSession.landed;

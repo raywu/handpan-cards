@@ -1,0 +1,15 @@
+# kills: a new scale opens as an empty pan: both type buttons enabled, Standard pressed, the ding and every zone drawn, the prompt in the status, Save disabled
+# suite: node --test --test-name-pattern ^a.new.scale.opens.as.an.empty.pan tests/editor_e2e.test.js
+# fault: The pan type buttons are disabled while the pan is empty.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13827,7 +13827,7 @@ function editorRenderBody() {
+     const b = editorEl("editor-type-" + kind);
+     b.setAttribute("aria-pressed", String(editorKindOf(m) === kind));
+     b.classList.toggle("on", editorKindOf(m) === kind);
+-    b.disabled = false;
++    b.disabled = editorIsEmpty(m);
+   }
+ }
+ // The notes a placement changed, for the highlight: a ring's new names, else the seats whose
