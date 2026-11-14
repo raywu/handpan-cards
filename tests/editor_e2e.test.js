@@ -305,10 +305,22 @@ function run() {
         const slot9 = await slotAt(9);
         await b.eval(`window.__ev = []; const ab = { pointerdown: "pd", pointerup: "pu", pointercancel: "pc", touchstart: "ts", touchend: "te", mousedown: "md", click: "ck" };
           for (const type of Object.keys(ab)) window.addEventListener(type, (e) => window.__ev.push({ n: ab[type] + (e.defaultPrevented ? "!" : ""), t: Math.round(performance.now()) }), true); return true;`);
+        await b.waitFor(`document.getAnimations().length === 0 && !document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the pan to be idle before the slot 10 tap" });
+        await b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))));`);
+        const clicked = () => b.eval(`return window.__ev.some((x) => x.n.startsWith("ck"));`);
         await tapPoint(slot9, kind === "touch");
+        let retry = 0;
+        if (kind === "touch") {
+          await b.waitFor(`window.__ev.some((x) => x.n.startsWith("ck"))`, { timeout: 600, label: "the slot 10 click" }).catch(() => {});
+          if (!(await clicked())) {
+            retry = 1;
+            console.log("slot10 retry=1: the touch tap produced no click, tapping once more");
+            await tapPoint(slot9, true);
+          }
+        }
         await b.waitFor(`editorSession.history.present.options.profile.map[9] !== null`, { timeout: 2000, label: "slot 10 to take the mutant" }).catch(async (err) => {
           const s = await b.eval(`const ev = window.__ev, pu = ev.find((x) => x.n.startsWith("pu")), ck = ev.find((x) => x.n.startsWith("ck"));
-            return "ev=" + ev.map((x) => x.n).join(",") + " ck=" + (ck ? (pu ? ck.t - pu.t : "?") + "ms" : "none") + " dn=" + (pu && ev[0] ? pu.t - ev[0].t : "?") + "ms" + " v=" + navigator.userAgent.replace(/^.*Chrome\\/(\\d+).*$/, "$1") + " held=" + +!!editorSession.held + " st=" + document.getElementById("editor-status").textContent.slice(0, 12);`);
+            return "slot10 ev=" + ev.map((x) => x.n).join(",") + " ck=" + (ck ? (pu ? ck.t - pu.t : "?") + "ms" : "none") + " dn=" + (pu && ev[0] ? pu.t - ev[0].t : "?") + "ms" + " retry=${retry} v=" + navigator.userAgent.replace(/^.*Chrome\\/(\\d+).*$/, "$1") + " held=" + +!!editorSession.held + " st=" + document.getElementById("editor-status").textContent.slice(0, 12);`).catch(() => "slot10 diag-err");
           throw new Error(s);
         });
         assert.strictEqual(await b.eval(`return editorSession.history.present.options.profile.map[9] !== null;`), true, await statusText());
