@@ -13792,12 +13792,11 @@ function editorPlaceAreas() {
   st.width = right - left + "px";
   st.height = bottom - top + "px";
 }
-function editorCloseAreas() {
-  const areas = editorEl("editor-areas");
-  if (!areas || areas.hidden) return false;
-  areas.hidden = true;
-  editorEl("editor-hint-toggle").setAttribute("aria-expanded", "false");
-  return true;
+function editorSetAreas(open) {
+  editorSession.hint = open;
+  editorEl("editor-areas").hidden = !open;
+  editorEl("editor-hint-toggle").setAttribute("aria-expanded", open ? "true" : "false");
+  editorPlaceAreas();
 }
 function editorRegionAtEnd() {
   const rg = editorEl("editor-region");
@@ -13819,7 +13818,7 @@ function editorSetTab(tab, focus) {
   editorCloseMenu();
   s.tab = tab;
   editorRenderTabs();
-  editorEl("editor-region").scrollTop = 0;
+  if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
   if (focus) editorEl("editor-tab-" + tab).focus();
   return true;
 }
@@ -14268,7 +14267,7 @@ function editorEscape() {
   if (editorDrag && editorDrag.live) editorDragEnd(null);
   else if (s.menu) editorCloseMenu(true);
   else if (s.dialog) editorShowDialog(false);
-  else if (editorCloseAreas()) return;
+  else if (s.hint) editorSetAreas(false);
   else if (s.naming) editorCancelName();
   else if (s.editing) editorCancelEdit();
   else if (s.held) editorCancelHold();
@@ -14605,10 +14604,7 @@ function editorWire() {
   };
   editorEl("editor-back").onclick = editorBack;
   editorEl("editor-hint-toggle").onclick = () => {
-    const areas = editorEl("editor-areas"), btn = editorEl("editor-hint-toggle"), open = areas.hidden;
-    areas.hidden = !open;
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-    editorPlaceAreas();
+    editorSetAreas(editorEl("editor-areas").hidden);
   };
   nameBox.addEventListener("focusin", () => requestAnimationFrame(() => nameBox.scrollIntoView({ block: "nearest" })));
   window.addEventListener("resize", editorRegionResize);

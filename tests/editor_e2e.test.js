@@ -3724,12 +3724,13 @@ function run() {
         assert.ok(await gap() >= 8, `${w}x${h} hint open gap ${await gap()}`);
       });
 
-      test(`PF ${w}x${h}: selecting a tab shows its panel from the top of the region, and Scale rests at its end only when first shown`, async () => {
+      test(`PF ${w}x${h}: selecting Layout shows its panel from the top of the region, and Scale rests at its end when shown`, async () => {
         await open(w, h);
         const read = () => b.eval(`const rg = document.getElementById("editor-region"), p = document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
           return { st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, panelTop: p.top, tabsBottom: t.bottom, id: document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').id };`);
+        await b.eval(`document.getElementById("editor-panels").style.minHeight = "1400px"; editorRegionPin(); return true;`);
         const a = await read();
-        assert.ok(a.max <= 2 || Math.abs(a.st - a.max) <= 2, "Scale rests at its end: " + JSON.stringify(a));
+        assert.ok(a.max > 100 && Math.abs(a.st - a.max) <= 2, "the region overflows and Scale rests at its end: " + JSON.stringify(a));
         await b.click("#editor-tab-layout");
         await pause(150);
         const l = await read();
@@ -3738,7 +3739,8 @@ function run() {
         assert.ok(l.panelTop >= l.tabsBottom - 1, "the Layout panel top is visible below the strip: " + JSON.stringify(l));
         await b.click("#editor-tab-scale");
         await pause(150);
-        assert.strictEqual((await read()).st, 0, "Scale chosen from the tab strip also opens from its top");
+        const sc = await read();
+        assert.ok(sc.max <= 2 || Math.abs(sc.st - sc.max) <= 2, "Scale chosen from the tab strip rests at its end again: " + JSON.stringify(sc));
       });
 
       test(`PF ${w}x${h}: the Hint block is an overlay on the whole controls area, nothing moves when it toggles, and a second tap or Escape closes it`, async () => {
