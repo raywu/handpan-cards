@@ -301,7 +301,14 @@ function run() {
         assert.deepStrictEqual(await b.eval(`return editorSession.history.present.options.profile.map.slice(0, 9).map((k) => k !== null);`),
           [true, false, false, false, false, false, false, false, false]);
         await b.click('.tray-note[data-name="E"]');
-        await tapPoint(await slotAt(9), kind === "touch");
+        const slot9 = await slotAt(9);
+        await b.eval(`window.__tapLog = []; for (const type of ["pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "click"]) window.addEventListener(type, (e) => window.__tapLog.push(Math.round(performance.now()) + " " + type + (e.defaultPrevented ? " PREVENTED" : "") + " " + Math.round(e.clientX || 0) + "," + Math.round(e.clientY || 0) + " " + (e.target.id || (e.target.className && e.target.className.baseVal) || e.target.className || e.target.tagName)), true); return true;`);
+        await tapPoint(slot9, kind === "touch");
+        await b.waitFor(`editorSession.history.present.options.profile.map[9] !== null`, { timeout: 2000, label: "slot 10 to take the mutant" }).catch(async (err) => {
+          const dump = await b.eval(`const pt = ${JSON.stringify(slot9)}; const hit = document.elementFromPoint(pt.x, pt.y); const r = document.querySelector("#editor-pan svg").getBoundingClientRect();
+            return JSON.stringify({ pt, hit: hit && (hit.id || hit.getAttribute("class") || hit.tagName), pan: [r.left, r.top, r.width, r.height], vv: [innerWidth, innerHeight, devicePixelRatio], held: !!editorSession.held, drag: !!editorDrag, cls: document.getElementById("editor").className, log: window.__tapLog, status: document.getElementById("editor-status").textContent });`);
+          throw new Error("slot 10 tap diagnostic " + dump + " :: " + err.message);
+        });
         assert.strictEqual(await b.eval(`return editorSession.history.present.options.profile.map[9] !== null;`), true, await statusText());
       });
     }
