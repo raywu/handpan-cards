@@ -287,10 +287,23 @@ counts, menu). Claims below cite
 the test that pins them; items marked PLANNED or PENDING have no passing test yet and
 carry the lane that lands them, so a reviewer can re-check each after that lane merges.
 
-- **Shell and Save.** A new scale opens empty with the empty copy shown and Save disabled; a
-  built-in opens with its notes and saves as a NEW scale (the built-in is untouched); a
+- **Shell and Save.** A new scale opens as an empty pan, never as a blank panel: Standard
+  is pressed by default, both type buttons stay enabled, the ding and the rim, cyclops and
+  bottom zones are drawn as orange dashed drop targets (`editorWithOverlay`), and the status
+  line prompts for the ding then a note a fifth above (`editorEmptyPrompt`); Save stays
+  disabled. Switching to Neotone while empty draws the ding and all 18 slots, the nine
+  mutant slots dimmed until their main field has a note (`editorNeoMarks`). Tap and drag
+  both work on the empty pan; notes staged before the ding are kept (`editorStageOf`) and
+  the ding drop commits them. The first ding says "{name} is the ding" (`editorFirstDingSay`),
+  never a replace or "removed" line. Back with only staged notes closes silently; a saved
+  scale that fails to decode opens on the empty pan with its error and keeps the dirty
+  guard (`base.failed`). The pan does not move when the scale commits (390x844: 0 px).
+  A built-in opens with its notes and saves as a NEW scale (the built-in is untouched); a
   saved scale updates in place, one more revision; a saved scale opened and saved untouched
-  is byte-equal. Tests: `tests/editor_e2e.test.js` "a new scale opens empty",
+  is byte-equal. Tests: `tests/editor_e2e.test.js` "a new scale opens as an empty pan",
+  "Neotone is one tap away while empty", "a ding placed on the empty pan says it is the
+  ding", "Back with only staged notes closes with no prompt", "a saved scale that fails to
+  decode opens on the empty pan", "390x844: committing the scale moves the pan",
   "editing a built-in saves a NEW scale", "a saved scale opened and saved untouched is
   byte-equal", "a changed saved scale updates in place". Back on a clean panel closes with
   no prompt; with changes it asks Save, Discard or Keep editing, and Escape is Keep
@@ -419,7 +432,7 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   splits notes 1 and 2", "the anchor controls are at least 44px", "PL-a a permuted Neotone
   arrangement is dropped by Cancel and kept through SAVE"; model `tests/editor_shell.test.js`
   "U2e2-7", "U2e2-8", "PLa-1".
-- **Layout tab: card palette.** Ten palettes; a pick is one Undo step, picking the current
+- **Layout tab: palette.** Ten palettes; a pick is one Undo step, picking the current
   palette adds none, palette 0 writes no option, and a swatch pick keeps the Layout tab.
   Today a chip toggles the swatch group open (PLANNED below replaces it). Tests: "the palette
   chip opens ten 44px swatches in the Layout tab", "picking the current palette closes the
@@ -466,7 +479,7 @@ exist yet, so re-check this block after W5a merges and delete the PLANNED marks.
   (`#5E5A53`); no `.on` class on editor tabs, no fill on hover or `:active`, so `#1 CENTRED`
   is the only filled control on Layout. Test: a selected-tab computed-style test in
   `tests/editor_e2e.test.js` (to be added; mutant `ets_tab_filled_on_select`).
-- **PLANNED (W5a): flat card palette**.
+- **PLANNED (W5a): flat palette**.
   The `#editor-palette` chip is removed; `#editor-swatches` is always shown on Layout under a
   visible label (`editor.palette`, "Palette") as a 5x2 grid of 44px dots with
   `aria-labelledby`; one tap picks, the group stays open, Undo covers it, the palette is
