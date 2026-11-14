@@ -227,6 +227,20 @@ function run() {
       assert.strictEqual(t1.slots, 0);
     });
 
+    for (const [w, h] of [[375, 667], [360, 640]]) {
+      test(`the empty pan targets stay at least 24px across at ${w}x${h}, Standard and Neotone`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        const sizes = () => b.eval(`const dims = [...document.querySelectorAll("#editor-pan .etarget, #editor-pan .ekey, #editor-pan .eslot")].map((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height); });
+          return { n: dims.length, min: Math.min(...dims) };`);
+        const std = await sizes();
+        await b.eval(`document.getElementById("editor-type-neotone").click(); return true;`);
+        const neo = await sizes();
+        assert.ok(std.n > 0 && std.min >= 24, "Standard targets " + JSON.stringify(std));
+        assert.ok(neo.n > 0 && neo.min >= 24, "Neotone targets " + JSON.stringify(neo));
+      });
+    }
+
     test("Neotone is one tap away while empty: the ding and 18 slots, the 9 mutant slots waiting for a main field; Standard switches back", async () => {
       await fresh();
       await openAdd();

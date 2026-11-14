@@ -532,9 +532,9 @@
   "over-cap-load/rest": "efb6dc2e65683ebd89e360d82a27606792ef1cbaf4512f4382d1744eacf953b4",
   "over-cap-load/selected": "0a0a7230318cc3ebded2dcc2bb9e7a8f80dc1a51a39726147f01ccc826d83332",
   "over-cap-load/held": "efb6dc2e65683ebd89e360d82a27606792ef1cbaf4512f4382d1744eacf953b4",
-  "neotone-empty/rest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "neotone-empty/selected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "neotone-empty/held": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "neotone-empty/rest": "4ceeeec64a52bef550134dfcb7b5f9c4f16aa91125014315d0f603e7c792909c",
+  "neotone-empty/selected": "4ceeeec64a52bef550134dfcb7b5f9c4f16aa91125014315d0f603e7c792909c",
+  "neotone-empty/held": "4ceeeec64a52bef550134dfcb7b5f9c4f16aa91125014315d0f603e7c792909c",
   "neotone-full/rest": "217e7728ad60fb2e2e8f749cf51ae5a9eefcb1da168b0b46845e88283b5cdb05",
   "neotone-full/selected": "534f1cfeec6c9771cd7be77a4c51821399a4b36a77af9fba656ca5dba9bd4961",
   "neotone-full/held": "217e7728ad60fb2e2e8f749cf51ae5a9eefcb1da168b0b46845e88283b5cdb05"
@@ -4930,11 +4930,26 @@
     ]
    ]
   },
-  "375x667/neotone-empty/rest": null,
-  "375x667/neotone-empty/selected": null,
-  "375x667/neotone-empty/held": null,
-  "375x667/neotone-empty/dragging": null,
-  "375x667/neotone-empty/settling": null,
+  "375x667/neotone-empty/rest": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "375x667/neotone-empty/selected": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "375x667/neotone-empty/held": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "375x667/neotone-empty/dragging": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "375x667/neotone-empty/settling": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
   "375x667/neotone-full/rest": {
    "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
    "ehit": [
@@ -9890,11 +9905,26 @@
     ]
    ]
   },
-  "390x844/neotone-empty/rest": null,
-  "390x844/neotone-empty/selected": null,
-  "390x844/neotone-empty/held": null,
-  "390x844/neotone-empty/dragging": null,
-  "390x844/neotone-empty/settling": null,
+  "390x844/neotone-empty/rest": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "390x844/neotone-empty/selected": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "390x844/neotone-empty/held": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "390x844/neotone-empty/dragging": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "390x844/neotone-empty/settling": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
   "390x844/neotone-full/rest": {
    "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
    "ehit": [
@@ -14850,11 +14880,26 @@
     ]
    ]
   },
-  "900x600/neotone-empty/rest": null,
-  "900x600/neotone-empty/selected": null,
-  "900x600/neotone-empty/held": null,
-  "900x600/neotone-empty/dragging": null,
-  "900x600/neotone-empty/settling": null,
+  "900x600/neotone-empty/rest": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "900x600/neotone-empty/selected": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "900x600/neotone-empty/held": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "900x600/neotone-empty/dragging": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
+  "900x600/neotone-empty/settling": {
+   "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
+   "ehit": []
+  },
   "900x600/neotone-full/rest": {
    "viewBox": "-119.66000000000001 -119.66000000000001 239.32000000000002 239.32000000000002",
    "ehit": [
@@ -15664,11 +15709,11 @@
   "375x667/over-cap-load/held": "bdba8a02a341f501",
   "375x667/over-cap-load/dragging": "9d147132e658d97c",
   "375x667/over-cap-load/settling": "9d147132e658d97c",
-  "375x667/neotone-empty/rest": "00e529ae16effab6",
-  "375x667/neotone-empty/selected": "00e529ae16effab6",
-  "375x667/neotone-empty/held": "00e529ae16effab6",
-  "375x667/neotone-empty/dragging": "d711b5faf5782c6e",
-  "375x667/neotone-empty/settling": "d711b5faf5782c6e",
+  "375x667/neotone-empty/rest": "b1a133dd44e23630",
+  "375x667/neotone-empty/selected": "b1a133dd44e23630",
+  "375x667/neotone-empty/held": "b1a133dd44e23630",
+  "375x667/neotone-empty/dragging": "674f05b0ec089b0d",
+  "375x667/neotone-empty/settling": "674f05b0ec089b0d",
   "375x667/neotone-full/rest": "20431f3fedcc9b88",
   "375x667/neotone-full/selected": "0354d4c91529a2a4",
   "375x667/neotone-full/held": "20431f3fedcc9b88",
@@ -15916,11 +15961,11 @@
   "390x844/over-cap-load/held": "bdba8a02a341f501",
   "390x844/over-cap-load/dragging": "9d147132e658d97c",
   "390x844/over-cap-load/settling": "9d147132e658d97c",
-  "390x844/neotone-empty/rest": "00e529ae16effab6",
-  "390x844/neotone-empty/selected": "00e529ae16effab6",
-  "390x844/neotone-empty/held": "00e529ae16effab6",
-  "390x844/neotone-empty/dragging": "d711b5faf5782c6e",
-  "390x844/neotone-empty/settling": "d711b5faf5782c6e",
+  "390x844/neotone-empty/rest": "b1a133dd44e23630",
+  "390x844/neotone-empty/selected": "b1a133dd44e23630",
+  "390x844/neotone-empty/held": "b1a133dd44e23630",
+  "390x844/neotone-empty/dragging": "674f05b0ec089b0d",
+  "390x844/neotone-empty/settling": "674f05b0ec089b0d",
   "390x844/neotone-full/rest": "20431f3fedcc9b88",
   "390x844/neotone-full/selected": "0354d4c91529a2a4",
   "390x844/neotone-full/held": "20431f3fedcc9b88",
@@ -16168,11 +16213,11 @@
   "900x600/over-cap-load/held": "bdba8a02a341f501",
   "900x600/over-cap-load/dragging": "9d147132e658d97c",
   "900x600/over-cap-load/settling": "9d147132e658d97c",
-  "900x600/neotone-empty/rest": "00e529ae16effab6",
-  "900x600/neotone-empty/selected": "00e529ae16effab6",
-  "900x600/neotone-empty/held": "00e529ae16effab6",
-  "900x600/neotone-empty/dragging": "d711b5faf5782c6e",
-  "900x600/neotone-empty/settling": "d711b5faf5782c6e",
+  "900x600/neotone-empty/rest": "b1a133dd44e23630",
+  "900x600/neotone-empty/selected": "b1a133dd44e23630",
+  "900x600/neotone-empty/held": "b1a133dd44e23630",
+  "900x600/neotone-empty/dragging": "674f05b0ec089b0d",
+  "900x600/neotone-empty/settling": "674f05b0ec089b0d",
   "900x600/neotone-full/rest": "20431f3fedcc9b88",
   "900x600/neotone-full/selected": "0354d4c91529a2a4",
   "900x600/neotone-full/held": "20431f3fedcc9b88",
