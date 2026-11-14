@@ -1,0 +1,16 @@
+# kills: EMP: an error is an ink banner at 14px and a notice is plain text
+# suite: node --test --test-name-pattern ^EMP..an.error.is.an.ink.banner.at.14px.and.a.notice.is.plain.text tests/editor_e2e.test.js
+# note: EMP: an error is an ink banner, not plain text
+# fault: The error banner loses its ink fill.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -920,7 +920,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-hint-toggle[aria-expanded="true"] .ico{background:#242424; color:#F6F4ED; border-color:#242424}
+ #editor.dragging .editor-statusrow{transform:translateY(var(--ed-status-shift,0px))}
+ #editor.dragging #editor-hint-toggle{visibility:hidden}
+-#editor-status[data-kind="error"]{background:#242424; color:#fff; font-size:14px; border-radius:8px; padding:4px 12px}
++#editor-status[data-kind="error"]{background:none; color:#242424; font-size:14px; border-radius:8px; padding:4px 12px}
+ #editor-status[data-kind="error"]::before{content:"\26A0"}
+ #editor-status.arrive{animation:editor-arrive 180ms cubic-bezier(.2,.8,.2,1)}
+ @keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}

@@ -1,0 +1,15 @@
+# kills: empty stage: notes placed before the ding are kept and all land when the ding arrives
+# suite: node --test --test-name-pattern empty.stage..notes.placed.before.the.ding.are.kept.and.all.land.when.the.ding.arrives tests/editor_shell.test.js
+# fault: Notes staged before the ding are discarded when the stage has no ding yet.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12880,7 +12880,7 @@
+ function editorStageCommit(m, stage, landedKey) {
+   const std = stage.kind === "standard";
+   const staged = editorWithStage(m, stage);
+-  if (!stage.ding || !(std ? stage.rim.length : stage.main.length)) return { ok: true, value: staged };
++  if (!stage.ding || !(std ? stage.rim.length : stage.main.length)) return { ok: true, value: editorWithStage(m, editorBlankStage(stage.kind)) };
+   let built;
+   if (std) {
+     const loaded = editorLoad(editorText(m, stage, stage.ding), { ...m.options, seats: null, angles: null });

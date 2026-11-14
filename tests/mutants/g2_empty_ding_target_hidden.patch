@@ -1,0 +1,15 @@
+# kills: a new scale opens as an empty pan: both type buttons enabled, Standard pressed, the ding and every zone drawn, the prompt in the status, Save disabled
+# suite: node --test --test-name-pattern ^a.new.scale.opens.as.an.empty.pan tests/editor_e2e.test.js
+# fault: The empty pan draws no ding drop target.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14183,7 +14183,7 @@ function editorWithOverlay(markup, m, solved) {
+   if (!standard && geom.place) out += editorNeoMarks(m, fields, geom);
+   if (unchosen) {
+     const dy = (geom.ding_dy * 100).toFixed(2), dr = (geom.r_ding * 100).toFixed(2);
+-    out += `<circle class="etarget eempty" data-ring="ding" cx="0" cy="${dy}" r="${dr}"/>`;
++    out += ``;
+     out += `<circle class="ekey" cx="0" cy="${dy}" r="${dr}" role="button" ${tab("ding:0")} aria-label="${escapeHtml(t("editor.note.aria_ding_empty"))}"/>`;
+   }
+   if (s && standard) {

@@ -1,0 +1,15 @@
+# kills: NEO-OUTLINE: every empty mutant tonefield carries an orange outline ring, with or without mutants filled
+# suite: node --test --test-name-pattern ^NEO-OUTLINE tests/app.test.js
+# why: Empty mutant tonefields lose their orange ring again unless a mutant is already filled.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14102,7 +14102,7 @@ function editorNeoMarks(m, fields, geom) {
+   const mutants = empty || map.slice(NEO_MAIN).some((k) => k !== null);
+   let out = "";
+   map.forEach((key, slot) => {
+-    if (key !== null || (!mutants && slot < NEO_MAIN)) return;
++    if (key !== null || !mutants) return;
+     const at = neoSlotPoint(slot, null, geom.turn);
+     const waiting = empty && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null;
+     out += `<circle class="eslot${waiting ? " unavailable" : ""}" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}"${slot >= NEO_MAIN ? ' data-mut="1"' : ""} aria-hidden="true"/>`;

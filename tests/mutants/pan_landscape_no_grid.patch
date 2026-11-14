@@ -1,0 +1,15 @@
+# kills: P0 phone landscape 844x390: the pan does not collapse (>= 0.95 x 309), the grid is on, toolbar in view, controls scroll in their own region
+# suite: node --test --test-name-pattern ^P0.phone.landscape.844x390 tests/editor_e2e.test.js
+# fault: The phone landscape rule no longer matches, so a short wide screen stacks the editor again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1058,7 +1058,7 @@
+ /* Phone landscape (S4): a short, wide screen takes the two-column grid so the pan never collapses; the pan column
+    takes the full height under the head and the control column scrolls on its own region with the toolbar pinned.
+    375x360 and a 360x330 keyboard-open portrait stay stacked (min-width). After the >=900 rule so it wins its template. */
+-@media (orientation:landscape) and (max-height:500px) and (min-width:560px){
++@media (orientation:landscape) and (max-height:0px) and (min-width:560px){
+   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid;
+     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
+     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar"}

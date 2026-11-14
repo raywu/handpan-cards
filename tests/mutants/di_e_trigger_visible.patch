@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1174,7 +1174,7 @@ footer.seq{row-gap:var(--sp-1)}
- /* The scroller spans the screen, so a swipe on the flanks beside the 520px column scrolls it too. */
- #scale-sheet.tiny .sheetsurf{max-width:none; padding-inline:max(var(--sp-3), calc((100% - 520px) / 2 + var(--sp-3)))}
+@@ -887,7 +887,7 @@
+ .sheethint{margin:0; font-family:Bitter, serif; font-weight:400; font-size:11.5px;
+   line-height:1.5; color:#a9a39a; overflow-wrap:anywhere}
  /* The app's settings trigger paints over the open sheet; it has no job there. */
 -body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 +body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:visible}
- #scale-sheet.side #scale-fields .sheetlabel{font-size:8.5px; letter-spacing:.1em}
- #scale-sheet.side #scale-fields-head{display:none}
- /* The selection ring is drawn in the SVG (pan(), .pansel) rather than in CSS:
+ #scale-sheet.onepanel #editor{width:100%; max-width:520px; height:100dvh; margin:0 auto; box-sizing:border-box;
+   padding:var(--sp-2) var(--sp-3) max(var(--sp-2), env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:var(--sp-1);
+   background:#F6F4ED; color:#242424; overflow:hidden; position:relative; container-type:inline-size; --ed-row:48px; --ed-k:calc(416px + var(--ed-row))}

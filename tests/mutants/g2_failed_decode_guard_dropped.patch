@@ -1,0 +1,15 @@
+# kills: a saved scale that fails to decode opens on the empty pan with its error and keeps the dirty guard: Back asks with nothing staged
+# suite: node --test --test-name-pattern ^a.saved.scale.that.fails.to.decode.opens.on.the.empty.pan tests/editor_e2e.test.js
+# fault: A failed decode no longer marks the base, so Back closes silently.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13655,7 +13655,7 @@ function editorOpen(edit) {
+   const model = editorModelFor(edit, kind);
+   const failed = model.ok === false;
+   const start = failed ? editorEmptyModel() : model;
+-  editorSession = { history: editorHistoryNew(start), base: failed ? { ...start, failed: true } : start, editing: false, error: failed ? reasonText(model) : "",
++  editorSession = { history: editorHistoryNew(start), base: start, editing: false, error: failed ? reasonText(model) : "",
+     notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", tab: "scale", menu: false, naming: false, nameTouched: false };
+   sheet.classList.add("onepanel");
+   const button = (id, key, cls) => editorNode("button", { id, type: "button", class: cls || "mode", text: t(key) });

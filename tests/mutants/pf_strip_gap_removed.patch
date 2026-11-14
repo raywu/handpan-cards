@@ -1,0 +1,15 @@
+# kills: PF 375x667: a gap of at least 8px separates the status row (and the open hint) from the tab strip
+# suite: node --test --test-name-pattern ^PF.375x667..a.gap.of.at.least.8px tests/editor_e2e.test.js
+# fault: The region loses its top margin, so the tab strip touches the status row again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -935,7 +935,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-areas[hidden]{display:none}
+ #editor-counts{display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); font:500 13px/20px "Nunito Sans"}
+ #editor-counts .zc.full{font-weight:700}
+-#editor-region{flex:1 1 0; min-height:0; margin-top:6px; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; padding-inline:4px; margin-inline:-4px;
++#editor-region{flex:1 1 0; min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; padding-inline:4px; margin-inline:-4px;
+   scrollbar-width:none; scroll-padding-top:48px}
+ #editor-region::-webkit-scrollbar{display:none}
+ @media (max-height:420px){#editor-region{margin-top:0}}
