@@ -192,8 +192,9 @@ function run() {
     const saveDisabled = () => b.eval(`return document.getElementById("editor-save").disabled;`);
     const tapPoint = async (pt, touch) => {
       if (touch) {
-        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y, id: 1 }] });
-        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        const t0 = Date.now() / 1000;
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y, radiusX: 4, radiusY: 4, force: 1, id: 1 }], timestamp: t0 });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + 0.05 });
       } else for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
     };
     const gesture = async (from, to, kind) => {
@@ -302,12 +303,12 @@ function run() {
           [true, false, false, false, false, false, false, false, false]);
         await b.click('.tray-note[data-name="E"]');
         const slot9 = await slotAt(9);
-        await b.eval(`window.__ev = []; const ab = { pointerdown: "pd", pointerup: "pu", touchstart: "ts", touchend: "te", mousedown: "md", click: "ck" };
+        await b.eval(`window.__ev = []; const ab = { pointerdown: "pd", pointerup: "pu", pointercancel: "pc", touchstart: "ts", touchend: "te", mousedown: "md", click: "ck" };
           for (const type of Object.keys(ab)) window.addEventListener(type, (e) => window.__ev.push({ n: ab[type] + (e.defaultPrevented ? "!" : ""), t: Math.round(performance.now()) }), true); return true;`);
         await tapPoint(slot9, kind === "touch");
         await b.waitFor(`editorSession.history.present.options.profile.map[9] !== null`, { timeout: 2000, label: "slot 10 to take the mutant" }).catch(async (err) => {
           const s = await b.eval(`const ev = window.__ev, pu = ev.find((x) => x.n.startsWith("pu")), ck = ev.find((x) => x.n.startsWith("ck"));
-            return "ev=" + ev.map((x) => x.n).join(",") + " ck=" + (ck ? (pu ? ck.t - pu.t : "?") + "ms" : "none") + " held=" + +!!editorSession.held + " st=" + document.getElementById("editor-status").textContent.slice(0, 12);`);
+            return "ev=" + ev.map((x) => x.n).join(",") + " ck=" + (ck ? (pu ? ck.t - pu.t : "?") + "ms" : "none") + " dn=" + (pu && ev[0] ? pu.t - ev[0].t : "?") + "ms" + " v=" + navigator.userAgent.replace(/^.*Chrome\\/(\\d+).*$/, "$1") + " held=" + +!!editorSession.held + " st=" + document.getElementById("editor-status").textContent.slice(0, 12);`);
           throw new Error(s);
         });
         assert.strictEqual(await b.eval(`return editorSession.history.present.options.profile.map[9] !== null;`), true, await statusText());
