@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  #editor-region::-webkit-scrollbar{display:none}
  @media (max-height:420px){#editor-region{margin-top:0}}
  #editor.dragging #editor-region{overflow:hidden}
--#editor-tabs{flex:0 0 auto; display:flex; padding-right:44px; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:var(--sp-1); position:sticky; top:0; z-index:3; background:#F6F4ED}
-+#editor-tabs{flex:0 0 auto; display:flex; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:var(--sp-1); position:sticky; top:0; z-index:3; background:#F6F4ED}
- #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5A53; font-weight:600;
+-#editor-tabs{flex:0 0 auto; display:flex; padding-right:44px; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
++#editor-tabs{flex:0 0 auto; display:flex; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
+ #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5850; font-weight:600;
    border-bottom:3px solid transparent; margin-bottom:-1px}
- #scale-sheet #editor-tabs .edtab{background:none; color:#5E5A53; border-color:transparent}
+ #scale-sheet #editor-tabs .edtab{background:none; color:#5E5850; border-color:transparent}

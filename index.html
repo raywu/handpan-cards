@@ -908,12 +908,12 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-line[aria-invalid="true"]{border-color:#242424; border-width:2px}
 #editor-name{width:100%; box-sizing:border-box; min-height:44px; padding:9px var(--sp-3); font:500 16px/1.3 "Nunito Sans"; color:#242424;
   background:#fff; border:1px solid #8A847B; border-radius:8px; text-overflow:ellipsis}
-#editor-name::placeholder{color:#6B665E; opacity:1}
+#editor-name::placeholder{color:#8A847B; opacity:1}
 #editor .editor-statusrow{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
 #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
 @media (max-width:420px){#editor-status{min-height:48px}}
 #editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
-  display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#5E5A53}
+  display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#5E5850}
 #editor-hint-toggle[hidden]{display:none}
 #editor-hint-toggle .ico{display:flex; align-items:center; justify-content:center; width:24px; height:24px; box-sizing:border-box; border:2px solid currentColor; border-radius:50%; font:700 14px/1 Bitter, serif; font-style:italic}
 #editor-hint-toggle[aria-expanded="true"]{color:#242424}
@@ -942,10 +942,10 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-region::-webkit-scrollbar{display:none}
 @media (max-height:420px){#editor-region{margin-top:0}}
 #editor.dragging #editor-region{overflow:hidden}
-#editor-tabs{flex:0 0 auto; display:flex; padding-right:44px; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:var(--sp-1); position:sticky; top:0; z-index:3; background:#F6F4ED}
-#editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5A53; font-weight:600;
+#editor-tabs{flex:0 0 auto; display:flex; padding-right:44px; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
+#editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5850; font-weight:600;
   border-bottom:3px solid transparent; margin-bottom:-1px}
-#scale-sheet #editor-tabs .edtab{background:none; color:#5E5A53; border-color:transparent}
+#scale-sheet #editor-tabs .edtab{background:none; color:#5E5850; border-color:transparent}
 #scale-sheet #editor-tabs .edtab:hover, #scale-sheet #editor-tabs .edtab:active{background:none; color:#242424; border-color:transparent}
 #scale-sheet #editor-tabs .edtab[aria-selected="true"]{color:#242424; border-bottom-color:#6756B5}
 #editor-panels{flex:0 0 auto; min-height:var(--ed-panel-h,192px); display:flex; flex-direction:column}
@@ -956,7 +956,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor .editor-accidentals .mode:first-child{border-radius:8px 0 0 8px}
 #editor .editor-accidentals .mode:last-child{border-radius:0 8px 8px 0; border-left-width:0}
 #editor .editor-palette-row{display:flex; flex-direction:column; gap:var(--sp-1)}
-#editor-palette-label{margin:0; font:600 12px/1.2 "Nunito Sans"; letter-spacing:.04em; text-transform:uppercase; color:#5E5A53}
+#editor-palette-label{margin:0; font:600 12px/1.2 "Nunito Sans"; letter-spacing:.04em; text-transform:uppercase; color:#5E5850}
 #editor-undo.covered{visibility:hidden}
 #editor .editor-toolbar .rs-short{display:none}
 @media (max-width:599px){#editor .editor-toolbar .rs-full{display:none} #editor .editor-toolbar .rs-short{display:inline}}
@@ -1026,7 +1026,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-layout{flex:0 0 auto; display:flex; gap:var(--sp-1); min-height:44px}
 #editor-layout .mode{flex:1 1 0; min-width:0; min-height:44px; padding:2px; font-size:11px; line-height:1.1}
 #editor-layout .mode.on{background:#242424; color:#F6F4ED; border-color:#242424}
-#editor-layout .mode:disabled{opacity:.45; cursor:default}
+#editor-layout .mode:disabled{opacity:1; cursor:default}
 #editor-layout .mode[hidden]{display:none}
 #editor .editor-toolbar{flex:0 0 auto; display:flex; gap:var(--sp-2); align-items:center}
 #editor .editor-toolbar .mode{flex:1 1 0; min-width:44px; padding-inline:2px; white-space:normal; text-align:center; line-height:1.15; overflow-wrap:anywhere}
@@ -1043,7 +1043,8 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor .editor-toolbar #editor-menu .rs-short{display:none}
 #editor-menu .menu-sep{height:1px; background:#8A847B; margin:var(--sp-1) 0}
 #editor-menu .del-name{display:inline-block; max-width:12ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom}
-#editor .editor-toolbar .mode:disabled{opacity:.45; cursor:default}
+#editor .editor-toolbar .mode:disabled{opacity:1; cursor:default}
+#editor .editor-toolbar .mode.primary:disabled{background:#F6F4ED; color:#8A847B; border-color:#8A847B}
 #editor-tray{flex:0 0 auto}
 #editor-dialog{position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
 #editor-dialog .dlg{background:#F6F4ED; color:#242424; border:2px solid #242424; border-radius:12px; padding:var(--sp-3); margin:var(--sp-3);
