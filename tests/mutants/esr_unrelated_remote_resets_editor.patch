@@ -1,4 +1,4 @@
-# kills: SV11 U3: unrelated remote writes preserve clean Layout interaction and dirty editor base
+# kills: SV11 U3: unrelated remote writes preserve the dirty editor base and its draft
 # suite: node --test --test-name-pattern ^SV11.U3: tests/app.test.js
 # fault: Unrelated remote changes reset an editor even when its target and revision are unchanged.
 diff --git a/index.html b/index.html

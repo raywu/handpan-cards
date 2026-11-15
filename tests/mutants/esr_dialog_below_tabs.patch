@@ -1,4 +1,4 @@
-# kills: the Back dialog paints above every editor layer
+# kills: 375x667 scale: Save, Discard and Keep editing are hittable and the scrim covers the tabs
 # suite: node --test --test-name-pattern 375x667.scale: tests/editor_e2e.test.js
 # fault: The Back dialog sits at z-index 2, under the sticky tabs, the info overlay and the hint close.
 diff --git a/index.html b/index.html

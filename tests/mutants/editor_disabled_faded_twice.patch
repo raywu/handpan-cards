@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1043,7 +1043,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1049,7 +1049,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  #editor .editor-toolbar #editor-menu .rs-short{display:none}
  #editor-menu .menu-sep{height:1px; background:#8A847B; margin:var(--sp-1) 0}
  #editor-menu .del-name{display:inline-block; max-width:12ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom}
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +#editor .editor-toolbar .mode:disabled{opacity:.45; cursor:default}
  #editor .editor-toolbar .mode.primary:disabled{background:#F6F4ED; color:#8A847B; border-color:#8A847B}
  #editor-tray{flex:0 0 auto}
- #editor-dialog{position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
+ #editor-dialog{position:absolute; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}

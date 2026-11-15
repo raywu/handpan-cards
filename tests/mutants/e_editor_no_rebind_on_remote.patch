@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14871,7 +14871,7 @@ savedSnapshotListener=event=>{
-   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
-   selection=savedResolve(selection,savedState,savedEntries);
-   const session=editorSession;
+@@ -15277,7 +15277,7 @@ savedSnapshotListener=event=>{
+     const kind=editorConflictKind();
+     if(kind!==session.conflict){session.conflict=kind;editorRender();}
+   }
 -  if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
 +  if(false && pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
      const target=savedResolve(editingBase.selection,savedState,savedEntries);

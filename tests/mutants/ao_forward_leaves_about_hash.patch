@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14791,7 +14791,7 @@ window.addEventListener("popstate", () => {
+@@ -15206,7 +15206,7 @@ window.addEventListener("popstate", () => {
    if (pendingPop) { pendingPop = false; syncRoute(); return; }
    observeLinkRoute();
    if (aboutOpen) { hideAbout(); return; }
 -  if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
 +
    if (!pageOpen) return;
+   if (editorBackstop()) return;
    sheetRouted = false;
-   hideSheet();
