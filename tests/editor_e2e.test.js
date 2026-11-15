@@ -4943,6 +4943,133 @@ function run() {
   });
 
 
+  describe("editor hint and menu at rest", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+    const POINTS = [[.25, .25], [.75, .25], [.5, .5], [.25, .75], [.75, .75]];
+    const liftInert = `const inerts = [...document.querySelectorAll("[inert]")]; inerts.forEach((el) => el.removeAttribute("inert"));`;
+    const dropInert = `inerts.forEach((el) => el.setAttribute("inert", ""));`;
+    const LONG_NAME = "Kurd R\u00e9 mineur - \u591c\u660e\u3051\u306e\u97f3\u968e \u00fc\u00f1\u00e7 \u00e9\u00e0\u00e8 \u00e7\u00f4\u00eb\u00ef\u00e2 40";
+    const openSaved = async (name) => {
+      await openAdd();
+      await typeLine(SCALE);
+      if (name) {
+        await b.click("#editor-name");
+        await b.eval(`const n = document.getElementById("editor-name"); n.value = ${JSON.stringify(name)}; n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+        await b.key("Enter", "Enter", 13);
+      }
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const samplePoints = (sel) => b.eval(`${liftInert}
+      try {
+        return [...document.querySelectorAll(${JSON.stringify(sel)})].map((el) => {
+          const r = el.getBoundingClientRect();
+          const miss = ${JSON.stringify(POINTS)}.filter(([fx, fy]) => {
+            const hit = document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy);
+            return !hit || !el.contains(hit);
+          }).length;
+          const h = document.elementFromPoint(r.left + r.width * .75, r.top + r.height * .25);
+          return { id: el.id || el.textContent.slice(0, 20), miss, over: h && (h.id || h.className) };
+        });
+      } finally { ${dropInert} }`);
+
+    for (const [w, h] of [[390, 844], [360, 640], [320, 568], [1280, 800]]) {
+      test(`EHM menu over toggle ${w}x${h}: with the menu open every item is hit at five points`, async () => {
+        await fresh(w, h);
+        await openSaved(LONG_NAME);
+        await b.click("#editor-delete");
+        await pause(250);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-menu").hidden;`), false, "the menu is open");
+        const rows = await samplePoints("#editor-menu, #editor-menu .menuitem");
+        const over = await b.eval(`${liftInert}
+          try {
+            const m = document.getElementById("editor-menu").getBoundingClientRect(), t = document.getElementById("editor-hint-toggle").getBoundingClientRect();
+            const l = Math.max(m.left, t.left), r = Math.min(m.right, t.right), tp = Math.max(m.top, t.top), bt = Math.min(m.bottom, t.bottom);
+            if (r <= l || bt <= tp) return { overlap: false };
+            const hit = document.elementFromPoint((l + r) / 2, (tp + bt) / 2);
+            return { overlap: true, inMenu: !!hit && document.getElementById("editor-menu").contains(hit), hit: hit && (hit.id || hit.className) };
+          } finally { ${dropInert} }`);
+        assert.ok(!over.overlap || over.inMenu, "the toggle paints over the open menu: " + JSON.stringify(over));
+        assert.ok(rows.length >= 2, "the menu has items");
+        const bad = rows.filter((r) => r.miss > 0);
+        assert.deepStrictEqual(bad, [], "menu items covered: " + JSON.stringify(bad));
+      });
+    }
+
+    for (const [w, h] of [[360, 640], [390, 844]]) {
+      test(`EHM tab skips covered ${w}x${h}: with the hint open Tab always lands on a reachable control`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await b.click("#editor-hint-toggle");
+        await pause(250);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
+        const probe = `${liftInert}
+          try {
+            const el = document.activeElement, r = el.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return { id: el.id || el.className || el.tagName, ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
+          } finally { ${dropInert} }`;
+        for (const shift of [false, true]) {
+          for (let i = 1; i <= 8; i++) {
+            const before = await b.eval(`return document.activeElement.id || document.activeElement.className || document.activeElement.tagName;`);
+            await b.eval(`document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: ${shift}, bubbles: true, cancelable: true })); return true;`);
+            await pause(40);
+            const r = await b.eval(probe);
+            assert.ok(r.ok, `${shift ? "Shift+" : ""}Tab ${i} from ${before} lands under another element: ${JSON.stringify(r)}`);
+          }
+        }
+      });
+    }
+
+    test("EHM tab skips covered: closing the hint restores the covered controls to the Tab order", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(NEO);
+      const stops = () => b.eval(`return editorTabStops().map((e) => e.id);`);
+      const closed = await stops();
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      await b.click("#editor-hint-close");
+      await pause(250);
+      assert.deepStrictEqual(await stops(), closed);
+      assert.ok(closed.includes("editor-name"));
+    });
+
+    for (const [w, h] of [[360, 640], [375, 667], [667, 375]]) {
+      test(`EHM close clears tab ${w}x${h}: with the hint open the Layout tab is hit at five points`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await b.click("#editor-hint-toggle");
+        await pause(250);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
+        const rows = await samplePoints("#editor-tab-layout");
+        assert.deepStrictEqual(rows.map((r) => r.miss), [0], "Layout tab covered: " + JSON.stringify(rows));
+      });
+    }
+
+    for (const lang of ["en", "de"]) {
+      test(`EHM delete space ${lang}: the armed delete item reads a space before the scale name`, async () => {
+        await fresh(390, 844);
+        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+        await openSaved();
+        await b.click("#editor-delete");
+        const got = await b.eval(`const e = document.getElementById("editor-delete"), n = e.querySelector(".del-name");
+          const tn = document.createTreeWalker(e, NodeFilter.SHOW_TEXT).nextNode(), rg = document.createRange();
+          rg.setStart(tn, 0); rg.setEnd(tn, tn.textContent.trimEnd().length);
+          const textRight = rg.getBoundingClientRect().right;
+          return { name: n && n.textContent, armed: e.classList.contains("armed"), gap: n ? n.getBoundingClientRect().left - textRight : null, text: e.innerText };`);
+        assert.strictEqual(got.armed, true);
+        assert.ok(got.name && got.name.length > 0, "the name span exists");
+        assert.ok(got.gap >= 2, "the rendered gap between the label and the name is a space wide: " + JSON.stringify(got));
+      });
+    }
+  });
+
   describe("editor cleanup", () => {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
     const saveOne = async (w = 375, h = 667) => {
