@@ -356,9 +356,9 @@ const NEW_HTML = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8
 const OLD_HTML = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_ee5438d0.html.txt"), "utf8");
 const OLD_HTML_C6 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_c6ef6b58.html.txt"), "utf8");
 const MAIN_HTML_A4 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_a4ecfc2e.html.txt"), "utf8");
-const MAIN_HTML_G = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_4b432f04.html.txt"), "utf8");
 const PA_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
 const PA_HIJAZ = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
+const MAIN_HTML_G = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_4b432f04.html.txt"), "utf8");
 
 const sharedBoot = async (origin, html) => {
   const app = boot({ html, origin, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true,
