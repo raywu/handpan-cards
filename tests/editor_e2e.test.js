@@ -5011,7 +5011,7 @@ function run() {
           try {
             const el = document.activeElement, r = el.getBoundingClientRect();
             const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-            return { id: el.id || String(el.className.baseVal ?? el.className) || el.tagName, ok: !!hit && (el.contains(hit) || (!!el.ownerSVGElement && el.parentNode.contains(hit))), hit: hit && (hit.id || String(hit.className.baseVal ?? hit.className)) };
+            return { id: el.id || String(el.className.baseVal ?? el.className) || el.tagName, ok: !!hit && (el.contains(hit) || !!el.closest("#editor-pan")), hit: hit && (hit.id || String(hit.className.baseVal ?? hit.className)) };
           } finally { ${dropInert} }`;
         for (const shift of [false, true]) {
           for (let i = 1; i <= 8; i++) {
