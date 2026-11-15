@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14104,7 +14104,7 @@ function editorNeoMarks(m, fields, geom) {
-   map.forEach((key, slot) => {
+@@ -14179,7 +14179,7 @@ function editorNeoMarks(m, fields, geom, part) {
+   if (part !== "landing") map.forEach((key, slot) => {
      if (key !== null || (!mutants && slot < NEO_MAIN)) return;
      const at = neoSlotPoint(slot, null, geom.turn);
 -    const waiting = empty && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null;

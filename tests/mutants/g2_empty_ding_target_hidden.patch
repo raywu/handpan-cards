@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14183,7 +14183,7 @@ function editorWithOverlay(markup, m, solved) {
-   if (!standard && geom.place) out += editorNeoMarks(m, fields, geom);
+@@ -14264,7 +14264,7 @@ function editorWithOverlay(markup, m, solved) {
+   }
    if (unchosen) {
      const dy = (geom.ding_dy * 100).toFixed(2), dr = (geom.r_ding * 100).toFixed(2);
 -    out += `<circle class="etarget eempty" data-ring="ding" cx="0" cy="${dy}" r="${dr}"/>`;
