@@ -529,7 +529,6 @@ test("U2a-X1: exchanging two bottom notes matches the recorded sheet output, pin
   for (const c of cases) {
     const label = js(c.opts) + " " + c.i + "," + c.j;
     const want = c.recorded;
-    assert.strictEqual(want.ok, true, label + " the sheet accepted it");
     const viaExchange = modelRun(app, BOTTOM3, c.opts, `editorExchangeAngles(m0, "bottom", ${c.i}, ${c.j})`);
     const viaSwap = modelRun(app, BOTTOM3, c.opts, `editorSwapSeats(m0, "bottom", ${c.i}, ${c.j})`);
     for (const got of [viaExchange, viaSwap]) {
@@ -540,7 +539,8 @@ test("U2a-X1: exchanging two bottom notes matches the recorded sheet output, pin
       assert.strictEqual(got.noop, false, label + " the exchange changed the model");
       assert.strictEqual(got.kept, true, label + " the input model is untouched");
     }
-    assert.strictEqual(viaExchange.link, viaSwap.link, label + " one link");
+    const wantCode = "at-" + want.angles.map((a) => (a === null ? "" : a)).join(",");
+    for (const got of [viaExchange, viaSwap]) assert.ok(got.link.includes(wantCode), label + " the link carries the recorded angles " + wantCode + ": " + got.link);
   }
   const first = modelRun(app, BOTTOM3, cases[0].opts, 'editorExchangeAngles(m0, "bottom", 0, 1)');
   assert.ok(first.link.includes("at-240,330,"), "the link carries both traded angles: " + first.link);
@@ -554,7 +554,6 @@ test("U2a-X2: an exchange the 5 degree steps cannot hold is refused and moves no
   const opts = { angles: { bottom: Array.from({ length: n }, (_, k) => (k === 22 ? 90 : null)) } };
   const recorded = { ok: false, angles: opts.angles.bottom, seats: null };
   for (const [a, b] of [[0, 2], [2, 0]]) {
-    assert.strictEqual(recorded.ok, false, "the sheet refuses " + a + "," + b);
     for (const fn of ["editorExchangeAngles", "editorSwapSeats"]) {
       const got = modelRun(app, text, opts, `${fn}(m0, "bottom", ${a}, ${b})`);
       assert.strictEqual(got.ok, recorded.ok, fn + " " + a + "," + b);
