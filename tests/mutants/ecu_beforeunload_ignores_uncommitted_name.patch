@@ -1,0 +1,15 @@
+# kills: CLU5 r3 an uncommitted rename guards unloading
+# suite: node --test --test-name-pattern CLU5.r3.an.uncommitted.rename tests/editor_e2e.test.js
+# fault: The unload guard no longer counts an uncommitted name or line draft, so a reload silently loses it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15246,7 +15246,7 @@ function editorPasteGuard(state) {
+ }
+ window.addEventListener("beforeunload", (e) => {
+   const s = editorSession;
+-  if (!s || !(editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present))) return;
++  if (!s || !editorIsDirty(s.base, s.history.present)) return;
+   e.preventDefault();
+   e.returnValue = "";
+ });

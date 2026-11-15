@@ -1,0 +1,15 @@
+# kills: CLU5 r4 a remote edit rebinding an unarmed clean editor shows no rebound message
+# suite: node --test --test-name-pattern CLU5.r4.a.remote.edit.rebinding tests/editor_e2e.test.js
+# fault: Every remote rebind says the scale was rebound, even when no Delete was armed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15337,7 +15337,7 @@ savedSnapshotListener=event=>{
+     if(changed && !savedEqual(target,editingBase.selection) && !(editingBase.selection.kind==="builtin" && target.kind==="saved" && target.id===savedState.slots[editingBase.selection.id])){
+       session.conflict=editorConflictKind();editorRender();
+     }else if(changed && latest){
+-      const tab=session.tab, wasArmed=session.delArmed;
++      const tab=session.tab, wasArmed=true;
+       beginSheetSession(latest,target);
+       editorClose();
+       editorOpen(latest);
