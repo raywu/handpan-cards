@@ -1,4 +1,4 @@
-# kills: EHM menu over toggle
+# kills: EHM menu over toggle 390x844: with the menu open every item is hit at five points
 # suite: node --test --test-name-pattern ^EHM.menu.over.toggle tests/editor_e2e.test.js
 # the open menu paints below the hint toggle
 # fault: The menu z-index drops back under the hint toggle.

@@ -1,4 +1,4 @@
-# kills: EHM delete space
+# kills: EHM delete space en: the armed delete item reads a space before the scale name
 # suite: node --test --test-name-pattern ^EHM.delete.space tests/editor_e2e.test.js
 # the armed delete label loses the space before the name
 # fault: The label's text nodes sit directly in the flex button again, so the trailing space collapses.

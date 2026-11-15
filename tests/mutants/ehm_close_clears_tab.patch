@@ -1,4 +1,4 @@
-# kills: EHM close clears tab
+# kills: EHM close clears tab 360x640: with the hint open the Layout tab is hit at five points
 # suite: node --test --test-name-pattern ^EHM.close.clears.tab tests/editor_e2e.test.js
 # the hint close button covers the Layout tab
 # fault: The close button goes back to the top of the hint card, over the tab strip.
