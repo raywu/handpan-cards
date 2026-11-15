@@ -1,4 +1,4 @@
-# kills: QA2 hint 390x844: the info button shares the name field's right edge and sits inside the strip; the open overlay is clear of the button and has an x at its top right that closes it
+# kills: QA2 hint 390x844: the info button sits below the strip; the open overlay is clear of the button and has an x at its top right that closes it
 # suite: node --test --test-name-pattern QA2.hint tests/editor_e2e.test.js
 # fault: The info button stays visible over the open overlay.
 diff --git a/index.html b/index.html

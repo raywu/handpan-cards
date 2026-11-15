@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13818,7 +13818,6 @@ function editorSetTab(tab, focus) {
-   editorCloseMenu();
+@@ -14050,7 +14050,6 @@ function editorSetTab(tab, focus) {
    s.tab = tab;
    editorRenderTabs();
+   editorEl(tab === "scale" ? "editor-panel-scale" : "editor-panel-layout").querySelector(".editor-hintrow").appendChild(editorEl("editor-hint-toggle"));
 -  if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
+   editorPlaceAreas();
    if (focus) editorEl("editor-tab-" + tab).focus();
    return true;
- }

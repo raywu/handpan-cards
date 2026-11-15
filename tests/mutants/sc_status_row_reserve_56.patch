@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
  #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
 -@media (max-width:420px){#editor-status{min-height:48px}}
 +@media (max-width:420px){#editor-status{min-height:56px}}
- #editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
-   display:flex; align-items:center; justify-content:flex-end; background:none; border:0; box-shadow:none; color:#5E5850}
- #editor-hint-toggle[hidden], #editor-hint-close[hidden]{display:none}
+ #editor .editor-hintrow{display:flex; align-items:center; gap:var(--sp-2)}
+ #editor-hint-toggle{flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+   display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
