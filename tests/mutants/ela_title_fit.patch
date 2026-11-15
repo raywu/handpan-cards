@@ -1,0 +1,15 @@
+# kills: ELA title fit 320x568 en add: h2#editor-title does not overflow
+# suite: node --test --test-name-pattern ELA.title.fit tests/editor_e2e.test.js
+# fault: The editor title is back to one clipped line, so its scrollWidth exceeds its clientWidth.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -896,7 +896,7 @@
+ @media (min-width:640px) and (min-height:700px){#scale-sheet.onepanel #editor{--ed-k:calc(370px + var(--ed-row))}}
+ #editor .editor-head{flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); min-width:0}
+ #editor-title{margin:0; font:600 13px/1.2 "Nunito Sans"; letter-spacing:.09em; text-transform:uppercase; flex:1 1 auto; min-width:0;
+-  overflow-wrap:anywhere; hyphens:auto}
++  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+ #editor .editor-type{flex:0 0 auto; display:flex; gap:0}
+ #editor .editor-type .mode{border-radius:0; min-width:44px}
+ #editor .editor-type .mode:first-child{border-radius:8px 0 0 8px}

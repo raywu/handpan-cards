@@ -896,7 +896,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @media (min-width:640px) and (min-height:700px){#scale-sheet.onepanel #editor{--ed-k:calc(370px + var(--ed-row))}}
 #editor .editor-head{flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); min-width:0}
 #editor-title{margin:0; font:600 13px/1.2 "Nunito Sans"; letter-spacing:.09em; text-transform:uppercase; flex:1 1 auto; min-width:0;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  overflow-wrap:anywhere; hyphens:auto}
 #editor .editor-type{flex:0 0 auto; display:flex; gap:0}
 #editor .editor-type .mode{border-radius:0; min-width:44px}
 #editor .editor-type .mode:first-child{border-radius:8px 0 0 8px}
@@ -917,7 +917,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
 #scale-sheet #editor-hint-toggle, #scale-sheet #editor-hint-toggle:hover, #scale-sheet #editor-hint-toggle:active{background:none}
 #editor-hint-toggle[hidden], #editor-hint-close[hidden]{display:none}
-#editor-hint-close{position:absolute; z-index:6; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+#editor-hint-close{position:absolute; z-index:6; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:45px 0 0;
   display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#242424; font:500 28px/1 "Nunito Sans"}
 #editor-hint-toggle .ico{display:flex; align-items:center; justify-content:center; width:24px; height:24px; box-sizing:border-box; border:2px solid currentColor; border-radius:50%; font:700 14px/1 Bitter, serif; font-style:italic}
 #editor-hint-toggle[aria-expanded="true"]{visibility:hidden}
@@ -929,7 +929,9 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}
 @media (prefers-reduced-motion:reduce){#editor-status.arrive{animation:none}}
 #editor-status .mode{min-height:32px; padding:4px 10px}
-#editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px}
+#editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px; position:absolute; left:0; right:0; bottom:0}
+#editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:40px}
+@media (max-width:420px){#editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:48px}}
 #editor-status[data-conflict] #editor-conflict-msg{flex:1 1 12em; min-width:0}
 #editor-status #editor-conflict-separate{min-height:44px; white-space:normal; padding:10px 14px}
 #editor .editor-panbox{flex:0 0 auto; min-height:0;
@@ -939,7 +941,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-pan{height:100%; width:100%; display:flex; align-items:center; justify-content:center}
 #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}
 #editor-areas{position:absolute; z-index:4; box-sizing:border-box; display:flex; flex-direction:column; gap:var(--sp-2); overflow-y:auto; overscroll-behavior:contain;
-  padding:var(--sp-3) 52px var(--sp-3) var(--sp-3); background:#F6F4ED; color:#242424; border:1px solid #8A847B; border-radius:8px}
+  padding:calc(var(--sp-3) + 45px) 52px var(--sp-3) var(--sp-3); background:#F6F4ED; color:#242424; border:1px solid #8A847B; border-radius:8px}
 #editor-areas[hidden]{display:none}
 #editor-counts{display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); font:500 13px/20px "Nunito Sans"}
 #editor-counts .zc.full{font-weight:700}
@@ -949,6 +951,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @media (max-height:420px){#editor-region{margin-top:0}}
 #editor.dragging #editor-region{overflow:hidden}
 #editor-tabs{flex:0 0 auto; display:flex; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
+#editor:has(#editor-areas:not([hidden])) #editor-tabs{z-index:5}
 #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5850; font-weight:600;
   border-bottom:3px solid transparent; margin-bottom:-1px}
 #scale-sheet #editor-tabs .edtab{background:none; color:#5E5850; border-color:transparent}
