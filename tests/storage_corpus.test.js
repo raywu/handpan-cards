@@ -619,3 +619,161 @@ test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport inta
     assert.deepStrictEqual(envelopeOf(old), oldEnv, `${n}: the old store changed`);
   }
 });
+
+/* ---- RG: rollback guard. Rows written by a newer app (record version above this
+ * app's newest) stay byte-identical, are counted in a notice, travel through the
+ * move and are named in the backup. They are seeded straight into storage. */
+const RG_NOTICE = {
+  one: "1 saved scale was made in a newer version of Handpan Theory. It is kept safe and will show again after an update.",
+  other: (n) => `${n} saved scales were made in a newer version of Handpan Theory. They are kept safe and will show again after an update.`,
+};
+const RG_BACKUP = (n) => (n === 1
+  ? "1 scale from a newer version is not in this file. It stays saved in this browser."
+  : `${n} scales from a newer version are not in this file. They stay saved in this browser.`);
+
+const rgRewrite = async (app, body) => app.getAsync(`(async () => {
+  const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  const tx = db.transaction("collections", "readwrite");
+  const store = tx.objectStore("collections");
+  const row = await new Promise((res, rej) => { const q = store.get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  const env = JSON.parse(row);
+  (${body})(env);
+  await new Promise((res, rej) => { const q = store.put(JSON.stringify(env), "current"); q.onsuccess = () => res(); q.onerror = () => rej(q.error); });
+  await new Promise((res) => { tx.oncomplete = () => res(); });
+  return true;
+})()`);
+
+// Saves every wanted row the normal way, then rewrites the record version of the
+// paired ones in place: the envelope shape (ids, ordinals) stays valid. A number
+// above 5 or a string version is stored as given.
+const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href) => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = createOrigin({ storage: {} });
+  const fresh = href ? await rgMoveBoot(origin, href, "") : await sharedBoot(origin, NEW_HTML);
+  const lines = [PA_HIJAZ, PA_HIJAZ.replace("B4", "C#5"), PA_AMARA, "(E3) B3 D4 E4 F#4 G#4"];
+  for (const [i, name] of readable.entries()) await saveAcoustic(fresh, lines[i], name);
+  const plan = [];
+  for (const [i, v] of versions.entries()) {
+    if (v === 4) await saveAcoustic(fresh, lines[(readable.length + i) % 4], "ACOUSTIC V4 " + i);
+    else { await savePaired(fresh, lines[i % 4], "NEWER " + i); if (v !== 5) plan.push([i, v]); }
+  }
+  await rgRewrite(fresh, `(env) => {
+    for (const [i, v] of ${JSON.stringify(plan)}) {
+      const row = env.entries.find((e) => e.record.o && e.record.o.name === "NEWER " + i);
+      row.record.v = v;
+      if (v === 7) row.record.o.anchor = "between";
+    }
+  }`);
+  return origin;
+};
+const rgNewer = (env) => env.entries.filter((e) => typeof e.record.v === "number" && e.record.v > 5);
+
+test("RG: record 6 and 7 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit", async () => {
+  const origin = await rgOrigin([6, 7], ["ACOUSTIC ONE", "ACOUSTIC TWO"]);
+  const app = await sharedBoot(origin, NEW_HTML);
+  const seeded = rgNewer(envelopeOf(app));
+  assert.strictEqual(seeded.length, 2);
+  assert.notStrictEqual(app.get("savedMode"), "protected");
+  const snapshot = JSON.stringify(envelopeOf(app));
+  const again = await sharedBoot(origin, NEW_HTML);
+  assert.strictEqual(JSON.stringify(envelopeOf(again)), snapshot, "boot wrote nothing");
+  assert.ok(!chips(again).some((c) => c.includes("NEWER")), "newer rows are not offered as scales");
+
+  await saveAcoustic(again, PA_HIJAZ.replace("B4", "C#5"), "ACOUSTIC THREE");
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "SAVE left the newer rows alone");
+
+  openChipOf(again, "ACOUSTIC ONE");
+  again.els["scale-name"].value = "ACOUSTIC ONE EDITED";
+  again.els["scale-name"].dispatchEvent({ type: "input" });
+  await again.getAsync("runGenerate()");
+  await settle();
+  assert.ok(envelopeOf(again).entries.some((e) => e.record.o && e.record.o.name === "ACOUSTIC ONE EDITED"), "the edit landed");
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "Edit left the newer rows alone");
+
+  openChipOf(again, "ACOUSTIC TWO");
+  again.els["scale-delete"].click();
+  await settle();
+  again.els["scale-delete"].click();
+  await settle();
+  await new Promise((r) => setTimeout(r, 300));
+  await settle();
+  assert.ok(!envelopeOf(again).entries.some((e) => e.record.o && e.record.o.name === "ACOUSTIC TWO"), "the other scale is gone");
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "Delete left the newer rows alone");
+
+  again.els["deck-restore"].click();
+  again.els["deck-restore"].click();
+  await settle();
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "RESET SEEDED left the newer rows alone");
+  assert.notStrictEqual(again.get("savedMode"), "protected");
+});
+
+test("RG: the notice counts only rows above the app's newest record version", async () => {
+  const origin = await rgOrigin([4, 6, 7, 8, "7"]);
+  const app = await sharedBoot(origin, NEW_HTML);
+  const status = app.els["saved-status"];
+  assert.strictEqual(status.textContent, RG_NOTICE.other(3), "v6, v7 and v8 are counted; v5, v4 and a non-number v are not");
+  assert.strictEqual(status.hidden, false);
+
+  const one = await sharedBoot(await rgOrigin([6]), NEW_HTML);
+  assert.strictEqual(one.els["saved-status"].textContent, RG_NOTICE.one);
+
+  const none = await sharedBoot(await rgOrigin([4, 5]), NEW_HTML);
+  assert.strictEqual(none.els["saved-status"].textContent, "");
+  assert.strictEqual(none.els["saved-status"].hidden, true);
+});
+
+const rgMoveBoot = async (origin, href, referrer) => {
+  const armed = NEW_HTML.replace(/^const MOVE_FROM = .*;$/m, () => 'const MOVE_FROM = "old.example";')
+    .replace(/^const MOVE_TARGET = .*;$/m, () => 'const MOVE_TARGET = "https://new.example";');
+  const page = `<script>location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + armed;
+  const app = boot({ html: page, origin, href, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true,
+    crypto: require("node:crypto").webcrypto, abortController: true });
+  for (let i = 0; i < 80 && !app.get("typeof booted!=='undefined'&&booted"); i += 1) await new Promise((r) => setTimeout(r, 25));
+  await settle();
+  return app;
+};
+
+test("RG: a move from the old host carries newer rows byte-identical, and a junk object row passes through as opaque", async () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = await rgOrigin([6, 7, 8], ["ACOUSTIC ONE"], "https://old.example/index.html");
+  const old = await rgMoveBoot(origin, "https://old.example/index.html", "");
+  const oldEnv = envelopeOf(old);
+  const sent = rgNewer(oldEnv).map((e) => e.record);
+  assert.strictEqual(sent.length, 3);
+  old.click(old.get("moveBannerGo"));
+  const url = old.get("window.__assigned");
+  assert.ok(url && url.startsWith("https://new.example/"), "the old host forwarded");
+  const dest = await rgMoveBoot(createOrigin({}), url, "https://old.example/");
+  assert.deepStrictEqual(rgNewer(envelopeOf(dest)).map((e) => e.record), sent, "newer rows arrived byte-identical");
+  assert.deepStrictEqual(envelopeOf(old), oldEnv, "the old store did not change");
+  assert.strictEqual(dest.els["saved-status"].textContent, RG_NOTICE.other(3));
+
+  const junk = { weird: true, n: [1, 2] };
+  const code = Buffer.from(JSON.stringify({ r: [{ i: "junk-1", r: junk }], h: [] })).toString("base64url");
+  const handmade = "https://new.example/#move=" + code + "&then=";
+  const dest2 = await rgMoveBoot(createOrigin({}), handmade, "https://old.example/");
+  assert.deepStrictEqual(plain(envelopeOf(dest2).entries.map((e) => e.record)), [junk], "a junk object row is kept as opaque");
+});
+
+test("RG: the backup names the rows it leaves out, and with only newer rows it is not empty and cannot be exported", async () => {
+  const mixed = await sharedBoot(await rgOrigin([6, 7]), NEW_HTML);
+  mixed.els["backup-open"].click();
+  const text = mixed.els["backup-text"].value;
+  assert.ok(text.includes(RG_BACKUP(2)), "the file says two newer scales are not in it");
+  assert.ok(text.includes("Handpan Theory saved scales (1)"), "the readable count excludes newer rows");
+  assert.ok(!text.includes("NEWER"), "no newer row is written");
+  assert.ok(mixed.els["backup-copy"].disabled === false);
+
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = await rgOrigin([7], []);
+  const only = await sharedBoot(origin, NEW_HTML);
+  only.els["backup-open"].click();
+  assert.strictEqual(only.els["backup-status"].textContent, RG_BACKUP(1));
+  assert.notStrictEqual(only.els["backup-status"].textContent, "No saved scales to back up yet.");
+  assert.strictEqual(only.els["backup-text"].value, "");
+  for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(only.els[id].disabled, true, id);
+
+  const empty = await sharedBoot(createOrigin({ storage: {} }), NEW_HTML);
+  empty.els["backup-open"].click();
+  assert.strictEqual(empty.els["backup-status"].textContent, "No saved scales to back up yet.");
+});

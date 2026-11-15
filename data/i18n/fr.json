@@ -341,6 +341,10 @@
   "saved.temporary": "UTILISER CET ONGLET TEMPORAIREMENT",
   "saved.failure": "Impossible d’enregistrer ces modifications. Votre brouillon est conservé. Réessayez.",
   "saved.legacy": "Une ancienne version a modifié ses gammes enregistrées. Ces modifications sont conservées séparément pour les récupérer.",
+  "saved.newer": {
+    "one": "1 gamme enregistrée vient d’une version plus récente de Handpan Theory. Elle est conservée en sécurité et réapparaîtra après une mise à jour.",
+    "other": "{n} gammes enregistrées viennent d’une version plus récente de Handpan Theory. Elles sont conservées en sécurité et réapparaîtront après une mise à jour."
+  },
   "saved.savedToken": "{token} identifie cette gamme enregistrée dans ce navigateur.",
   "saved.presetToken": "{token} identifie cette gamme prédéfinie.",
   "saved.importFailure": "Impossible d’ajouter cette gamme partagée. Son lien reste dans la barre d’adresse. Essayez de l’ouvrir à nouveau.",
@@ -380,5 +384,9 @@
   "backup.downloaded": "Téléchargé.",
   "backup.last": "Dernière sauvegarde : {date}",
   "backup.file_title": "Gammes enregistrées de Handpan Theory ({n}). Touchez chaque lien pour retrouver une gamme.",
-  "backup.file_hidden": "Gammes d’origine masquées (note seulement, sans lien) : {names}"
+  "backup.file_hidden": "Gammes d’origine masquées (note seulement, sans lien) : {names}",
+  "backup.file_newer": {
+    "one": "1 gamme d’une version plus récente n’est pas dans ce fichier. Elle reste enregistrée dans ce navigateur.",
+    "other": "{n} gammes d’une version plus récente ne sont pas dans ce fichier. Elles restent enregistrées dans ce navigateur."
+  }
 }
