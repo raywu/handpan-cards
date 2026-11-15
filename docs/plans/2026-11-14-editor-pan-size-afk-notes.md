@@ -3,7 +3,7 @@
 ## AFK decisions
 
 - **Hint is an info button.** The counts and hint block sits behind a 44px info button (`#editor-hint-toggle`, `aria-expanded`, `aria-controls="editor-areas"`) in the tab strip, and opens as an overlay placed by `editorPlaceAreas`, so the pan never moves. Rationale: an always-visible block costs pan height at 375x667; the overlay keeps the 200-212px pan. The strip reserves 44px (`padding-right` on `#editor-tabs`) so the Layout tab never runs under the button; the test "P0 tabs" and mutant `editor_tabs_no_hint_reserve` guard it. "P0 hint resize" and `editor_hint_not_replaced_on_resize` guard re-placement on rotation.
-- **Status row height.** `#editor-status` has `min-height:40px` by default and `min-height:48px` under `@media (max-width:420px)`. The row is therefore 48px at phone widths (420px wide and below), up from 40px, matching the 48px `--ed-row`. This is what the code does at the int head; no earlier 56px value exists in `index.html`, so no "56 to 48" change is claimed.
+- **Status row height.** `#editor-status` has `min-height:40px` by default and `min-height:48px` under `@media (max-width:420px)`. The row is therefore 48px at phone widths (420px wide and below), up from 40px, matching the 48px `--ed-row`. This is what the code does at the int head. An earlier message-placement value reserved 56px at 360px wide or less; commit d70fe483 changed it to 48px at 420px wide or less, and the mutant `sc_status_row_reserve_56` (killed by the "SC" first-row test at 390x664) pins the 48px value. The change is therefore 56px to 48px.
 
 ## Tab test move
 

@@ -1057,7 +1057,8 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   pinned; then the link is version 8 and the record version 6
   (`recordVersion` returns 6 exactly then, never with a profile; the app's
   record gates `newestRecordVersion`, `savedCandidate` and `readSavedRecord`
-  accept v6 only with pinned inner angles and no profile, and refuse 7+). With no pinned
+  accept v6 only with pinned inner angles and no profile; 18.6 states the full
+  4/5/6/7 rule, and a record above the newest version is refused). With no pinned
   inner angle the writer emits exactly today's version 6 bytes (`at-` stays a
   version 6 option and is also valid on version 8, refused on version 7).
 - Option order on version 8: palette-N, parent-<mode>, mirror | mirror-top |
@@ -1107,8 +1108,20 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
 
 The sandbox `ELEMENT_IDS` in `tools/sandbox.js` (re-exported by `tests/helpers/sandbox.js`) is the registry of
 record; e2e targets them. Phase 3 registered the nine below, and later phases
-have appended more (`scale-*` ids for the Phase 4 Edit sheet and the Phase 5/6
-sheets); the rule is that phases APPEND, never renumber or rename.
+appended more (`scale-*` ids for the Phase 4 Edit sheet and the Phase 5/6
+sheets); the rule was that phases APPEND, never renumber or rename.
+
+- DECIDED(editor RC, legacy sheet removal U2j) The legacy scale sheet and layout
+  drawer are gone, so their ids left `ELEMENT_IDS` (it lists only ids that are in the
+  markup and looked up by the app; test "SB-2 every served id is in the markup and is
+  looked up by the app") and moved to `LEGACY_IDS` in `tools/sandbox.js`, which the
+  strict `getElementById` still serves so the shipped-client fixture bytes boot. A
+  retired id is never reused. The ids listed below are therefore history. The scale
+  editor builds its DOM at runtime (`editorOpen`), so no `editor-*` id is registered in
+  `ELEMENT_IDS`; its tests run in the real browser (`tests/editor_e2e.test.js`) and on
+  the pure model (`tests/editor_model.test.js`, `tests/editor_shell.test.js`). The
+  append-only rule now applies to `ELEMENT_IDS` entries that remain in the markup; a
+  retirement moves the id to `LEGACY_IDS`.
 
 - DECIDED(plan "Open decisions", UI element ids row) The Phase 3 scale-input UI
   uses these element ids: `scale-sheet`, `scale-box`, `scale-parse`,
@@ -1120,7 +1133,8 @@ sheets); the rule is that phases APPEND, never renumber or rename.
   `scale-mirror` (MIRROR TOP), `scale-mirror-bottom`, `scale-fine-toggle`,
   `scale-fine`, `scale-note-prev`, `scale-note-next`, `scale-seat-prev`,
   `scale-seat-next`, `scale-layout-reset` (RESET LAYOUT), `scale-drawer-status`
-  and `scale-drawer-hint`; the registry in `tools/sandbox.js` is the record.
+  and `scale-drawer-hint`; the registry in `tools/sandbox.js` is the record, and
+  these ids now live in `LEGACY_IDS`.
 
 ## 16. Fixture schemas
 
@@ -1402,13 +1416,21 @@ a profiled v9 link accepts `between` exactly once. `decodeSeed` admits 9 only wh
 `HPE.core.PROFILE_ENABLED` is on. A client whose newest wire is below 9 answers a
 version 9 link with `NEEDS_NEWER_APP`; a version 10 or above is `NEEDS_NEWER_APP`.
 
-### 18.6 Record versions 5 and 7, and rule I1
+### 18.6 Record versions 4, 5, 6 and 7, and rule I1
 
 `RECORD_VERSION` stays 4. `PROFILE_RECORD_VERSION = 5` is used for a record
-whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4, 5, 6 or 7:
-the app never chooses it. `savedCandidate` accepts 4 for a standard record and
-5 for a profile record, and refuses 5 without a profile or 4 with one;
-`savedMeaning` appends the canonical profile map (null for a standard record, so
+whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4, 5, 6 or 7
+(test "SE: recordVersion is 6 for a pinned inner angle, 4 without, 5 for a profile").
+The app derives the version through `recordVersionFor(options, profiled)` in
+`index.html`: a profile record is 7 when its anchor is `"between"` and 5 otherwise; a
+standard record is 6 when an inner angle is pinned and 4 otherwise. `savedCandidate`
+requires `record.v === recordVersionFor(options, profiled)`, so it accepts 4, 5, 6 and 7
+only in those pairings and refuses 5 with an anchor, 7 without one, 5 or 7 without a
+profile, 6 with a profile or without a pinned inner angle, and 4 with a profile (tests
+"TRI59d savedCandidate stages a between profile as record 7 and refuses the wrong
+pairings", "TRI59d record 7 is read exactly when the record is a profile carrying
+between", both in `tests/persist.test.js`). `savedMeaning` appends the canonical profile
+map (null for a standard record, so
 the meaning of every existing record is unchanged).
 
 Rule I1: a profile record never carries `replaces` and never owns a seeded

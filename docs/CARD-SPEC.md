@@ -66,23 +66,27 @@ exactly where its diagram has it.
 - MIRROR reflects the NOTES of the rim and inner rings; `mirrorBottom` does the
   same for the bottom ring and defaults to `mirror`. Index numbers never move:
   each position keeps its unmirrored number and the note mirrored into it takes
-  that number on the diagram, the number line and the drawer (owner 2026-10-30;
-  rule N extended). The sheet's MIRROR BOTTOM toggle reflects EVERY note, the
+  that number on the diagram (owner 2026-10-30; rule N extended). The scale
+  editor has no mirror control (owner Q10): a scale saved or shared
+  mirrored keeps its flags, draws as before and stays editable by swap, remove and
+  save (editor_shell "PLa-1: a mirrored scale stays editable by swap, remove and save,
+  with the mirror flags unchanged"; "PL-a the Layout row holds only the two anchor
+  buttons, Rotate and Mirror are gone, and the Neotone pair is shown like Standard's"
+  in editor_e2e). Reflecting the bottom ring reflects EVERY note, the
   hand-placed ones included: an explicit angle `a` in `options.angles.bottom`
   becomes `180 - a mod 360` (`HPE.layout.reflectAngles`; null entries stay null
   because `solve` already reflects them), so a note at 285 goes to 255 and the
   note that was at its mirror partner goes the other way (owner 2026-10-31,
   superseding MN2's hold-the-orphans rule S). Numbers stay with positions: after
   the reflection they are re-ranked around the ring by the cyclic rule N against
-  the unmirrored home. Pygmy C3 slid 300 -> 285 reads U1; with MIRROR BOTTOM on
+  the unmirrored home. Pygmy C3 slid 300 -> 285 reads U1; with `mirrorBottom` on
   C3 is at 255 and reads U2, and Db3 (home 240, now at 300) reads U1. Multiples
-  of 5 reflect to multiples of 5 and the top shell is symmetric, so the toggle is
+  of 5 reflect to multiples of 5 and the top shell is symmetric, so the reflection is
   never refused for an accepted layout (any ring size, the 5- and 7-note rings
-  included); toggling twice returns the identical layout. Stored angles are
+  included); reflecting twice returns the identical layout. Stored angles are
   drawn angles in their own frame, so saved scales and share links draw exactly
   as before (tests "MN3: reflectAngles reflects explicit entries ...", "MN3 release
   safety: records and v6 links ...", "MN3: across bottom rings of 2..8 notes ...").
-  RESET LAYOUT clears every angle.
 - Inner notes (after the inner bar): one at top centre, two at 128 and 52, more
   fan across the top half; they push the ding toward the player by at least
   0.1425R, raised step by step while an inner index number would touch the ding
@@ -223,8 +227,9 @@ chords[{main, sup, subtitle, fields[], roots[]}]`. Zones: `ding | rim | inner |
 bottom`. `chords[].fields` is the canonical voicing in spelling order.
 `options.parent` is null on decks saved from the sheet; the engine infers it.
 
-- **Typed order seats the rim and inner rings** (owner 2026-10-23); the drawer is the
-  correction path. Do not "fix" it to ascending. Tests: `tests/app.test.js` "OF:".
+- **Typed order seats the rim and inner rings** (owner 2026-10-23); swapping notes in
+  the scale editor is the correction path. Do not "fix" it to ascending. Tests:
+  `tests/app.test.js` "OF:".
 - **Saved instances:** local handles, not engine IDs, identify a saved scale; `#s=`
   never carries a handle. `docs/ENGINE-SPEC.md` sections 12 and 14.
 
@@ -280,12 +285,10 @@ import UI and the `scale_import` event were removed; do not rebuild them.
 ## Scale editor
 
 The scale editor is one panel: a header (Back, title, Standard / Neotone switch), the notes
-line, a status line, the pan drawing, the zone counts and hint, a two-tab control area
-(Scale, Layout) and an action row (Undo, Save, `...`). It replaces the legacy sheet
-editor. Plans: the editor release candidate plan and the editor panel simplify plan (tabs,
-counts, menu). Claims below cite
-the test that pins them; items marked PLANNED or PENDING have no passing test yet and
-carry the lane that lands them, so a reviewer can re-check each after that lane merges.
+line, the pan drawing, the status line, a two-tab control area (Scale, Layout) and an action
+row (Undo, Save, `...`); the zone counts and hint sit in an overlay behind the info button
+(see Hint). It replaces the legacy sheet editor. Plans: the editor release candidate plan and
+the editor panel simplify plan (tabs, counts, menu). Claims below cite the test that pins them.
 
 - **Shell and Save.** A new scale opens as an empty pan, never as a blank panel: Standard
   is pressed by default, both type buttons stay enabled, the ding and the rim, cyclops and
@@ -331,28 +334,60 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   makes the editor dirty", "a new Neotone scale stores the suffixed auto name"; model
   `tests/editor_model.test.js` "N1-M1" to "N1-M7".
 - **Tabs.** Two tabs, Scale and Layout (`role="tablist"`, roving tabindex, Arrow, Home and
-  End move and activate; the other panel is `hidden`). The pan, status, counts and hint sit
-  outside both panels and show on both tabs. Scale holds the name, the 12 note chips, the
-  octave row and the Sharps|Flats control; Layout holds the anchor buttons and the card
-  palette. A held note survives a tab switch. Tests: "tabs: tablist semantics",
-  "tabs: Scale holds the notes, octave and Sharps|Flats", "tabs: a held note survives a tab
-  switch", "counts: both hint lines render under the counts on both tabs".
+  End move and activate; the other panel is `hidden`). The pan and the status line sit
+  outside both panels and show on both tabs; the counts and hint are in the `#editor-areas`
+  overlay behind the info button on either tab. Scale holds the name, the 12 note chips, the
+  octave row and the Sharps|Flats control; Layout holds the anchor buttons and the palette.
+  A held note survives a tab switch. Tests: "tabs: tablist semantics", "tabs: Scale holds
+  the notes, octave and Sharps|Flats", "tabs: a held note survives a tab switch", "counts:
+  both hint lines render under the counts on both tabs".
+- **Selected tab.** The selected tab shows through `aria-selected` only: transparent
+  background, a 3px accent underline (`#6756B5`), full-strength text (`#242424`, weight 600);
+  the unselected tab is muted (`#5E5850`, main's drawer value); no `.on` class on editor tabs
+  and no fill on hover or press, so `#1 CENTRED` is the only filled control on Layout. Test:
+  "ETS: the selected tab is not filled: underline and strong text on it, muted text on the
+  other, no .on class, no fill on hover or press".
 - **Hint.** An info-glyph button (`#editor-hint-toggle`, 44px target, `aria-expanded`,
   `aria-controls="editor-areas"`, `aria-label` from `editor.hint.toggle.aria`, `title` from
-  `editor.hint.toggle`) sits at the right end of the tab strip, positioned absolutely by
-  `editorPlaceAreas`; it takes no layout height and the strip reserves its width. It opens
-  the counts-and-hint overlay over the whole tabs-plus-panels area, above the sticky strip
-  and never moving anything; the button stays above the overlay. A second tap on the button, a
-  pointer-down outside the overlay, or Escape closes it. The `--ed-k` reserve leaves the
-  control region tall enough for the Scale tab (strip, Name, tray) to show whole at 390x664,
-  so its first row is never scrolled under the strip. Tests: "SC 390x844", "SC 390x664", "P0
-  hint: counts and hint sit in a collapsed block", "PF 390x844: the Hint block is an overlay".
+  `editor.hint.toggle`) sits in the active panel's hint row below the tab strip (beside the
+  name field on Scale; `editorRender` moves it to the Layout row) and takes no layout height.
+  It opens the counts-and-hint overlay over the whole tabs-plus-panels area
+  (`editorPlaceAreas`), above the sticky strip and never moving anything; the info button is
+  not shown over the overlay, and opening moves focus to the (x). An (x) button
+  (`#editor-hint-close`, 44px, `aria-label` from `editor.hint.close`) sits at the overlay's top
+  right with no overlay text under it. The (x), a pointer-down outside the overlay, or
+  Escape closes it; Escape closes only the overlay, not the editor; the (x) and Escape return
+  focus to the info button. The `--ed-k` reserve leaves the control region tall enough for the
+  Scale tab (strip, Name, tray) to show whole at 390x664, so its first row is never scrolled
+  under the strip. Tests: "QA2 hint 390x844: the info button sits below the strip; the open
+  overlay is clear of the button and has an x at its top right that closes it" (the x, Escape
+  and the focus return), "the first row of the Scale tab is fully visible under the strip, and
+  the Hint info button takes no layout height", "P0 hint: counts and hint sit in a collapsed
+  block", "the Hint block is an overlay on the whole controls area, nothing moves when it
+  toggles, and a second tap or Escape closes it".
+- **Message placement.** `#editor-status` sits just under the pan box, before the tab strip
+  and the counts overlay. An error shows as an ink banner (`#242424` background, white text,
+  14px/600, radius 8px, padding 4px 12px, a leading warning glyph, no red, no hover) and plays
+  one 180ms settle only when the error text changes (none under reduced motion); notices stay
+  plain text. During a drag the status stays visible below the magnified pan (the pan's grow
+  room excludes the status height in portrait). The reserved height is 40px, 48px at 420px
+  wide or less (AFK value, was 56px at 360px in the plan; pinned by the mutant
+  `sc_status_row_reserve_56`, killed by "the first row of the Scale tab is fully visible
+  under the strip, and the Hint info button takes no layout height" at 390x664). Tests:
+  "EMP: the status line sits between the pan and the counts, within 16px of the pan, and
+  stays in view with no scroll at 375x667 and 320x568", "EMP: an error is an ink banner at
+  14px and a notice is plain text", "EMP: the arrival cue replays for a different error, not
+  for a re-render of the same one, and again after a clear", "EMP: no arrival animation under
+  reduced motion", "EMP: mid-drag at 390x844 the scaled pan box does not cover the status,
+  which stays the top hit".
 - **Swipe between tabs.** A horizontal swipe on the Scale panel, the tab strip, the counts
   row, the hint or the Layout panel switches tabs. A swipe that starts on the pan, a note
   chip or a text field, starts within 24px of a screen edge, is held past the hold time, is
   short, slow or mostly vertical, or happens while a note is held or selected, the line is
   edited, a dialog is open or a drag is live, switches nothing. With reduced motion the cue
-  does not slide. Tests: "a left swipe on the Scale panel opens Layout", "a swipe that
+  does not slide. A scroll of the controls region by more than 8px cancels the swipe, and so
+  does a pinch zoom (`sheetZoomed`; no test pins the pinch cancel). Tests: "P0 editorWireSwipe:
+  a region scroll cancels the tab swipe (the scrollTop check points at the region)", "a left swipe on the Scale panel opens Layout", "a swipe that
   starts on the tab strip", "a press held past the hold time is not a swipe", "with reduced
   motion the swipe cue does not slide", "a short, slow or mostly vertical swipe changes
   nothing", "a swipe that starts on the pan, a tray note or a text field", "a swipe does not
@@ -369,7 +404,7 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
 - **Zones, counts and caps.** Standard shows `Rim n/12`, `Cyclops n/6`, `Bottom n/12` and
   `Ding n/1`; a zone at its cap reads Full and refuses a further add with the exact copy;
   a crowded cyclops/bottom is refused with the pt figures. Neotone shows `Main n/9`,
-  `Mutant n/9` and `Ding`, with no Full mark and no area caps. An over-cap saved scale
+  `Mutant n/9` and `Ding n/1`, with no Full mark and no area caps. An over-cap saved scale
   loads and saves unchanged; only a further add is refused. Tests: "D17: the counts read",
   "D16: a full area reads Full", "D16 e2e: the 6th cyclops note is refused as crowded",
   "counts: Standard shows Rim, Cyclops, Bottom and Ding; Neotone shows Main, Mutant and
@@ -435,19 +470,25 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   (`sheet.anchor_one`, `sheet.anchor_between`), 44px or larger and in view at 320, 375 and
   820 wide; no Mirror and no Rotate (the app-wide MIRROR feature, saved and shared mirrored
   layouts are untouched; a scale saved mirrored keeps its flags and stays editable by swap,
-  remove and save). With no notes both are disabled (on Neotone they are also hidden); that is the only
-  disabled state. Standard: the anchor splits notes 1 and 2,
+  remove and save). With no notes both are disabled; that is the only disabled state, on Neotone too. Standard: the anchor splits notes 1 and 2,
   `aria-pressed` follows, a repeat adds no step. Tests: "PL-a the Layout row holds only the
   two anchor buttons", "PLa-N2: with no notes both anchor buttons are disabled", "the anchor
   splits notes 1 and 2", "the anchor controls are at least 44px", "PL-a a permuted Neotone
   arrangement is dropped by Cancel and kept through SAVE"; model `tests/editor_shell.test.js`
   "U2e2-7", "U2e2-8", "PLa-1".
-- **Layout tab: palette.** Ten palettes; a pick is one Undo step, picking the current
-  palette adds none, palette 0 writes no option, and a swatch pick keeps the Layout tab.
-  Today a chip toggles the swatch group open (PLANNED below replaces it). Tests: "the palette
-  chip opens ten 44px swatches in the Layout tab", "picking the current palette closes the
-  swatches", "tabs: choosing a palette swatch keeps the Layout tab"; model
-  `tests/editor_shell.test.js` "U2e2-1", "U2e2-2".
+- **Layout tab: palette.** Ten palettes as a flat group: `#editor-swatches` is always shown on
+  Layout under the visible `editor.palette` label (`aria-labelledby`), a 5x2 grid of 44px dots,
+  with no chip; the palette is not on the Scale tab. A pick is one Undo step, picking the
+  current palette adds none and keeps the dots shown, palette 0 writes no option, a pick keeps
+  the Layout tab and applies while the notes line is being edited, and a pick is refused while
+  a dialog is open or while an edit error is still open (AFK decision; the error stays
+  visible). Tests: "EPF: the Layout tab shows ten 44px palette dots under a visible label with
+  no chip, with no scroll at 375x667, and one tap picks", "EPF: picking the current palette
+  adds no Undo step and keeps the dots shown", "EPF: a palette pick applies while the text line
+  is being edited, and is refused while a dialog is open", "EPF: a palette pick is refused
+  while a rejected text line is still being edited, and the error stays visible", "tabs:
+  choosing a palette swatch keeps the Layout tab"; model `tests/editor_shell.test.js`
+  "U2e2-1", "U2e2-2".
 - **Neotone.** The Neotone pan has 9 main fields and 9 mutant fields, each mutant in the field
   of its main; a tray note fills the first empty main field; a mutant needs its field filled
   (`Field n is empty`); a note moves only inside its own row; tap-swap and tap-move take the
@@ -455,10 +496,11 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   no pin is made. Tests: "a tray note dragged to an empty main field fills it", "a mutant
   dragged into an empty field is refused", "D3 tap parity: tapping a main note then another
   swaps them"; model `tests/editor_shell.test.js` "U2e-1" to "U2e-11". The `#1 CENTRED` and
-  `#1 / #2` buttons are never greyed out on Neotone (owner 2026-11-11) and work as on
-  Standard, including with and without mutant notes: PENDING lane A1/A2 (PL-b). Until then
-  the pair is hidden on Neotone, never disabled (test: "the Neotone pair is hidden, never
-  disabled"). Those lanes also cover wire v9 and record 7, owned by `docs/ENGINE-SPEC.md`.
+  `#1 / #2` buttons are shown on Neotone like Standard's and never greyed out there (owner
+  2026-11-11; `editorRenderLayout`), and work as on Standard, including with and without mutant
+  notes. Tests: "PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are
+  gone, and the Neotone pair is shown like Standard's", "TRI59d A2: Pygmy to Neotone with
+  between, SAVE writes record 7". Wire v9 and record 7 are owned by `docs/ENGINE-SPEC.md`.
 - **Keyboard and accessibility.** Every placed note, the cyclops area and the bottom ring
   are named stops with one tab stop in the pan; Enter picks, arrows move between seats,
   Enter on another note swaps; Left and Right nudge a picked cyclops or bottom note 5
@@ -476,35 +518,6 @@ carry the lane that lands them, so a reviewer can re-check each after that lane 
   scale; the `ONE_PANEL` flag, the sheet tabs, drawer and its swipe are gone (U2j-1
   removed the sheet swipe; its tab swipe is the editor's). The RC gate is zero hits of
   `ONE_PANEL` in `index.html`.
-
-### Planned (lane W5a, not yet built)
-
-Three owner-approved changes land together in lane W5a after U2j-1. They are described
-here as the intended behaviour; every test named is specified by the plan and does not
-exist yet, so re-check this block after W5a merges and delete the PLANNED marks.
-
-- **PLANNED (W5a): quieter selected tab**.
-  The selected tab shows through `aria-selected` only: transparent background, a 3px accent
-  underline (`#6756B5`), full-strength text (`#242424`, weight 600); unselected tabs are muted
-  (`#5E5A53`); no `.on` class on editor tabs, no fill on hover or `:active`, so `#1 CENTRED`
-  is the only filled control on Layout. Test: a selected-tab computed-style test in
-  `tests/editor_e2e.test.js` (to be added; mutant `ets_tab_filled_on_select`).
-- **PLANNED (W5a): flat palette**.
-  The `#editor-palette` chip is removed; `#editor-swatches` is always shown on Layout under a
-  visible label (`editor.palette`, "Palette") as a 5x2 grid of 44px dots with
-  `aria-labelledby`; one tap picks, the group stays open, Undo covers it, the palette is
-  absent from the Scale tab, a pick during a dialog is refused. The ten chip tests in
-  `tests/editor_e2e.test.js` are rewritten to the flat behaviour (to be added; mutants
-  `epf_swatches_hidden_again`, `epf_pick_needs_two_taps`).
-- **PLANNED (W5a): message placement**.
-  `#editor-status` moves to just under the pan box, before the counts; an error shows as an
-  ink pill (`#242424` background, white text, 14px/600, radius 8px, a leading warning
-  glyph, no red, no hover) and plays one 180ms settle only when the error text changes (none
-  under reduced motion); notices stay plain text. During a drag the status stays visible below
-  the magnified pan (the pan's grow room excludes the status height in portrait). The
-  reserved height is 40px, 56px at 360px wide or less. Tests to be added in
-  `tests/editor_e2e.test.js` (mutants `emp_status_back_on_top`, `emp_error_plain_text`,
-  `emp_status_under_drag_pan`).
 
 ## Feature plans
 

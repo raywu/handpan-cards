@@ -24,9 +24,9 @@ const APP = path.join(__dirname, "..", "index.html");
 
 // Ids getElementById will serve. getElementById stays STRICT - an unknown id
 // throws, so a typo in the app is a loud failure, not a silent null.
-// The scale-sheet ids of ENGINE-SPEC section 15 are served from Phase 3 on, so
-// a boot never throws on the sheet markup and e2e and the units target the same
-// names. Serving an id costs nothing when no element in index.html uses it yet.
+// ELEMENT_IDS lists the ids that are in the index.html markup (SB-2 checks it).
+// The retired scale-sheet and drawer ids of ENGINE-SPEC section 15 live in
+// LEGACY_IDS below; the scale editor builds its DOM at runtime and registers none.
 // Ids that older shipped clients (the fixture bytes) still look up but the current markup no longer serves.
 const LEGACY_IDS = ["print-paper-select", "scale-box", "scale-name", "scale-generate", "scale-delete", "scale-back", "scale-swatches", "scale-neotone", "scale-msg", "scale-refusal", "scale-parse", "scale-mirror", "scale-mirror-bottom", "scale-box-wrap", "scale-name-row", "scale-name-label", "scale-delete-row", "scale-del-note", "scale-layout-reset", "scale-layout-zone", "scale-plate-band", "scale-layout-hint", "scale-layout-state", "scale-drawer", "scale-drawer-hint", "scale-drawer-status", "scale-anchor-one", "scale-anchor-between", "scale-note-prev", "scale-note-next", "scale-seat-prev", "scale-seat-next", "scale-angle-prev", "scale-angle-next", "scale-fine-toggle", "scale-fine", "scale-mode-row", "scale-mode-label", "scale-mode-standard", "scale-mode-neotone", "scale-standard", "scale-neotone-pair", "scale-neotone-extra", "scale-neotone-unused", "scale-neotone-rearrange", "scale-neotone-builtin", "scale-neotone-name-hint", "scale-neotone-wrap", "scale-neotone-text", "scale-neotone-msg", "scale-preview", "scale-title", "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next", "scale-foot", "scale-footslide", "scale-lip", "scale-fields", "scale-ding", "scale-top", "scale-inner", "scale-bottom", "scale-ding-label", "scale-top-label", "scale-inner-label", "scale-bottom-label", "scale-field-msg", "scale-fields-live", "scale-fields-note", "scale-line-note", "scale-conflict", "scale-conflict-msg", "scale-conflict-separate"];
 const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", "shuffle", "modeA", "modeB",
