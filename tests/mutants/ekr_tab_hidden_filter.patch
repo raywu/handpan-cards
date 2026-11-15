@@ -9,7 +9,7 @@ diff --git a/index.html b/index.html
  // CSS, has no client rects), never of a hand-kept mode table.
  const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
  function cycleTabStops(all, e) {
--  const stops = all.filter(el => getComputedStyle(el).visibility !== "hidden");
+-  const stops = typeof getComputedStyle === "function" ? all.filter(el => getComputedStyle(el).visibility !== "hidden") : all;
 +  const stops = all;
    if (!stops.length) return;
    const i = stops.indexOf(document.activeElement);

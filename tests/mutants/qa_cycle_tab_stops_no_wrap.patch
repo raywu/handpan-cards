@@ -10,7 +10,7 @@ diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
 @@ -15530,7 +15530,7 @@ function cycleTabStops(all, e) {
-   const stops = all.filter(el => getComputedStyle(el).visibility !== "hidden");
+   const stops = typeof getComputedStyle === "function" ? all.filter(el => getComputedStyle(el).visibility !== "hidden") : all;
    if (!stops.length) return;
    const i = stops.indexOf(document.activeElement);
 -  const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);

@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
 +const isStop = el => !!el && el.getClientRects().length > 0;
  function cycleTabStops(all, e) {
-   const stops = all.filter(el => getComputedStyle(el).visibility !== "hidden");
+   const stops = typeof getComputedStyle === "function" ? all.filter(el => getComputedStyle(el).visibility !== "hidden") : all;
    if (!stops.length) return;

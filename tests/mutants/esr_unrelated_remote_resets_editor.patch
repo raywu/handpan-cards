@@ -6,7 +6,7 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -15291,7 +15291,7 @@ savedSnapshotListener=event=>{
      const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
-     if(changed && !savedEqual(target,editingBase.selection)){
+     if(changed && editorConflictKind()==="deleted"){
        session.conflict=editorConflictKind();editorRender();
 -    }else if(changed && latest){
 +    }else if(latest){
