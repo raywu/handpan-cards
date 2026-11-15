@@ -4841,8 +4841,19 @@ function run() {
       });
     }
 
+    for (const [w, h] of [[667, 375], [844, 390], [1024, 768]]) {
+      test(`ELA banner grid ${w}x${h}: with the conflict banner shown the scale line centre hits itself`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await showBanner();
+        const r = await hitsSelf("editor-line");
+        assert.ok(r.ok, "banner stays in the grid cell: " + JSON.stringify(r));
+      });
+    }
+
     for (const [w, h] of [[360, 640], [375, 667], [320, 568], [667, 375]]) {
-      test(`ELA counts row ${w}x${h}: with the hint open the Layout tab centre hits itself`, async () => {
+      test(`ELA counts row${w}x${h}: with the hint open the Layout tab centre hits itself`, async () => {
         await fresh(w, h);
         await openAdd();
         await typeLine(NEO);
