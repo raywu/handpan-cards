@@ -341,6 +341,10 @@
   "saved.temporary": "USE THIS TAB TEMPORARILY",
   "saved.failure": "Could not save these changes. Your draft is still here. Try again.",
   "saved.legacy": "An older app changed its saved scales. Those changes are kept separately for recovery.",
+  "saved.newer": {
+    "one": "1 saved scale was made in a newer version of Handpan Theory. It is kept safe and will show again after an update.",
+    "other": "{n} saved scales were made in a newer version of Handpan Theory. They are kept safe and will show again after an update."
+  },
   "saved.savedToken": "{token} identifies this saved scale in this browser.",
   "saved.presetToken": "{token} identifies this preset scale.",
   "saved.importFailure": "Could not add this shared scale. Its link is still in the address bar. Try opening it again.",
@@ -510,5 +514,9 @@
   "editor.count.bottom": "Bottom {n}/{max}",
   "editor.count.ding": "Ding {n}/{max}",
   "editor.count.main": "Main {n}/{max}",
-  "editor.count.mutant": "Mutant {n}/{max}"
+  "editor.count.mutant": "Mutant {n}/{max}",
+  "backup.file_newer": {
+    "one": "1 scale from a newer version is not in this file. It stays saved in this browser.",
+    "other": "{n} scales from a newer version are not in this file. They stay saved in this browser."
+  }
 }

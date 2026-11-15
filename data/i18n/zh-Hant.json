@@ -327,6 +327,9 @@
   "saved.temporary": "暫時使用此分頁",
   "saved.failure": "無法儲存這些變更。你的編輯內容仍然保留。請再試一次。",
   "saved.legacy": "舊版應用程式變更了已儲存的音階。這些變更會另行保留，以供復原。",
+  "saved.newer": {
+    "other": "有 {n} 個已儲存的音階是用較新版本的 Handpan Theory 建立的。它們已安全保留，更新後會再次顯示。"
+  },
   "saved.savedToken": "{token} 是此瀏覽器中這個已儲存音階的識別標記。",
   "saved.presetToken": "{token} 是這個內建音階的識別標記。",
   "saved.importFailure": "無法加入這個分享的音階。連結仍在網址列中，請嘗試重新開啟。",
@@ -493,5 +496,8 @@
   "editor.count.bottom": "底部 {n}/{max}",
   "editor.count.ding": "Ding {n}/{max}",
   "editor.count.main": "主音 {n}/{max}",
-  "editor.count.mutant": "Mutant {n}/{max}"
+  "editor.count.mutant": "Mutant {n}/{max}",
+  "backup.file_newer": {
+    "other": "有 {n} 個來自較新版本的音階不在此檔案中。它們仍儲存在此瀏覽器裡。"
+  }
 }

@@ -21233,5 +21233,62 @@ function run() {
     });
   });
 
+
+  describe("RG: rollback guard", () => {
+    const RG_UID = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const RG_SEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const rgRecords = (newer) => [{ v: 4, s: RG_SEED, o: { name: "READABLE" } },
+      ...newer.map((v, i) => ({ v, s: RG_SEED, o: { name: "NEWER " + i, ...(v === 7 ? { anchor: "between" } : {}) } }))];
+    const rgEnvelope = (records, revision) => ({
+      schema: 1, collectionId: "00000000-0000-4000-8000-0000000000aa", revision, slotStateRevision: 0,
+      entries: records.map((record, i) => ({ instanceId: RG_UID(i + 1), revision: 1, displayOrdinal: i + 1, record })),
+      usedInstanceIds: records.map((_, i) => RG_UID(i + 1)), nextDisplayOrdinal: records.length + 1,
+      preferredSelection: { kind: "builtin", id: "kurd" }, slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] } });
+    const rgWrite = (records, revision) => b.eval(`return ${nativeSavedExpression({ write: true, raw: JSON.stringify(rgEnvelope(records, revision)) })};`);
+    const rgStatus = () => b.eval(`const el = document.getElementById("saved-status"); return el.hidden ? "" : el.textContent;`);
+    async function rgLoad(records) {
+      await freshLoad();
+      await rgWrite(records, 1);
+      await navigate();
+      await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the page to boot" });
+    }
+
+    test("RG: a newer row written by another tab updates the notice on focus, without a reload", async () => {
+      await rgLoad(rgRecords([]));
+      assert.strictEqual(await rgStatus(), "", "no notice while every row is readable");
+      await rgWrite(rgRecords([7]), 2);
+      await b.eval(`window.dispatchEvent(new Event("focus")); return true;`);
+      await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("1 saved scale was made in a newer version")`, { timeout: 5000, label: "the one-row notice" });
+      await rgWrite(rgRecords([7, 6]), 3);
+      await b.eval(`window.dispatchEvent(new Event("focus")); return true;`);
+      await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("2 saved scales were made in a newer version")`, { timeout: 5000, label: "the two-row notice" });
+    });
+
+    test("RG: the notice and the backup line fit at 320x568 in every locale", async () => {
+      try {
+        await b.setViewport(320, 568, true);
+        await rgLoad(rgRecords([6, 7, 8]));
+        const langs = await b.eval(`return LANGS.slice();`);
+        assert.strictEqual(langs.length, 8);
+        for (const lang of langs) {
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          const r = await b.eval(`const el = document.getElementById("saved-status"), q = el.getBoundingClientRect();
+            return { text: el.textContent, hidden: el.hidden, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight,
+              left: q.left, right: q.right, vw: innerWidth, doc: document.documentElement.scrollWidth };`);
+          assert.ok(!r.hidden && r.text.length > 0, `${lang}: the notice shows`);
+          assert.ok(!r.text.includes("{n}") && r.text.includes("3"), `${lang}: the count is filled in`);
+          assert.ok(r.sw <= r.cw && r.sh <= r.ch + 1, `${lang}: the notice is not clipped`);
+          assert.ok(r.left >= 0 && r.right <= r.vw, `${lang}: the notice is inside the viewport`);
+          assert.ok(r.doc <= r.vw, `${lang}: the page has no horizontal overflow`);
+          const line = await b.eval(`return t("backup.file_newer", { n: 3 });`);
+          assert.ok(line.length > 0 && line !== "backup.file_newer" && !line.includes("{n}"), `${lang}: the backup line is filled in`);
+          const text = await b.eval(`document.getElementById("backup-text").value = backupText(); return backupText();`);
+          assert.ok(text.includes(line), `${lang}: the backup file carries the line`);
+        }
+      } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
+    });
+  });
+
 }
 
