@@ -1,5 +1,5 @@
 # kills: ECL5 Cancel stays reachable while a conflict banner shows over a held note
-# suite: node --test --test-name-pattern ^ECL5 tests/editor_e2e.test.js
+# suite: node --test --test-name-pattern ^ECL5.Cancel.stays tests/editor_e2e.test.js
 # fault: The conflict banner hides the Cancel button and the armed Delete note.
 diff --git a/index.html b/index.html
 --- a/index.html
