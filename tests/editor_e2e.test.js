@@ -2609,7 +2609,13 @@ function run() {
             await pause(300);
             assert.strictEqual(await isDragging(), true, how);
             if (how === "cancel") await touch("touchCancel");
-            else if (how === "escape") { await b.key("Escape", "Escape", 27); await touch("touchEnd"); }
+            else if (how === "escape") {
+              await b.key("Escape", "Escape", 27);
+              await pause(500);
+              assert.strictEqual(await isDragging(), false, "Escape alone ends the drag");
+              assert.strictEqual(await live(), false, "Escape alone ends the drag");
+              await touch("touchEnd");
+            }
             else {
               await touch("touchMove", how === "off" ? to : await spotNow((await geom()).rim, 22.5));
               await touch("touchEnd");
@@ -4087,10 +4093,11 @@ function run() {
 
     test("P0 tabs: a tap near the Layout tab's right edge lands on the tab (the info button sits in the name row, not the strip)", async () => {
       await open(375, 667);
+      await b.click("#editor-tab-layout");
       const hit = await b.eval(`const t = document.getElementById("editor-tab-layout").getBoundingClientRect(), h = document.getElementById("editor-hint-toggle").getBoundingClientRect();
         const e = document.elementFromPoint(t.right - 2, t.top + t.height / 2), m = e && e.closest("[role=tab], #editor-hint-toggle");
-        return { id: m ? m.id : null, clear: h.top >= t.bottom - 1 };`);
-      assert.deepStrictEqual(hit, { id: "editor-tab-layout", clear: true });
+        return { id: m ? m.id : null, clear: h.top >= t.bottom - 1, inStrip: document.getElementById("editor-tabs").contains(document.getElementById("editor-hint-toggle")) };`);
+      assert.deepStrictEqual(hit, { id: "editor-tab-layout", clear: true, inStrip: false });
     });
 
     test("P0 hint: counts and hint sit in a collapsed block, a 44px info button in the name row with aria-expanded toggles it in place, and the pan does not move", async () => {
