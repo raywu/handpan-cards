@@ -21141,11 +21141,11 @@ function run() {
       assert.deepStrictEqual(arrived, [...records].sort(byName));
     });
 
-    test("move: a NEEDS_NEWER_APP record in the payload is skipped and the rest import", async () => {
+    test("move: a NEEDS_NEWER_APP record in the payload travels as an opaque row and the rest import", async () => {
       on(); await clearOrigin(NEW());
       await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`, OLD() + "/");
       await b.waitFor(noticeShown, { label: "the notice" });
-      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD"]);
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD", undefined]);
     });
 
     test("move: the notice shows the singular and plural counts only after the write commits", async () => {
@@ -21227,6 +21227,98 @@ function run() {
       await b.waitFor(atNew(), { label: "the second jump" });
       await sleep(800);
       assert.deepStrictEqual(names(await peek(NEW())).sort(), ["A", "B"]);
+    });
+  });
+
+
+  describe("RG: rollback guard", () => {
+    const RG_UID = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const RG_SEED = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
+    const rgRecords = (newer) => [{ v: 4, s: RG_SEED, o: { name: "READABLE" } },
+      ...newer.map((v, i) => ({ v, s: RG_SEED, o: { name: "NEWER " + i, ...(v === 7 ? { anchor: "between" } : {}) } }))];
+    const rgEnvelope = (records, revision) => ({
+      schema: 1, collectionId: "00000000-0000-4000-8000-0000000000aa", revision, slotStateRevision: 0,
+      entries: records.map((record, i) => ({ instanceId: RG_UID(i + 1), revision: 1, displayOrdinal: i + 1, record })),
+      usedInstanceIds: records.map((_, i) => RG_UID(i + 1)), nextDisplayOrdinal: records.length + 1,
+      preferredSelection: { kind: "builtin", id: "kurd" }, slots: {}, hidden: [],
+      migration: { sourceKey: null, raw: { hpfc: null, "hpfc.scales": null, "hpfc.scales.v3": null }, instanceIds: [] } });
+    const rgWrite = (records, revision) => b.eval(`return ${nativeSavedExpression({ write: true, raw: JSON.stringify(rgEnvelope(records, revision)) })};`);
+    const rgStatus = () => b.eval(`const el = document.getElementById("saved-status"); return el.hidden ? "" : el.textContent;`);
+    async function rgLoad(records) {
+      await freshLoad();
+      await rgWrite(records, 1);
+      await navigate();
+      await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the page to boot" });
+    }
+
+    test("RG: a newer row written by another tab updates the notice from its channel message, without a reload", async () => {
+      await rgLoad(rgRecords([]));
+      assert.strictEqual(await rgStatus(), "", "no notice while every row is readable");
+      const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
+      try {
+        const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
+        const peer = async (method, params = {}) => {
+          const previous = b.sessionId;
+          b.sessionId = sessionId;
+          try { return await b.rawSend(method, params); } finally { b.sessionId = previous; }
+        };
+        const peerEval = async (body) => {
+          const r = await peer("Runtime.evaluate", { expression: `(async () => { ${body} })()`, awaitPromise: true, returnByValue: true });
+          assert.ok(!r.exceptionDetails, "the peer page evaluated without an error: " + JSON.stringify(r.exceptionDetails));
+          return r.result.value;
+        };
+        assert.notStrictEqual(sessionId, b.sessionId, "the writer is a distinct target");
+        await peer("Page.enable");
+        await peer("Runtime.enable");
+        await peer("Network.enable");
+        await peer("Network.setBlockedURLs", { urls: b.blockedUrls });
+        await peer("Page.navigate", { url: URL });
+        const deadline = Date.now() + 15000;
+        while (!(await peerEval(`return ${APP_READY_EXPR};`))) {
+          assert.ok(Date.now() < deadline, "the peer page booted");
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        const post = (records, revision) => peerEval(`await ${nativeSavedExpression({ write: true, raw: JSON.stringify(rgEnvelope(records, revision)) })};
+          const c = new BroadcastChannel("handpan-cards:saved-scales:v1");
+          c.postMessage({ schema: 1, collectionId: "00000000-0000-4000-8000-0000000000aa", revision: ${revision} });
+          c.close(); return true;`);
+        await post(rgRecords([7]), 2);
+        await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("1 saved scale was made in a newer version")`, { timeout: 5000, label: "the one-row notice" });
+        await post(rgRecords([7, 6]), 3);
+        await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("2 saved scales were made in a newer version")`, { timeout: 5000, label: "the two-row notice" });
+      } finally { await b.send("Target.closeTarget", { targetId }, false); }
+    });
+
+    test("RG: the notice and the backup line fit at 320x568 in every locale", async () => {
+      try {
+        await b.setViewport(320, 568, true);
+        await rgLoad(rgRecords([6, 7, 8]));
+        const langs = await b.eval(`return LANGS.slice();`);
+        assert.strictEqual(langs.length, 8);
+        for (const lang of langs) {
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          const r = await b.eval(`const el = document.getElementById("saved-status"), q = el.getBoundingClientRect();
+            return { text: el.textContent, hidden: el.hidden, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight,
+              left: q.left, right: q.right, vw: innerWidth, doc: document.documentElement.scrollWidth };`);
+          assert.ok(!r.hidden && r.text.length > 0, `${lang}: the notice shows`);
+          assert.ok(!r.text.includes("{n}") && r.text.includes("3"), `${lang}: the count is filled in`);
+          assert.ok(r.sw <= r.cw && r.sh <= r.ch + 1, `${lang}: the notice is not clipped`);
+          assert.ok(r.left >= 0 && r.right <= r.vw, `${lang}: the notice is inside the viewport`);
+          assert.ok(r.doc <= r.vw, `${lang}: the page has no horizontal overflow`);
+          const line = await b.eval(`return t("backup.file_newer", { n: 3 });`);
+          assert.ok(line.length > 0 && line !== "backup.file_newer" && !line.includes("{n}"), `${lang}: the backup line is filled in`);
+          const text = await b.eval(`document.getElementById("backup-text").value = backupText(); return backupText();`);
+          assert.ok(text.includes(line), `${lang}: the backup file carries the line`);
+          const m = await b.eval(`openPanel(); backupPanel.hidden = false; paintBackup(t("backup.file_newer_none", { n: 3 }));
+            const el = document.getElementById("backup-status"), q = el.getBoundingClientRect();
+            return { text: el.textContent, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight, w: q.width, left: q.left, right: q.right, vw: innerWidth, doc: document.documentElement.scrollWidth };`);
+          const none = await b.eval(`return t("backup.file_newer_none", { n: 3 });`);
+          assert.ok(none.length > 0 && none !== line && !none.includes("{n}"), `${lang}: the no-file line is filled in`);
+          assert.strictEqual(m.text, none, `${lang}: the backup status shows the no-file line`);
+          assert.ok(m.w > 0 && m.sw <= m.cw && m.sh <= m.ch + 1, `${lang}: the backup status is not clipped`);
+          assert.ok(m.left >= 0 && m.right <= m.vw && m.doc <= m.vw, `${lang}: the backup status fits the viewport`);
+        }
+      } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
     });
   });
 

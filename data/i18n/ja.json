@@ -327,6 +327,9 @@
   "saved.temporary": "このタブで一時的に使用",
   "saved.failure": "変更を保存できませんでした。編集中の内容は残っています。もう一度お試しください。",
   "saved.legacy": "古いバージョンで保存済みスケールが変更されました。変更内容は復元用に別途保持されています。",
+  "saved.newer": {
+    "other": "{n}件の保存したスケールは、新しいバージョンの Handpan Theory で作られたものです。安全に保管されており、アップデート後にまた表示されます。"
+  },
   "saved.savedToken": "{token} はこのブラウザーに保存されたスケールの識別記号です。",
   "saved.presetToken": "{token} はこの標準スケールの識別記号です。",
   "saved.importFailure": "共有スケールを追加できませんでした。リンクはアドレスバーに残っています。もう一度開いてみてください。",
@@ -364,5 +367,11 @@
   "backup.downloaded": "ダウンロードしました。",
   "backup.last": "最終バックアップ: {date}",
   "backup.file_title": "Handpan Theory の保存したスケール（{n}件）。各リンクをタップするとスケールが戻ります。",
-  "backup.file_hidden": "非表示の標準スケール（メモのみ、リンクなし）: {names}"
+  "backup.file_hidden": "非表示の標準スケール（メモのみ、リンクなし）: {names}",
+  "backup.file_newer": {
+    "other": "新しいバージョンのスケール{n}件はこのファイルに含まれていません。このブラウザには保存されたままです。"
+  },
+  "backup.file_newer_none": {
+    "other": "新しいバージョンのスケール{n}件はここでバックアップできません。このブラウザには保存されたままです。"
+  }
 }
