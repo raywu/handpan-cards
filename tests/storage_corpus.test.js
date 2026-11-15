@@ -639,10 +639,17 @@ const rgRewrite = async (app, body) => app.getAsync(`(async () => {
   const row = await new Promise((res, rej) => { const q = store.get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
   const env = JSON.parse(row);
   (${body})(env);
-  await new Promise((res, rej) => { const q = store.put(JSON.stringify(env), "current"); q.onsuccess = () => res(); q.onerror = () => rej(q.error); });
+  const planted = JSON.stringify(env);
+  await new Promise((res, rej) => { const q = store.put(planted, "current"); q.onsuccess = () => res(); q.onerror = () => rej(q.error); });
   await new Promise((res) => { tx.oncomplete = () => res(); });
-  return true;
+  return planted;
 })()`);
+
+const rgRaw = async (app) => app.getAsync(`(async () => {
+  const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  return new Promise((res, rej) => { const q = db.transaction("collections").objectStore("collections").get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+})()`);
+const rgBytes = (raw) => JSON.parse(raw).entries.filter((e) => typeof e.record.v === "number" && e.record.v > 5).map((e) => JSON.stringify(e));
 
 // Saves every wanted row the normal way, then rewrites the record version of the
 // paired ones in place: the envelope shape (ids, ordinals) stays valid. A number
@@ -658,7 +665,7 @@ const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href) => {
     if (v === 4) await saveAcoustic(fresh, lines[(readable.length + i) % 4], "ACOUSTIC V4 " + i);
     else { await savePaired(fresh, lines[i % 4], "NEWER " + i); if (v !== 5) plan.push([i, v]); }
   }
-  await rgRewrite(fresh, `(env) => {
+  origin.rgPlanted = await rgRewrite(fresh, `(env) => {
     for (const [i, v] of ${JSON.stringify(plan)}) {
       const row = env.entries.find((e) => e.record.o && e.record.o.name === "NEWER " + i);
       row.record.v = v;
@@ -674,6 +681,10 @@ test("RG: record 7 and 8 rows seeded into storage stay byte-identical through bo
   const app = await sharedBoot(origin, NEW_HTML);
   const seeded = rgNewer(envelopeOf(app));
   assert.strictEqual(seeded.length, 2);
+  const plantedBytes = rgBytes(origin.rgPlanted);
+  assert.strictEqual(plantedBytes.length, 2);
+  assert.strictEqual(await rgRaw(app), origin.rgPlanted, "boot left the planted bytes untouched");
+  const bytesKept = async (label) => assert.deepStrictEqual(rgBytes(await rgRaw(again)), plantedBytes, label);
   assert.notStrictEqual(app.get("savedMode"), "protected");
   const snapshot = JSON.stringify(envelopeOf(app));
   const again = await sharedBoot(origin, NEW_HTML);
@@ -682,6 +693,7 @@ test("RG: record 7 and 8 rows seeded into storage stay byte-identical through bo
 
   await saveAcoustic(again, PA_HIJAZ.replace("B4", "C#5"), "ACOUSTIC THREE");
   assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "SAVE left the newer rows alone");
+  await bytesKept("SAVE kept the newer bytes");
 
   openChipOf(again, "ACOUSTIC ONE");
   again.els["scale-name"].value = "ACOUSTIC ONE EDITED";
@@ -690,6 +702,7 @@ test("RG: record 7 and 8 rows seeded into storage stay byte-identical through bo
   await settle();
   assert.ok(envelopeOf(again).entries.some((e) => e.record.o && e.record.o.name === "ACOUSTIC ONE EDITED"), "the edit landed");
   assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "Edit left the newer rows alone");
+  await bytesKept("Edit kept the newer bytes");
 
   openChipOf(again, "ACOUSTIC TWO");
   again.els["scale-delete"].click();
@@ -700,11 +713,15 @@ test("RG: record 7 and 8 rows seeded into storage stay byte-identical through bo
   await settle();
   assert.ok(!envelopeOf(again).entries.some((e) => e.record.o && e.record.o.name === "ACOUSTIC TWO"), "the other scale is gone");
   assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "Delete left the newer rows alone");
+  await bytesKept("Delete kept the newer bytes");
 
   again.els["deck-restore"].click();
   again.els["deck-restore"].click();
   await settle();
+  await new Promise((r) => setTimeout(r, 600));
+  await settle();
   assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "RESET SEEDED left the newer rows alone");
+  await bytesKept("RESET kept the newer bytes");
   assert.notStrictEqual(again.get("savedMode"), "protected");
 });
 
