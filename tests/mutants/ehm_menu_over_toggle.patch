@@ -1,0 +1,16 @@
+# kills: EHM menu over toggle
+# suite: node --test --test-name-pattern ^EHM.menu.over.toggle tests/editor_e2e.test.js
+# the open menu paints below the hint toggle
+# fault: The menu z-index drops back under the hint toggle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1042,7 +1042,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor .editor-toolbar .mode.primary{flex:1.4 1 0; background:#6756B5; color:#fff; border-color:#6756B5}
+ #editor .editor-toolbar{position:relative}
+ #editor .editor-toolbar #editor-more{flex:0 0 auto; min-width:44px}
+-#editor-menu{outline:none; position:absolute; right:0; bottom:calc(100% + var(--sp-1)); z-index:5; min-width:200px; max-width:min(320px,100%); display:flex; flex-direction:column;
++#editor-menu{outline:none; position:absolute; right:0; bottom:calc(100% + var(--sp-1)); z-index:3; min-width:200px; max-width:min(320px,100%); display:flex; flex-direction:column;
+   background:#F6F4ED; border:1px solid #242424; border-radius:8px; padding:var(--sp-1); box-shadow:0 8px 20px rgba(36,36,36,.28)}
+ #editor-menu[hidden]{display:none}
+ #editor .editor-toolbar #editor-menu .menuitem{flex:0 0 auto; min-height:44px; justify-content:flex-start; text-align:left; border:none; background:none; padding-inline:var(--sp-2)}

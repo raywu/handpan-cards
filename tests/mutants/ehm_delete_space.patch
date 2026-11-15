@@ -1,0 +1,19 @@
+# kills: EHM delete space
+# suite: node --test --test-name-pattern ^EHM.delete.space tests/editor_e2e.test.js
+# the armed delete label loses the space before the name
+# fault: The label's text nodes sit directly in the flex button again, so the trailing space collapses.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13611,8 +13611,9 @@ function editorPaintDelete(b, armed) {
+   if (!armed) { b.textContent = t("editor.menu.delete"); return; }
+   const name = editedDeck() ? editedDeck().name : t("sheet.this_scale");
+   const [before, after] = t("editor.menu.delete_armed", { name: "\u0001" }).split("\u0001");
+-  b.appendChild(editorNode("span", {},
+-    document.createTextNode(before), editorNode("span", { class: "del-name", text: name }), document.createTextNode(after)));
++  b.appendChild(document.createTextNode(before));
++  b.appendChild(editorNode("span", { class: "del-name", text: name }));
++  b.appendChild(document.createTextNode(after));
+ }
+ function editorResetDeleteButton(b) {
+   editorPaintDelete(b, false);

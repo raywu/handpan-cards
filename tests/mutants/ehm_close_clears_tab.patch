@@ -1,0 +1,16 @@
+# kills: EHM close clears tab
+# suite: node --test --test-name-pattern ^EHM.close.clears.tab tests/editor_e2e.test.js
+# the hint close button covers the Layout tab
+# fault: The close button goes back to the top of the hint card, over the tab strip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14074,7 +14074,7 @@ function editorPlaceAreas() {
+   st.width = right - left + "px";
+   st.height = bottom - top + "px";
+   const cl = editorEl("editor-hint-close").style;
+-  cl.top = editorEl("editor-tabs").getBoundingClientRect().bottom - box.top - ed.clientTop + 4 + "px";
++  cl.top = top - box.top - ed.clientTop + 4 + "px";
+   cl.left = right - box.left - ed.clientLeft - 48 + "px";
+ }
+ function editorSetAreas(open) {

@@ -1,0 +1,16 @@
+# kills: EHM tab skips covered
+# suite: node --test --test-name-pattern ^EHM.tab.skips.covered.[0-9] tests/editor_e2e.test.js
+# Tab lands on controls under the open hint card
+# fault: The covered-control filter is dropped from the Tab stops.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14884,7 +14884,7 @@ function editorHintCovers(el) {
+ }
+ function editorTabStops() {
+   const scope = editorEl(editorSession.dialog ? "editor-dialog" : "editor");
+-  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]") && !editorHintCovers(el));
++  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]"));
+ }
+ function editorSetPanType(kind) {
+   if (!editorDo((m) => editorPanType(m, kind))) return;
