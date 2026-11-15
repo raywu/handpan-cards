@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
  @media (max-width:420px){#editor-status{min-height:48px}}
 -#editor .editor-hintrow{display:flex; align-items:center; gap:var(--sp-2)}
 +#editor .editor-hintrow{display:flex; align-items:center; gap:0}
- #editor-hint-toggle{flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+ #editor-hint-toggle{position:relative; z-index:4; flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
    display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
  #scale-sheet #editor-hint-toggle, #scale-sheet #editor-hint-toggle:hover, #scale-sheet #editor-hint-toggle:active{background:none}

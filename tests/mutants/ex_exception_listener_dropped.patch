@@ -5,7 +5,7 @@
 diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 --- a/tests/helpers/cdp.js
 +++ b/tests/helpers/cdp.js
-@@ -703,10 +703,6 @@ async function launchOnce(opts = {}) {
+@@ -756,10 +756,6 @@ async function launchOnce(opts = {}) {
      const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
      const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
      b.sessionId = sessionId;
@@ -13,6 +13,6 @@ diff --git a/tests/helpers/cdp.js b/tests/helpers/cdp.js
 -      const d = params.exceptionDetails || {};
 -      EXCEPTIONS.push(String((d.exception && d.exception.description) || d.text || "uncaught exception"));
 -    });
-     await b.send("Page.enable");
-     await b.send("Runtime.enable");
-     // F-18, plan section 15: classic scrollbars take layout width on Linux CI and
+     b.on("Page.javascriptDialogOpening", (params) => {
+       if (params.type === "beforeunload") return b.send("Page.handleJavaScriptDialog", { accept: true });
+     });
