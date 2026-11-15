@@ -1,15 +1,14 @@
-# kills: QA3 hint row 390x844: the info button shares the name input's row, centred and flush right; on Layout it clears every control
+# kills: QA3 hint row 390x844: at rest the info button shares the name input's row, centred, transparent and flush right, and it never covers a control on either tab
 # suite: node --test --test-name-pattern QA3.hint.row tests/editor_e2e.test.js
-# fault: The Layout panel's first row stops reserving room for the info button.
+# fault: The info button is not moved into the Layout row on a tab switch.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1024,7 +1024,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- #editor-swatches .dot::after{content:""; position:absolute; left:50%; top:50%; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%;
-   background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%); box-shadow:0 0 0 1px #8A847B}
- #editor-swatches .dot.sel::after{box-shadow:0 0 0 3px #242424}
--#editor-layout{flex:0 0 auto; display:flex; gap:var(--sp-1); min-height:44px; padding-right:calc(44px + var(--sp-2)); box-sizing:border-box}
-+#editor-layout{flex:0 0 auto; display:flex; gap:var(--sp-1); min-height:44px}
- #editor-layout .mode{flex:1 1 0; min-width:0; min-height:44px; padding:2px; font-size:11px; line-height:1.1}
- #editor-layout .mode.on{background:#242424; color:#F6F4ED; border-color:#242424}
- #editor-layout .mode:disabled{opacity:1; cursor:default}
+@@ -14049,7 +14049,6 @@ function editorSetTab(tab, focus) {
+   editorCloseMenu();
+   s.tab = tab;
+   editorRenderTabs();
+-  editorEl(tab === "scale" ? "editor-panel-scale" : "editor-panel-layout").querySelector(".editor-hintrow").appendChild(editorEl("editor-hint-toggle"));
+   if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
+   editorPlaceAreas();
+   if (focus) editorEl("editor-tab-" + tab).focus();

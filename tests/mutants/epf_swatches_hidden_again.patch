@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13499,7 +13499,7 @@
-           editorNode("button", { id: "editor-anchor-between", type: "button", class: "mode", text: t("sheet.anchor_between"), "aria-label": t("sheet.anchor_between.aria") })),
+@@ -13715,7 +13715,7 @@ function editorOpen(edit) {
+             editorNode("button", { id: "editor-anchor-between", type: "button", class: "mode", text: t("sheet.anchor_between"), "aria-label": t("sheet.anchor_between.aria") }))),
          editorNode("div", { class: "editor-palette-row" },
            editorNode("p", { id: "editor-palette-label", text: t("editor.palette") }),
 -          editorNode("div", { id: "editor-swatches", role: "group", "aria-labelledby": "editor-palette-label" }))))),

@@ -1,15 +1,15 @@
-# kills: QA3 hint row 390x844: the info button shares the name input's row, centred and flush right; on Layout it clears every control
+# kills: QA3 hint row 390x844: at rest the info button shares the name input's row, centred, transparent and flush right, and it never covers a control on either tab
 # suite: node --test --test-name-pattern QA3.hint.row tests/editor_e2e.test.js
-# fault: The info button's right edge follows the name input instead of the name row.
+# fault: The name row loses the gap between the input and the info button.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14007,7 +14007,7 @@ function editorPlaceAreas() {
-   const strip = editorEl("editor-tabs").getBoundingClientRect(), ebox = ed.getBoundingClientRect(), pr = editorEl("editor-panels").getBoundingClientRect();
-   const nm = editorEl("editor-name").getBoundingClientRect(), want = editorSession && editorSession.tab === "scale" ? nm.top + (nm.height - 44) / 2 : pr.top;
-   tog.style.top = Math.max(want, strip.bottom) - ebox.top - ed.clientTop + "px";
--  tog.style.right = ebox.left + ed.clientLeft + ed.clientWidth - pr.right + "px";
-+  tog.style.right = ebox.left + ed.clientLeft + ed.clientWidth - nm.right + "px";
-   if (areas.hidden) return;
-   const parts = getComputedStyle(rg).display === "contents" ? [editorEl("editor-tabs"), editorEl("editor-panels")] : [rg];
-   const rs = parts.map((e) => e.getBoundingClientRect()), box = ebox;
+@@ -912,7 +912,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor .editor-statusrow{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
+ #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
+ @media (max-width:420px){#editor-status{min-height:48px}}
+-#editor .editor-hintrow{display:flex; align-items:center; gap:var(--sp-2)}
++#editor .editor-hintrow{display:flex; align-items:center; gap:0}
+ #editor-hint-toggle{flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+   display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
+ #scale-sheet #editor-hint-toggle, #scale-sheet #editor-hint-toggle:hover, #scale-sheet #editor-hint-toggle:active{background:none}
