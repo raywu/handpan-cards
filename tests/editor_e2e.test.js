@@ -3423,7 +3423,7 @@ function run() {
       await fresh(375, 667);
       await openAdd();
       const r = await b.eval(`const n = document.getElementById("editor-name"), panel = document.getElementById("editor-panel-scale"), c = getComputedStyle(n), box = n.getBoundingClientRect();
-        return { first: panel.firstElementChild === n, inTray: panel.querySelector("#editor-tray") !== null, size: parseFloat(c.fontSize), h: box.height, max: n.maxLength,
+        return { first: panel.firstElementChild.firstElementChild === n, inTray: panel.querySelector("#editor-tray") !== null, size: parseFloat(c.fontSize), h: box.height, max: n.maxLength,
           aria: n.getAttribute("aria-label"), wide: box.width, stops: editorTabStops().indexOf(n) };`);
       assert.strictEqual(r.first, true, "the name is the first thing in the Scale panel");
       assert.ok(r.size >= 16, "font-size " + r.size + " must not zoom iOS");
@@ -4095,37 +4095,54 @@ function run() {
       assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "Escape returns focus to the info button");
     });
 
-    for (const [w, h] of [[390, 844], [375, 667], [360, 640], [320, 568]]) {
-      test(`QA3 hint row ${w}x${h}: the info button shares the name input's row, centred and flush right; on Layout it clears every control`, async () => {
+    for (const [w, h] of [[390, 844], [375, 667], [360, 640], [320, 568], [667, 375], [844, 390]]) {
+      test(`QA3 hint row ${w}x${h}: at rest the info button shares the name input's row, centred, transparent and flush right, and it never covers a control on either tab`, async () => {
         await open(w, h);
         const geo = () => b.eval(`const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
-          return { bt: R(document.getElementById("editor-hint-toggle")), name: R(document.getElementById("editor-name")), row: R(document.getElementById("editor-panels")), ico: R(document.querySelector("#editor-hint-toggle .ico")) };`);
-        await b.eval(`document.getElementById("editor-region").scrollTop = 0;`);
-        await pause(100);
-        const c = await geo();
-        assert.ok(Math.abs((c.bt.t + c.bt.b) / 2 - (c.name.t + c.name.b) / 2) <= 1, "vertical centres match: " + JSON.stringify(c));
-        assert.ok(Math.abs(c.bt.r - c.row.r) <= 0.5, "button right edge == name row right edge: " + JSON.stringify(c));
-        assert.ok(c.name.r + 8 <= c.bt.l + 0.5, "name ends a gap before the button: " + JSON.stringify(c));
-        assert.ok(Math.abs(c.bt.w - 44) <= 0.5 && Math.abs(c.bt.h - 44) <= 0.5, "44x44: " + JSON.stringify(c.bt));
-        assert.ok(Math.abs((c.ico.l + c.ico.r) / 2 - (c.bt.l + c.bt.r) / 2) <= 0.5, "circle centred in the button");
-        await b.click("#editor-tab-layout");
-        await pause(100);
-        const hits = await b.eval(`const bt = document.getElementById("editor-hint-toggle").getBoundingClientRect(), out = [];
-          for (const e of document.querySelectorAll("#editor-panel-layout button, #editor-panel-layout input, #editor-panel-layout [tabindex]")) {
+          const rg = R(document.getElementById("editor-region")), strip = R(document.getElementById("editor-tabs")), tg = document.getElementById("editor-hint-toggle");
+          const name = R(document.getElementById("editor-name")), vis = name.t >= strip.b - 0.5 && name.b <= rg.b + 0.5 && name.b > 0;
+          return { bt: R(tg), name, vis, strip, rg, row: R(tg.parentNode), ico: R(document.querySelector("#editor-hint-toggle .ico")), bg: getComputedStyle(tg).backgroundColor };`);
+        const covers = () => b.eval(`const tg = document.getElementById("editor-hint-toggle"), out = [], rg = document.getElementById("editor-region").getBoundingClientRect(), strip = document.getElementById("editor-tabs").getBoundingClientRect();
+          const panel = document.querySelector("#editor-panels > :not([hidden])");
+          for (const e of panel.querySelectorAll("button, input, [tabindex]")) {
+            if (e === tg) continue;
             const r = e.getBoundingClientRect(); if (!r.width || !r.height) continue;
-            if (r.left < bt.right && r.right > bt.left && r.top < bt.bottom && r.bottom > bt.top) out.push(e.id || e.className);
+            const x = r.left + r.width / 2, y = r.top + r.height / 2;
+            if (y < Math.max(rg.top, strip.bottom) || y > rg.bottom || x < 0 || x > innerWidth) continue;
+            const hit = document.elementFromPoint(x, y);
+            if (hit !== e && !e.contains(hit)) out.push((e.id || e.className) + " -> " + (hit && (hit.id || hit.className)));
           }
           return out;`);
-        assert.deepStrictEqual(hits, [], "the info button covers no Layout control");
+        const c = await geo();
+        if (c.vis) assert.ok(Math.abs((c.bt.t + c.bt.b) / 2 - (c.name.t + c.name.b) / 2) <= 1, "vertical centres match at rest: " + JSON.stringify(c));
+        assert.ok(Math.abs(c.bt.r - c.row.r) <= 0.5, "button right edge == name row right edge: " + JSON.stringify(c));
+        assert.ok(c.name.r + 4 <= c.bt.l + 0.5, "name ends a gap before the button: " + JSON.stringify(c));
+        assert.ok(Math.abs(c.bt.w - 44) <= 0.5 && Math.abs(c.bt.h - 44) <= 0.5, "44x44: " + JSON.stringify(c.bt));
+        assert.ok(Math.abs((c.ico.l + c.ico.r) / 2 - (c.bt.l + c.bt.r) / 2) <= 0.5, "circle centred in the button");
+        assert.ok(c.bg === "rgba(0, 0, 0, 0)" || c.bg === "transparent", "the info button background is transparent: " + c.bg);
+        assert.deepStrictEqual(await covers(), [], "the info button covers no Scale control");
+        await b.click("#editor-tab-layout");
+        await pause(100);
+        assert.deepStrictEqual(await covers(), [], "the info button covers no Layout control");
         const p = await geo();
-        assert.ok(Math.abs(p.bt.r - p.row.r) <= 0.5, "still flush right on Layout");
+        assert.ok(Math.abs(p.bt.r - p.row.r) <= 0.5, "flush right in the Layout row: " + JSON.stringify(p));
         await b.click("#editor-tab-scale");
-        await b.eval(`document.getElementById("editor-region").scrollTop = 0;`);
         await pause(100);
         const back = await geo();
-        assert.ok(Math.abs((back.bt.t + back.bt.b) / 2 - (back.name.t + back.name.b) / 2) <= 1, "centred again after switching back: " + JSON.stringify(back));
+        if (back.vis) assert.ok(Math.abs((back.bt.t + back.bt.b) / 2 - (back.name.t + back.name.b) / 2) <= 1, "centred again after switching back: " + JSON.stringify(back));
+        assert.deepStrictEqual(await covers(), [], "no Scale control covered after switching back");
       });
     }
+
+    test("QA3 hint row 390x844: after a tray drag ends the info button is still centred on the name input", async () => {
+      await open(390, 844);
+      await b.drag(".tray-note", [[0, 100, -150], [0, 200, -300]]);
+      await pause(500);
+      const r = await b.eval(`const q = (e) => { const r = document.getElementById(e).getBoundingClientRect(); return (r.top + r.bottom) / 2; };
+        return { name: q("editor-name"), bt: q("editor-hint-toggle"), dragging: document.getElementById("editor").classList.contains("dragging") };`);
+      assert.strictEqual(r.dragging, false);
+      assert.ok(Math.abs(r.name - r.bt) <= 1, JSON.stringify(r));
+    });
 
     for (const [w, h] of [[390, 844], [390, 664]]) {
       test(`SC ${w}x${h}: the first row of the Scale tab is fully visible under the strip, and the Hint info button takes no layout height`, async () => {

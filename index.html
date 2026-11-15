@@ -906,14 +906,16 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   background:#fff; border:1px solid #8A847B; border-radius:8px; text-overflow:ellipsis}
 #editor-line[readonly]{cursor:pointer}
 #editor-line[aria-invalid="true"]{border-color:#242424; border-width:2px}
-#editor-name{width:calc(100% - 44px - var(--sp-2)); box-sizing:border-box; min-height:44px; padding:9px var(--sp-3); font:500 16px/1.3 "Nunito Sans"; color:#242424;
+#editor-name{flex:1 1 auto; min-width:0; width:auto; box-sizing:border-box; min-height:44px; padding:9px var(--sp-3); font:500 16px/1.3 "Nunito Sans"; color:#242424;
   background:#fff; border:1px solid #8A847B; border-radius:8px; text-overflow:ellipsis}
 #editor-name::placeholder{color:#8A847B; opacity:1}
 #editor .editor-statusrow{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
 #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
 @media (max-width:420px){#editor-status{min-height:48px}}
-#editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+#editor .editor-hintrow{display:flex; align-items:center; gap:var(--sp-2)}
+#editor-hint-toggle{flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
   display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
+#scale-sheet #editor-hint-toggle, #scale-sheet #editor-hint-toggle:hover, #scale-sheet #editor-hint-toggle:active{background:none}
 #editor-hint-toggle[hidden], #editor-hint-close[hidden]{display:none}
 #editor-hint-close{position:absolute; z-index:6; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
   display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#242424; font:500 28px/1 "Nunito Sans"}
@@ -1024,7 +1026,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-swatches .dot::after{content:""; position:absolute; left:50%; top:50%; width:24px; height:24px; margin:-12px 0 0 -12px; border-radius:50%;
   background:linear-gradient(180deg,var(--dga) 0 50%,var(--dgb) 50% 100%); box-shadow:0 0 0 1px #8A847B}
 #editor-swatches .dot.sel::after{box-shadow:0 0 0 3px #242424}
-#editor-layout{flex:0 0 auto; display:flex; gap:var(--sp-1); min-height:44px; padding-right:calc(44px + var(--sp-2)); box-sizing:border-box}
+#editor-layout{display:flex; gap:var(--sp-1); min-height:44px; flex:1 1 auto; min-width:0}
 #editor-layout .mode{flex:1 1 0; min-width:0; min-height:44px; padding:2px; font-size:11px; line-height:1.1}
 #editor-layout .mode.on{background:#242424; color:#F6F4ED; border-color:#242424}
 #editor-layout .mode:disabled{opacity:1; cursor:default}
@@ -13683,9 +13685,6 @@ function editorOpen(edit) {
         ...EDITOR_COUNTS.map((zone) => editorNode("span", { class: "zc", "data-zone": zone }))),
       editorNode("p", { id: "editor-hint" },
         editorNode("span", { text: t("editor.hint.place") }), editorNode("span", { text: t("editor.hint.ding") }))),
-    editorNode("button", { id: "editor-hint-toggle", type: "button", class: "mode", "aria-expanded": "false", "aria-controls": "editor-areas",
-      "aria-label": t("editor.hint.toggle.aria"), title: t("editor.hint.toggle") },
-      editorNode("span", { class: "ico", "aria-hidden": "true", text: "i" })),
     editorNode("button", { id: "editor-hint-close", type: "button", class: "mode", hidden: true, "aria-label": t("editor.hint.close"), text: "\u00D7" }),
     editorNode("div", { id: "editor-region" },
     editorNode("div", { id: "editor-tabs", role: "tablist", "aria-label": t("editor.tabs.aria") },
@@ -13693,8 +13692,12 @@ function editorOpen(edit) {
         "aria-controls": "editor-panel-" + tab, text: t("sheet.tab_" + tab) }))),
     editorNode("div", { id: "editor-panels" },
       editorNode("div", { id: "editor-panel-scale", role: "tabpanel", "aria-labelledby": "editor-tab-scale" },
-        editorNode("input", { id: "editor-name", type: "text", maxlength: EDITOR_NAME_MAX, autocomplete: "off", autocapitalize: "characters", autocorrect: "off",
-          spellcheck: "false", "aria-label": t("editor.name.aria") }),
+        editorNode("div", { class: "editor-hintrow" },
+          editorNode("input", { id: "editor-name", type: "text", maxlength: EDITOR_NAME_MAX, autocomplete: "off", autocapitalize: "characters", autocorrect: "off",
+            spellcheck: "false", "aria-label": t("editor.name.aria") }),
+          editorNode("button", { id: "editor-hint-toggle", type: "button", class: "mode", "aria-expanded": "false", "aria-controls": "editor-areas",
+            "aria-label": t("editor.hint.toggle.aria"), title: t("editor.hint.toggle") },
+            editorNode("span", { class: "ico", "aria-hidden": "true", text: "i" }))),
         editorNode("div", { id: "editor-tray" },
           editorNode("div", { id: "editor-notes", role: "group", "aria-label": t("editor.tray.aria") }),
           editorNode("div", { class: "editor-octaves" },
@@ -13706,9 +13709,10 @@ function editorOpen(edit) {
             editorNode("div", { class: "editor-accidentals", role: "group", "aria-label": t("editor.accidentals.aria") },
               button("editor-sharps", "editor.sharps"), button("editor-flats", "editor.flats"))))),
       editorNode("div", { id: "editor-panel-layout", role: "tabpanel", "aria-labelledby": "editor-tab-layout", hidden: true },
-        editorNode("div", { id: "editor-layout", role: "group", "aria-label": t("editor.layout.aria") },
-          button("editor-anchor-one", "sheet.anchor_one"),
-          editorNode("button", { id: "editor-anchor-between", type: "button", class: "mode", text: t("sheet.anchor_between"), "aria-label": t("sheet.anchor_between.aria") })),
+        editorNode("div", { class: "editor-hintrow" },
+          editorNode("div", { id: "editor-layout", role: "group", "aria-label": t("editor.layout.aria") },
+            button("editor-anchor-one", "sheet.anchor_one"),
+            editorNode("button", { id: "editor-anchor-between", type: "button", class: "mode", text: t("sheet.anchor_between"), "aria-label": t("sheet.anchor_between.aria") }))),
         editorNode("div", { class: "editor-palette-row" },
           editorNode("p", { id: "editor-palette-label", text: t("editor.palette") }),
           editorNode("div", { id: "editor-swatches", role: "group", "aria-labelledby": "editor-palette-label" }))))),
@@ -14004,10 +14008,7 @@ function editorRegionPin() {
 function editorPlaceAreas() {
   const areas = editorEl("editor-areas"), rg = editorEl("editor-region"), ed = editorEl("editor"), tog = editorEl("editor-hint-toggle");
   if (!areas || !rg || !tog) return;
-  const strip = editorEl("editor-tabs").getBoundingClientRect(), ebox = ed.getBoundingClientRect(), pr = editorEl("editor-panels").getBoundingClientRect();
-  const nm = editorEl("editor-name").getBoundingClientRect(), want = editorSession && editorSession.tab === "scale" ? nm.top + (nm.height - 44) / 2 : pr.top;
-  tog.style.top = Math.max(want, strip.bottom) - ebox.top - ed.clientTop + "px";
-  tog.style.right = ebox.left + ed.clientLeft + ed.clientWidth - pr.right + "px";
+  const ebox = ed.getBoundingClientRect();
   if (areas.hidden) return;
   const parts = getComputedStyle(rg).display === "contents" ? [editorEl("editor-tabs"), editorEl("editor-panels")] : [rg];
   const rs = parts.map((e) => e.getBoundingClientRect()), box = ebox;
@@ -14048,6 +14049,7 @@ function editorSetTab(tab, focus) {
   editorCloseMenu();
   s.tab = tab;
   editorRenderTabs();
+  editorEl(tab === "scale" ? "editor-panel-scale" : "editor-panel-layout").querySelector(".editor-hintrow").appendChild(editorEl("editor-hint-toggle"));
   if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
   editorPlaceAreas();
   if (focus) editorEl("editor-tab-" + tab).focus();
@@ -14860,7 +14862,6 @@ function editorWire() {
   };
   nameBox.addEventListener("focusin", () => requestAnimationFrame(() => nameBox.scrollIntoView({ block: "nearest" })));
   window.addEventListener("resize", editorRegionResize);
-  editorEl("editor-region").addEventListener("scroll", editorPlaceAreas, { passive: true });
   const del = editorEl("editor-delete");
   if (del) del.onclick = editorMenuPick(editorDeleteTap);
   editorEl("editor").addEventListener("pointerdown", (e) => {
