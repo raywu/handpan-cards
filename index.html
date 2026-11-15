@@ -14550,8 +14550,8 @@ function editorEscape() {
   const s = editorSession;
   if (!s) { closeScaleSheet(); return; }
   if (editorDrag && editorDrag.live) editorDragEnd(null);
-  else if (s.menu) editorCloseMenu(true);
   else if (s.dialog) editorShowDialog(false);
+  else if (s.menu) editorCloseMenu(true);
   else if (s.hint) { editorSetAreas(false); editorEl("editor-hint-toggle").focus(); }
   else if (s.naming) editorCancelName();
   else if (s.editing) editorCancelEdit();
@@ -15289,7 +15289,9 @@ savedSnapshotListener=event=>{
     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);
     const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
-    if(changed && latest){
+    if(changed && !savedEqual(target,editingBase.selection) && !(editingBase.selection.kind==="builtin" && target.kind==="saved" && target.id===savedState.slots[editingBase.selection.id])){
+      session.conflict=editorConflictKind();editorRender();
+    }else if(changed && latest){
       const tab=session.tab;
       beginSheetSession(latest,target);
       editorClose();
@@ -15524,7 +15526,8 @@ const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 36, GHOST_RETUR
 // asked of the browser (a control inside a hidden ancestor, or unrendered by
 // CSS, has no client rects), never of a hand-kept mode table.
 const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
-function cycleTabStops(stops, e) {
+function cycleTabStops(all, e) {
+  const stops = typeof getComputedStyle === "function" ? all.filter(el => getComputedStyle(el).visibility !== "hidden") : all;
   if (!stops.length) return;
   const i = stops.indexOf(document.activeElement);
   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);

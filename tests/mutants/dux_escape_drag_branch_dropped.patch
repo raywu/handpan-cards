@@ -9,8 +9,8 @@ diff --git a/index.html b/index.html
    const s = editorSession;
    if (!s) { closeScaleSheet(); return; }
 -  if (editorDrag && editorDrag.live) editorDragEnd(null);
--  else if (s.menu) editorCloseMenu(true);
-+  if (s.menu) editorCloseMenu(true);
-   else if (s.dialog) editorShowDialog(false);
+-  else if (s.dialog) editorShowDialog(false);
++  if (s.dialog) editorShowDialog(false);
+   else if (s.menu) editorCloseMenu(true);
    else if (s.hint) { editorSetAreas(false); editorEl("editor-hint-toggle").focus(); }
    else if (s.naming) editorCancelName();

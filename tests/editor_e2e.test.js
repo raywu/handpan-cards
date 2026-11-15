@@ -4696,6 +4696,96 @@ function run() {
     });
   });
 
+  describe("editor keys and delete rebind", () => {
+    const saveOne = async (w, h) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const armedDelete = async () => {
+      await b.click("#editor-delete");
+      await b.eval(`return new Promise((r) => setTimeout(r, 500));`);
+      await b.click("#editor-delete");
+      await b.eval(`return new Promise((r) => setTimeout(r, 300));`);
+    };
+    for (const [w, h] of [[360, 640], [390, 844]]) {
+      test(`FA-06 ${w}x${h} after system Back with the menu open the first Escape leaves the Save-changes dialog and focus returns to Back`, async () => {
+        await saveOne(w, h);
+        await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "FA06 EDIT";
+          n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+        await b.click("#editor-more");
+        assert.strictEqual(await b.eval(`return editorSession.menu;`), true);
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Back dialog" });
+        await b.key("Escape", "Escape", 27);
+        assert.strictEqual(await dialogOpen(), false, "the first Escape leaves the dialog");
+        assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-back");
+      });
+    }
+
+    test("FA-07 with the hint open Tab moves focus on every step and never to a hidden control", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-hint-toggle");
+      await b.waitFor(`editorSession.hint === true`, { label: "the hint to open" });
+      const seen = [];
+      for (let i = 0; i < 8; i++) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await b.eval(`const a = document.activeElement, c = getComputedStyle(a);
+          return { id: a.id || a.outerHTML.slice(0, 120), hidden: c.visibility === "hidden" || c.display === "none" || a.getClientRects().length === 0 };`));
+      }
+      assert.ok(seen.every((x) => !x.hidden), JSON.stringify(seen));
+      assert.ok(seen.every((x, i) => i === 0 || x.id !== seen[i - 1].id), JSON.stringify(seen));
+    });
+
+    test("a Delete after the scale vanished elsewhere shows the deleted banner and a retry never deletes the fallback", async () => {
+      await saveOne(375, 667);
+      const hiddenBefore = await b.eval(`return savedState.hidden.length;`);
+      const xId = await b.eval(`return editingBase.selection.id;`);
+      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
+        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok);`);
+      await armedDelete();
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
+      assert.strictEqual(await b.eval(`return editingBase.selection.id;`), xId, "the sheet is not rebound to the fallback");
+      await armedDelete();
+      assert.strictEqual(await b.eval(`return savedState.hidden.length;`), hiddenBefore, "no built-in was hidden by the retry");
+    });
+
+    test("a broadcast remote deletion of the open saved scale shows the deleted banner", async () => {
+      await saveOne(375, 667);
+      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
+        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => {
+          if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
+          return r.ok === true; });`);
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
+    });
+
+    test("a Delete on a built-in hidden elsewhere shows a conflict banner and a retry never deletes the saved fallback", async () => {
+      await fresh(375, 667);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const v = allDeckViews().find((x) => x.selection.kind === "builtin"); selectDeck(v.selection, false); openEditSheet(v.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line") && editingBase.selection.kind === "builtin"`, { label: "the editor on a built-in" });
+      const savedBefore = await savedCount();
+      const key = await b.eval(`return editingBase.selection.id;`);
+      await b.eval(`return commitSaved({ type: "hide-builtin", seedId: editingBase.selection.id, expectedSlotStateRevision: editingBase.slotStateRevision, expectedOwnerId: editingBase.ownerId, collectionId: savedState.collectionId }).then((r) => r.ok);`);
+      await armedDelete();
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      assert.strictEqual(await b.eval(`return editingBase.selection.id;`), key, "the sheet is not rebound to the saved fallback");
+      await armedDelete();
+      assert.strictEqual(await savedCount(), savedBefore, "the saved scale survives the retried Delete");
+    });
+  });
+
 }
 
 function DECK_IDS_HAVE(builtinJson, id) {
