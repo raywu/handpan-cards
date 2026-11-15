@@ -4140,7 +4140,8 @@ function run() {
       const o = await geo();
       assert.ok(o.xVis && o.x, "the overlay has an x button");
       assert.ok(!o.btVis || o.bt.l >= o.a.r || o.bt.r <= o.a.l || o.bt.b <= o.a.t || o.bt.t >= o.a.b, "the info button is not shown over the overlay");
-      assert.ok(o.x.r <= o.a.r + 0.5 && o.x.t >= o.a.t - 0.5 && o.x.r >= o.a.r - 24 && o.x.t <= o.a.t + 24, "x sits at the overlay top right: " + JSON.stringify([o.x, o.a]));
+      const ceil = Math.max(o.a.t, o.tabs.b);
+      assert.ok(o.x.r <= o.a.r + 0.5 && o.x.t >= ceil - 0.5 && o.x.r >= o.a.r - 24 && o.x.t <= ceil + 24, "x sits at the overlay top right, below the tab strip: " + JSON.stringify([o.x, o.a, o.tabs]));
       assert.ok(o.texts.length > 0);
       for (const t of o.texts) {
         assert.ok(!hit(t, o.x), "no overlay text under the x: " + JSON.stringify([t, o.x]));
