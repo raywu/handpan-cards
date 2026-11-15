@@ -1420,7 +1420,7 @@ version 9 link with `NEEDS_NEWER_APP`; a version 10 or above is `NEEDS_NEWER_APP
 
 `RECORD_VERSION` stays 4. `PROFILE_RECORD_VERSION = 5` is used for a record
 whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4, 5, 6 or 7
-(test "SE: recordVersion is 6 for a pinned inner angle, 4 without, 5 for a profile").
+(test "SE: recordVersion is 6 for a pinned inner angle, 4 without, 5 for a profile" covers 4, 5 and 6; the TRI59d tests below cover 7).
 The app derives the version through `recordVersionFor(options, profiled)` in
 `index.html`: a profile record is 7 when its anchor is `"between"` and 5 otherwise; a
 standard record is 6 when an inner angle is pinned and 4 otherwise. `savedCandidate`

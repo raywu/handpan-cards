@@ -496,9 +496,9 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   no pin is made. Tests: "a tray note dragged to an empty main field fills it", "a mutant
   dragged into an empty field is refused", "D3 tap parity: tapping a main note then another
   swaps them"; model `tests/editor_shell.test.js` "U2e-1" to "U2e-11". The `#1 CENTRED` and
-  `#1 / #2` buttons are shown on Neotone like Standard's and never greyed out there (owner
+  `#1 / #2` buttons are shown on Neotone like Standard's and are disabled only when there are no notes, as on Standard (owner
   2026-11-11; `editorRenderLayout`), and work as on Standard, including with and without mutant
-  notes. Tests: "PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are
+  notes. Tests: "PLa-N2: with no notes both anchor buttons are disabled on each pan type, and with notes they are enabled on Standard", "PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are
   gone, and the Neotone pair is shown like Standard's", "TRI59d A2: Pygmy to Neotone with
   between, SAVE writes record 7". Wire v9 and record 7 are owned by `docs/ENGINE-SPEC.md`.
 - **Keyboard and accessibility.** Every placed note, the cyclops area and the bottom ring
