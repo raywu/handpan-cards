@@ -4767,6 +4767,32 @@ function run() {
       assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
     });
 
+    test("a remote edit of the open saved scale keeps a dirty editor's draft and does not reopen it", async () => {
+      await saveOne(375, 667);
+      await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5");
+      await b.eval(`document.activeElement.blur(); editorSession.__probe = "local"; return true;`);
+      const before = await b.eval(`const s = editorSession;
+        return { dirty: editorIsDirty(s.base, s.history.present), naming: !!s.naming, editing: !!s.editing, dialog: !!s.dialog,
+          nameMatches: editorSetName(s.history.present, document.getElementById("editor-name").value).value === s.history.present,
+          line: document.getElementById("editor-line").value, rev: editingBase.revision };`);
+      assert.strictEqual(before.dirty, true, "the notes edit makes the editor dirty");
+      assert.deepStrictEqual([before.naming, before.editing, before.dialog, before.nameMatches], [false, false, false, true]);
+      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+        built = buildGenerated(row.record.s, { ...row.record.o, name: "REMOTE RENAMED" });
+        return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+          candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => {
+          if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
+          return r.ok === true; });`);
+      await b.waitFor(`savedState.entries.find((r) => r.instanceId === editingBase.selection.id).revision > ${before.rev}`, { label: "the remote revision" });
+      const after = await b.eval(`const s = editorSession;
+        return { same: s.__probe === "local", dirty: editorIsDirty(s.base, s.history.present),
+          line: document.getElementById("editor-line").value, name: document.getElementById("editor-name").value };`);
+      assert.strictEqual(after.same, true, "the editor session was not reopened");
+      assert.strictEqual(after.dirty, true);
+      assert.strictEqual(after.line, before.line, "the local draft survives");
+      assert.notStrictEqual(after.name, "REMOTE RENAMED", "the remote content did not overwrite the draft");
+    });
+
     test("a Delete on a built-in hidden elsewhere shows a conflict banner and a retry never deletes the saved fallback", async () => {
       await fresh(375, 667);
       await openAdd();
