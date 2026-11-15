@@ -4320,6 +4320,96 @@ function run() {
     });
   });
 
+  describe("editor drag guards", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+    const live = () => b.eval(`return !!(editorDrag && editorDrag.live);`);
+    const setup = async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(SCALE);
+    };
+    const liftLive = async () => {
+      await setup();
+      const from = await chipAt("B"), to = await noteAt("rim", 0);
+      await touch("touchStart", from);
+      for (const k of [0.15, 0.3]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+      await pause(300);
+      assert.strictEqual(await live(), true, "the drag is live");
+    };
+    const contextMenuPrevented = () => b.eval(`const ev = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.getElementById("editor-pan").dispatchEvent(ev); return ev.defaultPrevented;`);
+
+    test("edg contextmenu is suppressed during an editor drag and only then", async () => {
+      await setup();
+      assert.strictEqual(await contextMenuPrevented(), false, "no drag, the menu is left alone");
+      await liftLive();
+      assert.strictEqual(await contextMenuPrevented(), true, "a live drag swallows the context menu");
+      await touch("touchEnd");
+      await pause(120);
+      assert.strictEqual(await contextMenuPrevented(), false, "after the drop the menu is left alone again");
+    });
+
+    test("edg a second pointer cancels the drag and puts the note back", async () => {
+      await liftLive();
+      const before = await b.eval(`return JSON.stringify(editorSession.history.present.fields);`);
+      await b.eval(`document.querySelector("#editor-pan").dispatchEvent(new PointerEvent("pointerdown", { pointerId: 77, button: 0, bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorDrag === null;`), true, "the second pointer ended the drag");
+      assert.strictEqual(await b.eval(`return document.querySelectorAll(".editor-ghost").length;`), 0, "the ghost is gone");
+      await touch("touchEnd");
+      await pause(120);
+      assert.strictEqual(await b.eval(`return JSON.stringify(editorSession.history.present.fields);`), before, "nothing was placed");
+    });
+  });
+
+  describe("editor armed delete", () => {
+    // Oracle recorded 2026-11-14 by reading main's armed delete from the fixture text:
+    //   grep -n 'scale-delete\[data-armed\]' tests/fixtures/shipped_client_a4ecfc2e.html.txt
+    // gives "#scale-sheet #scale-delete[data-armed]{color:#242424}" over the "#scale-delete" rule's "background:none",
+    // and main's armed label (sheet.del_armed) carries no icon glyph or element.
+    const MAIN = { color: "rgb(36, 36, 36)", backgroundColor: "rgba(0, 0, 0, 0)", icon: false };
+
+    test("ead the armed delete is main's ink with no fill, not red", async () => {
+      const fixture = fs.readFileSync(path.join(REPO, "tests/fixtures/shipped_client_a4ecfc2e.html.txt"), "utf8");
+      assert.ok(fixture.includes("#scale-sheet #scale-delete[data-armed]{color:#242424}"), "the oracle literal still matches main");
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      await b.click("#editor-delete");
+      const got = await b.eval(`const e = document.getElementById("editor-delete"), c = getComputedStyle(e);
+        return { armed: e.classList.contains("armed"), color: c.color, backgroundColor: c.backgroundColor,
+          icon: !!e.querySelector("svg, img, .ico") || !["none", "normal"].includes(getComputedStyle(e, "::before").content) };`);
+      assert.strictEqual(got.armed, true);
+      assert.deepStrictEqual({ color: got.color, backgroundColor: got.backgroundColor, icon: got.icon }, MAIN);
+    });
+  });
+
+  describe("editor Back prompt Save on an empty model", () => {
+    test("U2b n8 Save in the prompt on an emptied saved scale says why nothing was saved", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      const before = await savedCount();
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => ({ ok: true, value: { ...m, fields: {}, pins: [] } })).history; editorRender(); return true;`);
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true);
+      await b.click("#editor-dlg-save");
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await dialogOpen(), false);
+      assert.strictEqual(await savedCount(), before, "nothing saved");
+      assert.match(await b.eval(`return document.getElementById("editor-status").textContent;`), /Place the ding/);
+    });
+  });
+
   describe("editor save recovery", () => {
     const LOCK_NAME = "handpan-cards:saved-scales:v1";
     const saveScale = async (name) => {

@@ -1,0 +1,15 @@
+# kills: ead the armed delete is main's ink with no fill, not red
+# suite: node --test --test-name-pattern ^ead.the.armed.delete tests/editor_e2e.test.js
+# fault: The armed delete goes back to a red fill with white text.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1044,7 +1044,7 @@
+ #editor-menu[hidden]{display:none}
+ #editor .editor-toolbar #editor-menu .menuitem{flex:0 0 auto; min-height:44px; justify-content:flex-start; text-align:left; border:none; background:none; padding-inline:var(--sp-2)}
+ #editor .editor-toolbar #editor-menu .menuitem[aria-disabled="true"]{opacity:.45; cursor:default}
+-#editor .editor-toolbar #editor-menu .menuitem.armed{background:none; color:#242424}
++#editor .editor-toolbar #editor-menu .menuitem.armed{background:#B3261E; color:#fff}
+ #editor .editor-toolbar #editor-menu .rs-full{display:inline}
+ #editor .editor-toolbar #editor-menu .rs-short{display:none}
+ #editor-menu .menu-sep{height:1px; background:#8A847B; margin:var(--sp-1) 0}
