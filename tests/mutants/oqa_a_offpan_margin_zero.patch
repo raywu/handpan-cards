@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13374,7 +13374,7 @@ function editorResetSpacing(m, rings) {
- // sets the radius of the rendered .ehit target.
+@@ -13373,7 +13373,7 @@ function editorResetSpacing(m, rings) {
+ // notes come next (D22); then the zone under the pointer decides.
  const EDITOR_HIT_AREA = 0.43;
  const EDITOR_SCALE = { rim: 0.85, inner: 0.75, bottom: 0.85 };
 -const EDITOR_OFF_MARGIN = 0.08;
