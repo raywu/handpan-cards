@@ -1,0 +1,16 @@
+# kills: a Delete on a built-in hidden elsewhere shows a conflict banner and a retry never deletes the saved fallback
+# suite: node --test --test-name-pattern ^a.Delete.on.a.built.in.hidden.elsewhere tests/editor_e2e.test.js
+# A mutant: only a vanished saved scale blocks the rebind, so a hidden built-in rebinds to the saved fallback.
+#
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15289,7 +15289,7 @@ savedSnapshotListener=event=>{
+     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
+     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);
+     const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
+-    if(changed && !savedEqual(target,editingBase.selection) && !(editingBase.selection.kind==="builtin" && target.kind==="saved" && target.id===savedState.slots[editingBase.selection.id])){
++    if(changed && editorConflictKind()==="deleted"){
+       session.conflict=editorConflictKind();editorRender();
+     }else if(changed && latest){
+       const tab=session.tab;
