@@ -4997,19 +4997,20 @@ function run() {
     describe("pasted navigation with the editor open", () => {
       test("ECL3 a pasted link with a dirty editor asks, keeps the draft and leaves no dead history entry", async () => {
         await fresh();
-        const first = await b.eval(`return navigation.currentEntry.index;`);
+        const first = await b.eval(`return navigation.currentEntry.key;`);
         await openAdd();
         await typeLine(SCALE);
+        const own = await b.eval(`return navigation.currentEntry.key;`);
         const route = await b.eval(`return location.hash;`);
         await b.eval(`location.hash = "#deck=kurd"; return true;`);
         await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
         assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
         assert.match(await text(), /A4/, "the draft survives");
-        await b.waitFor(`navigation.currentEntry.index === ${first + 1}`, { label: "the page's own entry to be current again" });
+        await b.waitFor(`navigation.currentEntry.key === ${JSON.stringify(own)}`, { label: "the page's own entry to be current again" });
         assert.strictEqual(await b.eval(`return location.hash;`), route, "the address bar is back on the page route");
         await b.click("#editor-dlg-discard");
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "Discard to close the page" });
-        await b.waitFor(`navigation.currentEntry.index === ${first}`, { label: "history to end where it started" });
+        await b.waitFor(`navigation.currentEntry.key === ${JSON.stringify(first)}`, { label: "history to end where it started" });
       });
 
       test("ECL3 a pasted link with a clean editor does not ask", async () => {
