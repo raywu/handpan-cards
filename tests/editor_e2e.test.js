@@ -4126,6 +4126,7 @@ function run() {
         assert.deepStrictEqual(await covers(), [], "the info button covers no Layout control");
         const p = await geo();
         assert.ok(Math.abs(p.bt.r - p.row.r) <= 0.5, "flush right in the Layout row: " + JSON.stringify(p));
+        assert.ok(await b.eval(`return document.getElementById("editor-panel-layout").contains(document.getElementById("editor-hint-toggle"));`) && p.bt.w >= 44 && p.bt.h >= 44, "the info button is shown in the Layout row: " + JSON.stringify(p));
         await b.click("#editor-tab-scale");
         await pause(100);
         const back = await geo();
