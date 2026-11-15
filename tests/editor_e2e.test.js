@@ -4765,7 +4765,7 @@ function run() {
       await b.eval(`return new Promise((r) => setTimeout(r, 300));`);
     };
     for (const [w, h] of [[360, 640], [390, 844]]) {
-      test(`FA-06 ${w}x${h} after system Back with the menu open the first Escape leaves the Save-changes dialog and focus returns to Back`, async () => {
+      test(`FA-06 ${w}x${h} after system Back with the menu open the dialog closes the menu and the first Escape leaves the Save-changes dialog and focus returns to Back`, async () => {
         await saveOne(w, h);
         await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "FA06 EDIT";
           n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
@@ -4773,6 +4773,8 @@ function run() {
         assert.strictEqual(await b.eval(`return editorSession.menu;`), true);
         await b.eval(`history.back(); return true;`);
         await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Back dialog" });
+        assert.strictEqual(await b.eval(`return editorSession.menu;`), false, "opening the dialog closes the menu");
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-menu").hasAttribute("hidden");`), true, "the menu element is hidden");
         await b.key("Escape", "Escape", 27);
         assert.strictEqual(await dialogOpen(), false, "the first Escape leaves the dialog");
         assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-back");
