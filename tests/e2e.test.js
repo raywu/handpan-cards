@@ -21260,7 +21260,7 @@ function run() {
       await rgWrite(rgRecords([7]), 2);
       await b.eval(`window.dispatchEvent(new Event("focus")); return true;`);
       await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("1 saved scale was made in a newer version")`, { timeout: 5000, label: "the one-row notice" });
-      await rgWrite(rgRecords([7, 6]), 3);
+      await rgWrite(rgRecords([7, 8]), 3);
       await b.eval(`window.dispatchEvent(new Event("focus")); return true;`);
       await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("2 saved scales were made in a newer version")`, { timeout: 5000, label: "the two-row notice" });
     });
@@ -21268,7 +21268,7 @@ function run() {
     test("RG: the notice and the backup line fit at 320x568 in every locale", async () => {
       try {
         await b.setViewport(320, 568, true);
-        await rgLoad(rgRecords([6, 7, 8]));
+        await rgLoad(rgRecords([7, 8, 9]));
         const langs = await b.eval(`return LANGS.slice();`);
         assert.strictEqual(langs.length, 8);
         for (const lang of langs) {

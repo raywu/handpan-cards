@@ -646,7 +646,7 @@ const rgRewrite = async (app, body) => app.getAsync(`(async () => {
 
 // Saves every wanted row the normal way, then rewrites the record version of the
 // paired ones in place: the envelope shape (ids, ordinals) stays valid. A number
-// above 5 or a string version is stored as given.
+// above 6 or a string version is stored as given.
 const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href) => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const origin = createOrigin({ storage: {} });
@@ -667,10 +667,10 @@ const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href) => {
   }`);
   return origin;
 };
-const rgNewer = (env) => env.entries.filter((e) => typeof e.record.v === "number" && e.record.v > 5);
+const rgNewer = (env) => env.entries.filter((e) => typeof e.record.v === "number" && e.record.v > 6);
 
-test("RG: record 6 and 7 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit", async () => {
-  const origin = await rgOrigin([6, 7], ["ACOUSTIC ONE", "ACOUSTIC TWO"]);
+test("RG: record 7 and 8 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit", async () => {
+  const origin = await rgOrigin([7, 8], ["ACOUSTIC ONE", "ACOUSTIC TWO"]);
   const app = await sharedBoot(origin, NEW_HTML);
   const seeded = rgNewer(envelopeOf(app));
   assert.strictEqual(seeded.length, 2);
@@ -709,13 +709,13 @@ test("RG: record 6 and 7 rows seeded into storage stay byte-identical through bo
 });
 
 test("RG: the notice counts only rows above the app's newest record version", async () => {
-  const origin = await rgOrigin([4, 6, 7, 8, "7"]);
+  const origin = await rgOrigin([4, 5, 7, 8, 9, "7"]);
   const app = await sharedBoot(origin, NEW_HTML);
   const status = app.els["saved-status"];
-  assert.strictEqual(status.textContent, RG_NOTICE.other(3), "v6, v7 and v8 are counted; v5, v4 and a non-number v are not");
+  assert.strictEqual(status.textContent, RG_NOTICE.other(3), "v7, v8 and v9 are counted; v5, v4 and a non-number v are not");
   assert.strictEqual(status.hidden, false);
 
-  const one = await sharedBoot(await rgOrigin([6]), NEW_HTML);
+  const one = await sharedBoot(await rgOrigin([7]), NEW_HTML);
   assert.strictEqual(one.els["saved-status"].textContent, RG_NOTICE.one);
 
   const none = await sharedBoot(await rgOrigin([4, 5]), NEW_HTML);
@@ -736,7 +736,7 @@ const rgMoveBoot = async (origin, href, referrer) => {
 
 test("RG: a move from the old host carries newer rows byte-identical, and a junk object row passes through as opaque", async () => {
   const { createOrigin } = require("./helpers/sandbox.js");
-  const origin = await rgOrigin([6, 7, 8], ["ACOUSTIC ONE"], "https://old.example/index.html");
+  const origin = await rgOrigin([7, 8, 9], ["ACOUSTIC ONE"], "https://old.example/index.html");
   const old = await rgMoveBoot(origin, "https://old.example/index.html", "");
   const oldEnv = envelopeOf(old);
   const sent = rgNewer(oldEnv).map((e) => e.record);
@@ -757,7 +757,7 @@ test("RG: a move from the old host carries newer rows byte-identical, and a junk
 });
 
 test("RG: the backup names the rows it leaves out, and with only newer rows it is not empty and cannot be exported", async () => {
-  const mixed = await sharedBoot(await rgOrigin([6, 7]), NEW_HTML);
+  const mixed = await sharedBoot(await rgOrigin([7, 8]), NEW_HTML);
   mixed.els["backup-open"].click();
   const text = mixed.els["backup-text"].value;
   assert.ok(text.includes(RG_BACKUP(2)), "the file says two newer scales are not in it");
@@ -770,11 +770,11 @@ test("RG: the backup names the rows it leaves out, and with only newer rows it i
   const only = await sharedBoot(origin, NEW_HTML);
   only.els["backup-open"].click();
   assert.strictEqual(only.els["backup-status"].textContent, RG_BACKUP(1));
-  assert.notStrictEqual(only.els["backup-status"].textContent, "No saved scales to back up yet.");
+  assert.notStrictEqual(only.els["backup-status"].textContent, "No saved scales to export yet.");
   assert.strictEqual(only.els["backup-text"].value, "");
   for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(only.els[id].disabled, true, id);
 
   const empty = await sharedBoot(createOrigin({ storage: {} }), NEW_HTML);
   empty.els["backup-open"].click();
-  assert.strictEqual(empty.els["backup-status"].textContent, "No saved scales to back up yet.");
+  assert.strictEqual(empty.els["backup-status"].textContent, "No saved scales to export yet.");
 });
