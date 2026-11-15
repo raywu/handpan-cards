@@ -9,7 +9,7 @@ diff --git a/index.html b/index.html
      if (!result.ok) {
        if (result.kind === "conflict") {
 -        await reconcileSavedCollection();
-+        
++
          if (generation === sheetGeneration && editorSession === s) editorShowConflict();
        } else if (result.kind !== "cancelled") s.error = savedErrorText(result);
        return;

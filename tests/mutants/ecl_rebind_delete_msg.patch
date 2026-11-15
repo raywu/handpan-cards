@@ -1,0 +1,14 @@
+# kills: ECL7 a Delete tap on a rebound slot-owner explains why the scale was not removed
+# suite: node --test --test-name-pattern ^ECL7 tests/editor_e2e.test.js
+# fault: The slot-owner rebind resets an armed Delete without saying why nothing was deleted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15342,7 +15342,6 @@
+       editorClose();
+       editorOpen(latest);
+       if(editorSession && tab!=="scale")editorSetTab(tab,false);
+-      if(editorSession && wasArmed){editorSession.say=editorSession.plainSay=t("editor.rebound",{name:latest.name});editorRender();}
+     }
+   }
+   // Preference ACKs and unchanged rereads must not detach an active pointer

@@ -1,0 +1,19 @@
+# kills: ECL6 a dirty editor guards unloading and a clean one does not
+# suite: node --test --test-name-pattern ^ECL6.a.dirty.editor.guards.unloading tests/editor_e2e.test.js
+# fault: A dirty editor no longer asks the browser to confirm before the page unloads.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15244,12 +15244,6 @@
+   history.back();
+   return true;
+ }
+-window.addEventListener("beforeunload", (e) => {
+-  const s = editorSession;
+-  if (!s || !(editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present))) return;
+-  e.preventDefault();
+-  e.returnValue = "";
+-});
+ window.addEventListener("popstate", (e) => {
+   // SAVE already selected and synced the committed scale. Observe the final
+   // route after this app-owned pop, not its temporary pre-SAVE destination.

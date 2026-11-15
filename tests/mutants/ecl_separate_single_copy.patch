@@ -1,0 +1,16 @@
+# kills: ECL2 two taps on Save as separate with an unacknowledged write leave exactly one copy and no second button
+# suite: node --test --test-name-pattern ^ECL2.two.taps.on.Save.as.separate tests/editor_e2e.test.js
+# fault: An unacknowledged separate save returns before the conflict is cleared, so a second tap writes a second copy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15055,8 +15055,8 @@
+       } else if (result.kind !== "cancelled") s.error = savedErrorText(result);
+       return;
+     }
++    if (result.published === false) { s.error = savedPublicationText(result); return; }
+     if (editorSession === s) s.conflict = null;
+-    if (result.published === false) { s.error = savedPublicationText(result); return; }
+     const d = savedEntries.get(result.instanceId).deck;
+     const warned = (d.warnings || []).map((w) => reasonText(w));
+     if (editorSession === s && editorDraftMoved(s, m)) {
