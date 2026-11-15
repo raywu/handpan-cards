@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12992,7 +12992,7 @@
+@@ -12992,7 +12992,7 @@ function editorStageNeoMove(st, from, to) {
  // stage rides on the arriving one as `other`), the current ding goes both ways.
  function editorStagePanType(m, kind) {
    const { other, ...old } = editorStageOf(m);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  const next = editorBlankStage(kind);
    if (old.ding) next.ding = old.ding;
    if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
-   return { ok: true, value: editorWithStage(m, next) };
+   const staged = editorWithStage(m, next);
