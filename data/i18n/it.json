@@ -518,5 +518,9 @@
   "backup.file_newer": {
     "one": "1 scala di una versione più recente non è in questo file. Resta salvata in questo browser.",
     "other": "{n} scale di una versione più recente non sono in questo file. Restano salvate in questo browser."
+  },
+  "backup.file_newer_none": {
+    "one": "1 scala di una versione più recente non può essere inclusa nel backup qui. Resta salvata in questo browser.",
+    "other": "{n} scale di una versione più recente non possono essere incluse nel backup qui. Restano salvate in questo browser."
   }
 }

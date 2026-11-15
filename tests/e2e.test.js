@@ -21254,15 +21254,42 @@ function run() {
       await b.waitFor(APP_READY_EXPR, { timeout: 15000, label: "the page to boot" });
     }
 
-    test("RG: a newer row written by another tab updates the notice on focus, without a reload", async () => {
+    test("RG: a newer row written by another tab updates the notice from its channel message, without a reload", async () => {
       await rgLoad(rgRecords([]));
       assert.strictEqual(await rgStatus(), "", "no notice while every row is readable");
-      await rgWrite(rgRecords([7]), 2);
-      await b.eval(`window.dispatchEvent(new Event("focus")); return true;`);
-      await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("1 saved scale was made in a newer version")`, { timeout: 5000, label: "the one-row notice" });
-      await rgWrite(rgRecords([7, 8]), 3);
-      await b.eval(`window.dispatchEvent(new Event("focus")); return true;`);
-      await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("2 saved scales were made in a newer version")`, { timeout: 5000, label: "the two-row notice" });
+      const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
+      try {
+        const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true }, false);
+        const peer = async (method, params = {}) => {
+          const previous = b.sessionId;
+          b.sessionId = sessionId;
+          try { return await b.rawSend(method, params); } finally { b.sessionId = previous; }
+        };
+        const peerEval = async (body) => {
+          const r = await peer("Runtime.evaluate", { expression: `(async () => { ${body} })()`, awaitPromise: true, returnByValue: true });
+          assert.ok(!r.exceptionDetails, "the peer page evaluated without an error: " + JSON.stringify(r.exceptionDetails));
+          return r.result.value;
+        };
+        assert.notStrictEqual(sessionId, b.sessionId, "the writer is a distinct target");
+        await peer("Page.enable");
+        await peer("Runtime.enable");
+        await peer("Network.enable");
+        await peer("Network.setBlockedURLs", { urls: b.blockedUrls });
+        await peer("Page.navigate", { url: URL });
+        const deadline = Date.now() + 15000;
+        while (!(await peerEval(`return ${APP_READY_EXPR};`))) {
+          assert.ok(Date.now() < deadline, "the peer page booted");
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        const post = (records, revision) => peerEval(`await ${nativeSavedExpression({ write: true, raw: JSON.stringify(rgEnvelope(records, revision)) })};
+          const c = new BroadcastChannel("handpan-cards:saved-scales:v1");
+          c.postMessage({ schema: 1, collectionId: "00000000-0000-4000-8000-0000000000aa", revision: ${revision} });
+          c.close(); return true;`);
+        await post(rgRecords([7]), 2);
+        await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("1 saved scale was made in a newer version")`, { timeout: 5000, label: "the one-row notice" });
+        await post(rgRecords([7, 8]), 3);
+        await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("2 saved scales were made in a newer version")`, { timeout: 5000, label: "the two-row notice" });
+      } finally { await b.send("Target.closeTarget", { targetId }, false); }
     });
 
     test("RG: the notice and the backup line fit at 320x568 in every locale", async () => {
@@ -21285,10 +21312,12 @@ function run() {
           assert.ok(line.length > 0 && line !== "backup.file_newer" && !line.includes("{n}"), `${lang}: the backup line is filled in`);
           const text = await b.eval(`document.getElementById("backup-text").value = backupText(); return backupText();`);
           assert.ok(text.includes(line), `${lang}: the backup file carries the line`);
-          const m = await b.eval(`if (subpage) hideSubpage(); openSubpage("export"); paintBackup(t("backup.file_newer", { n: 3 }));
+          const m = await b.eval(`if (subpage) hideSubpage(); openSubpage("export"); paintBackup(t("backup.file_newer_none", { n: 3 }));
             const el = document.getElementById("backup-status"), q = el.getBoundingClientRect();
             return { text: el.textContent, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight, w: q.width, left: q.left, right: q.right, vw: innerWidth, doc: document.documentElement.scrollWidth };`);
-          assert.strictEqual(m.text, line, `${lang}: the backup status shows the newer line`);
+          const none = await b.eval(`return t("backup.file_newer_none", { n: 3 });`);
+          assert.ok(none.length > 0 && none !== line && !none.includes("{n}"), `${lang}: the no-file line is filled in`);
+          assert.strictEqual(m.text, none, `${lang}: the backup status shows the no-file line`);
           assert.ok(m.w > 0 && m.sw <= m.cw && m.sh <= m.ch + 1, `${lang}: the backup status is not clipped`);
           assert.ok(m.left >= 0 && m.right <= m.vw && m.doc <= m.vw, `${lang}: the backup status fits the viewport`);
         }

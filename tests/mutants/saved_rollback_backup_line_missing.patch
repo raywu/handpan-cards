@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15784,7 +15784,7 @@ function backupText() {
+@@ -15784,7 +15784,7 @@
    for (const r of rows) parts.push(r.name + "\n" + r.link);
    if (hidden.length) parts.push(t("backup.file_hidden", { names: hidden.join(", ") }));
    const newer = savedNewerCount();
--  if (newer) parts.push(t("backup.file_newer", { n: newer }));
+-  if (newer && rows.length) parts.push(t("backup.file_newer", { n: newer }));
 +  if (false) parts.push(t("backup.file_newer", { n: newer }));
    return parts.join("\n\n") + "\n";
  }
