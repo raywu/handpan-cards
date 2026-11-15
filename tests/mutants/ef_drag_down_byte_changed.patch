@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14639,7 +14639,7 @@ function editorDragSource(e) {
+@@ -16702,7 +16702,7 @@ function editorDragSource(e) {
+ }
  function editorDragDown(e) {
    const s = editorSession;
-   if (editorDrag && e.pointerId !== editorDrag.id) { editorDragEnd(null); return; }
 -  if (!s || s.dialog || s.editing || editorDrag || e.button > 0) return;
 +  if (!s || s.dialog || s.editing || editorDrag || e.button > 1) return;
    if (e.pointerType === "touch" && !DRAG_ON_TOUCH) return;

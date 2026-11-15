@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14923,7 +14923,6 @@
-   editorEl("editor-pan").onkeydown = editorPanKey;
+@@ -14922,7 +14922,6 @@ function editorWire() {
    editorEl("editor-pan").addEventListener("focusin", editorPanFocus);
+   editorEl("editor").addEventListener("pointerdown", (e) => { if (editorDrag && e.pointerId !== editorDrag.id) { e.stopImmediatePropagation(); editorDragEnd(null); } });
    editorEl("editor").addEventListener("pointerdown", editorDragDown);
 -  editorEl("editor").addEventListener("contextmenu", (e) => { if (editorDrag) e.preventDefault(); });
    editorEl("editor-oct-down").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct - 1 });
