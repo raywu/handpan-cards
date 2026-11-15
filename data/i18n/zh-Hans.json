@@ -370,5 +370,8 @@
   "backup.file_hidden": "被隐藏的内置音阶（仅备注，无链接）：{names}",
   "backup.file_newer": {
     "other": "有 {n} 个来自更新版本的音阶不在此文件中。它们仍保存在此浏览器里。"
+  },
+  "backup.file_newer_none": {
+    "other": "有 {n} 个来自更新版本的音阶无法在此备份。它们仍保存在此浏览器里。"
   }
 }

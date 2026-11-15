@@ -388,5 +388,9 @@
   "backup.file_newer": {
     "one": "1 scale from a newer version is not in this file. It stays saved in this browser.",
     "other": "{n} scales from a newer version are not in this file. They stay saved in this browser."
+  },
+  "backup.file_newer_none": {
+    "one": "1 scale from a newer version can't be backed up here. It stays saved in this browser.",
+    "other": "{n} scales from a newer version can't be backed up here. They stay saved in this browser."
   }
 }

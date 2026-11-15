@@ -630,6 +630,9 @@ const RG_NOTICE = {
 const RG_BACKUP = (n) => (n === 1
   ? "1 scale from a newer version is not in this file. It stays saved in this browser."
   : `${n} scales from a newer version are not in this file. They stay saved in this browser.`);
+const RG_BACKUP_NONE = (n) => (n === 1
+  ? "1 scale from a newer version can't be backed up here. It stays saved in this browser."
+  : `${n} scales from a newer version can't be backed up here. They stay saved in this browser.`);
 
 const rgRewrite = async (app, body) => app.getAsync(`(async () => {
   const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
@@ -653,7 +656,7 @@ const rgBytes = (raw) => JSON.parse(raw).entries.filter((e) => typeof e.record.v
 // Saves every wanted row the normal way, then rewrites the record version of the
 // paired ones in place: the envelope shape (ids, ordinals) stays valid. A number
 // above 5 or a string version is stored as given.
-const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href) => {
+const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href, extra = {}) => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const origin = createOrigin({ storage: {} });
   const fresh = href ? await rgMoveBoot(origin, href, "") : await sharedBoot(origin, NEW_HTML);
@@ -670,14 +673,21 @@ const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href) => {
       row.record.v = v;
       if (v === 7) row.record.o.anchor = "between";
     }
+    for (const [name, seed] of Object.entries(${JSON.stringify(extra.replaces || {})})) {
+      const row = env.entries.find((e) => e.record.o && e.record.o.name === name);
+      row.record.o.replaces = seed;
+      env.slots[seed] = row.instanceId;
+    }
+    env.hidden.push(...${JSON.stringify(extra.hidden || [])});
   }`);
   return origin;
 };
 const rgNewer = (env) => env.entries.filter((e) => typeof e.record.v === "number" && e.record.v > 5);
 
 test("RG: record 6 and 7 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit", async () => {
-  const origin = await rgOrigin([6, 7], ["ACOUSTIC ONE", "ACOUSTIC TWO"]);
+  const origin = await rgOrigin([6, 7, 4], ["ACOUSTIC ONE", "ACOUSTIC TWO"], undefined, { replaces: { "ACOUSTIC V4 2": "kurd" } });
   const app = await sharedBoot(origin, NEW_HTML);
+  assert.ok(envelopeOf(app).entries.some((e) => e.record.o && e.record.o.replaces === "kurd"), "the seeded replacement is stored");
   const seeded = rgNewer(envelopeOf(app));
   assert.strictEqual(seeded.length, 2);
   const plantedBytes = rgBytes(origin.rgPlanted);
@@ -714,11 +724,12 @@ test("RG: record 6 and 7 rows seeded into storage stay byte-identical through bo
   assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "Delete left the newer rows alone");
   await bytesKept("Delete kept the newer bytes");
 
+  const beforeReset = envelopeOf(again).revision;
   again.els["deck-restore"].click();
   again.els["deck-restore"].click();
-  await settle();
-  await new Promise((r) => setTimeout(r, 600));
-  await settle();
+  for (let i = 0; i < 200 && envelopeOf(again).revision === beforeReset; i += 1) { await settle(); await new Promise((r) => setImmediate(r)); }
+  assert.notStrictEqual(envelopeOf(again).revision, beforeReset, "RESET committed a new revision");
+  assert.ok(!envelopeOf(again).entries.some((e) => e.record.o && e.record.o.replaces), "RESET dropped the replacement");
   assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "RESET SEEDED left the newer rows alone");
   await bytesKept("RESET kept the newer bytes");
   assert.notStrictEqual(again.get("savedMode"), "protected");
@@ -761,7 +772,9 @@ test("RG: a move from the old host carries newer rows byte-identical, and a junk
   const url = old.get("window.__assigned");
   assert.ok(url && url.startsWith("https://new.example/"), "the old host forwarded");
   const dest = await rgMoveBoot(createOrigin({}), url, "https://old.example/");
-  assert.deepStrictEqual(rgNewer(envelopeOf(dest)).map((e) => e.record), sent, "newer rows arrived byte-identical");
+  const storedBytes = async (app) => JSON.parse(await rgRaw(app)).entries.filter((e) => e.record.v > 5).map((e) => JSON.stringify(e.record));
+  assert.deepStrictEqual(await storedBytes(dest), await storedBytes(old), "newer rows arrived byte-identical");
+  assert.deepStrictEqual(await storedBytes(dest), sent.map((r) => JSON.stringify(r)), "the stored bytes match what the old host held");
   assert.deepStrictEqual(envelopeOf(old), oldEnv, "the old store did not change");
   assert.strictEqual(dest.els["saved-status"].textContent, RG_NOTICE.other(3));
 
@@ -785,7 +798,8 @@ test("RG: the backup names the rows it leaves out, and with only newer rows it i
   const origin = await rgOrigin([7], []);
   const only = await sharedBoot(origin, NEW_HTML);
   only.els["backup-open"].click();
-  assert.strictEqual(only.els["backup-status"].textContent, RG_BACKUP(1));
+  assert.strictEqual(only.els["backup-status"].textContent, RG_BACKUP_NONE(1));
+  assert.ok(!only.els["backup-status"].textContent.includes("not in this file"), "with no file the line does not point at a file");
   assert.notStrictEqual(only.els["backup-status"].textContent, "No saved scales to back up yet.");
   assert.strictEqual(only.els["backup-text"].value, "");
   for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(only.els[id].disabled, true, id);
@@ -793,4 +807,25 @@ test("RG: the backup names the rows it leaves out, and with only newer rows it i
   const empty = await sharedBoot(createOrigin({ storage: {} }), NEW_HTML);
   empty.els["backup-open"].click();
   assert.strictEqual(empty.els["backup-status"].textContent, "No saved scales to back up yet.");
+});
+
+test("RG: with no readable rows the newer line shows once, as the no-file line, whether or not seeded scales are hidden", async () => {
+  const count = (app) => (app.els["backup-text"].value + "\n" + app.els["backup-status"].textContent).split("from a newer version").length - 1;
+  const two = await sharedBoot(await rgOrigin([6, 7], []), NEW_HTML);
+  two.els["backup-open"].click();
+  assert.strictEqual(two.els["backup-status"].textContent, RG_BACKUP_NONE(2));
+  assert.strictEqual(count(two), 1);
+
+  const hiddenOnly = await sharedBoot(await rgOrigin([6, 7, 8], [], undefined, { hidden: ["amara"] }), NEW_HTML);
+  hiddenOnly.els["backup-open"].click();
+  assert.strictEqual(hiddenOnly.els["backup-status"].textContent, RG_BACKUP_NONE(3));
+  assert.ok(hiddenOnly.els["backup-text"].value.includes("Hidden seeded scales"), "the hidden note is still listed");
+  assert.strictEqual(count(hiddenOnly), 1, "the newer line appears once");
+  for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(hiddenOnly.els[id].disabled, true, id);
+
+  const mixed = await sharedBoot(await rgOrigin([6, 7], ["ACOUSTIC ONE"], undefined, { hidden: ["amara"] }), NEW_HTML);
+  mixed.els["backup-open"].click();
+  assert.strictEqual(mixed.els["backup-status"].textContent, "");
+  assert.strictEqual(count(mixed), 1, "with a file the line is in the file, once");
+  assert.ok(mixed.els["backup-text"].value.includes(RG_BACKUP(2)));
 });
