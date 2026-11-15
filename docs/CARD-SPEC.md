@@ -292,10 +292,14 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
 
 - **Shell and Save.** A new scale opens as an empty pan, never as a blank panel: Standard
   is pressed by default, both type buttons stay enabled, the ding and the rim, cyclops and
-  bottom zones are drawn as orange dashed drop targets (`editorWithOverlay`), and the status
+  bottom zones are drawn as softer orange dashed drop targets (`editorWithOverlay`: 1.5 stroke at
+  70% opacity, painted under the notes in the `eunder` group so no ring line crosses a staged
+  note; the ding target stays on top, and a committed pan is drawn as before), and the status
   line prompts for the ding then a note a fifth above (`editorEmptyPrompt`); Save stays
   disabled. Switching to Neotone while empty draws the ding and all 18 slots, the nine
-  mutant slots dimmed until their main field has a note (`editorNeoMarks`). Tap and drag
+  mutant slots dimmed until their main field has a note (`editorNeoMarks`, the slot outlines
+  also under the notes). Tests: "the empty Standard pan paints staged notes above every area
+  ring". Tap and drag
   both work on the empty pan; notes staged before the ding are kept (`editorStageOf`) and
   the ding drop commits them. The first ding says "{name} is the ding" (`editorFirstDingSay`),
   never a replace or "removed" line. Back with only staged notes closes silently; a saved
@@ -316,7 +320,16 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   saves with the same record and link ("parity 9 save").
 - **Pan type.** The header Standard / Neotone switch changes the pan type as one Undo step
   each way and returns the panel to the Scale tab. Tests: "switching the pan type returns
-  the panel to the Scale tab", "Standard to Neotone and back are one Undo step each".
+  the panel to the Scale tab", "Standard to Neotone and back are one Undo step each". While
+  the pan is empty each kind keeps its own staged notes and switching back restores them,
+  the current ding going both ways (the last ding set wins; `editorStagePanType` parks the
+  leaving stage as `other`, which is never saved, shared or dirty); a kind with nothing
+  remembered starts blank with the ding, and notes are never mapped across kinds. Tests:
+  "empty stage: switching the pan type of an empty model keeps each kind's staged notes"
+  (Standard to Neotone and back, Neotone to Standard and back), "empty stage: the current
+  ding goes both ways", "empty stage: a kind with nothing remembered", "empty stage: each
+  switch of an empty model is one Undo step", "empty stage: a remembered stage of the other
+  kind is never saved", e2e "switching pan type and back keeps the staged notes".
 - **Scale name.** The Scale panel opens with a name field: 40 characters at most, trimmed,
   16px or larger so iOS does not zoom, a 44px target, and a tab stop. A name the user
   blanks stores nothing and the auto name shows (placeholder = the auto name; on Neotone it
