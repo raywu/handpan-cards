@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13372,7 +13372,7 @@ function editorResetSpacing(m, rings) {
- // centre first; unless a note is held, the cyclops and bottom notes' EDITOR_SCALE
- // areas come next; then the zone under the pointer decides. EDITOR_HIT_AREA only
- // sets the radius of the rendered .ehit target.
+@@ -15655,7 +15655,7 @@ function editorResetSpacing(m, rings) {
+ // What a point on the pan (R units, y up) lands on. A drawn circle wins, nearest
+ // centre first; unless a note is held, the 43 unit areas of the cyclops and bottom
+ // notes come next (D22); then the zone under the pointer decides.
 -const EDITOR_HIT_AREA = 0.43;
 +const EDITOR_HIT_AREA = 0.44;
  const EDITOR_SCALE = { rim: 0.85, inner: 0.75, bottom: 0.85 };

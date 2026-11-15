@@ -13369,9 +13369,8 @@ function editorResetSpacing(m, rings) {
   return solved.ok ? { ok: true, value: next } : solved;
 }
 // What a point on the pan (R units, y up) lands on. A drawn circle wins, nearest
-// centre first; unless a note is held, the cyclops and bottom notes' EDITOR_SCALE
-// areas come next; then the zone under the pointer decides. EDITOR_HIT_AREA only
-// sets the radius of the rendered .ehit target.
+// centre first; unless a note is held, the 43 unit areas of the cyclops and bottom
+// notes come next (D22); then the zone under the pointer decides.
 const EDITOR_HIT_AREA = 0.43;
 const EDITOR_SCALE = { rim: 0.85, inner: 0.75, bottom: 0.85 };
 const EDITOR_OFF_MARGIN = 0.08;
@@ -14638,7 +14637,6 @@ function editorDragSource(e) {
 }
 function editorDragDown(e) {
   const s = editorSession;
-  if (editorDrag && e.pointerId !== editorDrag.id) { editorDragEnd(null); return; }
   if (!s || s.dialog || s.editing || editorDrag || e.button > 0) return;
   if (e.pointerType === "touch" && !DRAG_ON_TOUCH) return;
   const src = editorDragSource(e);
@@ -14922,6 +14920,7 @@ function editorWire() {
   editorEl("editor-pan").onclick = editorPanClick;
   editorEl("editor-pan").onkeydown = editorPanKey;
   editorEl("editor-pan").addEventListener("focusin", editorPanFocus);
+  editorEl("editor").addEventListener("pointerdown", (e) => { if (editorDrag && e.pointerId !== editorDrag.id) { e.stopImmediatePropagation(); editorDragEnd(null); } });
   editorEl("editor").addEventListener("pointerdown", editorDragDown);
   editorEl("editor").addEventListener("contextmenu", (e) => { if (editorDrag) e.preventDefault(); });
   editorEl("editor-oct-down").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct - 1 });
