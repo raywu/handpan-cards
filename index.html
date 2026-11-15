@@ -14904,7 +14904,7 @@ function editorWire() {
   const del = editorEl("editor-delete");
   if (del) del.onclick = editorMenuPick(editorDeleteTap);
   editorEl("editor").addEventListener("pointerdown", (e) => {
-    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target)) editorSetAreas(false);
+    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target) && !editorEl("editor-tabs").contains(e.target)) editorSetAreas(false);
     const menu = editorEl("editor-menu");
     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();
