@@ -4135,6 +4135,32 @@ function run() {
       });
     }
 
+    test("QA4 hint after type switch: the info button is in the visible Scale name row after a pan-type tap from Layout", async () => {
+      await open(390, 844);
+      for (const kind of ["standard", "neotone", "standard"]) {
+        await b.click("#editor-tab-layout");
+        await pause(100);
+        await b.click("#editor-type-" + kind);
+        await pause(200);
+        const r = await b.eval(`const t = document.getElementById("editor-hint-toggle"), rc = t.getBoundingClientRect(), row = t.parentNode, sc = document.getElementById("editor-panel-scale"),
+          hit = document.elementFromPoint(rc.left + rc.width / 2, rc.top + rc.height / 2);
+          return { rects: t.getClientRects().length, w: rc.width, h: rc.height, rowOk: row.classList.contains("editor-hintrow") && sc.contains(row) && !sc.hidden, hit: hit === t || t.contains(hit), tab: editorSession.tab };`);
+        assert.ok(r.rects > 0 && r.w > 0 && r.h > 0, kind + " tap leaves the info button with a rect: " + JSON.stringify(r));
+        assert.ok(r.rowOk && r.tab === "scale", kind + " tap: the button is in the visible Scale hint row: " + JSON.stringify(r));
+        assert.ok(r.hit, kind + " tap: the button is hit at its centre: " + JSON.stringify(r));
+      }
+    });
+
+    test("QA4 hint focus: a focused info button stays focused when the tab changes", async () => {
+      await open(390, 844);
+      await b.eval(`document.getElementById("editor-hint-toggle").focus(); return editorSetTab("layout");`);
+      await pause(100);
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "focus survives the move to Layout");
+      await b.eval(`return editorSetTab("scale");`);
+      await pause(100);
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "focus survives the move back to Scale");
+    });
+
     test("QA3 hint row 390x844: after a tray drag ends the info button is still centred on the name input", async () => {
       await open(390, 844);
       await b.drag(".tray-note", [[0, 100, -150], [0, 200, -300]]);
