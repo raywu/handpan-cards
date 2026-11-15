@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -932,7 +932,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- #editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px}
+@@ -934,7 +934,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ @media (max-width:420px){#editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:48px}}
  #editor-status[data-conflict] #editor-conflict-msg{flex:1 1 12em; min-width:0}
  #editor-status #editor-conflict-separate{min-height:44px; white-space:normal; padding:10px 14px}
 -#editor .editor-panbox{flex:0 0 auto; min-height:0;
