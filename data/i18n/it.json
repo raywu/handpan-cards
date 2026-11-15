@@ -125,6 +125,10 @@
   "saved.temporary": "USA TEMPORANEAMENTE QUESTA SCHEDA",
   "saved.failure": "Impossibile salvare le modifiche. La tua bozza è ancora qui. Riprova.",
   "saved.legacy": "Una versione precedente ha modificato le scale salvate. Le modifiche sono conservate separatamente per il recupero.",
+  "saved.newer": {
+    "one": "1 scala salvata è stata creata con una versione più recente di Handpan Theory. È al sicuro e ricomparirà dopo un aggiornamento.",
+    "other": "{n} scale salvate sono state create con una versione più recente di Handpan Theory. Sono al sicuro e ricompariranno dopo un aggiornamento."
+  },
   "saved.savedToken": "{token} identifica questa scala salvata in questo browser.",
   "saved.presetToken": "{token} identifica questa scala predefinita.",
   "saved.importFailure": "Impossibile aggiungere questa scala condivisa. Il link è ancora nella barra degli indirizzi. Prova ad aprirlo di nuovo.",
@@ -260,5 +264,13 @@
   "editor.count.mutant": "Mutant {n}/{max}",
   "sheet.neotone_check": "Neotone",
   "sheet.mode_neotone": "NEOTONE",
-  "sheet.layout_mode": "DISPOSIZIONE"
+  "sheet.layout_mode": "DISPOSIZIONE",
+  "backup.file_newer": {
+    "one": "1 scala di una versione più recente non è in questo file. Resta salvata in questo browser.",
+    "other": "{n} scale di una versione più recente non sono in questo file. Restano salvate in questo browser."
+  },
+  "backup.file_newer_none": {
+    "one": "1 scala di una versione più recente non può essere inclusa nel backup qui. Resta salvata in questo browser.",
+    "other": "{n} scale di una versione più recente non possono essere incluse nel backup qui. Restano salvate in questo browser."
+  }
 }

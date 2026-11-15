@@ -125,6 +125,10 @@
   "saved.temporary": "DIESEN TAB VORÜBERGEHEND NUTZEN",
   "saved.failure": "Diese Änderungen konnten nicht gespeichert werden. Dein Entwurf bleibt erhalten. Versuche es erneut.",
   "saved.legacy": "Eine ältere App hat ihre gespeicherten Skalen geändert. Diese Änderungen bleiben zur Wiederherstellung getrennt erhalten.",
+  "saved.newer": {
+    "one": "1 gespeicherte Skala stammt aus einer neueren Version von Handpan Theory. Sie ist sicher aufbewahrt und erscheint nach einem Update wieder.",
+    "other": "{n} gespeicherte Skalen stammen aus einer neueren Version von Handpan Theory. Sie sind sicher aufbewahrt und erscheinen nach einem Update wieder."
+  },
   "saved.savedToken": "{token} kennzeichnet diese gespeicherte Skala in diesem Browser.",
   "saved.presetToken": "{token} kennzeichnet diese Standardskala.",
   "saved.importFailure": "Diese geteilte Skala konnte nicht hinzugefügt werden. Ihr Link steht weiterhin in der Adressleiste. Versuche, ihn erneut zu öffnen.",
@@ -260,5 +264,13 @@
   "editor.count.mutant": "Mutant {n}/{max}",
   "sheet.neotone_check": "Neotone",
   "sheet.mode_neotone": "NEOTONE",
-  "sheet.layout_mode": "ANORDNUNG"
+  "sheet.layout_mode": "ANORDNUNG",
+  "backup.file_newer": {
+    "one": "1 Skala aus einer neueren Version ist nicht in dieser Datei. Sie bleibt in diesem Browser gespeichert.",
+    "other": "{n} Skalen aus einer neueren Version sind nicht in dieser Datei. Sie bleiben in diesem Browser gespeichert."
+  },
+  "backup.file_newer_none": {
+    "one": "1 Skala aus einer neueren Version kann hier nicht gesichert werden. Sie bleibt in diesem Browser gespeichert.",
+    "other": "{n} Skalen aus einer neueren Version können hier nicht gesichert werden. Sie bleiben in diesem Browser gespeichert."
+  }
 }

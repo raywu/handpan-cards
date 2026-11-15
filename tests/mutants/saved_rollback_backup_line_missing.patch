@@ -1,0 +1,15 @@
+# kills: RG: the backup names the rows it leaves out, and with only newer rows it is not empty and cannot be exported
+# suite: node --test --test-name-pattern ^RG..the.backup.names.the.rows tests/storage_corpus.test.js
+# why: A backup that omits newer rows without saying so reads as complete.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15784,7 +15784,7 @@
+   for (const r of rows) parts.push(r.name + "\n" + r.link);
+   if (hidden.length) parts.push(t("backup.file_hidden", { names: hidden.join(", ") }));
+   const newer = savedNewerCount();
+-  if (newer && rows.length) parts.push(t("backup.file_newer", { n: newer }));
++  if (false) parts.push(t("backup.file_newer", { n: newer }));
+   return parts.join("\n\n") + "\n";
+ }
+ function backupLastText() {
