@@ -259,6 +259,73 @@ function run() {
       assert.deepStrictEqual([t2.rings, t2.slots], [["bottom", "ding", "inner", "rim"], 0]);
     });
 
+    test("switching pan type and back keeps the staged notes: ding C and two rim notes by tap at 390x844 return at the same rings after Neotone and Standard", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      const o = await octave();
+      await b.click('.tray-note[data-name="C"]');
+      await tapPoint(await dingAt(), true);
+      await b.click('.tray-note[data-name="D"]');
+      await tapPoint(await spotAt("rim", 45), true);
+      await b.click('.tray-note[data-name="E"]');
+      await tapPoint(await spotAt("rim", 135), true);
+      const hits = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit")].map((c) => [c.dataset.ring, c.dataset.i, c.getAttribute("cx"), c.getAttribute("cy")].join(":"));`);
+      const before = await hits();
+      assert.deepStrictEqual((await stageOf()).rim, ["D" + o, "E" + o], await statusText());
+      assert.strictEqual(before.length, 3);
+      await b.click("#editor-type-neotone");
+      assert.deepStrictEqual((await stageOf()).main, []);
+      assert.strictEqual((await stageOf()).ding, "C" + o);
+      await b.click("#editor-type-standard");
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: [] }, await statusText());
+      assert.deepStrictEqual(await hits(), before);
+      assert.strictEqual(await stillEmpty(), true);
+      assert.strictEqual(await saveDisabled(), true);
+    });
+
+    test("the empty Standard pan paints staged notes above every area ring: at each note centre and where a ring crosses its edge the note is the topmost thing, filled", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => [(x) => editorReplaceDing(x, "C3"), (x) => editorPlace(x, "rim", "D3"), (x) => editorPlace(x, "rim", "G#3"), (x) => editorPlace(x, "rim", "B3"), (x) => editorPlace(x, "inner", "F4"), (x) => editorPlace(x, "bottom", "A2")].reduce((r, f) => (r.ok === false ? r : f(r.value)), { ok: true, value: m })).history;
+        editorRender();
+        const st = document.createElement("style"); st.textContent = "#editor-pan svg > circle, #editor-pan .etarget{pointer-events:all !important}"; document.head.appendChild(st); return true;`);
+      const r = await b.eval(`const svg = document.querySelector("#editor-pan svg"), ctm = svg.getScreenCTM();
+        const px = (x, y) => { const q = new DOMPoint(x, y).matrixTransform(ctm); return [q.x, q.y]; };
+        const rings = [...svg.querySelectorAll(".etarget.eempty:not([data-ring=ding])")].map((e) => +e.getAttribute("r"));
+        const notes = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff");
+        const top = (x, y) => { const [cx, cy] = px(x, y); return document.elementFromPoint(cx, cy); };
+        const onNote = (e, n) => e === n || (e && e.tagName === "text" && !!(n.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING));
+        const out = { notes: notes.length, rings: rings.length, centres: [], crossings: 0, wrong: [], fills: [], order: [] };
+        for (const n of notes) {
+          const x = +n.getAttribute("cx"), y = +n.getAttribute("cy"), r = +n.getAttribute("r");
+          out.fills.push(getComputedStyle(n).fill);
+          if (!onNote(top(x, y), n)) out.centres.push([x, y]);
+          for (const R of rings) {
+            const d = Math.hypot(x, y);
+            if (Math.abs(d - R) >= r) continue;
+            const a = (R * R - r * r + d * d) / (2 * d), h = Math.sqrt(Math.max(0, R * R - a * a));
+            const mx = a * x / d, my = a * y / d;
+            for (const sgn of [1, -1]) {
+              const ix = mx + sgn * h * -y / d, iy = my + sgn * h * x / d;
+              const ex = ix + (x - ix) * 0.12, ey = iy + (y - iy) * 0.12;
+              out.crossings += 1;
+              if (!onNote(top(ex, ey), n)) out.wrong.push([ex, ey, (top(ex, ey) || {}).outerHTML]);
+            }
+          }
+        }
+        for (const e of svg.querySelectorAll(".etarget.eempty:not([data-ring=ding])")) for (const n of notes) out.order.push(!!(e.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING));
+        const ring = getComputedStyle(svg.querySelector(".etarget.eempty[data-ring=rim]"));
+        out.ring = { opacity: +ring.opacity, width: parseFloat(ring.strokeWidth), stroke: ring.stroke };
+        return out;`);
+      assert.strictEqual(r.notes, 6, "the ding circle + 3 rim + inner + bottom: " + JSON.stringify(r));
+      assert.deepStrictEqual(r.centres, [], "every note centre is the note itself");
+      assert.ok(r.crossings >= 6, "rings cross the notes in this fixture: " + r.crossings);
+      assert.deepStrictEqual(r.wrong, [], "no ring line is on top of a note");
+      assert.ok(r.order.length > 0 && r.order.every(Boolean), "every area ring precedes every note in paint order");
+      assert.ok(r.fills.every((f) => f !== "none" && f !== "rgba(0, 0, 0, 0)"), "every note is solid: " + JSON.stringify(r.fills));
+      assert.ok(r.ring.opacity < 1 && r.ring.opacity >= 0.5 && r.ring.width <= 2 && r.ring.stroke === "rgb(226, 112, 5)", "the rings are softer but still orange: " + JSON.stringify(r.ring));
+    });
+
     for (const kind of ["mouse", "touch"]) {
       test(`${kind} tap on the empty Standard pan: the ding first (no leading space), then a fifth on the rim commits the scale`, async () => {
         await fresh();

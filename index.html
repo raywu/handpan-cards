@@ -978,7 +978,8 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-pan .eslot{fill:none; stroke:#8a8a8a; stroke-width:1; stroke-dasharray:3 3; pointer-events:none}
 #editor-pan .eslot[data-mut]{stroke:#E27005; stroke-width:1.5}
 #editor-pan .eslot.unavailable{opacity:.45; stroke-dasharray:1.5 4}
-#editor-pan .etarget.eempty{stroke:#E27005; stroke-width:2; stroke-dasharray:6 5; opacity:1}
+#editor-pan .etarget.eempty{stroke:#E27005; stroke-width:1.5; stroke-dasharray:6 5; opacity:.7}
+#editor-pan .etarget.eempty[data-ring="ding"], #editor-pan .etarget.eempty.picked{stroke-width:2; opacity:1}
 #editor-pan .ekey{fill:none; stroke:none; pointer-events:none}
 #editor-pan .ehit:focus-visible, #editor-pan .ekey:focus-visible{outline:none; stroke:#242424; stroke-width:3; stroke-dasharray:6 4}
 #editor-pan .esel{fill:none; stroke:#242424; stroke-width:3; pointer-events:none}
@@ -12857,7 +12858,9 @@ function editorResize(m, ring, parts, change) {
  * a ding and a first rim or main note the engine accepts become the real model in the
  * same step, anything short of a fifth stays staged, any other refusal is returned and
  * the stage is left as it was. The stage is never saved, shared or exported; editorBare
- * ignores it, and editorCanSave stays false until the commit. */
+ * ignores it, and editorCanSave stays false until the commit. Switching the pan type of an
+ * empty model parks the leaving kind's stage on the arriving one as `other`, so switching back
+ * restores it; `other` is part of the stage and goes where the stage goes (nowhere). */
 const EDITOR_NAME_RE = /^([A-G][#b]?)(-?\d)$/;
 const EDITOR_GHOST = {
   rim: "A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5".split(" "),
@@ -12985,14 +12988,16 @@ function editorStageNeoMove(st, from, to) {
   st.mutant = row;
   return null;
 }
-// The pan type of an empty model: the ding survives, the other kind's staged notes do not.
+// The pan type of an empty model: each kind keeps its own staged notes (the leaving kind's
+// stage rides on the arriving one as `other`), the current ding goes both ways.
 function editorStagePanType(m, kind) {
-  const old = editorStageOf(m);
-  const next = editorBlankStage(kind);
+  const { other, ...old } = editorStageOf(m);
+  const next = other && other.kind === kind ? { ...other } : editorBlankStage(kind);
   if (old.ding) next.ding = old.ding;
-  const had = Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean));
-  const moved = editorWithStage(m, next);
-  return { ok: true, value: moved, ...(had ? { notice: { stageCleared: true } } : {}) };
+  if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+  const staged = editorWithStage(m, next);
+  const done = editorStageCommit(staged, next);
+  return done.ok ? done : { ok: true, value: staged };
 }
 function editorNameEntry(name, zone, label) {
   const at = EDITOR_NAME_RE.exec(String(name));
@@ -14168,19 +14173,19 @@ function editorNeoPoint(m, fields, geom, id) {
 }
 // The empty fields drawn dashed once mutants exist (the sheet's rule), and the ring on the
 // slot a change landed in, read after compaction (D9).
-function editorNeoMarks(m, fields, geom) {
+function editorNeoMarks(m, fields, geom, part) {
   const map = m.options.profile.map;
   const empty = editorIsEmpty(m);
   const mutants = empty || map.slice(NEO_MAIN).some((k) => k !== null);
   let out = "";
-  map.forEach((key, slot) => {
+  if (part !== "landing") map.forEach((key, slot) => {
     if (key !== null || (!mutants && slot < NEO_MAIN)) return;
     const at = neoSlotPoint(slot, null, geom.turn);
     const waiting = empty && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null;
     out += `<circle class="eslot${waiting ? " unavailable" : ""}" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}"${slot >= NEO_MAIN ? ' data-mut="1"' : ""} aria-hidden="true"/>`;
   });
   const landed = editorSession && editorSession.landed;
-  if (Number.isInteger(landed) && map[landed]) {
+  if (part !== "slots" && Number.isInteger(landed) && map[landed]) {
     const id = Object.keys(fields).find((k) => fields[k][3] !== "ding" && profileKeyOf(fields[k]) === map[landed]);
     const at = id && neoSlotPoint(landed, geom.place[id], geom.turn);
     if (at) out += `<circle class="editor-landing editor-new" data-slot="${landed}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${(at.r + 4).toFixed(2)}"/>`;
@@ -14252,7 +14257,13 @@ function editorWithOverlay(markup, m, solved) {
     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
   }
   const standard = editorKindOf(m) === "standard";
-  if (!standard && geom.place) out += editorNeoMarks(m, fields, geom);
+  let under = "";
+  if (!standard && geom.place) {
+    if (empty) {
+      under += editorNeoMarks(m, fields, geom, "slots");
+      out += editorNeoMarks(m, fields, geom, "landing");
+    } else out += editorNeoMarks(m, fields, geom);
+  }
   if (unchosen) {
     const dy = (geom.ding_dy * 100).toFixed(2), dr = (geom.r_ding * 100).toFixed(2);
     out += `<circle class="etarget eempty" data-ring="ding" cx="0" cy="${dy}" r="${dr}"/>`;
@@ -14264,7 +14275,9 @@ function editorWithOverlay(markup, m, solved) {
       const picked = s.zone === ring;
       if (!empty && ringIds(fields, ring).length && !picked) continue;
       const orb = editorOrbit(geom, ring);
-      out += `<circle class="etarget${picked ? " picked" : ""}${empty ? " eempty" : ""}" data-ring="${ring}" cx="0" cy="0" r="${(orb * 100).toFixed(2)}"/>`;
+      const area = `<circle class="etarget${picked ? " picked" : ""}${empty ? " eempty" : ""}" data-ring="${ring}" cx="0" cy="0" r="${(orb * 100).toFixed(2)}"/>`;
+      if (empty) under += area;
+      else out += area;
     }
     for (const ring of zones) {
       out += `<circle class="ekey" cx="0" cy="0" r="${(editorOrbit(geom, ring) * 100).toFixed(2)}" role="button" aria-pressed="${s.zone === ring}" ${tab("zone:" + ring)} aria-label="${escapeHtml(editorAreaLabel(m, ring))}"/>`;
@@ -14278,7 +14291,10 @@ function editorWithOverlay(markup, m, solved) {
     })
     : markup;
   const close = shown.lastIndexOf("</svg>");
-  return shown.slice(0, close) + out + shown.slice(close);
+  const body = shown.slice(0, close) + out + shown.slice(close);
+  if (!under) return body;
+  const open = body.indexOf(">", body.indexOf("<svg")) + 1;
+  return body.slice(0, open) + `<g class="eunder">${under}</g>` + body.slice(open);
 }
 function editorHold(k) {
   const s = editorSession;
