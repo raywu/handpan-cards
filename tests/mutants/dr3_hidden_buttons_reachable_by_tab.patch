@@ -9,8 +9,8 @@ diff --git a/index.html b/index.html
  }
  function editorTabStops() {
    const scope = editorEl(editorSession.dialog ? "editor-dialog" : "editor");
--  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]"));
-+  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && !el.closest("[inert],[hidden]"));
+-  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]") && !editorHintCovers(el));
++  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && !el.closest("[inert],[hidden]") && !editorHintCovers(el));
  }
  function editorSetPanType(kind) {
    if (!editorDo((m) => editorPanType(m, kind))) return;

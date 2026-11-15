@@ -1042,7 +1042,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor .editor-toolbar .mode.primary{flex:1.4 1 0; background:#6756B5; color:#fff; border-color:#6756B5}
 #editor .editor-toolbar{position:relative}
 #editor .editor-toolbar #editor-more{flex:0 0 auto; min-width:44px}
-#editor-menu{outline:none; position:absolute; right:0; bottom:calc(100% + var(--sp-1)); z-index:3; min-width:200px; max-width:min(320px,100%); display:flex; flex-direction:column;
+#editor-menu{outline:none; position:absolute; right:0; bottom:calc(100% + var(--sp-1)); z-index:5; min-width:200px; max-width:min(320px,100%); display:flex; flex-direction:column;
   background:#F6F4ED; border:1px solid #242424; border-radius:8px; padding:var(--sp-1); box-shadow:0 8px 20px rgba(36,36,36,.28)}
 #editor-menu[hidden]{display:none}
 #editor .editor-toolbar #editor-menu .menuitem{flex:0 0 auto; min-height:44px; justify-content:flex-start; text-align:left; border:none; background:none; padding-inline:var(--sp-2)}
@@ -13611,9 +13611,8 @@ function editorPaintDelete(b, armed) {
   if (!armed) { b.textContent = t("editor.menu.delete"); return; }
   const name = editedDeck() ? editedDeck().name : t("sheet.this_scale");
   const [before, after] = t("editor.menu.delete_armed", { name: "\u0001" }).split("\u0001");
-  b.appendChild(document.createTextNode(before));
-  b.appendChild(editorNode("span", { class: "del-name", text: name }));
-  b.appendChild(document.createTextNode(after));
+  b.appendChild(editorNode("span", {},
+    document.createTextNode(before), editorNode("span", { class: "del-name", text: name }), document.createTextNode(after)));
 }
 function editorResetDeleteButton(b) {
   editorPaintDelete(b, false);
@@ -14075,7 +14074,7 @@ function editorPlaceAreas() {
   st.width = right - left + "px";
   st.height = bottom - top + "px";
   const cl = editorEl("editor-hint-close").style;
-  cl.top = top - box.top - ed.clientTop + 4 + "px";
+  cl.top = editorEl("editor-tabs").getBoundingClientRect().bottom - box.top - ed.clientTop + 4 + "px";
   cl.left = right - box.left - ed.clientLeft - 48 + "px";
 }
 function editorSetAreas(open) {
@@ -14877,9 +14876,15 @@ function editorPanFocus(e) {
   s.focusKey = fk;
   for (const el of editorEl("editor-pan").querySelectorAll("[data-fk]")) el.tabIndex = el === e.target ? 0 : -1;
 }
+// An open hint card paints over the region's controls; Tab skips what it covers and closing the hint puts them back.
+function editorHintCovers(el) {
+  if (!editorSession.hint || editorSession.dialog || el.closest("#editor-areas, #editor-tabs") || el === editorEl("editor-hint-close")) return false;
+  const a = editorEl("editor-areas").getBoundingClientRect(), r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  return x >= a.left && x <= a.right && y >= a.top && y <= a.bottom;
+}
 function editorTabStops() {
   const scope = editorEl(editorSession.dialog ? "editor-dialog" : "editor");
-  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]"));
+  return [...scope.querySelectorAll("button, input, [tabindex]")].filter((el) => el.tabIndex >= 0 && isStop(el) && !el.closest("[inert],[hidden]") && !editorHintCovers(el));
 }
 function editorSetPanType(kind) {
   if (!editorDo((m) => editorPanType(m, kind))) return;
