@@ -1,6 +1,6 @@
-# kills: FA-07 with the hint open Tab moves focus on every step and never to a hidden control
-# suite: node --test --test-name-pattern ^FA-07.with.the.hint.open tests/editor_e2e.test.js
-# A mutant: cycleTabStops keeps visibility-hidden stops.
+# kills: with the Undo chip showing, Tab never lands on or stalls at the covered toolbar Undo
+# suite: node --test --test-name-pattern ^with.the.Undo.chip.showing tests/editor_e2e.test.js
+# A mutant: cycleTabStops keeps visibility-hidden stops (the hint-open FA-07 test no longer reaches it, the hint drops those controls first).
 #
 diff --git a/index.html b/index.html
 --- a/index.html

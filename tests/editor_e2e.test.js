@@ -866,6 +866,21 @@ function run() {
       assert.strictEqual((await model()).options.seats, undefined);
     });
 
+    test("with the Undo chip showing, Tab never lands on or stalls at the covered toolbar Undo", async () => {
+      await setup(SCALE);
+      await tapNote("rim", 0);
+      await tapNote("rim", 1);
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo") && getComputedStyle(document.getElementById("editor-undo")).visibility;`), "hidden");
+      const seen = [];
+      for (let i = 0; i < 40; i++) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await b.eval(`const a = document.activeElement; return a.id || a.outerHTML.slice(0, 80);`));
+      }
+      assert.ok(seen.includes("editor-notice-undo"), "the chip is a stop: " + JSON.stringify(seen));
+      assert.ok(!seen.includes("editor-undo"), "the covered Undo is never a stop: " + JSON.stringify(seen));
+      assert.ok(seen.every((x, i) => i === 0 || x !== seen[i - 1]), "focus moves on every Tab, a hidden stop would swallow one: " + JSON.stringify(seen));
+    });
+
     test("Remove deletes the selected note and Undo restores it; tapping the selection again deselects it", async () => {
       await setup(SCALE);
       await tapNote("rim", 3);
