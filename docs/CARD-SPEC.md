@@ -324,11 +324,13 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   the pan is empty each kind keeps its own staged notes and switching back restores them,
   the current ding going both ways (the last ding set wins; `editorStagePanType` parks the
   leaving stage as `other`, which is never saved, shared or dirty); a kind with nothing
-  remembered starts blank with the ding, and notes are never mapped across kinds. Tests:
+  remembered starts blank with the ding, and notes are never mapped across kinds. A switch
+  that restores a stage holding the ding and a fifth commits it like any edit (a refused
+  commit, such as a ding equal to a parked note, stays staged and editable). Tests:
   "empty stage: switching the pan type of an empty model keeps each kind's staged notes"
   (Standard to Neotone and back, Neotone to Standard and back), "empty stage: the current
   ding goes both ways", "empty stage: a kind with nothing remembered", "empty stage: each
-  switch of an empty model is one Undo step", "empty stage: a remembered stage of the other
+  switch of an empty model is one Undo step", "empty stage: a switch that restores parked notes commits them", "empty stage: a restore whose ding equals a parked note stays staged", "empty stage: a remembered stage of the other
   kind is never saved", e2e "switching pan type and back keeps the staged notes".
 - **Scale name.** The Scale panel opens with a name field: 40 characters at most, trimmed,
   16px or larger so iOS does not zoom, a 44px target, and a tab stop. A name the user

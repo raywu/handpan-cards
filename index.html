@@ -12995,7 +12995,9 @@ function editorStagePanType(m, kind) {
   const next = other && other.kind === kind ? { ...other } : editorBlankStage(kind);
   if (old.ding) next.ding = old.ding;
   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
-  return { ok: true, value: editorWithStage(m, next) };
+  const staged = editorWithStage(m, next);
+  const done = editorStageCommit(staged, next);
+  return done.ok ? done : { ok: true, value: staged };
 }
 function editorNameEntry(name, zone, label) {
   const at = EDITOR_NAME_RE.exec(String(name));

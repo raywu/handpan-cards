@@ -1386,10 +1386,11 @@ describe("empty-state staging", () => {
     stagedBoth(a);
     a.run(`globalThis.__x = editorReplaceDing(editorPanType(__s, "neotone").value, "C3").value; globalThis.__y = editorPanType(__x, "standard").value; true`);
     assert.strictEqual(a.get("editorDingOf(__x)"), "C3");
-    assert.deepStrictEqual(kindsOf(plain(a.get("__y.stage"))), { kind: "standard", ding: "C3", notes: { rim: ["E4"], inner: ["G4"], bottom: ["A2"] } });
-    a.run(`globalThis.__z = editorPanType(editorReplaceDing(__y, "F3").value, "neotone").value; true`);
-    assert.strictEqual(a.get("editorDingOf(__z)"), "F3");
-    assert.strictEqual(a.get(`editorDingOf(editorPanType(__z, "standard").value)`), "F3");
+    assert.strictEqual(a.get("editorDingOf(__y)"), "C3");
+    assert.deepStrictEqual([names(a, "__y", "rim"), names(a, "__y", "inner"), names(a, "__y", "bottom")], [["E4"], ["G4"], ["A2"]]);
+    a.run(`globalThis.__p = editorReplaceDing(__m, "D3").value; globalThis.__q = editorReplaceDing(editorPanType(__p, "neotone").value, "F3").value; globalThis.__r = editorPanType(__q, "standard").value; true`);
+    assert.strictEqual(a.get("editorDingOf(__r)"), "F3");
+    assert.strictEqual(a.get(`editorDingOf(editorPanType(__r, "neotone").value)`), "F3");
   });
 
   test("empty stage: a kind with nothing remembered switches to a blank stage with the ding, and the same kind is a no-op", () => {
@@ -1432,6 +1433,35 @@ describe("empty-state staging", () => {
     assert.strictEqual(a.get(`editorIsEmpty(editorPlace(editorPanType(__k, "standard").value, "rim", "A4").value)`), false);
     assert.strictEqual("stage" in done.value, false);
     assert.strictEqual(JSON.stringify(done.value).includes("other"), false);
+  });
+
+  test("empty stage: a switch that restores parked notes commits them when the ding and a fifth are there, in the same one Undo step", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorReplaceDing(__m, "D3").value, "rim", "G3").value;
+      globalThis.__nn = editorReplaceDing(editorPanType(__s, "neotone").value, "C3").value;
+      globalThis.__h = editorApply(editorHistoryNew(__nn), (m) => editorPanType(m, "standard")).history; true`);
+    assert.strictEqual(a.get("editorIsEmpty(__h.present)"), false);
+    assert.strictEqual(a.get("editorCanSave(__h.present)"), true);
+    assert.strictEqual(a.get("editorDingOf(__h.present)"), "C3");
+    assert.deepStrictEqual(names(a, "__h.present", "rim"), ["G3"]);
+    assert.strictEqual(a.get("__h.past.length"), 1);
+    assert.strictEqual(a.get("editorIsEmpty(editorUndo(__h).present)"), true);
+    assert.strictEqual(a.get("editorKindOf(editorUndo(__h).present)"), "neotone");
+  });
+
+  test("empty stage: a restore whose ding equals a parked note stays staged and editable, never refused", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorReplaceDing(__m, "D3").value, "rim", "G3").value;
+      globalThis.__nn = editorReplaceDing(editorPanType(__s, "neotone").value, "G3").value;
+      globalThis.__b = editorPanType(__nn, "standard"); true`);
+    assert.strictEqual(a.get("__b.ok"), true);
+    assert.strictEqual(a.get("editorIsEmpty(__b.value)"), true);
+    assert.strictEqual(a.get("editorDingOf(__b.value)"), "G3");
+    assert.deepStrictEqual(names(a, "__b.value", "rim"), ["G3"]);
+    assert.strictEqual(a.get(`editorReplaceDing(__b.value, "C3").ok`), true);
+    assert.strictEqual(a.get(`editorIsEmpty(editorReplaceDing(__b.value, "C3").value)`), false);
   });
 
   test("empty stage: the pan type of a non-empty model behaves as before", () => {
