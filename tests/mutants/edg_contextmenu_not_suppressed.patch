@@ -1,0 +1,14 @@
+# kills: edg contextmenu is suppressed during an editor drag and only then
+# suite: node --test --test-name-pattern ^edg.contextmenu tests/editor_e2e.test.js
+# fault: The editor never suppresses the context menu during a drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14923,7 +14923,6 @@
+   editorEl("editor-pan").onkeydown = editorPanKey;
+   editorEl("editor-pan").addEventListener("focusin", editorPanFocus);
+   editorEl("editor").addEventListener("pointerdown", editorDragDown);
+-  editorEl("editor").addEventListener("contextmenu", (e) => { if (editorDrag) e.preventDefault(); });
+   editorEl("editor-oct-down").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct - 1 });
+   editorEl("editor-oct-up").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct + 1 });
+   editorEl("editor-sharps").onclick = () => editorTrayView({ flats: false });

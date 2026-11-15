@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15419,7 +15419,7 @@ function editorResetSpacing(m, rings) {
- // centre first; unless a note is held, the 43 unit areas of the cyclops and bottom
- // notes come next (D22); then the zone under the pointer decides.
+@@ -13373,7 +13373,7 @@ function editorResetSpacing(m, rings) {
+ // areas come next; then the zone under the pointer decides. EDITOR_HIT_AREA only
+ // sets the radius of the rendered .ehit target.
  const EDITOR_HIT_AREA = 0.43;
 -const EDITOR_SCALE = { rim: 0.85, inner: 0.75, bottom: 0.85 };
 +const EDITOR_SCALE = { rim: 0.85, inner: 0.85, bottom: 0.85 };
