@@ -1,0 +1,14 @@
+# kills: ECL11 a system Back with an uncommitted rename asks first
+# suite: node --test --test-name-pattern ^ECL11.a.system.Back.with.an.uncommitted.rename tests/editor_e2e.test.js
+# fault: The Back gesture ignores an uncommitted rename and closes without asking.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15225,7 +15225,6 @@
+ function editorBackstop() {
+   const s = editorSession;
+   if (!s) return false;
+-  editorCommitName();
+   if (!editorIsDirty(s.base, s.history.present)) return false;
+   history.pushState({ scalePage: true }, "", sheetRoute());
+   sheetRouted = true;

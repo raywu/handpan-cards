@@ -1,0 +1,15 @@
+# kills: ECL11 Save as separate on an untouched editor whose scale was removed elsewhere still saves a copy
+# suite: node --test --test-name-pattern ^ECL11.Save.as.separate.on.an.untouched.editor tests/editor_e2e.test.js
+# fault: Save as a separate scale on an untouched editor closes without writing the copy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15033,7 +15033,7 @@
+   if (s.editing) editorCommitLine();
+   const m = s.history.present;
+   if (!editorCanSave(m) || s.error) return;
+-  if (!separate && !editorIsDirty(s.base, m) && editingBase) { closeScaleSheet(); return; }
++  if (!editorIsDirty(s.base, m) && editingBase) { closeScaleSheet(); return; }
+   const generation = sheetGeneration, base = editingBase;
+   const controller = new AbortController(), operation = { controller, generation };
+   savePending = operation;

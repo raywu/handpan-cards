@@ -1,0 +1,15 @@
+# kills: ECL4 the Add path's conflict says so instead of claiming a saved scale changed
+# suite: node --test --test-name-pattern ^ECL4.the.Add.path tests/editor_e2e.test.js
+# fault: The Add path conflict reports the saved-scale wording.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13755,7 +13755,7 @@
+ const editorSubmitOff = (s, m) => !editorCanSave(m) || !!s.saving || !!savePending;
+ // A rejected Save or Delete: the target is either changed or gone in another tab.
+ function editorConflictKind() {
+-  if (!editingBase) return "add";
++  if (!editingBase) return "changed";
+   return editingBase.selection.kind === "saved" && !savedEntries.has(editingBase.selection.id) ? "deleted" : "changed";
+ }
+ function editorShowConflict() {

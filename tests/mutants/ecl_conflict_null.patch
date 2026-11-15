@@ -1,0 +1,14 @@
+# kills: ECL11 a successful Save as separate while the draft kept moving clears the conflict banner
+# suite: node --test --test-name-pattern ^ECL11.a.successful.Save.as.separate.while.the.draft.kept.moving tests/editor_e2e.test.js
+# fault: A successful save leaves the conflict banner up.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15055,7 +15055,6 @@
+       } else if (result.kind !== "cancelled") s.error = savedErrorText(result);
+       return;
+     }
+-    if (editorSession === s) s.conflict = null;
+     if (result.published === false) { s.error = savedPublicationText(result); return; }
+     const d = savedEntries.get(result.instanceId).deck;
+     const warned = (d.warnings || []).map((w) => reasonText(w));

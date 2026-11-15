@@ -1,0 +1,22 @@
+# kills: ECL5 Cancel stays reachable while a conflict banner shows over a held note
+# suite: node --test --test-name-pattern ^ECL5.Cancel.stays tests/editor_e2e.test.js
+# fault: The conflict banner hides the Cancel button and the armed Delete note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13819,7 +13819,6 @@
+     keptSeparate.disabled = editorSubmitOff(s, m);
+     const extra = editorEl("editor-conflict-extra");
+     extra.textContent = "";
+-    editorStatusNotes(extra, s, m, empty);
+   } else if (s.error) {
+     status.setAttribute("data-kind", "error");
+     status.textContent = s.error;
+@@ -13838,7 +13837,6 @@
+     separate.onclick = () => editorSave(true);
+     status.appendChild(separate);
+     const extra = editorNode("span", { id: "editor-conflict-extra" });
+-    editorStatusNotes(extra, s, m, empty);
+     status.appendChild(extra);
+   } else if (s.held || s.say || s.notice) editorStatusNotes(status, s, m, empty);
+   else if (empty) status.textContent = editorEmptyPrompt(m);

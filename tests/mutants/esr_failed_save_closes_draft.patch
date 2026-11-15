@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15022,7 +15022,7 @@
+@@ -15048,7 +15048,7 @@ async function editorSave(separate = false) {
      const command = separate ? { type: "save-as-separate" } : editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
-     const result = await commitSaved({ ...command, collectionId: base ? base.collectionId : savedState?.collectionId, candidate }, { signal: controller.signal });
+     const result = await commitSaved({ ...command, collectionId: separate || !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
      if (generation !== sheetGeneration || !pageOpen) return;
 -    if (!result.ok) {
 +    if (!result.ok) { closeScaleSheet();

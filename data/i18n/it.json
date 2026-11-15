@@ -117,6 +117,8 @@
   "saved.session": "Le modifiche in questa scheda sono temporanee. Si perdono se ricarichi o chiudi questa scheda.",
   "saved.recovery": "Impossibile leggere le scale salvate. Le scale salvate non sono state modificate. Le modifiche temporanee in questa scheda si perdono quando la ricarichi o la chiudi.",
   "saved.conflict": "Questa scala è stata modificata in un’altra scheda. La tua bozza è ancora qui. Salvala come scala separata oppure torna alla versione salvata.",
+  "saved.conflictAdd": "Le tue scale salvate sono cambiate in un’altra scheda. La tua bozza è ancora qui. Salvala come scala separata oppure torna indietro.",
+  "editor.rebound": "{name} è stata salvata al posto di questa scala in un’altra scheda, quindi non è stato eliminato nulla.",
   "saved.conflictDeleted": "Questa scala è stata eliminata in un’altra scheda. La tua bozza è ancora qui. Salvala come scala separata oppure torna indietro.",
   "saved.separate": "SALVA COME SCALA SEPARATA",
   "saved.resetConflict": "Le scale predefinite sono state modificate in un’altra scheda. Non è stato ripristinato nulla. Controllale prima di ripristinarle di nuovo.",

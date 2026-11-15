@@ -4938,6 +4938,269 @@ function run() {
     }
   });
 
+
+  describe("editor cleanup", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const saveOne = async (w = 375, h = 667) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+    const staleSave = async (patch = `revision: editingBase.revision + 100`) => {
+      await b.eval(`editingBase = { ...editingBase, ${patch} }; return true;`);
+      await b.click("#editor-save");
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+    };
+    const backAndWait = async () => {
+      await b.eval(`history.back(); return true;`);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden") || !!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "back to settle" });
+    };
+    const remoteEdit = (name) => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+      built = buildGenerated(row.record.s, { ...row.record.o, name: ${JSON.stringify(name)} });
+      return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+        candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
+    const broadcast = () => b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
+
+    test("ECL1 Save as separate after a collection epoch change writes one new scale", async () => {
+      await saveOne();
+      const original = await names();
+      await rename("DRAFT COPY");
+      await staleSave(`collectionId: "00000000-0000-4000-8000-000000000000"`);
+      await b.click("#editor-conflict-separate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
+      assert.deepStrictEqual(await names(), [...original, "DRAFT COPY"].sort());
+    });
+
+    test("ECL2 two taps on Save as separate with an unacknowledged write leave exactly one copy and no second button", async () => {
+      await saveOne();
+      await rename("DRAFT COPY");
+      await staleSave();
+      const before = await savedCount();
+      await b.eval(`window.__realCommit = commitSaved;
+        commitSaved = async (c, o) => { const r = await window.__realCommit(c, o); return c.type === "save-as-separate" && r.ok ? { ...r, published: false, persistence: "durable" } : r; };
+        const btn = document.getElementById("editor-conflict-separate"); btn.click(); btn.click(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the separate save to finish" });
+      await b.eval(`commitSaved = window.__realCommit; return true;`);
+      assert.strictEqual(await savedCount(), before + 1, "one tap writes one copy");
+      assert.strictEqual(await b.eval(`return editorSession.conflict;`), null, "the conflict is settled once the copy exists");
+      await b.eval(`editorSession.error = ""; editorRender(); return true;`);
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-separate");`), false, "no second Save as separate offered");
+    });
+
+    describe("pasted navigation with the editor open", () => {
+      test("ECL3 a pasted link with a dirty editor asks, keeps the draft and leaves no dead history entry", async () => {
+        await fresh();
+        const first = await b.eval(`return navigation.currentEntry.key;`);
+        await openAdd();
+        await typeLine(SCALE);
+        const own = await b.eval(`return navigation.currentEntry.key;`);
+        const route = await b.eval(`return location.hash;`);
+        await b.eval(`location.hash = "#deck=kurd"; return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+        assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
+        assert.match(await text(), /A4/, "the draft survives");
+        await b.waitFor(`navigation.currentEntry.key === ${JSON.stringify(own)}`, { label: "the page's own entry to be current again" });
+        assert.strictEqual(await b.eval(`return location.hash;`), route, "the address bar is back on the page route");
+        await b.click("#editor-dlg-discard");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "Discard to close the page" });
+        await b.waitFor(`navigation.currentEntry.key === ${JSON.stringify(first)}`, { label: "history to end where it started" });
+      });
+
+      test("ECL3 a pasted link with a clean editor does not ask", async () => {
+        await fresh();
+        await openBuiltin();
+        await b.eval(`location.hash = "#deck=kurd"; return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the clean editor to close" });
+        assert.strictEqual(await dialogOpen(), false);
+      });
+    });
+
+    test("ECL4 the Add path's conflict says so instead of claiming a saved scale changed", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.eval(`editorShowConflict(); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      const r = await b.eval(`const msg = document.getElementById("editor-conflict-msg").textContent;
+        return { msg, add: msg === t("saved.conflictAdd"), saved: msg === t("saved.conflict"), kind: editorSession.conflict };`);
+      assert.strictEqual(r.add, true, JSON.stringify(r));
+      assert.strictEqual(r.saved, false, JSON.stringify(r));
+    });
+
+    test("ECL5 Cancel stays reachable while a conflict banner shows over a held note", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.eval(`editorHold(1); editorShowConflict(); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-cancel");`), true, "Cancel is in the status row");
+      await b.click("#editor-cancel");
+      assert.strictEqual(await b.eval(`return editorSession.held;`), null, "Cancel drops the held note");
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !document.getElementById("editor-cancel");`), true, "the banner stays");
+    });
+
+    test("ECL5 the armed Delete note stays on screen while a conflict banner shows", async () => {
+      await saveOne();
+      await b.click("#editor-delete");
+      const note = await b.eval(`return editorSession.delNote;`);
+      assert.ok(note, "Delete armed with its note");
+      await b.eval(`editorShowConflict(); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent.includes(editorSession.delNote);`), true);
+    });
+
+    test("ECL6 a dirty editor guards unloading and a clean one does not", async () => {
+      await fresh();
+      await openAdd();
+      const probe = () => b.eval(`const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented;`);
+      assert.strictEqual(await probe(), false, "an untouched editor leaves freely");
+      await typeLine(SCALE);
+      assert.strictEqual(await probe(), true, "a dirty editor asks the browser to confirm");
+    });
+
+    test("ECL6 a second Back while the Save changes dialog is up keeps the draft", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await backAndWait();
+      assert.strictEqual(await dialogOpen(), true);
+      await backAndWait();
+      assert.strictEqual(await dialogOpen(), true, "the dialog is still up");
+      assert.strictEqual(await sheetHidden(), false);
+      assert.match(await text(), /A4/);
+    });
+
+    test("ECL7 a Delete tap on a rebound slot-owner explains why the scale was not removed", async () => {
+      await fresh();
+      await openBuiltin();
+      const seed = await b.eval(`return editingBase.selection.id;`);
+      await b.click("#editor-delete");
+      assert.strictEqual(await b.eval(`return editorSession.delArmed;`), true);
+      await b.eval(`const built = buildGenerated(HPE.core.formatSeed(editingBase.deck.fields), { ...editingBase.deck.options, name: "OWNER Y", replaces: ${JSON.stringify(seed)} });
+        return commitSaved({ type: "replace-builtin", collectionId: savedState.collectionId, seedId: ${JSON.stringify(seed)}, expectedSlotStateRevision: editingBase.slotStateRevision, expectedOwnerId: null,
+          candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok);`);
+      await broadcast();
+      await b.waitFor(`editingBase.selection.kind === "saved"`, { label: "the editor to rebind to the slot owner" });
+      const r = await b.eval(`return { armed: editorSession.delArmed, status: document.getElementById("editor-status").textContent, say: editorSession.say };`);
+      assert.ok(!r.armed, "the rebind reset the armed Delete");
+      assert.ok(r.status.length > 0, "the status row says something: " + JSON.stringify(r));
+      assert.strictEqual(r.status, await b.eval(`return t("editor.rebound", { name: editedDeck().name });`));
+    });
+
+    test("ECL8 editing the name keeps an invalid-notes error on screen until the notes are valid", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine("(D3) A3 Q9 nonsense", { commit: true });
+      const shown = await b.eval(`return { error: editorSession.error, status: document.getElementById("editor-status").textContent, editing: editorSession.editing };`);
+      assert.ok(shown.error && shown.status === shown.error, "notes error is shown: " + JSON.stringify(shown));
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "MY NAME";
+        n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+      const after = await b.eval(`return { error: editorSession.error, status: document.getElementById("editor-status").textContent };`);
+      assert.strictEqual(after.status, shown.status, "the error is still shown after the rename: " + JSON.stringify(after));
+      assert.strictEqual(after.error, shown.error);
+    });
+
+    for (const [w, h] of [[360, 640], [390, 844]]) {
+      test(`ECL9 ${w}x${h} a system Back closes the open menu, so Escape leaves the dialog and a second Escape never closes the editor`, async () => {
+        await saveOne(w, h);
+        await rename("ECL9 EDIT");
+        await b.click("#editor-more");
+        assert.strictEqual(await b.eval(`return editorSession.menu;`), true);
+        await backAndWait();
+        assert.strictEqual(await dialogOpen(), true);
+        await b.key("Escape", "Escape", 27);
+        const r = await b.eval(`return { dialog: editorSession.dialog, menu: editorSession.menu, hidden: document.getElementById("editor-menu").hasAttribute("hidden"),
+          expanded: document.getElementById("editor-more").getAttribute("aria-expanded"), focus: document.activeElement && document.activeElement.id };`);
+        assert.deepStrictEqual(r, { dialog: false, menu: false, hidden: true, expanded: "false", focus: "editor-back" }, JSON.stringify(r));
+        await b.key("Escape", "Escape", 27);
+        assert.strictEqual(await sheetHidden(), false, "the editor is still open");
+        assert.strictEqual(await dialogOpen(), true, "Escape on a dirty editor asks first");
+      });
+    }
+
+    for (const [w, h] of [[320, 568], [360, 640], [390, 844]]) {
+      test(`ECL9 RR3 ${w}x${h}: the info button's top edge is not under the tab strip`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(SCALE);
+        await pause(250);
+        const r = await b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
+          inerts.forEach((el) => el.removeAttribute("inert"));
+          try {
+            const el = document.getElementById("editor-hint-toggle"), q = el.getBoundingClientRect();
+            const hit = document.elementFromPoint(q.left + q.width / 2, q.top + 3);
+            return { ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
+          } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
+        assert.ok(r.ok, "info button top-centre + 3px hits itself: " + JSON.stringify(r));
+      });
+    }
+
+    test("ECL10 saving after a remote edit raises the conflict through expectedRevision and keeps the remote scale", async () => {
+      await saveOne();
+      await rename("LOCAL DRAFT");
+      assert.strictEqual(await remoteEdit("REMOTE WINNER"), true, "the remote edit committed");
+      await b.click("#editor-save");
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      assert.deepStrictEqual(await names(), ["REMOTE WINNER"], "the remote edit was not overwritten");
+      assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
+    });
+
+    test("ECL10 an unfinished rename blocks a remote snapshot from rebinding the clean editor", async () => {
+      await saveOne();
+      await b.eval(`editorSession.__probe = "local"; const n = document.getElementById("editor-name"); n.value = "TYPED NOT COMMITTED"; return true;`);
+      assert.strictEqual(await remoteEdit("REMOTE RENAMED"), true, "the remote edit committed");
+      await broadcast();
+      await pause(200);
+      const r = await b.eval(`return { same: editorSession.__probe === "local", name: document.getElementById("editor-name").value };`);
+      assert.deepStrictEqual(r, { same: true, name: "TYPED NOT COMMITTED" });
+    });
+
+    test("ECL11 a system Back with an uncommitted rename asks first", async () => {
+      await saveOne();
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "UNCOMMITTED"; n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorSession.naming;`), true, "the name field is mid-edit");
+      await backAndWait();
+      assert.strictEqual(await dialogOpen(), true, "the Save changes dialog asks");
+      assert.strictEqual(await sheetHidden(), false);
+    });
+
+    test("ECL11 Save as separate on an untouched editor whose scale was removed elsewhere still saves a copy", async () => {
+      await saveOne();
+      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
+        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok);`);
+      await broadcast();
+      await b.waitFor(`!!document.getElementById("editor-conflict-separate")`, { label: "the deleted banner" });
+      assert.strictEqual(await b.eval(`return editorIsDirty(editorSession.base, editorSession.history.present);`), false, "the editor is clean");
+      const before = await savedCount();
+      await b.click("#editor-conflict-separate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to close" });
+      assert.strictEqual(await savedCount(), before + 1, "the copy was written");
+    });
+
+    test("ECL11 a successful Save as separate while the draft kept moving clears the conflict banner", async () => {
+      await saveOne();
+      await rename("DRAFT COPY");
+      await staleSave();
+      await b.eval(`navigator.locks.request("handpan-cards:saved-scales:v1", () => new Promise((r) => { window.__rel = r; })); return true;`);
+      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
+      await b.eval(`document.getElementById("editor-conflict-separate").click(); return true;`);
+      await b.waitFor(`!!savePending`, { label: "the separate save to wait on the lock" });
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetName(m, "MOVED ON")).history; editorRender(); return true;`);
+      await b.eval(`window.__rel(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the separate save to finish" });
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open on the moved draft");
+      assert.strictEqual(await b.eval(`return editorSession.conflict;`), null);
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-separate");`), false);
+    });
+  });
+
 }
 
 function DECK_IDS_HAVE(builtinJson, id) {

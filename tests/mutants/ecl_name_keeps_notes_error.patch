@@ -1,0 +1,16 @@
+# kills: ECL8 editing the name keeps an invalid-notes error on screen until the notes are valid
+# suite: node --test --test-name-pattern ^ECL8 tests/editor_e2e.test.js
+# fault: Committing a rename clears an invalid-notes error that is still unresolved.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14481,8 +14481,7 @@
+   const text = editorEl("editor-name").value;
+   const m = s.history.present;
+   if (editorSetName(m, text).value !== m) {
+-    const lineError = s.editing ? s.error : "";
+-    if (editorDo((cur) => editorSetName(cur, text)) && lineError) s.error = lineError;
++    editorDo((cur) => editorSetName(cur, text));
+     s.nameTouched = true;
+   }
+   editorRender();

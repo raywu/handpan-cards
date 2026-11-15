@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14696,9 +14696,7 @@ function showSheet(opener) {
-   pageOpen = true;
-   setInert(true, background);
+@@ -15132,9 +15132,7 @@ function showSheet(opener) {
+   sheetPreTagged = !reuseEntry;
+   if (sheetPreTagged) history.replaceState({ ...history.state, preSheet: true }, "", location.href);
    if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
 -  else history.pushState({ scalePage: true }, "", sheetRoute());
    reuseEntry = false;

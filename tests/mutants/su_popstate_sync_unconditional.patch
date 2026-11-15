@@ -4,13 +4,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13423,7 +13423,8 @@ let pendingPop = false;
- window.addEventListener("popstate", () => {
+@@ -15251,7 +15251,8 @@ window.addEventListener("beforeunload", (e) => {
+ window.addEventListener("popstate", (e) => {
    // SAVE already selected and synced the committed scale. Observe the final
    // route after this app-owned pop, not its temporary pre-SAVE destination.
 -  if (pendingPop) { pendingPop = false; syncRoute(); return; }
 +  syncRoute();
 +  if (pendingPop) { pendingPop = false; return; }
    observeLinkRoute();
-   if (aboutOpen) { hideAbout(); return; }
-   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
+   if (pageOpen && returnPop) { returnPop = false; return; }
+   if (pageOpen && editorPasteGuard(e.state)) return;

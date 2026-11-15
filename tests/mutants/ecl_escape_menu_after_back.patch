@@ -1,0 +1,14 @@
+# kills: ECL9 360x640 a system Back closes the open menu, so Escape leaves the dialog and a second Escape never closes the editor
+# suite: node --test --test-name-pattern ^ECL9.3.*a.system.Back.closes.the.open.menu tests/editor_e2e.test.js
+# fault: The Save changes dialog opens over a still-open menu, which Escape then leaves in the wrong state.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14550,7 +14550,6 @@
+ function editorShowDialog(on) {
+   const s = editorSession;
+   s.dialog = on;
+-  if (on) editorCloseMenu(false);
+   const dlg = editorEl("editor-dialog");
+   if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");
+   for (const node of editorEl("editor").children) if (node !== dlg) { node.inert = on; if (on) node.setAttribute("aria-hidden", "true"); else node.removeAttribute("aria-hidden"); }
