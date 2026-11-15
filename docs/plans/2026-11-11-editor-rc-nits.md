@@ -23,7 +23,7 @@ Lanes: U2i, U2j-1, U2j-2, PL-a, P1, N1, I1, D1 are the plan's lanes; "nit lane" 
 | 13 | U2a n4 | Direct `editorExchangeAngles` refused on a seated ring; unreachable via swap | CLOSED (matches app) | none |
 | 14 | U2b n1 | README mutant count lags | OPEN | D1 (set from main CI artifacts; P0 base README reads 1969 = `ls tests/mutants/*.patch`) |
 | 15 | U2b n2 | popstate with unsaved edits closes the editor without the D10 Back prompt (`popstate` handler has no editor path; no test) | OPEN | U2j-1 |
-| 16 | U2b n3 | `editorCommitText` ignores a typed seat order | OPEN | nit lane |
+| 16 | U2b n3 | `editorCommitText` ignores a typed seat order | CLOSED (fixed in U2c; editor_shell "U2c-3 (U2b nit 3)"; review R4) | none |
 | 17 | U2b n4 | D21 e2e compares against `pan()` output (tautological) | OPEN | nit lane |
 | 18 | U2b n5 | No conflict-recovery UI in the editor (legacy offer lives in hidden `.sheetsurf`) | OPEN, new UI | nit lane; owner decision if it exceeds one session |
 | 19 | U2b n6 | Release-safety v4/v5/v6 fixtures not loaded through the editor e2e | OPEN | nit lane |
@@ -58,7 +58,24 @@ Lanes: U2i, U2j-1, U2j-2, PL-a, P1, N1, I1, D1 are the plan's lanes; "nit lane" 
 | 48 | #992 | Delete nits N1-N3 and drag-restore guard | CLOSED in #992 (merged into base) | none |
 | 49 | Panel plan D1a | "#1" hidden on profile | PAUSED (PL-b paused by owner and out of this RC; Q8 same-controls part goes to PL-a) | PL-a for Q8; the PL-b part is paused, not assigned |
 | 50 | Panel plan Q6 | Neotone wording check, 8 languages | OPEN | before P1 (W3); owner of the check: P1 |
-| 51 | #994 (Mirror/Rotate) | Content to be removed (Q9/Q10: Rotate and Mirror dropped) | OPEN | PL-a (removal); #994 stays open |
-| 52 | #982 | `ONE_PANEL` toggle and legacy UI must not ship | OPEN | U2j-1 / U2j-2; U2i migrates tests first |
+| 51 | #994 (Mirror/Rotate) | Content to be removed (Q9/Q10: Rotate and Mirror dropped) | CLOSED (PL-a; editor_e2e "PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are gone, and the Neotone pair is shown like Standard's") | none; #994 stays open |
+| 52 | #982 | `ONE_PANEL` toggle and legacy UI must not ship | CLOSED (U2j-1 / U2j-2; `ONE_PANEL` has no hit in `index.html`, CARD-SPEC "Legacy sheet editor: removed") | none |
 | 53 | #985, #988, #992, #994 reviews | No reviewer nit text recorded in repo plans, PR comments or reviews | GAP | RC review (fresh reviewer re-derives from the diff); integrator supplies any review text held in session notes |
 | 54 | P0 merge | README mutant/suite counts conflicted when merging #977; resolved to the larger count and re-checked | CLOSED (test_readme_currency 11 passed) | D1 re-sets from main CI artifacts |
+
+## Deleted tests of removed UI (OD-U2)
+
+OD-U2 (`docs/plans/2026-11-06-scale-editor-u2-split.md`): U2j may delete tests of removed UI with one ledger line each. These test files existed on main and are gone from the RC, with the legacy sheet and layout drawer they drove.
+
+| File | What it tested | Why it is gone |
+|---|---|---|
+| `tests/drawer_drag.test.js` | DR2b: the note drag in the layout drawer (real mouse and touch through CDP) | The drawer is removed; the editor's drag is covered by `tests/editor_e2e.test.js` "drag ux E1" to "E7" |
+| `tests/drawer_grid.test.js` | DR1: the drawer's geometry rule G, by enumeration | The drawer is removed; the editor has no drawer grid |
+| `tests/drawer_seats.test.js` | DR2a: drawer seats without a drag (hit nodes, focus, keys) | The drawer's seat buttons are removed; editor keyboard seats are covered by "keyboard pick and drop" |
+| `tests/sandbox_events.test.js` | The sheet-body event fixture (SPS) | The sheet body it modelled is removed |
+| `tests/seat_sweeps_keys.test.js` | DR2a rule W key and seat-button sweeps, Add and Edit | Drawer seat buttons are removed |
+| `tests/seat_sweeps_tap_add.test.js` | DR2a rule W tap sweep and DR2b drag sweeps, Add | The drawer and its Add sheet are removed |
+| `tests/seat_sweeps_tap_edit.test.js` | DR2a rule W tap sweep and DR2b drag sweeps, Edit | The drawer and its Edit sheet are removed |
+| `tests/helpers/seat_sweep_common.js` | Shared fixtures for the seat sweeps | Its only users are the three sweep files above |
+
+Mutant patches in `tests/mutants/` that targeted the removed sheet and drawer code (the `sps_*`, `dr*`, `di_*`, `uxl_*`, `lg_*` and similar families) were deleted with it; each one's removed-UI reason is the same as its test file's. The Save-recovery mutants listed in the plan-conformance plan under F1 (`sv_*`, `d_gone_deck_stays_armed`) are restored against the editor by lane F1 where they still apply; any that F1 does not restore is recorded here by name when that lane merges.

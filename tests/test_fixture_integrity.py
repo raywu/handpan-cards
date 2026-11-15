@@ -719,5 +719,21 @@ class TestAnchorLinkFixtureV9(unittest.TestCase):
                              "the v9 link fixture is append-only; add a file, never edit one")
 
 
+RELEASE_SAFETY_FIXTURE_SHA256 = {
+    "shipped_client_a4ecfc2e.html.txt": "f0c41f3943f7194c15be178daf456c91ef8bad762bd3c7d894c7f4eea63ba91f",
+    "editor_pan_v1.json": "d428723f4aa2f7ffbfee657c44c641f97ede7544d25b1beeb6dae7eab62ce8f3",
+    "engine_parity_golden_v1.json": "9f83e3752b922534286ce714cce1991b711dcdaf47b9290a0eea67e9bec5ae7b",
+}
+
+
+class TestReleaseSafetyFixturePins(unittest.TestCase):
+    def test_each_fixture_matches_its_pinned_sha256(self):
+        for name, want in RELEASE_SAFETY_FIXTURE_SHA256.items():
+            with self.subTest(fixture=name):
+                with open(os.path.join(FIXTURES, name), "rb") as fh:
+                    self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), want,
+                                     name + " is frozen release-safety evidence; add a new file, never edit one")
+
+
 if __name__ == "__main__":
     unittest.main()
