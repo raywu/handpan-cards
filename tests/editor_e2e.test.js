@@ -57,7 +57,11 @@ function run() {
     if (b) await b.close();
     if (server) await new Promise((r) => server.close(r));
   });
-  afterEach(() => assertNoUncaught());
+  afterEach(async () => {
+    try {
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 0, y: 0, button: "left", buttons: 0, clickCount: 1 });
+    } finally { assertNoUncaught(); }
+  });
 
   async function fresh(width = 375, height = 667, on = true, touchDrag = true) {
     dragTouch = touchDrag;
@@ -1575,10 +1579,13 @@ function run() {
           await fresh(w, h);
           await openAdd();
           await typeLine(SCALE);
+          await b.click("#editor-hint-toggle");
+          await b.waitFor(`!document.getElementById("editor-areas").hidden`);
           assert.strictEqual(await zoneCount("rim"), "Rim 8/12");
           assert.strictEqual(await zoneCount("inner"), "Cyclops 2/6");
           assert.strictEqual(await zoneCount("bottom"), "Bottom 0/12");
           for (const l of await lineBoxes("#editor-counts .zc")) assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": '" + l.text + "' is at most two line boxes, " + l.h + " vs " + l.lh);
+          for (const f of await b.eval(`return [...document.querySelectorAll("#editor-counts .zc")].map((e) => ({ text: e.textContent, sw: e.scrollWidth, cw: e.clientWidth }));`)) assert.ok(f.cw > 0 && f.sw <= f.cw,w + ": '" + f.text + "' does not overflow its box, scrollWidth " + f.sw + " vs clientWidth " + f.cw);
           await typeLine("(D3) " + RIM12 + " | C6");
           assert.strictEqual(await zoneCount("rim"), "Rim 12/12 Full");
           assert.strictEqual(await b.eval(`return document.querySelectorAll('#editor-counts [data-zone="rim"] b').length;`), 1);
@@ -4091,13 +4098,17 @@ function run() {
       assert.strictEqual(l.region.st, 0, "a tab switch opens the chosen panel from the top of the region");
     });
 
-    test("P0 tabs: a tap near the Layout tab's right edge lands on the tab (the info button sits in the name row, not the strip)", async () => {
+    test("P0 tabs: a tap near every tab's right edge lands on that tab (the info button sits in the name row, not the strip)", async () => {
       await open(375, 667);
-      await b.click("#editor-tab-layout");
-      const hit = await b.eval(`const t = document.getElementById("editor-tab-layout").getBoundingClientRect(), h = document.getElementById("editor-hint-toggle").getBoundingClientRect();
-        const e = document.elementFromPoint(t.right - 2, t.top + t.height / 2), m = e && e.closest("[role=tab], #editor-hint-toggle");
-        return { id: m ? m.id : null, clear: h.top >= t.bottom - 1, inStrip: document.getElementById("editor-tabs").contains(document.getElementById("editor-hint-toggle")) };`);
-      assert.deepStrictEqual(hit, { id: "editor-tab-layout", clear: true, inStrip: false });
+      const tabs = await b.eval(`return EDITOR_TABS.slice();`);
+      assert.ok(tabs.length >= 2, "the tab list is read from the app: " + JSON.stringify(tabs));
+      for (const tab of tabs) {
+        await b.click("#editor-tab-" + tab);
+        const hit = await b.eval(`const t = document.getElementById("editor-tab-${tab}").getBoundingClientRect(), h = document.getElementById("editor-hint-toggle").getBoundingClientRect();
+          const e = document.elementFromPoint(t.right - 2, t.top + t.height / 2), m = e && e.closest("[role=tab], #editor-hint-toggle");
+          return { id: m ? m.id : null, clear: h.top >= t.bottom - 1, inStrip: document.getElementById("editor-tabs").contains(document.getElementById("editor-hint-toggle")) };`);
+        assert.deepStrictEqual(hit, { id: "editor-tab-" + tab, clear: true, inStrip: false }, tab);
+      }
     });
 
     test("P0 hint: counts and hint sit in a collapsed block, a 44px info button in the name row with aria-expanded toggles it in place, and the pan does not move", async () => {
@@ -4164,17 +4175,10 @@ function run() {
           }
           return out;`);
         const seen = async () => {
-          const g = await geo();
-          if (g.vis) return g;
-          const rest = await b.eval(`const rg = document.getElementById("editor-region"); const was = rg.scrollTop; document.getElementById("editor-name").scrollIntoView({ block: "center" }); return was;`);
-          await pause(100);
-          const g2 = await geo();
-          await b.eval(`document.getElementById("editor-region").scrollTop = ${rest}; return true;`);
-          await pause(100);
-          return g2;
+          assert.strictEqual(await b.eval(`const rg = document.getElementById("editor-region"); return Math.abs(rg.scrollTop - (rg.scrollHeight - rg.clientHeight)) <= 1;`), true, "measured at the region's rest position, not scrolled by the test");
+          return geo();
         };
         const c = await seen();
-        assert.ok(c.vis, "the name row can be scrolled into view: " + JSON.stringify(c));
         assert.ok(Math.abs((c.bt.t + c.bt.b) / 2 - (c.name.t + c.name.b) / 2) <= 1, "vertical centres match at rest: " + JSON.stringify(c));
         assert.ok(Math.abs(c.bt.r - c.row.r) <= 0.5, "button right edge == name row right edge: " + JSON.stringify(c));
         assert.ok(c.name.r + 4 <= c.bt.l + 0.5, "name ends a gap before the button: " + JSON.stringify(c));
@@ -4191,7 +4195,6 @@ function run() {
         await b.click("#editor-tab-scale");
         await pause(100);
         const back = await seen();
-        assert.ok(back.vis, "the name row can be scrolled into view after switching back: " + JSON.stringify(back));
         assert.ok(Math.abs((back.bt.t + back.bt.b) / 2 - (back.name.t + back.name.b) / 2) <= 1, "centred again after switching back: " + JSON.stringify(back));
         assert.deepStrictEqual(await covers(), [], "no Scale control covered after switching back");
       });
@@ -4621,6 +4624,52 @@ function run() {
       assert.deepStrictEqual(await names(), ["DRAFT COPY"]);
     });
 
+    test("Save as separate keeps the focus on the same button when the conflict changes to deleted", async () => {
+      await saveScale("ORIGINAL");
+      await editSaved();
+      await rename("DRAFT COPY");
+      await staleSave();
+      await b.eval(`const el = document.getElementById("editor-conflict-separate"); window.__kept = el; el.focus(); return document.activeElement === el;`);
+      assert.strictEqual(await remoteDelete(), true);
+      await b.waitFor(`document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted")`, { label: "the deleted-scale text" });
+      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-conflict-separate") === window.__kept, document.activeElement === window.__kept, document.activeElement.id];`),
+        [true, true, "editor-conflict-separate"], "the focused Save as separate button is kept, not rebuilt");
+    });
+
+    describe("the Back dialog on an edited saved scale", () => {
+      const record = () => b.eval(`return JSON.stringify(savedState.entries.map((e) => [e.instanceId, e.revision, e.record]));`);
+      const toDialog = async () => {
+        await saveScale("ORIGINAL");
+        await editSaved();
+        await rename("EDITED");
+        await b.click("#editor-back");
+        assert.strictEqual(await dialogOpen(), true);
+      };
+
+      test("Discard closes and leaves the saved scale unchanged", async () => {
+        await saveScale("ORIGINAL");
+        const before = await record();
+        await editSaved();
+        await rename("EDITED");
+        await b.click("#editor-back");
+        assert.strictEqual(await dialogOpen(), true);
+        await b.click("#editor-dlg-discard");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Discard" });
+        await b.waitFor(`!savePending`, { label: "any write started by Discard to settle" });
+        assert.strictEqual(await record(), before, "the saved record and its revision are untouched");
+        assert.deepStrictEqual(await names(), ["ORIGINAL"]);
+      });
+
+      test("Save writes the edit once (revision +1, no copy) and closes", async () => {
+        await toDialog();
+        const rev = await b.eval(`return savedState.entries[0].revision;`);
+        await b.click("#editor-dlg-save");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Save" });
+        assert.deepStrictEqual(await names(), ["EDITED"], "one scale, renamed in place");
+        assert.strictEqual(await b.eval(`return savedState.entries[0].revision;`), rev + 1, "written exactly once");
+      });
+    });
+
     describe("history back on the editor", () => {
       const back = async () => {
         await b.eval(`history.back(); return true;`);
@@ -4655,7 +4704,10 @@ function run() {
       test("a staged-only editor closes silently", async () => {
         await fresh();
         await openAdd();
-        await b.eval(`editorSession.history.present.stage = { note: "A4" }; return true;`);
+        await b.eval(`const r = editorApply(editorSession.history, (m) => editorStageEdit(m, (st) => { editorStagePush(st, "rim", "A4"); }));
+          editorSession.history = r.history; editorRender(); return r.ok !== false;`);
+        const staged = await b.eval(`return editorStageNames(editorSession.history.present, "rim");`);
+        assert.deepStrictEqual(staged, ["A4"], "a note is really staged through the real stage path");
         await back();
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
         assert.strictEqual(await dialogOpen(), false);
@@ -4753,8 +4805,12 @@ function run() {
       await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
       assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
       assert.strictEqual(await b.eval(`return editingBase.selection.id;`), xId, "the sheet is not rebound to the fallback");
+      const countBefore = await savedCount();
       await armedDelete();
       assert.strictEqual(await b.eval(`return savedState.hidden.length;`), hiddenBefore, "no built-in was hidden by the retry");
+      assert.strictEqual(await savedCount(), countBefore, "the retry deleted no other saved scale");
+      assert.strictEqual(await sheetHidden(), false, "the page stays open on the deleted banner");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true, "the banner is still on screen");
     });
 
     test("a broadcast remote deletion of the open saved scale shows the deleted banner", async () => {
