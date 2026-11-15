@@ -358,6 +358,7 @@ const OLD_HTML_C6 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_cl
 const MAIN_HTML_A4 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_a4ecfc2e.html.txt"), "utf8");
 const PA_AMARA = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
 const PA_HIJAZ = "(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4";
+const MAIN_HTML_G = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_4b432f04.html.txt"), "utf8");
 
 const sharedBoot = async (origin, html) => {
   const app = boot({ html, origin, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true,
@@ -627,9 +628,10 @@ test("SC: every stored_blobs_v1 blob forwards through moveEncode/moveImport inta
   }
 });
 
-test("PAU-I: a record 7 (profile plus between) row stays opaque, untouched and unprotected in the shipped client, the c6ef6b58 client and main a4ecfc2e", async () => {
+test("PAU-I: a record 6 (pinned inner angles) and a record 7 (profile plus between) row stay opaque, untouched and unprotected in the shipped client, the c6ef6b58 client, main a4ecfc2e and main 4b432f04", async () => {
   const { createOrigin } = require("./helpers/sandbox.js");
-  for (const [label, html] of [["ee5438d0", OLD_HTML], ["c6ef6b58", OLD_HTML_C6], ["a4ecfc2e", MAIN_HTML_A4]]) {
+  for (const v of [6, 7]) for (const [client, html] of [["ee5438d0", OLD_HTML], ["c6ef6b58", OLD_HTML_C6], ["a4ecfc2e", MAIN_HTML_A4], ["4b432f04", MAIN_HTML_G]]) {
+    const label = `${client} v${v}`;
     const origin = createOrigin({ storage: {} });
     const fresh = await sharedBoot(origin, NEW_HTML);
     await saveAcoustic(fresh, PA_AMARA, "ACOUSTIC ONE");
@@ -641,27 +643,277 @@ test("PAU-I: a record 7 (profile plus between) row stays opaque, untouched and u
       const row = await new Promise((res, rej) => { const q = store.get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
       const env = JSON.parse(row);
       const entry = env.entries.find((e) => e.record.v === 5);
-      entry.record.v = 7;
-      entry.record.o.anchor = "between";
+      entry.record.v = ${v};${v === 7 ? ' entry.record.o.anchor = "between";' : ""}
       await new Promise((res, rej) => { const q = store.put(JSON.stringify(env), "current"); q.onsuccess = () => res(); q.onerror = () => rej(q.error); });
       await new Promise((res) => { tx.oncomplete = () => res(); });
       return true;
     })()`);
     assert.strictEqual(ok, true);
     const before = envelopeOf(fresh);
-    const row7 = before.entries.find((e) => e.record.v === 7);
-    assert.ok(row7 && row7.record.o.anchor === "between", `${label}: a v7 row is stored`);
+    const row7 = before.entries.find((e) => e.record.v === v);
+    assert.ok(row7 && (v === 6 || row7.record.o.anchor === "between"), `${label}: the row is stored`);
     const snapshot = JSON.stringify(before);
 
     const old = await sharedBoot(origin, html);
     assert.notStrictEqual(old.get("savedMode"), "protected", `${label}: not protected`);
     assert.strictEqual(JSON.stringify(envelopeOf(old)), snapshot, `${label}: boot wrote nothing`);
     assert.ok(chips(old).some((c) => c.includes("ACOUSTIC ONE")), `${label}: acoustic row shows`);
-    assert.ok(!chips(old).some((c) => c.includes("PAIRED ONE")), `${label}: record 7 is not offered`);
+    assert.ok(!chips(old).some((c) => c.includes("PAIRED ONE")), `${label}: the newer row is not offered`);
 
     await saveAcoustic(old, PA_HIJAZ.replace("B4", "C#5"), "ACOUSTIC TWO");
     const after = envelopeOf(old);
-    assert.deepStrictEqual(after.entries.find((e) => e.record.v === 7), row7, `${label}: the v7 row is never rewritten`);
+    assert.deepStrictEqual(after.entries.find((e) => e.record.v === v), row7, `${label}: the newer row is never rewritten`);
     assert.notStrictEqual(old.get("savedMode"), "protected");
   }
+});
+
+/* ---- RG: rollback guard. Rows written by a newer app (record version above this
+ * app's newest, 7 on this app) stay byte-identical, are counted in a notice, travel through the
+ * move and are named in the backup. They are seeded straight into storage. */
+const RG_NOTICE = {
+  one: "1 saved scale was made in a newer version of Handpan Theory. It is kept safe and will show again after an update.",
+  other: (n) => `${n} saved scales were made in a newer version of Handpan Theory. They are kept safe and will show again after an update.`,
+};
+const RG_BACKUP = (n) => (n === 1
+  ? "1 scale from a newer version is not in this file. It stays saved in this browser."
+  : `${n} scales from a newer version are not in this file. They stay saved in this browser.`);
+const RG_BACKUP_NONE = (n) => (n === 1
+  ? "1 scale from a newer version can't be backed up here. It stays saved in this browser."
+  : `${n} scales from a newer version can't be backed up here. They stay saved in this browser.`);
+
+const PYGMY_RC = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]";
+
+test("RC-G-RC: rows the RC saved at v4, v5, v6 and v7 stay byte-identical through main 4b432f04 (rollback guard), and the RC shows them again", async () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = createOrigin({ storage: {} });
+  const rc = await sharedBoot(origin, NEW_HTML);
+  await saveAcoustic(rc, PA_AMARA, "ACOUSTIC FOUR");
+  await savePaired(rc, PA_HIJAZ, "PAIRED FIVE");
+  const six = await rc.getAsync(`generateDeck(${JSON.stringify("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5")}, { name: "PINNED SIX", angles: { inner: [125, 55] } })`);
+  assert.strictEqual(six.ok, true, six.reason);
+  const seven = await rc.getAsync(`(() => {
+    const text = ${JSON.stringify(PYGMY_RC)};
+    const p = HPE.layout.proposeProfile(HPE.core.parseSeed(text).value.fields);
+    return generateDeck(text, { name: "BETWEEN SEVEN", palette: 1, anchor: "between", profile: { id: "paired", rev: 2, map: p.value.map } });
+  })()`);
+  assert.strictEqual(seven.ok, true, seven.reason);
+  await settle();
+  const saved = envelopeOf(rc);
+  const byName = (env, name) => env.entries.find((e) => e.record.o && e.record.o.name === name);
+  assert.deepStrictEqual(["ACOUSTIC FOUR", "PAIRED FIVE", "PINNED SIX", "BETWEEN SEVEN"].map((n) => byName(saved, n).record.v), [4, 5, 6, 7]);
+  const bytes = (env, names) => names.map((n) => JSON.stringify(byName(env, n)));
+  const all = ["ACOUSTIC FOUR", "PAIRED FIVE", "PINNED SIX", "BETWEEN SEVEN"];
+  const before = bytes(saved, all);
+
+  const g = await sharedBoot(origin, MAIN_HTML_G);
+  assert.notStrictEqual(g.get("savedMode"), "protected", "4b432f04 is not protected");
+  assert.deepStrictEqual(bytes(envelopeOf(g), all), before, "booting 4b432f04 wrote nothing");
+  assert.ok(chips(g).some((c) => c.includes("ACOUSTIC FOUR")), "4b432f04 shows the acoustic row");
+  assert.ok(!chips(g).some((c) => c.includes("PINNED SIX") || c.includes("BETWEEN SEVEN")), "4b432f04 does not offer the rows it cannot read");
+  assert.strictEqual(g.els["saved-status"].textContent, RG_NOTICE.other(2), "4b432f04 counts the v6 and v7 rows");
+  await saveAcoustic(g, PA_HIJAZ.replace("B4", "C#5"), "ACOUSTIC G");
+  assert.deepStrictEqual(bytes(envelopeOf(g), all), before, "a SAVE in 4b432f04 left every RC row byte-identical");
+  assert.ok(byName(envelopeOf(g), "ACOUSTIC G"), "the 4b432f04 save landed");
+
+  const back = await sharedBoot(origin, NEW_HTML);
+  assert.notStrictEqual(back.get("savedMode"), "protected", "the RC is not protected");
+  assert.deepStrictEqual(bytes(envelopeOf(back), all), before, "booting the RC again wrote nothing to the RC rows");
+  for (const n of [...all, "ACOUSTIC G"]) assert.ok(chips(back).some((c) => c.includes(n)), `the RC shows ${n} again`);
+  assert.strictEqual(back.els["saved-status"].textContent, "", "the RC has no newer rows to count");
+});
+
+const rgRewrite = async (app, body) => app.getAsync(`(async () => {
+  const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  const tx = db.transaction("collections", "readwrite");
+  const store = tx.objectStore("collections");
+  const row = await new Promise((res, rej) => { const q = store.get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  const env = JSON.parse(row);
+  (${body})(env);
+  const planted = JSON.stringify(env);
+  await new Promise((res, rej) => { const q = store.put(planted, "current"); q.onsuccess = () => res(); q.onerror = () => rej(q.error); });
+  await new Promise((res) => { tx.oncomplete = () => res(); });
+  return planted;
+})()`);
+
+const rgRaw = async (app) => app.getAsync(`(async () => {
+  const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  return new Promise((res, rej) => { const q = db.transaction("collections").objectStore("collections").get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+})()`);
+const rgBytes = (raw) => JSON.parse(raw).entries.filter((e) => typeof e.record.v === "number" && e.record.v > 7).map((e) => JSON.stringify(e));
+
+// Saves every wanted row the normal way, then rewrites the record version of the
+// paired ones in place: the envelope shape (ids, ordinals) stays valid. A number
+// other than 5 or a string version is stored as given.
+const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href, extra = {}) => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = createOrigin({ storage: {} });
+  const fresh = href ? await rgMoveBoot(origin, href, "") : await sharedBoot(origin, NEW_HTML);
+  const lines = [PA_HIJAZ, PA_HIJAZ.replace("B4", "C#5"), PA_AMARA, "(E3) B3 D4 E4 F#4 G#4"];
+  for (const [i, name] of readable.entries()) await saveAcoustic(fresh, lines[i], name);
+  const plan = [];
+  for (const [i, v] of versions.entries()) {
+    if (v === 4) await saveAcoustic(fresh, lines[(readable.length + i) % 4], "ACOUSTIC V4 " + i);
+    else { await savePaired(fresh, lines[i % 4], "NEWER " + i); if (v !== 5) plan.push([i, v]); }
+  }
+  origin.rgPlanted = await rgRewrite(fresh, `(env) => {
+    for (const [i, v] of ${JSON.stringify(plan)}) {
+      const row = env.entries.find((e) => e.record.o && e.record.o.name === "NEWER " + i);
+      row.record.v = v;
+      if (v === 7) row.record.o.anchor = "between";
+    }
+    for (const [name, seed] of Object.entries(${JSON.stringify(extra.replaces || {})})) {
+      const row = env.entries.find((e) => e.record.o && e.record.o.name === name);
+      row.record.o.replaces = seed;
+      env.slots[seed] = row.instanceId;
+    }
+    env.hidden.push(...${JSON.stringify(extra.hidden || [])});
+  }`);
+  return origin;
+};
+const rgNewer = (env) => env.entries.filter((e) => typeof e.record.v === "number" && e.record.v > 7);
+
+test("RG: rows above the newest record version seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit", async () => {
+  const origin = await rgOrigin([8, 9, 4], ["ACOUSTIC ONE", "ACOUSTIC TWO"], undefined, { replaces: { "ACOUSTIC V4 2": "kurd" } });
+  const app = await sharedBoot(origin, NEW_HTML);
+  assert.ok(envelopeOf(app).entries.some((e) => e.record.o && e.record.o.replaces === "kurd"), "the seeded replacement is stored");
+  const seeded = rgNewer(envelopeOf(app));
+  assert.strictEqual(seeded.length, 2);
+  const plantedBytes = rgBytes(origin.rgPlanted);
+  assert.strictEqual(plantedBytes.length, 2);
+  assert.strictEqual(await rgRaw(app), origin.rgPlanted, "boot left the planted bytes untouched");
+  const bytesKept = async (label) => assert.deepStrictEqual(rgBytes(await rgRaw(again)), plantedBytes, label);
+  assert.notStrictEqual(app.get("savedMode"), "protected");
+  const snapshot = JSON.stringify(envelopeOf(app));
+  const again = await sharedBoot(origin, NEW_HTML);
+  assert.strictEqual(JSON.stringify(envelopeOf(again)), snapshot, "boot wrote nothing");
+  assert.ok(!chips(again).some((c) => c.includes("NEWER")), "newer rows are not offered as scales");
+
+  await saveAcoustic(again, PA_HIJAZ.replace("B4", "C#5"), "ACOUSTIC THREE");
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "SAVE left the newer rows alone");
+  await bytesKept("SAVE kept the newer bytes");
+
+  openChipOf(again, "ACOUSTIC ONE");
+  again.els["scale-name"].value = "ACOUSTIC ONE EDITED";
+  again.els["scale-name"].dispatchEvent({ type: "input" });
+  await again.getAsync("runGenerate()");
+  await settle();
+  assert.ok(envelopeOf(again).entries.some((e) => e.record.o && e.record.o.name === "ACOUSTIC ONE EDITED"), "the edit landed");
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "Edit left the newer rows alone");
+  await bytesKept("Edit kept the newer bytes");
+
+  openChipOf(again, "ACOUSTIC TWO");
+  again.els["scale-delete"].click();
+  await settle();
+  again.els["scale-delete"].click();
+  await settle();
+  await new Promise((r) => setTimeout(r, 300));
+  await settle();
+  assert.ok(!envelopeOf(again).entries.some((e) => e.record.o && e.record.o.name === "ACOUSTIC TWO"), "the other scale is gone");
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "Delete left the newer rows alone");
+  await bytesKept("Delete kept the newer bytes");
+
+  const beforeReset = envelopeOf(again).revision;
+  again.els["deck-restore"].click();
+  again.els["deck-restore"].click();
+  for (let i = 0; i < 200 && envelopeOf(again).revision === beforeReset; i += 1) { await settle(); await new Promise((r) => setImmediate(r)); }
+  assert.notStrictEqual(envelopeOf(again).revision, beforeReset, "RESET committed a new revision");
+  assert.ok(!envelopeOf(again).entries.some((e) => e.record.o && e.record.o.replaces), "RESET dropped the replacement");
+  assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "RESET SEEDED left the newer rows alone");
+  await bytesKept("RESET kept the newer bytes");
+  assert.notStrictEqual(again.get("savedMode"), "protected");
+});
+
+test("RG: the notice counts only rows above the app's newest record version", async () => {
+  const origin = await rgOrigin([4, 7, 8, 9, 10, "9"]);
+  const app = await sharedBoot(origin, NEW_HTML);
+  const status = app.els["saved-status"];
+  assert.strictEqual(status.textContent, RG_NOTICE.other(3), "v8, v9 and v10 are counted; v7 (the app's own newest), v5, v4 and a non-number v are not");
+  assert.strictEqual(status.hidden, false);
+
+  const one = await sharedBoot(await rgOrigin([8]), NEW_HTML);
+  assert.strictEqual(one.els["saved-status"].textContent, RG_NOTICE.one);
+
+  const none = await sharedBoot(await rgOrigin([4, 5]), NEW_HTML);
+  assert.strictEqual(none.els["saved-status"].textContent, "");
+  assert.strictEqual(none.els["saved-status"].hidden, true);
+});
+
+const rgMoveBoot = async (origin, href, referrer) => {
+  const armed = NEW_HTML.replace(/^const MOVE_FROM = .*;$/m, () => 'const MOVE_FROM = "old.example";')
+    .replace(/^const MOVE_TARGET = .*;$/m, () => 'const MOVE_TARGET = "https://new.example";');
+  const page = `<script>location.assign=function(u){window.__assigned=String(u)};document.referrer=${JSON.stringify(referrer)};</script>` + armed;
+  const app = boot({ html: page, origin, href, indexedDB: true, broadcastChannel: true, locks: true, isSecureContext: true,
+    crypto: require("node:crypto").webcrypto, abortController: true });
+  for (let i = 0; i < 80 && !app.get("typeof booted!=='undefined'&&booted"); i += 1) await new Promise((r) => setTimeout(r, 25));
+  await settle();
+  return app;
+};
+
+test("RG: a move from the old host carries newer rows byte-identical, and a junk object row passes through as opaque", async () => {
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = await rgOrigin([8, 9, 10], ["ACOUSTIC ONE"], "https://old.example/index.html");
+  const old = await rgMoveBoot(origin, "https://old.example/index.html", "");
+  const oldEnv = envelopeOf(old);
+  const sent = rgNewer(oldEnv).map((e) => e.record);
+  assert.strictEqual(sent.length, 3);
+  old.click(old.get("moveBannerGo"));
+  const url = old.get("window.__assigned");
+  assert.ok(url && url.startsWith("https://new.example/"), "the old host forwarded");
+  const dest = await rgMoveBoot(createOrigin({}), url, "https://old.example/");
+  const storedBytes = async (app) => JSON.parse(await rgRaw(app)).entries.filter((e) => e.record.v > 7).map((e) => JSON.stringify(e.record));
+  assert.deepStrictEqual(await storedBytes(dest), await storedBytes(old), "newer rows arrived byte-identical");
+  assert.deepStrictEqual(await storedBytes(dest), sent.map((r) => JSON.stringify(r)), "the stored bytes match what the old host held");
+  assert.deepStrictEqual(envelopeOf(old), oldEnv, "the old store did not change");
+  assert.strictEqual(dest.els["saved-status"].textContent, RG_NOTICE.other(3));
+
+  const junk = { weird: true, n: [1, 2] };
+  const code = Buffer.from(JSON.stringify({ r: [{ i: "junk-1", r: junk }], h: [] })).toString("base64url");
+  const handmade = "https://new.example/#move=" + code + "&then=";
+  const dest2 = await rgMoveBoot(createOrigin({}), handmade, "https://old.example/");
+  assert.deepStrictEqual(plain(envelopeOf(dest2).entries.map((e) => e.record)), [junk], "a junk object row is kept as opaque");
+});
+
+test("RG: the backup names the rows it leaves out, and with only newer rows it is not empty and cannot be exported", async () => {
+  const mixed = await sharedBoot(await rgOrigin([8, 9]), NEW_HTML);
+  mixed.els["backup-open"].click();
+  const text = mixed.els["backup-text"].value;
+  assert.ok(text.includes(RG_BACKUP(2)), "the file says two newer scales are not in it");
+  assert.ok(text.includes("Handpan Theory saved scales (1)"), "the readable count excludes newer rows");
+  assert.ok(!text.includes("NEWER"), "no newer row is written");
+  assert.ok(mixed.els["backup-copy"].disabled === false);
+
+  const { createOrigin } = require("./helpers/sandbox.js");
+  const origin = await rgOrigin([9], []);
+  const only = await sharedBoot(origin, NEW_HTML);
+  only.els["backup-open"].click();
+  assert.strictEqual(only.els["backup-status"].textContent, RG_BACKUP_NONE(1));
+  assert.ok(!only.els["backup-status"].textContent.includes("not in this file"), "with no file the line does not point at a file");
+  assert.notStrictEqual(only.els["backup-status"].textContent, "No saved scales to back up yet.");
+  assert.strictEqual(only.els["backup-text"].value, "");
+  for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(only.els[id].disabled, true, id);
+
+  const empty = await sharedBoot(createOrigin({ storage: {} }), NEW_HTML);
+  empty.els["backup-open"].click();
+  assert.strictEqual(empty.els["backup-status"].textContent, "No saved scales to back up yet.");
+});
+
+test("RG: with no readable rows the newer line shows once, as the no-file line, whether or not seeded scales are hidden", async () => {
+  const count = (app) => (app.els["backup-text"].value + "\n" + app.els["backup-status"].textContent).split("from a newer version").length - 1;
+  const two = await sharedBoot(await rgOrigin([8, 9], []), NEW_HTML);
+  two.els["backup-open"].click();
+  assert.strictEqual(two.els["backup-status"].textContent, RG_BACKUP_NONE(2));
+  assert.strictEqual(count(two), 1);
+
+  const hiddenOnly = await sharedBoot(await rgOrigin([8, 9, 10], [], undefined, { hidden: ["amara"] }), NEW_HTML);
+  hiddenOnly.els["backup-open"].click();
+  assert.strictEqual(hiddenOnly.els["backup-status"].textContent, RG_BACKUP_NONE(3));
+  assert.ok(hiddenOnly.els["backup-text"].value.includes("Hidden seeded scales"), "the hidden note is still listed");
+  assert.strictEqual(count(hiddenOnly), 1, "the newer line appears once");
+  for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(hiddenOnly.els[id].disabled, true, id);
+
+  const mixed = await sharedBoot(await rgOrigin([8, 9], ["ACOUSTIC ONE"], undefined, { hidden: ["amara"] }), NEW_HTML);
+  mixed.els["backup-open"].click();
+  assert.strictEqual(mixed.els["backup-status"].textContent, "");
+  assert.strictEqual(count(mixed), 1, "with a file the line is in the file, once");
+  assert.ok(mixed.els["backup-text"].value.includes(RG_BACKUP(2)));
 });

@@ -1,0 +1,15 @@
+# kills: RG: a move from the old host carries newer rows byte-identical, and a junk object row passes through as opaque
+# suite: node --test --test-name-pattern ^RG..a.move.from.the.old.host tests/storage_corpus.test.js
+# why: Without the opaque branch the domain move drops scales the reader cannot parse.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17569,7 +17569,7 @@ async function moveImport(code) {
+     if (!savedObject(row) || typeof row.i !== "string" || row.i.length > 64) continue;
+     const read = readSavedRecord(row.r);
+     if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), read });
+-    else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
++    else if (false) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
+   }
+   const hidden = (Array.isArray(data.h) ? data.h : []).filter(x => typeof x === "string" && x.length <= 64).slice(0, 50);
+   return commitSaved({ type: "move-import", collectionId: savedState.collectionId, items, hidden });

@@ -1,0 +1,15 @@
+# kills: RG: the notice counts only rows above the app's newest record version
+# suite: node --test --test-name-pattern ^RG..the.notice.counts.only.rows tests/storage_corpus.test.js
+# why: With the count forced to 0, a user whose saved scales came from a newer app sees no notice.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15486,7 +15486,7 @@ function savedErrorText(result) {
+   return t(result.kind === "conflict" ? "saved.conflict" : "saved.failure");
+ }
+ function savedNewerCount() {
+-  if (!savedState) return 0;
++  if (!savedState || true) return 0;
+   const newest = newestRecordVersion();
+   return savedState.entries.filter(row => savedObject(row.record) && Number.isFinite(row.record.v) && typeof row.record.v === "number" && row.record.v > newest).length;
+ }
