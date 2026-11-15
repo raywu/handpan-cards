@@ -15289,7 +15289,7 @@ savedSnapshotListener=event=>{
     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);
     const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
-    if(changed && !savedEqual(target,editingBase.selection)){
+    if(changed && editorConflictKind()==="deleted"){
       session.conflict=editorConflictKind();editorRender();
     }else if(changed && latest){
       const tab=session.tab;
@@ -15527,7 +15527,7 @@ const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 36, GHOST_RETUR
 // CSS, has no client rects), never of a hand-kept mode table.
 const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
 function cycleTabStops(all, e) {
-  const stops = all.filter(el => getComputedStyle(el).visibility !== "hidden");
+  const stops = typeof getComputedStyle === "function" ? all.filter(el => getComputedStyle(el).visibility !== "hidden") : all;
   if (!stops.length) return;
   const i = stops.indexOf(document.activeElement);
   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
