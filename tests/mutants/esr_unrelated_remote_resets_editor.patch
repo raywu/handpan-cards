@@ -1,5 +1,5 @@
-# kills: SV11 U3: unrelated remote writes preserve the dirty editor base and its draft
-# suite: node --test --test-name-pattern ^SV11.U3: tests/app.test.js
+# kills: SV11 U3: unrelated remote writes leave a clean editor session untouched
+# suite: node --test --test-name-pattern ^SV11.U3:.unrelated.remote.writes.leave.a.clean.editor.session.untouched$ tests/app.test.js
 # fault: Unrelated remote changes reset an editor even when its target and revision are unchanged.
 diff --git a/index.html b/index.html
 --- a/index.html

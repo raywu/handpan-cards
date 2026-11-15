@@ -10454,6 +10454,17 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.deepStrictEqual(plain(app.get("editingBase")),dirtyBase,"remote winner cannot rebind a dirty draft's original revision");
   });
 
+  test("SV11 U3: unrelated remote writes leave a clean editor session untouched", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.pygmyLayoutA]);
+    editSelected(app);
+    app.run(`globalThis.__keptSession = editorSession;`);
+    const peer=(await load({origin,crypto})).app;
+    assert.strictEqual((await imported(peer,SV.portableRecords.amaraB)).ok,true);
+    origin.flushBroadcastMessages();
+    await app.waitFor(`savedEntries.size === 2`);
+    assert.strictEqual(app.get(`editorSession === globalThis.__keptSession`),true,"an unrelated record never rebuilds the open editor");
+  });
+
   test("SV11 U4: stored and detected non-English cold boots localize before ready", async () => {
     const de=JSON.parse(fs.readFileSync(path.join(ROOT,"data/i18n/de.json"),"utf8"));
     for(const storage of [{hpfc:JSON.stringify({lang:"de"})},{}]) {

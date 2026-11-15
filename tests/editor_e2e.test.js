@@ -4437,7 +4437,10 @@ function run() {
         const hit = (id) => { const el = document.getElementById(id); const [x, y] = center(el); const h = document.elementFromPoint(x, y); return !!h && el.contains(h); };
         const [tx, ty] = center(document.getElementById("editor-tab-scale")), under = document.elementFromPoint(tx, ty);
         return { save: hit("editor-dlg-save"), discard: hit("editor-dlg-discard"), keep: hit("editor-dlg-keep"),
-          tabsCovered: !!under && document.getElementById("editor-dialog").contains(under) };`);
+          tabsCovered: !!under && document.getElementById("editor-dialog").contains(under),
+          aboveEveryLayer: (() => { const dlg = document.getElementById("editor-dialog"), own = Number(getComputedStyle(dlg).zIndex);
+            return [...document.querySelectorAll("#editor *")].filter((el) => !dlg.contains(el) && getComputedStyle(el).position !== "static")
+              .every((el) => { const z = Number(getComputedStyle(el).zIndex); return Number.isNaN(z) || z < own; }); })() };`);
       const SIZES = [[360, 640], [375, 667], [390, 844], [844, 390]];
       for (const [w, h] of SIZES) {
         for (const state of ["scale", "layout", "info"]) {
@@ -4451,7 +4454,7 @@ function run() {
             if (state === "layout") await b.eval(`history.back(); return true;`); else await b.click("#editor-back");
             await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Back dialog" });
             const r = await probe();
-            assert.deepStrictEqual(r, { save: true, discard: true, keep: true, tabsCovered: true }, JSON.stringify(r));
+            assert.deepStrictEqual(r, { save: true, discard: true, keep: true, tabsCovered: true, aboveEveryLayer: true }, JSON.stringify(r));
           });
         }
       }
