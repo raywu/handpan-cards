@@ -79,3 +79,8 @@ OD-U2 (`docs/plans/2026-11-06-scale-editor-u2-split.md`): U2j may delete tests o
 | `tests/helpers/seat_sweep_common.js` | Shared fixtures for the seat sweeps | Its only users are the three sweep files above |
 
 Mutant patches in `tests/mutants/` that targeted the removed sheet and drawer code (the `sps_*`, `dr*`, `di_*`, `uxl_*`, `lg_*` and similar families) were deleted with it; each one's removed-UI reason is the same as its test file's. The Save-recovery mutants listed in the plan-conformance plan under F1 (`sv_*`, `d_gone_deck_stays_armed`) are restored against the editor by lane F1 where they still apply; any that F1 does not restore is recorded here by name when that lane merges.
+
+| Mutant | What it mutated on main | Why it is not restored |
+|---|---|---|
+| `d_gone_deck_stays_armed` | The armed Delete button staying armed after the deck it targeted disappeared | Equivalent on the editor: `editorDeleteFailed` also clears `delArmed`, so the mutated line changes nothing observable |
+| `sv_old_completion_enables_invalid` | A stale save completion re-enabling the Save button for an invalid draft | The editor save path has no completion-time write to the button: its disabled state is derived by `editorSubmitOff` at render |
