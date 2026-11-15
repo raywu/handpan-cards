@@ -4812,6 +4812,76 @@ function run() {
     });
   });
 
+  describe("editor layout at rest", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+    const hitsSelf = (id) => b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
+      inerts.forEach((el) => el.removeAttribute("inert"));
+      try {
+        const el = document.getElementById(${JSON.stringify(id)}), r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return { id: ${JSON.stringify(id)}, ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
+      } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
+    const showBanner = async () => {
+      await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      await pause(300);
+    };
+
+    for (const [w, h] of [[390, 844], [320, 568]]) {
+      test(`ELA banner ${w}x${h}: with the conflict banner shown the name input and the info button are not under the tab strip`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await showBanner();
+        for (const id of ["editor-name", "editor-hint-toggle"]) {
+          const r = await hitsSelf(id);
+          assert.ok(r.ok, "banner offset: " + JSON.stringify(r));
+        }
+      });
+    }
+
+    for (const [w, h] of [[667, 375], [844, 390], [1024, 768]]) {
+      test(`ELA banner grid ${w}x${h}: with the conflict banner shown the scale line centre hits itself`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await showBanner();
+        const r = await hitsSelf("editor-line");
+        assert.ok(r.ok, "banner stays in the grid cell: " + JSON.stringify(r));
+      });
+    }
+
+    for (const [w, h] of [[360, 640], [375, 667], [320, 568], [667, 375]]) {
+      test(`ELA counts row${w}x${h}: with the hint open the Layout tab centre hits itself`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await b.click("#editor-hint-toggle");
+        await pause(250);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
+        const r = await hitsSelf("editor-tab-layout");
+        assert.ok(r.ok, "counts row stack: " + JSON.stringify(r));
+        const gap = await b.eval(`return document.getElementById("editor-counts").getBoundingClientRect().top - document.getElementById("editor-tabs").getBoundingClientRect().bottom;`);
+        assert.ok(gap >= 0, "the counts row starts below the tab strip: " + gap);
+      });
+    }
+
+    const TITLE_CASES = [[320, 568, "en"], [320, 568, "de"], [390, 844, "de"], [390, 844, "es"], [390, 844, "fr"], [390, 844, "it"]];
+    for (const [w, h, lang] of TITLE_CASES) {
+      for (const mode of ["add", "edit"]) {
+        test(`ELA title fit ${w}x${h} ${lang} ${mode}: h2#editor-title does not overflow`, async () => {
+          await fresh(w, h);
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          if (mode === "add") await openAdd(); else await openBuiltin();
+          await pause(150);
+          const r = await b.eval(`const e = document.getElementById("editor-title"); return { sw: e.scrollWidth, cw: e.clientWidth, text: e.textContent };`);
+          assert.ok(r.sw <= r.cw, "title fits: " + JSON.stringify(r));
+        });
+      }
+    }
+  });
+
 }
 
 function DECK_IDS_HAVE(builtinJson, id) {

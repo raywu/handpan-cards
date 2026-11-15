@@ -896,7 +896,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @media (min-width:640px) and (min-height:700px){#scale-sheet.onepanel #editor{--ed-k:calc(370px + var(--ed-row))}}
 #editor .editor-head{flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); min-width:0}
 #editor-title{margin:0; font:600 13px/1.2 "Nunito Sans"; letter-spacing:.09em; text-transform:uppercase; flex:1 1 auto; min-width:0;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  overflow-wrap:anywhere; hyphens:auto}
 #editor .editor-type{flex:0 0 auto; display:flex; gap:0}
 #editor .editor-type .mode{border-radius:0; min-width:44px}
 #editor .editor-type .mode:first-child{border-radius:8px 0 0 8px}
@@ -929,7 +929,9 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}
 @media (prefers-reduced-motion:reduce){#editor-status.arrive{animation:none}}
 #editor-status .mode{min-height:32px; padding:4px 10px}
-#editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px}
+#editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px; position:absolute; left:0; right:0; bottom:0}
+#editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:40px}
+@media (max-width:420px){#editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:48px}}
 #editor-status[data-conflict] #editor-conflict-msg{flex:1 1 12em; min-width:0}
 #editor-status #editor-conflict-separate{min-height:44px; white-space:normal; padding:10px 14px}
 #editor .editor-panbox{flex:0 0 auto; min-height:0;
@@ -939,7 +941,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor-pan{height:100%; width:100%; display:flex; align-items:center; justify-content:center}
 #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}
 #editor-areas{position:absolute; z-index:4; box-sizing:border-box; display:flex; flex-direction:column; gap:var(--sp-2); overflow-y:auto; overscroll-behavior:contain;
-  padding:var(--sp-3) 52px var(--sp-3) var(--sp-3); background:#F6F4ED; color:#242424; border:1px solid #8A847B; border-radius:8px}
+  padding:calc(var(--sp-3) + 45px) 52px var(--sp-3) var(--sp-3); background:#F6F4ED; color:#242424; border:1px solid #8A847B; border-radius:8px}
 #editor-areas[hidden]{display:none}
 #editor-counts{display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); font:500 13px/20px "Nunito Sans"}
 #editor-counts .zc.full{font-weight:700}
@@ -949,6 +951,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @media (max-height:420px){#editor-region{margin-top:0}}
 #editor.dragging #editor-region{overflow:hidden}
 #editor-tabs{flex:0 0 auto; display:flex; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
+#editor:has(#editor-areas:not([hidden])) #editor-tabs{z-index:5}
 #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5850; font-weight:600;
   border-bottom:3px solid transparent; margin-bottom:-1px}
 #scale-sheet #editor-tabs .edtab{background:none; color:#5E5850; border-color:transparent}
@@ -1067,6 +1070,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr); grid-template-rows:auto 1fr auto auto auto auto auto auto 1fr;
     grid-template-areas:"head head" "pan ." "pan line" "pan status" "pan counts" "pan tabs" "pan panel" "pan bar" "pan ."}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
+  #editor-status[data-conflict]{position:static}
   #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:contents} #editor-tabs{grid-area:tabs; position:static} #editor-panels{grid-area:panel} #editor .editor-toolbar{grid-area:bar}
 }
 /* Phone landscape (S4): a short, wide screen takes the two-column grid so the pan never collapses; the pan column
@@ -1077,6 +1081,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar"}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
+  #editor-status[data-conflict]{position:static}
   #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:flex; grid-area:region; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto} #editor .editor-toolbar{grid-area:bar}
 }
 /* Keyboard-open short portrait (R5/R6): while Name has focus the 120px floor gives way so Name and the toolbar stay in view. */
@@ -14901,7 +14906,7 @@ function editorWire() {
   const del = editorEl("editor-delete");
   if (del) del.onclick = editorMenuPick(editorDeleteTap);
   editorEl("editor").addEventListener("pointerdown", (e) => {
-    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target)) editorSetAreas(false);
+    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target) && !editorEl("editor-tabs").contains(e.target)) editorSetAreas(false);
     const menu = editorEl("editor-menu");
     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();
