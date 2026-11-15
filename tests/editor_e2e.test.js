@@ -4406,7 +4406,8 @@ function run() {
       assert.strictEqual(await sheetHidden(), false, "the editor stays open");
       assert.strictEqual(await dialogOpen(), false);
       assert.strictEqual(await savedCount(), before, "nothing saved");
-      assert.match(await b.eval(`return document.getElementById("editor-status").textContent;`), /Place the ding/);
+      assert.match(await b.eval(`return editorSession.error;`), /^Place the ding/, "the session carries the reason as an error");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").getAttribute("data-kind");`), "error");
     });
   });
 
