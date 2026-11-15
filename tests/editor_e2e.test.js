@@ -4806,6 +4806,8 @@ function run() {
       await armedDelete();
       await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
       assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
+      assert.deepStrictEqual(await b.eval(`const d = document.getElementById("editor-delete"); return [d.classList.contains("armed"), d.textContent === t("editor.menu.delete"), editorSession.delArmed];`),
+        [false, true, false], "the failed Delete leaves no armed button on screen");
       assert.strictEqual(await b.eval(`return editingBase.selection.id;`), xId, "the sheet is not rebound to the fallback");
       const countBefore = await savedCount();
       await armedDelete();
@@ -4911,7 +4913,7 @@ function run() {
     }
 
     for (const [w, h] of [[360, 640], [375, 667], [320, 568], [667, 375]]) {
-      test(`ELA counts row${w}x${h}: with the hint open the Layout tab centre hits itself`, async () => {
+      test(`ELA counts row ${w}x${h}: with the hint open the Layout tab centre hits itself`, async () => {
         await fresh(w, h);
         await openAdd();
         await typeLine(NEO);
@@ -5200,6 +5202,79 @@ function run() {
       assert.strictEqual(await sheetHidden(), false, "the editor stays open on the moved draft");
       assert.strictEqual(await b.eval(`return editorSession.conflict;`), null);
       assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-separate");`), false);
+    });
+  });
+
+  describe("editor test gaps CL-U", () => {
+    const saveOne = async (w = 375, h = 667) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+    const remoteEdit = (name) => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+      built = buildGenerated(row.record.s, { ...row.record.o, name: ${JSON.stringify(name)} });
+      return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+        candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
+    const chipLabel = () => b.eval(`return document.querySelector("#decks .chip.on").textContent;`);
+
+    test("CLU4 a missed broadcast then Save shows the conflict, keeps the draft, and Discard lands on the real winner", async () => {
+      await saveOne();
+      const original = await names();
+      await rename("LOSING LOCAL DRAFT");
+      await b.eval(`window.__stale = { state: savedClone(savedState), entries: [...savedEntries] }; return true;`);
+      assert.strictEqual(await remoteEdit("WINNING PEER"), true, "the peer edit committed");
+      await b.eval(`const st = window.__stale; savedState = st.state; savedEntries.clear(); for (const [k, v] of st.entries) savedEntries.set(k, v); buildChips(); return true;`);
+      assert.deepStrictEqual(await names(), original, "this tab never heard the peer: it still holds the old row");
+      assert.doesNotMatch(await chipLabel(), /WINNING PEER/);
+      await b.click("#editor-save");
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflict");`), true, "the changed-conflict text shows");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "LOSING LOCAL DRAFT", "the loser's draft stays in the field");
+      assert.strictEqual(await sheetHidden(), false, "the page stays open");
+      assert.deepStrictEqual(await names(), ["WINNING PEER"], "the failed Save reconciled the winner and wrote nothing");
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true);
+      await b.click("#editor-dlg-discard");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "Discard to close the page" });
+      assert.match(await chipLabel(), /WINNING PEER/, "the strip shows the acknowledged winner");
+    });
+
+    test("CLU5 r3 an uncommitted rename guards unloading", async () => {
+      await saveOne();
+      const probe = () => b.eval(`const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented;`);
+      assert.strictEqual(await probe(), false, "a clean editor leaves freely");
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "UNCOMMITTED"; n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorSession.naming;`), true, "the name field is mid-edit and uncommitted");
+      assert.strictEqual(await probe(), true, "a reload would lose the typed name, so the browser must ask");
+    });
+
+    test("CLU5 r4 a remote edit rebinding an unarmed clean editor shows no rebound message", async () => {
+      await saveOne();
+      assert.strictEqual(await b.eval(`return !editorSession.delArmed;`), true);
+      assert.strictEqual(await remoteEdit("REMOTE RENAMED"), true);
+      await b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
+      await b.waitFor(`document.getElementById("editor-name").value === "REMOTE RENAMED"`, { label: "the editor to rebind to the remote edit" });
+      const r = await b.eval(`return { status: document.getElementById("editor-status").textContent, say: editorSession.say };`);
+      assert.deepStrictEqual(r, { status: "", say: "" }, "nothing was armed, so nothing is explained: " + JSON.stringify(r));
+    });
+
+    test("CLU5 r5 Cancel appears when a note is held after the conflict banner is already up", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.eval(`editorShowConflict(); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-cancel");`), false, "no hold yet");
+      await b.eval(`editorHold(1); return true;`);
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !!document.getElementById("editor-cancel") && !!document.getElementById("editor-conflict-separate");`), true,
+        "the banner is kept and the status row grows a Cancel for the held note");
     });
   });
 
