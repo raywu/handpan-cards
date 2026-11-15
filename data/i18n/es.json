@@ -518,5 +518,9 @@
   "backup.file_newer": {
     "one": "1 escala de una versión más reciente no está en este archivo. Sigue guardada en este navegador.",
     "other": "{n} escalas de una versión más reciente no están en este archivo. Siguen guardadas en este navegador."
+  },
+  "backup.file_newer_none": {
+    "one": "1 escala de una versión más reciente no se puede respaldar aquí. Sigue guardada en este navegador.",
+    "other": "{n} escalas de una versión más reciente no se pueden respaldar aquí. Siguen guardadas en este navegador."
   }
 }
