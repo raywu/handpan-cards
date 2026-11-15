@@ -1,0 +1,15 @@
+# kills: Save as separate keeps the focus on the same button when the conflict changes to deleted
+# suite: node --test --test-name-pattern Save.as.separate.keeps.the.focus.on.the.same.button tests/editor_e2e.test.js
+# fault: The conflict recovery rebuilds the Save as separate button on every render, dropping focus.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13787,7 +13787,7 @@ function editorRenderBody() {
+   nameBox.placeholder = editorAutoName(m);
+   if (s.error) line.setAttribute("aria-invalid", "true"); else line.removeAttribute("aria-invalid");
+   const status = editorEl("editor-status");
+-  const keptSeparate = !s.error && s.conflict && status.querySelector("#editor-conflict-separate");
++  const keptSeparate = null;
+   if (!s.error) s.lastError = "";
+   if (!keptSeparate) {
+     status.textContent = "";
