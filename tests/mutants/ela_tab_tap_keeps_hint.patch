@@ -1,15 +1,15 @@
 # kills: counts: both hint lines render under the counts on both tabs
 # suite: node --test --test-name-pattern counts.*both.hint.lines tests/editor_e2e.test.js
-# fault: A tap on a tab closes the open hint card, so the hint no longer follows the tab switch.
+# fault: Switching tabs closes the open hint card, so the hint no longer follows the tab switch.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14904,7 +14904,7 @@
-   const del = editorEl("editor-delete");
-   if (del) del.onclick = editorMenuPick(editorDeleteTap);
-   editorEl("editor").addEventListener("pointerdown", (e) => {
--    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target) && !editorEl("editor-tabs").contains(e.target)) editorSetAreas(false);
-+    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target)) editorSetAreas(false);
-     const menu = editorEl("editor-menu");
-     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
-     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();
+@@ -14104,7 +14104,7 @@
+   s.tab = tab;
+   editorRenderTabs();
+   if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
+-  editorPlaceAreas();
++  editorSetAreas(false);
+   if (focus) editorEl("editor-tab-" + tab).focus();
+   return true;
+ }

@@ -3204,7 +3204,8 @@ function run() {
       assert.ok((await hint()).every((x) => x.endsWith(":false")), "collapsed until the Hint button is pressed");
       await b.click("#editor-hint-toggle");
       assert.deepStrictEqual(await hint(), want);
-      await b.click("#editor-tab-layout");
+      await b.eval(`return editorSetTab("layout");`);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-panel-layout").hidden;`), false, "the Layout tab is showing");
       assert.deepStrictEqual(await hint(), want);
       assert.strictEqual(await b.eval(`return !document.getElementById("editor-panels").contains(document.getElementById("editor-hint"));`), true, "the hint sits outside both panels");
     });
