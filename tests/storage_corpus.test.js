@@ -649,7 +649,7 @@ const rgRaw = async (app) => app.getAsync(`(async () => {
   const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
   return new Promise((res, rej) => { const q = db.transaction("collections").objectStore("collections").get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
 })()`);
-const rgBytes = (raw) => JSON.parse(raw).entries.filter((e) => typeof e.record.v === "number" && e.record.v > 5).map((e) => JSON.stringify(e));
+const rgBytes = (raw) => JSON.parse(raw).entries.filter((e) => typeof e.record.v === "number" && e.record.v > 6).map((e) => JSON.stringify(e));
 
 // Saves every wanted row the normal way, then rewrites the record version of the
 // paired ones in place: the envelope shape (ids, ordinals) stays valid. A number
