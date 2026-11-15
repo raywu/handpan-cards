@@ -1,0 +1,15 @@
+# kills: RG: record 7 and 8 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit
+# suite: node --test --test-name-pattern ^RG..record.7.and.8.rows.seeded tests/storage_corpus.test.js
+# why: A DELETE that keeps only rows with a visible view deletes newer rows the app cannot show.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11823,7 +11823,7 @@ function applySavedCommand(staged, command, candidate) {
+     if (!row || !views.has(row.instanceId) || row.revision !== command.expectedRevision) return conflict();
+     const heldSlot = Object.keys(current.slots).find(seed => current.slots[seed] === row.instanceId);
+     if (heldSlot && !savedSlotProof(command, current)) return conflict();
+-    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId); views.delete(row.instanceId);
++    next.entries = next.entries.filter(entry => entry.instanceId !== row.instanceId && views.has(entry.instanceId)); views.delete(row.instanceId);
+     if (heldSlot) {
+       if (!next.hidden.includes(heldSlot)) next.hidden.push(heldSlot);
+       const survivors = next.entries.filter(entry => views.has(entry.instanceId) && entry.record && entry.record.o && entry.record.o.replaces === heldSlot);

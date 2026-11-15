@@ -1410,6 +1410,17 @@ map format: rev 2, and served DEV produced rev 1 maps (flag on since #752), so r
 (owner 2026-11-03; rev 3 was owner OD1, 2026-11-01). A geometry revision never changes the map format, so a rev
 2 map draws on fixture rev 4 unchanged; v1, v2 and v3 are superseded and kept.
 
+### 18.8 Newer records
+
+A stored record whose version is above the app's newest (`newestRecordVersion`) is
+kept byte-for-byte: no command rewrites or deletes it, it is never shown or
+offered as a scale, and `#saved-status` counts it (`savedNewerCount`, the `saved.newer`
+notice). The backup file leaves it out and says so (`backup.file_newer`); the move to
+the new host carries it as an opaque row. A record version above the app's never owns
+a seeded slot: rule I1, generalised to every future version, so a newer record never
+makes the library protected. A non-number `v` is a bad row, not a newer one, and is not
+counted.
+
 ## 19. PDF tier cards (`HPE.sequence.tierCards`, `HPE.pdfcards.build` `opts.cards`)
 
 `HPE.sequence.tierCards(deck)` returns `{ easy: [i...], easyMedium: [i...] }`, sorted
