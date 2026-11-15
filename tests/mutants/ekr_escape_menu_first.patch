@@ -1,0 +1,17 @@
+# kills: FA-06 360x640 after system Back with the menu open the first Escape leaves the Save-changes dialog and focus returns to Back
+# suite: node --test --test-name-pattern ^FA-06.360x640 tests/editor_e2e.test.js
+# A mutant: the menu is closed before the Back dialog on Escape.
+#
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14550,8 +14550,8 @@ function editorEscape() {
+   const s = editorSession;
+   if (!s) { closeScaleSheet(); return; }
+   if (editorDrag && editorDrag.live) editorDragEnd(null);
+-  else if (s.dialog) editorShowDialog(false);
+   else if (s.menu) editorCloseMenu(true);
++  else if (s.dialog) editorShowDialog(false);
+   else if (s.hint) { editorSetAreas(false); editorEl("editor-hint-toggle").focus(); }
+   else if (s.naming) editorCancelName();
+   else if (s.editing) editorCancelEdit();

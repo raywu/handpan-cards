@@ -1,0 +1,16 @@
+# kills: FA-07 with the hint open Tab moves focus on every step and never to a hidden control
+# suite: node --test --test-name-pattern ^FA-07.with.the.hint.open tests/editor_e2e.test.js
+# A mutant: cycleTabStops keeps visibility-hidden stops.
+#
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15527,7 +15527,7 @@ const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 36, GHOST_RETUR
+ // CSS, has no client rects), never of a hand-kept mode table.
+ const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
+ function cycleTabStops(all, e) {
+-  const stops = all.filter(el => getComputedStyle(el).visibility !== "hidden");
++  const stops = all;
+   if (!stops.length) return;
+   const i = stops.indexOf(document.activeElement);
+   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
