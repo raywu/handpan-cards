@@ -1,5 +1,5 @@
-# kills: U2a-X4: pinning a bottom note on a ring with a custom seat order first pins every note where it sits, as the sheet does
-# suite: node --test --test-name-pattern ^U2a-X4:.pinning.a.bottom.note.on.a.ring.with.a.custom.seat.order.first.pins.every.note.where.it.sits..as.the.sheet.does$ tests/editor_model.test.js
+# kills: U2a-X4: pinning a bottom note on a ring with a custom seat order matches the recorded sheet output: every note is pinned where it sits first
+# suite: node --test --test-name-pattern ^U2a-X4:.pinning.a.bottom.note.on.a.ring.with.a.custom.seat.order.matches.the.recorded.sheet.output..every.note.is.pinned.where.it.sits.first$ tests/editor_model.test.js
 # fault: Pinning on a seated ring pins only the one note and keeps the seat order.
 diff --git a/index.html b/index.html
 --- a/index.html

@@ -1,0 +1,16 @@
+# kills: drag ux E2: the panel returns after a drop, a pointercancel, Escape and a drop off the pan, and Undo is then usable
+# suite: node --test --test-name-pattern ^drag.ux.E2 tests/editor_e2e.test.js
+# fault: editorEscape no longer ends a live drag, so Escape leaves the ghost and the hidden panel in place.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14549,8 +14549,7 @@ function editorBack() {
+ function editorEscape() {
+   const s = editorSession;
+   if (!s) { closeScaleSheet(); return; }
+-  if (editorDrag && editorDrag.live) editorDragEnd(null);
+-  else if (s.menu) editorCloseMenu(true);
++  if (s.menu) editorCloseMenu(true);
+   else if (s.dialog) editorShowDialog(false);
+   else if (s.hint) { editorSetAreas(false); editorEl("editor-hint-toggle").focus(); }
+   else if (s.naming) editorCancelName();

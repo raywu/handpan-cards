@@ -506,35 +506,39 @@ test("U2a-H3: an action that changes nothing adds no Undo step", () => {
   assert.strictEqual(r.real, 1, "a real change still adds its step");
 });
 
-// The retired sheet's own functions were the oracle: each expected value below is what its
-// swapSeats and slideNote returned for the same scale and options, recorded before it was removed.
+// The retired sheet's own functions were the oracle. Every literal in X1-X5 below was recorded by
+// running origin/main's (a4ecfc2e) swapSeats and slideNote on the same scale and options with the
+// sheet's globals set, ok flag included; the live oracle is gone with the sheet, the literals stay.
 const modelRun = (app, text, opts, call) => run(app, `${LOAD(text, opts)}
+  const before = JSON.stringify(m0);
   const r = ${call};
-  if (!r.ok) return { ok: false, code: r.code, kept: JSON.stringify(m0) === JSON.stringify(m0) };
+  if (!r.ok) return { ok: false, code: r.code, kept: JSON.stringify(m0) === before };
   const o = r.value.options;
   return { ok: true, angles: (o.angles && o.angles.bottom) || null, seats: o.seats || null,
     inner: (o.angles && o.angles.inner) || null, link: editorExport(r.value).code,
-    solved: editorExport(r.value).solve.ok, noop: JSON.stringify(r.value) === JSON.stringify(m0) };`);
+    solved: editorExport(r.value).solve.ok, noop: JSON.stringify(r.value) === before, kept: JSON.stringify(m0) === before };`);
 const BOTTOM3 = "[A2] [B2] [C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
 
-test("U2a-X1: exchanging two bottom notes trades their solved angles exactly as the sheet does, pinning both", () => {
+test("U2a-X1: exchanging two bottom notes matches the recorded sheet output, pinning both", () => {
   const app = appBoot();
   const cases = [
-    { opts: { angles: { bottom: [null, 240, null] } }, i: 0, j: 1, expect: [240, 330, null] },
-    { opts: { angles: { bottom: [null, null, 240] } }, i: 0, j: 1, expect: [210, 330, 240] },
-    { opts: { angles: { bottom: [60, 240, null] } }, i: 1, j: 0, expect: [240, 60, null] },
+    { opts: { angles: { bottom: [null, 240, null] } }, i: 0, j: 1, recorded: { ok: true, angles: [240, 330, null], seats: null } },
+    { opts: { angles: { bottom: [null, null, 240] } }, i: 0, j: 1, recorded: { ok: true, angles: [210, 330, 240], seats: null } },
+    { opts: { angles: { bottom: [60, 240, null] } }, i: 1, j: 0, recorded: { ok: true, angles: [240, 60, null], seats: null } },
   ];
   for (const c of cases) {
     const label = js(c.opts) + " " + c.i + "," + c.j;
-    const want = { angles: c.expect, seats: null };
+    const want = c.recorded;
+    assert.strictEqual(want.ok, true, label + " the sheet accepted it");
     const viaExchange = modelRun(app, BOTTOM3, c.opts, `editorExchangeAngles(m0, "bottom", ${c.i}, ${c.j})`);
     const viaSwap = modelRun(app, BOTTOM3, c.opts, `editorSwapSeats(m0, "bottom", ${c.i}, ${c.j})`);
     for (const got of [viaExchange, viaSwap]) {
-      assert.strictEqual(got.ok, true, label);
+      assert.strictEqual(got.ok, want.ok, label);
       assert.deepStrictEqual(got.angles, want.angles, label + " angles");
       assert.deepStrictEqual(got.seats, want.seats, label + " seats");
       assert.strictEqual(got.solved, true, label);
       assert.strictEqual(got.noop, false, label + " the exchange changed the model");
+      assert.strictEqual(got.kept, true, label + " the input model is untouched");
     }
     assert.strictEqual(viaExchange.link, viaSwap.link, label + " one link");
   }
@@ -542,33 +546,38 @@ test("U2a-X1: exchanging two bottom notes trades their solved angles exactly as 
   assert.ok(first.link.includes("at-240,330,"), "the link carries both traded angles: " + first.link);
 });
 
-test("U2a-X2: an exchange the 5 degree steps cannot hold is refused as the sheet refuses it", () => {
+test("U2a-X2: an exchange the 5 degree steps cannot hold is refused and moves nothing, as the recorded sheet output is", () => {
   const app = appBoot();
   const n = 23;
   const notes = Array.from({ length: n }, (_, k) => `[${"CDEFGAB"[k % 7]}${1 + Math.floor(k / 7)}]`).join(" ");
   const text = notes + " (A3) C4 D4 E4 F4";
   const opts = { angles: { bottom: Array.from({ length: n }, (_, k) => (k === 22 ? 90 : null)) } };
+  const recorded = { ok: false, angles: opts.angles.bottom, seats: null };
   for (const [a, b] of [[0, 2], [2, 0]]) {
+    assert.strictEqual(recorded.ok, false, "the sheet refuses " + a + "," + b);
     for (const fn of ["editorExchangeAngles", "editorSwapSeats"]) {
       const got = modelRun(app, text, opts, `${fn}(m0, "bottom", ${a}, ${b})`);
-      assert.strictEqual(got.ok, false, fn + " " + a + "," + b);
+      assert.strictEqual(got.ok, recorded.ok, fn + " " + a + "," + b);
+      assert.strictEqual(got.kept, true, fn + " " + a + "," + b + " moves nothing");
+      const after = run(app, `${LOAD(text, opts)} ${fn}(m0, "bottom", ${a}, ${b}); return m0.options.angles.bottom;`);
+      assert.deepStrictEqual(after, recorded.angles, fn + " " + a + "," + b + " the pins stay where they were");
     }
   }
 });
 
-test("U2a-X3: a seat swap follows the sheet: seats without bottom pins, the angle trade with them", () => {
+test("U2a-X3: a seat swap matches the recorded sheet output: seats without bottom pins, the angle trade with them", () => {
   const app = appBoot();
   const cases = [
-    { text: BASE, opts: {}, ring: "rim", i: 0, j: 3, seats: { rim: [3, 1, 2, 0, 4, 5, 6, 7] } },
-    { text: WITH_BOTTOM, opts: { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, ring: "rim", i: 1, j: 2, seats: { rim: [1, 2, 0, 3, 4, 5, 6, 7] } },
-    { text: BOTTOM3, opts: {}, ring: "bottom", i: 0, j: 2, seats: { bottom: [2, 1, 0] } },
-    { text: BOTTOM3, opts: { seats: { bottom: [1, 0, 2] } }, ring: "bottom", i: 0, j: 1, seats: null },
+    { text: BASE, opts: {}, ring: "rim", i: 0, j: 3, recorded: { ok: true, seats: { rim: [3, 1, 2, 0, 4, 5, 6, 7] }, angles: null } },
+    { text: WITH_BOTTOM, opts: { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, ring: "rim", i: 1, j: 2, recorded: { ok: true, seats: { rim: [1, 2, 0, 3, 4, 5, 6, 7] }, angles: null } },
+    { text: BOTTOM3, opts: {}, ring: "bottom", i: 0, j: 2, recorded: { ok: true, seats: { bottom: [2, 1, 0] }, angles: null } },
+    { text: BOTTOM3, opts: { seats: { bottom: [1, 0, 2] } }, ring: "bottom", i: 0, j: 1, recorded: { ok: true, seats: null, angles: null } },
   ];
   for (const c of cases) {
     const label = c.ring + " " + c.i + "," + c.j + " " + js(c.opts);
-    const want = { seats: c.seats, angles: null };
+    const want = c.recorded;
     const got = modelRun(app, c.text, c.opts, `editorSwapSeats(m0, ${js(c.ring)}, ${c.i}, ${c.j})`);
-    assert.strictEqual(got.ok, true, label);
+    assert.strictEqual(got.ok, want.ok, label);
     assert.deepStrictEqual(got.seats, want.seats, label + " seats");
     assert.deepStrictEqual(got.angles, want.angles, label + " angles");
   }
@@ -577,28 +586,34 @@ test("U2a-X3: a seat swap follows the sheet: seats without bottom pins, the angl
   assert.strictEqual(cyclops.angles, null);
 });
 
-test("U2a-X4: pinning a bottom note on a ring with a custom seat order first pins every note where it sits, as the sheet does", () => {
+test("U2a-X4: pinning a bottom note on a ring with a custom seat order matches the recorded sheet output: every note is pinned where it sits first", () => {
   const app = appBoot();
   const seated = { seats: { bottom: [1, 0, 2] } };
-  const want = { angles: [210, 330, 95] };
+  const want = { ok: true, angles: [210, 330, 95], seats: null };
   const got = modelRun(app, BOTTOM3, seated, 'editorSetAngle(m0, "bottom", 2, 95)');
-  assert.strictEqual(got.ok, true);
-  assert.deepStrictEqual(got.angles, want.angles);
-  assert.strictEqual(got.seats, null);
+  assert.strictEqual(got.ok, want.ok);
+  assert.deepStrictEqual(got.angles, want.angles, "the sheet's own result");
+  assert.strictEqual(got.seats, want.seats, "the seat order is folded into the angles");
   assert.strictEqual(got.solved, true);
+  const plainWant = { ok: true, angles: [null, 300, null], seats: null };
   const plain3 = modelRun(app, BOTTOM3, {}, 'editorSetAngle(m0, "bottom", 1, 300)');
-  assert.deepStrictEqual(plain3.angles, [null, 300, null]);
+  assert.strictEqual(plain3.ok, plainWant.ok);
+  assert.deepStrictEqual(plain3.angles, plainWant.angles, "no seat order: only the one note is pinned");
+  assert.strictEqual(plain3.seats, plainWant.seats);
 });
 
-test("U2a-X5: pinning a note where it already sits changes nothing unless a seat order is being folded", () => {
+test("U2a-X5: pinning a note where it already sits changes nothing, as the recorded sheet output does, unless a seat order is being folded", () => {
   const app = appBoot();
   const solvedAt = run(app, `${LOAD(BOTTOM3)}
     const s = HPE.layout.solve({ fields: m0.fields, options: m0.options }).value;
     return ringIds(s.fields, "bottom").map((id) => s.fields[id][4]);`);
+  assert.deepStrictEqual(solvedAt, [330, 210, 90], "the solved angles the sheet's slideNote was recorded against");
+  const want = { ok: true, angles: null, seats: null };
   const got = modelRun(app, BOTTOM3, {}, `editorSetAngle(m0, "bottom", 1, ${solvedAt[1]})`);
-  assert.strictEqual(got.ok, true);
+  assert.strictEqual(got.ok, want.ok);
   assert.strictEqual(got.noop, true);
-  assert.strictEqual(got.angles, null);
+  assert.strictEqual(got.angles, want.angles, "the sheet pins nothing");
+  assert.strictEqual(got.seats, want.seats);
 });
 
 test("U2a-X6: the inner ring folds its seat order into pins the same way", () => {

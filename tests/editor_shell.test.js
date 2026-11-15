@@ -1047,7 +1047,8 @@ describe("U2e-2 palette, mirror and anchor", () => {
     assert.strictEqual(apply(a, `editorRemove(__m, "bottom", 0)`).ok, true);
     assert.deepStrictEqual(flags(), { m: true, b: true });
     assert.strictEqual(a.get("editorExport(__m).solve.ok"), true);
-    assert.strictEqual(plain(a.get("editorExport(__m).record.o")).mirror, true);
+    const rec = plain(a.get("editorExport(__m).record.o"));
+    assert.deepStrictEqual([rec.mirror, rec.mirrorBottom], [true, true]);
   });
 });
 
