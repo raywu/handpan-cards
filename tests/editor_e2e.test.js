@@ -4155,8 +4155,7 @@ function run() {
       const o = await geo();
       assert.ok(o.xVis && o.x, "the overlay has an x button");
       assert.ok(!o.btVis || o.bt.l >= o.a.r || o.bt.r <= o.a.l || o.bt.b <= o.a.t || o.bt.t >= o.a.b, "the info button is not shown over the overlay");
-      const ceil = Math.max(o.a.t, o.tabs.b);
-      assert.ok(o.x.r <= o.a.r + 0.5 && o.x.t >= ceil - 0.5 && o.x.r >= o.a.r - 24 && o.x.t <= ceil + 24, "x sits at the overlay top right, below the tab strip: " + JSON.stringify([o.x, o.a, o.tabs]));
+      assert.ok(o.x.r <= o.a.r + 0.5 && o.x.t >= o.a.t - 0.5 && o.x.r >= o.a.r - 24 && o.x.t <= o.a.t + 12, "x sits at the overlay top right: " + JSON.stringify([o.x, o.a, o.tabs]));
       assert.ok(o.texts.length > 0);
       for (const t of o.texts) {
         assert.ok(!hit(t, o.x), "no overlay text under the x: " + JSON.stringify([t, o.x]));
@@ -4928,21 +4927,6 @@ function run() {
       });
     }
 
-    for (const [w, h] of [[360, 640], [375, 667], [320, 568], [667, 375]]) {
-      test(`ELA counts row ${w}x${h}: with the hint open the Layout tab centre hits itself`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await b.click("#editor-hint-toggle");
-        await pause(250);
-        assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
-        const r = await hitsSelf("editor-tab-layout");
-        assert.ok(r.ok, "counts row stack: " + JSON.stringify(r));
-        const gap = await b.eval(`return document.getElementById("editor-counts").getBoundingClientRect().top - document.getElementById("editor-tabs").getBoundingClientRect().bottom;`);
-        assert.ok(gap >= 0, "the counts row starts below the tab strip: " + gap);
-      });
-    }
-
     const TITLE_CASES = [[320, 568, "en"], [320, 568, "de"], [390, 844, "de"], [390, 844, "es"], [390, 844, "fr"], [390, 844, "it"]];
     for (const [w, h, lang] of TITLE_CASES) {
       for (const mode of ["add", "edit"]) {
@@ -5027,7 +5011,7 @@ function run() {
           try {
             const el = document.activeElement, r = el.getBoundingClientRect();
             const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-            return { id: el.id || el.className || el.tagName, ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
+            return { id: el.id || String(el.className.baseVal ?? el.className) || el.tagName, ok: !!hit && (el.contains(hit) || (!!el.ownerSVGElement && el.parentNode.contains(hit))), hit: hit && (hit.id || String(hit.className.baseVal ?? hit.className)) };
           } finally { ${dropInert} }`;
         for (const shift of [false, true]) {
           for (let i = 1; i <= 8; i++) {
@@ -5055,16 +5039,37 @@ function run() {
       assert.ok(closed.includes("editor-name"));
     });
 
-    for (const [w, h] of [[360, 640], [375, 667], [667, 375]]) {
-      test(`EHM close clears tab ${w}x${h}: with the hint open the Layout tab is hit at five points`, async () => {
+    for (const [w, h] of [[390, 844], [375, 667], [360, 640], [320, 568], [844, 390]]) {
+      test(`EHC hint card ${w}x${h}: the open card covers the tabs and carries the close button at its top right`, async () => {
         await fresh(w, h);
         await openAdd();
         await typeLine(NEO);
         await b.click("#editor-hint-toggle");
         await pause(250);
         assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
-        const rows = await samplePoints("#editor-tab-layout");
-        assert.deepStrictEqual(rows.map((r) => r.miss), [0], "Layout tab covered: " + JSON.stringify(rows));
+        const r = await b.eval(`${liftInert}
+          try {
+            const areas = document.getElementById("editor-areas"), card = areas.getBoundingClientRect();
+            const tabs = [...document.querySelectorAll("#editor-tabs .edtab")].map((el) => {
+              const q = el.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+              return { id: el.id, covered: !!hit && areas.contains(hit) };
+            });
+            const cb = document.getElementById("editor-hint-close"), c = cb.getBoundingClientRect();
+            const hit = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
+            const strip = document.getElementById("editor-tabs").getBoundingClientRect();
+            return { tabs, closeHit: hit === cb, inside: c.left >= card.left - 1 && c.right <= card.right + 1 && c.top >= card.top - 1 && c.bottom <= card.bottom + 1,
+              closeTop: c.top - card.top, cardTop: card.top, stripTop: strip.top,
+              countsTop: document.getElementById("editor-counts").getBoundingClientRect().top - card.top,
+              stops: editorTabStops().map((e) => e.id) };
+          } finally { ${dropInert} }`);
+        assert.ok(r.tabs.length >= 2 && r.tabs.every((t) => t.covered), "tab buttons covered by the card: " + JSON.stringify(r.tabs));
+        assert.ok(r.closeHit, "the close button is hit at its centre: " + JSON.stringify(r));
+        assert.ok(r.inside, "the close button sits inside the card: " + JSON.stringify(r));
+        assert.ok(r.closeTop >= -1 && r.closeTop <= 12, "the close button is within 12px of the card top: " + r.closeTop);
+        assert.ok(r.cardTop <= r.stripTop + .5, "the card top is at or above the tab strip: " + JSON.stringify(r));
+        assert.ok(r.countsTop >= 0 && r.countsTop <= 24, "the counts row sits at the card top: " + r.countsTop);
+        assert.ok(!r.stops.some((id) => id === "editor-tab-scale" || id === "editor-tab-layout"), "Tab skips the covered tabs: " + JSON.stringify(r.stops));
+        assert.ok(r.stops.includes("editor-hint-close"), "the close button stays a Tab stop");
       });
     }
 
