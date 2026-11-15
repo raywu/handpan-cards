@@ -1,6 +1,6 @@
-# kills: QA2 hint 390x844: the info button shares the name field's right edge and sits inside the strip; the open overlay is clear of the button and has an x at its top right that closes it
-# suite: node --test --test-name-pattern QA2.hint tests/editor_e2e.test.js
-# fault: The info circle sits inside the button box instead of flush with the name field edge.
+# kills: QA3 hint row 390x844: the info button shares the name input's row, centred and flush right; on Layout it clears every control
+# suite: node --test --test-name-pattern QA3.hint.row tests/editor_e2e.test.js
+# fault: The info circle is pushed to the button's right edge instead of centred.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -8,8 +8,8 @@ diff --git a/index.html b/index.html
  #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
  @media (max-width:420px){#editor-status{min-height:48px}}
  #editor-hint-toggle{position:absolute; right:var(--sp-3); z-index:5; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
--  display:flex; align-items:center; justify-content:flex-end; background:none; border:0; box-shadow:none; color:#5E5850}
-+  display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
+-  display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
++  display:flex; align-items:center; justify-content:flex-end; background:none; border:0; box-shadow:none; color:#5E5850}
  #editor-hint-toggle[hidden], #editor-hint-close[hidden]{display:none}
  #editor-hint-close{position:absolute; z-index:6; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
    display:flex; align-items:center; justify-content:center; background:none; border-color:transparent; box-shadow:none; color:#242424; font:500 28px/1 "Nunito Sans"}

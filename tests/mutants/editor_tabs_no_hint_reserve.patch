@@ -1,15 +1,15 @@
-# kills: P0 tabs: a tap near the Layout tab's right edge lands on the tab, not the Hint info button (the strip reserves 44px)
-# suite: node --test --test-name-pattern ^P0.tabs..a.tap.near.the.Layout.tab.s.right.edge tests/editor_e2e.test.js
-# fault: The tab strip stops reserving 44px for the Hint info button, so the Layout tab runs underneath it.
+# kills: QA3 hint row 390x844: the info button shares the name input's row, centred and flush right; on Layout it clears every control
+# suite: node --test --test-name-pattern QA3.hint.row tests/editor_e2e.test.js
+# fault: The info button's right edge follows the name input instead of the name row.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -942,7 +942,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- #editor-region::-webkit-scrollbar{display:none}
- @media (max-height:420px){#editor-region{margin-top:0}}
- #editor.dragging #editor-region{overflow:hidden}
--#editor-tabs{flex:0 0 auto; display:flex; padding-right:44px; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
-+#editor-tabs{flex:0 0 auto; display:flex; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
- #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5850; font-weight:600;
-   border-bottom:3px solid transparent; margin-bottom:-1px}
- #scale-sheet #editor-tabs .edtab{background:none; color:#5E5850; border-color:transparent}
+@@ -14007,7 +14007,7 @@ function editorPlaceAreas() {
+   const strip = editorEl("editor-tabs").getBoundingClientRect(), ebox = ed.getBoundingClientRect(), pr = editorEl("editor-panels").getBoundingClientRect();
+   const nm = editorEl("editor-name").getBoundingClientRect(), want = editorSession && editorSession.tab === "scale" ? nm.top + (nm.height - 44) / 2 : pr.top;
+   tog.style.top = Math.max(want, strip.bottom) - ebox.top - ed.clientTop + "px";
+-  tog.style.right = ebox.left + ed.clientLeft + ed.clientWidth - pr.right + "px";
++  tog.style.right = ebox.left + ed.clientLeft + ed.clientWidth - nm.right + "px";
+   if (areas.hidden) return;
+   const parts = getComputedStyle(rg).display === "contents" ? [editorEl("editor-tabs"), editorEl("editor-panels")] : [rg];
+   const rs = parts.map((e) => e.getBoundingClientRect()), box = ebox;

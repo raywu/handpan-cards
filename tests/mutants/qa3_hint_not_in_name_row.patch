@@ -1,0 +1,15 @@
+# kills: QA3 hint row 390x844: the info button shares the name input's row, centred and flush right; on Layout it clears every control
+# suite: node --test --test-name-pattern QA3.hint.row tests/editor_e2e.test.js
+# fault: The info button is placed at the panels top instead of beside the name input.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14005,7 +14005,7 @@ function editorPlaceAreas() {
+   const areas = editorEl("editor-areas"), rg = editorEl("editor-region"), ed = editorEl("editor"), tog = editorEl("editor-hint-toggle");
+   if (!areas || !rg || !tog) return;
+   const strip = editorEl("editor-tabs").getBoundingClientRect(), ebox = ed.getBoundingClientRect(), pr = editorEl("editor-panels").getBoundingClientRect();
+-  const nm = editorEl("editor-name").getBoundingClientRect(), want = editorSession && editorSession.tab === "scale" ? nm.top + (nm.height - 44) / 2 : pr.top;
++  const nm = editorEl("editor-name").getBoundingClientRect(), want = pr.top;
+   tog.style.top = Math.max(want, strip.bottom) - ebox.top - ed.clientTop + "px";
+   tog.style.right = ebox.left + ed.clientLeft + ed.clientWidth - pr.right + "px";
+   if (areas.hidden) return;
