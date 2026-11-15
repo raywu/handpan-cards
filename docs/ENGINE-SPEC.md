@@ -1462,6 +1462,16 @@ profile-plus-between links) and `tests/fixtures/share_links_v1/v7.json` and `v8.
 (frozen links encoded at `caaec83b`). All are sha256-pinned in `tests/test_fixture_integrity.py`; a
 change is a new revision, never an in-place edit.
 
+Three release-safety fixtures from the editor RC are pinned the same way:
+`tests/fixtures/shipped_client_a4ecfc2e.html.txt` (main's `index.html` at `a4ecfc2e`, the
+oracle for the "PAU-I" and "SE-I1-4" tests), `tests/fixtures/editor_pan_v1.json` and
+`tests/fixtures/engine_parity_golden_v1.json`. Their sha256 values are in
+`RELEASE_SAFETY_FIXTURE_SHA256` and checked by
+`TestReleaseSafetyFixturePins.test_each_fixture_matches_its_pinned_sha256` in
+`tests/test_fixture_integrity.py`. A sanctioned regeneration of `editor_pan_v1.json`
+(`tools/regen_editor_pan_fixture.js`) must update its pin in
+`RELEASE_SAFETY_FIXTURE_SHA256` in the same commit; the other two are never edited.
+
 Two revisions are counted separately. The map rev (`options.profile.rev`) is the
 map format: rev 2, and served DEV produced rev 1 maps (flag on since #752), so rev
 2 keeps the rev 1 migration of 18.2. The fixture rev
