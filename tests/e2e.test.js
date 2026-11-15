@@ -21141,11 +21141,11 @@ function run() {
       assert.deepStrictEqual(arrived, [...records].sort(byName));
     });
 
-    test("move: a NEEDS_NEWER_APP record in the payload is skipped and the rest import", async () => {
+    test("move: a NEEDS_NEWER_APP record in the payload travels as an opaque row and the rest import", async () => {
       on(); await clearOrigin(NEW());
       await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`, OLD() + "/");
       await b.waitFor(noticeShown, { label: "the notice" });
-      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD"]);
+      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD", undefined]);
     });
 
     test("move: the notice shows the singular and plural counts only after the write commits", async () => {
