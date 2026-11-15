@@ -1,0 +1,15 @@
+# kills: SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy
+# suite: node --test --test-name-pattern ^SV10.E1: tests/e2e.test.js
+# fault: The conflict recovery action loses its minimum touch-target height.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -931,7 +931,7 @@
+ #editor-status .mode{min-height:32px; padding:4px 10px}
+ #editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px}
+ #editor-status[data-conflict] #editor-conflict-msg{flex:1 1 12em; min-width:0}
+-#editor-status #editor-conflict-separate{min-height:44px; white-space:normal; padding:10px 14px}
++#editor-status #editor-conflict-separate{min-height:10px; white-space:normal; padding:10px 14px}
+ #editor .editor-panbox{flex:0 0 auto; min-height:0;
+   height:max(120px, min(max(200px, min(50vh, 100cqw, 520px)), calc(100vh - var(--ed-k))));
+   height:max(120px, min(max(200px, min(50dvh, 100cqw, 520px)), calc(100dvh - var(--ed-k)))); display:flex; align-items:center; justify-content:center; position:relative;

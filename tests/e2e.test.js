@@ -12602,8 +12602,10 @@ function run() {
         await body(primary,peer);
       } finally {if(targetId)await b.send("Target.closeTarget",{targetId},false);}
     }
-    async function openEdit(p) {await p.click("#decks .chip.on");await p.wait("!document.getElementById('scale-sheet').hidden","Edit open");}
-    async function save(p) {await p.click("#scale-generate");await p.wait("document.getElementById('scale-sheet').hidden","saved sheet closed");
+    async function openEdit(p) {await p.click("#decks .chip.on");await p.wait("!document.getElementById('scale-sheet').hidden&&!!document.getElementById('editor-line')","Edit open");}
+    const nameDraft=(p,value,{keepFocus=false}={})=>p.eval(`const n=document.getElementById("editor-name");n.focus();n.value=${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input",{bubbles:true}));${keepFocus?"":"n.blur();"}return true;`);
+    async function save(p) {await p.click("#editor-save");await p.wait("document.getElementById('scale-sheet').hidden","saved sheet closed");
       await p.wait("location.hash===routeFor(deck())","saved canonical route");}
     async function hold(p) {
       await p.eval(`window.__svHeld=false;window.__svRelease=null;
@@ -12662,23 +12664,21 @@ function run() {
     async function conflictSave(p,blocker,lang="en",kind="conflict",live=false) {
       await hold(blocker);
       try {
-        await p.click("#scale-generate");
+        await p.click("#editor-save");
         // IDB staging precedes lock acquisition. Keep the real blocker held
         // until the trusted action has actually queued its single request.
         await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted Save reaches the real exclusive commit queue");
         const q=await p.eval("return navigator.locks.query();");
         assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"trusted Save must actually enqueue its commit; a no-op cannot pass");
       }finally{await release(blocker);}
-      await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0&&document.getElementById('scale-generate').disabled===false)`,"Save operation releases its queue and returns from pending");
+      await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0&&!!document.getElementById('editor-conflict-msg'))`,"Save operation releases its queue and shows the conflict");
       assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false,"conflict keeps the draft page open");
-      // Observe natural post-Save visibility BEFORE ink()/click helpers scroll.
-      const recoveryVisible=await p.eval(`const body=document.querySelector('#scale-sheet .sheetbody'),br=body.getBoundingClientRect();
-        return ['scale-conflict-msg','scale-conflict-separate'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();
-          return {id,visible:!!el.getClientRects().length&&r.height>0&&r.width>0&&r.top>=Math.max(0,br.top+body.clientTop)-1&&r.bottom<=Math.min(innerHeight,br.top+body.clientTop+body.clientHeight)+1};});`);
+      const recoveryVisible=await p.eval(`return ['editor-conflict-msg','editor-conflict-separate'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();
+        return {id,visible:!!el.getClientRects().length&&r.height>0&&r.width>0&&r.top>=-1&&r.bottom<=innerHeight+1&&r.left>=-1&&r.right<=innerWidth+1};});`);
       assert.ok(recoveryVisible.every(item=>item.visible),"failed Save reveals recovery copy and action without test-driven scrolling: "+JSON.stringify(recoveryVisible));
-      await ink(p,"#scale-conflict-msg",{text:SV.uiContract.copy[lang][kind],live});
-      await ink(p,"#scale-conflict-separate",{text:SV.uiContract.copy[lang].separate,control:true});
-      await ink(p,"#scale-back",{control:true});
+      await ink(p,"#editor-conflict-msg",{text:SV.uiContract.copy[lang][kind],live});
+      await ink(p,"#editor-conflict-separate",{text:SV.uiContract.copy[lang].separate,control:true});
+      await ink(p,"#editor-back",{control:true});
     }
 
     async function startImport(p,record) {
@@ -12899,6 +12899,180 @@ function run() {
       });
     });
 
+
+
+    test("SV9 E1: clean reconciliation updates content and route while dirty reconciliation preserves caret pick and scroll",{timeout:90000},async()=>{
+      await withTwo([SV.portableRecords.pygmyLayoutA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC LAYOUT");const initial=await read(a);
+        await a.eval("document.getElementById('share-copy').focus();return true;"); // no OS clipboard/share invocation
+        const focus=await a.eval("return document.activeElement.id;");
+        assert.strictEqual(focus,"share-copy");
+        const edit=await commit(bPeer,{type:"edit",collectionId:initial.collectionId,instanceId:uid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB);assert.strictEqual(edit.ok,true);
+        await a.wait("deck().options.angles && deck().options.angles.bottom[0]===295","clean remote content refresh");
+        assert.strictEqual(await a.eval("return location.hash===routeFor(deck());"),true);
+        assert.strictEqual(await a.eval("return document.activeElement.id;"),focus,"clean data refresh cannot steal focus");
+        const beforeDirty=await read(a);await openEdit(a);
+        await a.eval("editorSession.sel={ring:'bottom',i:0};editorRender();return true;");
+        await a.send("Emulation.setDeviceMetricsOverride",{width:380,height:667,deviceScaleFactor:1,mobile:true});
+        await a.eval("return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));");
+        await nameDraft(a,"DIRTY LOCAL DRAFT",{keepFocus:true});
+        await a.eval("document.getElementById('editor-name').setSelectionRange(2,7);return true;");
+        const scroller="document.getElementById('editor-region')";
+        await a.eval(`const n=${scroller};if(n){const max=n.scrollHeight-n.clientHeight;n.scrollTop=Math.min(40,Math.max(0,max));}return true;`);
+        const grab=()=>a.eval(`const n=document.getElementById('editor-name'),r=${scroller};return {name:n.value,start:n.selectionStart,end:n.selectionEnd,pick:JSON.stringify(editorSession.sel),scroll:r?r.scrollTop:0,focus:document.activeElement.id};`);
+        const draft=await grab();
+        assert.notStrictEqual(draft.pick,"null","dirty reconciliation fixture must have a genuinely picked note");
+        assert.strictEqual(draft.focus,"editor-name","fixture retains the name field's focus rather than an empty/body focus");
+        const remote={...clone(SV.portableRecords.pygmyLayoutB),o:{...clone(SV.portableRecords.pygmyLayoutB.o),name:"REMOTE WINNER"}};
+        assert.strictEqual((await commit(bPeer,{type:"edit",collectionId:beforeDirty.collectionId,instanceId:uid(1),expectedRevision:beforeDirty.entries[0].revision},remote)).ok,true);
+        await a.wait("savedState.entries[0].revision===3","dirty tab observes remote revision");
+        assert.deepStrictEqual(await grab(),draft,"dirty caret/pick/scroll/focus remain local");
+        await conflictSave(a,bPeer);
+        const remoteWinner=await read(bPeer);assert.strictEqual(remoteWinner.entries[0].record.o.name,"REMOTE WINNER");
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:remoteWinner.collectionId,instanceId:uid(1),expectedRevision:remoteWinner.entries[0].revision})).ok,true);
+        await a.wait("savedState.entries.length===0","dirty remote deletion observed");
+        assert.strictEqual(await a.eval("return document.getElementById('editor-name').value;"),"DIRTY LOCAL DRAFT","remote deletion cannot erase draft");
+        await a.wait("document.getElementById('editor-conflict-msg')&&document.getElementById('editor-conflict-msg').textContent.length>0&&editorSession.conflict==='deleted'","the visible conflict refreshes to the removed copy");
+        await ink(a,"#editor-conflict-msg",{text:SV.uiContract.copy.en.conflictDeleted});
+      });
+      // Repair only genuinely removed-chip focus. A surviving outside control
+      // has the same remote deletion and must retain focus instead.
+      for(const chipFocus of [true,false])await withTwo([SV.portableRecords.amaraA],{},async(a,bPeer)=>{
+        assert.strictEqual(await a.eval("return deck().name;"),"PUBLIC PAN A");const e=await read(a);
+        await a.eval(chipFocus?"document.querySelector('#decks .chip.on').focus();return true;":"document.getElementById('share-copy').focus();return true;");
+        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:e.collectionId,instanceId:uid(1),expectedRevision:1})).ok,true);
+        await a.wait("deck().id==='kurd'","clean removed selection fallback");
+        if(chipFocus)assert.strictEqual(await a.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
+        else assert.strictEqual(await a.eval("return document.activeElement.id;"),"share-copy","surviving outside focus must never be stolen");
+        assert.strictEqual((await read(a)).entries.length,0,"background reconciliation cannot reimport the deleted route");
+      });
+    });
+
+    test("SV10 E1: variants conflict and session states preserve targets clipping focus and eight-locale copy",{timeout:180000},async()=>{
+      let cells=0,states=0,discriminatorControls=0;
+      const matrix=SV.labels.nativeMatrix;
+      function matrixEnvelope() {
+        const e=makeEnvelope(matrix.entries.map(x=>x.record));
+        e.entries.forEach((x,i)=>{x.displayOrdinal=matrix.entries[i].displayOrdinal;x.instanceId=uid(x.displayOrdinal);});
+        const highest=203;e.usedInstanceIds=Array.from({length:highest},(_,i)=>uid(i+1));e.nextDisplayOrdinal=highest+1;
+        e.preferredSelection={kind:'saved',id:uid(matrix.initialSelectedOrdinal)};return e;
+      }
+      for(const mode of ["fallback","real"]) {
+        const rb=await launch({foregroundSettle:true,realFonts:mode==="real"});assert.ok(rb,"owned font-mode browser must launch");
+        let peer=null;
+        try {
+          const p=session(rb.sessionId,rb);let generation=0;
+          async function reload() {
+            const stamp="sv-font-"+(++generation);
+            const hook=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"window.__svFontDocument="+JSON.stringify(stamp)+";"});
+            try {await rb.send("Page.navigate",{url:URL});await p.wait("window.__svFontDocument==="+JSON.stringify(stamp)+" && "+APP_READY_EXPR,"fresh font-mode document");}
+            finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:hook.identifier});}
+            const fonts=await p.eval(`return document.fonts.ready.then(()=>Promise.all(["14px Marcellus","400 14px Bitter","700 14px Bitter","400 14px 'Nunito Sans'","600 14px 'Nunito Sans'"].map(x=>document.fonts.load(x)))).then(()=>({size:document.fonts.size,faces:[...document.fonts].map(f=>({family:f.family,weight:f.weight,status:f.status}))}));`);
+            require("../tools/probe/panel_fit.js").checkFontMode(mode,fonts);
+          }
+          await rb.goto(URL);peer=await openPeer(rb);
+          for(const [localeIndex,lang]of SV.labels.locales.entries()) {
+            const expected=SV.uiContract.copy[lang],collision=matrixEnvelope();
+            await p.eval(`localStorage.clear();localStorage.setItem('hpfc',JSON.stringify({lang:${JSON.stringify(lang)},mode:'A'}));return ${nativeSavedExpression({write:true,raw:JSON.stringify(collision)})};`);await reload();
+            assert.strictEqual(await p.eval("return document.getElementById('lang-select').value;"),lang,"requested locale must actually be active");
+            for(const [w,h,mobile]of [[380,780,true],[844,390,true],[1280,800,false]]) {
+              await rb.setViewport(w,h,mobile);await rb.settle();
+              const labels=await p.eval("return [...document.querySelectorAll('#decks .chip')].map(n=>n.textContent.trim());");
+              assert.strictEqual(labels.length,matrix.expectedVisibleControlCount,"all frozen multi-digit/preset/long-name controls render");
+              assert.strictEqual(new Set(labels).size,labels.length,"FINAL labels, including literal suffix names, must be distinct");
+              for(const row of matrix.entries.filter(x=>x.expectedToken)) {
+                const index=matrix.expectedCustomOrdinalsNewestFirst.indexOf(row.displayOrdinal);
+                const selector="#decks .chip:nth-child("+(index+1)+")",m=await ink(p,selector,{control:true});
+                assert.ok(m.text.endsWith(SV.labels.separator+row.expectedToken),"literal full ASCII suffix on its own control: "+row.expectedToken);
+                assert.ok(m.aria.includes(row.expectedToken),"accessible name includes the same full suffix");discriminatorControls++;
+              }
+              const presetSelector="#decks .chip:nth-child("+(matrix.entries.length+3)+")",preset=await ink(p,presetSelector,{control:true});
+              assert.ok(preset.text.endsWith(SV.labels.separator+"P3")&&preset.aria.includes("P3"),"literal third-preset discriminator survives layout");discriminatorControls++;
+              cells++;
+            }
+            await rb.setViewport(380,780,true);
+            // Exact normal imports still deduplicate. The resolution action
+            // below has different trusted semantics and must allocate freshly.
+            const exact=await importRecord(p,matrix.entries.find(x=>x.displayOrdinal===203).record);
+            assert.strictEqual(exact.ok,true);assert.strictEqual((await read(p)).entries.length,matrix.entries.length);
+            // Native keyboard activation selects the colliding S202 control,
+            // then opens its Edit sheet.
+            await p.eval(`document.querySelectorAll('#decks .chip')[${matrix.keyboardChipIndex}].focus();return true;`);
+            await p.key("Enter","Enter",13);await p.wait(`selection.kind==='saved'&&selection.id===${JSON.stringify(uid(202))}`,"keyboard selects literal S202");
+            await p.key("Enter","Enter",13);await p.wait("!document.getElementById('scale-sheet').hidden&&!!document.getElementById('editor-name')","keyboard opens selected Edit");
+            assert.strictEqual(await p.eval("return document.getElementById('editor-name').value;"),matrix.entries.find(x=>x.displayOrdinal===202).record.o.name);
+            await p.click("#editor-back");await p.wait("document.getElementById('scale-sheet').hidden","Back closes a clean Edit");
+            assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Back returns focus to the rebuilt selected chip");
+            await openEdit(p);await nameDraft(p,matrix.draftName);const base=await read(p);
+            const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
+            await p.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(conflict)})};`);
+            await conflictSave(p,peer.p,lang,"conflict",true);
+            assert.strictEqual(await p.eval("return document.getElementById('editor-name').value;"),matrix.draftName);
+            assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
+            await p.click("#editor-name");await rb.fakeKeyboard(520,0,"layout");await rb.settle();
+            const input=await p.eval("const n=document.getElementById('editor-name'),r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,limit:visualViewport.offsetTop+visualViewport.height,focus:document.activeElement===n};");
+            assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps the focused input above simulated keyboard "+JSON.stringify(input));await rb.clearKeyboard();
+            if(lang==="en") {
+              // This draft already equals ordinal203. Normal import above
+              // reused it; explicit Save-as-separate must create another handle.
+              const prior=await read(p);await hold(peer.p);
+              try {
+                await p.eval("document.getElementById('editor-conflict-separate').focus();return true;");
+                await p.key("Enter","Enter",13);
+                await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted separate-save activation reaches the real exclusive commit queue");
+                let q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"resolution actually queues a distinct save command");
+                assert.strictEqual(await p.eval("return document.getElementById('editor-conflict-separate').disabled;"),true);
+                await p.eval("document.getElementById('editor-conflict-separate').dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;");
+                q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"repeated activation cannot enqueue duplicate resolution");
+              }finally{await release(peer.p);}
+              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","separate save acknowledgment and canonical route");
+              const after=await read(p);assert.strictEqual(after.entries.length,prior.entries.length+1);
+              const fresh=after.entries.find(x=>!prior.usedInstanceIds.includes(x.instanceId));assert.ok(fresh,"explicit separate action allocates a fresh lifetime handle");
+              assert.strictEqual(fresh.record.o.name,matrix.draftName);assert.strictEqual(fresh.record.o.replaces,undefined);
+              assert.strictEqual(after.entries.filter(x=>x.record.o?.name===matrix.draftName).length,2,"equal content versions coexist after explicit resolution");
+              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(203)),prior.entries.find(x=>x.instanceId===uid(203)));
+              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(202)),prior.entries.find(x=>x.instanceId===uid(202)));
+              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
+            } else {
+              await p.click("#editor-back");
+              await p.wait("!document.getElementById('editor-dialog').hidden","Back on the dirty draft asks first");
+              await p.click("#editor-dlg-discard");
+              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","explicit discard returns to winner");
+              assert.strictEqual(await p.eval("return deck().name;"),"REMOTE LABEL","Back discards the draft only by explicit owner action and displays the winner");
+              assert.strictEqual(await p.eval("return HPE.share.decode(location.hash.slice(3)).value.options.name;"),"REMOTE LABEL","canonical URL reflects the acknowledged winner");
+              assert.deepStrictEqual((await read(p)).entries,conflict.entries);
+              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Back restores the selected chip's focus");
+            }
+            const durable=await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`);
+            const unsupported=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
+            try {
+              await reload();assert.strictEqual(await p.eval("return savedMode;"),"session");
+              await ink(p,"#saved-status",{text:expected.session,live:true});
+              await p.click("#settings-trigger");await p.click("#deck-add");await p.wait("!!document.getElementById('editor-line')","Add opens the editor");
+              await p.click("#editor-line");
+              await p.eval(`const l=document.getElementById("editor-line");l.value=${JSON.stringify(SV.inventories.other.seed)};l.dispatchEvent(new Event("input",{bubbles:true}));return true;`);
+              await p.key("Enter","Enter",13);
+              await p.wait("!document.getElementById('editor-save').disabled","note input stays English in every locale");
+              await p.click("#editor-save");await p.wait("document.getElementById('scale-sheet').hidden","session-only scale generation completes");
+              assert.strictEqual(await p.eval("return HPE.core.formatSeed(deck().fields);"),SV.inventories.other.seed,"actual temporary scale becomes the selected view");
+              assert.strictEqual(await p.eval("return savedMode;"),"session");await ink(p,"#saved-status",{text:expected.session,live:true});
+              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`),durable,"temporary generation performs no durable saved-store write");
+              await reload();
+              assert.strictEqual(await p.eval(`return savedState.entries.some(x=>x.record?.s===${JSON.stringify(SV.inventories.other.seed)});`),false,"temporary scale is lost after reload, never silently promoted");
+              assert.deepStrictEqual(await p.eval(`return ${nativeSavedExpression()};`),durable.current);await ink(p,"#saved-status",{text:expected.session,live:true});
+            }finally{await rb.send("Page.removeScriptToEvaluateOnNewDocument",{identifier:unsupported.identifier});}
+            await p.eval(`return ${nativeSavedExpression({write:true,raw:"{not-json"})};`);await reload();
+            assert.strictEqual(await p.eval("return savedMode;"),"protected");
+            await ink(p,"#saved-status",{text:expected.recovery,live:true});
+            assert.strictEqual((await p.eval(`return ${nativeSavedExpression()};`)).raw,"{not-json","recovery cannot overwrite unreadable source");states++;
+          }
+        } finally{if(peer)await peer.close();await rb.close();}
+      }
+      assert.strictEqual(cells,48,"all2font x8locale x3viewport geometry cells execute");
+      assert.strictEqual(discriminatorControls,528,"every frozen suffix/preset control gets child-text/ancestor x/y clipping and target checks");
+      assert.strictEqual(states,16,"conflict/session/recovery/keyboard states execute in every font/locale");
+      console.log("SV_COPY_MATRIX "+JSON.stringify({geometryCells:cells,discriminatorControls,conflictSessionRecoveryStates:states,fontModes:["fallback","real"],simulatedKeyboard:true,physicalIOS:false}));
+    });
 
     // Real native-only deletion regression: the scoped model has no delete
     // API. Metadata inspection below must not open the missing DB itself.

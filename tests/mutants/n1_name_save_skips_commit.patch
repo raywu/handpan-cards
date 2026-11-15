@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17115,7 +17115,6 @@ function editorWireSwipe() {
- async function editorSave() {
+@@ -15003,7 +15003,6 @@ function editorWireSwipe() {
+   separate = separate === true;
    const s = editorSession;
    if (!s || s.saving || savePending) return;
 -  editorCommitName();

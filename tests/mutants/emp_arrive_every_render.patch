@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15864,7 +15864,7 @@
-   if (s.error) {
+@@ -13798,7 +13798,7 @@ function editorRenderBody() {
+   } else if (s.error) {
      status.setAttribute("data-kind", "error");
      status.textContent = s.error;
 -    if (s.error !== s.lastError) {

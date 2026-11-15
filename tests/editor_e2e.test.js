@@ -4320,6 +4320,151 @@ function run() {
     });
   });
 
+  describe("editor save recovery", () => {
+    const LOCK_NAME = "handpan-cards:saved-scales:v1";
+    const saveScale = async (name) => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(name)};
+        n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the first save to close" });
+    };
+    const editSaved = async () => {
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const staleSave = async () => {
+      await b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
+      await b.click("#editor-save");
+      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict recovery" });
+    };
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+    const remoteDelete = () => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
+      return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => {
+        if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
+        return r.ok === true; });`);
+
+    test("Save as separate creates a second scale and keeps the original", async () => {
+      await saveScale("ORIGINAL");
+      await editSaved();
+      await rename("DRAFT COPY");
+      await staleSave();
+      assert.strictEqual(await sheetHidden(), false, "the draft page stays open on a conflict");
+      await b.click("#editor-conflict-separate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+    });
+
+    test("both submit actions are disabled while Save as separate is pending", async () => {
+      await saveScale("ORIGINAL");
+      await editSaved();
+      await rename("DRAFT COPY");
+      await staleSave();
+      await b.eval(`navigator.locks.request(${JSON.stringify(LOCK_NAME)}, () => new Promise((r) => { window.__rel = r; })); return true;`);
+      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
+      await b.eval(`document.getElementById("editor-conflict-separate").click(); return true;`);
+      await b.waitFor(`!!savePending`, { label: "the separate save to wait on the lock" });
+      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-save").disabled, document.getElementById("editor-conflict-separate").disabled];`), [true, true]);
+      await b.eval(`window.__rel(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the pending save to finish" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+    });
+
+    test("another tab deleting the scale switches the conflict text and Save as separate still works", async () => {
+      await saveScale("ORIGINAL");
+      await b.eval(`return typeof editorConflictKind;`);
+      await editSaved();
+      await rename("DRAFT COPY");
+      await staleSave();
+      const changed = await b.eval(`return document.getElementById("editor-conflict-msg").textContent;`);
+      assert.strictEqual(changed, await b.eval(`return t("saved.conflict");`));
+      assert.strictEqual(await remoteDelete(), true);
+      await b.waitFor(`document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted")`, { label: "the deleted-scale text" });
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "DRAFT COPY");
+      await b.click("#editor-conflict-separate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY"]);
+    });
+
+    describe("history back on the editor", () => {
+      const back = async () => {
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden") || !!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "back to settle" });
+      };
+
+      test("a dirty editor shows the dialog and Keep editing retains the edits and the history entry", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine(SCALE);
+        const route = await b.eval(`return location.hash;`);
+        await back();
+        assert.strictEqual(await dialogOpen(), true);
+        assert.strictEqual(await sheetHidden(), false);
+        await b.click("#editor-dlg-keep");
+        assert.strictEqual(await dialogOpen(), false);
+        assert.strictEqual(await sheetHidden(), false);
+        assert.match(await text(), /A4/);
+        assert.strictEqual(await b.eval(`return location.hash;`), route, "the page's history entry is back on the stack");
+        await back();
+        assert.strictEqual(await dialogOpen(), true, "a second back asks again");
+      });
+
+      test("a clean editor closes silently", async () => {
+        await fresh();
+        await openBuiltin();
+        await back();
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        assert.strictEqual(await dialogOpen(), false);
+      });
+
+      test("a staged-only editor closes silently", async () => {
+        await fresh();
+        await openAdd();
+        await b.eval(`editorSession.history.present.stage = { note: "A4" }; return true;`);
+        await back();
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        assert.strictEqual(await dialogOpen(), false);
+      });
+    });
+
+    describe("the Back dialog paints above every editor layer", () => {
+      const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+      const probe = () => b.eval(`const center = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+        const inerts = [...document.querySelectorAll("[inert]")];
+        inerts.forEach((el) => el.removeAttribute("inert"));
+        try {
+          const hit = (id) => { const el = document.getElementById(id); const [x, y] = center(el); const h = document.elementFromPoint(x, y); return !!h && el.contains(h); };
+          const [tx, ty] = center(document.getElementById("editor-tab-scale")), under = document.elementFromPoint(tx, ty);
+          return { save: hit("editor-dlg-save"), discard: hit("editor-dlg-discard"), keep: hit("editor-dlg-keep"),
+            tabsCovered: !!under && document.getElementById("editor-dialog").contains(under),
+            aboveEveryLayer: (() => { const dlg = document.getElementById("editor-dialog"), own = Number(getComputedStyle(dlg).zIndex);
+              return [...document.querySelectorAll("#editor *")].filter((el) => !dlg.contains(el) && getComputedStyle(el).position !== "static")
+                .every((el) => { const z = Number(getComputedStyle(el).zIndex); return Number.isNaN(z) || z < own; }); })() };
+        } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
+      const SIZES = [[360, 640], [375, 667], [390, 844], [844, 390]];
+      for (const [w, h] of SIZES) {
+        for (const state of ["scale", "layout", "info"]) {
+          test(`${w}x${h} ${state}: Save, Discard and Keep editing are hittable and the scrim covers the tabs`, async () => {
+            await fresh(w, h);
+            await openAdd();
+            await typeLine(NEO);
+            await b.click("#editor-type-neotone");
+            if (state === "layout") await b.click("#editor-tab-layout");
+            if (state === "info") await b.click("#editor-hint-toggle");
+            if (state === "layout") await b.eval(`history.back(); return true;`); else await b.click("#editor-back");
+            await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Back dialog" });
+            const r = await probe();
+            assert.deepStrictEqual(r, { save: true, discard: true, keep: true, tabsCovered: true, aboveEveryLayer: true }, JSON.stringify(r));
+          });
+        }
+      }
+    });
+  });
+
 }
 
 function DECK_IDS_HAVE(builtinJson, id) {

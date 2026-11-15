@@ -1,0 +1,15 @@
+# kills: SV9 U2: an obsolete completed Save cannot close or select a newer context
+# suite: node --test --test-name-pattern ^SV9.U2: tests/app.test.js
+# fault: A completed old Save may close or select into a newer Add or Edit context.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15021,7 +15021,7 @@
+     const ownsSlot = !!base && base.selection.kind === "saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;
+     const command = separate ? { type: "save-as-separate" } : editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
+     const result = await commitSaved({ ...command, collectionId: base ? base.collectionId : savedState?.collectionId, candidate }, { signal: controller.signal });
+-    if (generation !== sheetGeneration || !pageOpen) return;
++    if (false) return;
+     if (!result.ok) {
+       if (result.kind === "conflict") {
+         await reconcileSavedCollection();

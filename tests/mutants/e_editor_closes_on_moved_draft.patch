@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14643,7 +14643,7 @@ async function editorSave() {
-     if (result.published === false) { s.error = savedPublicationText(result); return; }
+@@ -15033,7 +15033,7 @@ async function editorSave(separate = false) {
      const d = savedEntries.get(result.instanceId).deck;
      const warned = (d.warnings || []).map((w) => reasonText(w));
+     if (editorSession === s) s.conflict = null;
 -    if (editorSession === s && editorDraftMoved(s, m)) {
 +    if (false && editorSession === s && editorDraftMoved(s, m)) {
        s.base = m;
