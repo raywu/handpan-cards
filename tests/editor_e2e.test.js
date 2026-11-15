@@ -906,7 +906,7 @@ function run() {
 
     test("D23 copy: a rim or cyclops note dropped on the ding is refused with a plain message; the hint line still carries the ding cue", async () => {
       await setup("[A2] " + SCALE);
-      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent);`), ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.", "Drop or tap a note on the ding to swap it with the root."]);
+      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent);`), ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.", "Drop or tap a bottom note on the ding to swap it with the root."]);
       const before = await model();
       await tapNote("rim", 0);
       await tapNote("ding", 0);
@@ -3139,7 +3139,7 @@ function run() {
     test("counts: both hint lines render under the counts on both tabs", async () => {
       await setup(SCALE);
       const hint = () => b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent + ":" + (e.offsetParent !== null));`);
-      const want = ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.:true", "Drop or tap a note on the ding to swap it with the root.:true"];
+      const want = ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.:true", "Drop or tap a bottom note on the ding to swap it with the root.:true"];
       assert.ok((await hint()).every((x) => x.endsWith(":false")), "collapsed until the Hint button is pressed");
       await b.click("#editor-hint-toggle");
       assert.deepStrictEqual(await hint(), want);
