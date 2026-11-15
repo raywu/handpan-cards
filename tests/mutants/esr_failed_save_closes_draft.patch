@@ -1,0 +1,15 @@
+# kills: SV5 U2: failed durable Save preserves draft and acknowledged winner
+# suite: node --test --test-name-pattern ^SV5.U2: tests/app.test.js
+# fault: Closes the editor even when durable saving failed and the draft must remain recoverable.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15022,7 +15022,7 @@
+     const command = separate ? { type: "save-as-separate" } : editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
+     const result = await commitSaved({ ...command, collectionId: base ? base.collectionId : savedState?.collectionId, candidate }, { signal: controller.signal });
+     if (generation !== sheetGeneration || !pageOpen) return;
+-    if (!result.ok) {
++    if (!result.ok) { closeScaleSheet();
+       if (result.kind === "conflict") {
+         await reconcileSavedCollection();
+         if (generation === sheetGeneration && editorSession === s) editorShowConflict();

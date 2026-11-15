@@ -10438,6 +10438,22 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
 
+  test("SV11 U3: unrelated remote writes preserve the dirty editor base and its draft", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.pygmyLayoutA]);
+    editSelected(app);
+    const peer=(await load({origin,crypto})).app;
+    assert.strictEqual((await imported(peer,SV.portableRecords.amaraB)).ok,true);
+    origin.flushBroadcastMessages();
+    await app.waitFor(`savedEntries.size === 2`);
+    rename(app,"UNSAVED LOCAL DRAFT");const dirtyBase=plain(app.get("editingBase"));
+    const e=snapshot(peer);
+    const changed=await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB);
+    assert.strictEqual(changed.ok,true);origin.flushBroadcastMessages();
+    await app.waitFor(`savedState.revision === ${snapshot(peer).revision}`);
+    assert.strictEqual(app.els["scale-name"].value,"UNSAVED LOCAL DRAFT");
+    assert.deepStrictEqual(plain(app.get("editingBase")),dirtyBase,"remote winner cannot rebind a dirty draft's original revision");
+  });
+
   test("SV11 U4: stored and detected non-English cold boots localize before ready", async () => {
     const de=JSON.parse(fs.readFileSync(path.join(ROOT,"data/i18n/de.json"),"utf8"));
     for(const storage of [{hpfc:JSON.stringify({lang:"de"})},{}]) {
@@ -10471,7 +10487,7 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.get(`savedState.entries[0].revision`),1,"the conflict fallback must discover the peer revision itself");
     await submit(app);
     assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-name"].value,"LOSING LOCAL DRAFT");
-    assert.ok(app.els["scale-refusal"].textContent.length>0,"the conflict is shown");assert.strictEqual(savedRaw(app),winner);
+    assert.strictEqual(app.get("editorSession.conflict"),"changed","the conflict is shown");assert.strictEqual(savedRaw(app),winner);
     app.els["scale-back"].click();
     assert.strictEqual(app.currentDeck().name,"PUBLIC PAN B","explicit Back reviews the real saved winner even with all events omitted");
     assert.strictEqual(savedRaw(app),winner,"review/cancel cannot rewrite the winner");
@@ -10512,6 +10528,23 @@ describe("SHC asynchronous LINK ownership", () => {
   });
 
 
+  test("SV12 U2: pending save-as-separate disables both submitting actions", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.amaraA]);
+    editSelected(app);rename(app,"LOCAL CONFLICT");
+    const peer=(await load({origin,crypto})).app,e=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.amaraB)).ok,true);
+    await submit(app);assert.strictEqual(app.get("editorSession.conflict"),"changed");
+    const off=()=>app.get("editorSubmitOff(editorSession,editorSession.history.present)");
+    assert.strictEqual(off(),false,"the separate action is available while the conflict stands");
+    let release,acquired;const held=new Promise(resolve=>{acquired=resolve;});
+    const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});await held;
+    const pending=app.getAsync("editorSave(true)");
+    try {
+      await app.waitFor("navigator.locks.query().then(q=>q.pending.length===1)");
+      assert.strictEqual(off(),true,"both Save and Save as separate share one disabled state while a save is pending");
+    } finally {release();await blocker;await pending;}
+  });
+
   test("SV12 U3: a draft becoming invalid during pending Save stays disabled after completion", async () => {
     const {app}=await seeded([SV.portableRecords.amaraA]);editSelected(app);rename(app,"PENDING VALID");
     let release,acquired;const held=new Promise(resolve=>{acquired=resolve;});
@@ -10521,6 +10554,34 @@ describe("SHC asynchronous LINK ownership", () => {
     release();await blocker;await pending;
     assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.els["scale-box"].value,"xyz");
     assert.strictEqual(app.els["scale-generate"].disabled,true,"old completion cannot re-enable an invalid current draft");
+  });
+
+  test("SV16 U1: a visible changed conflict refreshes to removed after remote deletion without disturbing the draft", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.pygmyLayoutA]);
+    editSelected(app);rename(app,"DIRTY RETAINED DRAFT");
+    const peer=(await load({origin,crypto})).app,e=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB)).ok,true);
+    await submit(app);
+    assert.strictEqual(app.get("editorSession.conflict"),"changed");
+    const before={base:plain(app.get("editingBase")),name:app.els["scale-name"].value,draft:app.get("editorSession.history.present.options.name"),route:app.location.href};
+    const winner=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"delete",collectionId:winner.collectionId,instanceId:iid(1),expectedRevision:2})).ok,true);
+    origin.flushBroadcastMessages();
+    await app.waitFor(`!savedEntries.has(${JSON.stringify(iid(1))})`);
+    assert.strictEqual(app.get("editorSession.conflict"),"deleted","visible recovery guidance reflects the target's current removed state");
+    assert.strictEqual(app.sheetOpen(),true);
+    assert.deepStrictEqual({base:plain(app.get("editingBase")),name:app.els["scale-name"].value,draft:app.get("editorSession.history.present.options.name"),route:app.location.href},before,
+      "background copy refresh preserves original revision proof, local draft and route");
+  });
+
+  test("deleting an instance that disappeared leaves no armed button and preserves explicit conflict recovery", async () => {
+    const app=boot(),d=await makeCustom(app);openEdit(app,d);
+    app.run('(()=>{const look=document.getElementById;document.getElementById=id=>look(id==="editor-delete"?"scale-delete":id);})()');
+    await deleteClick(app);assert.strictEqual(app.els["scale-delete"].armed,true);
+    const removed=plain(app.get(`commitSavedSession({type:"delete",collectionId:savedState.collectionId,instanceId:${JSON.stringify(d.instanceId)},expectedRevision:1})`));assert.strictEqual(removed.ok,true);
+    const winner=plain(app.get("savedState"));await deleteClick(app);
+    assert.strictEqual(app.els["scale-delete"].armed,false);assert.strictEqual(app.get("editorSession.delArmed")||false,false);
+    assert.strictEqual(app.sheetOpen(),true);assert.strictEqual(app.get("editorSession.conflict"),"deleted");assert.deepStrictEqual(plain(app.get("savedState")),winner);
   });
 
   test("SV12 U4: unchanged session status is not written again into its live region", async () => {

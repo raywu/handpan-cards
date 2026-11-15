@@ -1,0 +1,15 @@
+# kills: both submit actions are disabled while Save as separate is pending
+# suite: node --test --test-name-pattern both.submit.actions.are.disabled tests/editor_e2e.test.js
+# fault: The primary Save action stays enabled while a save is queued.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13864,7 +13864,7 @@
+     const item = editorEl(id);
+     if (item.disabled) item.setAttribute("aria-disabled", "true"); else item.removeAttribute("aria-disabled");
+   }
+-  editorEl("editor-save").disabled = editorSubmitOff(s, m);
++  editorEl("editor-save").disabled = !editorCanSave(m);
+   for (const kind of ["standard", "neotone"]) {
+     const b = editorEl("editor-type-" + kind);
+     b.setAttribute("aria-pressed", String(editorKindOf(m) === kind));

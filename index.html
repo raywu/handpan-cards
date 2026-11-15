@@ -929,6 +929,9 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}
 @media (prefers-reduced-motion:reduce){#editor-status.arrive{animation:none}}
 #editor-status .mode{min-height:32px; padding:4px 10px}
+#editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px}
+#editor-status[data-conflict] #editor-conflict-msg{flex:1 1 12em; min-width:0}
+#editor-status #editor-conflict-separate{min-height:44px; white-space:normal; padding:10px 14px}
 #editor .editor-panbox{flex:0 0 auto; min-height:0;
   height:max(120px, min(max(200px, min(50vh, 100cqw, 520px)), calc(100vh - var(--ed-k))));
   height:max(120px, min(max(200px, min(50dvh, 100cqw, 520px)), calc(100dvh - var(--ed-k)))); display:flex; align-items:center; justify-content:center; position:relative;
@@ -1049,7 +1052,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor .editor-toolbar .mode:disabled{opacity:1; cursor:default}
 #editor .editor-toolbar .mode.primary:disabled{background:#F6F4ED; color:#8A847B; border-color:#8A847B}
 #editor-tray{flex:0 0 auto}
-#editor-dialog{position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
+#editor-dialog{position:absolute; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
 #editor-dialog .dlg{background:#F6F4ED; color:#242424; border:2px solid #242424; border-radius:12px; padding:var(--sp-3); margin:var(--sp-3);
   max-width:360px; display:flex; flex-direction:column; gap:var(--sp-2)}
 #editor-dialog h3{margin:0; font:700 15px/1.3 "Nunito Sans"}
@@ -13664,7 +13667,7 @@ function editorOpen(edit) {
   const failed = model.ok === false;
   const start = failed ? editorEmptyModel() : model;
   editorSession = { history: editorHistoryNew(start), base: failed ? { ...start, failed: true } : start, editing: false, error: failed ? reasonText(model) : "",
-    notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", tab: "scale", menu: false, naming: false, nameTouched: false };
+    notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", tab: "scale", menu: false, naming: false, nameTouched: false, conflict: null };
   sheet.classList.add("onepanel");
   const button = (id, key, cls) => editorNode("button", { id, type: "button", class: cls || "mode", text: t(key) });
   const root = editorNode("div", { id: "editor", class: DRAG_ON_TOUCH ? "dragtouch" : "" },
@@ -13745,6 +13748,18 @@ function editorClose() {
   sheet.classList.remove("onepanel");
   editorSession = null;
 }
+// Both submitting actions (Save and Save as a separate scale) share one off switch.
+const editorSubmitOff = (s, m) => !editorCanSave(m) || !!s.saving || !!savePending;
+// A rejected Save or Delete: the target is either changed or gone in another tab.
+function editorConflictKind() {
+  return editingBase && editingBase.selection.kind === "saved" && !savedEntries.has(editingBase.selection.id) ? "deleted" : "changed";
+}
+function editorShowConflict() {
+  const s = editorSession;
+  if (!s) return;
+  s.conflict = editorConflictKind();
+  editorRender();
+}
 function editorRender() {
   const rg = editorEl("editor-region"), pin = !rg || editorRegionAtEnd();
   editorRenderBody();
@@ -13769,10 +13784,18 @@ function editorRenderBody() {
   nameBox.placeholder = editorAutoName(m);
   if (s.error) line.setAttribute("aria-invalid", "true"); else line.removeAttribute("aria-invalid");
   const status = editorEl("editor-status");
-  status.textContent = "";
-  status.removeAttribute("data-kind");
+  const keptSeparate = !s.error && s.conflict && status.querySelector("#editor-conflict-separate");
   if (!s.error) s.lastError = "";
-  if (s.error) {
+  if (!keptSeparate) {
+    status.textContent = "";
+    status.removeAttribute("data-conflict");
+    status.removeAttribute("data-kind");
+  }
+  if (keptSeparate) {
+    status.setAttribute("data-conflict", s.conflict);
+    editorEl("editor-conflict-msg").textContent = t(s.conflict === "deleted" ? "saved.conflictDeleted" : "saved.conflict");
+    keptSeparate.disabled = editorSubmitOff(s, m);
+  } else if (s.error) {
     status.setAttribute("data-kind", "error");
     status.textContent = s.error;
     if (s.error !== s.lastError) {
@@ -13781,6 +13804,14 @@ function editorRenderBody() {
       void status.offsetWidth;
       status.classList.add("arrive");
     }
+  } else if (s.conflict) {
+    status.setAttribute("data-kind", "error");
+    status.setAttribute("data-conflict", s.conflict);
+    status.appendChild(editorNode("span", { id: "editor-conflict-msg", text: t(s.conflict === "deleted" ? "saved.conflictDeleted" : "saved.conflict") }));
+    const separate = editorNode("button", { id: "editor-conflict-separate", type: "button", class: "mode", text: t("saved.separate") });
+    separate.disabled = editorSubmitOff(s, m);
+    separate.onclick = () => editorSave(true);
+    status.appendChild(separate);
   } else if (s.held) {
     status.appendChild(document.createTextNode(t("editor.held", { name: editorHeldName() })));
     const cancel = editorNode("button", { id: "editor-cancel", type: "button", class: "mode", text: t("editor.cancel") });
@@ -13833,7 +13864,7 @@ function editorRenderBody() {
     const item = editorEl(id);
     if (item.disabled) item.setAttribute("aria-disabled", "true"); else item.removeAttribute("aria-disabled");
   }
-  editorEl("editor-save").disabled = !editorCanSave(m) || s.saving;
+  editorEl("editor-save").disabled = editorSubmitOff(s, m);
   for (const kind of ["standard", "neotone"]) {
     const b = editorEl("editor-type-" + kind);
     b.setAttribute("aria-pressed", String(editorKindOf(m) === kind));
@@ -14968,14 +14999,15 @@ function editorDraftMoved(s, saved) {
   if (s.naming && editorSetName(saved, editorEl("editor-name").value).value !== saved) return true;
   return editorEl("editor-line").value.trim() !== editorLineText(saved);
 }
-async function editorSave() {
+async function editorSave(separate = false) {
+  separate = separate === true;
   const s = editorSession;
   if (!s || s.saving || savePending) return;
   editorCommitName();
   if (s.editing) editorCommitLine();
   const m = s.history.present;
   if (!editorCanSave(m) || s.error) return;
-  if (!editorIsDirty(s.base, m) && editingBase) { closeScaleSheet(); return; }
+  if (!separate && !editorIsDirty(s.base, m) && editingBase) { closeScaleSheet(); return; }
   const generation = sheetGeneration, base = editingBase;
   const controller = new AbortController(), operation = { controller, generation };
   savePending = operation;
@@ -14987,17 +15019,20 @@ async function editorSave() {
     if (!built.ok) { s.error = reasonText(built); return; }
     const candidate = { record: scaleRecord(seedOf(built.value)), deck: built.value };
     const ownsSlot = !!base && base.selection.kind === "saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;
-    const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
+    const command = separate ? { type: "save-as-separate" } : editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
     const result = await commitSaved({ ...command, collectionId: base ? base.collectionId : savedState?.collectionId, candidate }, { signal: controller.signal });
     if (generation !== sheetGeneration || !pageOpen) return;
     if (!result.ok) {
-      if (result.kind === "conflict") await reconcileSavedCollection();
-      if (result.kind !== "cancelled") s.error = savedErrorText(result);
+      if (result.kind === "conflict") {
+        await reconcileSavedCollection();
+        if (generation === sheetGeneration && editorSession === s) editorShowConflict();
+      } else if (result.kind !== "cancelled") s.error = savedErrorText(result);
       return;
     }
     if (result.published === false) { s.error = savedPublicationText(result); return; }
     const d = savedEntries.get(result.instanceId).deck;
     const warned = (d.warnings || []).map((w) => reasonText(w));
+    if (editorSession === s) s.conflict = null;
     if (editorSession === s && editorDraftMoved(s, m)) {
       s.base = m;
       editingBase = { selection: { kind: "saved", id: result.instanceId }, deck: d, collectionId: savedState.collectionId,
@@ -15152,6 +15187,17 @@ function closeScaleSheet() {
 // history.back() answers with a popstate later; the entry it restores is the
 // pre-sheet URL, so syncRoute() runs at that pop, not before it.
 let pendingPop = false;
+// The back gesture on a dirty editor gives the entry back and asks first (D10), as BACK does.
+function editorBackstop() {
+  const s = editorSession;
+  if (!s) return false;
+  editorCommitName();
+  if (!editorIsDirty(s.base, s.history.present)) return false;
+  history.pushState({ scalePage: true }, "", sheetRoute());
+  sheetRouted = true;
+  if (!s.dialog) editorShowDialog(true);
+  return true;
+}
 // The browser's way out: the back gesture, or a swipe. The entry is already
 // gone, so this only takes the page down.
 window.addEventListener("popstate", () => {
@@ -15162,6 +15208,7 @@ window.addEventListener("popstate", () => {
   if (aboutOpen) { hideAbout(); return; }
   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
   if (!pageOpen) return;
+  if (editorBackstop()) return;
   sheetRouted = false;
   hideSheet();
 });
@@ -15199,7 +15246,7 @@ async function deleteDeck(id) {
   if(!result.ok){
     if(result.kind==="conflict")await reconcileSavedCollection();
     if(generation!==sheetGeneration)return;
-    if(editorSession){editorDeleteFailed(savedErrorText(result));return;}
+    if(editorSession){editorDeleteFailed(result.kind==="conflict"?"":savedErrorText(result));if(result.kind==="conflict")editorShowConflict();return;}
     say(savedErrorText(result),"warn");
     return;
   }
@@ -15226,6 +15273,10 @@ savedSnapshotListener=event=>{
   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
   selection=savedResolve(selection,savedState,savedEntries);
   const session=editorSession;
+  if(pageOpen && session && session.conflict && editingBase && event.source==="remote"){
+    const kind=editorConflictKind();
+    if(kind!==session.conflict){session.conflict=kind;editorRender();}
+  }
   if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
     const target=savedResolve(editingBase.selection,savedState,savedEntries);
     const entry=target.kind==="saved"?savedEntries.get(target.id):null;

@@ -1,0 +1,15 @@
+# kills: both submit actions are disabled while Save as separate is pending
+# suite: node --test --test-name-pattern both.submit.actions.are.disabled tests/editor_e2e.test.js
+# fault: The explicit save-as-separate action stays enabled while its own submission is queued.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13794,7 +13794,7 @@
+   if (keptSeparate) {
+     status.setAttribute("data-conflict", s.conflict);
+     editorEl("editor-conflict-msg").textContent = t(s.conflict === "deleted" ? "saved.conflictDeleted" : "saved.conflict");
+-    keptSeparate.disabled = editorSubmitOff(s, m);
++    keptSeparate.disabled = false;
+   } else if (s.error) {
+     status.setAttribute("data-kind", "error");
+     status.textContent = s.error;
