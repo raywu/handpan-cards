@@ -1,4 +1,4 @@
-# kills: RG: a newer row written by another tab updates the notice on focus, without a reload
+# kills: RG: a newer row written by another tab updates the notice from its channel message, without a reload
 # suite: node --test --test-name-pattern ^RG..a.newer.row.written.by.another.tab tests/e2e.test.js
 # why: If the snapshot listener stops refreshing the status, the notice stays stale until reload.
 diff --git a/index.html b/index.html
