@@ -1,5 +1,5 @@
-# kills: SV9 E1: clean reconciliation updates content and route while dirty reconciliation preserves caret pick and scroll
-# suite: node --test --test-name-pattern ^SV9.E1: tests/e2e.test.js
+# kills: a remote edit of the open saved scale keeps a dirty editor's draft and does not reopen it
+# suite: node --test --test-name-pattern ^a.remote.edit.of.the.open.saved.scale.keeps tests/editor_e2e.test.js
 # fault: A remote snapshot rebinds the dirty editor and overwrites its draft interaction state.
 diff --git a/index.html b/index.html
 --- a/index.html
