@@ -334,7 +334,8 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   starts blank with the ding. A mapped switch also parks the leaving stage as `other`, and switching back with no edit
   in between restores the parked stage exactly (owner 2026-11-16, "restore if notes unchanged";
   test "NR: Neotone to Standard to Neotone with no edit restores every placement"); an edit
-  re-maps. Undo restores the exact prior stage. The Neotone hint block lists the pair help, a built-in's save-as-new note
+  re-maps, and when that re-map cannot map either (a cyclops note, an overflow) the switch back starts blank with the ding, as before; only a stage parked by an unmapped switch is restored
+  (tests "NR: a cyclops edit after a mapped switch leaves nothing to restore on the way back", "NR: an edit that leaves a stage which cannot map back commits nothing #1099 would not"). Undo restores the exact prior stage. The Neotone hint block lists the pair help, a built-in's save-as-new note
   and the name hint (`editorRenderNeoHelp`, Q4). A switch
   that restores a stage holding the ding and a fifth commits it like any edit (a refused
   commit, such as a ding equal to a parked note, stays staged and editable). Tests:

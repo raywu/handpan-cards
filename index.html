@@ -13015,7 +13015,8 @@ function editorStagePanType(m, kind) {
   const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
   const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
   const mapped = unchanged ? null : editorStageMapped(old, kind);
-  const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
+  const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
+  const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
   if (old.ding) next.ding = old.ding;
   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
   const staged = editorWithStage(m, next);

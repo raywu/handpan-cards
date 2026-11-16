@@ -1446,8 +1446,27 @@ describe("empty-state staging", () => {
       globalThis.__bk = editorPanType(__st, "neotone").value;
       globalThis.__want = editorStageMapped((({ other, ...o }) => o)(__st.stage), "neotone"); true`);
     const want = plain(a.get("__want"));
-    assert.deepStrictEqual(plain(a.get("(({ other, ding, ...st }) => st)(__bk.stage)")), want);
+    assert.deepStrictEqual(plain(a.get("(({ other, ...st }) => st)(__bk.stage)")), { ...want, ding: "D3" });
     assert.strictEqual(a.get("__bk.stage.main.length"), 3);
+  });
+
+  test("NR: a cyclops edit after a mapped switch leaves nothing to restore on the way back", () => {
+    const a = app();
+    nrNeo(a, { main: ["E4", "F4"], mutant: [null, "A2"] });
+    a.run(`globalThis.__st = editorPlace(editorPanType(__nr, "standard").value, "inner", "G4").value;
+      globalThis.__bk = editorPanType(__st, "neotone").value; true`);
+    assert.strictEqual(nrStage(a, "__bk"), JSON.stringify({ ding: "D3", kind: "neotone", main: [], mutant: [] }));
+  });
+
+  test("NR: an edit that leaves a stage which cannot map back commits nothing #1099 would not", () => {
+    const a = app();
+    nrNeo(a, { main: ["E4", "F4"], mutant: [null, "A2"] });
+    a.run(`globalThis.__st = editorPanType(__nr, "standard").value;
+      for (const n of ["G2", "A3"]) __st = editorPlace(__st, "bottom", n).value;
+      globalThis.__bk = editorPanType(__st, "neotone").value; true`);
+    assert.strictEqual(a.get("__st.stage.bottom.length"), 3);
+    assert.strictEqual(nrStage(a, "__bk"), JSON.stringify({ ding: "D3", kind: "neotone", main: [], mutant: [] }));
+    assert.strictEqual(a.get("__bk.stage.other.bottom.length"), 3);
   });
 
   test("NR: a stage with a cyclops note still maps nothing on the switch", () => {
