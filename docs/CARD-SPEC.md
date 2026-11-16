@@ -321,17 +321,29 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
 - **Pan type.** The header Standard / Neotone switch changes the pan type as one Undo step
   each way and returns the panel to the Scale tab. Tests: "switching the pan type returns
   the panel to the Scale tab", "Standard to Neotone and back are one Undo step each". While
-  the pan is empty each kind keeps its own staged notes and switching back restores them,
-  the current ding going both ways (the last ding set wins; `editorStagePanType` parks the
-  leaving stage as `other`, which is never saved, shared or dirty); a kind with nothing
-  remembered starts blank with the ding, and notes are never mapped across kinds. A switch
+  the pan is empty the switch maps the staged notes the way a committed pan does (owner
+  2026-11-15, Q1 "match main, map only if cyclops are empty and bottom notes become
+  mutant"; `editorStageMapped`): Standard to Neotone puts the rim on the main fields in order
+  and the bottom on the mutants when the cyclops is empty, the rim holds at most nine notes
+  and the bottom no more than the rim; Neotone to Standard puts the main fields on the rim
+  and the mutants on the bottom. The ding goes both ways (the last ding set wins). With
+  cyclops notes or an overflow (Q3: refusing is kept, a stage is never refused) nothing is
+  mapped and each kind keeps its own staged notes, `editorStagePanType` parking the leaving
+  stage as `other`, which is never saved, shared or dirty; a kind with nothing remembered
+  starts blank with the ding. A mapped switch parks nothing, and Undo restores the exact
+  prior stage. The Neotone hint block lists the pair help, a built-in's save-as-new note
+  and the name hint (`editorRenderNeoHelp`, Q4). A switch
   that restores a stage holding the ding and a fifth commits it like any edit (a refused
   commit, such as a ding equal to a parked note, stays staged and editable). Tests:
   "empty stage: switching the pan type of an empty model keeps each kind's staged notes"
   (Standard to Neotone and back, Neotone to Standard and back), "empty stage: the current
   ding goes both ways", "empty stage: a kind with nothing remembered", "empty stage: each
   switch of an empty model is one Undo step", "empty stage: a switch that restores parked notes commits them", "empty stage: a restore whose ding equals a parked note stays staged", "empty stage: a remembered stage of the other
-  kind is never saved", e2e "switching pan type and back keeps the staged notes".
+  kind is never saved", e2e "switching pan type and back keeps the staged notes". Mapping tests: "empty stage:
+  Standard to Neotone maps the rim to the main fields", "empty stage: a stage with a cyclops
+  note keeps today's park and restore", "empty stage: a stage with more than nine rim notes",
+  "empty stage: Neotone to Standard maps the main fields to the rim", "empty stage: a mapped
+  switch is one Undo step", e2e "Neotone on an empty Standard pan maps the staged notes".
 - **Scale name.** The Scale panel opens with a name field: 40 characters at most, trimmed,
   16px or larger so iOS does not zoom, a 44px target, and a tab stop. A name the user
   blanks stores nothing and the auto name shows (placeholder = the auto name; on Neotone it
