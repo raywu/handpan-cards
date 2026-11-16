@@ -385,15 +385,16 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   At `(orientation:landscape) and (max-height:500px) and (min-width:560px)` `#editor` itself is the
   one scroll box (no inner region scrolls, `editorRegionPin` does not apply, the status row shrinks
   to 28px). The pan is sticky in the left column; the head, line, status, counts, tabs and panels
-  scroll as one column on the right with the tab strip sticky inside it, and the toolbar is
-  sticky at the bottom of that column (reachable at any scroll position, over a solid ground).
+  scroll as one column on the right with the tab strip sticky inside it, and the toolbar follows
+  the tray in flow at the end of that column (chosen over sticky: a sticky bar covers the first
+  tray row at 844x340, and main's sheet has no fixed bar).
   At rest on Scale the name field, both tabs and the first tray row are in view; every Scale and
   Layout control is reachable by scrolling the column, and the pan stays in view. The hint overlay
   tracks the column's scroll and the dialog scrolls it to the top and locks it. Portrait is
   unchanged. Tests: "LS 844x390: at rest on Scale the name field, both tabs and the first tray chip
   are fully in view", "LS 844x390: every control on Scale and on Layout is reachable by scrolling
   the one column, and the pan stays in view" (also 844x340, 667x375), "LS 844x390: the toolbar is
-  reachable (sticky at the column bottom) and a chip dragged onto the pan still places a note";
+  reachable at the end of the column and a chip dragged onto the pan still places a note";
   mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`.
 - **Message placement.** `#editor-status` sits just under the pan box, before the tab strip
   and the counts overlay. An error shows as an ink banner (`#242424` background, white text,

@@ -4646,12 +4646,14 @@ function run() {
       });
     }
 
-    test("LS 844x390: the toolbar is reachable (sticky at the column bottom) and a chip dragged onto the pan still places a note", async () => {
+    test("LS 844x390: the toolbar is reachable at the end of the column and a chip dragged onto the pan still places a note", async () => {
       await open(844, 390);
       await typeLine(SCALE);
-      const bar = await b.eval(`const r = document.querySelector("#editor .editor-toolbar").getBoundingClientRect(), p = getComputedStyle(document.querySelector("#editor .editor-toolbar")).position;
-        return { bottom: r.bottom, ih: innerHeight, p };`);
-      assert.ok(bar.p === "sticky" && bar.bottom <= bar.ih, "the toolbar sticks inside the viewport: " + JSON.stringify(bar));
+      const bar = await b.eval(`const t = document.querySelector("#editor .editor-toolbar"); t.scrollIntoView({ block: "nearest" });
+        const r = t.getBoundingClientRect(), s = document.getElementById("editor-save").getBoundingClientRect(), hit = document.elementFromPoint(s.left + s.width / 2, s.top + s.height / 2);
+        return { bottom: r.bottom, ih: innerHeight, hit: !!hit && hit.id === "editor-save", p: getComputedStyle(t).position };`);
+      assert.ok(bar.hit && bar.bottom <= bar.ih && bar.p !== "sticky", "the toolbar follows the tray in flow and Save is hit when scrolled to: " + JSON.stringify(bar));
+      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
       const rimCount = () => b.eval(`return editorNames(editorSession.history.present, "rim").length;`);
       const before = await rimCount();
       await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
