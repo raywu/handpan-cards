@@ -19,4 +19,4 @@ diff --git a/index.html b/index.html
 -  #editor-status[data-conflict]{position:static}
    #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
      height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
-   #editor-region{display:flex; grid-area:region; overflow:visible; min-height:0; margin-top:0; margin-bottom:calc(44px + var(--sp-2))} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto}
+   #editor-region{display:flex; grid-area:region; overflow:visible; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto}
