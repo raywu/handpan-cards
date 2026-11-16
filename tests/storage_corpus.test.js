@@ -800,13 +800,13 @@ test("RG: the backup names the rows it leaves out, and with only newer rows it i
   only.els["backup-open"].click();
   assert.strictEqual(only.els["backup-status"].textContent, RG_BACKUP_NONE(1));
   assert.ok(!only.els["backup-status"].textContent.includes("not in this file"), "with no file the line does not point at a file");
-  assert.notStrictEqual(only.els["backup-status"].textContent, "No saved scales to back up yet.");
+  assert.notStrictEqual(only.els["backup-status"].textContent, "No saved scales to export yet.");
   assert.strictEqual(only.els["backup-text"].value, "");
   for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(only.els[id].disabled, true, id);
 
   const empty = await sharedBoot(createOrigin({ storage: {} }), NEW_HTML);
   empty.els["backup-open"].click();
-  assert.strictEqual(empty.els["backup-status"].textContent, "No saved scales to back up yet.");
+  assert.strictEqual(empty.els["backup-status"].textContent, "No saved scales to export yet.");
 });
 
 test("RG: with no readable rows the newer line shows once, as the no-file line, whether or not seeded scales are hidden", async () => {

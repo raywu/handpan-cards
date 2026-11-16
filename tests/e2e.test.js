@@ -21305,7 +21305,7 @@ function run() {
           assert.ok(line.length > 0 && line !== "backup.file_newer" && !line.includes("{n}"), `${lang}: the backup line is filled in`);
           const text = await b.eval(`document.getElementById("backup-text").value = backupText(); return backupText();`);
           assert.ok(text.includes(line), `${lang}: the backup file carries the line`);
-          const m = await b.eval(`openPanel(); backupPanel.hidden = false; paintBackup(t("backup.file_newer_none", { n: 3 }));
+          const m = await b.eval(`openSubpage("export"); paintBackup(t("backup.file_newer_none", { n: 3 }));
             const el = document.getElementById("backup-status"), q = el.getBoundingClientRect();
             return { text: el.textContent, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight, w: q.width, left: q.left, right: q.right, vw: innerWidth, doc: document.documentElement.scrollWidth };`);
           const none = await b.eval(`return t("backup.file_newer_none", { n: 3 });`);
