@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12996,7 +12996,7 @@ function editorStageNeoMove(st, from, to) {
+@@ -13007,7 +13007,7 @@
    if (old.ding) next.ding = old.ding;
-   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+   if (!mapped && Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
    const staged = editorWithStage(m, next);
 -  const done = editorStageCommit(staged, next);
 +  const done = { ok: false };
