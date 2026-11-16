@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12993,7 +12993,6 @@ function editorStageNeoMove(st, from, to) {
- function editorStagePanType(m, kind) {
+@@ -13004,7 +13004,6 @@
    const { other, ...old } = editorStageOf(m);
-   const next = other && other.kind === kind ? { ...other } : editorBlankStage(kind);
+   const mapped = editorStageMapped(old, kind);
+   const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
 -  if (old.ding) next.ding = old.ding;
-   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+   if (!mapped && Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
    const staged = editorWithStage(m, next);
    const done = editorStageCommit(staged, next);

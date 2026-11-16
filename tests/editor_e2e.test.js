@@ -274,13 +274,40 @@ function run() {
       assert.deepStrictEqual((await stageOf()).rim, ["D" + o, "E" + o], await statusText());
       assert.strictEqual(before.length, 3);
       await b.click("#editor-type-neotone");
-      assert.deepStrictEqual((await stageOf()).main, []);
+      assert.deepStrictEqual((await stageOf()).main, ["D" + o, "E" + o]);
       assert.strictEqual((await stageOf()).ding, "C" + o);
       await b.click("#editor-type-standard");
       assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: [] }, await statusText());
       assert.deepStrictEqual(await hits(), before);
       assert.strictEqual(await stillEmpty(), true);
       assert.strictEqual(await saveDisabled(), true);
+    });
+
+    test("Neotone on an empty Standard pan maps the staged notes (owner 2026-11-15): at 390x844 a ding, two rim notes and a bottom note become two main fields and a mutant, and the info overlay explains the pairing", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      const o = await octave();
+      await b.click('.tray-note[data-name="C"]');
+      await tapPoint(await dingAt(), true);
+      await b.click('.tray-note[data-name="D"]');
+      await tapPoint(await spotAt("rim", 45), true);
+      await b.click('.tray-note[data-name="E"]');
+      await tapPoint(await spotAt("rim", 135), true);
+      await b.click('.tray-note[data-name="A"]');
+      await tapPoint(await spotAt("bottom", 90), true);
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o] }, await statusText());
+      await b.click("#editor-type-neotone");
+      assert.deepStrictEqual(await stageOf(), { kind: "neotone", ding: "C" + o, main: ["D" + o, "E" + o], mutant: ["A" + o] }, await statusText());
+      const shape = await b.eval(`const map = editorSession.history.present.options.profile.map; return [map.slice(0, 9).filter(Boolean).length, map.slice(9).filter(Boolean).length, [...document.querySelectorAll("#editor-pan svg text")].map((e) => e.textContent).join(" ")];`);
+      assert.deepStrictEqual(shape.slice(0, 2), [2, 1]);
+      for (const n of ["D", "E", "A"]) assert.ok(shape[2].includes(n), shape[2]);
+      await b.click("#editor-hint-toggle");
+      const help = await b.eval(`return [...document.querySelectorAll("#editor-hint .neo-help")].map((e) => e.textContent);`);
+      assert.deepStrictEqual(help, ["Mutant notes pair with tonefields: note N goes in tonefield N."]);
+      await b.click("#editor-hint-close");
+      await b.click("#editor-type-standard");
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o] });
+      assert.strictEqual(await stillEmpty(), true);
     });
 
     test("the empty Standard pan paints staged notes above every area ring: at each note centre and where a ring crosses its edge the note is the topmost thing, filled", async () => {
