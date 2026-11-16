@@ -1,4 +1,5 @@
-# kills: P0 phone landscape 844x390: the pan does not collapse (>= 0.95 x 309), the grid is on, toolbar in view, controls scroll in their own region
+# kills: P0 phone landscape 844x390: the pan does not collapse (>= 0.95 x 309), the grid is on, tabs in view, toolbar reachable, controls scroll as one column (#editor, LS 2026-11-15)
+# was: P0 phone landscape 844x390: the pan does not collapse (>= 0.95 x 309), the grid is on, toolbar in view, controls scroll in their own region
 # suite: node --test --test-name-pattern ^P0.phone.landscape.844x390 tests/editor_e2e.test.js
 # fault: The phone landscape rule no longer matches, so a short wide screen stacks the editor again.
 diff --git a/index.html b/index.html
