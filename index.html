@@ -1048,6 +1048,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor .editor-toolbar #editor-menu .menuitem{flex:0 0 auto; min-height:44px; justify-content:flex-start; text-align:left; border:none; background:none; padding-inline:var(--sp-2)}
 #editor .editor-toolbar #editor-menu .menuitem[aria-disabled="true"]{opacity:.45; cursor:default}
 #editor .editor-toolbar #editor-menu .menuitem.armed{background:none; color:#242424}
+#editor .editor-toolbar #editor-menu .menuitem.armed:active{color:#5A49A6}
 #editor .editor-toolbar #editor-menu .rs-full{display:inline}
 #editor .editor-toolbar #editor-menu .rs-short{display:none}
 #editor-menu .menu-sep{height:1px; background:#8A847B; margin:var(--sp-1) 0}
@@ -13021,10 +13022,13 @@ function editorStageMapped(old, kind) {
 // on the arriving one as `other`). The current ding goes both ways.
 function editorStagePanType(m, kind) {
   const { other, ...old } = editorStageOf(m);
-  const mapped = editorStageMapped(old, kind);
-  const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
+  const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
+  const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
+  const mapped = unchanged ? null : editorStageMapped(old, kind);
+  const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
+  const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
   if (old.ding) next.ding = old.ding;
-  if (!mapped && Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+  if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
   const staged = editorWithStage(m, next);
   const done = editorStageCommit(staged, next);
   return done.ok ? done : { ok: true, value: staged };
@@ -14170,6 +14174,7 @@ function editorOpenMenu() {
   const s = editorSession;
   editorCommitName();
   if (!s || s.dialog || s.editing || s.menu) return;
+  if (s.hint) editorSetAreas(false);
   s.menu = true;
   editorEl("editor-menu").removeAttribute("hidden");
   editorEl("editor-more").setAttribute("aria-expanded", "true");
@@ -14938,7 +14943,14 @@ function editorPanFocus(e) {
 // An open hint card paints over the region's controls; Tab skips what it covers and closing the hint puts them back.
 function editorHintCovers(el) {
   if (!editorSession.hint || editorSession.dialog || el.closest("#editor-areas") || el === editorEl("editor-hint-close")) return false;
-  const a = editorEl("editor-areas").getBoundingClientRect(), r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  const a = editorEl("editor-areas").getBoundingClientRect(), r = el.getBoundingClientRect(), x = r.left + r.width / 2;
+  let y = r.top + r.height / 2;
+  for (let p = el.parentElement; p && p !== editorEl("editor"); p = p.parentElement) {
+    if (p.scrollHeight <= p.clientHeight || !/auto|scroll/.test(getComputedStyle(p).overflowY)) continue;
+    const c = p.getBoundingClientRect();
+    if (y + r.height / 2 > c.bottom) y -= y + r.height / 2 - c.bottom;
+    else if (y - r.height / 2 < c.top) y += c.top - (y - r.height / 2);
+  }
   return x >= a.left && x <= a.right && y >= a.top && y <= a.bottom;
 }
 function editorTabStops() {
@@ -14987,7 +14999,7 @@ function editorWire() {
   const del = editorEl("editor-delete");
   if (del) del.onclick = editorMenuPick(editorDeleteTap);
   editorEl("editor").addEventListener("pointerdown", (e) => {
-    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target) && !editorEl("editor-tabs").contains(e.target)) editorSetAreas(false);
+    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target)) editorSetAreas(false);
     const menu = editorEl("editor-menu");
     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();
