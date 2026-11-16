@@ -190,7 +190,7 @@ function run() {
       const q = new DOMPoint(p.x, p.y).matrixTransform(document.querySelector("#editor-pan svg").getScreenCTM()); return { x: q.x, y: q.y };`);
     const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     const statusText = () => b.eval(`return document.getElementById("editor-status").textContent;`);
-    const stageOf = () => b.eval(`return JSON.parse(JSON.stringify(editorStageOf(editorSession.history.present)));`);
+    const stageOf = () => b.eval(`return JSON.parse(JSON.stringify((({ other, ...st }) => st)(editorStageOf(editorSession.history.present))));`);
     const octave = () => b.eval(`return editorView(editorSession.history.present).oct;`);
     const stillEmpty = () => b.eval(`return editorIsEmpty(editorSession.history.present);`);
     const saveDisabled = () => b.eval(`return document.getElementById("editor-save").disabled;`);
@@ -5178,31 +5178,93 @@ function run() {
       });
     }
 
+    const walkTabs = async (w, h) => {
+      await fresh(w, h);
+      await openAdd(); await typeLine(SCALE);
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
+      const probe = `${liftInert}
+        try {
+          const el = document.activeElement, r = el.getBoundingClientRect(), areas = document.getElementById("editor-areas");
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return { id: el.id || String(el.className.baseVal ?? el.className) || el.tagName, ok: !!hit && (el.contains(hit) || (!!el.closest("#editor-pan") && !areas.contains(hit))), hit: hit && (hit.id || String(hit.className.baseVal ?? hit.className)) };
+        } finally { ${dropInert} }`;
+      for (const shift of [false, true]) {
+        for (let i = 1; i <= 8; i++) {
+          const before = await b.eval(`const a = document.activeElement; return a.id || String(a.className.baseVal ?? a.className) || a.tagName;`);
+          const beforeEl = await b.eval(`window.__ehkPrev = document.activeElement; return true;`);
+          await b.eval(`document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: ${shift}, bubbles: true, cancelable: true })); return true;`);
+          await pause(40);
+          const moved = await b.eval(`return document.activeElement !== window.__ehkPrev;`);
+          assert.ok(beforeEl && moved, `${shift ? "Shift+" : ""}Tab ${i} from ${before} left focus where it was`);
+          const r = await b.eval(probe);
+          assert.ok(r.ok, `${shift ? "Shift+" : ""}Tab ${i} from ${before} lands under another element: ${JSON.stringify(r)}`);
+        }
+      }
+    };
     for (const [w, h] of [[360, 640], [390, 844]]) {
       test(`EHM tab skips covered ${w}x${h}: with the hint open Tab always lands on a reachable control`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await b.click("#editor-hint-toggle");
-        await pause(250);
-        assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
-        const probe = `${liftInert}
-          try {
-            const el = document.activeElement, r = el.getBoundingClientRect();
-            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-            return { id: el.id || String(el.className.baseVal ?? el.className) || el.tagName, ok: !!hit && (el.contains(hit) || !!el.closest("#editor-pan")), hit: hit && (hit.id || String(hit.className.baseVal ?? hit.className)) };
-          } finally { ${dropInert} }`;
-        for (const shift of [false, true]) {
-          for (let i = 1; i <= 8; i++) {
-            const before = await b.eval(`return document.activeElement.id || document.activeElement.className || document.activeElement.tagName;`);
-            await b.eval(`document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: ${shift}, bubbles: true, cancelable: true })); return true;`);
-            await pause(40);
-            const r = await b.eval(probe);
-            assert.ok(r.ok, `${shift ? "Shift+" : ""}Tab ${i} from ${before} lands under another element: ${JSON.stringify(r)}`);
-          }
-        }
+        await walkTabs(w, h);
       });
     }
+    for (const [w, h] of [[844, 390], [320, 568], [320, 400]]) {
+      test(`EHK2 ${w}x${h} with the hint open Tab and Shift+Tab never land on a control under the card`, async () => {
+        await walkTabs(w, h);
+      });
+    }
+
+    test("EHK1 the menu opened from the keyboard with the hint open closes the hint first", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(NEO);
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      assert.strictEqual(await b.eval(`return editorSession.hint;`), true, "the hint is open");
+      await b.eval(`const m = document.getElementById("editor-more"); m.focus(); m.click(); return true;`);
+      await pause(100);
+      assert.strictEqual(await b.eval(`return editorSession.menu;`), true, "the menu is open");
+      assert.deepStrictEqual(await b.eval(`return [editorSession.hint, document.getElementById("editor-areas").hidden, document.getElementById("editor-hint-close").hidden];`), [false, true, true], "the hint closed");
+    });
+
+    test("EHK3 an armed Delete item shows the main pressed ink #5A49A6 while pressed", async () => {
+      await fresh(390, 844);
+      await openSaved();
+      await b.click("#editor-delete");
+      await pause(250);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").classList.contains("armed");`), true, "the Delete is armed");
+      await b.send("DOM.enable");
+      await b.send("CSS.enable");
+      const doc = await b.send("DOM.getDocument", { depth: 0 });
+      const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: "#editor-delete" });
+      const ink = () => b.eval(`return getComputedStyle(document.getElementById("editor-delete")).color;`);
+      assert.strictEqual(await ink(), "rgb(36, 36, 36)", "at rest the armed ink is main's");
+      await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
+      try {
+        await b.settle();
+        assert.strictEqual(await ink(), "rgb(90, 73, 166)");
+      } finally {
+        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
+      }
+    });
+
+    test("EHK4 1280x800 the open hint card covers the tab strip", async () => {
+      await fresh(1280, 800);
+      await openAdd();
+      await typeLine(NEO);
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      const r = await b.eval(`${liftInert}
+        try {
+          const areas = document.getElementById("editor-areas");
+          return [...document.querySelectorAll("#editor-tabs .edtab")].map((el) => {
+            const q = el.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+            return { id: el.id, covered: !!hit && areas.contains(hit) };
+          });
+        } finally { ${dropInert} }`);
+      assert.ok(r.length > 0, "the tab strip exists");
+      assert.deepStrictEqual(r.filter((x) => !x.covered), [], "tabs not under the card: " + JSON.stringify(r));
+    });
 
     test("EHM tab skips covered: closing the hint restores the covered controls to the Tab order", async () => {
       await fresh(390, 844);

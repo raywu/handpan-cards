@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13004,7 +13004,6 @@
-   const { other, ...old } = editorStageOf(m);
-   const mapped = editorStageMapped(old, kind);
-   const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
+@@ -13017,7 +13017,6 @@ function editorStagePanType(m, kind) {
+   const mapped = unchanged ? null : editorStageMapped(old, kind);
+   const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
+   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
 -  if (old.ding) next.ding = old.ding;
-   if (!mapped && Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
    const staged = editorWithStage(m, next);
    const done = editorStageCommit(staged, next);
