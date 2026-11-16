@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14002,7 +14002,7 @@ function editorRenderTabs() {
+@@ -14065,7 +14065,7 @@ function editorRenderTabs() {
    if (tog && row && tog.parentNode !== row) {
      const had = document.activeElement === tog;
      row.appendChild(tog);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +    if (false) tog.focus();
    }
  }
- // The region rests scrolled to its end so the tray sits above the toolbar; a render re-pins only when it was already there.
+ // Phone landscape (the S4 media query): #editor is the one scroll box and the region does not scroll, so nothing pins to an end there.
