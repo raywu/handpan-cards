@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1070,7 +1070,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1071,7 +1071,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
      grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr); grid-template-rows:auto 1fr auto auto auto auto auto auto 1fr;
      grid-template-areas:"head head" "pan ." "pan line" "pan status" "pan counts" "pan tabs" "pan panel" "pan bar" "pan ."}
    #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
@@ -12,11 +12,11 @@ diff --git a/index.html b/index.html
    #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:contents} #editor-tabs{grid-area:tabs; position:static} #editor-panels{grid-area:panel} #editor .editor-toolbar{grid-area:bar}
  }
  /* Phone landscape (S4, owner 2026-11-15 "main-style column scroll"): a short, wide screen takes the two-column grid so the pan never
-@@ -1094,7 +1093,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1095,7 +1094,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
    #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
-   #editor-status:not([data-conflict]) button{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:auto}
-   #editor-status:not([data-conflict]):has(button){padding-right:calc(50% + 56px)}
--  #editor-status[data-conflict]{position:absolute; top:0; bottom:auto; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
+   #editor-status:not([data-conflict]) button{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}
+   #editor-status:not([data-conflict]):has(button){padding-right:96px; min-height:34px}
+-  #editor-status[data-conflict]{position:absolute; right:0; top:0; bottom:auto; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
 +  #editor-status[data-conflict]{position:absolute; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
    #scale-sheet.onepanel #editor:has(#editor-areas[hidden]){grid-template-areas:"head head" "pan line" "pan region" "pan bar" "pan ."; grid-template-rows:repeat(4, max-content) minmax(0,1fr)}
    #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) :is(#editor-region, .editor-statusrow){margin-top:calc(4px - var(--sp-3))}
