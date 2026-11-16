@@ -341,6 +341,10 @@
   "saved.temporary": "USAR ESTA PESTAÑA TEMPORALMENTE",
   "saved.failure": "No se pudieron guardar los cambios. Tu borrador sigue aquí. Inténtalo de nuevo.",
   "saved.legacy": "Una versión anterior cambió sus escalas guardadas. Esos cambios se conservan por separado para recuperarlos.",
+  "saved.newer": {
+    "one": "1 escala guardada se creó con una versión más reciente de Handpan Theory. Está a salvo y volverá a aparecer tras una actualización.",
+    "other": "{n} escalas guardadas se crearon con una versión más reciente de Handpan Theory. Están a salvo y volverán a aparecer tras una actualización."
+  },
   "saved.savedToken": "{token} identifica esta escala guardada en este navegador.",
   "saved.presetToken": "{token} identifica esta escala predefinida.",
   "saved.importFailure": "No se pudo añadir esta escala compartida. El enlace sigue en la barra de direcciones. Intenta abrirlo de nuevo.",
@@ -424,5 +428,13 @@
   "sync.pageAccount": "Cuenta",
   "sync.pageBack": "Volver a la práctica",
   "sync.resendAt": "Puedes pedir un código nuevo a las {time}.",
-  "backup.signIn": "Para guardar escalas automáticamente, inicia sesión."
+  "backup.signIn": "Para guardar escalas automáticamente, inicia sesión.",
+  "backup.file_newer": {
+    "one": "1 escala de una versión más reciente no está en este archivo. Sigue guardada en este navegador.",
+    "other": "{n} escalas de una versión más reciente no están en este archivo. Siguen guardadas en este navegador."
+  },
+  "backup.file_newer_none": {
+    "one": "1 escala de una versión más reciente no se puede respaldar aquí. Sigue guardada en este navegador.",
+    "other": "{n} escalas de una versión más reciente no se pueden respaldar aquí. Siguen guardadas en este navegador."
+  }
 }

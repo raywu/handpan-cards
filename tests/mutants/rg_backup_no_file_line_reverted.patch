@@ -1,0 +1,15 @@
+# kills: RG: with no readable rows the newer line shows once, as the no-file line, whether or not seeded scales are hidden
+# suite: node --test --test-name-pattern ^RG..with.no.readable.rows tests/storage_corpus.test.js
+# why: With no file to back up, "is not in this file" points at a file that does not exist.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16376,7 +16376,7 @@
+   paintBackupHint();
+   document.getElementById("backup-share").hidden = typeof navigator.share !== "function";
+   for (const b of backupButtons) b.disabled = !rows;
+-  backupStatus.textContent = message !== undefined ? message : rows ? "" : newer ? t("backup.file_newer_none", { n: newer }) : t("backup.empty");
++  backupStatus.textContent = message !== undefined ? message : rows ? "" : newer ? t("backup.file_newer", { n: newer }) : t("backup.empty");
+   const last = backupLastText();
+   backupLast.textContent = last;
+   backupLast.hidden = !last;

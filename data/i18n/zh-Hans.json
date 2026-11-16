@@ -327,6 +327,9 @@
   "saved.temporary": "临时使用此标签页",
   "saved.failure": "无法保存这些更改。你的编辑内容仍然保留。请重试。",
   "saved.legacy": "旧版应用更改了已保存的音阶。这些更改会单独保留，以供恢复。",
+  "saved.newer": {
+    "other": "有 {n} 个已保存的音阶是用更新版本的 Handpan Theory 创建的。它们已安全保留，更新后会再次显示。"
+  },
   "saved.savedToken": "{token} 是此浏览器中这个已保存音阶的标识。",
   "saved.presetToken": "{token} 是这个内置音阶的标识。",
   "saved.importFailure": "无法添加这个分享的音阶。链接仍在地址栏中，请尝试重新打开。",
@@ -407,5 +410,11 @@
   "sync.pageAccount": "账户",
   "sync.pageBack": "返回练习",
   "sync.resendAt": "你可以在 {time} 请求新验证码。",
-  "backup.signIn": "要自动保存音阶，请登录。"
+  "backup.signIn": "要自动保存音阶，请登录。",
+  "backup.file_newer": {
+    "other": "有 {n} 个来自更新版本的音阶不在此文件中。它们仍保存在此浏览器里。"
+  },
+  "backup.file_newer_none": {
+    "other": "有 {n} 个来自更新版本的音阶无法在此备份。它们仍保存在此浏览器里。"
+  }
 }

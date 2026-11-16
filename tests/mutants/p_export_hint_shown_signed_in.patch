@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18567,7 +18567,7 @@ function backupMarkDone() {
+@@ -16364,7 +16364,7 @@
    paintBackup();
  }
  function paintBackupHint() {
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  document.getElementById("backup-signin").hidden = !syncActive();
  }
  function paintBackup(message) {
-   const rows = backupRows().length;
+   const rows = backupRows().length, newer = savedNewerCount();
