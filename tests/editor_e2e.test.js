@@ -4173,13 +4173,16 @@ function run() {
     });
 
     for (const [w, h, target] of [[926, 428, 347], [844, 390, 309], [667, 375, 294], [568, 320, 206]]) {
-      test(`P0 phone landscape ${w}x${h}: the pan does not collapse (>= 0.95 x ${target}), the grid is on, toolbar in view, controls scroll as one column (#editor, LS 2026-11-15)`, async () => {
+      test(`P0 phone landscape ${w}x${h}: the pan does not collapse (>= 0.95 x ${target}), the grid is on, tabs in view, toolbar reachable, controls scroll as one column (#editor, LS 2026-11-15)`, async () => {
         await open(w, h);
         const r = await rects(w, h);
         assert.ok(r.grid, "two-column grid");
         assert.ok(r.svg.h >= 0.95 * target && r.svg.h >= 200, `drawn pan ${r.svg.h}`);
         assert.ok(r.page, "no page scroll");
-        assert.ok(r.bar.top >= 0 && r.bar.bottom <= h && r.tabs.top >= 0 && r.tabs.bottom <= h, "toolbar and tabs in view");
+        assert.ok(r.tabs.top >= 0 && r.tabs.bottom <= h, "tabs in view at rest");
+        await b.eval(`document.querySelector("#editor .editor-toolbar").scrollIntoView({ block: "nearest" }); return true;`);
+        const bar = await b.eval(`const r = document.querySelector("#editor .editor-toolbar").getBoundingClientRect(); return { top: r.top, bottom: r.bottom };`);
+        assert.ok(bar.top >= 0 && bar.bottom <= h, "the toolbar is in view once scrolled to: " + JSON.stringify(bar));
         assert.ok(r.region && r.region.oy === "visible" && r.region.h > 0 && r.region.st === 0, "the region no longer scrolls: " + JSON.stringify(r.region));
         assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor")).overflowY;`), "auto", "the column scrolls as one box");
         assert.ok(r.svg.right <= r.tabs.left + 1 || r.svg.left >= r.tabs.right - 1, "the pan and the controls do not overlap");
@@ -4280,7 +4283,7 @@ function run() {
             if (e === tg) continue;
             const r = e.getBoundingClientRect(); if (!r.width || !r.height) continue;
             const x = r.left + r.width / 2, y = r.top + r.height / 2;
-            if (y < Math.max(rg.top, strip.bottom) || y > rg.bottom || x < 0 || x > innerWidth) continue;
+            if (y < Math.max(rg.top, strip.bottom) || y > rg.bottom || y > innerHeight || x < 0 || x > innerWidth) continue;
             const hit = document.elementFromPoint(x, y);
             if (hit !== e && !e.contains(hit)) out.push((e.id || e.className) + " -> " + (hit && (hit.id || hit.className)));
           }

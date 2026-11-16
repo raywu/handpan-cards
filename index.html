@@ -1081,7 +1081,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @media (orientation:landscape) and (max-height:500px) and (min-width:560px){
   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none;
     scroll-padding:48px 0 var(--sp-4); container-type:normal;
-    grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto auto auto minmax(0,1fr);
+    grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:repeat(6, max-content) minmax(0,1fr);
     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar" "pan ."}
   #scale-sheet.onepanel #editor::-webkit-scrollbar{display:none}
   #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
@@ -1090,7 +1090,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   #editor-status[data-conflict]{position:static}
   #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
     height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
-  #editor-region{display:flex; grid-area:region; overflow:visible; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto}
+  #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}
   #editor .editor-toolbar{grid-area:bar}
   #editor-dialog{position:fixed}
 }
