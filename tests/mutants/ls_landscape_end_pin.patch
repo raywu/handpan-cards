@@ -1,5 +1,5 @@
 # kills: LS 844x390: at rest on Scale the name field, both tabs and the first tray chip are fully in view and hit at their centres, and the column is one scroll box at its top
-# suite: node --test --test-name-pattern ^LS.844x390.at.rest tests/editor_e2e.test.js
+# suite: node --test --test-name-pattern ^LS.844x390..at.rest tests/editor_e2e.test.js
 # fault: In phone landscape the Scale tab pins the column to its end again, so the tabs and name field scroll out of view at rest.
 diff --git a/index.html b/index.html
 --- a/index.html
