@@ -5215,9 +5215,9 @@ function run() {
       });
     }
 
-    const walkTabs = async (w, h) => {
+    const walkTabs = async (w, h, line = SCALE) => {
       await fresh(w, h);
-      await openAdd(); await typeLine(SCALE);
+      await openAdd(); await typeLine(line);
       await b.click("#editor-hint-toggle");
       await pause(250);
       assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
@@ -5242,7 +5242,7 @@ function run() {
     };
     for (const [w, h] of [[360, 640], [390, 844]]) {
       test(`EHM tab skips covered ${w}x${h}: with the hint open Tab always lands on a reachable control`, async () => {
-        await walkTabs(w, h);
+        await walkTabs(w, h, NEO);
       });
     }
     for (const [w, h] of [[844, 390], [320, 568], [320, 400]]) {
