@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
    const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
 -  const mapped = unchanged ? null : editorStageMapped(old, kind);
 +  const mapped = null;
-   const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
+   const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
+   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
    if (old.ding) next.ding = old.ding;
-   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;

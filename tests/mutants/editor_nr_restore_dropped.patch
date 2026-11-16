@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
 +  const unchanged = false && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
    const mapped = unchanged ? null : editorStageMapped(old, kind);
-   const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
-   if (old.ding) next.ding = old.ding;
+   const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
+   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
