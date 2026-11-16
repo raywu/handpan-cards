@@ -1577,6 +1577,20 @@ describe("empty-state staging", () => {
     assert.strictEqual(a.get(`editorIsEmpty(editorReplaceDing(__b.value, "C3").value)`), false);
   });
 
+  test("empty stage: a refused restore says why in the editor status, and a clean switch says nothing", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorPlace(editorReplaceDing(__m, "D3").value, "rim", "G3").value, "inner", "D5").value;
+      globalThis.__nn = editorReplaceDing(editorPanType(__s, "neotone").value, "G3").value; true`);
+    openSession(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.history = editorHistoryNew(__nn); editorSession.error = "";`);
+    a.run(`globalThis.__ok = editorDo((m) => editorPanType(m, "standard")); true`);
+    assert.strictEqual(a.get("__ok"), true);
+    assert.strictEqual(a.get("editorIsEmpty(editorSession.history.present)"), true);
+    assert.match(a.get("editorSession.error"), /G3/);
+    a.run(`editorSession.error = ""; editorDo((m) => editorPanType(m, "neotone")); true`);
+    assert.strictEqual(a.get("editorSession.error"), "");
+  });
+
   test("empty stage: the pan type of a non-empty model behaves as before", () => {
     const a = app();
     withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");

@@ -13022,7 +13022,7 @@ function editorStagePanType(m, kind) {
   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
   const staged = editorWithStage(m, next);
   const done = editorStageCommit(staged, next);
-  return done.ok ? done : { ok: true, value: staged };
+  return done.ok ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
 }
 function editorNameEntry(name, zone, label) {
   const at = EDITOR_NAME_RE.exec(String(name));
@@ -13965,6 +13965,7 @@ function editorDo(step, say, mark) {
   s.flash = mark ? editorFlashOf(prev, res.history.present) : null;
   s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
   s.notice = !!(res.notice && res.notice.pinsReset);
+  if (res.notice && res.notice.stageRefused) s.error = res.notice.stageRefused;
   const firstDing = say && !editorDingOf(prev) ? editorFirstDingSay(say) : say;
   s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : firstDing || "";
   return true;
