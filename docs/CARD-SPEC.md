@@ -398,7 +398,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   one scroll box (no inner region scrolls, `editorRegionPin` does not apply). The status row takes no
   layout height (owner 2026-11-16): idle, the tab strip sits within 8px under the scale field; a
   message overlays the top of the tab strip at its left and right edges without moving the tabs
-  (plain info messages with no button let taps through; errors and prompts with buttons take them). The pan is sticky in the left column; the head, line, status, counts, tabs and panels
+  (the message box lets taps through to the tabs, at most one tab strip tall; its Cancel and Undo buttons sit between the two tab centres and take their own taps; the conflict banner is the exception: it sizes to its text over the tabs, below the scale field, and takes taps). The pan is sticky in the left column; the head, line, status, counts, tabs and panels
   scroll as one column on the right with the tab strip sticky inside it, and the toolbar follows
   the tray in flow at the end of that column (chosen over sticky: a sticky bar covers the first
   tray row at 844x340, and main's sheet has no fixed bar).
@@ -409,7 +409,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   are fully in view", "LS 844x390: every control on Scale and on Layout is reachable by scrolling
   the one column, and the pan stays in view" (also 844x340, 667x375), "LS 844x390: the toolbar is
   reachable at the end of the column and a chip dragged onto the pan still places a note", "SO: landscape message overlays the tabs without shifting them";
-  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`, `so_landscape_status_in_flow`.
+  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`, `so_landscape_status_in_flow`, `so_landscape_message_blocks_tabs`.
 - **Message placement.** `#editor-status` sits just under the pan box, before the tab strip
   and the counts overlay. An error shows as an ink banner (`#242424` background, white text,
   14px/600, radius 8px, padding 4px 12px, a leading warning glyph, no red, no hover) and plays

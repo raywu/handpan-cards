@@ -1,0 +1,15 @@
+# kills: SO: en 844x390: while a message shows a real click at each tab centre switches tabs and the message buttons stay tappable
+# suite: node --test --test-name-pattern ^SO:.en.844x390..while.a.message tests/editor_e2e.test.js
+# fault: In phone landscape the status box takes taps again, so a message laid over the tab strip blocks a click at a tab centre.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1089,7 +1089,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #editor-counts{grid-area:counts}
+   #editor .editor-statusrow{grid-area:region; align-self:start; height:0; min-height:0; z-index:5}
+   #editor-status, #editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:0}
+-  #editor-status{position:absolute; left:0; right:0; top:0; bottom:auto; border-radius:8px; pointer-events:none}
++  #editor-status{position:absolute; left:0; right:0; top:0; bottom:auto; border-radius:8px}
+   #editor-status:not([data-conflict]){max-height:44px; overflow:hidden; padding-block:2px; line-height:20px}
+   #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
+   #editor-status:not([data-conflict]) button{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:auto}
