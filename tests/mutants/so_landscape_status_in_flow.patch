@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1096,7 +1096,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-   #editor-status:not([data-conflict]):has(button){padding-right:calc(50% + 56px)}
-   #editor-status[data-conflict]{position:absolute; top:0; bottom:auto; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
+@@ -1097,7 +1097,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #editor-status:not([data-conflict]):has(button){padding-right:96px; min-height:34px}
+   #editor-status[data-conflict]{position:absolute; right:0; top:0; bottom:auto; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
    #scale-sheet.onepanel #editor:has(#editor-areas[hidden]){grid-template-areas:"head head" "pan line" "pan region" "pan bar" "pan ."; grid-template-rows:repeat(4, max-content) minmax(0,1fr)}
 -  #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) :is(#editor-region, .editor-statusrow){margin-top:calc(4px - var(--sp-3))}
 +  #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) :is(#editor-region, .editor-statusrow){margin-top:0}

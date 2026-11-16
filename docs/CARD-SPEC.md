@@ -411,8 +411,8 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   unchanged. Tests: "LS 844x390: at rest on Scale the name field, both tabs and the first tray chip
   are fully in view", "LS 844x390: every control on Scale and on Layout is reachable by scrolling
   the one column, and the pan stays in view" (also 844x340, 667x375), "LS 844x390: the toolbar is
-  reachable at the end of the column and a chip dragged onto the pan still places a note", "SO: landscape message overlays the tabs without shifting them";
-  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`, `so_landscape_status_in_flow`, `so_landscape_message_blocks_tabs`.
+  reachable at the end of the column and a chip dragged onto the pan still places a note", "SO: landscape message overlays the tabs without shifting them", "SO: <locale> <size>: every landscape message is fully readable inside the tab strip and moves nothing" (all 8 locales at 844x390, 667x375, 932x430, 568x320: the landscape message is 12px/14px, at most 3 lines in the 44px strip, with Cancel or Undo at the right edge clear of both tab centres);
+  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`, `so_landscape_status_in_flow`, `so_landscape_message_blocks_tabs`, `so_landscape_message_clipped`.
 - **Message placement.** `#editor-status` sits just under the pan box, before the tab strip
   and the counts overlay. An error shows as an ink banner (`#242424` background, white text,
   14px/600, radius 8px, padding 4px 12px, a leading warning glyph, no red, no hover) and plays
