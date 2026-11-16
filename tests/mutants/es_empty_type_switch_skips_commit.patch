@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13007,7 +13007,7 @@
+@@ -13019,7 +13019,7 @@ function editorStagePanType(m, kind) {
    if (old.ding) next.ding = old.ding;
-   if (!mapped && Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
    const staged = editorWithStage(m, next);
 -  const done = editorStageCommit(staged, next);
 +  const done = { ok: false };
