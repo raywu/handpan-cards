@@ -4734,26 +4734,90 @@ function run() {
       assert.ok(g.status.height > 0 && g.status.top >= g.line.bottom, "the message is visible below the scale field: " + JSON.stringify(g.status));
       assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih && g.status.left >= 0 && g.status.right <= g.iw, "the message is inside the viewport: " + JSON.stringify(g.status));
       assert.ok(near(g.status.left, g.tabs.left) && near(g.status.right, g.tabs.right), "the message spans the tab strip edges: " + JSON.stringify([g.status, g.tabs]));
-      const hit = await b.eval(`const r = document.getElementById("editor-status").getBoundingClientRect(), h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return !!h && document.getElementById("editor-status").contains(h);`);
-      assert.ok(hit, "the message box is on top at its centre");
-      const pos = await b.eval(`const e = document.getElementById("editor-status"), r = e.getBoundingClientRect(), t = document.getElementById("editor-tab-layout").getBoundingClientRect();
-        const clear = t.right > r.right ? 0 : 1; return { visible: getComputedStyle(e).visibility, overlap: r.bottom > t.top };`);
-      assert.strictEqual(pos.visible, "visible");
-      assert.ok(pos.overlap, "the message lies over the tab strip");
+      assert.ok(g.status.bottom <= g.tabs.bottom + 0.5 && g.status.bottom > g.tabs.top, "the message lies over the tab strip and no lower: " + JSON.stringify([g.status, g.tabs]));
     });
 
-    test("SO: landscape tabs are clickable again once the message clears", async () => {
+    test("SO: landscape tabs are clickable again once the message is cleared by the app", async () => {
       await open(844, 390);
-      await refuse();
-      await b.eval(`const s = document.getElementById("editor-status"); s.textContent = ""; s.removeAttribute("data-kind"); return true;`);
-      await pause(100);
+      await typeLine(SCALE);
+      await b.click('.tray-note[data-name="F"]');
+      await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+      await b.click("#editor-cancel");
+      await b.waitFor(`document.getElementById("editor-status").textContent === ""`, { label: "the message to clear" });
       const r = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return h === e || e.contains(h); });`);
       assert.deepStrictEqual(r, [true, true], "both tabs are the hit target at their centres");
-      const idle = await b.eval(`return document.getElementById("editor-tab-layout").getBoundingClientRect().top;`);
       await b.click("#editor-tab-layout");
       assert.strictEqual(await b.eval(`return editorSession.tab;`), "layout");
-      assert.ok(idle > 0);
+    });
+
+    const LANDSCAPE = [[844, 390], [667, 375]];
+    const STATES = {
+      empty: async () => true,
+      held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
+      error: async () => { await b.eval(`editorSession.error = "The rim is full at 12 notes. Remove one first."; editorRender(); return true;`); },
+      undo: async () => { await b.eval(`editorSession.say = "C4 removed."; editorRender(); return true;`); await b.waitFor(`!!document.getElementById("editor-notice-undo")`, { label: "the undo chip" }); },
+    };
+    const reset = () => b.eval(`const s = editorSession; s.error = ""; s.say = ""; s.notice = false; if (s.held) editorCancelHold(); editorRender(); return true;`);
+    describe("with real fonts", () => {
+      let saved = null;
+      before(async () => { saved = b; b = await launch({ foregroundSettle: true, realFonts: true }); });
+      after(async () => { const mine = b; b = saved; await mine.close(); });
+      for (const lang of ["en", "de"]) {
+        for (const [w, h] of LANDSCAPE) {
+          test(`SO: ${lang} ${w}x${h}: while a message shows a real click at each tab centre switches tabs and the message buttons stay tappable`, async () => {
+            await fresh(w, h);
+            if (lang === "de") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            for (const name of ["empty", "held", "error", "undo"]) {
+              if (name !== "empty") { await reset(); await typeLine(SCALE); }
+              await b.click("#editor-tab-scale");
+              await STATES[name]();
+              await pause(250);
+              const g = await geo();
+              assert.ok(g.status.bottom <= g.tabs.bottom + 0.5, `${name}: the message stays within the tab strip: ` + JSON.stringify([g.status, g.tabs]));
+              for (const id of ["layout", "scale", "layout"]) {
+                await b.click("#editor-tab-" + id);
+                assert.strictEqual(await b.eval(`return editorSession.tab;`), id, `${name} ${lang} ${w}x${h}: a click at the ${id} tab centre switched to it`);
+              }
+              const btn = { held: "#editor-cancel", undo: "#editor-notice-undo" }[name];
+              if (btn) {
+                const hit = await b.eval(`const e = document.querySelector(${JSON.stringify(btn)}), r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x));`);
+                assert.ok(hit, `${name} ${lang} ${w}x${h}: ${btn} takes its own tap`);
+              }
+              await reset();
+            }
+          });
+        }
+      }
+
+      for (const lang of ["en", "de"]) {
+        for (const [w, h] of [[844, 390], [667, 375], [932, 430]]) {
+          test(`SO: ${lang} ${w}x${h}: the conflict message is readable, its button is tappable and it stays off the scale line`, async () => {
+            await fresh(w, h);
+            if (lang === "de") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+            }
+            await openAdd();
+            await typeLine(SCALE);
+            await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
+            await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+            await pause(300);
+            const r = await b.eval(`const s = document.getElementById("editor-status"), sr = s.getBoundingClientRect(), l = document.getElementById("editor-line").getBoundingClientRect(),
+              btn = document.getElementById("editor-conflict-separate"), br = btn.getBoundingClientRect(), bh = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2),
+              lh = document.elementFromPoint(l.left + l.width / 2, l.top + l.height / 2);
+              return { fits: s.scrollHeight <= s.clientHeight, top: sr.top, bottom: sr.bottom, lineBottom: l.bottom, btnHit: !!bh && (bh === btn || btn.contains(bh)), lineHit: lh === document.getElementById("editor-line"),
+                btnIn: br.top >= 0 && br.bottom <= innerHeight, h: sr.height };`);
+            assert.ok(r.fits && r.h > 20, `${lang} ${w}x${h} the message text fits its box: ` + JSON.stringify(r));
+            assert.ok(r.top >= r.lineBottom - 0.5 && r.lineHit, `${lang} ${w}x${h} the message stays off the scale line: ` + JSON.stringify(r));
+            assert.ok(r.btnHit && r.btnIn, `${lang} ${w}x${h} the separate button is on top and in view: ` + JSON.stringify(r));
+          });
+        }
+      }
     });
 
     test("SO: portrait status row unchanged at 375x667", async () => {
