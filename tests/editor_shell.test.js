@@ -1432,6 +1432,14 @@ describe("empty-state staging", () => {
     assert.deepStrictEqual(plain(a.get("__bk.options.profile.map")), plain(a.get("__nr.options.profile.map")));
   });
 
+  test("NR: a ding change on the other pan type then a switch back restores the notes with the new ding", () => {
+    const a = app();
+    nrNeo(a, { main: ["E4", "F4"], mutant: [null, "A2"] });
+    a.run(`globalThis.__st = editorReplaceDing(editorPanType(__nr, "standard").value, "C3").value;
+      globalThis.__bk = editorPanType(__st, "neotone").value; true`);
+    assert.strictEqual(nrStage(a, "__bk"), JSON.stringify({ ding: "C3", kind: "neotone", main: ["E4", "F4"], mutant: [null, "A2"] }));
+  });
+
   test("NR: Standard to Neotone to Standard with no edit restores the Standard stage exactly", () => {
     const a = app();
     stagedMap(a, ["E4", "F4"], ["A2"]);

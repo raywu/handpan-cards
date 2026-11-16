@@ -975,6 +975,21 @@ function run() {
       assert.ok(seen.every((x, i) => i === 0 || x !== seen[i - 1]), "focus moves on every Tab, a hidden stop would swallow one: " + JSON.stringify(seen));
     });
 
+    test("MT first Tab from the control before the covered Undo moves focus on at once and never stalls", async () => {
+      await setup(SCALE);
+      await tapNote("rim", 0);
+      await tapNote("rim", 1);
+      const prev = await b.eval(`const raw = [...document.querySelectorAll("#editor button, #editor input, #editor [tabindex]")];
+        const before = raw.slice(0, raw.indexOf(document.getElementById("editor-undo"))).filter((el) => el.tabIndex >= 0 && el.getClientRects().length && !el.closest("[hidden]") && getComputedStyle(el).visibility !== "hidden").pop();
+        before.focus();
+        window.__mtFrom = before;
+        return before.id || before.outerHTML.slice(0, 80);`);
+      await b.key("Tab", "Tab", 9);
+      const r = await b.eval(`const a = document.activeElement; return { moved: a !== window.__mtFrom, covered: a.id === "editor-undo", at: a.id || a.outerHTML.slice(0, 80) };`);
+      assert.ok(r.moved, "the first Tab from " + prev + " left focus where it was: " + JSON.stringify(r));
+      assert.ok(!r.covered, "the first Tab landed on the covered toolbar Undo: " + JSON.stringify(r));
+    });
+
     test("Remove deletes the selected note and Undo restores it; tapping the selection again deselects it", async () => {
       await setup(SCALE);
       await tapNote("rim", 3);
@@ -4700,6 +4715,28 @@ function run() {
     });
   });
 
+  describe("editor landscape dialog lock", () => {
+    test("LS 844x390: an open dialog locks the column's scroll", async () => {
+      await fresh(844, 390);
+      await openAdd();
+      await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+      await typeLine(SCALE);
+      const wheel = async () => {
+        const pt = await b.eval(`const r = document.getElementById("editor").getBoundingClientRect(); return { x: r.right - 40, y: r.top + r.height / 2 };`);
+        await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: pt.x, y: pt.y, deltaX: 0, deltaY: 300 });
+        await new Promise((done) => setTimeout(done, 300));
+        return b.eval(`return document.getElementById("editor").scrollTop;`);
+      };
+      assert.ok(await wheel() > 0, "the column scrolls under the wheel before any dialog");
+      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
+      await b.click("#editor-back");
+      await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+      const st = await b.eval(`const cs = getComputedStyle(document.getElementById("editor")); return { oy: cs.overflowY, ox: cs.overflowX, top: document.getElementById("editor").scrollTop };`);
+      assert.deepStrictEqual([st.oy, st.top], ["hidden", 0], "the column is overflow hidden while the dialog is open: " + JSON.stringify(st));
+      assert.strictEqual(await wheel(), 0, "a wheel over the column does not move it while the dialog is open");
+    });
+  });
+
   describe("editor armed delete", () => {
     // Oracle recorded 2026-11-14 by reading main's armed delete from the fixture text:
     //   grep -n 'scale-delete\[data-armed\]' tests/fixtures/shipped_client_a4ecfc2e.html.txt
@@ -5328,6 +5365,30 @@ function run() {
         assert.strictEqual(got.armed, true);
         assert.ok(got.name && got.name.length > 0, "the name span exists");
         assert.ok(got.gap >= 2, "the rendered gap between the label and the name is a space wide: " + JSON.stringify(got));
+      });
+    }
+  });
+
+  describe("editor Neotone hint fit", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const LANGS = fs.readdirSync(path.join(REPO, "data/i18n")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+    for (const lang of LANGS) {
+      test(`NM hint fit ${lang}: both Neotone hint lines fit`, async () => {
+        for (const [w, h] of [[320, 568], [390, 844]]) {
+          await fresh(w, h);
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          await openAdd();
+          await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+          await b.click("#editor-type-neotone");
+          await b.click("#editor-hint-toggle");
+          await pause(250);
+          const r = await b.eval(`const card = document.getElementById("editor-areas"), c = card.getBoundingClientRect(), lines = [...document.querySelectorAll("#editor-hint .neo-help")];
+            return { n: lines.length, cardScroll: [card.scrollWidth - card.clientWidth, card.scrollHeight - card.clientHeight],
+              out: lines.map((l) => { const q = l.getBoundingClientRect(); return { text: l.textContent.slice(0, 24), over: Math.max(c.left - q.left, q.right - c.right, c.top - q.top, q.bottom - c.bottom, l.scrollWidth - l.clientWidth) }; }).filter((x) => x.over > 0.5) };`);
+          assert.strictEqual(r.n, 2, `${lang} ${w}x${h} shows both Neotone lines: ` + JSON.stringify(r));
+          assert.ok(r.cardScroll[0] <= 0 && r.cardScroll[1] <= 0, `${lang} ${w}x${h} the hint card does not scroll: ` + JSON.stringify(r));
+          assert.deepStrictEqual(r.out, [], `${lang} ${w}x${h} a Neotone line leaves the card: ` + JSON.stringify(r));
+        }
       });
     }
   });

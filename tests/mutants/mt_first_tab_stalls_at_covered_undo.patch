@@ -1,0 +1,14 @@
+# kills: MT first Tab from the control before the covered Undo moves focus on at once and never stalls
+# suite: node --test --test-name-pattern ^MT.first.Tab tests/editor_e2e.test.js
+# fault: Tab keeps visibility-hidden stops, so the first Tab from the control before the covered toolbar Undo targets a stop that cannot take focus and stalls.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15657,6 +15657,6 @@ const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
+ function cycleTabStops(all, e) {
+-  const stops = typeof getComputedStyle === "function" ? all.filter(el => getComputedStyle(el).visibility !== "hidden") : all;
++  const stops = all;
+   if (!stops.length) return;
+   const i = stops.indexOf(document.activeElement);
+   const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
+   e.preventDefault();
