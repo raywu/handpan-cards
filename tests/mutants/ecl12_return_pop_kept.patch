@@ -1,0 +1,22 @@
+# kills: ECL12 after Discard in the Save changes dialog the next system Back closes the sheet
+# suite: node --test --test-name-pattern ^ECL12.after tests/editor_e2e.test.js
+# fault: Neither showSheet nor hideSheet clears returnPop, so a pop the paste guard queued stays armed after Discard or Save and swallows the next system Back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15189,7 +15189,6 @@
+   sheet.removeAttribute("hidden");
+   pageOpen = true;
+   setInert(true, background);
+-  returnPop = false;
+   sheetPreTagged = !reuseEntry;
+   if (sheetPreTagged) history.replaceState({ ...history.state, preSheet: true }, "", location.href);
+   if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
+@@ -15235,7 +15234,6 @@
+ /** Take the page down. The DOM half only - the route is the caller's. */
+ function hideSheet() {
+   navigationGeneration++;
+-  returnPop = false;
+   editorClose();
+   if(savePending)savePending.controller.abort();
+   sheetGeneration++;
