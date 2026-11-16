@@ -4700,6 +4700,69 @@ function run() {
     });
   });
 
+  const PORTRAIT_TABS_TOP = 369;
+  describe("Editor phone landscape: status row overlays the tabs (SO, owner 2026-11-16)", () => {
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const open = async (w, h) => { await fresh(w, h); await openAdd(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
+    const geo = () => b.eval(`const q = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height }; };
+      return { line: q("#editor-line"), tabs: q("#editor-tabs"), status: q("#editor-status"), ih: innerHeight, iw: innerWidth };`);
+    const refuse = async () => {
+      await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6");
+      await b.click('.tray-note[data-name="F"]');
+      await b.click("#editor-oct-up");
+      await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the refusal" });
+      await pause(300);
+    };
+    const near = (a, c) => Math.abs(a - c) <= 0.5;
+
+    for (const [w, h] of [[844, 390], [667, 375]]) {
+      test(`SO: landscape idle status row takes no height at ${w}x${h}`, async () => {
+        await open(w, h);
+        const g = await geo();
+        const gap = g.tabs.top - g.line.bottom;
+        assert.ok(gap <= 8, `${w}x${h} gap between the scale field and the tabs is ${gap}px: ` + JSON.stringify(g));
+      });
+    }
+
+    test("SO: landscape message overlays the tabs without shifting them", async () => {
+      await open(844, 390);
+      const idle = await geo();
+      await refuse();
+      const g = await geo();
+      for (const k of ["top", "bottom", "left", "right"]) assert.ok(near(g.tabs[k], idle.tabs[k]), `tab strip ${k} moved ${idle.tabs[k]} -> ${g.tabs[k]}`);
+      assert.ok(g.status.height > 0 && g.status.top >= g.line.bottom, "the message is visible below the scale field: " + JSON.stringify(g.status));
+      assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih && g.status.left >= 0 && g.status.right <= g.iw, "the message is inside the viewport: " + JSON.stringify(g.status));
+      assert.ok(near(g.status.left, g.tabs.left) && near(g.status.right, g.tabs.right), "the message spans the tab strip edges: " + JSON.stringify([g.status, g.tabs]));
+      const hit = await b.eval(`const r = document.getElementById("editor-status").getBoundingClientRect(), h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return !!h && document.getElementById("editor-status").contains(h);`);
+      assert.ok(hit, "the message box is on top at its centre");
+      const pos = await b.eval(`const e = document.getElementById("editor-status"), r = e.getBoundingClientRect(), t = document.getElementById("editor-tab-layout").getBoundingClientRect();
+        const clear = t.right > r.right ? 0 : 1; return { visible: getComputedStyle(e).visibility, overlap: r.bottom > t.top };`);
+      assert.strictEqual(pos.visible, "visible");
+      assert.ok(pos.overlap, "the message lies over the tab strip");
+    });
+
+    test("SO: landscape tabs are clickable again once the message clears", async () => {
+      await open(844, 390);
+      await refuse();
+      await b.eval(`const s = document.getElementById("editor-status"); s.textContent = ""; s.removeAttribute("data-kind"); return true;`);
+      await pause(100);
+      const r = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return h === e || e.contains(h); });`);
+      assert.deepStrictEqual(r, [true, true], "both tabs are the hit target at their centres");
+      const idle = await b.eval(`return document.getElementById("editor-tab-layout").getBoundingClientRect().top;`);
+      await b.click("#editor-tab-layout");
+      assert.strictEqual(await b.eval(`return editorSession.tab;`), "layout");
+      assert.ok(idle > 0);
+    });
+
+    test("SO: portrait status row unchanged at 375x667", async () => {
+      await open(375, 667);
+      const g = await geo();
+      assert.strictEqual(Math.round(g.tabs.top * 10) / 10, PORTRAIT_TABS_TOP, "portrait tab strip top: " + JSON.stringify(g));
+    });
+  });
+
   describe("editor armed delete", () => {
     // Oracle recorded 2026-11-14 by reading main's armed delete from the fixture text:
     //   grep -n 'scale-delete\[data-armed\]' tests/fixtures/shipped_client_a4ecfc2e.html.txt
