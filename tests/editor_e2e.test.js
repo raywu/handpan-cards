@@ -190,7 +190,7 @@ function run() {
       const q = new DOMPoint(p.x, p.y).matrixTransform(document.querySelector("#editor-pan svg").getScreenCTM()); return { x: q.x, y: q.y };`);
     const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     const statusText = () => b.eval(`return document.getElementById("editor-status").textContent;`);
-    const stageOf = () => b.eval(`return JSON.parse(JSON.stringify(editorStageOf(editorSession.history.present)));`);
+    const stageOf = () => b.eval(`return JSON.parse(JSON.stringify((({ other, ...st }) => st)(editorStageOf(editorSession.history.present))));`);
     const octave = () => b.eval(`return editorView(editorSession.history.present).oct;`);
     const stillEmpty = () => b.eval(`return editorIsEmpty(editorSession.history.present);`);
     const saveDisabled = () => b.eval(`return document.getElementById("editor-save").disabled;`);

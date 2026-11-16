@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13002,7 +13002,7 @@
- // on the arriving one as `other`). The current ding goes both ways.
- function editorStagePanType(m, kind) {
+@@ -13014,7 +13014,7 @@ function editorStagePanType(m, kind) {
    const { other, ...old } = editorStageOf(m);
--  const mapped = editorStageMapped(old, kind);
+   const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
+   const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
+-  const mapped = unchanged ? null : editorStageMapped(old, kind);
 +  const mapped = null;
-   const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
+   const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
+   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
    if (old.ding) next.ding = old.ding;
-   if (!mapped && Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
