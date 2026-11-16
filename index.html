@@ -13012,10 +13012,12 @@ function editorStageMapped(old, kind) {
 // on the arriving one as `other`). The current ding goes both ways.
 function editorStagePanType(m, kind) {
   const { other, ...old } = editorStageOf(m);
-  const mapped = editorStageMapped(old, kind);
+  const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
+  const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
+  const mapped = unchanged ? null : editorStageMapped(old, kind);
   const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
   if (old.ding) next.ding = old.ding;
-  if (!mapped && Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+  if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
   const staged = editorWithStage(m, next);
   const done = editorStageCommit(staged, next);
   return done.ok ? done : { ok: true, value: staged };

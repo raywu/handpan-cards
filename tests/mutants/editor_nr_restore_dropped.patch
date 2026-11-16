@@ -1,0 +1,15 @@
+# kills: NR: Neotone to Standard to Neotone with no edit restores every placement, sparse mutant slots included
+# suite: node --test --test-name-pattern NR:.Neotone.to.Standard.to.Neotone tests/editor_shell.test.js
+# The unedited switch back never restores the remembered stage; it always re-maps and loses the sparse mutant slots.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13013,7 +13013,7 @@ function editorStageMapped(old, kind) {
+ function editorStagePanType(m, kind) {
+   const { other, ...old } = editorStageOf(m);
+   const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
+-  const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
++  const unchanged = false && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
+   const mapped = unchanged ? null : editorStageMapped(old, kind);
+   const next = mapped || (other && other.kind === kind ? { ...other } : editorBlankStage(kind));
+   if (old.ding) next.ding = old.ding;
