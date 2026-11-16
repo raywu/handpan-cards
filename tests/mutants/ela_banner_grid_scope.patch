@@ -4,19 +4,19 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1070,7 +1070,6 @@
+@@ -1070,7 +1070,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
      grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr); grid-template-rows:auto 1fr auto auto auto auto auto auto 1fr;
      grid-template-areas:"head head" "pan ." "pan line" "pan status" "pan counts" "pan tabs" "pan panel" "pan bar" "pan ."}
    #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
 -  #editor-status[data-conflict]{position:static}
    #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:contents} #editor-tabs{grid-area:tabs; position:static} #editor-panels{grid-area:panel} #editor .editor-toolbar{grid-area:bar}
  }
- /* Phone landscape (S4): a short, wide screen takes the two-column grid so the pan never collapses; the pan column
-@@ -1081,7 +1080,6 @@
-     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
-     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar"}
+ /* Phone landscape (S4, owner 2026-11-15 "main-style column scroll"): a short, wide screen takes the two-column grid so the pan never
+@@ -1087,7 +1086,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
    #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
+   #editor-status{min-height:28px} #editor-counts{grid-area:counts}
 -  #editor-status[data-conflict]{position:static}
-   #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:flex; grid-area:region; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto} #editor .editor-toolbar{grid-area:bar}
- }
- /* Keyboard-open short portrait (R5/R6): while Name has focus the 120px floor gives way so Name and the toolbar stay in view. */
+   #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
+     height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
+   #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}

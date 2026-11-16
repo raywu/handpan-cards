@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16940,7 +16940,6 @@
+@@ -14915,7 +14915,6 @@ function editorTabStops() {
  }
  function editorSetPanType(kind) {
    if (!editorDo((m) => editorPanType(m, kind))) return;
 -  editorSession.zone = null;
-   editorSession.tab = "scale";
+   if (!editorPhoneLandscape()) editorSession.tab = "scale";
    editorRender();
  }

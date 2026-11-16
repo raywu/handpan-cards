@@ -1073,16 +1073,26 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   #editor-status[data-conflict]{position:static}
   #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:contents} #editor-tabs{grid-area:tabs; position:static} #editor-panels{grid-area:panel} #editor .editor-toolbar{grid-area:bar}
 }
-/* Phone landscape (S4): a short, wide screen takes the two-column grid so the pan never collapses; the pan column
-   takes the full height under the head and the control column scrolls on its own region with the toolbar pinned.
-   375x360 and a 360x330 keyboard-open portrait stay stacked (min-width). After the >=900 rule so it wins its template. */
+/* Phone landscape (S4, owner 2026-11-15 "main-style column scroll"): a short, wide screen takes the two-column grid so the pan never
+   collapses, and #editor itself is the one scroll box. The pan is sticky in its column; the head, line, status, tabs and panels scroll
+   as one column (the tab strip sticks inside it); the toolbar follows the tray in flow (main's sheet has no fixed bar; a sticky one would cover the first tray row at 844x340). No inner region scrolls
+   and nothing pins to an end, so the name field and the first tray row show at rest. 375x360 and a 360x330 keyboard-open portrait stay
+   stacked (min-width). After the >=900 rule so it wins its template. */
 @media (orientation:landscape) and (max-height:500px) and (min-width:560px){
-  #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
-    grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar"}
+  #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none;
+    scroll-padding:48px 0 var(--sp-4); container-type:normal;
+    grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:repeat(6, max-content) minmax(0,1fr);
+    grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar" "pan ."}
+  #scale-sheet.onepanel #editor::-webkit-scrollbar{display:none}
+  #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
+  #editor-status{min-height:28px} #editor-counts{grid-area:counts}
   #editor-status[data-conflict]{position:static}
-  #editor .editor-panbox{grid-area:pan; height:auto} #editor-region{display:flex; grid-area:region; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto} #editor .editor-toolbar{grid-area:bar}
+  #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
+    height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
+  #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}
+  #editor .editor-toolbar{grid-area:bar}
+  #editor-dialog{position:fixed}
 }
 /* Keyboard-open short portrait (R5/R6): while Name has focus the 120px floor gives way so Name and the toolbar stay in view. */
 @media (max-height:420px) and (max-width:559.98px){
@@ -14081,6 +14091,8 @@ function editorRenderTabs() {
     if (had) tog.focus();
   }
 }
+// Phone landscape (the S4 media query): #editor is the one scroll box and the region does not scroll, so nothing pins to an end there.
+const editorPhoneLandscape = () => matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px)").matches;
 // The region rests scrolled to its end so the tray sits above the toolbar; a render re-pins only when it was already there.
 function editorRegionPin() {
   const rg = editorEl("editor-region");
@@ -14094,14 +14106,14 @@ function editorPlaceAreas() {
   if (areas.hidden) return;
   const parts = getComputedStyle(rg).display === "contents" ? [editorEl("editor-tabs"), editorEl("editor-panels")] : [rg];
   const rs = parts.map((e) => e.getBoundingClientRect()), box = ebox;
-  const top = Math.min(...rs.map((r) => r.top)), bottom = Math.max(...rs.map((r) => r.bottom)), left = Math.min(...rs.map((r) => r.left)), right = Math.max(...rs.map((r) => r.right));
+  const top = Math.max(Math.min(...rs.map((r) => r.top)), box.top + ed.clientTop), bottom = Math.max(...rs.map((r) => r.bottom)), left = Math.min(...rs.map((r) => r.left)), right = Math.max(...rs.map((r) => r.right));
   const st = areas.style;
-  st.top = top - box.top - ed.clientTop + "px";
+  st.top = top - box.top - ed.clientTop + ed.scrollTop + "px";
   st.left = left - box.left - ed.clientLeft + "px";
   st.width = right - left + "px";
   st.height = bottom - top + "px";
   const cl = editorEl("editor-hint-close").style;
-  cl.top = top - box.top - ed.clientTop + 4 + "px";
+  cl.top = top - box.top - ed.clientTop + ed.scrollTop + 4 + "px";
   cl.left = right - box.left - ed.clientLeft - 48 + "px";
 }
 function editorSetAreas(open) {
@@ -14927,10 +14939,11 @@ function editorTabStops() {
 function editorSetPanType(kind) {
   if (!editorDo((m) => editorPanType(m, kind))) return;
   editorSession.zone = null;
-  editorSession.tab = "scale";
+  if (!editorPhoneLandscape()) editorSession.tab = "scale";
   editorRender();
 }
 function editorWire() {
+  editorEl("editor").addEventListener("scroll", () => { if (editorSession && editorSession.hint) editorPlaceAreas(); }, { passive: true });
   const line = editorEl("editor-line");
   line.onclick = editorStartEdit;
   line.onkeydown = (e) => {
@@ -15008,7 +15021,8 @@ function editorWire() {
 }
 // A swipe starting on the tab strip, counts row, hint or either panel switches Scale / Layout. It reuses the sheet's verdict and cue but keeps its own gesture state.
 function editorWireSwipe() {
-  const body = editorEl("editor-region");
+  const body = editorEl("editor-region"), column = editorEl("editor");
+  const scrolled = () => body.scrollTop + column.scrollTop;
   const regions = ["editor-areas", "editor-tabs", "editor-panels"].map(editorEl);
   let g = null;
   const stop = () => { g = null; hideSwipeCue({ force: true }); };
@@ -15030,12 +15044,12 @@ function editorWireSwipe() {
     const ts = e.touches, p = ts && ts.length === 1 && ts[0], t = e.target;
     if (!p || !eligible() || p.clientX < 24 || p.clientX > window.innerWidth - 24 ||
         (t && t.closest && t.closest("#editor-pan, .tray-note, input, textarea, select"))) return;
-    g = { id: p.identifier, x: p.clientX, y: p.clientY, at: e.timeStamp, tab: editorSession.tab, top: body.scrollTop, moved: false };
+    g = { id: p.identifier, x: p.clientX, y: p.clientY, at: e.timeStamp, tab: editorSession.tab, top: scrolled(), moved: false };
   };
   const onMove = (e) => {
     if (!g) return;
     const ts = e.touches, p = ts && ts.length === 1 && ts[0].identifier === g.id && ts[0];
-    if (!p || !eligible() || Math.abs(body.scrollTop - g.top) > 8) { stop(); return; }
+    if (!p || !eligible() || Math.abs(scrolled() - g.top) > 8) { stop(); return; }
     if (!g.moved && e.timeStamp - g.at >= HOLD_MS) { stop(); return; }
     if (Math.hypot(p.clientX - g.x, p.clientY - g.y) > HOLD_SLOP) g.moved = true;
     const dx = p.clientX - g.x, dy = p.clientY - g.y;

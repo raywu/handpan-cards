@@ -319,8 +319,9 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   nothing". Share links and saved records are unchanged by the editor: an over-cap scale
   saves with the same record and link ("parity 9 save").
 - **Pan type.** The header Standard / Neotone switch changes the pan type as one Undo step
-  each way and returns the panel to the Scale tab. Tests: "switching the pan type returns
-  the panel to the Scale tab", "Standard to Neotone and back are one Undo step each". While
+  each way and, in portrait (R4-4, kept), returns the panel to the Scale tab; in phone
+  landscape (owner 2026-11-15) the active tab is kept. Tests: "switching the pan type returns
+  the panel to the Scale tab", "LS 844x390: a Neotone switch from the Layout tab keeps the Layout tab", "Standard to Neotone and back are one Undo step each". While
   the pan is empty the switch maps the staged notes the way a committed pan does (owner
   2026-11-15, Q1 "match main, map only if cyclops are empty and bottom notes become
   mutant"; `editorStageMapped`): Standard to Neotone puts the rim on the main fields in order
@@ -392,6 +393,21 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   the Hint info button takes no layout height", "P0 hint: counts and hint sit in a collapsed
   block", "the Hint block is an overlay on the whole controls area, nothing moves when it
   toggles, and a second tap or Escape closes it".
+- **Phone landscape: one scrolling column (S4, owner 2026-11-15 "Main-style column scroll").**
+  At `(orientation:landscape) and (max-height:500px) and (min-width:560px)` `#editor` itself is the
+  one scroll box (no inner region scrolls, `editorRegionPin` does not apply, the status row shrinks
+  to 28px). The pan is sticky in the left column; the head, line, status, counts, tabs and panels
+  scroll as one column on the right with the tab strip sticky inside it, and the toolbar follows
+  the tray in flow at the end of that column (chosen over sticky: a sticky bar covers the first
+  tray row at 844x340, and main's sheet has no fixed bar).
+  At rest on Scale the name field, both tabs and the first tray row are in view; every Scale and
+  Layout control is reachable by scrolling the column, and the pan stays in view. The hint overlay
+  tracks the column's scroll and the dialog scrolls it to the top and locks it. Portrait is
+  unchanged. Tests: "LS 844x390: at rest on Scale the name field, both tabs and the first tray chip
+  are fully in view", "LS 844x390: every control on Scale and on Layout is reachable by scrolling
+  the one column, and the pan stays in view" (also 844x340, 667x375), "LS 844x390: the toolbar is
+  reachable at the end of the column and a chip dragged onto the pan still places a note";
+  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`.
 - **Message placement.** `#editor-status` sits just under the pan box, before the tab strip
   and the counts overlay. An error shows as an ink banner (`#242424` background, white text,
   14px/600, radius 8px, padding 4px 12px, a leading warning glyph, no red, no hover) and plays
@@ -414,7 +430,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   edited, a dialog is open or a drag is live, switches nothing. With reduced motion the cue
   does not slide. A scroll of the controls region by more than 8px cancels the swipe, and so
   does a pinch zoom (`sheetZoomed`; no test pins the pinch cancel). Tests: "P0 editorWireSwipe:
-  a region scroll cancels the tab swipe (the scrollTop check points at the region)", "a left swipe on the Scale panel opens Layout", "a swipe that
+  a region scroll cancels the tab swipe (the scrollTop check points at the region; in phone landscape the swipe also reads the `#editor` column's scrollTop)", "a left swipe on the Scale panel opens Layout", "a swipe that
   starts on the tab strip", "a press held past the hold time is not a swipe", "with reduced
   motion the swipe cue does not slide", "a short, slow or mostly vertical swipe changes
   nothing", "a swipe that starts on the pan, a tray note or a text field", "a swipe does not

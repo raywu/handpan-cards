@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1058,7 +1058,7 @@
- /* Phone landscape (S4): a short, wide screen takes the two-column grid so the pan never collapses; the pan column
-    takes the full height under the head and the control column scrolls on its own region with the toolbar pinned.
-    375x360 and a 360x330 keyboard-open portrait stay stacked (min-width). After the >=900 rule so it wins its template. */
+@@ -1078,7 +1078,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+    as one column (the tab strip sticks inside it); the toolbar follows the tray in flow (main's sheet has no fixed bar; a sticky one would cover the first tray row at 844x340). No inner region scrolls
+    and nothing pins to an end, so the name field and the first tray row show at rest. 375x360 and a 360x330 keyboard-open portrait stay
+    stacked (min-width). After the >=900 rule so it wins its template. */
 -@media (orientation:landscape) and (max-height:500px) and (min-width:560px){
 +@media (orientation:landscape) and (max-height:0px) and (min-width:560px){
-   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid;
-     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:auto auto auto auto minmax(0,1fr) auto;
-     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar"}
+   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none;
+     scroll-padding:48px 0 var(--sp-4); container-type:normal;
+     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:repeat(6, max-content) minmax(0,1fr);
