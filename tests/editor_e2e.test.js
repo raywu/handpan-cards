@@ -5665,6 +5665,54 @@ function run() {
       assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !!document.getElementById("editor-cancel") && !!document.getElementById("editor-conflict-separate");`), true,
         "the banner is kept and the status row grows a Cancel for the held note");
     });
+
+    describe("history guard", () => {
+      const raceDialog = async (button) => {
+        await fresh();
+        const first = await b.eval(`return navigation.currentEntry.key;`);
+        await openAdd();
+        await typeLine(SCALE);
+        await b.eval(`window.__realBack = history.back.bind(history); window.__held = 0; history.back = () => { window.__held++; };
+          location.hash = "#deck=kurd"; return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden")) && window.__held === 1`, { label: "the guard's own pop to be deferred" });
+        await b.click(button);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to close" });
+        await b.eval(`history.back = window.__realBack; const n = window.__held; window.__held = 0; for (let i = 0; i < n; i++) history.back(); return true;`);
+        await new Promise((r) => setTimeout(r, 600));
+        await b.eval(`openScaleSheet(addChip); return true;`);
+        await b.waitFor(`!!document.getElementById("editor-line") && !document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to reopen" });
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the next system Back to close the page" });
+        assert.strictEqual(await b.eval(`return navigation.currentEntry.key;`), first, "history ends where it started");
+      };
+
+      test("ECL12 after Discard in the Save changes dialog the next system Back closes the sheet", async () => {
+        await raceDialog("#editor-dlg-discard");
+      });
+
+      test("ECL12 after Save in the Save changes dialog the next system Back closes the sheet", async () => {
+        await raceDialog("#editor-dlg-save");
+      });
+
+      test("ECL13 a system Back with an invalid uncommitted notes line asks first", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine("zzz not a scale", { commit: false });
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+        assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
+        assert.strictEqual(await text(), "zzz not a scale", "the line survives");
+      });
+
+      test("ECL13 BACK with an invalid uncommitted notes line asks first", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine("zzz not a scale", { commit: false });
+        await b.eval(`editorBack(); return true;`);
+        assert.strictEqual(await dialogOpen(), true, "the Save changes dialog asks");
+        assert.strictEqual(await sheetHidden(), false);
+      });
+    });
   });
 
 }

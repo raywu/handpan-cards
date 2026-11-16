@@ -8493,6 +8493,7 @@ describe("TB: the sheet's tabs", () => {
       const app = await tbOpen(boot());
       app.click(tbTab(app, "layout"));
       assert.strictEqual(app.sheetOpen(), true);
+      app.els["scale-box"].value = "";
       if (how === "back") app.els["scale-back"].click();
       else if (how === "escape") app.keydown("Escape");
       else { app.history.state = null; app.location.hash = ""; app.popstate(); }
@@ -8503,6 +8504,7 @@ describe("TB: the sheet's tabs", () => {
     app.click(tbTab(app, "layout"));
     app.click(tbTab(app, "scale"));
     app.click(tbTab(app, "layout"));
+    app.els["scale-box"].value = "";
     app.els["scale-back"].click();
     assert.strictEqual(backs(app), 1, "one Back leaves no extra entry");
   });
