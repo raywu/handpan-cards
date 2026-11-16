@@ -1,13 +1,15 @@
 # kills: LS 844x390: at rest on Scale the name field, both tabs and the first tray chip are fully in view and hit at their centres, and the column is one scroll box at its top
 # suite: node --test --test-name-pattern ^LS.844x390..at.rest tests/editor_e2e.test.js
-# fault: In phone landscape the Scale tab pins the column to its end again, so the tabs and name field scroll out of view at rest.
+# fault: In phone landscape the controls region scrolls on its own again (the old inner box that the end-pin scrolled), so the tabs and name field fall out of view at rest.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14073,5 +14073,6 @@
- function editorRegionPin() {
-   const rg = editorEl("editor-region");
-   if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = rg.scrollHeight;
-+  if (editorPhoneLandscape() && editorSession && editorSession.tab === "scale") editorEl("editor").scrollTop = editorEl("editor").scrollHeight;
+@@ -1090,7 +1090,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #editor-status[data-conflict]{position:static}
+   #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
+     height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
+-  #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}
++  #editor-region{display:flex; grid-area:region; overflow-y:auto; min-height:0; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}
+   #editor .editor-toolbar{grid-area:bar}
+   #editor-dialog{position:fixed}
  }
- // The hint block overlays the controls area (region, or tabs plus panels where the region is display:contents) and never moves the layout.
