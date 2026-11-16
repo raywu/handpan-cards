@@ -4146,14 +4146,15 @@ function run() {
     });
 
     for (const [w, h, target] of [[926, 428, 347], [844, 390, 309], [667, 375, 294], [568, 320, 206]]) {
-      test(`P0 phone landscape ${w}x${h}: the pan does not collapse (>= 0.95 x ${target}), the grid is on, toolbar in view, controls scroll in their own region`, async () => {
+      test(`P0 phone landscape ${w}x${h}: the pan does not collapse (>= 0.95 x ${target}), the grid is on, toolbar in view, controls scroll as one column (#editor, LS 2026-11-15)`, async () => {
         await open(w, h);
         const r = await rects(w, h);
         assert.ok(r.grid, "two-column grid");
         assert.ok(r.svg.h >= 0.95 * target && r.svg.h >= 200, `drawn pan ${r.svg.h}`);
         assert.ok(r.page, "no page scroll");
         assert.ok(r.bar.top >= 0 && r.bar.bottom <= h && r.tabs.top >= 0 && r.tabs.bottom <= h, "toolbar and tabs in view");
-        assert.ok(r.region && r.region.oy === "auto" && r.region.h > 0, "the region is a scroll box: " + JSON.stringify(r.region));
+        assert.ok(r.region && r.region.oy === "visible" && r.region.h > 0 && r.region.st === 0, "the region no longer scrolls: " + JSON.stringify(r.region));
+        assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor")).overflowY;`), "auto", "the column scrolls as one box");
         assert.ok(r.svg.right <= r.tabs.left + 1 || r.svg.left >= r.tabs.right - 1, "the pan and the controls do not overlap");
       });
     }
@@ -4586,6 +4587,84 @@ function run() {
       await mouse("mouseReleased", again);
       await pause(300);
       assert.deepStrictEqual(await picked(), { sel: null, held: null });
+    });
+  });
+
+  describe("Editor phone landscape: one scrolling column (LS, owner 2026-11-15)", () => {
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const open = async (w, h) => { await fresh(w, h); await openAdd(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
+    const atRest = (sel) => b.eval(`const e = document.querySelector(${JSON.stringify(sel)}), r = e.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { inside: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth, hit: !!hit && (hit === e || e.contains(hit)), top: r.top, bottom: r.bottom, ih: innerHeight };`);
+    const sweep = () => b.eval(`const bad = [], seen = [];
+      const els = [...document.querySelectorAll("#editor button, #editor input")].filter((e) => !e.closest("[hidden]") && !e.closest("#editor-menu") && e.id !== "editor-hint-close" && e.getClientRects().length);
+      for (const e of els) {
+        e.scrollIntoView({ block: "nearest" });
+        const r = e.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        seen.push(e.id || e.className);
+        if (!(hit === e || e.contains(hit)) || r.top < 0 || r.bottom > innerHeight) bad.push((e.id || e.className) + "@" + Math.round(r.top) + "-" + Math.round(r.bottom));
+      }
+      const p = document.querySelector("#editor-pan svg").getBoundingClientRect();
+      return { bad, n: seen.length, pan: p.top >= 0 && p.bottom <= innerHeight && p.height > 100, panRect: [p.top, p.bottom], ih: innerHeight, st: document.getElementById("editor").scrollTop };`);
+
+    for (const [w, h] of [[844, 390], [844, 340], [667, 375]]) {
+      test(`LS ${w}x${h}: at rest on Scale the name field, both tabs and the first tray chip are fully in view and hit at their centres, and the column is one scroll box at its top`, async () => {
+        await open(w, h);
+        const st = await b.eval(`const e = document.getElementById("editor"), rg = document.getElementById("editor-region");
+          return { oy: getComputedStyle(e).overflowY, top: e.scrollTop, rgOy: getComputedStyle(rg).overflowY, grid: getComputedStyle(e).display, tab: editorSession.tab };`);
+        assert.deepStrictEqual([st.oy, st.top, st.rgOy, st.grid, st.tab], ["auto", 0, "visible", "grid", "scale"], "the column scrolls as one, from its top: " + JSON.stringify(st));
+        for (const sel of ["#editor-name", "#editor-tab-scale", "#editor-tab-layout", ".tray-note"]) {
+          const r = await atRest(sel);
+          assert.ok(r.inside && r.hit, `${w}x${h} ${sel} in view and on top: ` + JSON.stringify(r));
+        }
+      });
+
+      test(`LS ${w}x${h}: every control on Scale and on Layout is reachable by scrolling the one column, and the pan stays in view`, async () => {
+        await open(w, h);
+        const s = await sweep();
+        assert.deepStrictEqual(s.bad, [], `${w}x${h} Scale: ` + JSON.stringify(s));
+        assert.ok(s.pan, "the pan stays in view while the column scrolls: " + JSON.stringify(s.panRect));
+        await b.click("#editor-tab-layout");
+        await pause(150);
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-swatches .dot").length;`), 10, "ten palette dots");
+        const l = await sweep();
+        assert.deepStrictEqual(l.bad, [], `${w}x${h} Layout: ` + JSON.stringify(l));
+        assert.ok(l.n >= 14 && l.pan, "every Layout control and dot was visited, the pan in view: " + JSON.stringify(l));
+        const back = await atRest("#editor-tab-scale");
+        assert.ok(back.inside && back.hit, "the tabs are reachable from the bottom of the column: " + JSON.stringify(back));
+      });
+
+      test(`LS ${w}x${h}: a Neotone switch from the Layout tab keeps the Layout tab`, async () => {
+        await open(w, h);
+        await b.click("#editor-tab-layout");
+        await pause(100);
+        for (const kind of ["neotone", "standard"]) {
+          await b.click("#editor-type-" + kind);
+          await pause(150);
+          const r = await b.eval(`return { tab: editorSession.tab, layout: !document.getElementById("editor-panel-layout").hidden, scale: document.getElementById("editor-panel-scale").hidden };`);
+          assert.deepStrictEqual(r, { tab: "layout", layout: true, scale: true }, kind + " keeps Layout: " + JSON.stringify(r));
+        }
+      });
+    }
+
+    test("LS 844x390: the toolbar is reachable (sticky at the column bottom) and a chip dragged onto the pan still places a note", async () => {
+      await open(844, 390);
+      await typeLine(SCALE);
+      const bar = await b.eval(`const r = document.querySelector("#editor .editor-toolbar").getBoundingClientRect(), p = getComputedStyle(document.querySelector("#editor .editor-toolbar")).position;
+        return { bottom: r.bottom, ih: innerHeight, p };`);
+      assert.ok(bar.p === "sticky" && bar.bottom <= bar.ih, "the toolbar sticks inside the viewport: " + JSON.stringify(bar));
+      const rimCount = () => b.eval(`return editorNames(editorSession.history.present, "rim").length;`);
+      const before = await rimCount();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
+      const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const to = await b.eval(`const g = editorSolve(editorSession.history.present).value.geom, o = editorOrbit(g, "rim"), svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+        const x = o * Math.cos(22.5 * Math.PI / 180) * 100, y = -o * Math.sin(22.5 * Math.PI / 180) * 100;
+        return { x: r.left + (x - vb.x) / vb.width * r.width, y: r.top + (y - vb.y) / vb.height * r.height };`);
+      const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+      await touch("touchStart", from);
+      for (const k of [0.15, 0.3, 0.6, 1]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+      await touch("touchEnd");
+      await pause(600);
+      assert.strictEqual(await rimCount(), before + 1, "the dropped chip became a rim note");
     });
   });
 
