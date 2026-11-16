@@ -1,5 +1,5 @@
 # kills: ECL12 after Discard in the Save changes dialog the next system Back closes the sheet
-# suite: node --test --test-name-pattern ^ECL12.after tests/editor_e2e.test.js
+# suite: node --test --test-name-pattern ^ECL12.after.Discard tests/editor_e2e.test.js
 # fault: Neither showSheet nor hideSheet clears returnPop, so a pop the paste guard queued stays armed after Discard or Save and swallows the next system Back.
 diff --git a/index.html b/index.html
 --- a/index.html
