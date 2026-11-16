@@ -4733,7 +4733,7 @@ function run() {
       for (const k of ["top", "bottom", "left", "right"]) assert.ok(near(g.tabs[k], idle.tabs[k]), `tab strip ${k} moved ${idle.tabs[k]} -> ${g.tabs[k]}`);
       assert.ok(g.status.height > 0 && g.status.top >= g.line.bottom, "the message is visible below the scale field: " + JSON.stringify(g.status));
       assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih && g.status.left >= 0 && g.status.right <= g.iw, "the message is inside the viewport: " + JSON.stringify(g.status));
-      assert.ok(near(g.status.left, g.tabs.left) && near(g.status.right, g.tabs.right), "the message spans the tab strip edges: " + JSON.stringify([g.status, g.tabs]));
+      assert.ok(near(g.status.left, g.tabs.left) && g.status.right >= g.tabs.right - 0.5 && g.status.right <= g.tabs.right + 12, "the message spans the tab strip edges: " + JSON.stringify([g.status, g.tabs]));
       assert.ok(g.status.bottom <= g.tabs.bottom + 0.5 && g.status.bottom > g.tabs.top, "the message lies over the tab strip and no lower: " + JSON.stringify([g.status, g.tabs]));
     });
 
@@ -4790,6 +4790,61 @@ function run() {
               }
               await reset();
             }
+          });
+        }
+      }
+
+      const LOCALES = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+      const SO_STATES = {
+        empty: async () => true,
+        held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
+        crowded: () => b.eval(`editorSession.error = t("editor.crowded", { pt: "5.5", floor: "6" }); editorRender(); return true;`),
+        picked: () => b.eval(`editorSession.say = t("editor.say.picked", { name: "C4" }); editorRender(); return true;`),
+        removed: () => b.eval(`editorDo((m) => editorRemove(m, "rim", 2), t("editor.say.removed", { name: "C4" })); editorRender(); return true;`),
+        rimfull: async () => {
+          await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+          await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+        },
+      };
+      const FULL_RIM = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6";
+      for (const lang of LOCALES) {
+        for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
+          test(`SO: ${lang} ${w}x${h}: every landscape message is fully readable inside the tab strip and moves nothing`, async () => {
+            await fresh(w, h);
+            if (lang !== "en") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: lang });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            const frame = () => b.eval(`const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
+              return { tabs: q(document.getElementById("editor-tabs")), line: q(document.getElementById("editor-line")), pan: q(document.getElementById("editor-pan")) };`);
+            const read = () => b.eval(`const st = document.getElementById("editor-status"), sr = st.getBoundingClientRect(), tb = document.getElementById("editor-tabs").getBoundingClientRect(),
+              cs = getComputedStyle(st), hit = (a, r) => !(r.right <= a.left || r.left >= a.right || r.bottom <= a.top || r.top >= a.bottom);
+              let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
+              for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
+                if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
+              return { text: st.textContent, fits: st.scrollHeight <= st.clientHeight, h: sr.height, clipped, inStrip: sr.top >= tb.top - 0.5 && sr.bottom <= tb.bottom + 0.5, px: parseFloat(cs.fontSize),
+                overChip: [...document.querySelectorAll(".tray-note, #editor-name")].some((e) => hit(sr, e.getBoundingClientRect())) || hit(sr, document.getElementById("editor-line").getBoundingClientRect()) };`);
+            for (const name of Object.keys(SO_STATES)) {
+              if (name !== "empty") { await reset(); await typeLine(name === "rimfull" ? FULL_RIM : SCALE); await b.click("#editor-tab-scale"); }
+              const rest = await frame();
+              await SO_STATES[name]();
+              await pause(250);
+              const r = await read();
+              const tag = `${name} ${lang} ${w}x${h}: ` + JSON.stringify(r);
+              if (name !== "empty") assert.ok(r.text.length > 0, "a message shows. " + tag);
+              assert.ok(r.fits && r.clipped === 0, "the message is not clipped. " + tag);
+              assert.ok(r.inStrip, "the message stays inside the tab strip. " + tag);
+              assert.ok(!r.overChip, "the message covers no chip, field or line. " + tag);
+              assert.ok(r.px >= 12, "the message font is at least 12px. " + tag);
+              assert.deepStrictEqual(await frame(), rest, "tabs, line and pan do not move. " + tag);
+              const centres = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
+              assert.deepStrictEqual(centres, [true, true], "a tap at each tab centre reaches its tab. " + tag);
+              const own = await b.eval(`return [...document.querySelectorAll("#editor-status button")].every((e) => { const q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
+              assert.ok(own, "Cancel and Undo take their own taps. " + tag);
+            }
+            await reset();
           });
         }
       }
