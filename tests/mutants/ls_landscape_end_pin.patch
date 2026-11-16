@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1090,7 +1090,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-   #editor-status[data-conflict]{position:static}
+@@ -1097,7 +1097,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) #editor-region{margin-top:calc(4px - var(--sp-3))}
    #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
      height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
 -  #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}
