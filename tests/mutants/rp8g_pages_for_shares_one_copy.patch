@@ -5,12 +5,12 @@
 diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
 --- a/tools/gen_scale_page.py
 +++ b/tools/gen_scale_page.py
-@@ -521,8 +521,6 @@ def render(row, data, rows_by_slug, copy, alt=None):
-
-
- def pages_for(slugs, rows=None, copy=None):
+@@ -888,8 +888,6 @@ def zh_cross_lead(row, target, z):
+ 
+ 
+ def pages_for(slugs, rows=None, copy=None, script="en", avail=None):
 -    if copy is not None and len(slugs) > 1:
 -        raise ValueError("pages_for: one copy cannot serve %d slugs" % len(slugs))
      rows = rows or load_rows()
+     avail = avail if avail is not None else discover(rows)
      by = {r["slug"]: r for r in rows}
-     data = engine([by[s] for s in slugs])

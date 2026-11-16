@@ -1,0 +1,15 @@
+# kills: test_the_probe_text_is_impure_for_the_other_script_and_pure_for_its_own
+# suite: python3 -m unittest -k test_the_probe_text_is_impure_for_the_other_script_and_pure_for_its_own tests.test_zh_scale_pages
+# The script-purity check forgets one Simplified-only character, so a Simplified 灵 in Traditional copy passes.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -344,7 +344,7 @@ def hub_page_zh(rows, script, scripts):
+     return "".join(out)
+ 
+ 
+-SIMPLIFIED_ONLY = "阶进级灵钢乐调声这个对门书发应们时间图单线种与为"
++SIMPLIFIED_ONLY = "阶进级钢乐调声这个对门书发应们时间图单线种与为"
+ TRADITIONAL_ONLY = "階進級靈鋼樂調聲這個對門書發應們時間圖單線種與為"
+ 
+ 

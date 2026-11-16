@@ -1,0 +1,15 @@
+# kills: test_head_markers_per_script
+# suite: python3 -m unittest -k test_head_markers_per_script tests.test_zh_scale_pages
+# A zh page loses Baidu's applicable-device meta.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -251,7 +251,7 @@
+     out = ['<!doctype html>\n<html lang="%s">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n' % script]
+     if zh:
+-        out.append('<meta http-equiv="content-language" content="%s">\n<meta name="applicable-device" content="pc,mobile">\n'
++        out.append('<meta http-equiv="content-language" content="%s">\n'
+                    % script)
+     out.append("<title>%s</title>\n" % esc(title))
+     out.append('<meta name="description" content="%s">\n' % html.escape(description))
