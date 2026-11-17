@@ -980,10 +980,11 @@ function run() {
       await tapNote("rim", 0);
       await tapNote("rim", 1);
       const prev = await b.eval(`const raw = [...document.querySelectorAll("#editor button, #editor input, #editor [tabindex]")];
-        const before = raw.slice(0, raw.indexOf(document.getElementById("editor-undo"))).filter((el) => el.tabIndex >= 0 && el.getClientRects().length && !el.closest("[hidden]") && getComputedStyle(el).visibility !== "hidden").pop();
+        const before = raw.slice(0, raw.indexOf(document.getElementById("editor-undo"))).filter((el) => el.tabIndex >= 0 && !el.disabled && el.getClientRects().length && !el.closest("[inert],[hidden]") && getComputedStyle(el).visibility !== "hidden").pop();
         before.focus();
         window.__mtFrom = before;
         return before.id || before.outerHTML.slice(0, 80);`);
+      assert.strictEqual(await b.eval(`return document.activeElement === window.__mtFrom && document.getElementById("editor-undo").classList.contains("covered");`), true, "the start focus took effect on " + prev + " and the toolbar Undo is covered");
       await b.key("Tab", "Tab", 9);
       const r = await b.eval(`const a = document.activeElement; return { moved: a !== window.__mtFrom, covered: a.id === "editor-undo", at: a.id || a.outerHTML.slice(0, 80) };`);
       assert.ok(r.moved, "the first Tab from " + prev + " left focus where it was: " + JSON.stringify(r));
@@ -4576,6 +4577,12 @@ function run() {
       await touch("touchEnd");
       await pause(120);
       assert.strictEqual(await b.eval(`return JSON.stringify(editorSession.history.present.fields);`), before, "nothing was placed");
+    });
+
+    test("edg another pointer pressed on a tray chip ends the drag and starts none of its own", async () => {
+      await liftLive();
+      await b.eval(`document.querySelector("#editor-tray .tray-note").dispatchEvent(new PointerEvent("pointerdown", { pointerId: 77, button: 0, bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorDrag === null;`), true, "the second press neither continues nor re-arms a drag");
     });
   });
 
