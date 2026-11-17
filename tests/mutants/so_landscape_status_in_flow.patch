@@ -1,0 +1,15 @@
+# kills: SO: landscape idle status row takes no height at 844x390
+# suite: node --test --test-name-pattern ^SO:.landscape.idle tests/editor_e2e.test.js
+# fault: In phone landscape the tab strip no longer closes up under the scale field, so the empty status row's space comes back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1099,7 +1099,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #editor-status:not([data-conflict]):has(button){padding-right:96px; min-height:34px}
+   #editor-status[data-conflict]{position:absolute; right:0; top:0; bottom:auto; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
+   #scale-sheet.onepanel #editor:has(#editor-areas[hidden]){grid-template-areas:"head head" "pan line" "pan region" "pan bar" "pan ."; grid-template-rows:repeat(4, max-content) minmax(0,1fr)}
+-  #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) :is(#editor-region, .editor-statusrow){margin-top:calc(4px - var(--sp-3))}
++  #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) :is(#editor-region, .editor-statusrow){margin-top:0}
+   #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
+     height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
+   #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}

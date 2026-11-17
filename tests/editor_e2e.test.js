@@ -4746,6 +4746,307 @@ function run() {
     });
   });
 
+  const PORTRAIT_TABS_TOP = 369;
+  describe("Editor phone landscape: status row overlays the tabs (SO, owner 2026-11-16)", () => {
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const open = async (w, h) => { await fresh(w, h); await openAdd(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
+    const geo = () => b.eval(`const q = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height }; };
+      return { line: q("#editor-line"), tabs: q("#editor-tabs"), status: q("#editor-status"), ih: innerHeight, iw: innerWidth };`);
+    const refuse = async () => {
+      await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6");
+      await b.click('.tray-note[data-name="F"]');
+      await b.click("#editor-oct-up");
+      await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the refusal" });
+      await pause(300);
+    };
+    const near = (a, c) => Math.abs(a - c) <= 0.5;
+
+    for (const [w, h] of [[844, 390], [667, 375]]) {
+      test(`SO: landscape idle status row takes no height at ${w}x${h}`, async () => {
+        await open(w, h);
+        const g = await geo();
+        const gap = g.tabs.top - g.line.bottom;
+        assert.ok(gap <= 8, `${w}x${h} gap between the scale field and the tabs is ${gap}px: ` + JSON.stringify(g));
+      });
+    }
+
+    test("SO: landscape message overlays the tabs without shifting them", async () => {
+      await open(844, 390);
+      const idle = await geo();
+      await refuse();
+      const g = await geo();
+      for (const k of ["top", "bottom", "left", "right"]) assert.ok(near(g.tabs[k], idle.tabs[k]), `tab strip ${k} moved ${idle.tabs[k]} -> ${g.tabs[k]}`);
+      assert.ok(g.status.height > 0 && g.status.top >= g.line.bottom, "the message is visible below the scale field: " + JSON.stringify(g.status));
+      assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih && g.status.left >= 0 && g.status.right <= g.iw, "the message is inside the viewport: " + JSON.stringify(g.status));
+      assert.ok(near(g.status.left, g.tabs.left) && g.status.right >= g.tabs.right - 0.5 && g.status.right <= g.tabs.right + 12, "the message spans the tab strip edges: " + JSON.stringify([g.status, g.tabs]));
+      assert.ok(g.status.bottom <= g.tabs.bottom + 0.5 && g.status.bottom > g.tabs.top, "the message lies over the tab strip and no lower: " + JSON.stringify([g.status, g.tabs]));
+    });
+
+    test("SO: landscape tabs are clickable again once the message is cleared by the app", async () => {
+      await open(844, 390);
+      await typeLine(SCALE);
+      await b.click('.tray-note[data-name="F"]');
+      await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+      await b.click("#editor-cancel");
+      await b.waitFor(`document.getElementById("editor-status").textContent === ""`, { label: "the message to clear" });
+      const r = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return h === e || e.contains(h); });`);
+      assert.deepStrictEqual(r, [true, true], "both tabs are the hit target at their centres");
+      await b.click("#editor-tab-layout");
+      assert.strictEqual(await b.eval(`return editorSession.tab;`), "layout");
+    });
+
+    for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
+      test(`SO: en ${w}x${h}: the idle prompt leaves the tab labels showing and a message still covers them`, async () => {
+        await open(w, h);
+        const look = () => b.eval(`const st = document.getElementById("editor-status"); return { text: st.textContent, idle: st.hasAttribute("data-idle"), clip: getComputedStyle(st).clipPath };`);
+        const idle = await look();
+        assert.ok(idle.text.length > 0 && idle.idle && idle.clip !== "none", "the idle prompt stays in the status for screen readers and is hidden off the tab labels: " + JSON.stringify(idle));
+        await typeLine(SCALE);
+        await b.click("#editor-tab-scale");
+        await b.click('.tray-note[data-name="F"]');
+        await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+        const held = await look();
+        assert.ok(held.text.length > 0 && !held.idle && held.clip === "none", "a message after the idle prompt shows over the tabs: " + JSON.stringify(held));
+        await open(w, h);
+        const c = await b.eval(`const r = document.querySelector(".tray-note").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: c.x, y: c.y, button: "left", buttons: 1, clickCount: 1 });
+        for (let i = 1; i <= 6; i++) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x - 10 * i, y: c.y - 6 * i, button: "left", buttons: 1 });
+        const drag = { ...(await look()), dragging: await b.eval(`return document.getElementById("editor").classList.contains("dragging");`) };
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: c.x - 60, y: c.y - 36, button: "left", buttons: 0, clickCount: 1 });
+        assert.ok(drag.dragging && drag.text.length > 0 && !drag.idle && drag.clip === "none", "a drag from the empty scale shows its message over the tabs: " + JSON.stringify(drag));
+      });
+    }
+
+    const LANDSCAPE = [[844, 390], [667, 375]];
+    const STATES = {
+      empty: async () => true,
+      held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
+      error: async () => { await b.eval(`editorSession.error = "The rim is full at 12 notes. Remove one first."; editorRender(); return true;`); },
+      undo: async () => { await b.eval(`editorSession.say = "C4 removed."; editorRender(); return true;`); await b.waitFor(`!!document.getElementById("editor-notice-undo")`, { label: "the undo chip" }); },
+    };
+    const reset = () => b.eval(`const s = editorSession; s.error = ""; s.say = ""; s.notice = false; if (s.held) editorCancelHold(); editorRender(); return true;`);
+    describe("with real fonts", () => {
+      let saved = null;
+      before(async () => { saved = b; b = await launch({ foregroundSettle: true, realFonts: true }); });
+      after(async () => { const mine = b; b = saved; await mine.close(); });
+      for (const lang of ["en", "de"]) {
+        for (const [w, h] of LANDSCAPE) {
+          test(`SO: ${lang} ${w}x${h}: while a message shows a real click at each tab centre switches tabs and the message buttons stay tappable`, async () => {
+            await fresh(w, h);
+            if (lang === "de") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            for (const name of ["empty", "held", "error", "undo"]) {
+              if (name !== "empty") { await reset(); await typeLine(SCALE); }
+              await b.click("#editor-tab-scale");
+              await STATES[name]();
+              await pause(250);
+              const g = await geo();
+              assert.ok(g.status.bottom <= g.tabs.bottom + 0.5, `${name}: the message stays within the tab strip: ` + JSON.stringify([g.status, g.tabs]));
+              for (const id of ["layout", "scale", "layout"]) {
+                await b.click("#editor-tab-" + id);
+                assert.strictEqual(await b.eval(`return editorSession.tab;`), id, `${name} ${lang} ${w}x${h}: a click at the ${id} tab centre switched to it`);
+              }
+              const btn = { held: "#editor-cancel", undo: "#editor-notice-undo" }[name];
+              if (btn) {
+                const hit = await b.eval(`const e = document.querySelector(${JSON.stringify(btn)}), r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x));`);
+                assert.ok(hit, `${name} ${lang} ${w}x${h}: ${btn} takes its own tap`);
+              }
+              await reset();
+            }
+          });
+        }
+      }
+
+      test("SO: en 568x320: a typed out-of-order line shows its whole error in landscape", async () => {
+        await open(568, 320);
+        await typeLine("(D3) A3 C3 D4 E4");
+        await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the out-of-order error" });
+        await b.waitFor(`document.getElementById("editor-status").getAnimations().length === 0`, { label: "the message to settle" });
+        const r = await b.eval(`const st = document.getElementById("editor-status"), sr = st.getBoundingClientRect(), tb = document.getElementById("editor-tabs").getBoundingClientRect();
+          let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
+          for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
+            if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
+          return { text: st.textContent, top: sr.top, bottom: sr.bottom, tabsTop: tb.top, fits: st.scrollHeight <= st.clientHeight, clipped };`);
+        assert.ok(r.text.length > 0 && r.fits && r.clipped === 0, "the whole error is readable: " + JSON.stringify(r));
+        assert.ok(Math.abs(r.top - r.tabsTop) <= 0.5 && r.bottom <= 187.5, "the error starts on the tabs and ends by 187.5: " + JSON.stringify(r));
+      });
+
+      const LOCALES = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+      const SO_STATES = {
+        empty: async () => true,
+        held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
+        crowded: () => b.eval(`editorSession.error = t("editor.crowded", { pt: "5.5", floor: "6" }); editorRender(); return true;`),
+        picked: () => b.eval(`editorSession.say = t("editor.say.picked", { name: "C4" }); editorRender(); return true;`),
+        removed: () => b.eval(`editorDo((m) => editorRemove(m, "rim", 2), t("editor.say.removed", { name: "C4" })); editorRender(); return true;`),
+        rimfull: async () => {
+          await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+          await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+        },
+      };
+      const FULL_RIM = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6";
+      for (const lang of LOCALES) {
+        for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
+          test(`SO: ${lang} ${w}x${h}: every landscape message is fully readable inside the tab strip and moves nothing`, async () => {
+            await fresh(w, h);
+            if (lang !== "en") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: lang });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            const frame = () => b.eval(`const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
+              return { tabs: q(document.getElementById("editor-tabs")), line: q(document.getElementById("editor-line")), pan: q(document.getElementById("editor-pan")) };`);
+            const read = () => b.eval(`const st = document.getElementById("editor-status"), sr = st.getBoundingClientRect(), tb = document.getElementById("editor-tabs").getBoundingClientRect(),
+              cs = getComputedStyle(st), hit = (a, r) => !(r.right <= a.left || r.left >= a.right || r.bottom <= a.top || r.top >= a.bottom);
+              let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
+              for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
+                if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
+              return { text: st.textContent, fits: st.scrollHeight <= st.clientHeight, h: sr.height, clipped, inStrip: sr.top >= tb.top - 0.5 && sr.bottom <= tb.bottom + 0.5, px: parseFloat(cs.fontSize),
+                overChip: [...document.querySelectorAll(".tray-note, #editor-name")].some((e) => hit(sr, e.getBoundingClientRect())) || hit(sr, document.getElementById("editor-line").getBoundingClientRect()) };`);
+            for (const name of Object.keys(SO_STATES)) {
+              if (name !== "empty") { await reset(); await typeLine(name === "rimfull" ? FULL_RIM : SCALE); await b.click("#editor-tab-scale"); }
+              const rest = await frame();
+              await SO_STATES[name]();
+              await pause(250);
+              await b.waitFor(`document.getElementById("editor-status").getAnimations().length === 0`, { label: "the message to settle" });
+              const r = await read();
+              const tag = `${name} ${lang} ${w}x${h}: ` + JSON.stringify(r);
+              if (name !== "empty") assert.ok(r.text.length > 0, "a message shows. " + tag);
+              assert.ok(r.fits && r.clipped === 0, "the message is not clipped. " + tag);
+              assert.ok(r.inStrip, "the message stays inside the tab strip. " + tag);
+              assert.ok(!r.overChip, "the message covers no chip, field or line. " + tag);
+              assert.ok(r.px >= 12, "the message font is at least 12px. " + tag);
+              assert.deepStrictEqual(await frame(), rest, "tabs, line and pan do not move. " + tag);
+              const centres = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
+              assert.deepStrictEqual(centres, [true, true], "a tap at each tab centre reaches its tab. " + tag);
+              const own = await b.eval(`return [...document.querySelectorAll("#editor-status button")].every((e) => { const q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
+              assert.ok(own, "Cancel and Undo take their own taps. " + tag);
+            }
+            await reset();
+          });
+        }
+      }
+
+      const { ROWS } = require("./helpers/so_status_inventory.js");
+      const RENDER_ROW = `
+        const ROW = __ROW__;
+        const s = editorSession, st = document.getElementById("editor-status"), ed = document.getElementById("editor"), K = window.__so;
+        const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
+        s.error = ""; s.say = ""; s.plainSay = ""; s.notice = false; s.conflict = null; if (s.held) editorCancelHold();
+        s.history = { ...s.history, present: K.full }; editorRender(); ed.scrollTop = 0;
+        const text = t(ROW.k, Object.assign({}, ROW.vars, { zone: t("editor.zone.inner") }));
+        if (ROW.mode === "error") s.error = text;
+        else if (ROW.mode === "plain") s.say = s.plainSay = text;
+        else if (ROW.mode === "undo") { s.say = text; s.plainSay = ""; }
+        else if (ROW.mode === "undo-empty") { s.history = { ...s.history, present: K.empty }; if (ROW.k === "editor.pins_reset") s.notice = true; else s.say = text; }
+        else if (ROW.mode === "held") document.querySelector('.tray-note[data-name="F"]').click();
+        else if (ROW.mode === "idle") s.history = { ...s.history, present: K.idle[ROW.k] };
+        if (ROW.mode === "drag") { editorRender(); st.removeAttribute("data-kind"); st.removeAttribute("data-idle"); st.textContent = text; } else editorRender();
+        ed.scrollTop = 0;
+        st.getAnimations().forEach((a) => a.finish());
+        const tabs = document.getElementById("editor-tabs"), line = document.getElementById("editor-line"), name = document.getElementById("editor-name");
+        const sr = st.getBoundingClientRect(), tb = tabs.getBoundingClientRect(), lb = line.getBoundingClientRect(), nr = name.getBoundingClientRect();
+        const hitsOwn = (e) => { const r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x)); };
+        let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
+        for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
+          if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
+        const crosses = [...document.querySelectorAll(".tray-note, #editor-pan")].some((e) => { const r = e.getBoundingClientRect(); return !(r.right <= sr.left + 0.5 || r.left >= sr.right - 0.5 || r.bottom <= sr.top + 0.5 || r.top >= sr.bottom - 0.5); });
+        const nameHit = document.elementFromPoint(nr.left + nr.width / 2, nr.top + 4);
+        const rest = { text: st.textContent, idle: st.hasAttribute("data-idle"), clipPath: getComputedStyle(st).clipPath, anim: st.getAnimations().length, clipped, h: sr.height, top: sr.top, bottom: sr.bottom,
+          tabsTop: tb.top, tabsBottom: tb.bottom, lineBottom: lb.bottom, crosses, frame: { tabs: q(tabs), line: q(line), pan: q(document.getElementById("editor-pan")) },
+          tabHits: ["editor-tab-scale", "editor-tab-layout"].map((id) => hitsOwn(document.getElementById(id))), nameHit: nameHit === name,
+          buttonsOwn: [...st.querySelectorAll("button")].every(hitsOwn) };
+        ed.scrollTop = ed.scrollHeight;
+        const sr2 = st.getBoundingClientRect(), tb2 = tabs.getBoundingClientRect();
+        const end = { scrollTop: ed.scrollTop, top: sr2.top, bottom: sr2.bottom, tabsTop: tb2.top };
+        ed.scrollTop = 0;
+        return { rest, end };`;
+      const SETUP_ROWS = `const s = editorSession, empty = editorEmptyModel(), full = s.history.present;
+        const stage = (extra) => editorWithStage(empty, { ...editorBlankStage("standard"), ...extra });
+        window.__so = { full, empty, idle: { "editor.empty": empty, "editor.say.stage_need_ding": stage({ rim: ["A3"] }), "editor.say.stage_need_fifth": stage({ ding: "D3" }) } };
+        return document.fonts.ready.then(() => true);`;
+      for (const lang of ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"]) {
+        for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
+          test(`SO: ${lang} ${w}x${h}: every editor message in the inventory is fully readable in landscape`, async () => {
+            await fresh(w, h);
+            if (lang !== "en") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: lang });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            await typeLine(SCALE);
+            await b.eval(SETUP_ROWS);
+            await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
+            const base = await b.eval(`const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
+              return { tabs: q(document.getElementById("editor-tabs")), line: q(document.getElementById("editor-line")), pan: q(document.getElementById("editor-pan")) };`);
+            for (const row of ROWS) {
+              const { rest: r, end } = await b.eval(RENDER_ROW.replace("__ROW__", () => JSON.stringify(row)));
+              const tag = `${row.mode} ${row.k} ${lang} ${w}x${h}: ` + JSON.stringify({ rest: r, end });
+              assert.ok(r.text.length > 0, "a message shows. " + tag);
+              assert.strictEqual(r.anim, 0, "the arrive animation has settled. " + tag);
+              if (row.mode === "idle") {
+                assert.ok(r.idle && r.clipPath !== "none", "the idle prompt is hidden from view and kept in the status. " + tag);
+                assert.strictEqual(r.text, await b.eval(`return t(${JSON.stringify(row.k)}, ${JSON.stringify(row.vars)});`), "the idle prompt text. " + tag);
+                continue;
+              }
+              assert.ok(!r.idle && r.clipPath === "none", "a message is not hidden. " + tag);
+              assert.strictEqual(r.clipped, 0, "no character is clipped. " + tag);
+              assert.ok(Math.abs(r.top - r.tabsTop) <= 0.5, "the message starts on the tab strip. " + tag);
+              assert.ok(r.top >= r.lineBottom - 0.5, "the message stays off the scale line. " + tag);
+              if (r.h <= 44) assert.ok(r.bottom <= r.tabsBottom + 0.5, "a short message stays inside the tab strip. " + tag);
+              assert.ok(r.bottom <= 187.5, "the message reaches at most 187.5. " + tag);
+              assert.ok(!r.crosses, "the message covers no tray chip or pan. " + tag);
+              assert.deepStrictEqual(r.frame, base, "tabs, line and pan do not move. " + tag);
+              assert.deepStrictEqual(r.tabHits, [true, true], "a tap at each tab centre reaches its tab. " + tag);
+              assert.ok(r.nameHit, "a tap near the top of the name field reaches it. " + tag);
+              assert.ok(r.buttonsOwn, "Cancel and Undo take their own taps. " + tag);
+              assert.ok(Math.abs(end.top - end.tabsTop) <= 0.5 && end.top >= -0.5, "scrolled to the end the message stays on the tabs. " + tag);
+              assert.ok(end.bottom - end.tabsTop <= 72.5, "scrolled to the end the message is at most 72.5px tall. " + tag);
+            }
+            await reset();
+          });
+        }
+      }
+
+      for (const lang of ["en", "de"]) {
+        for (const [w, h] of [[844, 390], [667, 375], [932, 430]]) {
+          test(`SO: ${lang} ${w}x${h}: the conflict message is readable, its button is tappable and it stays off the scale line`, async () => {
+            await fresh(w, h);
+            if (lang === "de") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+            }
+            await openAdd();
+            await typeLine(SCALE);
+            await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
+            await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+            await pause(300);
+            const r = await b.eval(`const s = document.getElementById("editor-status"), sr = s.getBoundingClientRect(), l = document.getElementById("editor-line").getBoundingClientRect(),
+              btn = document.getElementById("editor-conflict-separate"), br = btn.getBoundingClientRect(), bh = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2),
+              lh = document.elementFromPoint(l.left + l.width / 2, l.top + l.height / 2);
+              return { fits: s.scrollHeight <= s.clientHeight, top: sr.top, bottom: sr.bottom, lineBottom: l.bottom, btnHit: !!bh && (bh === btn || btn.contains(bh)), lineHit: lh === document.getElementById("editor-line"),
+                btnIn: br.top >= 0 && br.bottom <= innerHeight, h: sr.height };`);
+            assert.ok(r.fits && r.h > 20, `${lang} ${w}x${h} the message text fits its box: ` + JSON.stringify(r));
+            assert.ok(r.top >= r.lineBottom - 0.5 && r.lineHit, `${lang} ${w}x${h} the message stays off the scale line: ` + JSON.stringify(r));
+            assert.ok(r.btnHit && r.btnIn, `${lang} ${w}x${h} the separate button is on top and in view: ` + JSON.stringify(r));
+          });
+        }
+      }
+    });
+
+    test("SO: portrait status row unchanged at 375x667", async () => {
+      await open(375, 667);
+      const g = await geo();
+      assert.strictEqual(Math.round(g.tabs.top * 10) / 10, PORTRAIT_TABS_TOP, "portrait tab strip top: " + JSON.stringify(g));
+    });
+  });
+
   describe("editor armed delete", () => {
     // Oracle recorded 2026-11-14 by reading main's armed delete from the fixture text:
     //   grep -n 'scale-delete\[data-armed\]' tests/fixtures/shipped_client_a4ecfc2e.html.txt

@@ -1087,8 +1087,19 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
   #scale-sheet.onepanel #editor::-webkit-scrollbar{display:none}
   #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
-  #editor-status{min-height:28px} #editor-counts{grid-area:counts}
-  #editor-status[data-conflict]{position:static}
+  #editor-counts{grid-area:counts}
+  #editor .editor-statusrow{grid-area:region; align-self:start; height:0; min-height:0; z-index:5}
+  #editor-status, #editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:0}
+  #editor-status{position:absolute; left:0; right:-8px; top:0; bottom:auto; border-radius:8px; pointer-events:none}
+  #editor-status:not([data-conflict]){max-height:none; align-items:flex-start; padding-block:1px; font-size:12px; line-height:14px}
+  #scale-sheet.onepanel #editor .editor-statusrow:not(:has(#editor-status[data-conflict])){position:sticky; top:0}
+  #editor-status[data-idle]{clip-path:inset(50%)}
+  #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
+  #editor-status:not([data-conflict]) button{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}
+  #editor-status:not([data-conflict]):has(button){padding-right:96px; min-height:34px}
+  #editor-status[data-conflict]{position:absolute; right:0; top:0; bottom:auto; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
+  #scale-sheet.onepanel #editor:has(#editor-areas[hidden]){grid-template-areas:"head head" "pan line" "pan region" "pan bar" "pan ."; grid-template-rows:repeat(4, max-content) minmax(0,1fr)}
+  #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) :is(#editor-region, .editor-statusrow){margin-top:calc(4px - var(--sp-3))}
   #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;
     height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
   #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}
@@ -13843,6 +13854,7 @@ function editorRenderBody() {
     status.removeAttribute("data-conflict");
     status.removeAttribute("data-kind");
   }
+  status.removeAttribute("data-idle");
   if (keptSeparate) {
     status.setAttribute("data-conflict", s.conflict);
     editorEl("editor-conflict-msg").textContent = t(editorConflictMessageKey(s.conflict));
@@ -13871,7 +13883,10 @@ function editorRenderBody() {
     editorStatusNotes(extra, s, m, empty);
     status.appendChild(extra);
   } else if (s.held || s.say || s.notice) editorStatusNotes(status, s, m, empty);
-  else if (empty) status.textContent = editorEmptyPrompt(m);
+  else if (empty) {
+    status.textContent = editorEmptyPrompt(m);
+    status.setAttribute("data-idle", "");
+  }
   const chip = editorEl("editor-notice-undo");
   const toolbarUndo = editorEl("editor-undo");
   if (chip) {
@@ -14750,6 +14765,7 @@ function editorDragLift(d) {
   if (d.src.chip) d.src.chip.classList.add("dragging");
   const status = editorEl("editor-status");
   status.removeAttribute("data-kind");
+  status.removeAttribute("data-idle");
   status.textContent = t("editor.dragging", { name: editorDragName(d.src) });
 }
 function editorDragMove(e) {

@@ -11,4 +11,4 @@ diff --git a/index.html b/index.html
 +  #scale-sheet.onepanel #editor{scroll-snap-type:y mandatory} #editor .editor-toolbar{scroll-snap-align:end}
    #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
    #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
-   #editor-status{min-height:28px} #editor-counts{grid-area:counts}
+   #editor-counts{grid-area:counts}
