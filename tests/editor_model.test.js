@@ -967,11 +967,15 @@ test("BN-M8: a Neotone model resizes as before: no bottom angles are ever stored
     if (!neo.ok) return { refused: neo.code };
     const added = editorAdd(neo.value, "bottom", "C3");
     const removed = editorRemove(neo.value, "rim", 0);
-    return { kind: editorKindOf(neo.value), addAngles: added.ok ? added.value.options.angles : null, rmAngles: removed.ok ? removed.value.options.angles : null };`);
+    const put = editorNeoPut(neo.value, NEO_MAIN, "A3");
+    const placed = put.ok ? editorPlaceAt(put.value, "bottom", "E3", 100) : null;
+    const mutantPlace = placed && placed.ok ? editorNames(placed.value, "bottom") : (placed ? placed.code : "no mutant");
+    return { mutantPlace, kind: editorKindOf(neo.value), addAngles: added.ok ? added.value.options.angles : null, rmAngles: removed.ok ? removed.value.options.angles : null };`);
   assert.strictEqual(r.refused, undefined);
   assert.strictEqual(r.kind, "neotone");
   assert.strictEqual(r.addAngles === null || r.addAngles === undefined, true);
   assert.strictEqual(r.rmAngles === null || r.rmAngles === undefined, true);
+  assert.deepStrictEqual(r.mutantPlace, ["E3", "A3"], "a positioned add beside a Neotone bottom mutant note takes today's path, not the freeze");
 });
 
 test("BN-M9: a typed line that only adds or removes bottom names freezes the rest (rim and cyclops pins kept, no pinsReset); a rename with no stable match and a line that changes another ring respread", () => {
@@ -1002,6 +1006,17 @@ test("BN-M9: a typed line that only adds or removes bottom names freezes the res
   assert.strictEqual(rename.angles, undefined);
   const other = commit(bnText(3), { angles: { inner: [150, null] } }, bnText(3).replace("A4 |", "|"));
   assert.deepStrictEqual(other.notice, { pinsReset: true }, "a line that changes another ring keeps pinsReset");
+  const seatsOf = (text, typed) => run(app, `${BN_FN} ${LOAD(text, {})}
+    const r = editorCommitText(m0, ${js(typed)});
+    return { ok: r.ok, seats: r.ok ? r.value.options.seats : null };`);
+  const RIM_PITCH = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const RIM_SWAP = "(D3) Bb3 A3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const swapIn = seatsOf("[A2] [B2] " + RIM_PITCH, "[A2] [B2] [C3] " + RIM_SWAP);
+  assert.strictEqual(swapIn.ok, true);
+  assert.deepStrictEqual(swapIn.seats && swapIn.seats.rim, [1, 0, 2, 3, 4, 5, 6, 7], "a rim swap typed with a bottom add is applied");
+  const swapOut = seatsOf("[A2] [B2] " + RIM_SWAP, "[A2] [B2] [C3] " + RIM_PITCH);
+  assert.strictEqual(swapOut.ok, true);
+  assert.strictEqual(swapOut.seats, undefined, "typing the rim back in pitch order with a bottom add clears the swap");
 });
 
 test("BN-M10: an add to an empty bottom ring stays untouched (no position) or gives the RC's model (drop angle)", () => {

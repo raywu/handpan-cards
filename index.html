@@ -13646,10 +13646,13 @@ function editorTypedOrder(m, typed) {
 /** A typed line that changes only bottom names: the removed notes go first, then each added note
  *  lands at the widest-stretch midpoint, so the kept notes never move. Null when the line is not
  *  a clean remove/add (kept notes reordered, or a removal and an addition in one gap). */
-function editorTypedBottom(m, target) {
+function editorTypedBottom(m, target, typed) {
   if (m.options.profile || editorIsEmpty(m) || !editorFrozenCase(m, "bottom")) return null;
   const others = ["rim", "inner"].every((r) => editorNames(m, r).join("\n") === editorNames(target, r).join("\n"));
   if (!others || editorDingOf(m) !== editorDingOf(target)) return null;
+  const was0 = HPE.core.parseSeed(editorLineText(m), m.options);
+  const before = was0.ok ? HPE.core.typedSeats(was0.value) : null;
+  if (["rim", "inner"].some((r) => editorTypedKey(typed, r) !== editorTypedKey(before, r))) return null;
   const was = editorNames(m, "bottom"), now = editorNames(target, "bottom");
   if (was.filter((n) => now.includes(n)).join("\n") !== now.filter((n) => was.includes(n)).join("\n")) return null;
   const removed = was.map((n, i) => (now.includes(n) ? -1 : i)).filter((i) => i >= 0);
@@ -13699,7 +13702,7 @@ function editorCommitText(m, text) {
   const seed = HPE.core.parseSeed(trimmed, carried);
   const typed = seed.ok ? HPE.core.typedSeats(seed.value) : null;
   if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) return editorTypedOrder(m, typed);
-  const diffed = editorTypedBottom(m, loaded.value);
+  const diffed = editorTypedBottom(m, loaded.value, typed);
   if (diffed) return diffed;
   const next = loaded.value;
   if (typed) next.options.seats = typed;
