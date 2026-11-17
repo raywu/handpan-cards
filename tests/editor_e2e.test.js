@@ -4583,6 +4583,8 @@ function run() {
       await liftLive();
       await b.eval(`document.querySelector("#editor-tray .tray-note").dispatchEvent(new PointerEvent("pointerdown", { pointerId: 77, button: 0, bubbles: true })); return true;`);
       assert.strictEqual(await b.eval(`return editorDrag === null;`), true, "the second press neither continues nor re-arms a drag");
+      await touch("touchEnd");
+      await pause(120);
     });
   });
 
