@@ -78,9 +78,9 @@ exactly where its diagram has it.
   because `solve` already reflects them), so a note at 285 goes to 255 and the
   note that was at its mirror partner goes the other way (owner 2026-10-31,
   superseding MN2's hold-the-orphans rule S). Numbers stay with positions: after
-  the reflection they are re-ranked around the ring by the cyclic rule N against
-  the unmirrored home. Pygmy C3 slid 300 -> 285 reads U1; with `mirrorBottom` on
-  C3 is at 255 and reads U2, and Db3 (home 240, now at 300) reads U1. Multiples
+  the reflection they are re-ranked by distance from bottom centre (nearest bottom centre
+  first, right first on a tie). Pygmy C3 slid 300 -> 285 shows U1; with `mirrorBottom` on
+  C3 is at 255 and reads U1, and Db3 (home 240, now at 300) reads U2. Multiples
   of 5 reflect to multiples of 5 and the top shell is symmetric, so the reflection is
   never refused for an accepted layout (any ring size, the 5- and 7-note rings
   included); reflecting twice returns the identical layout. Stored angles are
@@ -103,7 +103,7 @@ exactly where its diagram has it.
   and seats); an overlap is never allowed (floor = smallest multiple of 5 above
   the touching angle, at most 15); `seats.bottom` and `angles` never coexist.
   Seat numbers belong to the seat (rule N, owner 2026-10-23): a swap trades only
-  the two labels, a slide that passes a note renumbers by home cyclic order, and
+  the two labels, U numbers follow distance from bottom centre (right first on a tie), and
   the first slide on a seated ring folds seats into angles keeping every seat's
   number.
 

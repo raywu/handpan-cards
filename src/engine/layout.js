@@ -751,7 +751,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
     if (bottoms) {
       out.angles = bottoms;
-      out.home = plainHome.bottoms;
     }
     if (inners) {
       out.innerAngles = inners;
@@ -789,7 +788,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         fields[ids[i]][5] = source[ids[map ? map[seat] : seat]][5];
       }
     }
-    if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
+    positionLabels(source, zones.bottom, fields);
     if (seats && seats.innerAngles && seats.innerHome) {
       cyclicLabels(source, zones.inner, seats.innerHome, seats.innerAngles, fields);
     }
@@ -799,6 +798,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function turnOf(from, to) {
     var d = norm(to - from);
     return d > 180 ? d - 360 : d;
+  }
+
+  /* Bottom numbers follow the drawn position: U1 is the note nearest bottom
+   * centre (270), then upward by distance, right first on a tie. Distances
+   * within 0.11 degrees tie (solved angles round to 0.1). */
+  function positionLabels(source, ids, fields) {
+    var order = ids.map(function (id, i) { return i; });
+    var key = function (i) {
+      var a = fields[ids[i]][4];
+      return { d: angleGap(a, 270), right: norm(a - 270) < 180 };
+    };
+    order.sort(function (x, y) {
+      var kx = key(x);
+      var ky = key(y);
+      if (Math.abs(kx.d - ky.d) > 0.11) return kx.d - ky.d;
+      if (kx.right !== ky.right) return kx.right ? -1 : 1;
+      return x - y;
+    });
+    for (var k = 0; k < order.length; k += 1) fields[ids[order[k]]][5] = source[ids[k]][5];
   }
 
   function cyclicLabels(source, ids, home, placed, fields) {

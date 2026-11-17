@@ -1,0 +1,15 @@
+# kills: BN-L6: a slide that crosses a note renumbers by position, no swap back: Eb3 to 90 reads Eb3 U6, Bb3 U3 and Db4 U4
+# suite: node --test --test-name-pattern ^BN.L6..a.slide.that.crosses.a.note.renumbers.by.position..no.swap.back..Eb3.to.90.reads.Eb3.U6..Bb3.U3.and.Db4.U4$ tests/layout.test.js
+# Bottom labels stay in index order instead of position order.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -812,7 +812,7 @@
+     order.sort(function (x, y) {
+       var kx = key(x);
+       var ky = key(y);
+-      if (Math.abs(kx.d - ky.d) > 0.11) return kx.d - ky.d;
++      return x - y;
+       if (kx.right !== ky.right) return kx.right ? -1 : 1;
+       return x - y;
+     });

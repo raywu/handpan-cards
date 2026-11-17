@@ -358,10 +358,10 @@ test("U2c-15 (parity 2): add, remove, swap, root replace and a pinned bottom ang
   const cases = [
     ["add rim", `editorAdd(m0, "rim", "B4")`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 | C5 D5"],
     ["add inner", `editorAdd(m0, "inner", "E5")`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5"],
-    ["add bottom", `editorAdd(m0, "bottom", "C3")`, "[A2] [B2] [C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+    ["add bottom (the rest stay put)", `editorAdd(m0, "bottom", "C3")`, "[A2] [B2] [C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", { angles: { bottom: [0, 180, 270] } }],
     ["remove rim", `editorRemove(m0, "rim", 7)`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 | C5 D5"],
     ["remove inner", `editorRemove(m0, "inner", 1)`, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5"],
-    ["remove bottom", `editorRemove(m0, "bottom", 0)`, "[B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
+    ["remove bottom (the rest stay put)", `editorRemove(m0, "bottom", 0)`, "[B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5", { angles: { bottom: [180] } }],
     ["swap rim seats", `editorSwapSeats(m0, "rim", 0, 1)`, BASE, { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }],
     ["root replace", `editorReplaceDing(m0, "C3")`, "[A2] [B2] (C3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5"],
     ["pinned bottom angle", `editorSetAngle(m0, "bottom", 0, 60, true)`, BASE, { angles: { bottom: [60, null] } }],
@@ -396,11 +396,19 @@ test("U2c-16 (ENGINE-SPEC, D10): a bottom copy of a top note is legal, so replac
 
 test("U2c-17 (nit 4): placing a pinned note keeps the add's notice and the pin's notice", () => {
   const a = app();
-  withModel(a, "[A2] [B2] " + SCALE, `{ seats: { bottom: [1, 0] } }`);
-  a.run(`globalThis.__real = editorSetAngle; editorSetAngle = (...args) => { const r = __real(...args); return r.ok ? { ...r, notice: { unpinned: [{ ring: "bottom", i: 0 }] } } : r; }; true`);
-  const res = plain(a.get(`editorPlace(__m, "bottom", "C3", 120)`));
+  withModel(a, "[A2] [B2] " + SCALE, `{ seats: { inner: [1, 0] } }`);
+  a.run(`globalThis.__real = editorSetAngle; editorSetAngle = (...args) => { const r = __real(...args); return r.ok ? { ...r, notice: { unpinned: [{ ring: "inner", i: 0 }] } } : r; }; true`);
+  const res = plain(a.get(`editorPlace(__m, "inner", "E5", 120)`));
   assert.strictEqual(res.ok, true);
-  assert.deepStrictEqual(res.notice, { seatsReset: "bottom", unpinned: [{ ring: "bottom", i: 0 }] });
+  assert.deepStrictEqual(res.notice, { seatsReset: "inner", unpinned: [{ ring: "inner", i: 0 }] });
+  assert.deepStrictEqual(res.value.options.angles, { inner: [null, null, 120] });
+  withModel(a, "[A2] [B2] " + SCALE, `{ seats: { bottom: [1, 0] } }`);
+  const frozen = plain(a.get(`editorPlace(__m, "bottom", "C3", 120)`));
+  assert.strictEqual(frozen.ok, true);
+  assert.strictEqual(frozen.notice, undefined, "the freeze drops the bottom seats with no notice");
+  assert.strictEqual(frozen.value.options.seats, undefined);
+  assert.deepStrictEqual(frozen.value.options.angles.bottom, [180, 0, 120]);
+  assert.deepStrictEqual(frozen.value.pins, [{ ring: "bottom", i: 0 }, { ring: "bottom", i: 1 }, { ring: "bottom", i: 2 }]);
 });
 
 // ---- U2d: caps, crowded refusal, Reset spacing (D14, D16, D17, D18, parity 6 and 9) ----

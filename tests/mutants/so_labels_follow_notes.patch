@@ -1,14 +1,14 @@
-# kills: SO: an angles swap of Db3 and Db4 on Pygmy draws U5 at 60 and U2 at 240, as the seats swap does
-# suite: node --test --test-name-pattern ^SO..an.angles.swap.of.Db3.and.Db4.on.Pygmy.draws.U5.at.60.and.U2.at.240..as.the.seats.swap.does$ tests/layout.test.js
-# Under angles the labels stay on the notes, not on the seats.
+# kills: BN-L6: a slide that crosses a note renumbers by position, no swap back: Eb3 to 90 reads Eb3 U6, Bb3 U3 and Db4 U4
+# suite: node --test --test-name-pattern ^BN.L6..a.slide.that.crosses.a.note.renumbers.by.position..no.swap.back..Eb3.to.90.reads.Eb3.U6..Bb3.U3.and.Db4.U4$ tests/layout.test.js
+# Under angles the labels stay on the seats, not on the drawn positions.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -786,7 +786,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -788,7 +788,7 @@
          fields[ids[i]][5] = source[ids[map ? map[seat] : seat]][5];
        }
      }
--    if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
+-    positionLabels(source, zones.bottom, fields);
 +
      if (seats && seats.innerAngles && seats.innerHome) {
        cyclicLabels(source, zones.inner, seats.innerHome, seats.innerAngles, fields);

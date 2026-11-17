@@ -7152,7 +7152,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
     if (bottoms) {
       out.angles = bottoms;
-      out.home = plainHome.bottoms;
     }
     if (inners) {
       out.innerAngles = inners;
@@ -7190,7 +7189,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         fields[ids[i]][5] = source[ids[map ? map[seat] : seat]][5];
       }
     }
-    if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
+    positionLabels(source, zones.bottom, fields);
     if (seats && seats.innerAngles && seats.innerHome) {
       cyclicLabels(source, zones.inner, seats.innerHome, seats.innerAngles, fields);
     }
@@ -7200,6 +7199,25 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function turnOf(from, to) {
     var d = norm(to - from);
     return d > 180 ? d - 360 : d;
+  }
+
+  /* Bottom numbers follow the drawn position: U1 is the note nearest bottom
+   * centre (270), then upward by distance, right first on a tie. Distances
+   * within 0.11 degrees tie (solved angles round to 0.1). */
+  function positionLabels(source, ids, fields) {
+    var order = ids.map(function (id, i) { return i; });
+    var key = function (i) {
+      var a = fields[ids[i]][4];
+      return { d: angleGap(a, 270), right: norm(a - 270) < 180 };
+    };
+    order.sort(function (x, y) {
+      var kx = key(x);
+      var ky = key(y);
+      if (Math.abs(kx.d - ky.d) > 0.11) return kx.d - ky.d;
+      if (kx.right !== ky.right) return kx.right ? -1 : 1;
+      return x - y;
+    });
+    for (var k = 0; k < order.length; k += 1) fields[ids[order[k]]][5] = source[ids[k]][5];
   }
 
   function cyclicLabels(source, ids, home, placed, fields) {
@@ -12717,6 +12735,13 @@ let lastSolved = null;
 const ANGLE_STEP = 5;
 const turnTo = (a) => ((a % 360) + 360) % 360;
 const stepOf = (a) => turnTo(Math.round(a / ANGLE_STEP) * ANGLE_STEP);
+/** The step nearest `a`, rounding the same way on both sides of bottom centre (270), so an
+ *  even ring keeps its left/right symmetry and every bottom number when it is frozen. */
+const snapSym = (a) => {
+  const d = turnTo(a - 270);
+  const s = d <= 180 ? d : d - 360;
+  return turnTo(270 + Math.sign(s) * ANGLE_STEP * Math.round(Math.abs(s) / ANGLE_STEP));
+};
 const bottomAngles = () => ringIds(lastSolved.fields, "bottom").map((id) => lastSolved.fields[id][4]);
 
 
@@ -12856,7 +12881,60 @@ function editorWithAngle(m, ring, i, angle) {
   editorTidy(next.options, "angles");
   return next;
 }
+/* ---- bottom notes stay put (TRI-59, lane BN) ----
+ * An add or remove on a bottom ring that already holds a note freezes the ring first: every
+ * note is stored at the angle it is drawn at, so the others never move. A ring whose notes
+ * all sit on their even spots afterwards is stored as untouched again. */
+const editorFrozenCase = (m, ring) => ring === "bottom" && editorKindOf(m) === "standard" && !editorIsEmpty(m)
+  && editorNames(m, "bottom").length > 0 && editorSolve(m).ok;
+const editorFreezeBottom = (m) => editorAnglesOf(editorSolve(m), "bottom").map(snapSym);
+const editorBottomGap = (a) => Math.min(turnTo(a - 270), 360 - turnTo(a - 270));
+/** The middle of the widest empty stretch of the ring; the one nearest bottom centre on a tie, right first. */
+function editorWidestMidpoint(angles) {
+  const sorted = angles.map(turnTo).sort((a, b) => a - b);
+  let best = null;
+  sorted.forEach((a, k) => {
+    const gap = (sorted[(k + 1) % sorted.length] - a + 360) % 360 || 360;
+    const mid = turnTo(a + gap / 2);
+    const cand = { mid, gap, near: editorBottomGap(mid), right: turnTo(mid - 270) < 180 };
+    const wins = !best || cand.gap > best.gap + 1e-9 || (Math.abs(cand.gap - best.gap) <= 1e-9
+      && (cand.near < best.near - 1e-9 || (Math.abs(cand.near - best.near) <= 1e-9 && cand.right && !best.right)));
+    if (wins) best = cand;
+  });
+  return best.mid;
+}
+function editorResizeFrozen(m, ring, parts, change) {
+  const loaded = editorLoad(editorText(m, parts), { ...m.options, seats: null, angles: null });
+  if (!loaded.ok) return loaded;
+  const next = loaded.value;
+  const o = next.options;
+  if (m.options.seats) o.seats = editorClone(m.options.seats);
+  if (o.seats) delete o.seats[ring];
+  if (m.options.angles) o.angles = editorClone(m.options.angles);
+  const list = editorFreezeBottom(m);
+  const at = change.add ? editorNames(next, ring).findIndex((n) => !editorNames(m, ring).includes(n)) : change.remove;
+  const dropped = change.add && change.angle !== undefined;
+  if (change.add) list.splice(at, 0, snapSym(dropped ? change.angle : editorWidestMidpoint(list)));
+  else list.splice(at, 1);
+  o.angles = { ...o.angles, bottom: list };
+  next.pins = m.pins.filter((p) => !(p.ring === ring && p.i === at && !change.add)).map((p) => (p.ring === ring && p.i >= at && change.add ? { ring, i: p.i + 1 } : p.ring === ring && p.i > at ? { ring, i: p.i - 1 } : p));
+  list.forEach((_, k) => { if ((!change.add || k !== at) && !next.pins.some((p) => p.ring === ring && p.i === k)) next.pins.push({ ring, i: k }); });
+  if (change.add) next.pins.push({ ring, i: at });
+  const even = HPE.layout.solve({ fields: next.fields, options: { ...o, angles: { ...o.angles, bottom: undefined } } });
+  if (even.ok && editorAnglesOf(even, ring).every((a, k) => snapSym(a) === list[k])) {
+    delete o.angles.bottom;
+    next.pins = next.pins.filter((p) => p.ring !== ring);
+  }
+  editorTidy(o, "seats");
+  editorTidy(o, "angles");
+  if (dropped) {
+    const solved = editorSolve(next);
+    if (!solved.ok) return solved.code === "BAD_NOTE" ? editorNoRoom(next, ring, at, change.angle) : solved;
+  }
+  return editorSettle(next, {});
+}
 function editorResize(m, ring, parts, change) {
+  if (editorFrozenCase(m, ring)) return editorResizeFrozen(m, ring, parts, change);
   const loaded = editorLoad(editorText(m, parts), { ...m.options, seats: null, angles: null });
   if (!loaded.ok) return loaded;
   const next = loaded.value;
@@ -13364,6 +13442,11 @@ function editorSwapNames(m, a, b) {
   return editorRebuild(m, entries);
 }
 function editorPlaceAt(m, ring, name, angle) {
+  if (Number.isFinite(angle) && editorFrozenCase(m, ring)) {
+    const parts = editorPartsOf(m);
+    parts[ring].push(String(name));
+    return editorResize(m, ring, parts, { add: true, angle });
+  }
   const added = editorAdd(m, ring, name);
   if (!added.ok || angle === undefined || !EDITOR_PINNABLE.includes(ring) || m.options.profile || editorIsEmpty(added.value)) return added;
   const at = editorNames(added.value, ring).indexOf(String(name));
@@ -13560,6 +13643,46 @@ function editorTypedOrder(m, typed) {
   const solved = editorSolve(next);
   return solved.ok ? { ok: true, value: next } : solved;
 }
+/** A typed line that changes only bottom names: the removed notes go first, then each added note
+ *  lands at the widest-stretch midpoint, so the kept notes never move. Null when the line is not
+ *  a clean remove/add (kept notes reordered, or a removal and an addition in one gap). */
+function editorTypedBottom(m, target, typed) {
+  if (m.options.profile || editorIsEmpty(m) || !editorFrozenCase(m, "bottom")) return null;
+  const others = ["rim", "inner"].every((r) => editorNames(m, r).join("\n") === editorNames(target, r).join("\n"));
+  if (!others || editorDingOf(m) !== editorDingOf(target)) return null;
+  const was0 = HPE.core.parseSeed(editorLineText(m), m.options);
+  const before = was0.ok ? HPE.core.typedSeats(was0.value) : null;
+  if (["rim", "inner"].some((r) => editorTypedKey(typed, r) !== editorTypedKey(before, r))) return null;
+  const was = editorNames(m, "bottom"), now = editorNames(target, "bottom");
+  if (was.filter((n) => now.includes(n)).join("\n") !== now.filter((n) => was.includes(n)).join("\n")) return null;
+  const removed = was.map((n, i) => (now.includes(n) ? -1 : i)).filter((i) => i >= 0);
+  const added = now.map((n, j) => (was.includes(n) ? -1 : j)).filter((j) => j >= 0);
+  const oldGaps = removed.map((i) => was.slice(0, i).filter((n) => now.includes(n)).length);
+  if (added.some((j) => oldGaps.includes(now.slice(0, j).filter((n) => was.includes(n)).length))) return null;
+  let cur = m, notice;
+  const step = (names, change) => {
+    const parts = editorPartsOf(cur);
+    parts.bottom = names;
+    const r = editorResize(cur, "bottom", parts, change);
+    if (r.ok) {
+      cur = r.value;
+      if (r.notice) notice = { ...notice, ...r.notice };
+    }
+    return r;
+  };
+  for (const i of removed.slice().reverse()) {
+    const names = editorNames(cur, "bottom");
+    const r = step(names.filter((_, k) => k !== i), { remove: i });
+    if (!r.ok) return r;
+  }
+  for (const j of added) {
+    const names = editorNames(cur, "bottom");
+    names.splice(j, 0, now[j]);
+    const r = step(names, { add: true });
+    if (!r.ok) return r;
+  }
+  return { ok: true, value: cur, ...(notice ? { notice } : {}) };
+}
 // A text commit. The same notes and zones keep the model as it is (pins and all); a
 // change to either drops the placement options and says so when pins were set.
 function editorCommitText(m, text) {
@@ -13579,6 +13702,8 @@ function editorCommitText(m, text) {
   const seed = HPE.core.parseSeed(trimmed, carried);
   const typed = seed.ok ? HPE.core.typedSeats(seed.value) : null;
   if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) return editorTypedOrder(m, typed);
+  const diffed = editorTypedBottom(m, loaded.value, typed);
+  if (diffed) return diffed;
   const next = loaded.value;
   if (typed) next.options.seats = typed;
   if (m.options.profile) {

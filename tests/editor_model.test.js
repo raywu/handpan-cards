@@ -358,24 +358,25 @@ test("U2a-M1: adding or removing a note resets that ring's seats to solved and k
 
 test("U2a-M2: a pinned angle survives a count change; a clash the change creates unpins the newest pin (D18)", () => {
   const app = appBoot();
-  const kept = run(app, `${LOAD("[A2] [B2] " + BASE.slice(0), { angles: { bottom: [240, null] } })}
-    const added = editorAdd(m0, "bottom", "C3");
+  const kept = run(app, `${LOAD(BASE, { angles: { inner: [150, null] } })}
+    const added = editorAdd(m0, "inner", "E5");
     return { angles: added.value.options.angles, notice: added.notice };`);
-  assert.deepStrictEqual(kept.angles, { bottom: [240, null, null] }, "the pin stays, the newcomer is auto");
+  assert.deepStrictEqual(kept.angles, { inner: [150, null, null] }, "the pin stays, the newcomer is auto");
   assert.strictEqual(kept.notice, undefined);
-  const clash = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [210, null] } })}
-    const added = editorAdd(m0, "bottom", "C3");
+  const clash = run(app, `${LOAD(BASE, { angles: { inner: [125, null] } })}
+    const added = editorAdd(m0, "inner", "E5");
     return { ok: added.ok, angles: added.value.options.angles, notice: added.notice, solved: editorExport(added.value).solve.ok };`);
   assert.strictEqual(clash.ok, true);
   assert.strictEqual(clash.angles, undefined, "the clashing pin is gone and the empty list dropped");
-  assert.deepStrictEqual(clash.notice, { unpinned: [{ ring: "bottom", i: 0 }] });
+  assert.deepStrictEqual(clash.notice, { unpinned: [{ ring: "inner", i: 0 }] });
   assert.strictEqual(clash.solved, true);
-  const newest = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [240, null] } })}
-    const second = editorSetAngle(m0, "bottom", 1, 100);
-    const added = editorAdd(second.value, "bottom", "C3");
-    return { pins: second.value.pins, angles: added.value.options.angles, notice: added.notice };`);
-  assert.deepStrictEqual(newest.notice.unpinned[0], { ring: "bottom", i: 1 }, "the pin set last goes first");
-  assert.deepStrictEqual(newest.angles, { bottom: [240, null, null] }, "the older pin stays when removing the newest clears the clash");
+  const newest = run(app, `${LOAD(BASE, { angles: { inner: [150, null] } })}
+    const second = editorSetAngle(m0, "inner", 1, 55);
+    const added = editorAdd(second.value, "inner", "E5");
+    return { ok: second.ok, pins: second.value.pins, angles: added.value.options.angles, notice: added.notice };`);
+  assert.strictEqual(newest.ok, true);
+  assert.deepStrictEqual(newest.notice.unpinned[0], { ring: "inner", i: 1 }, "the pin set last goes first");
+  assert.deepStrictEqual(newest.angles, { inner: [150, null, null] }, "the older pin stays when removing the newest clears the clash");
 });
 
 test("U2a-M3: primitives are pure and refuse without changing the model", () => {
@@ -821,4 +822,234 @@ test("SE-I1-5: an edit command that would turn a slot owner into a v6 row is ref
   assert.strictEqual(res.placed, true);
   assert.strictEqual(res.ok, false);
   assert.strictEqual(res.v, 4);
+});
+
+/* ---- BN (TRI-59): bottom notes stay put on add and remove ---- */
+const BN_BOT = ["A2", "B2", "C3", "E3", "F3", "G3", "Bb2", "Db3", "Eb3", "Gb3", "Ab3", "B3"];
+const bnText = (n) => (n ? BN_BOT.slice(0, n).map((x) => `[${x}]`).join(" ") + " " : "") + BASE;
+const BN_FN = `const drawn = (m) => { const s = editorSolve(m); return s.ok ? editorAnglesOf(s, "bottom") : null; };
+  const norm = (a) => ((a % 360) + 360) % 360;
+  const near = (a, b) => { const d = Math.abs(norm(a - b)); return Math.min(d, 360 - d); };
+  const right = (a) => norm(a - 270) < 180;
+  const byName = (m) => { const names = editorNames(m, "bottom"), at = drawn(m); return Object.fromEntries(names.map((n, k) => [n, at[k]])); };
+  const sameWithin = (before, after) => Object.keys(before).every((n) => after[n] !== undefined && near(before[n], after[n]) <= 2.5 + 1e-9 && right(before[n]) === right(after[n]));
+  const widest = (angles) => { const s = angles.map(norm).sort((a, b) => a - b); let best = null;
+    s.forEach((a, k) => { const gap = (s[(k + 1) % s.length] - a + 360) % 360 || 360; const mid = norm(a + gap / 2);
+      const c = { mid, gap, d: near(mid, 270), r: right(mid) };
+      if (!best || c.gap > best.gap + 1e-9 || (Math.abs(c.gap - best.gap) < 1e-9 && (c.d < best.d - 1e-9 || (Math.abs(c.d - best.d) < 1e-9 && c.r && !best.r)))) best = c; });
+    return best.mid; };`;
+
+test("BN-M1: a drop on an untouched bottom ring puts the note at the drop angle and keeps every other note where it is drawn (symmetric snap), in one model", () => {
+  const app = appBoot();
+  for (let n = 1; n <= 11; n += 1) {
+    const r = run(app, `${BN_FN} ${LOAD(bnText(n), {})}
+      const before = byName(m0);
+      for (const angle of [270, 345, 15, 195, 165, 120, 60, 300, 240]) {
+        const placed = editorPlaceAt(m0, "bottom", ${js(BN_BOT[n])}, angle);
+        if (!placed.ok) continue;
+        const after = byName(placed.value);
+        return { angle, at: after[${js(BN_BOT[n])}], kept: sameWithin(before, after), size: Object.keys(after).length, stored: placed.value.options.angles.bottom.length };
+      }
+      return null;`);
+    assert.ok(r, `n=${n} has a free drop angle`);
+    assert.strictEqual(r.at, r.angle, `n=${n} the new note is where it was dropped`);
+    assert.strictEqual(r.kept, true, `n=${n} the others stay within the snap`);
+    assert.strictEqual(r.size, n + 1);
+    assert.strictEqual(r.stored, n + 1, `n=${n} every note is stored`);
+  }
+});
+
+test("BN-M2: an add with no position lands in the middle of the widest empty stretch (nearest bottom centre, right first on a tie); the others stay", () => {
+  const app = appBoot();
+  for (let n = 1; n <= 11; n += 1) {
+    const r = run(app, `${BN_FN} ${LOAD(bnText(n), {})}
+      const before = byName(m0);
+      const added = editorAdd(m0, "bottom", ${js(BN_BOT[n])});
+      const after = byName(added.value);
+      const others = { ...after }; delete others[${js(BN_BOT[n])}];
+      return { ok: added.ok, want: widest(Object.values(others)), at: after[${js(BN_BOT[n])}], kept: sameWithin(before, after), notice: added.notice };`);
+    assert.strictEqual(r.ok, true, `n=${n}`);
+    const gap = Math.abs(r.at - r.want);
+    assert.ok(Math.min(gap, 360 - gap) <= 2.5 + 1e-9, `n=${n} lands in the middle of the widest stretch of the frozen ring (${r.want}), got ${r.at}`);
+    assert.strictEqual(r.kept, true, `n=${n}`);
+    assert.strictEqual(r.notice, undefined, `n=${n} the add never unpins or resets anything`);
+  }
+  const two = run(app, `${LOAD(bnText(2), {})} const a = editorAdd(m0, "bottom", "C3"); return a.value.options.angles;`);
+  assert.deepStrictEqual(two, { bottom: [0, 180, 270] }, "the 90 and 270 midpoints tie; the one nearest bottom centre wins");
+  const one = run(app, `${LOAD(bnText(1), {})} const a = editorAdd(m0, "bottom", "B2"); return a.value.options.angles;`);
+  assert.deepStrictEqual(one, { bottom: [90, 270] });
+});
+
+test("BN-M3: removing a bottom note keeps every other note where it is drawn", () => {
+  const app = appBoot();
+  for (let n = 2; n <= 12; n += 1) {
+    for (let i = 0; i < n; i += 1) {
+      const r = run(app, `${BN_FN} ${LOAD(bnText(n), {})}
+        const before = byName(m0);
+        const removed = editorRemove(m0, "bottom", ${i});
+        const after = byName(removed.value);
+        delete before[editorNames(m0, "bottom")[${i}]];
+        return { ok: removed.ok, kept: sameWithin(before, after), count: Object.keys(after).length, pins: removed.value.pins.filter((p) => p.ring === "bottom").length };`);
+      assert.strictEqual(r.ok, true, `n=${n} i=${i}`);
+      assert.strictEqual(r.kept, true, `n=${n} i=${i}`);
+      assert.strictEqual(r.count, n - 1);
+      assert.strictEqual(r.pins, n - 1, `n=${n} i=${i} every kept note is pinned`);
+    }
+  }
+});
+
+test("BN-M4: an add or remove that leaves every note on its even spot stores no bottom list and no bottom pins, and the link has no angle field", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(bnText(2), {})}
+    const grown = editorAdd(m0, "bottom", "C3");
+    const back = editorRemove(grown.value, "bottom", 2);
+    return { angles: back.value.options.angles, pins: back.value.pins, link: editorExport(back.value).code, grownLink: editorExport(grown.value).code };`);
+  assert.strictEqual(r.angles, undefined);
+  assert.deepStrictEqual(r.pins, []);
+  assert.doesNotMatch(r.link, /at-/);
+  assert.match(r.grownLink, /at-0,180,270/);
+});
+
+test("BN-M5: a drop onto a taken spot is refused as no room and leaves the model unchanged; a no-position add never refuses for room", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(bnText(3), {})}
+    const snap = JSON.stringify(m0);
+    const clash = editorPlaceAt(m0, "bottom", "E3", 200);
+    const onTop = editorPlaceAt(m0, "bottom", "E3", 90);
+    return { clash: { ok: clash.ok, code: clash.code, reason: clash.reason }, onTop: onTop.ok, same: snap === JSON.stringify(m0) };`);
+  assert.strictEqual(r.clash.ok, false);
+  assert.strictEqual(r.clash.code, "NO_ROOM");
+  assert.match(r.clash.reason, /E3 has no room at 200/);
+  assert.strictEqual(r.onTop, false);
+  assert.strictEqual(r.same, true);
+  const crowded = run(app, `${LOAD(bnText(11), {})}
+    const a = editorAdd(m0, "bottom", "B3");
+    return { ok: a.ok, code: a.code, notice: a.notice, count: a.ok && a.value.options.angles.bottom.length };`);
+  assert.strictEqual(crowded.ok, true, "the 12th note goes through editorSettle, which has room at the widest midpoint");
+  assert.strictEqual(crowded.notice, undefined);
+  assert.strictEqual(crowded.count, 12);
+});
+
+test("BN-M6: a swapped bottom ring freezes from its drawn angles with no seatsReset notice; rim seats still reset", () => {
+  const app = appBoot();
+  const r = run(app, `${BN_FN} ${LOAD(bnText(2), { seats: { bottom: [1, 0] } })}
+    const before = byName(m0);
+    const added = editorAdd(m0, "bottom", "C3");
+    const rim = editorLoad(${js(bnText(2))}, { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7], bottom: [1, 0] } }).value;
+    const rimAdd = editorAdd(rim, "rim", "B4");
+    return { before, after: byName(added.value), notice: added.notice, seats: added.value.options.seats, rimNotice: rimAdd.notice, rimSeats: rimAdd.value.options.seats };`);
+  assert.strictEqual(r.after.A2, r.before.A2);
+  assert.strictEqual(r.after.B2, r.before.B2);
+  assert.strictEqual(r.notice, undefined);
+  assert.strictEqual(r.seats, undefined);
+  assert.deepStrictEqual(r.rimNotice, { seatsReset: "rim" });
+  assert.deepStrictEqual(r.rimSeats, { bottom: [1, 0] });
+});
+
+test("BN-M7: with MIRROR BOTTOM stored, an add reads the drawn (mirrored) angles and nothing moves", () => {
+  const app = appBoot();
+  for (let n = 1; n <= 8; n += 1) {
+    const r = run(app, `${BN_FN} ${LOAD(bnText(n), { mirrorBottom: true })}
+      const before = byName(m0);
+      const added = editorAdd(m0, "bottom", ${js(BN_BOT[n])});
+      return { ok: added.ok, kept: sameWithin(before, byName(added.value)), mirror: added.value.options.mirrorBottom };`);
+    assert.strictEqual(r.ok, true, `n=${n}`);
+    assert.strictEqual(r.kept, true, `n=${n} mirrored notes stay where drawn`);
+    assert.strictEqual(r.mirror, true, `n=${n} the stored option is carried`);
+  }
+});
+
+test("BN-M8: a Neotone model resizes as before: no bottom angles are ever stored", () => {
+  const app = appBoot();
+  app.run("HPE.core.PROFILE_ENABLED = true");
+  const r = run(app, `const base = editorLoad(${js("(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4")}, {}).value;
+    const neo = editorPanType(base, "neotone");
+    if (!neo.ok) return { refused: neo.code };
+    const added = editorAdd(neo.value, "bottom", "C3");
+    const removed = editorRemove(neo.value, "rim", 0);
+    const put = editorNeoPut(neo.value, NEO_MAIN, "A3");
+    const placed = put.ok ? editorPlaceAt(put.value, "bottom", "E3", 100) : null;
+    const mutantPlace = placed && placed.ok ? editorNames(placed.value, "bottom") : (placed ? placed.code : "no mutant");
+    return { mutantPlace, kind: editorKindOf(neo.value), addAngles: added.ok ? added.value.options.angles : null, rmAngles: removed.ok ? removed.value.options.angles : null };`);
+  assert.strictEqual(r.refused, undefined);
+  assert.strictEqual(r.kind, "neotone");
+  assert.strictEqual(r.addAngles === null || r.addAngles === undefined, true);
+  assert.strictEqual(r.rmAngles === null || r.rmAngles === undefined, true);
+  assert.deepStrictEqual(r.mutantPlace, ["E3", "A3"], "a positioned add beside a Neotone bottom mutant note takes today's path, not the freeze");
+});
+
+test("BN-M9: a typed line that only adds or removes bottom names freezes the rest (rim and cyclops pins kept, no pinsReset); a rename with no stable match and a line that changes another ring respread", () => {
+  const app = appBoot();
+  const commit = (text, options, typed) => run(app, `${BN_FN} ${LOAD(text, options)}
+    const before = byName(m0);
+    const r = editorCommitText(m0, ${js(typed)});
+    return { ok: r.ok, notice: r.notice, before, after: r.ok ? byName(r.value) : null, pins: r.ok ? r.value.pins : null, angles: r.ok ? r.value.options.angles : null };`);
+  const add2 = commit(bnText(2), {}, bnText(4));
+  assert.strictEqual(add2.ok, true);
+  assert.deepStrictEqual(add2.after, { A2: 0, B2: 180, C3: 270, E3: 90 }, "two added notes are placed one by one at the widest-stretch midpoint: 270 first, then 90");
+  assert.strictEqual(add2.notice, undefined);
+  const drop = commit(bnText(3), {}, bnText(3).replace("[B2] ", ""));
+  assert.deepStrictEqual(drop.after, { A2: drop.before.A2, C3: drop.before.C3 }, "removing B2 keeps A2 and C3 where they are");
+  const both = commit(bnText(3), {}, bnText(4).replace("[B2] ", ""));
+  assert.strictEqual(both.ok, true);
+  assert.strictEqual(both.after.A2, both.before.A2);
+  assert.strictEqual(both.after.C3, both.before.C3);
+  assert.strictEqual(Object.keys(both.after).length, 3);
+  const pinned = commit(bnText(3), { angles: { inner: [150, null] } }, bnText(2));
+  assert.strictEqual(pinned.ok, true);
+  assert.strictEqual(pinned.notice, undefined, "a bottom-only typed edit shows no pinsReset notice");
+  assert.deepStrictEqual(pinned.angles.inner, [150, null], "the cyclops pin is kept");
+  assert.ok(pinned.pins.some((p) => p.ring === "inner" && p.i === 0));
+  const rename = commit(bnText(3), { angles: { inner: [150, null] } }, bnText(3).replace("[B2]", "[Bb2]"));
+  assert.strictEqual(rename.ok, true);
+  assert.deepStrictEqual(rename.notice, { pinsReset: true }, "a rename with no stable match respreads");
+  assert.strictEqual(rename.angles, undefined);
+  const other = commit(bnText(3), { angles: { inner: [150, null] } }, bnText(3).replace("A4 |", "|"));
+  assert.deepStrictEqual(other.notice, { pinsReset: true }, "a line that changes another ring keeps pinsReset");
+  const seatsOf = (text, typed) => run(app, `${BN_FN} ${LOAD(text, {})}
+    const r = editorCommitText(m0, ${js(typed)});
+    return { ok: r.ok, seats: r.ok ? r.value.options.seats : null };`);
+  const RIM_PITCH = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const RIM_SWAP = "(D3) Bb3 A3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const swapIn = seatsOf("[A2] [B2] " + RIM_PITCH, "[A2] [B2] [C3] " + RIM_SWAP);
+  assert.strictEqual(swapIn.ok, true);
+  assert.deepStrictEqual(swapIn.seats && swapIn.seats.rim, [1, 0, 2, 3, 4, 5, 6, 7], "a rim swap typed with a bottom add is applied");
+  const swapOut = seatsOf("[A2] [B2] " + RIM_SWAP, "[A2] [B2] [C3] " + RIM_PITCH);
+  assert.strictEqual(swapOut.ok, true);
+  assert.strictEqual(swapOut.seats, undefined, "typing the rim back in pitch order with a bottom add clears the swap");
+});
+
+test("BN-M10: an add to an empty bottom ring stays untouched (no position) or gives the RC's model (drop angle)", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(bnText(0), {})}
+    const a = editorAdd(m0, "bottom", "A2");
+    const placed = editorPlaceAt(m0, "bottom", "A2", 100);
+    const rc = editorSetAngle(editorAdd(m0, "bottom", "A2").value, "bottom", 0, 100, true);
+    return { auto: a.value.options.angles, pins: a.value.pins, placed: placed.value.options.angles, same: JSON.stringify(placed.value) === JSON.stringify(rc.value) };`);
+  assert.strictEqual(r.auto, undefined);
+  assert.deepStrictEqual(r.pins, []);
+  assert.deepStrictEqual(r.placed, { bottom: [100] });
+  assert.strictEqual(r.same, true);
+});
+
+test("BN-M11: freezing an untouched ring keeps every U label for 1 to 12 notes, both anchors, mirror off and on; a note moves at most 2.5 degrees", () => {
+  const app = appBoot();
+  for (const anchor of ["one", "between"]) {
+    for (const mirrorBottom of [false, true]) {
+      for (let n = 1; n <= 12; n += 1) {
+        const r = run(app, `${LOAD(bnText(n), { anchor, mirrorBottom })}
+          const solved = editorSolve(m0);
+          const labels = (s) => ringIds(s.value.fields, "bottom").map((id) => s.value.fields[id][5]);
+          const angles = editorFreezeBottom(m0);
+          const frozen = editorLoad(${js(bnText(n))}, { anchor: ${js(anchor)}, mirrorBottom: ${mirrorBottom}, angles: { bottom: angles } });
+          const after = frozen.ok ? editorSolve(frozen.value) : null;
+          const drawn = editorAnglesOf(solved, "bottom");
+          const gap = (a, b) => { const d = Math.abs(((a - b) % 360 + 360) % 360); return Math.min(d, 360 - d); };
+          return { ok: !!after && after.ok, same: !!after && after.ok && JSON.stringify(labels(after)) === JSON.stringify(labels(solved)), shift: Math.max(...drawn.map((a, k) => gap(a, angles[k]))) };`);
+        assert.strictEqual(r.ok, true, `${anchor} mirror=${mirrorBottom} n=${n} solves`);
+        assert.strictEqual(r.same, true, `${anchor} mirror=${mirrorBottom} n=${n} keeps every label`);
+        assert.ok(r.shift <= 2.5 + 1e-9, `${anchor} mirror=${mirrorBottom} n=${n} shifts ${r.shift}`);
+      }
+    }
+  }
 });

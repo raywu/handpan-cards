@@ -501,15 +501,23 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   gone. `mirror` reflects the notes of the rim and inner rings about the vertical
   axis; `mirrorBottom` reflects the notes of the bottom ring and, when absent,
   follows `mirror`. A mirror moves no index number (owner 2026-10-30).
-- DECIDED(owner 2026-10, Rule N) A seat's index number belongs to the position,
-  not to the note: moving a note (`options.seats`) changes the name drawn there
-  and nothing else, on the plate and on the generated cards alike. The same
-  holds for `options.angles`: a bottom note placed at a chosen angle keeps its
-  seat's number. Under `options.angles` the bottom labels follow the
-  cyclic-order rule: sort the home seats and the placed angles, pick the
-  rotation of least total angular gap; on a tie, the one that turns the notes
-  furthest anticlockwise in total, then the lowest; give each home label to its
-  matched angle ("SO: the cyclic match wraps through 0 degrees: Eb3 at 355 keeps U3, and C3 at 20 with Eb3 at 0 reads C3 U3 and Eb3 U1"; "SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U6 Db3 U1 Eb3 U3 Bb3 U2 Db4 U5 Ab5 U4"; "SO: whole-ring turns of +30, +25 and -25 on Pygmy keep the home labels, and -30 puts the same seat numbers at the same angles, with MIRROR BOTTOM off and on").
+- DECIDED(owner 2026-11-17, bottom numbering) The bottom ring's U numbers follow the
+  drawn position: U1 is the note nearest bottom centre (270 degrees), then U2, U3 and so
+  on by distance from 270 going up; two notes the same distance away (within 0.11
+  degrees) go right first. This replaces the 2026-10 cyclic match. A moved note
+  takes its number from where it lands, with no swap back; MIRROR BOTTOM moves no
+  number off a position ("BN-L1: untouched rings of 1 to 116 notes read U1, U2, ... by index"; "BN-L3: a bottom note drawn at 270 reads U1 and one drawn at 90 reads the last number"; "BN-L4: two notes the same distance from bottom centre: the right one (290) reads the lower number"; "BN-L6: a slide that crosses a note renumbers by position, no swap back"; "BN-L7: Pygmy C3 slid 300 -> 285 shows U1; with MIRROR BOTTOM on C3 is drawn at 255 and reads U1, Db3 at 300 reads U2"). For `options.seats` a seat's index number still belongs to the position and moving a note changes only the name drawn there, on the plate and on the generated cards alike. The cyclops ring keeps its cyclic match ("BN-L10").
+- Editor freeze and collapse (owner 2026-11-17): adding or removing a bottom note on a
+  standard bottom ring that holds a note and solves never moves the other bottom notes.
+  The editor writes every bottom note's solved angle (snapped about 270 to the 5 degree
+  grid, at most 2.5 degrees) into `options.angles.bottom` and pins each; an add with no
+  chosen position goes to the middle of the widest stretch, ties to the one nearest 270,
+  then right. When every note is back on its even spot the list and its pins are
+  dropped (collapse). A bottom-only typed edit is applied one note at a time and keeps
+  the rim and cyclops pins and shows no pinsReset notice (D3, F-B). A frozen ring keeps
+  its stored angles under a stored `mirrorBottom` (D4). A clashing add with a position
+  is refused as today; one with no position cannot clash (the cap is 12 notes, 15
+  degrees apart) and any other failure goes through `editorSettle` (ID3, F-D).
 
 ## 5. Legality invariants for a voicing
 
@@ -918,7 +926,7 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   reflects the explicit entries too through `HPE.layout.reflectAngles(angles)`
   (pure; each explicit `a` becomes `norm(180 - a)`, null stays null, it is its own
   inverse; owner 2026-10-31), so every note swaps sides and numbers stay with
-  positions (rule N cyclic match against the unmirrored home). MN2's rule S
+  positions (U numbers follow the drawn position, nearest bottom centre first). MN2's rule S
   (`holdForMirror`, hold the orphans) is SUPERSEDED and removed. Records and links
   need no conversion: `angles` always meant the drawn angle in its own frame, so
   RECORD_VERSION and the wire VERSION do not change. Tests: "MN3: reflectAngles
@@ -941,7 +949,7 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   [0, 360) or `null` for the solved angle, validated by `layout.readAngles`
   (any other shape is `BAD_NOTE`; an absent or all-null list reads as absent).
   The override is written last, after `mirrorBottom` and `seats`, into slot 4 of
-  the bottom fields, then relabels slot 5 of the bottom fields by the cyclic-order rule (Rule N; "SO: the five built-ins solve to byte-identical fields with no angles, all-null angles and their home angles written explicitly"); geometry is computed from the default placement, so
+  the bottom fields, then relabels slot 5 of the bottom fields by distance from bottom centre, right first on a tie (nearest bottom centre; "SO: the five built-ins solve to byte-identical fields with no angles, all-null angles and their home angles written explicitly"); geometry is computed from the default placement, so
   `geom` is byte-identical with and without it. A floor applies to the
   effective list (`layout.bottomClash`): two bottom notes closer than the
   smallest multiple of 5 strictly above their touching angle (capped by the

@@ -935,7 +935,80 @@ function run() {
       await b.click("#editor-oct-down");
       await tapSpot(...polar(1.15, 150));
       m = await model();
-      assert.deepStrictEqual(m.options.angles.bottom.filter((a) => a !== null), [150]);
+      assert.deepStrictEqual(m.options.angles.bottom.filter((a) => a !== null), [150, 90]);
+    });
+
+    const BN_ROWS = `const s = editorSolve(editorSession.history.present).value; return ringIds(s.fields, "bottom").map((id) => ({ n: s.fields[id][0] + s.fields[id][1], a: s.fields[id][4], l: s.fields[id][5] }));`;
+    const bnRows = async () => Object.fromEntries((await b.eval(BN_ROWS)).map((r) => [r.n, r]));
+
+    test("BN-E1 (QA video 1): a note added next to E3 on the side nearer bottom centre reads U1; E3 stays at its angle and reads U2", async () => {
+      await setup("[E3] " + SCALE);
+      const before = await bnRows();
+      assert.strictEqual(before.E3.l, "U1");
+      await hold("D#");
+      await b.click("#editor-oct-down");
+      await tapSpot(...polar(1.15, 140));
+      const after = await bnRows();
+      assert.strictEqual(after.E3.a, before.E3.a, "E3 did not move");
+      assert.strictEqual(after["D#3"].a, 140);
+      assert.strictEqual(after["D#3"].l, "U1", "the note nearest bottom centre reads U1");
+      assert.strictEqual(after.E3.l, "U2");
+    });
+
+    test("BN-E2 (QA video 2): a note moved across its neighbours takes its number from where it lands; nothing swaps back", async () => {
+      await setup("[A2] [B2] [C3] " + SCALE);
+      const before = await bnRows();
+      assert.deepStrictEqual([before.A2.a, before.B2.a, before.C3.a], [330, 210, 90]);
+      await tapNote("bottom", 2);
+      await tapSpot(...polar(1.15, 240));
+      const after = await bnRows();
+      assert.strictEqual(after.C3.a, 240);
+      assert.deepStrictEqual([after.C3.l, after.A2.l, after.B2.l], ["U1", "U2", "U3"], "distance from 270: C3 30, then A2 and B2 at 60 (right first)");
+      assert.deepStrictEqual([after.A2.a, after.B2.a], [330, 210], "the others stay");
+    });
+
+    test("BN-E3: removing a bottom note leaves the others where they are drawn on the screen", async () => {
+      await setup("[A2] [B2] [C3] " + SCALE);
+      const at = async (i) => noteAt("bottom", i);
+      const [a, c] = [await at(0), await at(2)];
+      await tapNote("bottom", 1);
+      await b.click("#editor-remove");
+      assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["A2", "C3"]);
+      assert.deepStrictEqual([await at(0), await at(1)], [a, c], "A2 and C3 did not move by a pixel");
+    });
+
+    test("BN-E4: a scale with MIRROR BOTTOM stored (record and share link) keeps its numbers on positions, and a bottom add keeps its stored angles", async () => {
+      for (const via of ["record", "link"]) {
+        await setup("[A2] [B2] [C3] " + SCALE);
+        const shape = await b.eval(`const base = editorLoad("[A2] [B2] [C3] " + ${JSON.stringify(SCALE)}, { mirrorBottom: true }).value;
+          const e = editorExport(base);
+          const loaded = ${JSON.stringify(via)} === "record" ? editorLoadRecord({ v: e.record.v, s: e.record.s, o: e.record.o }) : editorLoadShare(e.code);
+          if (!loaded.ok) return { code: loaded.code };
+          editorSession.history = editorHistoryNew(loaded.value); editorRender(); return { mirror: loaded.value.options.mirrorBottom };`);
+        assert.strictEqual(shape.mirror, true, via);
+        const before = await bnRows();
+        const rank = Object.values(before).sort((x, y) => Math.abs(((x.a - 270 + 540) % 360) - 180) - Math.abs(((y.a - 270 + 540) % 360) - 180) || (((x.a - 270 + 360) % 360) < 180 ? -1 : 1));
+        assert.deepStrictEqual(rank.map((r) => r.l), ["U1", "U2", "U3"], via + ": numbers follow the drawn positions");
+        await hold("E");
+        await b.click("#editor-oct-down");
+        await place("bottom");
+        const after = await bnRows();
+        for (const n of ["A2", "B2", "C3"]) assert.strictEqual(after[n].a, before[n].a, `${via} ${n} stays`);
+        assert.strictEqual((await model()).options.mirrorBottom, true);
+      }
+    });
+
+    test("BN-E5: a held note placed on the bottom area (no position) goes to the middle of the widest stretch, nearest bottom centre", async () => {
+      await setup("[A2] " + SCALE);
+      await hold("G");
+      await b.click("#editor-oct-down");
+      await place("bottom");
+      assert.deepStrictEqual((await model()).options.angles.bottom, [90, 270]);
+      await setup("[A2] [B2] " + SCALE);
+      await hold("G");
+      await b.click("#editor-oct-down");
+      await place("bottom");
+      assert.deepStrictEqual((await model()).options.angles.bottom, [0, 180, 270]);
     });
 
     test("SE-9: a tray note tapped next to a pinned bottom note never overlaps it", async () => {
@@ -1211,10 +1284,10 @@ function run() {
         await hold("E");
         await b.click("#editor-oct-down");
         await place("bottom");
-        assert.strictEqual((await model()).pins.length, 3, "the add keeps the pins");
+        assert.strictEqual((await model()).pins.length, 5, "the add freezes the ring: every bottom note pinned");
         assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 4);
         assert.match(await linkOf(), /at-/);
-        const unpinnedIdx = await b.eval(`const a = editorSession.history.present.options.angles.bottom; return a.findIndex((x) => x === null);`);
+        const unpinnedIdx = await b.eval(`return editorNames(editorSession.history.present, "bottom").indexOf("E3");`);
         await tapNote("bottom", unpinnedIdx);
         assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
         const before = await model();
