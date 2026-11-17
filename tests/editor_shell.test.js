@@ -1354,7 +1354,7 @@ describe("empty-state staging", () => {
     globalThis.__n = editorNeoPut(editorNeoPut(editorPanType(editorEmptyModel(), "neotone").value, 0, "A3").value, 9, "A2").value; true`);
   const kindsOf = (st) => ({ kind: st.kind, ding: st.ding, notes: Object.fromEntries(Object.entries(st).filter(([, v]) => Array.isArray(v))) });
 
-  test("empty stage: switching the pan type of an empty model keeps each kind's staged notes, Standard to Neotone and back", () => {
+  test("empty stage: a Standard stage survives a round trip through Neotone with its notes, and the Neotone stage starts empty", () => {
     const a = app();
     stagedStd(a);
     stagedBoth(a);
@@ -1370,7 +1370,7 @@ describe("empty-state staging", () => {
     assert.deepStrictEqual(["rim", "inner", "bottom"].map((r) => names(a, `editorPanType(editorPanType(__s, "neotone").value, "standard").value`, r)), [["E4"], ["G4"], ["A2"]]);
   });
 
-  test("empty stage: switching the pan type of an empty model keeps each kind's staged notes, Neotone to Standard and back", () => {
+  test("empty stage: a Neotone stage maps its notes across to Standard and back, with no ding set", () => {
     const a = app();
     stagedStd(a);
     stagedBoth(a);
@@ -1568,6 +1568,7 @@ describe("empty-state staging", () => {
     assert.deepStrictEqual(names(a, "__h.present", "rim"), ["G3"]);
     assert.strictEqual(a.get("__h.past.length"), 1);
     assert.strictEqual(a.get("editorIsEmpty(editorUndo(__h).present)"), true);
+    assert.strictEqual(a.get(`"stage" in __h.present`), false);
     assert.strictEqual(a.get("editorKindOf(editorUndo(__h).present)"), "neotone");
   });
 

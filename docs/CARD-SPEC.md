@@ -339,8 +339,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   and the name hint (`editorRenderNeoHelp`, Q4). A switch
   that restores a stage holding the ding and a fifth commits it like any edit (a refused
   commit, such as a ding equal to a parked note, stays staged and editable). Tests:
-  "empty stage: switching the pan type of an empty model keeps each kind's staged notes"
-  (Standard to Neotone and back, Neotone to Standard and back), "empty stage: the current
+  "empty stage: a Standard stage survives a round trip through Neotone with its notes, and the Neotone stage starts empty", "empty stage: a Neotone stage maps its notes across to Standard and back, with no ding set", "empty stage: the current
   ding goes both ways", "empty stage: a kind with nothing remembered", "empty stage: each
   switch of an empty model is one Undo step", "empty stage: a switch that restores parked notes commits them", "empty stage: a restore whose ding equals a parked note stays staged", "empty stage: a remembered stage of the other
   kind is never saved", e2e "switching pan type and back keeps the staged notes". Mapping tests: "empty stage:
@@ -410,7 +409,8 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   are fully in view", "LS 844x390: every control on Scale and on Layout is reachable by scrolling
   the one column, and the pan stays in view" (also 844x340, 667x375), "LS 844x390: the toolbar is
   reachable at the end of the column and a chip dragged onto the pan still places a note";
-  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`.
+  "LS 844x390: an open dialog locks the column's scroll";
+  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`, `ls_dialog_scroll_unlocked`.
 - **Message placement.** `#editor-status` sits just under the pan box, before the tab strip
   and the counts overlay. An error shows as an ink banner (`#242424` background, white text,
   14px/600, radius 8px, padding 4px 12px, a leading warning glyph, no red, no hover) and plays
