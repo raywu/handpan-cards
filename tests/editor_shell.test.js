@@ -1689,3 +1689,53 @@ describe("empty-state staging", () => {
     assert.strictEqual(hit([2, 2]).kind, "off");
   });
 });
+
+describe("SO-R inventory", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const { ROWS, DRIFT, EXCLUDED, CODES, RAW_FALLBACK } = require("./helpers/so_status_inventory.js");
+  const I18N_DIR = path.join(__dirname, "..", "data", "i18n");
+  const LOCALES = fs.readdirSync(I18N_DIR).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+  const flat = (o, p = "", out = {}) => {
+    for (const k of Object.keys(o)) {
+      const v = o[k];
+      if (v && typeof v === "object") flat(v, p + k + ".", out); else if (typeof v === "string") out[p + k] = v;
+    }
+    return out;
+  };
+  const tables = Object.fromEntries(LOCALES.map((l) => [l, flat(JSON.parse(fs.readFileSync(path.join(I18N_DIR, l + ".json"), "utf8")))]));
+
+  test("SO-R inventory: every key the drift regex matches is a table row or a listed exclusion", () => {
+    assert.strictEqual(LOCALES.length, 8);
+    const rowKeys = new Set(ROWS.map((r) => r.k));
+    const matched = Object.keys(tables.en).filter((k) => DRIFT.test(k));
+    const missing = matched.filter((k) => !rowKeys.has(k) && !(k in EXCLUDED));
+    assert.deepStrictEqual(missing, [], "a new editor message key needs a ROWS row or an EXCLUDED reason");
+    assert.deepStrictEqual(matched.filter((k) => rowKeys.has(k) && k in EXCLUDED), [], "a key is a row or an exclusion, never both");
+    assert.deepStrictEqual(Object.keys(EXCLUDED).filter((k) => !(k in tables.en)), [], "an exclusion names a real key");
+    for (const k of matched.filter((key) => key.startsWith("reason."))) {
+      assert.ok(ROWS.some((r) => r.k === k && r.mode === "error"), k + " is an error row");
+    }
+    const source = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8").replace(/^<script>const I18N = .*$/m, "");
+    const found = new Set([...source.matchAll(/(?:\bcode: *|\b(?:err|fail|editorAreaRefusal)\()"([A-Z][A-Z_]+)"/g)].map((m) => m[1]));
+    for (const c of found) assert.ok(CODES.includes(c), c + " is a refusal code the inventory lists");
+    for (const c of CODES) {
+      const hasKey = Object.keys(tables.en).some((k) => k === "reason." + c || k.startsWith("reason." + c + "."));
+      assert.ok(hasKey || RAW_FALLBACK[c], c + " has a reason key or a RAW_FALLBACK reason");
+      assert.ok(!(hasKey && RAW_FALLBACK[c]), c + " is not both");
+    }
+    assert.deepStrictEqual(Object.keys(RAW_FALLBACK).filter((c) => !CODES.includes(c)), []);
+  });
+
+  test("SO-R inventory: every table row names a key present in all 8 tables with every placeholder filled", () => {
+    assert.ok(ROWS.length >= 70, "the table is not empty: " + ROWS.length);
+    for (const r of ROWS) {
+      for (const l of LOCALES) {
+        const text = tables[l][r.k];
+        assert.strictEqual(typeof text, "string", `${r.k} exists in ${l}`);
+        const left = text.replace(/\{(\w+)\}/g, (m, name) => (Object.prototype.hasOwnProperty.call(r.vars, name) ? String(r.vars[name]) : m));
+        assert.ok(!/\{\w+\}/.test(left), `${r.k} in ${l} has an unfilled placeholder: ${left}`);
+      }
+    }
+  });
+});
