@@ -11,5 +11,5 @@ diff --git a/index.html b/index.html
 -  #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
 +  #scale-sheet.onepanel #editor.dragging{overflow:hidden}
    #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
-   #editor-status{min-height:28px} #editor-counts{grid-area:counts}
-   #editor-status[data-conflict]{position:static}
+   #editor-counts{grid-area:counts}
+   #editor .editor-statusrow{grid-area:region; align-self:start; height:0; min-height:0; z-index:5}
