@@ -178,7 +178,7 @@ const model = (app) => (text, options) => plain(app.get(`(() => { const r = edit
 // grow silently.
 const DIRECT_READERS = [
   "tests/app.test.js", "tests/coverage_merge.test.js", "tests/e2e.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/editor_shell.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
-  "tests/helpers/dump_app_render.js", "tests/layout.test.js", "tests/link_corpus.test.js",
+  "tests/helpers/dump_app_render.js", "tests/helpers/so_status_inventory.js", "tests/layout.test.js", "tests/link_corpus.test.js",
   "tests/mutation_harness.test.js", "tests/pdfcards.test.js", "tests/select.test.js",
   "tests/sequence.test.js", "tests/storage_corpus.test.js", "tests/swipe.test.js",
 ];
