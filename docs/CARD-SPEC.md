@@ -331,7 +331,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   cyclops notes or an overflow (Q3: refusing is kept, a stage is never refused) nothing is
   mapped and each kind keeps its own staged notes, `editorStagePanType` parking the leaving
   stage as `other`, which is never saved, shared or dirty; a kind with nothing remembered
-  starts blank with the ding. A mapped switch also parks the leaving stage as `other`, and switching back with no edit
+  starts blank with the ding. A committing switch drops the other kind's parked notes. A mapped switch also parks the leaving stage as `other`, and switching back with no edit
   in between restores the parked stage exactly (owner 2026-11-16, "restore if notes unchanged";
   test "NR: Neotone to Standard to Neotone with no edit restores every placement"); an edit
   re-maps, and when that re-map cannot map either (a cyclops note, an overflow) the switch back starts blank with the ding, as before; only a stage parked by an unmapped switch is restored
@@ -405,7 +405,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   tray row at 844x340, and main's sheet has no fixed bar).
   At rest on Scale the name field, both tabs and the first tray row are in view; every Scale and
   Layout control is reachable by scrolling the column, and the pan stays in view. The hint overlay
-  tracks the column's scroll and the dialog scrolls it to the top and locks it. Portrait is
+  tracks the column's scroll and the dialog locks the column's scroll. Portrait is
   unchanged. Tests: "LS 844x390: at rest on Scale the name field, both tabs and the first tray chip
   are fully in view", "LS 844x390: every control on Scale and on Layout is reachable by scrolling
   the one column, and the pan stays in view" (also 844x340, 667x375), "LS 844x390: the toolbar is
