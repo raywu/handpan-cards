@@ -5436,11 +5436,16 @@ function run() {
         await fresh(w, h);
         await openAdd();
         await typeLine(NEO);
+        await pause(300);
+        const tops = () => b.eval(`return ["editor-tabs", "editor-name"].map((id) => Math.round(document.getElementById(id).getBoundingClientRect().top));`);
+        const before = await tops();
         await showBanner();
         for (const id of ["editor-name", "editor-hint-toggle"]) {
           const r = await hitsSelf(id);
           assert.ok(r.ok, "banner offset: " + JSON.stringify(r));
         }
+        const after = await tops();
+        assert.ok(after.every((t, i) => Math.abs(t - before[i]) <= 1), "the banner overlays and moves neither the tab strip nor the name input: " + JSON.stringify({ before, after }));
       });
     }
 
