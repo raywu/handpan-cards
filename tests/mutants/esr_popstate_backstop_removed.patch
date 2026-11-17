@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
    const s = editorSession;
    if (!s) return false;
    editorCommitName();
--  if (!editorIsDirty(s.base, s.history.present)) return false;
+-  if (!editorHasChanges(s)) return false;
 +  if (true) return false;
    history.pushState({ scalePage: true }, "", sheetRoute());
    sheetRouted = true;

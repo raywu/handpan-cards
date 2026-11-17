@@ -1,5 +1,5 @@
-# kills: empty stage: switching the pan type of an empty model keeps each kind's staged notes, Standard to Neotone and back
-# suite: node --test --test-name-pattern empty.stage..switching.the.pan.type.of.an.empty.model.keeps.each.kind.s.staged.notes..Standard.to.Neotone.and.back tests/editor_shell.test.js
+# kills: empty stage: a Standard stage survives a round trip through Neotone with its notes, and the Neotone stage starts empty
+# suite: node --test --test-name-pattern empty.stage..a.Standard.stage.survives.a.round.trip tests/editor_shell.test.js
 # fault: Switching the pan type of an empty model discards the notes staged on the other kind.
 diff --git a/index.html b/index.html
 --- a/index.html

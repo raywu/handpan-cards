@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
  }
  window.addEventListener("beforeunload", (e) => {
    const s = editorSession;
--  if (!s || !(editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present))) return;
+-  if (!s || !editorHasChanges(s)) return;
 +  if (!s || !editorIsDirty(s.base, s.history.present)) return;
    e.preventDefault();
    e.returnValue = "";

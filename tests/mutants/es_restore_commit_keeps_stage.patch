@@ -1,0 +1,15 @@
+# kills: empty stage: a switch that restores parked notes commits them when the ding and a fifth are there, in the same one Undo step
+# suite: node --test --test-name-pattern empty.stage..a.switch.that.restores.parked.notes.commits tests/editor_shell.test.js
+# fault: A switch that restores parked notes commits the model but re-attaches the stage, so the committed model still carries the other kind's parked notes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13022,7 +13022,7 @@ function editorStagePanType(m, kind) {
+   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+   const staged = editorWithStage(m, next);
+   const done = editorStageCommit(staged, next);
+-  return done.ok ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
++  return done.ok ? { ...done, value: { ...done.value, stage: next } } : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
+ }
+ function editorNameEntry(name, zone, label) {
+   const at = EDITOR_NAME_RE.exec(String(name));

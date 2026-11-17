@@ -1354,7 +1354,7 @@ describe("empty-state staging", () => {
     globalThis.__n = editorNeoPut(editorNeoPut(editorPanType(editorEmptyModel(), "neotone").value, 0, "A3").value, 9, "A2").value; true`);
   const kindsOf = (st) => ({ kind: st.kind, ding: st.ding, notes: Object.fromEntries(Object.entries(st).filter(([, v]) => Array.isArray(v))) });
 
-  test("empty stage: switching the pan type of an empty model keeps each kind's staged notes, Standard to Neotone and back", () => {
+  test("empty stage: a Standard stage survives a round trip through Neotone with its notes, and the Neotone stage starts empty", () => {
     const a = app();
     stagedStd(a);
     stagedBoth(a);
@@ -1370,7 +1370,7 @@ describe("empty-state staging", () => {
     assert.deepStrictEqual(["rim", "inner", "bottom"].map((r) => names(a, `editorPanType(editorPanType(__s, "neotone").value, "standard").value`, r)), [["E4"], ["G4"], ["A2"]]);
   });
 
-  test("empty stage: switching the pan type of an empty model keeps each kind's staged notes, Neotone to Standard and back", () => {
+  test("empty stage: a Neotone stage maps its notes across to Standard and back, with no ding set", () => {
     const a = app();
     stagedStd(a);
     stagedBoth(a);
@@ -1430,6 +1430,14 @@ describe("empty-state staging", () => {
     a.run(`globalThis.__st = editorPanType(__nr, "standard").value; globalThis.__bk = editorPanType(__st, "neotone").value; true`);
     assert.strictEqual(nrStage(a, "__bk"), nrStage(a, "__nr"));
     assert.deepStrictEqual(plain(a.get("__bk.options.profile.map")), plain(a.get("__nr.options.profile.map")));
+  });
+
+  test("NR: a ding change on the other pan type then a switch back restores the notes with the new ding", () => {
+    const a = app();
+    nrNeo(a, { main: ["E4", "F4"], mutant: [null, "A2"] });
+    a.run(`globalThis.__st = editorReplaceDing(editorPanType(__nr, "standard").value, "C3").value;
+      globalThis.__bk = editorPanType(__st, "neotone").value; true`);
+    assert.strictEqual(nrStage(a, "__bk"), JSON.stringify({ ding: "C3", kind: "neotone", main: ["E4", "F4"], mutant: [null, "A2"] }));
   });
 
   test("NR: Standard to Neotone to Standard with no edit restores the Standard stage exactly", () => {
@@ -1560,6 +1568,7 @@ describe("empty-state staging", () => {
     assert.deepStrictEqual(names(a, "__h.present", "rim"), ["G3"]);
     assert.strictEqual(a.get("__h.past.length"), 1);
     assert.strictEqual(a.get("editorIsEmpty(editorUndo(__h).present)"), true);
+    assert.strictEqual(a.get(`"stage" in __h.present`), false);
     assert.strictEqual(a.get("editorKindOf(editorUndo(__h).present)"), "neotone");
   });
 
@@ -1575,6 +1584,20 @@ describe("empty-state staging", () => {
     assert.deepStrictEqual(names(a, "__b.value", "rim"), ["G3"]);
     assert.strictEqual(a.get(`editorReplaceDing(__b.value, "C3").ok`), true);
     assert.strictEqual(a.get(`editorIsEmpty(editorReplaceDing(__b.value, "C3").value)`), false);
+  });
+
+  test("empty stage: a refused restore says why in the editor status, and a clean switch says nothing", () => {
+    const a = app();
+    stagedStd(a);
+    a.run(`globalThis.__s = editorPlace(editorPlace(editorReplaceDing(__m, "D3").value, "rim", "G3").value, "inner", "D5").value;
+      globalThis.__nn = editorReplaceDing(editorPanType(__s, "neotone").value, "G3").value; true`);
+    openSession(a, "(D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.history = editorHistoryNew(__nn); editorSession.error = "";`);
+    a.run(`globalThis.__ok = editorDo((m) => editorPanType(m, "standard")); true`);
+    assert.strictEqual(a.get("__ok"), true);
+    assert.strictEqual(a.get("editorIsEmpty(editorSession.history.present)"), true);
+    assert.match(a.get("editorSession.error"), /G3/);
+    a.run(`editorSession.error = ""; editorDo((m) => editorPanType(m, "neotone")); true`);
+    assert.strictEqual(a.get("editorSession.error"), "");
   });
 
   test("empty stage: the pan type of a non-empty model behaves as before", () => {

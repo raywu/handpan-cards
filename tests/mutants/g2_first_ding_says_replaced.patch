@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13875,7 +13875,7 @@ function editorDo(step, say, mark) {
-   s.flash = mark ? editorFlashOf(prev, res.history.present) : null;
+@@ -13965,7 +13965,7 @@ function editorDo(step, say, mark) {
    s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
    s.notice = !!(res.notice && res.notice.pinsReset);
+   if (res.notice && res.notice.stageRefused) s.error = res.notice.stageRefused;
 -  const firstDing = say && !editorDingOf(prev) ? editorFirstDingSay(say) : say;
 +  const firstDing = say;
    s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : firstDing || "";

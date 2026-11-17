@@ -13031,7 +13031,7 @@ function editorStagePanType(m, kind) {
   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
   const staged = editorWithStage(m, next);
   const done = editorStageCommit(staged, next);
-  return done.ok ? done : { ok: true, value: staged };
+  return done.ok ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
 }
 function editorNameEntry(name, zone, label) {
   const at = EDITOR_NAME_RE.exec(String(name));
@@ -13974,6 +13974,7 @@ function editorDo(step, say, mark) {
   s.flash = mark ? editorFlashOf(prev, res.history.present) : null;
   s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
   s.notice = !!(res.notice && res.notice.pinsReset);
+  if (res.notice && res.notice.stageRefused) s.error = res.notice.stageRefused;
   const firstDing = say && !editorDingOf(prev) ? editorFirstDingSay(say) : say;
   s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : firstDing || "";
   return true;
@@ -14626,7 +14627,7 @@ function editorBack() {
   const s = editorSession;
   if (!s) { closeScaleSheet(); return; }
   editorCommitName();
-  if (editorIsDirty(s.base, s.history.present)) editorShowDialog(true);
+  if (editorHasChanges(s)) editorShowDialog(true);
   else closeScaleSheet();
 }
 // Escape: the prompt is Keep editing, typing is cancelled, and otherwise it is BACK.
@@ -15105,6 +15106,7 @@ function editorDraftMoved(s, saved) {
   if (s.naming && editorSetName(saved, editorEl("editor-name").value).value !== saved) return true;
   return editorEl("editor-line").value.trim() !== editorLineText(saved);
 }
+const editorHasChanges = (s) => editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present);
 async function editorSave(separate = false) {
   separate = separate === true;
   const s = editorSession;
@@ -15209,6 +15211,7 @@ function showSheet(opener) {
   sheet.removeAttribute("hidden");
   pageOpen = true;
   setInert(true, background);
+  returnPop = false;
   sheetPreTagged = !reuseEntry;
   if (sheetPreTagged) history.replaceState({ ...history.state, preSheet: true }, "", location.href);
   if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
@@ -15254,6 +15257,7 @@ function openEditSheet(d, opener) {
 /** Take the page down. The DOM half only - the route is the caller's. */
 function hideSheet() {
   navigationGeneration++;
+  returnPop = false;
   editorClose();
   if(savePending)savePending.controller.abort();
   sheetGeneration++;
@@ -15304,7 +15308,7 @@ function editorBackstop() {
   const s = editorSession;
   if (!s) return false;
   editorCommitName();
-  if (!editorIsDirty(s.base, s.history.present)) return false;
+  if (!editorHasChanges(s)) return false;
   history.pushState({ scalePage: true }, "", sheetRoute());
   sheetRouted = true;
   if (!s.dialog) editorShowDialog(true);
@@ -15316,7 +15320,7 @@ function editorPasteGuard(state) {
   const s = editorSession;
   if (!s || !sheetPreTagged || (state && (state.preSheet || state.scalePage))) return false;
   editorCommitName();
-  if (!editorIsDirty(s.base, s.history.present)) return false;
+  if (!editorHasChanges(s)) return false;
   if (!s.dialog) editorShowDialog(true);
   returnPop = true;
   history.back();
@@ -15324,7 +15328,7 @@ function editorPasteGuard(state) {
 }
 window.addEventListener("beforeunload", (e) => {
   const s = editorSession;
-  if (!s || !(editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present))) return;
+  if (!s || !editorHasChanges(s)) return;
   e.preventDefault();
   e.returnValue = "";
 });

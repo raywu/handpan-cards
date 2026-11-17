@@ -331,7 +331,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   cyclops notes or an overflow (Q3: refusing is kept, a stage is never refused) nothing is
   mapped and each kind keeps its own staged notes, `editorStagePanType` parking the leaving
   stage as `other`, which is never saved, shared or dirty; a kind with nothing remembered
-  starts blank with the ding. A mapped switch also parks the leaving stage as `other`, and switching back with no edit
+  starts blank with the ding. A committing switch drops the other kind's parked notes. A mapped switch also parks the leaving stage as `other`, and switching back with no edit
   in between restores the parked stage exactly (owner 2026-11-16, "restore if notes unchanged";
   test "NR: Neotone to Standard to Neotone with no edit restores every placement"); an edit
   re-maps, and when that re-map cannot map either (a cyclops note, an overflow) the switch back starts blank with the ding, as before; only a stage parked by an unmapped switch is restored
@@ -339,8 +339,7 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   and the name hint (`editorRenderNeoHelp`, Q4). A switch
   that restores a stage holding the ding and a fifth commits it like any edit (a refused
   commit, such as a ding equal to a parked note, stays staged and editable). Tests:
-  "empty stage: switching the pan type of an empty model keeps each kind's staged notes"
-  (Standard to Neotone and back, Neotone to Standard and back), "empty stage: the current
+  "empty stage: a Standard stage survives a round trip through Neotone with its notes, and the Neotone stage starts empty", "empty stage: a Neotone stage maps its notes across to Standard and back, with no ding set", "empty stage: the current
   ding goes both ways", "empty stage: a kind with nothing remembered", "empty stage: each
   switch of an empty model is one Undo step", "empty stage: a switch that restores parked notes commits them", "empty stage: a restore whose ding equals a parked note stays staged", "empty stage: a remembered stage of the other
   kind is never saved", e2e "switching pan type and back keeps the staged notes". Mapping tests: "empty stage:
@@ -407,12 +406,12 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   tray row at 844x340, and main's sheet has no fixed bar).
   At rest on Scale the name field, both tabs and the first tray row are in view; every Scale and
   Layout control is reachable by scrolling the column, and the pan stays in view. The hint overlay
-  tracks the column's scroll and the dialog scrolls it to the top and locks it. Portrait is
+  tracks the column's scroll and the dialog locks the column's scroll. Portrait is
   unchanged. Tests: "LS 844x390: at rest on Scale the name field, both tabs and the first tray chip
   are fully in view", "LS 844x390: every control on Scale and on Layout is reachable by scrolling
   the one column, and the pan stays in view" (also 844x340, 667x375), "LS 844x390: the toolbar is
-  reachable at the end of the column and a chip dragged onto the pan still places a note", "SO: landscape message overlays the tabs without shifting them", "SO: <locale> <size>: every landscape message is fully readable inside the tab strip and moves nothing" (all 8 locales at 844x390, 667x375, 932x430, 568x320: the landscape message is 12px/14px, at most 3 lines in the 44px strip, with Cancel or Undo at the right edge clear of both tab centres);
-  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`, `so_landscape_status_in_flow`, `so_landscape_message_blocks_tabs`, `so_landscape_message_clipped`.
+  reachable at the end of the column and a chip dragged onto the pan still places a note", "LS 844x390: an open dialog locks the column's scroll", "SO: landscape message overlays the tabs without shifting them", "SO: <locale> <size>: every landscape message is fully readable inside the tab strip and moves nothing" (all 8 locales at 844x390, 667x375, 932x430, 568x320: the landscape message is 12px/14px, at most 3 lines in the 44px strip, with Cancel or Undo at the right edge clear of both tab centres);
+  mutants `ls_landscape_end_pin`, `ls_landscape_forces_scale`, `ls_dialog_scroll_unlocked`, `so_landscape_status_in_flow`, `so_landscape_message_blocks_tabs`, `so_landscape_message_clipped`.
 - **Message placement.** `#editor-status` sits just under the pan box, before the tab strip
   and the counts overlay. An error shows as an ink banner (`#242424` background, white text,
   14px/600, radius 8px, padding 4px 12px, a leading warning glyph, no red, no hover) and plays

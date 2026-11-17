@@ -975,6 +975,22 @@ function run() {
       assert.ok(seen.every((x, i) => i === 0 || x !== seen[i - 1]), "focus moves on every Tab, a hidden stop would swallow one: " + JSON.stringify(seen));
     });
 
+    test("MT first Tab from the control before the covered Undo moves focus on at once and never stalls", async () => {
+      await setup(SCALE);
+      await tapNote("rim", 0);
+      await tapNote("rim", 1);
+      const prev = await b.eval(`const raw = [...document.querySelectorAll("#editor button, #editor input, #editor [tabindex]")];
+        const before = raw.slice(0, raw.indexOf(document.getElementById("editor-undo"))).filter((el) => el.tabIndex >= 0 && !el.disabled && el.getClientRects().length && !el.closest("[inert],[hidden]") && getComputedStyle(el).visibility !== "hidden").pop();
+        before.focus();
+        window.__mtFrom = before;
+        return before.id || before.outerHTML.slice(0, 80);`);
+      assert.strictEqual(await b.eval(`return document.activeElement === window.__mtFrom && document.getElementById("editor-undo").classList.contains("covered");`), true, "the start focus took effect on " + prev + " and the toolbar Undo is covered");
+      await b.key("Tab", "Tab", 9);
+      const r = await b.eval(`const a = document.activeElement; return { moved: a !== window.__mtFrom, covered: a.id === "editor-undo", at: a.id || a.outerHTML.slice(0, 80) };`);
+      assert.ok(r.moved, "the first Tab from " + prev + " left focus where it was: " + JSON.stringify(r));
+      assert.ok(!r.covered, "the first Tab landed on the covered toolbar Undo: " + JSON.stringify(r));
+    });
+
     test("Remove deletes the selected note and Undo restores it; tapping the selection again deselects it", async () => {
       await setup(SCALE);
       await tapNote("rim", 3);
@@ -4562,6 +4578,14 @@ function run() {
       await pause(120);
       assert.strictEqual(await b.eval(`return JSON.stringify(editorSession.history.present.fields);`), before, "nothing was placed");
     });
+
+    test("edg another pointer pressed on a tray chip ends the drag and starts none of its own", async () => {
+      await liftLive();
+      await b.eval(`document.querySelector("#editor-tray .tray-note").dispatchEvent(new PointerEvent("pointerdown", { pointerId: 77, button: 0, bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorDrag === null;`), true, "the second press neither continues nor re-arms a drag");
+      await touch("touchEnd");
+      await pause(120);
+    });
   });
 
   describe("editor mouse drag guards", () => {
@@ -4697,6 +4721,28 @@ function run() {
       await touch("touchEnd");
       await pause(600);
       assert.strictEqual(await rimCount(), before + 1, "the dropped chip became a rim note");
+    });
+  });
+
+  describe("editor landscape dialog lock", () => {
+    test("LS 844x390: an open dialog locks the column's scroll", async () => {
+      await fresh(844, 390);
+      await openAdd();
+      await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+      await typeLine(SCALE);
+      const wheel = async () => {
+        const pt = await b.eval(`const r = document.getElementById("editor").getBoundingClientRect(); return { x: r.right - 40, y: r.top + r.height / 2 };`);
+        await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: pt.x, y: pt.y, deltaX: 0, deltaY: 300 });
+        await new Promise((done) => setTimeout(done, 300));
+        return b.eval(`return document.getElementById("editor").scrollTop;`);
+      };
+      assert.ok(await wheel() > 0, "the column scrolls under the wheel before any dialog");
+      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
+      await b.click("#editor-back");
+      await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+      const st = await b.eval(`const cs = getComputedStyle(document.getElementById("editor")); return { oy: cs.overflowY, ox: cs.overflowX, top: document.getElementById("editor").scrollTop };`);
+      assert.deepStrictEqual([st.oy, st.top], ["hidden", 0], "the column is overflow hidden while the dialog is open: " + JSON.stringify(st));
+      assert.strictEqual(await wheel(), 0, "a wheel over the column does not move it while the dialog is open");
     });
   });
 
@@ -5360,9 +5406,9 @@ function run() {
       });
     }
 
-    const walkTabs = async (w, h) => {
+    const walkTabs = async (w, h, line = SCALE) => {
       await fresh(w, h);
-      await openAdd(); await typeLine(SCALE);
+      await openAdd(); await typeLine(line);
       await b.click("#editor-hint-toggle");
       await pause(250);
       assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
@@ -5387,7 +5433,7 @@ function run() {
     };
     for (const [w, h] of [[360, 640], [390, 844]]) {
       test(`EHM tab skips covered ${w}x${h}: with the hint open Tab always lands on a reachable control`, async () => {
-        await walkTabs(w, h);
+        await walkTabs(w, h, NEO);
       });
     }
     for (const [w, h] of [[844, 390], [320, 568], [320, 400]]) {
@@ -5510,6 +5556,30 @@ function run() {
         assert.strictEqual(got.armed, true);
         assert.ok(got.name && got.name.length > 0, "the name span exists");
         assert.ok(got.gap >= 2, "the rendered gap between the label and the name is a space wide: " + JSON.stringify(got));
+      });
+    }
+  });
+
+  describe("editor Neotone hint fit", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const LANGS = fs.readdirSync(path.join(REPO, "data/i18n")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+    for (const lang of LANGS) {
+      test(`NM hint fit ${lang}: both Neotone hint lines fit`, async () => {
+        for (const [w, h] of [[320, 568], [390, 844]]) {
+          await fresh(w, h);
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          await openAdd();
+          await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+          await b.click("#editor-type-neotone");
+          await b.click("#editor-hint-toggle");
+          await pause(250);
+          const r = await b.eval(`const card = document.getElementById("editor-areas"), c = card.getBoundingClientRect(), lines = [...document.querySelectorAll("#editor-hint .neo-help")];
+            return { n: lines.length, cardScroll: [card.scrollWidth - card.clientWidth, card.scrollHeight - card.clientHeight],
+              out: lines.map((l) => { const q = l.getBoundingClientRect(); return { text: l.textContent.slice(0, 24), over: Math.max(c.left - q.left, q.right - c.right, c.top - q.top, q.bottom - c.bottom, l.scrollWidth - l.clientWidth) }; }).filter((x) => x.over > 0.5) };`);
+          assert.strictEqual(r.n, 2, `${lang} ${w}x${h} shows both Neotone lines: ` + JSON.stringify(r));
+          assert.ok(r.cardScroll[0] <= 0 && r.cardScroll[1] <= 0, `${lang} ${w}x${h} the hint card does not scroll: ` + JSON.stringify(r));
+          assert.deepStrictEqual(r.out, [], `${lang} ${w}x${h} a Neotone line leaves the card: ` + JSON.stringify(r));
+        }
       });
     }
   });
@@ -5846,6 +5916,54 @@ function run() {
       await b.eval(`editorHold(1); return true;`);
       assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !!document.getElementById("editor-cancel") && !!document.getElementById("editor-conflict-separate");`), true,
         "the banner is kept and the status row grows a Cancel for the held note");
+    });
+
+    describe("history guard", () => {
+      const raceDialog = async (button) => {
+        await fresh();
+        const first = await b.eval(`return navigation.currentEntry.key;`);
+        await openAdd();
+        await typeLine(SCALE);
+        await b.eval(`window.__realBack = history.back.bind(history); window.__held = 0; history.back = () => { window.__held++; };
+          location.hash = "#deck=kurd"; return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden")) && window.__held === 1`, { label: "the guard's own pop to be deferred" });
+        await b.click(button);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to close" });
+        await b.eval(`history.back = window.__realBack; const n = window.__held; window.__held = 0; for (let i = 0; i < n; i++) history.back(); return true;`);
+        await new Promise((r) => setTimeout(r, 600));
+        await b.eval(`openScaleSheet(addChip); return true;`);
+        await b.waitFor(`!!document.getElementById("editor-line") && !document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to reopen" });
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the next system Back to close the page" });
+        assert.strictEqual(await b.eval(`return navigation.currentEntry.key;`), first, "history ends where it started");
+      };
+
+      test("ECL12 after Discard in the Save changes dialog the next system Back closes the sheet", async () => {
+        await raceDialog("#editor-dlg-discard");
+      });
+
+      test("ECL12 after Save in the Save changes dialog the next system Back closes the sheet", async () => {
+        await raceDialog("#editor-dlg-save");
+      });
+
+      test("ECL13 a system Back with an invalid uncommitted notes line asks first", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine("zzz not a scale", { commit: false });
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+        assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
+        assert.strictEqual(await text(), "zzz not a scale", "the line survives");
+      });
+
+      test("ECL13 BACK with an invalid uncommitted notes line asks first", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine("zzz not a scale", { commit: false });
+        await b.eval(`editorBack(); return true;`);
+        assert.strictEqual(await dialogOpen(), true, "the Save changes dialog asks");
+        assert.strictEqual(await sheetHidden(), false);
+      });
     });
   });
 
