@@ -4139,7 +4139,7 @@ function run() {
             try { rules = Array.from(sh.cssRules); } catch (e) { continue; }
             for (let i = rules.length - 1; i >= 0; i--) {
               const r = rules[i];
-              if (r.media && /clip-path/.test(r.cssText)) {
+              if (r.media && /h1 ?[{][^}]*clip-path/.test(r.cssText)) {
                 pulled.push([sh, i, r.cssText]);
                 sh.deleteRule(i);
               }
