@@ -1,0 +1,14 @@
+# kills: SO: de 568x320: every editor message in the inventory is fully readable in landscape
+# suite: node --test --test-name-pattern ^SO:.de.568x320..every.editor.message tests/editor_e2e.test.js
+# fault: The message row is not sticky, so a message scrolls away with the column in phone landscape.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1092,7 +1092,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #editor-status, #editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:0}
+   #editor-status{position:absolute; left:0; right:-8px; top:0; bottom:auto; border-radius:8px; pointer-events:none}
+   #editor-status:not([data-conflict]){max-height:none; align-items:flex-start; padding-block:1px; font-size:12px; line-height:14px}
+-  #scale-sheet.onepanel #editor .editor-statusrow:not(:has(#editor-status[data-conflict])){position:sticky; top:0}
+   #editor-status[data-idle]{clip-path:inset(50%)}
+   #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
+   #editor-status:not([data-conflict]) button{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}

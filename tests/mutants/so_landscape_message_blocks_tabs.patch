@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
    #editor-status, #editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:0}
 -  #editor-status{position:absolute; left:0; right:-8px; top:0; bottom:auto; border-radius:8px; pointer-events:none}
 +  #editor-status{position:absolute; left:0; right:-8px; top:0; bottom:auto; border-radius:8px}
-   #editor-status:not([data-conflict]){max-height:44px; overflow:hidden; padding-block:1px; font-size:12px; line-height:14px}
-   #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
-   #editor-status:not([data-conflict]) button{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}
+   #editor-status:not([data-conflict]){max-height:none; align-items:flex-start; padding-block:1px; font-size:12px; line-height:14px}
+   #scale-sheet.onepanel #editor .editor-statusrow:not(:has(#editor-status[data-conflict])){position:sticky; top:0}
+   #editor-status[data-idle]{clip-path:inset(50%)}

@@ -1,11 +1,11 @@
 # kills: SO: de 568x320: every landscape message is fully readable inside the tab strip and moves nothing
 # suite: node --test --test-name-pattern ^SO:.de.568x320..every.landscape tests/editor_e2e.test.js
-# fault: The landscape text column beside Cancel or Undo shrinks back to under half the box, so a message wraps past the 44px tab strip and is clipped.
+# fault: The landscape text column beside Cancel or Undo shrinks back to under half the box, so a message wraps and is clipped.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1094,7 +1094,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-   #editor-status:not([data-conflict]){max-height:44px; overflow:hidden; padding-block:1px; font-size:12px; line-height:14px}
+@@ -1096,7 +1096,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+   #editor-status[data-idle]{clip-path:inset(50%)}
    #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
    #editor-status:not([data-conflict]) button{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}
 -  #editor-status:not([data-conflict]):has(button){padding-right:96px; min-height:34px}
