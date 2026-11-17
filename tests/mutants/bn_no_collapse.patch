@@ -1,0 +1,15 @@
+# kills: BN-M4: an add or remove that leaves every note on its even spot stores no bottom list and no bottom pins, and the link has no angle field
+# suite: node --test --test-name-pattern ^BN.M4..an.add.or.remove.that.leaves.every.note.on.its.even.spot.stores.no.bottom.list.and.no.bottom.pins..and.the.link.has.no.angle.field$ tests/editor_model.test.js
+# A ring back on its even spots keeps its stored list and pins.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12921,7 +12921,7 @@
+   list.forEach((_, k) => { if ((!change.add || k !== at) && !next.pins.some((p) => p.ring === ring && p.i === k)) next.pins.push({ ring, i: k }); });
+   if (change.add) next.pins.push({ ring, i: at });
+   const even = HPE.layout.solve({ fields: next.fields, options: { ...o, angles: { ...o.angles, bottom: undefined } } });
+-  if (even.ok && editorAnglesOf(even, ring).every((a, k) => snapSym(a) === list[k])) {
++  if (false && even.ok && editorAnglesOf(even, ring).every((a, k) => snapSym(a) === list[k])) {
+     delete o.angles.bottom;
+     next.pins = next.pins.filter((p) => p.ring !== ring);
+   }

@@ -1,0 +1,15 @@
+# kills: BN-M9: a typed line that only adds or removes bottom names freezes the rest (rim and cyclops pins kept, no pinsReset); a rename with no stable match and a line that changes another ring respread
+# suite: node --test --test-name-pattern ^BN.M9..a.typed.line.that.only.adds.or.removes.bottom.names.freezes.the.rest..rim.and.cyclops.pins.kept..no.pinsReset...a.rename.with.no.stable.match.and.a.line.that.changes.another.ring.respread$ tests/editor_model.test.js
+# A bottom-only typed line respreads and resets pins as before.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13699,7 +13699,7 @@
+   const seed = HPE.core.parseSeed(trimmed, carried);
+   const typed = seed.ok ? HPE.core.typedSeats(seed.value) : null;
+   if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) return editorTypedOrder(m, typed);
+-  const diffed = editorTypedBottom(m, loaded.value);
++  const diffed = null;
+   if (diffed) return diffed;
+   const next = loaded.value;
+   if (typed) next.options.seats = typed;
