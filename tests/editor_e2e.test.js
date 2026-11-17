@@ -4213,12 +4213,14 @@ function run() {
       assert.ok(mag <= 1.02, "magnification " + mag);
     });
 
-    test("P0 region: the controls scroll inside #editor-region, the tab strip stays pinned, the region rests at its end, and the page does not scroll", async () => {
+    test("P0 region: the controls scroll inside #editor-region, the tab strip stays pinned, the region rests with the name clear of the strip, and the page does not scroll", async () => {
       await open(375, 548);
       const r = await rects(375, 548);
       assert.ok(r.region && r.region.oy === "auto" && r.region.sh > r.region.h, "375x548 region overflows: " + JSON.stringify(r.region));
-      assert.ok(Math.abs(r.region.st - (r.region.sh - r.region.h)) <= 2, "rests at its end: " + JSON.stringify(r.region));
-      assert.ok(r.tray.bottom <= r.bar.top + 1 && r.tray.top >= r.region.top, "the tray is in view at rest");
+      const rest = await b.eval(`const rg = document.getElementById("editor-region"), n = document.getElementById("editor-name").getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
+        return { rest: editorRegionRest(rg), clear: n.top >= t.bottom - 0.5 };`);
+      assert.ok(Math.abs(r.region.st - rest.rest) <= 1 && r.region.st < r.region.sh - r.region.h && rest.clear, "rests short of its end with the name clear of the strip: " + JSON.stringify([r.region, rest]));
+      assert.ok(r.tray.top >= r.region.top && r.tray.top < r.bar.top, "the tray starts in view at rest");
       assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor-tabs")).position;`), "sticky");
       assert.ok(Math.abs(r.tabs.top - r.region.top) <= 1, "the strip is pinned at the region top");
       assert.ok(r.page && r.panel, "neither the page nor #editor scrolls");
@@ -4305,7 +4307,7 @@ function run() {
           }
           return out;`);
         const seen = async () => {
-          assert.strictEqual(await b.eval(`const rg = document.getElementById("editor-region"); return Math.abs(rg.scrollTop - (rg.scrollHeight - rg.clientHeight)) <= 1;`), true, "measured at the region's rest position, not scrolled by the test");
+          assert.strictEqual(await b.eval(`const rg = document.getElementById("editor-region"); return Math.abs(rg.scrollTop - editorRegionRest(rg)) <= 1;`), true, "measured at the region's rest position, not scrolled by the test");
           return geo();
         };
         const c = await seen();
@@ -4427,13 +4429,13 @@ function run() {
         assert.ok(await gap() >= 8, `${w}x${h} hint open gap ${await gap()}`);
       });
 
-      test(`PF ${w}x${h}: selecting Layout shows its panel from the top of the region, and Scale rests at its end when shown`, async () => {
+      test(`PF ${w}x${h}: selecting Layout shows its panel from the top of the region, and Scale returns to its rest when shown`, async () => {
         await open(w, h);
         const read = () => b.eval(`const rg = document.getElementById("editor-region"), p = document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
-          return { st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, panelTop: p.top, tabsBottom: t.bottom, id: document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').id };`);
+          return { st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, rest: editorRegionRest(rg), panelTop: p.top, tabsBottom: t.bottom, id: document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').id };`);
         await b.eval(`document.getElementById("editor-panels").style.minHeight = "1400px"; editorRegionPin(); return true;`);
         const a = await read();
-        assert.ok(a.max > 100 && Math.abs(a.st - a.max) <= 2, "the region overflows and Scale rests at its end: " + JSON.stringify(a));
+        assert.ok(a.max > 100 && Math.abs(a.st - a.rest) <= 2 && a.panelTop >= a.tabsBottom - 1, "the region overflows and Scale rests with its panel top clear of the strip: " + JSON.stringify(a));
         await b.click("#editor-tab-layout");
         await pause(150);
         const l = await read();
@@ -4443,7 +4445,7 @@ function run() {
         await b.click("#editor-tab-scale");
         await pause(150);
         const sc = await read();
-        assert.ok(sc.max <= 2 || Math.abs(sc.st - sc.max) <= 2, "Scale chosen from the tab strip rests at its end again: " + JSON.stringify(sc));
+        assert.ok(Math.abs(sc.st - sc.rest) <= 2, "Scale chosen from the tab strip returns to its rest: " + JSON.stringify(sc));
       });
 
       test(`PF ${w}x${h}: the Hint block is an overlay on the whole controls area, nothing moves when it toggles, and a second tap or Escape closes it`, async () => {
@@ -5703,6 +5705,105 @@ function run() {
     }
   });
 
+  describe("editor name field at 320x568 (NF, owner 2026-11-17)", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const LANDSCAPE_NF = [[667, 375, { st: 0, edTop: 0, nt: 171, sb: 159, tt: 221 }], [844, 390, { st: 0, edTop: 0, nt: 171, sb: 159, tt: 221 }]];
+    const LANGS = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+    const crowd = () => b.eval(`editorSession.error = t("editor.crowded", { pt: "2.71", floor: "3.6" }); editorRender(); return true;`);
+    const geo = () => b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
+      inerts.forEach((el) => el.removeAttribute("inert"));
+      try {
+        const R = (e) => { const r = e.getBoundingClientRect(); return { t: r.top, b: r.bottom, l: r.left, r: r.right }; };
+        const ed = document.getElementById("editor"), rg = document.getElementById("editor-region"), name = document.getElementById("editor-name");
+        const n = R(name), strip = R(document.getElementById("editor-tabs")), reg = R(rg), tray = R(document.getElementById("editor-tray"));
+        const hits = [[n.l + 8, n.t + 3], [(n.l + n.r) / 2, n.t + 3], [(n.l + n.r) / 2, (n.t + n.b) / 2], [n.r - 8, n.b - 3]]
+          .map(([x, y]) => { const h = document.elementFromPoint(x, y); return h === name ? "self" : (h && (h.id || h.className)); });
+        return { n, strip, reg, tray, hits, st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, edTop: ed.scrollTop, kind: document.getElementById("editor-status").dataset.kind || "" };
+      } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
+    const openAt = async (w, h, lang) => {
+      await fresh(w, h);
+      await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+      await openAdd();
+      await b.eval(`return document.fonts.ready.then(() => true);`);
+      await typeLine(SCALE);
+      await pause(250);
+    };
+    const clear = (g, label) => {
+      assert.ok(g.n.t >= g.strip.b - 0.5, `${label}: the name's top is not under the tab strip: ` + JSON.stringify(g));
+      assert.ok(g.n.b <= g.reg.b + 0.5, `${label}: the name's bottom is inside the region: ` + JSON.stringify(g));
+      assert.deepStrictEqual(g.hits, ["self", "self", "self", "self"], `${label}: the name takes taps at its corners and centre: ` + JSON.stringify(g));
+    };
+    describe("with real fonts", () => {
+      let saved = null;
+      before(async () => { saved = b; b = await launch({ foregroundSettle: true, realFonts: true }); });
+      after(async () => { const mine = b; b = saved; await mine.close(); });
+      for (const lang of LANGS) {
+        test(`NF ${lang} 320x568: at rest and with the crowded error the name field sits fully below the tab strip and takes its own taps`, async () => {
+          await openAt(320, 568, lang);
+          clear(await geo(), `${lang} rest`);
+          await crowd();
+          await pause(250);
+          const g = await geo();
+          assert.strictEqual(g.kind, "error", "the crowded error shows: " + JSON.stringify(g));
+          clear(g, `${lang} crowded`);
+        });
+      }
+      test("NF en 320x568: scrolled to its end, a render leaves the region there and the octave row takes its taps", async () => {
+        await openAt(320, 568, "en");
+        const r = await b.eval(`const rg = document.getElementById("editor-region"); rg.scrollTop = rg.scrollHeight; const end = rg.scrollTop;
+          editorRender();
+          const o = [...document.querySelectorAll("#editor-panel-scale .editor-octaves .mode")].pop(), q = o.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+          return { end, st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, ok: !!hit && o.contains(hit), hit: hit && (hit.id || hit.className) };`);
+        assert.ok(r.max > 0 && r.end === r.st, "a render keeps the user's scroll: " + JSON.stringify(r));
+        assert.ok(r.ok, "the last octave button takes its own tap: " + JSON.stringify(r));
+      });
+      for (const [w, h] of [[360, 640], [375, 667], [390, 844]]) {
+        test(`NF guard ${w}x${h}: in every language the region still rests at its end with the name clear of the strip`, async () => {
+          for (const lang of LANGS) {
+            await openAt(w, h, lang);
+            const g = await geo();
+            assert.ok(Math.abs(g.st - g.max) <= 1, `${lang} ${w}x${h}: rests at its end: ` + JSON.stringify(g));
+            clear(g, `${lang} ${w}x${h}`);
+          }
+        });
+      }
+      for (const [w, h] of [[360, 640], [375, 667]]) {
+        test(`NF guard ${w}x${h} crowded: in every language the name field clears the strip while a two-line error shows`, async () => {
+          for (const lang of LANGS) {
+            await openAt(w, h, lang);
+            await crowd();
+            await pause(250);
+            const g = await geo();
+            assert.strictEqual(g.kind, "error", `${lang} ${w}x${h}: the crowded error shows: ` + JSON.stringify(g));
+            clear(g, `${lang} ${w}x${h} crowded`);
+          }
+        });
+      }
+      for (const [w, h] of [[320, 568], [375, 548]]) {
+        test(`NF tray ${w}x${h}: at rest the first note row is in view and the region scrolls to the tray's end`, async () => {
+          for (const lang of LANGS) {
+            await openAt(w, h, lang);
+            const r = await b.eval(`const R = (e) => e.getBoundingClientRect(), rg = document.getElementById("editor-region"), strip = R(document.getElementById("editor-tabs")), reg = R(rg), first = R(document.querySelector("#editor-notes button"));
+              const overflows = rg.scrollHeight > rg.clientHeight;
+              rg.scrollTop = rg.scrollHeight;
+              const oct = [...document.querySelectorAll(".editor-octaves button")].pop(), last = R(oct), reg2 = R(rg);
+              return { firstTop: first.top, firstBottom: first.bottom, stripBottom: strip.bottom, regBottom: reg.bottom, overflows, lastBottom: last.bottom, reg2Bottom: reg2.bottom };`);
+            assert.ok(r.firstTop >= r.stripBottom - 0.5 && r.firstBottom <= r.regBottom + 0.5, `${lang} ${w}x${h}: the first note row is in view at rest: ` + JSON.stringify(r));
+            assert.ok(r.overflows, `${lang} ${w}x${h}: the region scrolls: ` + JSON.stringify(r));
+            assert.ok(r.lastBottom <= r.reg2Bottom + 0.5, `${lang} ${w}x${h}: scrolled to its end the octave row is in view: ` + JSON.stringify(r));
+          }
+        });
+      }
+      for (const [w, h, want] of LANDSCAPE_NF) {
+        test(`NF guard ${w}x${h}: the landscape column is unchanged`, async () => {
+          await openAt(w, h, "en");
+          const g = await geo();
+          assert.deepStrictEqual({ st: g.st, edTop: g.edTop, nt: Math.round(g.n.t), sb: Math.round(g.strip.b), tt: Math.round(g.tray.t) }, want, JSON.stringify(g));
+        });
+      }
+    });
+  });
+
   describe("editor cleanup", () => {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
     const saveOne = async (w = 375, h = 667) => {
@@ -5890,11 +5991,12 @@ function run() {
     }
 
     for (const [w, h] of [[320, 568], [360, 640], [390, 844]]) {
-      test(`ECL9 RR3 ${w}x${h}: the info button's top edge is not under the tab strip`, async () => {
+      test(`ECL9 RR3 ${w}x${h}: the info button's top edge is not under the tab strip, even with the region scrolled to its end`, async () => {
         await fresh(w, h);
         await openAdd();
         await typeLine(SCALE);
         await pause(250);
+        await b.eval(`const rg = document.getElementById("editor-region"); rg.scrollTop = rg.scrollHeight; return true;`);
         const r = await b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
           inerts.forEach((el) => el.removeAttribute("inert"));
           try {

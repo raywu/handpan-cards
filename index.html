@@ -14113,10 +14113,15 @@ function editorRenderTabs() {
 }
 // Phone landscape (the S4 media query): #editor is the one scroll box and the region does not scroll, so nothing pins to an end there.
 const editorPhoneLandscape = () => matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px)").matches;
-// The region rests scrolled to its end so the tray sits above the toolbar; a render re-pins only when it was already there.
+// The region rests scrolled to its end so the tray sits above the toolbar, but never past the name row clearing the sticky strip; a render re-pins only when it was already there.
+function editorRegionRest(rg) {
+  const row = editorEl("editor-panel-scale").querySelector(".editor-hintrow");
+  const clear = row.getBoundingClientRect().top - rg.getBoundingClientRect().top + rg.scrollTop - editorEl("editor-tabs").offsetHeight;
+  return Math.max(0, Math.min(rg.scrollHeight - rg.clientHeight, Math.floor(clear)));
+}
 function editorRegionPin() {
   const rg = editorEl("editor-region");
-  if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = rg.scrollHeight;
+  if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = editorRegionRest(rg);
 }
 // The hint block overlays the controls area (region, or tabs plus panels where the region is display:contents) and never moves the layout.
 function editorPlaceAreas() {
@@ -14145,7 +14150,7 @@ function editorSetAreas(open) {
 }
 function editorRegionAtEnd() {
   const rg = editorEl("editor-region");
-  return !rg || rg.scrollHeight - rg.clientHeight - rg.scrollTop <= 2;
+  return !rg || Math.abs(rg.scrollTop - editorRegionRest(rg)) <= 2;
 }
 function editorRegionResize() {
   const rg = editorSession && editorEl("editor-region");
