@@ -1,4 +1,4 @@
-# kills: ECL9 RR3 320x568: the info button's top edge is not under the tab strip
+# kills: ECL9 RR3 320x568: the info button's top edge is not under the tab strip, even with the region scrolled to its end
 # suite: node --test --test-name-pattern ^ECL9.RR3.320x568 tests/editor_e2e.test.js
 # fault: The info button paints under the sticky tab strip, so its top edge is not tappable on short screens.
 diff --git a/index.html b/index.html

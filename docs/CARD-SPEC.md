@@ -389,7 +389,15 @@ the editor panel simplify plan (tabs, counts, menu). Claims below cite the test 
   Escape closes it; Escape closes only the overlay, not the editor; the (x) and Escape return
   focus to the info button. The `--ed-k` reserve leaves the control region tall enough for the
   Scale tab (strip, Name, tray) to show whole at 390x664, so its first row is never scrolled
-  under the strip. Tests: "QA2 hint 390x844: the info button sits below the strip; the open
+  under the strip. Where the region is still shorter than the Scale tab (320x568 and 375x548, or a
+  two-line message), it rests short of its end with the name row just clear of the strip
+  (`editorRegionRest`; owner 2026-11-17, Q1 "Fix after landscape lane"): the tray's last row is
+  reached by scrolling, and a render leaves a user's own scroll where it is. Tests: "NF <locale>
+  320x568: at rest and with the crowded error the name field sits fully below the tab strip and
+  takes its own taps" (all 8 locales, real fonts), "NF en 320x568: scrolled to its end, a render
+  leaves the region there and the octave row takes its taps", "NF guard <size>: ..." (360x640,
+  375x667, 390x844, 667x375, 844x390); mutants `nf_pin_to_end`, `nf_render_repins_from_end`.
+  Other tests: "QA2 hint 390x844: the info button sits below the strip; the open
   overlay is clear of the button and has an x at its top right that closes it" (the x, Escape
   and the focus return), "the first row of the Scale tab is fully visible under the strip, and
   the Hint info button takes no layout height", "P0 hint: counts and hint sit in a collapsed

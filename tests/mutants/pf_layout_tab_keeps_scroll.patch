@@ -1,4 +1,4 @@
-# kills: PF 375x667: selecting Layout shows its panel from the top of the region, and Scale rests at its end when shown
+# kills: PF 375x667: selecting Layout shows its panel from the top of the region, and Scale returns to its rest when shown
 # suite: node --test --test-name-pattern ^PF.375x667..selecting.Layout.shows.its.panel.from.the.top tests/editor_e2e.test.js
 # fault: Switching tabs keeps the region's scroll position, so Layout opens part-way down.
 diff --git a/index.html b/index.html
