@@ -6238,6 +6238,7 @@ function run() {
       assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "LOSING LOCAL DRAFT", "the loser's draft stays in the field");
       assert.strictEqual(await sheetHidden(), false, "the page stays open");
       assert.deepStrictEqual(await names(), ["WINNING PEER"], "the failed Save reconciled the winner and wrote nothing");
+      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
       await b.click("#editor-back");
       assert.strictEqual(await dialogOpen(), true);
       await b.click("#editor-dlg-discard");
