@@ -12661,24 +12661,16 @@ function run() {
       if(control){assert.ok(m.width>=44&&m.height>=44,"action is at least44x44: "+selector);assert.ok(m.hit&&!m.disabled,"action target is usable: "+selector);}
       return m;
     }
-    async function conflictSave(p,blocker,lang="en",kind="conflict",live=false) {
+    async function autoSave(p,blocker) {
       await hold(blocker);
       try {
         await p.click("#editor-save");
-        // IDB staging precedes lock acquisition. Keep the real blocker held
-        // until the trusted action has actually queued its single request.
         await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted Save reaches the real exclusive commit queue");
         const q=await p.eval("return navigator.locks.query();");
         assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"trusted Save must actually enqueue its commit; a no-op cannot pass");
       }finally{await release(blocker);}
-      await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0&&!!document.getElementById('editor-conflict-msg'))`,"Save operation releases its queue and shows the conflict");
-      assert.strictEqual(await p.eval("return document.getElementById('scale-sheet').hidden;"),false,"conflict keeps the draft page open");
-      const recoveryVisible=await p.eval(`return ['editor-conflict-msg','editor-conflict-separate'].map(id=>{const el=document.getElementById(id),r=el.getBoundingClientRect();
-        return {id,visible:!!el.getClientRects().length&&r.height>0&&r.width>0&&r.top>=-1&&r.bottom<=innerHeight+1&&r.left>=-1&&r.right<=innerWidth+1};});`);
-      assert.ok(recoveryVisible.every(item=>item.visible),"failed Save reveals recovery copy and action without test-driven scrolling: "+JSON.stringify(recoveryVisible));
-      await ink(p,"#editor-conflict-msg",{text:SV.uiContract.copy[lang][kind],live});
-      await ink(p,"#editor-conflict-separate",{text:SV.uiContract.copy[lang].separate,control:true});
-      await ink(p,"#editor-back",{control:true});
+      await p.wait(`document.getElementById('scale-sheet').hidden&&navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===0)`,"a refused Save saves the draft as a new scale and closes the sheet");
+      assert.strictEqual(await p.eval("return !!document.getElementById('editor-conflict-msg');"),false,"no conflict message exists");
     }
 
     async function startImport(p,record) {
@@ -12927,13 +12919,9 @@ function run() {
         assert.strictEqual((await commit(bPeer,{type:"edit",collectionId:beforeDirty.collectionId,instanceId:uid(1),expectedRevision:beforeDirty.entries[0].revision},remote)).ok,true);
         await a.wait("savedState.entries[0].revision===3","dirty tab observes remote revision");
         assert.deepStrictEqual(await grab(),draft,"dirty caret/pick/scroll/focus remain local");
-        await conflictSave(a,bPeer);
-        const remoteWinner=await read(bPeer);assert.strictEqual(remoteWinner.entries[0].record.o.name,"REMOTE WINNER");
-        assert.strictEqual((await commit(bPeer,{type:"delete",collectionId:remoteWinner.collectionId,instanceId:uid(1),expectedRevision:remoteWinner.entries[0].revision})).ok,true);
-        await a.wait("savedState.entries.length===0","dirty remote deletion observed");
-        assert.strictEqual(await a.eval("return document.getElementById('editor-name').value;"),"DIRTY LOCAL DRAFT","remote deletion cannot erase draft");
-        await a.wait("document.getElementById('editor-conflict-msg')&&document.getElementById('editor-conflict-msg').textContent.length>0&&editorSession.conflict==='deleted'","the visible conflict refreshes to the removed copy");
-        await ink(a,"#editor-conflict-msg",{text:SV.uiContract.copy.en.conflictDeleted});
+        await autoSave(a,bPeer);
+        const afterSave=await read(bPeer);
+        assert.deepStrictEqual(afterSave.entries.map(x=>x.record.o.name).sort(),["DIRTY LOCAL DRAFT","REMOTE WINNER"],"the peer winner stays and the draft is saved as a new scale");
       });
       // Repair only genuinely removed-chip focus. A surviving outside control
       // has the same remote deletion and must retain focus instead.
@@ -13006,43 +12994,14 @@ function run() {
             await openEdit(p);await nameDraft(p,matrix.draftName);const base=await read(p);
             const conflict={...clone(base),revision:base.revision+1,entries:base.entries.map(x=>x.instanceId===uid(202)?{...x,revision:x.revision+1,record:{...x.record,o:{...x.record.o,name:"REMOTE LABEL"}}}:x)};
             await p.eval(`return ${nativeSavedExpression({write:true,raw:JSON.stringify(conflict)})};`);
-            await conflictSave(p,peer.p,lang,"conflict",true);
-            assert.strictEqual(await p.eval("return document.getElementById('editor-name').value;"),matrix.draftName);
-            assert.deepStrictEqual(await read(p),conflict,"failed Save cannot modify the winner or discard the draft");
-            await p.click("#editor-name");await rb.fakeKeyboard(520,0,"layout");await rb.settle();
-            const input=await p.eval("const n=document.getElementById('editor-name'),r=n.getBoundingClientRect();return {top:r.top,bottom:r.bottom,limit:visualViewport.offsetTop+visualViewport.height,focus:document.activeElement===n};");
-            assert.strictEqual(input.focus,true);assert.ok(input.top>=0&&input.bottom<=input.limit+1,"conflict keeps the focused input above simulated keyboard "+JSON.stringify(input));await rb.clearKeyboard();
-            if(lang==="en") {
-              // This draft already equals ordinal203. Normal import above
-              // reused it; explicit Save-as-separate must create another handle.
-              const prior=await read(p);await hold(peer.p);
-              try {
-                await p.eval("document.getElementById('editor-conflict-separate').focus();return true;");
-                await p.key("Enter","Enter",13);
-                await p.wait(`navigator.locks.query().then(q=>q.pending.filter(x=>x.name===${JSON.stringify(LOCK)}).length===1)`,"trusted separate-save activation reaches the real exclusive commit queue");
-                let q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"resolution actually queues a distinct save command");
-                assert.strictEqual(await p.eval("return document.getElementById('editor-conflict-separate').disabled;"),true);
-                await p.eval("document.getElementById('editor-conflict-separate').dispatchEvent(new MouseEvent('click',{bubbles:true}));return true;");
-                q=await p.eval("return navigator.locks.query();");assert.strictEqual(q.pending.filter(x=>x.name===LOCK).length,1,"repeated activation cannot enqueue duplicate resolution");
-              }finally{await release(peer.p);}
-              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","separate save acknowledgment and canonical route");
-              const after=await read(p);assert.strictEqual(after.entries.length,prior.entries.length+1);
-              const fresh=after.entries.find(x=>!prior.usedInstanceIds.includes(x.instanceId));assert.ok(fresh,"explicit separate action allocates a fresh lifetime handle");
-              assert.strictEqual(fresh.record.o.name,matrix.draftName);assert.strictEqual(fresh.record.o.replaces,undefined);
-              assert.strictEqual(after.entries.filter(x=>x.record.o?.name===matrix.draftName).length,2,"equal content versions coexist after explicit resolution");
-              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(203)),prior.entries.find(x=>x.instanceId===uid(203)));
-              assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(202)),prior.entries.find(x=>x.instanceId===uid(202)));
-              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
-            } else {
-              await p.click("#editor-back");
-              await p.wait("!document.getElementById('editor-dialog').hidden","Back on the dirty draft asks first");
-              await p.click("#editor-dlg-discard");
-              await p.wait("document.getElementById('scale-sheet').hidden&&location.hash===routeFor(deck())","explicit discard returns to winner");
-              assert.strictEqual(await p.eval("return deck().name;"),"REMOTE LABEL","Back discards the draft only by explicit owner action and displays the winner");
-              assert.strictEqual(await p.eval("return HPE.share.decode(location.hash.slice(3)).value.options.name;"),"REMOTE LABEL","canonical URL reflects the acknowledged winner");
-              assert.deepStrictEqual((await read(p)).entries,conflict.entries);
-              assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true,"Back restores the selected chip's focus");
-            }
+            const prior=await read(p);
+            await autoSave(p,peer.p);
+            const after=await read(p);assert.strictEqual(after.entries.length,prior.entries.length+1,"the refused Save added exactly one scale");
+            const fresh=after.entries.find(x=>!prior.usedInstanceIds.includes(x.instanceId));assert.ok(fresh,"the automatic copy allocates a fresh lifetime handle");
+            assert.strictEqual(fresh.record.o.name,matrix.draftName);assert.strictEqual(fresh.record.o.replaces,undefined);
+            assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(202)),prior.entries.find(x=>x.instanceId===uid(202)),"the winner row is untouched");
+            assert.deepStrictEqual(after.entries.find(x=>x.instanceId===uid(203)),prior.entries.find(x=>x.instanceId===uid(203)));
+            assert.strictEqual(await p.eval("return document.activeElement===document.querySelector('#decks .chip.on');"),true);
             const durable=await p.eval(`return ${nativeSavedExpression()}.then(record=>({current:record,old:localStorage.getItem('hpfc.scales.v3'),legacy:localStorage.getItem('hpfc.scales')}));`);
             const unsupported=await rb.send("Page.addScriptToEvaluateOnNewDocument",{source:"Object.defineProperty(navigator,'locks',{configurable:true,value:undefined});"});
             try {
