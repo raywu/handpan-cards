@@ -10547,7 +10547,7 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(off(),false,"Save is available before it is tapped");
     let release,acquired;const held=new Promise(resolve=>{acquired=resolve;});
     const blocker=app.sandbox.navigator.locks.request(SV_LOCK,()=>{acquired();return new Promise(resolve=>{release=resolve;});});await held;
-    const pending=app.getAsync("editorSave()");
+    const pending=submit(app);
     try {
       await app.waitFor("navigator.locks.query().then(q=>q.pending.length===1)");
       assert.strictEqual(off(),true,"Save is disabled while its commit is pending");

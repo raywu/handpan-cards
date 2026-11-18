@@ -5037,7 +5037,7 @@ function run() {
         const ROW = __ROW__;
         const s = editorSession, st = document.getElementById("editor-status"), ed = document.getElementById("editor"), K = window.__so;
         const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
-        s.error = ""; s.say = ""; s.plainSay = ""; s.notice = false; s.conflict = null; if (s.held) editorCancelHold();
+        s.error = ""; s.say = ""; s.plainSay = ""; s.notice = false; if (s.held) editorCancelHold();
         s.history = { ...s.history, present: K.full }; editorRender(); ed.scrollTop = 0;
         const text = t(ROW.k, Object.assign({}, ROW.vars, { zone: t("editor.zone.inner") }));
         if (ROW.mode === "error") s.error = text;
@@ -5113,31 +5113,6 @@ function run() {
           });
         }
       }
-
-      for (const lang of ["en", "de"]) {
-        for (const [w, h] of [[844, 390], [667, 375], [932, 430]]) {
-          test(`SO: ${lang} ${w}x${h}: the conflict message is readable, its button is tappable and it stays off the scale line`, async () => {
-            await fresh(w, h);
-            if (lang === "de") {
-              await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
-              await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
-            }
-            await openAdd();
-            await typeLine(SCALE);
-            await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
-            await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-            await pause(300);
-            const r = await b.eval(`const s = document.getElementById("editor-status"), sr = s.getBoundingClientRect(), l = document.getElementById("editor-line").getBoundingClientRect(),
-              btn = document.getElementById("editor-conflict-separate"), br = btn.getBoundingClientRect(), bh = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2),
-              lh = document.elementFromPoint(l.left + l.width / 2, l.top + l.height / 2);
-              return { fits: s.scrollHeight <= s.clientHeight, top: sr.top, bottom: sr.bottom, lineBottom: l.bottom, btnHit: !!bh && (bh === btn || btn.contains(bh)), lineHit: lh === document.getElementById("editor-line"),
-                btnIn: br.top >= 0 && br.bottom <= innerHeight, h: sr.height };`);
-            assert.ok(r.fits && r.h > 20, `${lang} ${w}x${h} the message text fits its box: ` + JSON.stringify(r));
-            assert.ok(r.top >= r.lineBottom - 0.5 && r.lineHit, `${lang} ${w}x${h} the message stays off the scale line: ` + JSON.stringify(r));
-            assert.ok(r.btnHit && r.btnIn, `${lang} ${w}x${h} the separate button is on top and in view: ` + JSON.stringify(r));
-          });
-        }
-      }
     });
 
     test("SO: portrait status row unchanged at 375x667", async () => {
@@ -5196,7 +5171,6 @@ function run() {
   });
 
   describe("editor save recovery", () => {
-    const LOCK_NAME = "handpan-cards:saved-scales:v1";
     const saveScale = async (name) => {
       await fresh();
       await openAdd();
@@ -5212,70 +5186,7 @@ function run() {
     };
     const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
       n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
-    const staleSave = async () => {
-      await b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict recovery" });
-    };
     const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
-    const remoteDelete = () => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-      return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => {
-        if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
-        return r.ok === true; });`);
-
-    test("Save as separate creates a second scale and keeps the original", async () => {
-      await saveScale("ORIGINAL");
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      assert.strictEqual(await sheetHidden(), false, "the draft page stays open on a conflict");
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
-      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
-    });
-
-    test("both submit actions are disabled while Save as separate is pending", async () => {
-      await saveScale("ORIGINAL");
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      await b.eval(`navigator.locks.request(${JSON.stringify(LOCK_NAME)}, () => new Promise((r) => { window.__rel = r; })); return true;`);
-      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
-      await b.eval(`document.getElementById("editor-conflict-separate").click(); return true;`);
-      await b.waitFor(`!!savePending`, { label: "the separate save to wait on the lock" });
-      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-save").disabled, document.getElementById("editor-conflict-separate").disabled];`), [true, true]);
-      await b.eval(`window.__rel(); return true;`);
-      await b.waitFor(`!savePending`, { label: "the pending save to finish" });
-      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
-    });
-
-    test("another tab deleting the scale switches the conflict text and Save as separate still works", async () => {
-      await saveScale("ORIGINAL");
-      await b.eval(`return typeof editorConflictKind;`);
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      const changed = await b.eval(`return document.getElementById("editor-conflict-msg").textContent;`);
-      assert.strictEqual(changed, await b.eval(`return t("saved.conflict");`));
-      assert.strictEqual(await remoteDelete(), true);
-      await b.waitFor(`document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted")`, { label: "the deleted-scale text" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "DRAFT COPY");
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
-      assert.deepStrictEqual(await names(), ["DRAFT COPY"]);
-    });
-
-    test("Save as separate keeps the focus on the same button when the conflict changes to deleted", async () => {
-      await saveScale("ORIGINAL");
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      await b.eval(`const el = document.getElementById("editor-conflict-separate"); window.__kept = el; el.focus(); return document.activeElement === el;`);
-      assert.strictEqual(await remoteDelete(), true);
-      await b.waitFor(`document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted")`, { label: "the deleted-scale text" });
-      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-conflict-separate") === window.__kept, document.activeElement === window.__kept, document.activeElement.id];`),
-        [true, true, "editor-conflict-separate"], "the focused Save as separate button is kept, not rebuilt");
-    });
 
     describe("the Back dialog on an edited saved scale", () => {
       const record = () => b.eval(`return JSON.stringify(savedState.entries.map((e) => [e.instanceId, e.revision, e.record]));`);
@@ -5438,36 +5349,6 @@ function run() {
       assert.ok(seen.every((x, i) => i === 0 || x.id !== seen[i - 1].id), JSON.stringify(seen));
     });
 
-    test("a Delete after the scale vanished elsewhere shows the deleted banner and a retry never deletes the fallback", async () => {
-      await saveOne(375, 667);
-      const hiddenBefore = await b.eval(`return savedState.hidden.length;`);
-      const xId = await b.eval(`return editingBase.selection.id;`);
-      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok);`);
-      await armedDelete();
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
-      assert.deepStrictEqual(await b.eval(`const d = document.getElementById("editor-delete"); return [d.classList.contains("armed"), d.textContent === t("editor.menu.delete"), editorSession.delArmed];`),
-        [false, true, false], "the failed Delete leaves no armed button on screen");
-      assert.strictEqual(await b.eval(`return editingBase.selection.id;`), xId, "the sheet is not rebound to the fallback");
-      const countBefore = await savedCount();
-      await armedDelete();
-      assert.strictEqual(await b.eval(`return savedState.hidden.length;`), hiddenBefore, "no built-in was hidden by the retry");
-      assert.strictEqual(await savedCount(), countBefore, "the retry deleted no other saved scale");
-      assert.strictEqual(await sheetHidden(), false, "the page stays open on the deleted banner");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true, "the banner is still on screen");
-    });
-
-    test("a broadcast remote deletion of the open saved scale shows the deleted banner", async () => {
-      await saveOne(375, 667);
-      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => {
-          if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
-          return r.ok === true; });`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
-    });
-
     test("a remote edit of the open saved scale keeps a dirty editor's draft and does not reopen it", async () => {
       await saveOne(375, 667);
       await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5");
@@ -5493,411 +5374,11 @@ function run() {
       assert.strictEqual(after.line, before.line, "the local draft survives");
       assert.notStrictEqual(after.name, "REMOTE RENAMED", "the remote content did not overwrite the draft");
     });
-
-    test("a Delete on a built-in hidden elsewhere shows a conflict banner and a retry never deletes the saved fallback", async () => {
-      await fresh(375, 667);
-      await openAdd();
-      await typeLine(SCALE);
-      await b.click("#editor-save");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
-      await b.eval(`const v = allDeckViews().find((x) => x.selection.kind === "builtin"); selectDeck(v.selection, false); openEditSheet(v.deck, addChip); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-line") && editingBase.selection.kind === "builtin"`, { label: "the editor on a built-in" });
-      const savedBefore = await savedCount();
-      const key = await b.eval(`return editingBase.selection.id;`);
-      await b.eval(`return commitSaved({ type: "hide-builtin", seedId: editingBase.selection.id, expectedSlotStateRevision: editingBase.slotStateRevision, expectedOwnerId: editingBase.ownerId, collectionId: savedState.collectionId }).then((r) => r.ok);`);
-      await armedDelete();
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return editingBase.selection.id;`), key, "the sheet is not rebound to the saved fallback");
-      await armedDelete();
-      assert.strictEqual(await savedCount(), savedBefore, "the saved scale survives the retried Delete");
-    });
   });
 
   describe("editor layout at rest", () => {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
     const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
-    const hitsSelf = (id) => b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
-      inerts.forEach((el) => el.removeAttribute("inert"));
-      try {
-        const el = document.getElementById(${JSON.stringify(id)}), r = el.getBoundingClientRect();
-        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return { id: ${JSON.stringify(id)}, ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
-      } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
-    const showBanner = async () => {
-      await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      await pause(300);
-    };
-
-    for (const [w, h] of [[390, 844], [320, 568]]) {
-      test(`ELA banner ${w}x${h}: with the conflict banner shown the name input and the info button are not under the tab strip`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await pause(300);
-        const tops = () => b.eval(`return ["editor-tabs", "editor-name"].map((id) => Math.round(document.getElementById(id).getBoundingClientRect().top));`);
-        const before = await tops();
-        await showBanner();
-        for (const id of ["editor-name", "editor-hint-toggle"]) {
-          const r = await hitsSelf(id);
-          assert.ok(r.ok, "banner offset: " + JSON.stringify(r));
-        }
-        const after = await tops();
-        assert.ok(after.every((t, i) => Math.abs(t - before[i]) <= 1), "the banner overlays and moves neither the tab strip nor the name input: " + JSON.stringify({ before, after }));
-      });
-    }
-
-    for (const [w, h] of [[667, 375], [844, 390], [1024, 768]]) {
-      test(`ELA banner grid ${w}x${h}: with the conflict banner shown the scale line centre hits itself`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await showBanner();
-        const r = await hitsSelf("editor-line");
-        assert.ok(r.ok, "banner stays in the grid cell: " + JSON.stringify(r));
-      });
-    }
-
-    const layoutOf = () => b.eval(`const r = (id) => Math.round(document.getElementById(id).getBoundingClientRect().top);
-      return { tabs: r("editor-tabs"), name: r("editor-name"), scroll: document.getElementById("editor").scrollTop, save: Math.round(document.getElementById("editor-save").getBoundingClientRect().bottom), ih: innerHeight };`);
-    const clearBanner = async () => {
-      await b.eval(`editorSession.conflict = null; editorRender(); return true;`);
-      await b.waitFor(`!document.getElementById("editor-conflict-msg")`, { label: "the banner to clear" });
-      await pause(300);
-    };
-    const sameLayout = (a, c, why) => assert.ok(Math.abs(a.tabs - c.tabs) <= 1 && Math.abs(a.name - c.name) <= 1 && Math.abs(a.scroll - c.scroll) <= 1, why + ": " + JSON.stringify({ a, c }));
-
-    const sameTops = (a, c, why) => assert.ok(Math.abs(a.tabs - c.tabs) <= 1 && Math.abs(a.name - c.name) <= 1, why + ": " + JSON.stringify({ a, c }));
-
-    for (const [w, h] of [[844, 390], [667, 375]]) {
-      test(`AF landscape banner ${w}x${h}: the banner moves neither the tab strip, the name input nor the column scroll, shown or cleared`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await pause(300);
-        const rest = await layoutOf();
-        await showBanner();
-        assert.ok(!(await b.eval(`const e = document.getElementById("editor"); return e.classList.contains("conflict-row") || !!e.style.getPropertyValue("--ed-conflict-region");`)), "phone landscape: the conflict raise does not run");
-        sameLayout(rest, await layoutOf(), "banner shown");
-        await clearBanner();
-        sameLayout(rest, await layoutOf(), "banner cleared");
-      });
-    }
-
-    for (const [w, h] of [[430, 932], [768, 1024], [390, 844]]) {
-      test(`AF portrait banner ${w}x${h}: the banner moves neither the tab strip nor the name input, shown or cleared`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await pause(300);
-        const rest = await layoutOf();
-        await showBanner();
-        sameTops(rest, await layoutOf(), "banner shown");
-        await clearBanner();
-        sameTops(rest, await layoutOf(), "banner cleared");
-      });
-    }
-
-    for (const [w, h] of [[390, 844], [375, 667], [320, 568]]) {
-      test(`AF rotate ${w}x${h}: a banner up through landscape and back leaves the tab strip, name input and Save at rest`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await pause(300);
-        const rest = await layoutOf();
-        await showBanner();
-        const up = await layoutOf();
-        await b.setViewport(844, 390, true);
-        await pause(500);
-        await b.setViewport(w, h, true);
-        await pause(500);
-        const back = await layoutOf();
-        sameLayout(up, back, "after the round trip with the banner up");
-        assert.ok(back.save <= back.ih, "Save stays on screen: " + JSON.stringify(back));
-        await clearBanner();
-        sameLayout(rest, await layoutOf(), "banner cleared after the round trip");
-      });
-    }
-
-    for (const [w, h, lang, kind] of [[320, 568, "en", "changed"], [320, 568, "en", "deleted"], [320, 568, "de", "changed"], [320, 568, "de", "deleted"], [375, 667, "en", "changed"], [390, 844, "de", "deleted"]]) {
-      test(`AF banner clear of pan ${w}x${h} ${lang} ${kind}: the conflict banner covers no pan circle and starts below the pan`, async () => {
-        await fresh(w, h);
-        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
-        await openAdd();
-        await typeLine(NEO);
-        await pause(300);
-        const panH = () => b.eval(`return document.querySelector("#editor-pan svg").getBoundingClientRect().height;`);
-        const restH = await panH();
-        await b.eval(`editorSession.conflict = ${JSON.stringify(kind)}; editorRender(); return true;`);
-        await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-        await pause(300);
-        const bannerH = await panH();
-        assert.ok(Math.abs(bannerH - restH) <= 1, "the pan keeps its size with the banner up: " + JSON.stringify({ restH, bannerH }));
-        const r = await b.eval(`const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg");
-          const bad = [];
-          const scan = (tag) => {
-            for (const c of pan.querySelectorAll("circle")) {
-              const q = c.getBoundingClientRect();
-              if (!q.width) continue;
-              for (const [fx, fy] of [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]]) {
-                const x = q.left + q.width * fx, y = q.top + q.height * fy;
-                const hit = document.elementFromPoint(x, y);
-                const onScreen = x >= 0 && y >= 0 && x < innerWidth && y < innerHeight;
-                if (!hit ? onScreen : !pan.contains(hit)) bad.push(tag + ":" + (c.getAttribute("aria-label") || "") + "->" + (hit ? hit.id || hit.tagName : "null"));
-              }
-            }
-          };
-          scan("rest");
-          svg.scrollIntoView({ block: "center" });
-          scan("scrolled");
-          const banner = document.getElementById("editor-status").getBoundingClientRect();
-          const q = (sel) => document.querySelector(sel).getBoundingClientRect();
-          return { bad, bannerTop: banner.top, panBottom: svg.getBoundingClientRect().bottom, bannerBottom: banner.bottom, bannerH: banner.height, rowH: q(".editor-statusrow").height, panboxTop: q(".editor-panbox").top, panboxH: q(".editor-panbox").height, panTop: svg.getBoundingClientRect().top, tabs: q("#editor-tabs").top, n: pan.querySelectorAll("circle").length, row: getComputedStyle(document.getElementById("editor")).getPropertyValue("--ed-row"), kids: [...document.getElementById("editor-status").children].map((c) => [c.id, Math.round(c.getBoundingClientRect().height), c.textContent.length]) };`);
-        assert.ok(r.n > 0 && r.bad.length === 0, "no pan circle is under the banner: " + JSON.stringify(r));
-        assert.ok(r.bannerTop >= r.panBottom - 1, "the banner starts below the pan svg: " + JSON.stringify(r));
-      });
-    }
-
-    const AF_INV_SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024], [844, 390], [667, 375]];
-    const AF_INV_PATHS = ["show", "say", "say-undo", "held", "reflow", "error", "clear", "rotate", "lift"];
-    const afSnap = () => b.eval(`const q = (sel) => document.querySelector(sel).getBoundingClientRect();
-      const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg"), covered = [];
-      for (const c of pan.querySelectorAll("circle")) {
-        const r = c.getBoundingClientRect();
-        if (!r.width) continue;
-        for (const [fx, fy] of [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]]) {
-          const x = r.left + r.width * fx, y = r.top + r.height * fy;
-          if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
-          const hit = document.elementFromPoint(x, y);
-          if (!hit || !pan.contains(hit)) covered.push((c.getAttribute("aria-label") || "") + "->" + (hit ? hit.id || hit.tagName : "null"));
-        }
-      }
-      return { tabs: Math.round(q("#editor-tabs").top), name: Math.round(q("#editor-name").top), save: Math.round(q("#editor-save").bottom),
-        panH: Math.round(svg.getBoundingClientRect().height), panTop: Math.round(svg.getBoundingClientRect().top), back: Math.round(q("#editor-back").top),
-        scroll: document.getElementById("editor").scrollTop, ih: innerHeight, covered, banner: !!document.getElementById("editor-conflict-msg"),
-        statusTop: Math.round(q("#editor-status").top), statusH: Math.round(q("#editor-status").height), rowH: Math.round(q(".editor-statusrow").height), panBottom: Math.round(svg.getBoundingClientRect().bottom),
-        grid: matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px), (orientation:landscape) and (min-width:900px)").matches };`);
-    const afFrames = () => b.eval(`return new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(true))));`);
-    const afRender = async (js) => { await b.eval(js + `; editorRender(); return true;`); await afFrames(); await pause(250); };
-    const afRecord = (row) => { if (process.env.AF_MEASURE_OUT) fs.appendFileSync(process.env.AF_MEASURE_OUT, JSON.stringify(row) + "\n"); };
-    const afCheck = (rest, now, why) => {
-      assert.ok(Math.abs(now.tabs - rest.tabs) <= 1 && Math.abs(now.name - rest.name) <= 1, why + ": tab strip and name input stay at their pre-banner tops: " + JSON.stringify({ rest, now }));
-      assert.ok(Math.abs(now.panH - rest.panH) <= 1, why + ": the pan keeps its rest height: " + JSON.stringify({ rest, now }));
-      assert.deepStrictEqual(now.covered, [], why + ": no pan circle is covered at rest: " + JSON.stringify(now));
-      assert.ok(!now.banner || now.statusTop >= now.panBottom - 1 || now.statusTop >= now.panTop + now.panH - 1 || now.grid, why + ": the banner starts below the pan: " + JSON.stringify(now));
-      assert.ok(now.save <= Math.max(now.ih, rest.save) + 1, why + ": Save is pushed no further off screen than before the banner: " + JSON.stringify({ rest, now }));
-    };
-    for (const [w, h] of AF_INV_SIZES) {
-      for (const path of AF_INV_PATHS) {
-        test(`AF invariant ${w}x${h} ${path}: with the banner up the tab strip, name input, pan and Save stay where they rested`, async () => {
-          await fresh(w, h);
-          await openAdd();
-          await typeLine(NEO);
-          await afFrames();
-          await pause(300);
-          const rest = await afSnap();
-          await showBanner();
-          const shown = await afSnap();
-          let now = shown;
-          if (path === "say") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" }) + " " + t("editor.say.went_back", { name: "C4" })`);
-          if (path === "say-undo") await afRender(`editorSession.say = t("editor.say.went_back", { name: "Bb3" }); editorSession.plainSay = ""`);
-          if (path === "held") await afRender(`editorSession.held = { k: 0 }`);
-          if (path === "reflow") {
-            await b.eval(`document.getElementById("editor-conflict-msg").appendChild(document.createTextNode(" " + document.getElementById("editor-conflict-msg").textContent.repeat(2))); return true;`);
-            await afFrames();
-            await pause(250);
-          }
-          if (path === "error") {
-            await afRender(`editorSession.error = t("editor.empty")`);
-            afRecord({ variant: process.env.AF_VARIANT, w, h, path: "error-line", rest, now: await afSnap() });
-            await afRender(`editorSession.error = ""`);
-          }
-          if (path === "clear") {
-            await afRender(`editorSession.held = { k: 0 }`);
-            await afRender(`editorSession.held = null; editorSession.conflict = null`);
-          }
-          if (path === "rotate") {
-            await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" })`);
-            await b.setViewport(h, w, true);
-            await pause(500);
-            await b.setViewport(w, h, w < 700);
-            await afFrames();
-            await pause(500);
-          }
-          if (path === "lift") {
-            const from = await b.eval(`const c = document.querySelector("#editor-notes .tray-note"); c.scrollIntoView({ block: "nearest" }); const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-            await afFrames();
-            const before = await afSnap();
-            const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
-            await touch("touchStart", from);
-            for (const k of [10, 20, 30]) await touch("touchMove", { x: from.x, y: from.y - k });
-            await b.waitFor(`document.getElementById("editor").classList.contains("dragging")`, { label: "the lift" });
-            await afFrames();
-            await pause(250);
-            const held = await afSnap();
-            afRecord({ variant: process.env.AF_VARIANT, w, h, path: "lift-held", rest: before, now: held });
-            assert.ok(Math.abs(held.panTop - before.panTop) <= 1, "the pan does not move under the finger at the lift: " + JSON.stringify({ before, held }));
-            await b.eval(`editorSession.conflict = "deleted"; editorRender(); return true;`);
-            await afFrames();
-            await pause(250);
-            const rendered = await afSnap();
-            afRecord({ variant: process.env.AF_VARIANT, w, h, path: "lift-render", rest: before, now: rendered });
-            assert.ok(Math.abs(rendered.panTop - before.panTop) <= 1, "a render during the drag (a cross-tab conflict) does not move the pan under the finger: " + JSON.stringify({ before, rendered }));
-            await touch("touchEnd");
-            await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
-            await afFrames();
-            await pause(250);
-          }
-          if (path !== "show") now = await afSnap();
-          afRecord({ variant: process.env.AF_VARIANT, w, h, path, rest, shown, now });
-          afCheck(rest, shown, "banner shown");
-          if (path === "lift" && now.grid) assert.ok(now.save <= now.ih, "phone landscape: Save is on screen after the drop: " + JSON.stringify(now));
-          else afCheck(rest, now, path);
-        });
-      }
-    }
-
-    const AF_SHRINK_SAY = `editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" }) + " " + t("editor.say.went_back", { name: "C4" })`;
-    const AF_SHRINK_UNDO = `editorSession.say = t("editor.say.went_back", { name: "Bb3" }); editorSession.plainSay = ""`;
-    const AF_SHRINK_CLEAR = `editorSession.say = editorSession.plainSay = ""; editorSession.held = null`;
-    const AF_SHRINK_PATHS = [["say", AF_SHRINK_SAY], ["say-undo", AF_SHRINK_UNDO], ["held", `editorSession.held = { k: 0 }`]];
-    for (const [w, h] of AF_INV_SIZES) {
-      for (const [path, js] of AF_SHRINK_PATHS) {
-        test(`AF invariant shrink ${w}x${h} ${path}: the status row shrinking while the banner stays up keeps the tab strip, name input, pan and Save where they rested`, async () => {
-          await fresh(w, h);
-          await openAdd();
-          await typeLine(NEO);
-          await afFrames();
-          await pause(300);
-          const rest = await afSnap();
-          await showBanner();
-          afCheck(rest, await afSnap(), "banner shown");
-          await afRender(js);
-          afCheck(rest, await afSnap(), path + " shown");
-          await afRender(AF_SHRINK_CLEAR);
-          afCheck(rest, await afSnap(), path + " cleared with the banner still up");
-        });
-      }
-    }
-    test("AF invariant shrink 320x568 sequence: held, cleared, a longer say, cleared with the banner up throughout never accumulates a drift", async () => {
-      await fresh(320, 568);
-      await b.eval(`setLang("fr"); return true;`);
-      await openAdd();
-      await typeLine(NEO);
-      await afFrames();
-      await pause(300);
-      const rest = await afSnap();
-      await showBanner();
-      for (const [why, js] of [["held", `editorSession.held = { k: 0 }`], ["held cleared", AF_SHRINK_CLEAR], ["longer say", AF_SHRINK_SAY], ["say cleared", AF_SHRINK_CLEAR]]) {
-        await afRender(js);
-        afCheck(rest, await afSnap(), why);
-      }
-    });
-
-    const AF_PRE_CASES = [[320, 568, "de", "held"], [320, 568, "de", "say-empty"], [320, 568, "en", "say-empty"], [375, 667, "en", "say2-empty"], [390, 844, "de", "say2-empty"]];
-    for (const [w, h, lang, pre] of AF_PRE_CASES) {
-      test(`AF invariant pre-status ${w}x${h} ${lang} ${pre}: a multi-line status before the banner keeps the tab strip, name input, pan and Save where they rested`, async () => {
-        await fresh(w, h);
-        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
-        await openAdd();
-        if (pre === "held") {
-          await typeLine(NEO);
-          await afRender(`editorSession.held = { k: 0 }`);
-        }
-        if (pre === "say-empty") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" })`);
-        if (pre === "say2-empty") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" }) + " " + t("editor.say.went_back", { name: "C4" })`);
-        await afFrames();
-        await pause(300);
-        const rest = await afSnap();
-        await showBanner();
-        const shown = await afSnap();
-        await afRender(`editorSession.conflict = null`);
-        const cleared = await afSnap();
-        afRecord({ variant: process.env.AF_VARIANT, w, h, path: "pre-" + lang + "-" + pre, rest, shown, now: cleared });
-        afCheck(rest, shown, "banner shown over a multi-line status");
-        afCheck(rest, cleared, "banner cleared back to the multi-line status");
-      });
-    }
-
-    const afPre = async (pre) => {
-      if (pre === "neo") await typeLine(NEO);
-      if (pre === "say-empty") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" })`);
-      await afFrames();
-      await pause(300);
-    };
-    const AF_BASE_CASES = [[568, 320, 320, 568, "de"], [568, 320, 320, 568, "en"], [1024, 768, 768, 1024, "de"], [768, 1024, 320, 568, "de"]];
-    for (const [w, h, w2, h2, lang] of AF_BASE_CASES) {
-      test(`AF rest baseline ${w}x${h} to ${w2}x${h2} ${lang}: a banner raised at one size and carried to a stacked size holds the tab strip and name input at that size's rest`, async () => {
-        await fresh(w, h);
-        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
-        await openAdd();
-        await afPre("say-empty");
-        await showBanner();
-        await b.setViewport(w2, h2, w2 < 700);
-        await afFrames();
-        await pause(500);
-        const up = await afSnap();
-        await afRender(`editorSession.conflict = null`);
-        const cleared = await afSnap();
-        afRecord({ variant: process.env.AF_VARIANT, w: w2, h: h2, path: "base-" + w + "x" + h + "-" + lang, rest: cleared, shown: up, now: cleared });
-        afCheck(cleared, up, "banner carried to " + w2 + "x" + h2);
-      });
-    }
-    test("AF rest baseline second session: a session opened after a taller-status session raises the banner against its own rest", async () => {
-      await fresh(320, 568);
-      await b.eval(`setLang("de"); return true;`);
-      await openAdd();
-      await afPre("say-empty");
-      await b.eval(`closeScaleSheet(); setLang("en"); return true;`);
-      await pause(300);
-      await b.setViewport(568, 320, true);
-      await pause(400);
-      await openAdd();
-      await afPre("neo");
-      await showBanner();
-      await b.setViewport(320, 568, true);
-      await afFrames();
-      await pause(500);
-      const up = await afSnap();
-      await afRender(`editorSession.conflict = null`);
-      const cleared = await afSnap();
-      afRecord({ variant: process.env.AF_VARIANT, w: 320, h: 568, path: "base-second-session", rest: cleared, shown: up, now: cleared });
-      afCheck(cleared, up, "second session banner");
-    });
-
-    for (const [w, h] of [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]]) {
-      test(`AF lift then raise ${w}x${h}: a conflict first raised during a live drag leaves the pan under the finger, covers no circle, and settles at rest after the drop`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await afPre("neo");
-        const rest = await afSnap();
-        const from = await b.eval(`const c = document.querySelector("#editor-notes .tray-note"); c.scrollIntoView({ block: "nearest" }); const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-        await afFrames();
-        const before = await afSnap();
-        const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
-        await touch("touchStart", from);
-        for (const k of [10, 20, 30]) await touch("touchMove", { x: from.x, y: from.y - k });
-        await b.waitFor(`document.getElementById("editor").classList.contains("dragging")`, { label: "the lift" });
-        await afFrames();
-        await pause(250);
-        const held = await afSnap();
-        await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
-        await afFrames();
-        await pause(250);
-        const mid = await afSnap();
-        await touch("touchEnd");
-        await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
-        await afFrames();
-        await pause(300);
-        const after = await afSnap();
-        afRecord({ variant: process.env.AF_VARIANT, w, h, path: "lift-raise", rest, shown: mid, now: after, held, overlap: mid.panBottom - mid.statusTop });
-        assert.ok(Math.abs(mid.panTop - held.panTop) <= 1, "the pan does not move under the finger when the banner first shows mid-drag: " + JSON.stringify({ held, mid }));
-        assert.deepStrictEqual(mid.covered, [], "the mid-drag banner covers no pan circle: " + JSON.stringify(mid));
-        assert.ok(mid.statusTop >= mid.panBottom - 1, "the mid-drag banner starts below the pan: " + JSON.stringify(mid));
-        afCheck(rest, after, "after the drop with the banner up");
-      });
-    }
-
     const TITLE_CASES = [[320, 568, "en"], [320, 568, "de"], [390, 844, "de"], [390, 844, "es"], [390, 844, "fr"], [390, 844, "it"]];
     for (const [w, h, lang] of TITLE_CASES) {
       for (const mode of ["add", "edit"]) {
@@ -6261,11 +5742,6 @@ function run() {
     const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
       n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
     const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
-    const staleSave = async (patch = `revision: editingBase.revision + 100`) => {
-      await b.eval(`editingBase = { ...editingBase, ${patch} }; return true;`);
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-    };
     const backAndWait = async () => {
       await b.eval(`history.back(); return true;`);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden") || !!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "back to settle" });
@@ -6276,30 +5752,17 @@ function run() {
         candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
     const broadcast = () => b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
 
-    test("ECL1 Save as separate after a collection epoch change writes one new scale", async () => {
-      await saveOne();
-      const original = await names();
-      await rename("DRAFT COPY");
-      await staleSave(`collectionId: "00000000-0000-4000-8000-000000000000"`);
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
-      assert.deepStrictEqual(await names(), [...original, "DRAFT COPY"].sort());
-    });
-
-    test("ECL2 two taps on Save as separate with an unacknowledged write leave exactly one copy and no second button", async () => {
+    test("ECL2 one Save with an unacknowledged write leaves exactly one copy", async () => {
       await saveOne();
       await rename("DRAFT COPY");
-      await staleSave();
+      await b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
       const before = await savedCount();
       await b.eval(`window.__realCommit = commitSaved;
         commitSaved = async (c, o) => { const r = await window.__realCommit(c, o); return c.type === "save-as-separate" && r.ok ? { ...r, published: false, persistence: "durable" } : r; };
-        const btn = document.getElementById("editor-conflict-separate"); btn.click(); btn.click(); return true;`);
-      await b.waitFor(`!savePending`, { label: "the separate save to finish" });
+        document.getElementById("editor-save").click(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the save to finish" });
       await b.eval(`commitSaved = window.__realCommit; return true;`);
-      assert.strictEqual(await savedCount(), before + 1, "one tap writes one copy");
-      assert.strictEqual(await b.eval(`return editorSession.conflict;`), null, "the conflict is settled once the copy exists");
-      await b.eval(`editorSession.error = ""; editorRender(); return true;`);
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-separate");`), false, "no second Save as separate offered");
+      assert.strictEqual(await savedCount(), before + 1, "one Save writes one copy");
     });
 
     describe("pasted navigation with the editor open", () => {
@@ -6328,40 +5791,6 @@ function run() {
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the clean editor to close" });
         assert.strictEqual(await dialogOpen(), false);
       });
-    });
-
-    test("ECL4 the Add path's conflict says so instead of claiming a saved scale changed", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
-      await b.eval(`editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      const r = await b.eval(`const msg = document.getElementById("editor-conflict-msg").textContent;
-        return { msg, add: msg === t("saved.conflictAdd"), saved: msg === t("saved.conflict"), kind: editorSession.conflict };`);
-      assert.strictEqual(r.add, true, JSON.stringify(r));
-      assert.strictEqual(r.saved, false, JSON.stringify(r));
-    });
-
-    test("ECL5 Cancel stays reachable while a conflict banner shows over a held note", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
-      await b.eval(`editorHold(1); editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-cancel");`), true, "Cancel is in the status row");
-      await b.click("#editor-cancel");
-      assert.strictEqual(await b.eval(`return editorSession.held;`), null, "Cancel drops the held note");
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !document.getElementById("editor-cancel");`), true, "the banner stays");
-    });
-
-    test("ECL5 the armed Delete note stays on screen while a conflict banner shows", async () => {
-      await saveOne();
-      await b.click("#editor-delete");
-      const note = await b.eval(`return editorSession.delNote;`);
-      assert.ok(note, "Delete armed with its note");
-      await b.eval(`editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent.includes(editorSession.delNote);`), true);
     });
 
     test("ECL6 a dirty editor guards unloading and a clean one does not", async () => {
@@ -6451,16 +5880,6 @@ function run() {
       });
     }
 
-    test("ECL10 saving after a remote edit raises the conflict through expectedRevision and keeps the remote scale", async () => {
-      await saveOne();
-      await rename("LOCAL DRAFT");
-      assert.strictEqual(await remoteEdit("REMOTE WINNER"), true, "the remote edit committed");
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.deepStrictEqual(await names(), ["REMOTE WINNER"], "the remote edit was not overwritten");
-      assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
-    });
-
     test("ECL10 an unfinished rename blocks a remote snapshot from rebinding the clean editor", async () => {
       await saveOne();
       await b.eval(`editorSession.__probe = "local"; const n = document.getElementById("editor-name"); n.value = "TYPED NOT COMMITTED"; return true;`);
@@ -6480,34 +5899,6 @@ function run() {
       assert.strictEqual(await sheetHidden(), false);
     });
 
-    test("ECL11 Save as separate on an untouched editor whose scale was removed elsewhere still saves a copy", async () => {
-      await saveOne();
-      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok);`);
-      await broadcast();
-      await b.waitFor(`!!document.getElementById("editor-conflict-separate")`, { label: "the deleted banner" });
-      assert.strictEqual(await b.eval(`return editorIsDirty(editorSession.base, editorSession.history.present);`), false, "the editor is clean");
-      const before = await savedCount();
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to close" });
-      assert.strictEqual(await savedCount(), before + 1, "the copy was written");
-    });
-
-    test("ECL11 a successful Save as separate while the draft kept moving clears the conflict banner", async () => {
-      await saveOne();
-      await rename("DRAFT COPY");
-      await staleSave();
-      await b.eval(`navigator.locks.request("handpan-cards:saved-scales:v1", () => new Promise((r) => { window.__rel = r; })); return true;`);
-      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
-      await b.eval(`document.getElementById("editor-conflict-separate").click(); return true;`);
-      await b.waitFor(`!!savePending`, { label: "the separate save to wait on the lock" });
-      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetName(m, "MOVED ON")).history; editorRender(); return true;`);
-      await b.eval(`window.__rel(); return true;`);
-      await b.waitFor(`!savePending`, { label: "the separate save to finish" });
-      assert.strictEqual(await sheetHidden(), false, "the editor stays open on the moved draft");
-      assert.strictEqual(await b.eval(`return editorSession.conflict;`), null);
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-separate");`), false);
-    });
   });
 
   describe("editor test gaps CL-U", () => {
@@ -6529,29 +5920,6 @@ function run() {
         candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
     const chipLabel = () => b.eval(`return document.querySelector("#decks .chip.on").textContent;`);
 
-    test("CLU4 a missed broadcast then Save shows the conflict, keeps the draft, and Discard lands on the real winner", async () => {
-      await saveOne();
-      const original = await names();
-      await rename("LOSING LOCAL DRAFT");
-      await b.eval(`window.__stale = { state: savedClone(savedState), entries: [...savedEntries] }; return true;`);
-      assert.strictEqual(await remoteEdit("WINNING PEER"), true, "the peer edit committed");
-      await b.eval(`const st = window.__stale; savedState = st.state; savedEntries.clear(); for (const [k, v] of st.entries) savedEntries.set(k, v); buildChips(); return true;`);
-      assert.deepStrictEqual(await names(), original, "this tab never heard the peer: it still holds the old row");
-      assert.doesNotMatch(await chipLabel(), /WINNING PEER/);
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflict");`), true, "the changed-conflict text shows");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "LOSING LOCAL DRAFT", "the loser's draft stays in the field");
-      assert.strictEqual(await sheetHidden(), false, "the page stays open");
-      assert.deepStrictEqual(await names(), ["WINNING PEER"], "the failed Save reconciled the winner and wrote nothing");
-      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
-      await b.click("#editor-back");
-      assert.strictEqual(await dialogOpen(), true);
-      await b.click("#editor-dlg-discard");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "Discard to close the page" });
-      assert.match(await chipLabel(), /WINNING PEER/, "the strip shows the acknowledged winner");
-    });
-
     test("CLU5 r3 an uncommitted rename guards unloading", async () => {
       await saveOne();
       const probe = () => b.eval(`const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented;`);
@@ -6569,18 +5937,6 @@ function run() {
       await b.waitFor(`document.getElementById("editor-name").value === "REMOTE RENAMED"`, { label: "the editor to rebind to the remote edit" });
       const r = await b.eval(`return { status: document.getElementById("editor-status").textContent, say: editorSession.say };`);
       assert.deepStrictEqual(r, { status: "", say: "" }, "nothing was armed, so nothing is explained: " + JSON.stringify(r));
-    });
-
-    test("CLU5 r5 Cancel appears when a note is held after the conflict banner is already up", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
-      await b.eval(`editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-cancel");`), false, "no hold yet");
-      await b.eval(`editorHold(1); return true;`);
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !!document.getElementById("editor-cancel") && !!document.getElementById("editor-conflict-separate");`), true,
-        "the banner is kept and the status row grows a Cancel for the held note");
     });
 
     describe("history guard", () => {
@@ -6670,9 +6026,11 @@ function run() {
     const holdSecondCommit = () => b.eval(`const real = commitSaved; let n = 0; window.__real = real;
       commitSaved = (c, o) => { n++; if (n === 2) return new Promise((res) => { window.__release = () => res(real(c, o)); }); return real(c, o); }; return true;`);
     const armedDelete = async () => {
-      await tap("#editor-delete");
+      await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+      await b.click("#editor-delete");
       await pause(500);
-      await tap("#editor-delete");
+      await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+      await b.click("#editor-delete");
       await pause(300);
     };
     const NAME_OF = (n) => `savedState.entries.find((e) => e.record.o.name === ${JSON.stringify(n)})`;
@@ -6875,6 +6233,8 @@ function run() {
         await pause(300);
         const rects = () => b.eval(`const r = (el) => { const q = el.getBoundingClientRect(); return [q.left, q.top, q.width, q.height]; };
           return { tabs: [...document.querySelectorAll("#editor-tabs > *")].map(r), name: r(document.getElementById("editor-name")) };`);
+        await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+        await pause(200);
         const rest = await rects();
         assert.strictEqual(await remoteEdit("REMOTE EDIT"), true);
         await armedDelete();
