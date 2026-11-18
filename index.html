@@ -13905,6 +13905,9 @@ function editorOpen(edit) {
   sheet.appendChild(root);
   root.addEventListener("pointerdown", editorDragReserveMeasure, true);
   new MutationObserver(() => editorDragReserveApply(root)).observe(root, { attributes: true, attributeFilter: ["class"] });
+  editorRestRowAt = editorConflictRowAt = 0;
+  editorStatusObserver = new ResizeObserver(() => editorSyncConflictRow());
+  editorStatusObserver.observe(editorEl("editor-status"));
   editorWire();
   editorRender();
   editorRegionPin();
@@ -13914,6 +13917,7 @@ function editorClose() {
   if (!editorSession) return;
   if (editorDrag) editorDragEnd(null);
   window.removeEventListener("resize", editorRegionResize);
+  editorStatusObserver.disconnect();
   const root = editorEl("editor");
   if (root.parentNode) root.parentNode.removeChild(root);
   sheet.classList.remove("onepanel");
@@ -13959,32 +13963,62 @@ function editorStatusNotes(box, s, m, empty) {
     }
   }
 }
+function editorRestStatus(box, s, m, empty) {
+  if (s.held || s.say || s.notice) editorStatusNotes(box, s, m, empty);
+  else if (empty) {
+    box.textContent = editorEmptyPrompt(m);
+    box.setAttribute("data-idle", "");
+  }
+}
+function editorRestRowHeight(row) {
+  const probe = editorNode("p", { id: "editor-status" });
+  const m = editorSession.history.present;
+  editorRestStatus(probe, editorSession, m, editorIsEmpty(m));
+  row.appendChild(probe);
+  const h = row.offsetHeight;
+  probe.remove();
+  return h;
+}
 const editorStackedLayout = () => !matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px), (orientation:landscape) and (min-width:900px)").matches;
 function editorSyncConflictRow(reset) {
   const root = editorEl("editor");
   const status = editorEl("editor-status");
   if (!root || !status) return;
+  const live = !!(editorDrag && editorDrag.live);
+  status.style.top = live ? "0" : "";
+  status.style.bottom = live ? "auto" : "";
   const wasRaised = root.classList.contains("conflict-row");
+  if (reset) editorRestRowAt = 0;
   if (reset || !status.hasAttribute("data-conflict") || !editorStackedLayout()) {
     root.style.removeProperty("--ed-conflict-row");
     root.style.removeProperty("--ed-conflict-region");
     root.classList.remove("conflict-row");
     if (wasRaised) root.scrollTop = 0;
   }
-  if (!status.hasAttribute("data-conflict") || !editorStackedLayout()) return;
-  const raised = !root.style.getPropertyValue("--ed-conflict-row");
-  const restRow = raised ? status.parentElement.offsetHeight : 0;
+  const row = status.parentElement;
+  if (!editorStackedLayout()) return;
+  if (!status.hasAttribute("data-conflict")) {
+    if (!editorSession || !editorSession.conflict) editorRestRowAt = row.offsetHeight;
+    return;
+  }
+  const raised = !root.classList.contains("conflict-row");
   const regionTop = editorEl("editor-region").scrollTop;
   if (raised) {
-    root.style.setProperty("--ed-conflict-region", editorEl("editor-region").offsetHeight + "px");
+    if (!editorRestRowAt) editorRestRowAt = editorRestRowHeight(row);
+    editorConflictRowAt = editorRestRowAt;
+    root.style.setProperty("--ed-conflict-region", editorEl("editor-region").offsetHeight - Math.max(0, editorConflictRowAt - row.offsetHeight) + "px");
     root.classList.add("conflict-row");
   }
-  root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
-  if (raised) {
-    root.scrollTop = Math.max(0, status.offsetHeight - restRow);
-    editorEl("editor-region").scrollTop = regionTop;
+  if (raised) editorEl("editor-region").scrollTop = regionTop;
+  if (live) return;
+  root.style.setProperty("--ed-conflict-row", Math.max(status.offsetHeight, editorRestRowAt) + "px");
+  const grown = row.offsetHeight - editorConflictRowAt;
+  if (grown) {
+    editorConflictRowAt += grown;
+    root.scrollTop = Math.max(0, root.scrollTop + grown);
   }
 }
+let editorConflictRowAt = 0, editorRestRowAt = 0, editorStatusObserver = null;
 window.addEventListener("resize", () => editorSyncConflictRow(true));
 function editorConflictMessageKey(kind) {
   return kind === "deleted" ? "saved.conflictDeleted" : kind === "add" ? "saved.conflictAdd" : "saved.conflict";
@@ -14036,11 +14070,7 @@ function editorRenderBody() {
     const extra = editorNode("span", { id: "editor-conflict-extra" });
     editorStatusNotes(extra, s, m, empty);
     status.appendChild(extra);
-  } else if (s.held || s.say || s.notice) editorStatusNotes(status, s, m, empty);
-  else if (empty) {
-    status.textContent = editorEmptyPrompt(m);
-    status.setAttribute("data-idle", "");
-  }
+  } else editorRestStatus(status, s, m, empty);
   editorSyncConflictRow();
   const chip = editorEl("editor-notice-undo");
   const toolbarUndo = editorEl("editor-undo");
