@@ -1,0 +1,15 @@
+# kills: AF lift then raise 320x568: a conflict first raised during a live drag leaves the pan under the finger, covers no circle, and settles at rest after the drop
+# suite: node --test --test-name-pattern AF.lift.then.raise.320x568 tests/editor_e2e.test.js
+# fault: A banner first raised during a live drag stays anchored to the bottom of its unsized row and grows upward over the pan circles until the drop (round-2 F2).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13985,8 +13985,6 @@ function editorSyncConflictRow(reset) {
+   const status = editorEl("editor-status");
+   if (!root || !status) return;
+   const live = !!(editorDrag && editorDrag.live);
+-  status.style.top = live ? "0" : "";
+-  status.style.bottom = live ? "auto" : "";
+   const wasRaised = root.classList.contains("conflict-row");
+   if (reset) editorRestRowAt = 0;
+   if (reset || !status.hasAttribute("data-conflict") || !editorStackedLayout()) {

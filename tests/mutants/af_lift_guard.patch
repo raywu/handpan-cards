@@ -1,0 +1,14 @@
+# kills: AF invariant 375x667 lift: with the banner up the tab strip, name input, pan and Save stay where they rested
+# suite: node --test --test-name-pattern AF.invariant.375x667.lift tests/editor_e2e.test.js
+# fault: The sync runs its scroll during a live drag, so the lift readout or a render mid-drag scrolls the pan out from under the finger.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14010,7 +14010,6 @@ function editorSyncConflictRow(reset) {
+     root.classList.add("conflict-row");
+   }
+   if (raised) editorEl("editor-region").scrollTop = regionTop;
+-  if (live) return;
+   root.style.setProperty("--ed-conflict-row", Math.max(status.offsetHeight, editorRestRowAt) + "px");
+   const grown = row.offsetHeight - editorConflictRowAt;
+   if (grown) {

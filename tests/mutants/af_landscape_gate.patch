@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13959,7 +13959,7 @@ function editorStatusNotes(box, s, m, empty) {
-     }
-   }
+@@ -13979,7 +13979,7 @@ function editorRestRowHeight(row) {
+   probe.remove();
+   return h;
  }
 -const editorStackedLayout = () => !matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px), (orientation:landscape) and (min-width:900px)").matches;
 +const editorStackedLayout = () => true;

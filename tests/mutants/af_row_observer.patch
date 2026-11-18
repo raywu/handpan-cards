@@ -1,0 +1,14 @@
+# kills: AF invariant 375x667 reflow: with the banner up the tab strip, name input, pan and Save stay where they rested
+# suite: node --test --test-name-pattern AF.invariant.375x667.reflow tests/editor_e2e.test.js
+# fault: No observer watches the status row, so growth with no render (font load, reflow) leaves the banner over the pan.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13907,7 +13907,6 @@ function editorOpen(edit) {
+   new MutationObserver(() => editorDragReserveApply(root)).observe(root, { attributes: true, attributeFilter: ["class"] });
+   editorRestRowAt = editorConflictRowAt = 0;
+   editorStatusObserver = new ResizeObserver(() => editorSyncConflictRow());
+-  editorStatusObserver.observe(editorEl("editor-status"));
+   editorWire();
+   editorRender();
+   editorRegionPin();

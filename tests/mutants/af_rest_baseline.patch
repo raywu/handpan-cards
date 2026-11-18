@@ -1,0 +1,15 @@
+# kills: AF invariant pre-status 320x568 de say-empty: a multi-line status before the banner keeps the tab strip, name input, pan and Save where they rested
+# suite: node --test --test-name-pattern AF.invariant.pre-status.320x568.de.say-empty tests/editor_e2e.test.js
+# fault: The raise re-measures the row after the banner goes absolute, so a multi-line status shrinks to the min-height first and the tab strip and name jump up 12px on show (review round-1 F1).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14005,7 +14005,7 @@ function editorSyncConflictRow(reset) {
+   const regionTop = editorEl("editor-region").scrollTop;
+   if (raised) {
+     if (!editorRestRowAt) editorRestRowAt = editorRestRowHeight(row);
+-    editorConflictRowAt = editorRestRowAt;
++    editorConflictRowAt = row.offsetHeight;
+     root.style.setProperty("--ed-conflict-region", editorEl("editor-region").offsetHeight - Math.max(0, editorConflictRowAt - row.offsetHeight) + "px");
+     root.classList.add("conflict-row");
+   }

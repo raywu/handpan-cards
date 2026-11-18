@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13981,7 +13981,7 @@ function editorSyncConflictRow(reset) {
-   }
-   root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
-   if (raised) {
--    root.scrollTop = Math.max(0, status.offsetHeight - restRow);
-+    root.scrollTop = Math.max(0, status.offsetHeight - parseFloat(getComputedStyle(root).getPropertyValue("--ed-row")));
-     editorEl("editor-region").scrollTop = regionTop;
-   }
- }
+@@ -14012,7 +14012,7 @@ function editorSyncConflictRow(reset) {
+   if (raised) editorEl("editor-region").scrollTop = regionTop;
+   if (live) return;
+   root.style.setProperty("--ed-conflict-row", Math.max(status.offsetHeight, editorRestRowAt) + "px");
+-  const grown = row.offsetHeight - editorConflictRowAt;
++  const grown = raised ? status.offsetHeight - parseFloat(getComputedStyle(root).getPropertyValue("--ed-row")) : 0;
+   if (grown) {
+     editorConflictRowAt += grown;
+     root.scrollTop = Math.max(0, root.scrollTop + grown);

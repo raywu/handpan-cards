@@ -1,0 +1,15 @@
+# kills: AF invariant 320x568 error: with the banner up the tab strip, name input, pan and Save stay where they rested
+# suite: node --test --test-name-pattern AF.invariant.320x568.error tests/editor_e2e.test.js
+# fault: A render that hides the banner while the conflict is still pending (an error status) records a rest baseline, so the next raise starts from the wrong height and the tab strip moves.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13977,7 +13977,7 @@ function editorSyncConflictRow(reset) {
+   const row = status.parentElement;
+   if (!editorStackedLayout()) return;
+   if (!status.hasAttribute("data-conflict")) {
+-    if (!editorSession || !editorSession.conflict) editorRestRowAt = row.offsetHeight;
++    editorRestRowAt = row.offsetHeight;
+     return;
+   }
+   const raised = !root.classList.contains("conflict-row");
