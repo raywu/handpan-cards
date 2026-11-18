@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1090,7 +1090,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1084,7 +1084,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
    #editor-counts{grid-area:counts}
    #editor .editor-statusrow{grid-area:region; align-self:start; height:0; min-height:0; z-index:5}
-   #editor-status, #editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:0}
+   #editor-status{min-height:0}
 -  #editor-status{position:absolute; left:0; right:-8px; top:0; bottom:auto; border-radius:8px; pointer-events:none}
 +  #editor-status{position:absolute; left:0; right:-8px; top:0; bottom:auto; border-radius:8px}
-   #editor-status:not([data-conflict]){max-height:none; align-items:flex-start; padding-block:1px; font-size:12px; line-height:14px}
-   #scale-sheet.onepanel #editor .editor-statusrow:not(:has(#editor-status[data-conflict])){position:sticky; top:0}
+   #editor-status, #editor-status[data-kind="error"]{max-height:none; align-items:flex-start; padding-block:1px; font-size:12px; line-height:14px}
+   #scale-sheet.onepanel #editor .editor-statusrow{position:sticky; top:0}
    #editor-status[data-idle]{clip-path:inset(50%)}

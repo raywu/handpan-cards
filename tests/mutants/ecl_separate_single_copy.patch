@@ -1,16 +1,14 @@
-# kills: ECL2 two taps on Save as separate with an unacknowledged write leave exactly one copy and no second button
-# suite: node --test --test-name-pattern ^ECL2.two.taps.on.Save.as.separate tests/editor_e2e.test.js
-# fault: An unacknowledged separate save returns before the conflict is cleared, so a second tap writes a second copy.
+# kills: ECL2 one Save with an unacknowledged write leaves exactly one copy
+# suite: node --test --test-name-pattern ^ECL2.one.Save.with.an.unacknowledged tests/editor_e2e.test.js
+# fault: The automatic copy is written twice, so one Save leaves two copies.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15055,8 +15055,8 @@
-       } else if (result.kind !== "cancelled") s.error = savedErrorText(result);
-       return;
+@@ -15231,6 +15231,7 @@ async function editorSave() {
+     if (!result.ok && result.kind === "conflict") {
+       await reconcileSavedCollection();
+       retried = true;
++      await commitSaved({ type: "save-as-separate", collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });
+       result = await commitSaved({ type: "save-as-separate", collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });
+       if (generation !== sheetGeneration || !pageOpen) return;
      }
-+    if (result.published === false) { s.error = savedPublicationText(result); return; }
-     if (editorSession === s) s.conflict = null;
--    if (result.published === false) { s.error = savedPublicationText(result); return; }
-     const d = savedEntries.get(result.instanceId).deck;
-     const warned = (d.warnings || []).map((w) => reasonText(w));
-     if (editorSession === s && editorDraftMoved(s, m)) {

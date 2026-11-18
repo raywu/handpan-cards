@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15048,7 +15048,7 @@ async function editorSave(separate = false) {
-     const command = separate ? { type: "save-as-separate" } : editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
-     const result = await commitSaved({ ...command, collectionId: separate || !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
-     if (generation !== sheetGeneration || !pageOpen) return;
+@@ -15234,7 +15234,7 @@ async function editorSave() {
+       result = await commitSaved({ type: "save-as-separate", collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });
+       if (generation !== sheetGeneration || !pageOpen) return;
+     }
 -    if (!result.ok) {
 +    if (!result.ok) { closeScaleSheet();
-       if (result.kind === "conflict") {
-         await reconcileSavedCollection();
-         if (generation === sheetGeneration && editorSession === s) editorShowConflict();
+       if (result.kind !== "cancelled") s.error = savedErrorText(result);
+       return;
+     }

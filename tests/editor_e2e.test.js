@@ -4797,6 +4797,31 @@ function run() {
       await pause(600);
       assert.strictEqual(await rimCount(), before + 1, "the dropped chip became a rim note");
     });
+
+    for (const [w, h, drop] of [[838, 390, "seat"], [838, 390, "ding"], [667, 375, "seat"], [667, 375, "ding"]]) {
+      test(`AF save on screen ${w}x${h} ${drop}: after a touch drop Save is fully in view and hit at its centre`, async () => {
+        await open(w, h);
+        await typeLine(SCALE);
+        await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
+        const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        const to = await b.eval(`const svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+          if (${JSON.stringify(drop)} === "ding") { const c = [...document.querySelectorAll("#editor-pan circle")].find((e) => /ding/.test(e.getAttribute("aria-label") || "")).getBoundingClientRect(); return { x: c.left + c.width / 2, y: c.top + c.height / 2 }; }
+          const g = editorSolve(editorSession.history.present).value.geom, o = editorOrbit(g, "rim");
+          const x = o * Math.cos(22.5 * Math.PI / 180) * 100, y = -o * Math.sin(22.5 * Math.PI / 180) * 100;
+          return { x: r.left + (x - vb.x) / vb.width * r.width, y: r.top + (y - vb.y) / vb.height * r.height };`);
+        const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+        await touch("touchStart", from);
+        for (const k of [0.15, 0.3, 0.6, 1]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+        await touch("touchEnd");
+        await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
+        for (const ms of [0, 500, 1500]) {
+          await pause(ms);
+          const r = await b.eval(`const e = document.getElementById("editor-save"), q = e.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+            return { top: q.top, bottom: q.bottom, ih: innerHeight, hit: !!hit && e.contains(hit), msg: document.getElementById("editor-status").textContent };`);
+          assert.ok(r.top >= 0 && r.bottom <= r.ih && r.hit, "Save is on screen after the drop: " + JSON.stringify(r));
+        }
+      });
+    }
   });
 
   describe("editor landscape dialog lock", () => {
@@ -5012,7 +5037,7 @@ function run() {
         const ROW = __ROW__;
         const s = editorSession, st = document.getElementById("editor-status"), ed = document.getElementById("editor"), K = window.__so;
         const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
-        s.error = ""; s.say = ""; s.plainSay = ""; s.notice = false; s.conflict = null; if (s.held) editorCancelHold();
+        s.error = ""; s.say = ""; s.plainSay = ""; s.notice = false; if (s.held) editorCancelHold();
         s.history = { ...s.history, present: K.full }; editorRender(); ed.scrollTop = 0;
         const text = t(ROW.k, Object.assign({}, ROW.vars, { zone: t("editor.zone.inner") }));
         if (ROW.mode === "error") s.error = text;
@@ -5088,31 +5113,6 @@ function run() {
           });
         }
       }
-
-      for (const lang of ["en", "de"]) {
-        for (const [w, h] of [[844, 390], [667, 375], [932, 430]]) {
-          test(`SO: ${lang} ${w}x${h}: the conflict message is readable, its button is tappable and it stays off the scale line`, async () => {
-            await fresh(w, h);
-            if (lang === "de") {
-              await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
-              await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
-            }
-            await openAdd();
-            await typeLine(SCALE);
-            await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
-            await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-            await pause(300);
-            const r = await b.eval(`const s = document.getElementById("editor-status"), sr = s.getBoundingClientRect(), l = document.getElementById("editor-line").getBoundingClientRect(),
-              btn = document.getElementById("editor-conflict-separate"), br = btn.getBoundingClientRect(), bh = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2),
-              lh = document.elementFromPoint(l.left + l.width / 2, l.top + l.height / 2);
-              return { fits: s.scrollHeight <= s.clientHeight, top: sr.top, bottom: sr.bottom, lineBottom: l.bottom, btnHit: !!bh && (bh === btn || btn.contains(bh)), lineHit: lh === document.getElementById("editor-line"),
-                btnIn: br.top >= 0 && br.bottom <= innerHeight, h: sr.height };`);
-            assert.ok(r.fits && r.h > 20, `${lang} ${w}x${h} the message text fits its box: ` + JSON.stringify(r));
-            assert.ok(r.top >= r.lineBottom - 0.5 && r.lineHit, `${lang} ${w}x${h} the message stays off the scale line: ` + JSON.stringify(r));
-            assert.ok(r.btnHit && r.btnIn, `${lang} ${w}x${h} the separate button is on top and in view: ` + JSON.stringify(r));
-          });
-        }
-      }
     });
 
     test("SO: portrait status row unchanged at 375x667", async () => {
@@ -5171,7 +5171,6 @@ function run() {
   });
 
   describe("editor save recovery", () => {
-    const LOCK_NAME = "handpan-cards:saved-scales:v1";
     const saveScale = async (name) => {
       await fresh();
       await openAdd();
@@ -5187,70 +5186,7 @@ function run() {
     };
     const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
       n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
-    const staleSave = async () => {
-      await b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict recovery" });
-    };
     const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
-    const remoteDelete = () => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-      return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => {
-        if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
-        return r.ok === true; });`);
-
-    test("Save as separate creates a second scale and keeps the original", async () => {
-      await saveScale("ORIGINAL");
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      assert.strictEqual(await sheetHidden(), false, "the draft page stays open on a conflict");
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
-      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
-    });
-
-    test("both submit actions are disabled while Save as separate is pending", async () => {
-      await saveScale("ORIGINAL");
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      await b.eval(`navigator.locks.request(${JSON.stringify(LOCK_NAME)}, () => new Promise((r) => { window.__rel = r; })); return true;`);
-      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
-      await b.eval(`document.getElementById("editor-conflict-separate").click(); return true;`);
-      await b.waitFor(`!!savePending`, { label: "the separate save to wait on the lock" });
-      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-save").disabled, document.getElementById("editor-conflict-separate").disabled];`), [true, true]);
-      await b.eval(`window.__rel(); return true;`);
-      await b.waitFor(`!savePending`, { label: "the pending save to finish" });
-      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
-    });
-
-    test("another tab deleting the scale switches the conflict text and Save as separate still works", async () => {
-      await saveScale("ORIGINAL");
-      await b.eval(`return typeof editorConflictKind;`);
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      const changed = await b.eval(`return document.getElementById("editor-conflict-msg").textContent;`);
-      assert.strictEqual(changed, await b.eval(`return t("saved.conflict");`));
-      assert.strictEqual(await remoteDelete(), true);
-      await b.waitFor(`document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted")`, { label: "the deleted-scale text" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "DRAFT COPY");
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
-      assert.deepStrictEqual(await names(), ["DRAFT COPY"]);
-    });
-
-    test("Save as separate keeps the focus on the same button when the conflict changes to deleted", async () => {
-      await saveScale("ORIGINAL");
-      await editSaved();
-      await rename("DRAFT COPY");
-      await staleSave();
-      await b.eval(`const el = document.getElementById("editor-conflict-separate"); window.__kept = el; el.focus(); return document.activeElement === el;`);
-      assert.strictEqual(await remoteDelete(), true);
-      await b.waitFor(`document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted")`, { label: "the deleted-scale text" });
-      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-conflict-separate") === window.__kept, document.activeElement === window.__kept, document.activeElement.id];`),
-        [true, true, "editor-conflict-separate"], "the focused Save as separate button is kept, not rebuilt");
-    });
 
     describe("the Back dialog on an edited saved scale", () => {
       const record = () => b.eval(`return JSON.stringify(savedState.entries.map((e) => [e.instanceId, e.revision, e.record]));`);
@@ -5413,36 +5349,6 @@ function run() {
       assert.ok(seen.every((x, i) => i === 0 || x.id !== seen[i - 1].id), JSON.stringify(seen));
     });
 
-    test("a Delete after the scale vanished elsewhere shows the deleted banner and a retry never deletes the fallback", async () => {
-      await saveOne(375, 667);
-      const hiddenBefore = await b.eval(`return savedState.hidden.length;`);
-      const xId = await b.eval(`return editingBase.selection.id;`);
-      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok);`);
-      await armedDelete();
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
-      assert.deepStrictEqual(await b.eval(`const d = document.getElementById("editor-delete"); return [d.classList.contains("armed"), d.textContent === t("editor.menu.delete"), editorSession.delArmed];`),
-        [false, true, false], "the failed Delete leaves no armed button on screen");
-      assert.strictEqual(await b.eval(`return editingBase.selection.id;`), xId, "the sheet is not rebound to the fallback");
-      const countBefore = await savedCount();
-      await armedDelete();
-      assert.strictEqual(await b.eval(`return savedState.hidden.length;`), hiddenBefore, "no built-in was hidden by the retry");
-      assert.strictEqual(await savedCount(), countBefore, "the retry deleted no other saved scale");
-      assert.strictEqual(await sheetHidden(), false, "the page stays open on the deleted banner");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true, "the banner is still on screen");
-    });
-
-    test("a broadcast remote deletion of the open saved scale shows the deleted banner", async () => {
-      await saveOne(375, 667);
-      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => {
-          if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
-          return r.ok === true; });`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the deleted banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflictDeleted");`), true);
-    });
-
     test("a remote edit of the open saved scale keeps a dirty editor's draft and does not reopen it", async () => {
       await saveOne(375, 667);
       await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5");
@@ -5468,71 +5374,11 @@ function run() {
       assert.strictEqual(after.line, before.line, "the local draft survives");
       assert.notStrictEqual(after.name, "REMOTE RENAMED", "the remote content did not overwrite the draft");
     });
-
-    test("a Delete on a built-in hidden elsewhere shows a conflict banner and a retry never deletes the saved fallback", async () => {
-      await fresh(375, 667);
-      await openAdd();
-      await typeLine(SCALE);
-      await b.click("#editor-save");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
-      await b.eval(`const v = allDeckViews().find((x) => x.selection.kind === "builtin"); selectDeck(v.selection, false); openEditSheet(v.deck, addChip); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-line") && editingBase.selection.kind === "builtin"`, { label: "the editor on a built-in" });
-      const savedBefore = await savedCount();
-      const key = await b.eval(`return editingBase.selection.id;`);
-      await b.eval(`return commitSaved({ type: "hide-builtin", seedId: editingBase.selection.id, expectedSlotStateRevision: editingBase.slotStateRevision, expectedOwnerId: editingBase.ownerId, collectionId: savedState.collectionId }).then((r) => r.ok);`);
-      await armedDelete();
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return editingBase.selection.id;`), key, "the sheet is not rebound to the saved fallback");
-      await armedDelete();
-      assert.strictEqual(await savedCount(), savedBefore, "the saved scale survives the retried Delete");
-    });
   });
 
   describe("editor layout at rest", () => {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
     const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
-    const hitsSelf = (id) => b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
-      inerts.forEach((el) => el.removeAttribute("inert"));
-      try {
-        const el = document.getElementById(${JSON.stringify(id)}), r = el.getBoundingClientRect();
-        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return { id: ${JSON.stringify(id)}, ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
-      } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
-    const showBanner = async () => {
-      await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      await pause(300);
-    };
-
-    for (const [w, h] of [[390, 844], [320, 568]]) {
-      test(`ELA banner ${w}x${h}: with the conflict banner shown the name input and the info button are not under the tab strip`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await pause(300);
-        const tops = () => b.eval(`return ["editor-tabs", "editor-name"].map((id) => Math.round(document.getElementById(id).getBoundingClientRect().top));`);
-        const before = await tops();
-        await showBanner();
-        for (const id of ["editor-name", "editor-hint-toggle"]) {
-          const r = await hitsSelf(id);
-          assert.ok(r.ok, "banner offset: " + JSON.stringify(r));
-        }
-        const after = await tops();
-        assert.ok(after.every((t, i) => Math.abs(t - before[i]) <= 1), "the banner overlays and moves neither the tab strip nor the name input: " + JSON.stringify({ before, after }));
-      });
-    }
-
-    for (const [w, h] of [[667, 375], [844, 390], [1024, 768]]) {
-      test(`ELA banner grid ${w}x${h}: with the conflict banner shown the scale line centre hits itself`, async () => {
-        await fresh(w, h);
-        await openAdd();
-        await typeLine(NEO);
-        await showBanner();
-        const r = await hitsSelf("editor-line");
-        assert.ok(r.ok, "banner stays in the grid cell: " + JSON.stringify(r));
-      });
-    }
-
     const TITLE_CASES = [[320, 568, "en"], [320, 568, "de"], [390, 844, "de"], [390, 844, "es"], [390, 844, "fr"], [390, 844, "it"]];
     for (const [w, h, lang] of TITLE_CASES) {
       for (const mode of ["add", "edit"]) {
@@ -5896,11 +5742,6 @@ function run() {
     const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
       n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
     const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
-    const staleSave = async (patch = `revision: editingBase.revision + 100`) => {
-      await b.eval(`editingBase = { ...editingBase, ${patch} }; return true;`);
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-    };
     const backAndWait = async () => {
       await b.eval(`history.back(); return true;`);
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden") || !!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "back to settle" });
@@ -5911,30 +5752,17 @@ function run() {
         candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
     const broadcast = () => b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
 
-    test("ECL1 Save as separate after a collection epoch change writes one new scale", async () => {
-      await saveOne();
-      const original = await names();
-      await rename("DRAFT COPY");
-      await staleSave(`collectionId: "00000000-0000-4000-8000-000000000000"`);
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the separate save to close the page" });
-      assert.deepStrictEqual(await names(), [...original, "DRAFT COPY"].sort());
-    });
-
-    test("ECL2 two taps on Save as separate with an unacknowledged write leave exactly one copy and no second button", async () => {
+    test("ECL2 one Save with an unacknowledged write leaves exactly one copy", async () => {
       await saveOne();
       await rename("DRAFT COPY");
-      await staleSave();
+      await b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
       const before = await savedCount();
       await b.eval(`window.__realCommit = commitSaved;
         commitSaved = async (c, o) => { const r = await window.__realCommit(c, o); return c.type === "save-as-separate" && r.ok ? { ...r, published: false, persistence: "durable" } : r; };
-        const btn = document.getElementById("editor-conflict-separate"); btn.click(); btn.click(); return true;`);
-      await b.waitFor(`!savePending`, { label: "the separate save to finish" });
+        document.getElementById("editor-save").click(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the save to finish" });
       await b.eval(`commitSaved = window.__realCommit; return true;`);
-      assert.strictEqual(await savedCount(), before + 1, "one tap writes one copy");
-      assert.strictEqual(await b.eval(`return editorSession.conflict;`), null, "the conflict is settled once the copy exists");
-      await b.eval(`editorSession.error = ""; editorRender(); return true;`);
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-separate");`), false, "no second Save as separate offered");
+      assert.strictEqual(await savedCount(), before + 1, "one Save writes one copy");
     });
 
     describe("pasted navigation with the editor open", () => {
@@ -5963,40 +5791,6 @@ function run() {
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the clean editor to close" });
         assert.strictEqual(await dialogOpen(), false);
       });
-    });
-
-    test("ECL4 the Add path's conflict says so instead of claiming a saved scale changed", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
-      await b.eval(`editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      const r = await b.eval(`const msg = document.getElementById("editor-conflict-msg").textContent;
-        return { msg, add: msg === t("saved.conflictAdd"), saved: msg === t("saved.conflict"), kind: editorSession.conflict };`);
-      assert.strictEqual(r.add, true, JSON.stringify(r));
-      assert.strictEqual(r.saved, false, JSON.stringify(r));
-    });
-
-    test("ECL5 Cancel stays reachable while a conflict banner shows over a held note", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
-      await b.eval(`editorHold(1); editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-cancel");`), true, "Cancel is in the status row");
-      await b.click("#editor-cancel");
-      assert.strictEqual(await b.eval(`return editorSession.held;`), null, "Cancel drops the held note");
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !document.getElementById("editor-cancel");`), true, "the banner stays");
-    });
-
-    test("ECL5 the armed Delete note stays on screen while a conflict banner shows", async () => {
-      await saveOne();
-      await b.click("#editor-delete");
-      const note = await b.eval(`return editorSession.delNote;`);
-      assert.ok(note, "Delete armed with its note");
-      await b.eval(`editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent.includes(editorSession.delNote);`), true);
     });
 
     test("ECL6 a dirty editor guards unloading and a clean one does not", async () => {
@@ -6086,16 +5880,6 @@ function run() {
       });
     }
 
-    test("ECL10 saving after a remote edit raises the conflict through expectedRevision and keeps the remote scale", async () => {
-      await saveOne();
-      await rename("LOCAL DRAFT");
-      assert.strictEqual(await remoteEdit("REMOTE WINNER"), true, "the remote edit committed");
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.deepStrictEqual(await names(), ["REMOTE WINNER"], "the remote edit was not overwritten");
-      assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
-    });
-
     test("ECL10 an unfinished rename blocks a remote snapshot from rebinding the clean editor", async () => {
       await saveOne();
       await b.eval(`editorSession.__probe = "local"; const n = document.getElementById("editor-name"); n.value = "TYPED NOT COMMITTED"; return true;`);
@@ -6115,34 +5899,6 @@ function run() {
       assert.strictEqual(await sheetHidden(), false);
     });
 
-    test("ECL11 Save as separate on an untouched editor whose scale was removed elsewhere still saves a copy", async () => {
-      await saveOne();
-      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
-        return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok);`);
-      await broadcast();
-      await b.waitFor(`!!document.getElementById("editor-conflict-separate")`, { label: "the deleted banner" });
-      assert.strictEqual(await b.eval(`return editorIsDirty(editorSession.base, editorSession.history.present);`), false, "the editor is clean");
-      const before = await savedCount();
-      await b.click("#editor-conflict-separate");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to close" });
-      assert.strictEqual(await savedCount(), before + 1, "the copy was written");
-    });
-
-    test("ECL11 a successful Save as separate while the draft kept moving clears the conflict banner", async () => {
-      await saveOne();
-      await rename("DRAFT COPY");
-      await staleSave();
-      await b.eval(`navigator.locks.request("handpan-cards:saved-scales:v1", () => new Promise((r) => { window.__rel = r; })); return true;`);
-      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
-      await b.eval(`document.getElementById("editor-conflict-separate").click(); return true;`);
-      await b.waitFor(`!!savePending`, { label: "the separate save to wait on the lock" });
-      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetName(m, "MOVED ON")).history; editorRender(); return true;`);
-      await b.eval(`window.__rel(); return true;`);
-      await b.waitFor(`!savePending`, { label: "the separate save to finish" });
-      assert.strictEqual(await sheetHidden(), false, "the editor stays open on the moved draft");
-      assert.strictEqual(await b.eval(`return editorSession.conflict;`), null);
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-separate");`), false);
-    });
   });
 
   describe("editor test gaps CL-U", () => {
@@ -6164,28 +5920,6 @@ function run() {
         candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
     const chipLabel = () => b.eval(`return document.querySelector("#decks .chip.on").textContent;`);
 
-    test("CLU4 a missed broadcast then Save shows the conflict, keeps the draft, and Discard lands on the real winner", async () => {
-      await saveOne();
-      const original = await names();
-      await rename("LOSING LOCAL DRAFT");
-      await b.eval(`window.__stale = { state: savedClone(savedState), entries: [...savedEntries] }; return true;`);
-      assert.strictEqual(await remoteEdit("WINNING PEER"), true, "the peer edit committed");
-      await b.eval(`const st = window.__stale; savedState = st.state; savedEntries.clear(); for (const [k, v] of st.entries) savedEntries.set(k, v); buildChips(); return true;`);
-      assert.deepStrictEqual(await names(), original, "this tab never heard the peer: it still holds the old row");
-      assert.doesNotMatch(await chipLabel(), /WINNING PEER/);
-      await b.click("#editor-save");
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-conflict-msg").textContent === t("saved.conflict");`), true, "the changed-conflict text shows");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "LOSING LOCAL DRAFT", "the loser's draft stays in the field");
-      assert.strictEqual(await sheetHidden(), false, "the page stays open");
-      assert.deepStrictEqual(await names(), ["WINNING PEER"], "the failed Save reconciled the winner and wrote nothing");
-      await b.click("#editor-back");
-      assert.strictEqual(await dialogOpen(), true);
-      await b.click("#editor-dlg-discard");
-      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "Discard to close the page" });
-      assert.match(await chipLabel(), /WINNING PEER/, "the strip shows the acknowledged winner");
-    });
-
     test("CLU5 r3 an uncommitted rename guards unloading", async () => {
       await saveOne();
       const probe = () => b.eval(`const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented;`);
@@ -6203,18 +5937,6 @@ function run() {
       await b.waitFor(`document.getElementById("editor-name").value === "REMOTE RENAMED"`, { label: "the editor to rebind to the remote edit" });
       const r = await b.eval(`return { status: document.getElementById("editor-status").textContent, say: editorSession.say };`);
       assert.deepStrictEqual(r, { status: "", say: "" }, "nothing was armed, so nothing is explained: " + JSON.stringify(r));
-    });
-
-    test("CLU5 r5 Cancel appears when a note is held after the conflict banner is already up", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
-      await b.eval(`editorShowConflict(); return true;`);
-      await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-cancel");`), false, "no hold yet");
-      await b.eval(`editorHold(1); return true;`);
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-conflict-msg") && !!document.getElementById("editor-cancel") && !!document.getElementById("editor-conflict-separate");`), true,
-        "the banner is kept and the status row grows a Cancel for the held note");
     });
 
     describe("history guard", () => {
@@ -6263,6 +5985,318 @@ function run() {
         assert.strictEqual(await dialogOpen(), true, "the Save changes dialog asks");
         assert.strictEqual(await sheetHidden(), false);
       });
+    });
+  });
+
+  describe("editor conflict auto-save (CAS)", () => {
+    const TO = { timeout: 60000 };
+    const TO13 = { timeout: 120000 };
+    const tap = async (sel) => { await b.eval(`const e = document.querySelector(${JSON.stringify(sel)}); if (e && e.scrollIntoView) e.scrollIntoView({ block: "nearest" }); return true;`); await b.click(sel); };
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const closedExpr = `document.getElementById("scale-sheet").hasAttribute("hidden")`;
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+    const saveNamed = async (name, w = 375, h = 667) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await rename(name);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the first save to close" });
+    };
+    const editSaved = async () => {
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const openSaved = async (name, w, h) => { await saveNamed(name, w, h); await editSaved(); };
+    const remoteEdit = (name) => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+      built = buildGenerated(row.record.s, { ...row.record.o, name: ${JSON.stringify(name)} });
+      return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+        candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
+    const remoteDelete = () => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
+      return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok === true);`);
+    const broadcast = () => b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
+    const staleRevision = () => b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
+    const watchBanner = () => b.eval(`window.__banner = false;
+      new MutationObserver(() => { if (document.getElementById("editor-conflict-msg")) window.__banner = true; }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+      return true;`);
+    const sawBanner = () => b.eval(`return window.__banner === true || !!document.getElementById("editor-conflict-msg");`);
+    const sayRevision = () => b.eval(`return announcementRevision;`);
+    const holdSecondCommit = () => b.eval(`const real = commitSaved; let n = 0; window.__real = real;
+      commitSaved = (c, o) => { n++; if (n === 2) return new Promise((res) => { window.__release = () => res(real(c, o)); }); return real(c, o); }; return true;`);
+    const armedDelete = async () => {
+      await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+      await b.click("#editor-delete");
+      await pause(500);
+      await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+      await b.click("#editor-delete");
+      await pause(300);
+    };
+    const NAME_OF = (n) => `savedState.entries.find((e) => e.record.o.name === ${JSON.stringify(n)})`;
+
+    test("CAS1 a Save refused because the scale changed elsewhere saves the draft as a new scale with no message", TO, async () => {
+      await saveNamed("ORIGINAL");
+      const originalRev = await b.eval(`return savedState.entries[0].revision;`);
+      await editSaved();
+      await rename("DRAFT COPY");
+      await staleRevision();
+      await watchBanner();
+      const said = await sayRevision();
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+      assert.strictEqual(await b.eval(`return ${NAME_OF("ORIGINAL")}.revision;`), originalRev, "the original row is untouched");
+      assert.strictEqual(await b.eval(`return selection.id === ${NAME_OF("DRAFT COPY")}.instanceId;`), true, "the new scale is selected");
+      assert.strictEqual(await sawBanner(), false, "no conflict banner ever showed");
+      assert.strictEqual(await sayRevision(), said, "no success line and no say line for the retried copy");
+    });
+
+    test("CAS2 a Save refused because the scale was deleted elsewhere saves the draft as a new scale", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      assert.strictEqual(await remoteDelete(), true, "the peer deleted the scale");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY"]);
+      assert.strictEqual(await sawBanner(), false);
+    });
+
+    test("CAS3 a Save refused by a whole-list change writes exactly one new scale", TO, async () => {
+      await openSaved("ORIGINAL");
+      const before = await savedCount();
+      await rename("DRAFT COPY");
+      await b.eval(`editingBase = { ...editingBase, collectionId: "00000000-0000-4000-8000-000000000000" }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+      assert.strictEqual(await savedCount(), before + 1, "exactly one new scale");
+    });
+
+    test("CAS4 a built-in Save refused by a whole-list change writes one new scale and leaves the built-in", TO, async () => {
+      await fresh(375, 667);
+      await openBuiltin();
+      await rename("BUILTIN DRAFT");
+      await b.eval(`editingBase = { ...editingBase, collectionId: "00000000-0000-4000-8000-000000000000" }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["BUILTIN DRAFT"]);
+      assert.strictEqual(await b.eval(`return savedState.hidden.length === 0 && savedEntries.size === 1 && savedState.entries[0].record.o.replaces === undefined;`), true, "the built-in is neither hidden nor replaced");
+    });
+
+    test("CAS5 a new scale refused by a whole-list change writes one new scale", TO, async () => {
+      await fresh(375, 667);
+      await openAdd();
+      await typeLine(SCALE);
+      await rename("NEW DRAFT");
+      await b.eval(`savedState = { ...savedState, collectionId: "00000000-0000-4000-8000-000000000000" }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["NEW DRAFT"]);
+      assert.strictEqual(await savedCount(), 1);
+    });
+
+    test("CAS6 a second refusal keeps the draft with the failure message and retries only once", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      await b.eval(`window.__calls = []; commitSaved = async (c) => { window.__calls.push(c.type); return { ok: false, kind: "conflict" }; }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(`window.__calls.length >= 2 && !savePending`, { label: "the retry to finish" });
+      await pause(300);
+      assert.deepStrictEqual(await b.eval(`return window.__calls;`), ["edit", "save-as-separate"]);
+      assert.strictEqual(await b.eval(`return editorSession.error === t("saved.failure");`), true, "the existing failure message shows");
+      assert.strictEqual(await sheetHidden(), false, "the draft stays open");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "DRAFT COPY");
+    });
+
+    test("CAS7 Save stays disabled while the automatic copy waits", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      await staleRevision();
+      await holdSecondCommit();
+      await tap("#editor-save");
+      await b.waitFor(`typeof window.__release === "function"`, { label: "the automatic copy to wait" });
+      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-save").disabled, editorSubmitOff(editorSession, editorSession.history.present)];`), [true, true]);
+      await b.eval(`window.__release(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the held copy to finish" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+    });
+
+    test("CAS8 a draft that moved during the automatic copy keeps the editor open on the copy", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      await staleRevision();
+      await holdSecondCommit();
+      await tap("#editor-save");
+      await b.waitFor(`typeof window.__release === "function"`, { label: "the automatic copy to wait" });
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetName(m, "MOVED ON")).history; editorRender(); return true;`);
+      await b.eval(`window.__release(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the held copy to finish" });
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open on the moved draft");
+      assert.strictEqual(await b.eval(`return editingBase.selection.id === ${NAME_OF("DRAFT COPY")}.instanceId;`), true, "the editor is bound to the copy");
+      assert.strictEqual(await b.eval(`return editorSession.error;`), "");
+      assert.strictEqual(await sawBanner(), false);
+    });
+
+    test("CAS9 a Save after a remote edit keeps the remote scale and makes a copy", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOCAL DRAFT");
+      assert.strictEqual(await remoteEdit("REMOTE WINNER"), true, "the remote edit committed");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["LOCAL DRAFT", "REMOTE WINNER"]);
+    });
+
+    test("CLU4 a missed broadcast then Save keeps the real winner and saves the draft as a new scale", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOSING LOCAL DRAFT");
+      await b.eval(`window.__stale = { state: savedClone(savedState), entries: [...savedEntries] }; return true;`);
+      assert.strictEqual(await remoteEdit("WINNING PEER"), true, "the peer edit committed");
+      await b.eval(`const st = window.__stale; savedState = st.state; savedEntries.clear(); for (const [k, v] of st.entries) savedEntries.set(k, v); buildChips(); return true;`);
+      assert.deepStrictEqual(await names(), ["ORIGINAL"], "this tab never heard the peer: it still holds the old row");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["LOSING LOCAL DRAFT", "WINNING PEER"]);
+      assert.strictEqual(await sawBanner(), false);
+    });
+
+    test("CAS10 a Delete refused because the scale changed elsewhere keeps it and says so", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOCAL DRAFT");
+      assert.strictEqual(await remoteEdit("REMOTE EDIT"), true);
+      const hidden = await b.eval(`return savedState.hidden.length;`);
+      await armedDelete();
+      await b.waitFor(`document.getElementById("editor-status").textContent === t("editor.say.del_kept")`, { label: "the kept line" });
+      assert.deepStrictEqual(await b.eval(`const d = document.getElementById("editor-delete"), st = document.getElementById("editor-status");
+        return { error: editorSession.error, kind: st.getAttribute("data-kind"), armed: d.classList.contains("armed") || editorSession.delArmed,
+          buttons: st.querySelectorAll("button").length, banner: !!document.getElementById("editor-conflict-msg") };`),
+        { error: "", kind: null, armed: false, buttons: 0, banner: false });
+      assert.deepStrictEqual(await names(), ["REMOTE EDIT"], "the scale still exists");
+      await armedDelete();
+      await armedDelete();
+      assert.deepStrictEqual(await names(), ["REMOTE EDIT"], "further taps never delete it");
+      assert.strictEqual(await b.eval(`return savedState.hidden.length;`), hidden);
+    });
+
+    test("CAS11 a Delete refused because the scale is gone closes the editor silently and never deletes the saved fallback", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOCAL DRAFT");
+      assert.strictEqual(await remoteDelete(), true);
+      let said = await sayRevision();
+      await armedDelete();
+      await b.waitFor(closedExpr, { label: "the editor to close silently" });
+      assert.strictEqual(await sayRevision(), said, "no say line");
+      assert.strictEqual(await sawBanner(), false);
+      assert.strictEqual(await savedCount(), 0);
+      await fresh(375, 667);
+      await openAdd();
+      await typeLine(SCALE);
+      await rename("FALLBACK");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the fallback save to close" });
+      await b.eval(`const v = allDeckViews().find((x) => x.selection.kind === "builtin"); selectDeck(v.selection, false); openEditSheet(v.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line") && editingBase.selection.kind === "builtin"`, { label: "the editor on a built-in" });
+      await rename("BUILTIN DRAFT");
+      await b.eval(`return commitSaved({ type: "hide-builtin", seedId: editingBase.selection.id, expectedSlotStateRevision: editingBase.slotStateRevision, expectedOwnerId: editingBase.ownerId, collectionId: savedState.collectionId }).then((r) => r.ok);`);
+      said = await sayRevision();
+      await armedDelete();
+      await b.waitFor(closedExpr, { label: "the editor to close silently on the hidden built-in" });
+      assert.strictEqual(await sayRevision(), said, "no say line");
+      assert.strictEqual(await sawBanner(), false);
+      assert.deepStrictEqual(await names(), ["FALLBACK"], "the saved fallback survives");
+    });
+
+    test("CAS12 a broadcast remote deletion of the open saved scale leaves the editor and its draft", TO, async () => {
+      await openSaved("ORIGINAL");
+      assert.strictEqual(await remoteDelete(), true);
+      await broadcast();
+      await pause(400);
+      assert.strictEqual(await sawBanner(), false, "no conflict banner");
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "ORIGINAL", "the draft stays in the field");
+    });
+
+    const CAS13_VIEWPORTS = [[375, 667], [390, 844], [430, 932], [768, 1024], [844, 390], [667, 375], [1024, 768]];
+    const CAS13_CASES = [...["en", "de", "fr", "it", "es", "ja", "zh-Hant", "zh-Hans"].map((l) => [320, 568, l]),
+      ...CAS13_VIEWPORTS.flatMap(([w, h]) => ["en", "de"].map((l) => [w, h, l]))];
+    for (const [w, h, lang] of CAS13_CASES) {
+      test(`CAS13 ${w}x${h} ${lang}: the delete line keeps the tabs and name within 1px and covers no pan circle`, TO13, async () => {
+        await fresh(w, h);
+        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+        await openAdd();
+        await typeLine(SCALE);
+        await rename("ORIGINAL");
+        await tap("#editor-save");
+        await b.waitFor(closedExpr, { label: "the first save to close" });
+        await editSaved();
+        await rename("LOCAL DRAFT");
+        await pause(300);
+        const rects = () => b.eval(`const r = (el) => { const q = el.getBoundingClientRect(); return [q.left, q.top, q.width, q.height]; };
+          return { tabs: [...document.querySelectorAll("#editor-tabs > *")].map(r), name: r(document.getElementById("editor-name")) };`);
+        await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+        await pause(200);
+        const rest = await rects();
+        assert.strictEqual(await remoteEdit("REMOTE EDIT"), true);
+        await armedDelete();
+        await b.waitFor(`document.getElementById("editor-status").textContent === t("editor.say.del_kept")`, { label: "the kept line" });
+        await b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));`);
+        const now = await rects();
+        const close = (a, c) => a.length === c.length && a.every((v, i) => Math.abs(v - c[i]) <= 1);
+        assert.ok(rest.tabs.length >= 2 && rest.tabs.every((q, i) => close(q, now.tabs[i])), "the tab strip is where it rested: " + JSON.stringify({ rest, now }));
+        assert.ok(close(rest.name, now.name), "the name field is where it rested: " + JSON.stringify({ rest, now }));
+        const bad = await b.eval(`const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg"), status = document.getElementById("editor-status"), bad = [];
+          const scan = (tag) => {
+            for (const c of pan.querySelectorAll("circle")) {
+              const q = c.getBoundingClientRect();
+              if (!q.width) continue;
+              for (const [fx, fy] of [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]]) {
+                const hit = document.elementFromPoint(q.left + q.width * fx, q.top + q.height * fy);
+                if (hit && status.contains(hit)) bad.push(tag + ":" + (c.getAttribute("aria-label") || "") + "->" + (hit.id || hit.tagName));
+              }
+            }
+          };
+          scan("rest");
+          svg.scrollIntoView({ block: "center" });
+          scan("scrolled");
+          return { bad, n: pan.querySelectorAll("circle").length };`);
+        assert.ok(bad.n > 0 && bad.bad.length === 0, "the delete line covers no pan circle: " + JSON.stringify(bad));
+      });
+    }
+
+    test("CAS14 a Delete on a clean editor whose scale changed in a missed broadcast rebinds and shows the kept line", TO, async () => {
+      await openSaved("ORIGINAL");
+      assert.strictEqual(await remoteEdit("WINNER"), true, "the peer edit committed with no broadcast");
+      const generation = await b.eval(`return sheetGeneration;`);
+      await armedDelete();
+      await b.waitFor(`editorSession && editorSession.say === t("editor.say.del_kept")`, { label: "the kept line on the rebound session" });
+      assert.deepStrictEqual(await b.eval(`const st = document.getElementById("editor-status");
+        return { moved: sheetGeneration !== ${generation}, rebound: editorSession.say === t("editor.rebound", { name: "WINNER" }), armed: editorSession.delArmed,
+          kind: st.getAttribute("data-kind"), name: document.getElementById("editor-name").value, text: st.textContent === t("editor.say.del_kept") };`),
+        { moved: true, rebound: false, armed: false, kind: null, name: "WINNER", text: true });
+      assert.deepStrictEqual(await names(), ["WINNER"], "the scale is not deleted");
+
+      await openSaved("SECOND");
+      assert.strictEqual(await remoteEdit("SECOND WINNER"), true);
+      await b.eval(`window.__realRec = reconcileSavedCollection; reconcileSavedCollection = async () => { await new Promise((r) => { window.__relRec = r; }); return window.__realRec(); }; return true;`);
+      await armedDelete();
+      await b.waitFor(`typeof window.__relRec === "function"`, { label: "the reconcile to wait" });
+      await b.eval(`closeScaleSheet(); openScaleSheet(addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "a different session" });
+      await b.eval(`window.__relRec(); return true;`);
+      await pause(600);
+      assert.strictEqual(await b.eval(`return editorSession.say === "" && !document.getElementById("editor-status").textContent.includes(t("editor.say.del_kept"));`), true, "the new session gets no kept line");
+    });
+
+    test("CAS15 a Delete on a clean editor whose scale was removed elsewhere closes silently", TO, async () => {
+      await openSaved("ORIGINAL");
+      assert.strictEqual(await remoteDelete(), true, "the peer deleted the scale with no broadcast");
+      const said = await sayRevision();
+      await armedDelete();
+      await b.waitFor(closedExpr, { label: "the editor to close silently" });
+      assert.strictEqual(await sayRevision(), said, "no say line");
+      assert.strictEqual(await b.eval(`return editorSession === null;`), true);
+      assert.strictEqual(await sawBanner(), false);
+      assert.strictEqual(await savedCount(), 0, "nothing else was deleted");
     });
   });
 

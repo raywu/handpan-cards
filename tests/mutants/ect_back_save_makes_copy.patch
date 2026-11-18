@@ -1,6 +1,6 @@
 # kills: Save writes the edit once (revision +1, no copy) and closes
 # suite: node --test --test-name-pattern Save.writes.the.edit.once tests/editor_e2e.test.js
-# fault: Save in the Back dialog saves the edit as a separate copy.
+# fault: Save in the Back dialog closes the editor without saving the edit.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
@@ -9,7 +9,7 @@ diff --git a/index.html b/index.html
      editorShowDialog(false);
      if (s && !editorCanSave(s.history.present)) { s.error = t("editor.empty"); editorRender(); return; }
 -    editorSave();
-+    editorSave(true);
++    closeScaleSheet();
    };
  }
  // A swipe starting on the tab strip, counts row, hint or either panel switches Scale / Layout. It reuses the sheet's verdict and cue but keeps its own gesture state.

@@ -20,7 +20,7 @@ const ERROR = [
   "saved.failure", "saved.ackPending", "saved.sessionAckPending",
 ];
 const PLAIN = [
-  "sheet.del_refusal", "sheet.del_note_seeded", "sheet.del_note_custom", "editor.rebound",
+  "sheet.del_refusal", "sheet.del_note_seeded", "sheet.del_note_custom", "editor.rebound", "editor.say.del_kept",
   "editor.say.picked", "editor.say.zone_inner", "editor.say.zone_bottom", "editor.say.ding_stays", "editor.say.same_zone", "editor.say.went_back",
 ];
 const UNDO = [
@@ -41,10 +41,6 @@ const ROWS = [
 ];
 
 const EXCLUDED = {
-  "saved.conflict": "conflict banner (data-conflict), a non-goal",
-  "saved.conflictAdd": "conflict banner (data-conflict), a non-goal",
-  "saved.conflictDeleted": "conflict banner (data-conflict), a non-goal",
-  "saved.separate": "label of the conflict banner's button",
   "saved.temporary": "button label in the saved-scales menu status",
   "saved.session": "#saved-status in the menu (updateSavedStatus)",
   "saved.recovery": "#saved-status in the menu (updateSavedStatus)",
