@@ -4797,6 +4797,31 @@ function run() {
       await pause(600);
       assert.strictEqual(await rimCount(), before + 1, "the dropped chip became a rim note");
     });
+
+    for (const [w, h, drop] of [[838, 390, "seat"], [838, 390, "ding"], [667, 375, "seat"], [667, 375, "ding"]]) {
+      test(`AF save on screen ${w}x${h} ${drop}: after a touch drop Save is fully in view and hit at its centre`, async () => {
+        await open(w, h);
+        await typeLine(SCALE);
+        await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
+        const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        const to = await b.eval(`const svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+          if (${JSON.stringify(drop)} === "ding") { const c = [...document.querySelectorAll("#editor-pan circle")].find((e) => /ding/.test(e.getAttribute("aria-label") || "")).getBoundingClientRect(); return { x: c.left + c.width / 2, y: c.top + c.height / 2 }; }
+          const g = editorSolve(editorSession.history.present).value.geom, o = editorOrbit(g, "rim");
+          const x = o * Math.cos(22.5 * Math.PI / 180) * 100, y = -o * Math.sin(22.5 * Math.PI / 180) * 100;
+          return { x: r.left + (x - vb.x) / vb.width * r.width, y: r.top + (y - vb.y) / vb.height * r.height };`);
+        const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+        await touch("touchStart", from);
+        for (const k of [0.15, 0.3, 0.6, 1]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+        await touch("touchEnd");
+        await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
+        for (const ms of [0, 500, 1500]) {
+          await pause(ms);
+          const r = await b.eval(`const e = document.getElementById("editor-save"), q = e.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+            return { top: q.top, bottom: q.bottom, ih: innerHeight, hit: !!hit && e.contains(hit), msg: document.getElementById("editor-status").textContent };`);
+          assert.ok(r.top >= 0 && r.bottom <= r.ih && r.hit, "Save is on screen after the drop: " + JSON.stringify(r));
+        }
+      });
+    }
   });
 
   describe("editor landscape dialog lock", () => {
@@ -5530,6 +5555,35 @@ function run() {
         await showBanner();
         const r = await hitsSelf("editor-line");
         assert.ok(r.ok, "banner stays in the grid cell: " + JSON.stringify(r));
+      });
+    }
+
+    for (const [w, h, lang, kind] of [[320, 568, "en", "changed"], [320, 568, "en", "deleted"], [320, 568, "de", "changed"], [320, 568, "de", "deleted"], [375, 667, "en", "changed"], [390, 844, "de", "deleted"]]) {
+      test(`AF banner clear of pan ${w}x${h} ${lang} ${kind}: the conflict banner covers no pan circle and starts below the pan`, async () => {
+        await fresh(w, h);
+        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+        await openAdd();
+        await typeLine(NEO);
+        await pause(300);
+        await b.eval(`editorSession.conflict = ${JSON.stringify(kind)}; editorRender(); return true;`);
+        await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
+        await pause(300);
+        const r = await b.eval(`const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg");
+          const bad = [];
+          for (const c of pan.querySelectorAll("circle")) {
+            const q = c.getBoundingClientRect();
+            if (!q.width) continue;
+            const pts = [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]];
+            for (const [fx, fy] of pts) {
+              const hit = document.elementFromPoint(q.left + q.width * fx, q.top + q.height * fy);
+              if (hit && !pan.contains(hit)) bad.push((c.getAttribute("aria-label") || "") + "->" + (hit.id || hit.tagName));
+            }
+          }
+          const banner = document.getElementById("editor-status").getBoundingClientRect();
+          const q = (sel) => document.querySelector(sel).getBoundingClientRect();
+          return { bad, bannerTop: banner.top, panBottom: svg.getBoundingClientRect().bottom, bannerBottom: banner.bottom, bannerH: banner.height, rowH: q(".editor-statusrow").height, panboxTop: q(".editor-panbox").top, panboxH: q(".editor-panbox").height, panTop: svg.getBoundingClientRect().top, tabs: q("#editor-tabs").top, n: pan.querySelectorAll("circle").length, row: getComputedStyle(document.getElementById("editor")).getPropertyValue("--ed-row"), kids: [...document.getElementById("editor-status").children].map((c) => [c.id, Math.round(c.getBoundingClientRect().height), c.textContent.length]) };`);
+        assert.ok(r.n > 0 && r.bad.length === 0, "no pan circle is under the banner: " + JSON.stringify(r));
+        assert.ok(r.bannerTop >= r.panBottom - 1, "the banner starts below the pan svg: " + JSON.stringify(r));
       });
     }
 
