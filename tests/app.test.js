@@ -10566,6 +10566,23 @@ describe("SHC asynchronous LINK ownership", () => {
     assert.strictEqual(app.els["scale-generate"].disabled,true,"old completion cannot re-enable an invalid current draft");
   });
 
+  test("SV16 U1: a dirty draft survives a remote edit and then a remote deletion with no conflict state, and a Save makes one copy", async () => {
+    const {app,origin,crypto}=await seeded([SV.portableRecords.pygmyLayoutA]);
+    editSelected(app);rename(app,"DIRTY RETAINED DRAFT");
+    const peer=(await load({origin,crypto})).app,e=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"edit",collectionId:e.collectionId,instanceId:iid(1),expectedRevision:1},SV.portableRecords.pygmyLayoutB)).ok,true);
+    const winner=snapshot(peer);
+    assert.strictEqual((await command(peer,{type:"delete",collectionId:winner.collectionId,instanceId:iid(1),expectedRevision:2})).ok,true);
+    origin.flushBroadcastMessages();
+    await app.waitFor(`!savedEntries.has(${JSON.stringify(iid(1))})`);
+    assert.strictEqual(app.sheetOpen(),true);
+    assert.strictEqual(app.els["scale-name"].value,"DIRTY RETAINED DRAFT");
+    assert.strictEqual(app.get("editorSession.conflict"),undefined,"no conflict state exists");
+    await submit(app);
+    assert.strictEqual(app.sheetOpen(),false);
+    assert.deepStrictEqual(snapshot(app).entries.map(x=>x.record.o.name),["DIRTY RETAINED DRAFT"],"exactly one new scale");
+  });
+
   test("deleting an instance that disappeared leaves no armed button and closes the editor without deleting anything else", async () => {
     const app=boot(),d=await makeCustom(app);openEdit(app,d);
     app.run('(()=>{const look=document.getElementById;document.getElementById=id=>look(id==="editor-delete"?"scale-delete":id);})()');
