@@ -1,0 +1,15 @@
+# kills: AF banner clear of pan: the pan keeps its size with the banner up
+# suite: node --test --test-name-pattern AF.banner.clear tests/editor_e2e.test.js
+# fault: The pan shrinks by the banner height again instead of keeping its size.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -938,7 +938,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-status #editor-conflict-separate{min-height:44px; white-space:normal; padding:10px 14px}
+ #editor .editor-panbox{flex:0 0 auto; min-height:0;
+   height:max(120px, min(max(200px, min(50vh, 100cqw, 520px)), calc(100vh - var(--ed-k))));
+-  height:max(120px, min(max(200px, min(50dvh, 100cqw, 520px)), calc(100dvh - var(--ed-k)))); display:flex; align-items:center; justify-content:center; position:relative;
++  height:max(0px, calc(max(120px, min(max(200px, min(50dvh, 100cqw, 520px)), calc(100dvh - var(--ed-k)))) - max(0px, var(--ed-conflict-row,0px) - var(--ed-row)))); display:flex; align-items:center; justify-content:center; position:relative;
+   transform-origin:50% 0; transition:transform 220ms cubic-bezier(.2,.8,.2,1)}
+ #editor-pan{height:100%; width:100%; display:flex; align-items:center; justify-content:center}
+ #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}

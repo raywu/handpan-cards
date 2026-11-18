@@ -890,7 +890,7 @@ footer.seq{row-gap:var(--sp-1)}
 body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #scale-sheet.onepanel #editor{width:100%; max-width:520px; height:100dvh; margin:0 auto; box-sizing:border-box;
   padding:var(--sp-2) var(--sp-3) max(var(--sp-2), env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:var(--sp-1);
-  background:#F6F4ED; color:#242424; overflow:hidden; position:relative; container-type:inline-size; --ed-row:48px; --ed-conflict-extra:max(0px, calc(var(--ed-conflict-row,0px) - var(--ed-row))); --ed-k:calc(416px + var(--ed-row))}
+  background:#F6F4ED; color:#242424; overflow:hidden; position:relative; container-type:inline-size; --ed-row:48px; --ed-k:calc(416px + var(--ed-row))}
 @media (min-width:421px){#scale-sheet.onepanel #editor{--ed-row:44px}}
 @media (max-height:520px){#scale-sheet.onepanel #editor{--ed-k:calc(343px + var(--ed-row))}}
 @media (min-width:640px) and (min-height:700px){#scale-sheet.onepanel #editor{--ed-k:calc(370px + var(--ed-row))}}
@@ -930,13 +930,15 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 @media (prefers-reduced-motion:reduce){#editor-status.arrive{animation:none}}
 #editor-status .mode{min-height:32px; padding:4px 10px}
 #editor-status[data-conflict]{flex-wrap:wrap; padding:var(--sp-2) 12px; position:absolute; left:0; right:0; bottom:0}
+#scale-sheet.onepanel #editor.conflict-row{overflow-y:auto; overscroll-behavior:contain}
+#scale-sheet.onepanel #editor.conflict-row #editor-region{flex:0 0 var(--ed-conflict-region)}
 #editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:max(40px, var(--ed-conflict-row,0px))}
 @media (max-width:420px){#editor .editor-statusrow:has(#editor-status[data-conflict]){min-height:max(48px, var(--ed-conflict-row,0px))}}
 #editor-status[data-conflict] #editor-conflict-msg{flex:1 1 12em; min-width:0}
 #editor-status #editor-conflict-separate{min-height:44px; white-space:normal; padding:10px 14px}
 #editor .editor-panbox{flex:0 0 auto; min-height:0;
-  height:max(0px, calc(max(120px, min(max(200px, min(50vh, 100cqw, 520px)), calc(100vh - var(--ed-k)))) - var(--ed-conflict-extra)));
-  height:max(0px, calc(max(120px, min(max(200px, min(50dvh, 100cqw, 520px)), calc(100dvh - var(--ed-k)))) - var(--ed-conflict-extra))); display:flex; align-items:center; justify-content:center; position:relative;
+  height:max(120px, min(max(200px, min(50vh, 100cqw, 520px)), calc(100vh - var(--ed-k))));
+  height:max(120px, min(max(200px, min(50dvh, 100cqw, 520px)), calc(100dvh - var(--ed-k)))); display:flex; align-items:center; justify-content:center; position:relative;
   transform-origin:50% 0; transition:transform 220ms cubic-bezier(.2,.8,.2,1)}
 #editor-pan{height:100%; width:100%; display:flex; align-items:center; justify-content:center}
 #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}
@@ -13961,8 +13963,23 @@ function editorSyncConflictRow() {
   const root = editorEl("editor");
   const status = editorEl("editor-status");
   if (!root || !status) return;
-  if (status.hasAttribute("data-conflict")) root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
-  else root.style.removeProperty("--ed-conflict-row");
+  if (!status.hasAttribute("data-conflict")) {
+    root.style.removeProperty("--ed-conflict-row");
+    root.style.removeProperty("--ed-conflict-region");
+    root.classList.remove("conflict-row");
+    return;
+  }
+  const raised = !root.style.getPropertyValue("--ed-conflict-row");
+  const regionTop = editorEl("editor-region").scrollTop;
+  if (raised) {
+    root.style.setProperty("--ed-conflict-region", editorEl("editor-region").offsetHeight + "px");
+    root.classList.add("conflict-row");
+  }
+  root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
+  if (raised) {
+    root.scrollTop = Math.max(0, status.offsetHeight - parseFloat(getComputedStyle(root).getPropertyValue("--ed-row")));
+    editorEl("editor-region").scrollTop = regionTop;
+  }
 }
 window.addEventListener("resize", editorSyncConflictRow);
 function editorConflictMessageKey(kind) {

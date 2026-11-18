@@ -1,15 +1,15 @@
 # kills: AF banner clear of pan: the conflict banner covers no pan circle at 320x568 and starts below the pan
 # suite: node --test --test-name-pattern AF.banner.clear tests/editor_e2e.test.js
-# fault: The conflict row height is never reserved, so the banner grows upward over the pan circles again.
+# fault: The conflict row height is never set, so the banner grows upward over the pan circles again.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13961,7 +13961,7 @@ function editorSyncConflictRow() {
-   const root = editorEl("editor");
-   const status = editorEl("editor-status");
-   if (!root || !status) return;
--  if (status.hasAttribute("data-conflict")) root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
-+  if (false) root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
-   else root.style.removeProperty("--ed-conflict-row");
- }
- window.addEventListener("resize", editorSyncConflictRow);
+@@ -13975,7 +13975,7 @@ function editorSyncConflictRow() {
+     root.style.setProperty("--ed-conflict-region", editorEl("editor-region").offsetHeight + "px");
+     root.classList.add("conflict-row");
+   }
+-  root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
++  void status.offsetHeight;
+   if (raised) {
+     root.scrollTop = Math.max(0, status.offsetHeight - parseFloat(getComputedStyle(root).getPropertyValue("--ed-row")));
+     editorEl("editor-region").scrollTop = regionTop;

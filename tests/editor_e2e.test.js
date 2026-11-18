@@ -5565,11 +5565,16 @@ function run() {
         await openAdd();
         await typeLine(NEO);
         await pause(300);
+        const panH = () => b.eval(`return document.querySelector("#editor-pan svg").getBoundingClientRect().height;`);
+        const restH = await panH();
         await b.eval(`editorSession.conflict = ${JSON.stringify(kind)}; editorRender(); return true;`);
         await b.waitFor(`!!document.getElementById("editor-conflict-msg")`, { label: "the conflict banner" });
         await pause(300);
+        const bannerH = await panH();
+        assert.ok(Math.abs(bannerH - restH) <= 1, "the pan keeps its size with the banner up: " + JSON.stringify({ restH, bannerH }));
         const r = await b.eval(`const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg");
           const bad = [];
+          svg.scrollIntoView({ block: "center" });
           for (const c of pan.querySelectorAll("circle")) {
             const q = c.getBoundingClientRect();
             if (!q.width) continue;
