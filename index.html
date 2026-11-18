@@ -13959,16 +13959,19 @@ function editorStatusNotes(box, s, m, empty) {
     }
   }
 }
-function editorSyncConflictRow() {
+const editorStackedLayout = () => !matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px), (orientation:landscape) and (min-width:900px)").matches;
+function editorSyncConflictRow(reset) {
   const root = editorEl("editor");
   const status = editorEl("editor-status");
   if (!root || !status) return;
-  if (!status.hasAttribute("data-conflict")) {
+  const wasRaised = root.classList.contains("conflict-row");
+  if (reset || !status.hasAttribute("data-conflict") || !editorStackedLayout()) {
     root.style.removeProperty("--ed-conflict-row");
     root.style.removeProperty("--ed-conflict-region");
     root.classList.remove("conflict-row");
-    return;
+    if (wasRaised) root.scrollTop = 0;
   }
+  if (!status.hasAttribute("data-conflict") || !editorStackedLayout()) return;
   const raised = !root.style.getPropertyValue("--ed-conflict-row");
   const regionTop = editorEl("editor-region").scrollTop;
   if (raised) {
@@ -13981,7 +13984,7 @@ function editorSyncConflictRow() {
     editorEl("editor-region").scrollTop = regionTop;
   }
 }
-window.addEventListener("resize", editorSyncConflictRow);
+window.addEventListener("resize", () => editorSyncConflictRow(true));
 function editorConflictMessageKey(kind) {
   return kind === "deleted" ? "saved.conflictDeleted" : kind === "add" ? "saved.conflictAdd" : "saved.conflict";
 }

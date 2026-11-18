@@ -5558,6 +5558,50 @@ function run() {
       });
     }
 
+    const layoutOf = () => b.eval(`const r = (id) => Math.round(document.getElementById(id).getBoundingClientRect().top);
+      return { tabs: r("editor-tabs"), name: r("editor-name"), scroll: document.getElementById("editor").scrollTop, save: Math.round(document.getElementById("editor-save").getBoundingClientRect().bottom), ih: innerHeight };`);
+    const clearBanner = async () => {
+      await b.eval(`editorSession.conflict = null; editorRender(); return true;`);
+      await b.waitFor(`!document.getElementById("editor-conflict-msg")`, { label: "the banner to clear" });
+      await pause(300);
+    };
+    const sameLayout = (a, c, why) => assert.ok(Math.abs(a.tabs - c.tabs) <= 1 && Math.abs(a.name - c.name) <= 1 && Math.abs(a.scroll - c.scroll) <= 1, why + ": " + JSON.stringify({ a, c }));
+
+    for (const [w, h] of [[844, 390], [667, 375]]) {
+      test(`AF landscape banner ${w}x${h}: the banner moves neither the tab strip, the name input nor the column scroll, shown or cleared`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await pause(300);
+        const rest = await layoutOf();
+        await showBanner();
+        sameLayout(rest, await layoutOf(), "banner shown");
+        await clearBanner();
+        sameLayout(rest, await layoutOf(), "banner cleared");
+      });
+    }
+
+    for (const [w, h] of [[390, 844], [375, 667], [320, 568]]) {
+      test(`AF rotate ${w}x${h}: a banner up through landscape and back leaves the tab strip, name input and Save at rest`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await pause(300);
+        const rest = await layoutOf();
+        await showBanner();
+        const up = await layoutOf();
+        await b.setViewport(844, 390, true);
+        await pause(500);
+        await b.setViewport(w, h, true);
+        await pause(500);
+        const back = await layoutOf();
+        sameLayout(up, back, "after the round trip with the banner up");
+        assert.ok(back.save <= back.ih, "Save stays on screen: " + JSON.stringify(back));
+        await clearBanner();
+        sameLayout(rest, await layoutOf(), "banner cleared after the round trip");
+      });
+    }
+
     for (const [w, h, lang, kind] of [[320, 568, "en", "changed"], [320, 568, "en", "deleted"], [320, 568, "de", "changed"], [320, 568, "de", "deleted"], [375, 667, "en", "changed"], [390, 844, "de", "deleted"]]) {
       test(`AF banner clear of pan ${w}x${h} ${lang} ${kind}: the conflict banner covers no pan circle and starts below the pan`, async () => {
         await fresh(w, h);
@@ -5574,16 +5618,21 @@ function run() {
         assert.ok(Math.abs(bannerH - restH) <= 1, "the pan keeps its size with the banner up: " + JSON.stringify({ restH, bannerH }));
         const r = await b.eval(`const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg");
           const bad = [];
-          svg.scrollIntoView({ block: "center" });
-          for (const c of pan.querySelectorAll("circle")) {
-            const q = c.getBoundingClientRect();
-            if (!q.width) continue;
-            const pts = [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]];
-            for (const [fx, fy] of pts) {
-              const hit = document.elementFromPoint(q.left + q.width * fx, q.top + q.height * fy);
-              if (hit && !pan.contains(hit)) bad.push((c.getAttribute("aria-label") || "") + "->" + (hit.id || hit.tagName));
+          const scan = (tag) => {
+            for (const c of pan.querySelectorAll("circle")) {
+              const q = c.getBoundingClientRect();
+              if (!q.width) continue;
+              for (const [fx, fy] of [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]]) {
+                const x = q.left + q.width * fx, y = q.top + q.height * fy;
+                const hit = document.elementFromPoint(x, y);
+                const onScreen = x >= 0 && y >= 0 && x < innerWidth && y < innerHeight;
+                if (!hit ? onScreen : !pan.contains(hit)) bad.push(tag + ":" + (c.getAttribute("aria-label") || "") + "->" + (hit ? hit.id || hit.tagName : "null"));
+              }
             }
-          }
+          };
+          scan("rest");
+          svg.scrollIntoView({ block: "center" });
+          scan("scrolled");
           const banner = document.getElementById("editor-status").getBoundingClientRect();
           const q = (sel) => document.querySelector(sel).getBoundingClientRect();
           return { bad, bannerTop: banner.top, panBottom: svg.getBoundingClientRect().bottom, bannerBottom: banner.bottom, bannerH: banner.height, rowH: q(".editor-statusrow").height, panboxTop: q(".editor-panbox").top, panboxH: q(".editor-panbox").height, panTop: svg.getBoundingClientRect().top, tabs: q("#editor-tabs").top, n: pan.querySelectorAll("circle").length, row: getComputedStyle(document.getElementById("editor")).getPropertyValue("--ed-row"), kids: [...document.getElementById("editor-status").children].map((c) => [c.id, Math.round(c.getBoundingClientRect().height), c.textContent.length]) };`);
