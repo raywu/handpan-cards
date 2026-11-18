@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13985,8 +13985,6 @@ function editorSyncConflictRow(reset) {
-   const status = editorEl("editor-status");
+@@ -13986,8 +13986,6 @@ function editorSyncConflictRow(reset) {
    if (!root || !status) return;
+   let scroll0 = root.scrollTop;
    const live = !!(editorDrag && editorDrag.live);
 -  status.style.top = live ? "0" : "";
 -  status.style.bottom = live ? "auto" : "";

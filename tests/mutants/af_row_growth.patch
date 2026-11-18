@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14012,7 +14012,7 @@ function editorSyncConflictRow(reset) {
+@@ -14016,7 +14016,7 @@ function editorSyncConflictRow(reset) {
    if (raised) editorEl("editor-region").scrollTop = regionTop;
    if (live) return;
    root.style.setProperty("--ed-conflict-row", Math.max(status.offsetHeight, editorRestRowAt) + "px");
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  const grown = raised ? row.offsetHeight - editorConflictRowAt : 0;
    if (grown) {
      editorConflictRowAt += grown;
-     root.scrollTop = Math.max(0, root.scrollTop + grown);
+     root.scrollTop = Math.max(0, scroll0 + grown);
