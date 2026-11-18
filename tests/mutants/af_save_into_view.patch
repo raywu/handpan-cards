@@ -1,6 +1,7 @@
-# kills: AF save on screen: after a touch drop in phone landscape Save is fully in view
+# kills: AF save on screen 838x390 seat: after a touch drop Save is fully in view and hit at its centre
 # suite: node --test --test-name-pattern AF.save.on.screen tests/editor_e2e.test.js
 # fault: A drop no longer scrolls Save into view, so Save stays below the fold in phone landscape.
+# note: AF save on screen: after a touch drop in phone landscape Save is fully in view
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
