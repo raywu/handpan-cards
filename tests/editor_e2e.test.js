@@ -5757,6 +5757,43 @@ function run() {
       }
     }
 
+    const AF_SHRINK_SAY = `editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" }) + " " + t("editor.say.went_back", { name: "C4" })`;
+    const AF_SHRINK_UNDO = `editorSession.say = t("editor.say.went_back", { name: "Bb3" }); editorSession.plainSay = ""`;
+    const AF_SHRINK_CLEAR = `editorSession.say = editorSession.plainSay = ""; editorSession.held = null`;
+    const AF_SHRINK_PATHS = [["say", AF_SHRINK_SAY], ["say-undo", AF_SHRINK_UNDO], ["held", `editorSession.held = { k: 0 }`]];
+    for (const [w, h] of AF_INV_SIZES) {
+      for (const [path, js] of AF_SHRINK_PATHS) {
+        test(`AF invariant shrink ${w}x${h} ${path}: the status row shrinking while the banner stays up keeps the tab strip, name input, pan and Save where they rested`, async () => {
+          await fresh(w, h);
+          await openAdd();
+          await typeLine(NEO);
+          await afFrames();
+          await pause(300);
+          const rest = await afSnap();
+          await showBanner();
+          afCheck(rest, await afSnap(), "banner shown");
+          await afRender(js);
+          afCheck(rest, await afSnap(), path + " shown");
+          await afRender(AF_SHRINK_CLEAR);
+          afCheck(rest, await afSnap(), path + " cleared with the banner still up");
+        });
+      }
+    }
+    test("AF invariant shrink 320x568 sequence: held, cleared, a longer say, cleared with the banner up throughout never accumulates a drift", async () => {
+      await fresh(320, 568);
+      await b.eval(`setLang("fr"); return true;`);
+      await openAdd();
+      await typeLine(NEO);
+      await afFrames();
+      await pause(300);
+      const rest = await afSnap();
+      await showBanner();
+      for (const [why, js] of [["held", `editorSession.held = { k: 0 }`], ["held cleared", AF_SHRINK_CLEAR], ["longer say", AF_SHRINK_SAY], ["say cleared", AF_SHRINK_CLEAR]]) {
+        await afRender(js);
+        afCheck(rest, await afSnap(), why);
+      }
+    });
+
     const AF_PRE_CASES = [[320, 568, "de", "held"], [320, 568, "de", "say-empty"], [320, 568, "en", "say-empty"], [375, 667, "en", "say2-empty"], [390, 844, "de", "say2-empty"]];
     for (const [w, h, lang, pre] of AF_PRE_CASES) {
       test(`AF invariant pre-status ${w}x${h} ${lang} ${pre}: a multi-line status before the banner keeps the tab strip, name input, pan and Save where they rested`, async () => {
