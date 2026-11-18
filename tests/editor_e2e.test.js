@@ -5567,6 +5567,8 @@ function run() {
     };
     const sameLayout = (a, c, why) => assert.ok(Math.abs(a.tabs - c.tabs) <= 1 && Math.abs(a.name - c.name) <= 1 && Math.abs(a.scroll - c.scroll) <= 1, why + ": " + JSON.stringify({ a, c }));
 
+    const sameTops = (a, c, why) => assert.ok(Math.abs(a.tabs - c.tabs) <= 1 && Math.abs(a.name - c.name) <= 1, why + ": " + JSON.stringify({ a, c }));
+
     for (const [w, h] of [[844, 390], [667, 375]]) {
       test(`AF landscape banner ${w}x${h}: the banner moves neither the tab strip, the name input nor the column scroll, shown or cleared`, async () => {
         await fresh(w, h);
@@ -5578,6 +5580,20 @@ function run() {
         sameLayout(rest, await layoutOf(), "banner shown");
         await clearBanner();
         sameLayout(rest, await layoutOf(), "banner cleared");
+      });
+    }
+
+    for (const [w, h] of [[430, 932], [768, 1024], [390, 844]]) {
+      test(`AF portrait banner ${w}x${h}: the banner moves neither the tab strip nor the name input, shown or cleared`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await pause(300);
+        const rest = await layoutOf();
+        await showBanner();
+        sameTops(rest, await layoutOf(), "banner shown");
+        await clearBanner();
+        sameTops(rest, await layoutOf(), "banner cleared");
       });
     }
 

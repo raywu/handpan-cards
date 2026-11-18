@@ -13973,6 +13973,7 @@ function editorSyncConflictRow(reset) {
   }
   if (!status.hasAttribute("data-conflict") || !editorStackedLayout()) return;
   const raised = !root.style.getPropertyValue("--ed-conflict-row");
+  const restRow = raised ? status.parentElement.offsetHeight : 0;
   const regionTop = editorEl("editor-region").scrollTop;
   if (raised) {
     root.style.setProperty("--ed-conflict-region", editorEl("editor-region").offsetHeight + "px");
@@ -13980,7 +13981,7 @@ function editorSyncConflictRow(reset) {
   }
   root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
   if (raised) {
-    root.scrollTop = Math.max(0, status.offsetHeight - parseFloat(getComputedStyle(root).getPropertyValue("--ed-row")));
+    root.scrollTop = Math.max(0, status.offsetHeight - restRow);
     editorEl("editor-region").scrollTop = regionTop;
   }
 }

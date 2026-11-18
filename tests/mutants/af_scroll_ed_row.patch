@@ -1,0 +1,15 @@
+# kills: AF portrait banner: the banner moves neither the tab strip nor the name input
+# suite: node --test --test-name-pattern AF.portrait.banner tests/editor_e2e.test.js
+# fault: The raise scrolls by the banner height minus --ed-row (44 at 421px and up) instead of the measured row growth, so the tab strip drops 4px.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13981,7 +13981,7 @@ function editorSyncConflictRow(reset) {
+   }
+   root.style.setProperty("--ed-conflict-row", status.offsetHeight + "px");
+   if (raised) {
+-    root.scrollTop = Math.max(0, status.offsetHeight - restRow);
++    root.scrollTop = Math.max(0, status.offsetHeight - parseFloat(getComputedStyle(root).getPropertyValue("--ed-row")));
+     editorEl("editor-region").scrollTop = regionTop;
+   }
+ }
