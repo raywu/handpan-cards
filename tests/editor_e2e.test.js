@@ -5577,6 +5577,7 @@ function run() {
         await pause(300);
         const rest = await layoutOf();
         await showBanner();
+        assert.ok(!(await b.eval(`const e = document.getElementById("editor"); return e.classList.contains("conflict-row") || !!e.style.getPropertyValue("--ed-conflict-region");`)), "phone landscape: the conflict raise does not run");
         sameLayout(rest, await layoutOf(), "banner shown");
         await clearBanner();
         sameLayout(rest, await layoutOf(), "banner cleared");
@@ -5654,6 +5655,209 @@ function run() {
           return { bad, bannerTop: banner.top, panBottom: svg.getBoundingClientRect().bottom, bannerBottom: banner.bottom, bannerH: banner.height, rowH: q(".editor-statusrow").height, panboxTop: q(".editor-panbox").top, panboxH: q(".editor-panbox").height, panTop: svg.getBoundingClientRect().top, tabs: q("#editor-tabs").top, n: pan.querySelectorAll("circle").length, row: getComputedStyle(document.getElementById("editor")).getPropertyValue("--ed-row"), kids: [...document.getElementById("editor-status").children].map((c) => [c.id, Math.round(c.getBoundingClientRect().height), c.textContent.length]) };`);
         assert.ok(r.n > 0 && r.bad.length === 0, "no pan circle is under the banner: " + JSON.stringify(r));
         assert.ok(r.bannerTop >= r.panBottom - 1, "the banner starts below the pan svg: " + JSON.stringify(r));
+      });
+    }
+
+    const AF_INV_SIZES = [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024], [844, 390], [667, 375]];
+    const AF_INV_PATHS = ["show", "say", "say-undo", "held", "reflow", "error", "clear", "rotate", "lift"];
+    const afSnap = () => b.eval(`const q = (sel) => document.querySelector(sel).getBoundingClientRect();
+      const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg"), covered = [];
+      for (const c of pan.querySelectorAll("circle")) {
+        const r = c.getBoundingClientRect();
+        if (!r.width) continue;
+        for (const [fx, fy] of [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]]) {
+          const x = r.left + r.width * fx, y = r.top + r.height * fy;
+          if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
+          const hit = document.elementFromPoint(x, y);
+          if (!hit || !pan.contains(hit)) covered.push((c.getAttribute("aria-label") || "") + "->" + (hit ? hit.id || hit.tagName : "null"));
+        }
+      }
+      return { tabs: Math.round(q("#editor-tabs").top), name: Math.round(q("#editor-name").top), save: Math.round(q("#editor-save").bottom),
+        panH: Math.round(svg.getBoundingClientRect().height), panTop: Math.round(svg.getBoundingClientRect().top), back: Math.round(q("#editor-back").top),
+        scroll: document.getElementById("editor").scrollTop, ih: innerHeight, covered, banner: !!document.getElementById("editor-conflict-msg"),
+        statusTop: Math.round(q("#editor-status").top), statusH: Math.round(q("#editor-status").height), rowH: Math.round(q(".editor-statusrow").height), panBottom: Math.round(svg.getBoundingClientRect().bottom),
+        grid: matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px), (orientation:landscape) and (min-width:900px)").matches };`);
+    const afFrames = () => b.eval(`return new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(true))));`);
+    const afRender = async (js) => { await b.eval(js + `; editorRender(); return true;`); await afFrames(); await pause(250); };
+    const afRecord = (row) => { if (process.env.AF_MEASURE_OUT) fs.appendFileSync(process.env.AF_MEASURE_OUT, JSON.stringify(row) + "\n"); };
+    const afCheck = (rest, now, why) => {
+      assert.ok(Math.abs(now.tabs - rest.tabs) <= 1 && Math.abs(now.name - rest.name) <= 1, why + ": tab strip and name input stay at their pre-banner tops: " + JSON.stringify({ rest, now }));
+      assert.ok(Math.abs(now.panH - rest.panH) <= 1, why + ": the pan keeps its rest height: " + JSON.stringify({ rest, now }));
+      assert.deepStrictEqual(now.covered, [], why + ": no pan circle is covered at rest: " + JSON.stringify(now));
+      assert.ok(!now.banner || now.statusTop >= now.panBottom - 1 || now.statusTop >= now.panTop + now.panH - 1 || now.grid, why + ": the banner starts below the pan: " + JSON.stringify(now));
+      assert.ok(now.save <= Math.max(now.ih, rest.save) + 1, why + ": Save is pushed no further off screen than before the banner: " + JSON.stringify({ rest, now }));
+    };
+    for (const [w, h] of AF_INV_SIZES) {
+      for (const path of AF_INV_PATHS) {
+        test(`AF invariant ${w}x${h} ${path}: with the banner up the tab strip, name input, pan and Save stay where they rested`, async () => {
+          await fresh(w, h);
+          await openAdd();
+          await typeLine(NEO);
+          await afFrames();
+          await pause(300);
+          const rest = await afSnap();
+          await showBanner();
+          const shown = await afSnap();
+          let now = shown;
+          if (path === "say") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" }) + " " + t("editor.say.went_back", { name: "C4" })`);
+          if (path === "say-undo") await afRender(`editorSession.say = t("editor.say.went_back", { name: "Bb3" }); editorSession.plainSay = ""`);
+          if (path === "held") await afRender(`editorSession.held = { k: 0 }`);
+          if (path === "reflow") {
+            await b.eval(`document.getElementById("editor-conflict-msg").appendChild(document.createTextNode(" " + document.getElementById("editor-conflict-msg").textContent.repeat(2))); return true;`);
+            await afFrames();
+            await pause(250);
+          }
+          if (path === "error") {
+            await afRender(`editorSession.error = t("editor.empty")`);
+            afRecord({ variant: process.env.AF_VARIANT, w, h, path: "error-line", rest, now: await afSnap() });
+            await afRender(`editorSession.error = ""`);
+          }
+          if (path === "clear") {
+            await afRender(`editorSession.held = { k: 0 }`);
+            await afRender(`editorSession.held = null; editorSession.conflict = null`);
+          }
+          if (path === "rotate") {
+            await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" })`);
+            await b.setViewport(h, w, true);
+            await pause(500);
+            await b.setViewport(w, h, w < 700);
+            await afFrames();
+            await pause(500);
+          }
+          if (path === "lift") {
+            const from = await b.eval(`const c = document.querySelector("#editor-notes .tray-note"); c.scrollIntoView({ block: "nearest" }); const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+            await afFrames();
+            const before = await afSnap();
+            const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+            await touch("touchStart", from);
+            for (const k of [10, 20, 30]) await touch("touchMove", { x: from.x, y: from.y - k });
+            await b.waitFor(`document.getElementById("editor").classList.contains("dragging")`, { label: "the lift" });
+            await afFrames();
+            await pause(250);
+            const held = await afSnap();
+            afRecord({ variant: process.env.AF_VARIANT, w, h, path: "lift-held", rest: before, now: held });
+            assert.ok(Math.abs(held.panTop - before.panTop) <= 1, "the pan does not move under the finger at the lift: " + JSON.stringify({ before, held }));
+            await b.eval(`editorSession.conflict = "deleted"; editorRender(); return true;`);
+            await afFrames();
+            await pause(250);
+            const rendered = await afSnap();
+            afRecord({ variant: process.env.AF_VARIANT, w, h, path: "lift-render", rest: before, now: rendered });
+            assert.ok(Math.abs(rendered.panTop - before.panTop) <= 1, "a render during the drag (a cross-tab conflict) does not move the pan under the finger: " + JSON.stringify({ before, rendered }));
+            await touch("touchEnd");
+            await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
+            await afFrames();
+            await pause(250);
+          }
+          if (path !== "show") now = await afSnap();
+          afRecord({ variant: process.env.AF_VARIANT, w, h, path, rest, shown, now });
+          afCheck(rest, shown, "banner shown");
+          if (path === "lift" && now.grid) assert.ok(now.save <= now.ih, "phone landscape: Save is on screen after the drop: " + JSON.stringify(now));
+          else afCheck(rest, now, path);
+        });
+      }
+    }
+
+    const AF_PRE_CASES = [[320, 568, "de", "held"], [320, 568, "de", "say-empty"], [320, 568, "en", "say-empty"], [375, 667, "en", "say2-empty"], [390, 844, "de", "say2-empty"]];
+    for (const [w, h, lang, pre] of AF_PRE_CASES) {
+      test(`AF invariant pre-status ${w}x${h} ${lang} ${pre}: a multi-line status before the banner keeps the tab strip, name input, pan and Save where they rested`, async () => {
+        await fresh(w, h);
+        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+        await openAdd();
+        if (pre === "held") {
+          await typeLine(NEO);
+          await afRender(`editorSession.held = { k: 0 }`);
+        }
+        if (pre === "say-empty") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" })`);
+        if (pre === "say2-empty") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" }) + " " + t("editor.say.went_back", { name: "C4" })`);
+        await afFrames();
+        await pause(300);
+        const rest = await afSnap();
+        await showBanner();
+        const shown = await afSnap();
+        await afRender(`editorSession.conflict = null`);
+        const cleared = await afSnap();
+        afRecord({ variant: process.env.AF_VARIANT, w, h, path: "pre-" + lang + "-" + pre, rest, shown, now: cleared });
+        afCheck(rest, shown, "banner shown over a multi-line status");
+        afCheck(rest, cleared, "banner cleared back to the multi-line status");
+      });
+    }
+
+    const afPre = async (pre) => {
+      if (pre === "neo") await typeLine(NEO);
+      if (pre === "say-empty") await afRender(`editorSession.say = editorSession.plainSay = t("editor.say.went_back", { name: "Bb3" })`);
+      await afFrames();
+      await pause(300);
+    };
+    const AF_BASE_CASES = [[568, 320, 320, 568, "de"], [568, 320, 320, 568, "en"], [1024, 768, 768, 1024, "de"], [768, 1024, 320, 568, "de"]];
+    for (const [w, h, w2, h2, lang] of AF_BASE_CASES) {
+      test(`AF rest baseline ${w}x${h} to ${w2}x${h2} ${lang}: a banner raised at one size and carried to a stacked size holds the tab strip and name input at that size's rest`, async () => {
+        await fresh(w, h);
+        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+        await openAdd();
+        await afPre("say-empty");
+        await showBanner();
+        await b.setViewport(w2, h2, w2 < 700);
+        await afFrames();
+        await pause(500);
+        const up = await afSnap();
+        await afRender(`editorSession.conflict = null`);
+        const cleared = await afSnap();
+        afRecord({ variant: process.env.AF_VARIANT, w: w2, h: h2, path: "base-" + w + "x" + h + "-" + lang, rest: cleared, shown: up, now: cleared });
+        afCheck(cleared, up, "banner carried to " + w2 + "x" + h2);
+      });
+    }
+    test("AF rest baseline second session: a session opened after a taller-status session raises the banner against its own rest", async () => {
+      await fresh(320, 568);
+      await b.eval(`setLang("de"); return true;`);
+      await openAdd();
+      await afPre("say-empty");
+      await b.eval(`closeScaleSheet(); setLang("en"); return true;`);
+      await pause(300);
+      await b.setViewport(568, 320, true);
+      await pause(400);
+      await openAdd();
+      await afPre("neo");
+      await showBanner();
+      await b.setViewport(320, 568, true);
+      await afFrames();
+      await pause(500);
+      const up = await afSnap();
+      await afRender(`editorSession.conflict = null`);
+      const cleared = await afSnap();
+      afRecord({ variant: process.env.AF_VARIANT, w: 320, h: 568, path: "base-second-session", rest: cleared, shown: up, now: cleared });
+      afCheck(cleared, up, "second session banner");
+    });
+
+    for (const [w, h] of [[320, 568], [375, 667], [390, 844], [430, 932], [768, 1024]]) {
+      test(`AF lift then raise ${w}x${h}: a conflict first raised during a live drag leaves the pan under the finger, covers no circle, and settles at rest after the drop`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await afPre("neo");
+        const rest = await afSnap();
+        const from = await b.eval(`const c = document.querySelector("#editor-notes .tray-note"); c.scrollIntoView({ block: "nearest" }); const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        await afFrames();
+        const before = await afSnap();
+        const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+        await touch("touchStart", from);
+        for (const k of [10, 20, 30]) await touch("touchMove", { x: from.x, y: from.y - k });
+        await b.waitFor(`document.getElementById("editor").classList.contains("dragging")`, { label: "the lift" });
+        await afFrames();
+        await pause(250);
+        const held = await afSnap();
+        await b.eval(`editorSession.conflict = "changed"; editorRender(); return true;`);
+        await afFrames();
+        await pause(250);
+        const mid = await afSnap();
+        await touch("touchEnd");
+        await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
+        await afFrames();
+        await pause(300);
+        const after = await afSnap();
+        afRecord({ variant: process.env.AF_VARIANT, w, h, path: "lift-raise", rest, shown: mid, now: after, held, overlap: mid.panBottom - mid.statusTop });
+        assert.ok(Math.abs(mid.panTop - held.panTop) <= 1, "the pan does not move under the finger when the banner first shows mid-drag: " + JSON.stringify({ held, mid }));
+        assert.deepStrictEqual(mid.covered, [], "the mid-drag banner covers no pan circle: " + JSON.stringify(mid));
+        assert.ok(mid.statusTop >= mid.panBottom - 1, "the mid-drag banner starts below the pan: " + JSON.stringify(mid));
+        afCheck(rest, after, "after the drop with the banner up");
       });
     }
 
