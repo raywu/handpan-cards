@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1096,7 +1096,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1090,7 +1090,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
    #editor-status[data-idle]{clip-path:inset(50%)}
    #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
-   #editor-status:not([data-conflict]) button{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}
--  #editor-status:not([data-conflict]):has(button){padding-right:96px; min-height:34px}
-+  #editor-status:not([data-conflict]):has(button){padding-right:calc(50% + 56px); min-height:34px}
-   #editor-status[data-conflict]{position:absolute; right:0; top:0; bottom:auto; flex-wrap:wrap; padding:var(--sp-2) 12px; pointer-events:auto}
+   #editor-status button.mode{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}
+-  #editor-status:has(button){padding-right:96px; min-height:34px}
++  #editor-status:has(button){padding-right:calc(50% + 56px); min-height:34px}
    #scale-sheet.onepanel #editor:has(#editor-areas[hidden]){grid-template-areas:"head head" "pan line" "pan region" "pan bar" "pan ."; grid-template-rows:repeat(4, max-content) minmax(0,1fr)}
    #scale-sheet.onepanel #editor:has(#editor-areas[hidden]) :is(#editor-region, .editor-statusrow){margin-top:calc(4px - var(--sp-3))}
+   #editor .editor-panbox{grid-area:pan; position:sticky; top:var(--sp-4); align-self:start; z-index:1;

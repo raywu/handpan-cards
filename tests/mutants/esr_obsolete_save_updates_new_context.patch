@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15047,7 +15047,7 @@ async function editorSave(separate = false) {
-     const ownsSlot = !!base && base.selection.kind === "saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;
-     const command = separate ? { type: "save-as-separate" } : editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
-     const result = await commitSaved({ ...command, collectionId: separate || !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
+@@ -15227,7 +15227,7 @@ async function editorSave() {
+     const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
+     let retried = false;
+     let result = await commitSaved({ ...command, collectionId: !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
 -    if (generation !== sheetGeneration || !pageOpen) return;
 +    if (false) return;
-     if (!result.ok) {
-       if (result.kind === "conflict") {
-         await reconcileSavedCollection();
+     if (!result.ok && result.kind === "conflict") {
+       await reconcileSavedCollection();
+       retried = true;

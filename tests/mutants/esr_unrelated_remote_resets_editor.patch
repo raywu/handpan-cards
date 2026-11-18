@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15334,7 +15334,7 @@ savedSnapshotListener=event=>{
+@@ -15530,7 +15530,7 @@ savedSnapshotListener=event=>{
+     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
+     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);
      const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
-     if(changed && !savedEqual(target,editingBase.selection) && !(editingBase.selection.kind==="builtin" && target.kind==="saved" && target.id===savedState.slots[editingBase.selection.id])){
-       session.conflict=editorConflictKind();editorRender();
--    }else if(changed && latest){
-+    }else if(latest){
-       const tab=session.tab, wasArmed=session.delArmed;
+-    if(changed && editorTargetExists() && latest){
++    if(editorTargetExists() && latest){
+       const tab=session.tab, wasArmed=session.delArmed, from=sheetGeneration;
        beginSheetSession(latest,target);
-       editorClose();
+       editorRebind={from,to:sheetGeneration};

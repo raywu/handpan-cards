@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15296,7 +15296,6 @@ function updateSavedStatus() {
+@@ -15473,7 +15473,6 @@ function updateSavedStatus() {
    if(newer>0)text+=(text?" ":"")+t("saved.newer",{n:newer});
    if(el.textContent!==text)el.textContent=text;
    el.hidden=!text;temporary.hidden=savedMode!=="protected";temporary.textContent=t("saved.temporary");
 -  refreshMoveBanner();
  }
- async function deleteDeck(id) {
-   if(!editingBase)return;
+ let editorRebind=null;
+ function editorTargetExists(){

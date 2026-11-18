@@ -1,5 +1,5 @@
-# kills: Save as separate creates a second scale and keeps the original
-# suite: node --test --test-name-pattern ^Save.as.separate.creates.a.second.scale tests/editor_e2e.test.js
+# kills: CAS1 a Save refused because the scale changed elsewhere saves the draft as a new scale with no message
+# suite: node --test --test-name-pattern ^CAS1.a.Save.refused.because.the.scale.changed.elsewhere tests/editor_e2e.test.js
 # fault: Stale same-instance Edit no longer checks the captured revision.
 diff --git a/index.html b/index.html
 --- a/index.html

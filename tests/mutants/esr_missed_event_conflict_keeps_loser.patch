@@ -1,15 +1,14 @@
-# kills: SV11 U6: missed-event conflict preserves draft then Back shows the acknowledged winner
+# kills: SV11 U6: a missed-event conflict saves the draft as a new scale and keeps the acknowledged winner
 # suite: node --test --test-name-pattern ^SV11.U6: tests/app.test.js
-# fault: A failed stale Save never reconciles the acknowledged winner before the conflict is shown.
+# fault: A refused stale Save never reconciles the acknowledged winner before the automatic copy.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15024,7 +15024,7 @@
+@@ -15229,7 +15229,6 @@ async function editorSave() {
+     let result = await commitSaved({ ...command, collectionId: !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
      if (generation !== sheetGeneration || !pageOpen) return;
-     if (!result.ok) {
-       if (result.kind === "conflict") {
--        await reconcileSavedCollection();
-+
-         if (generation === sheetGeneration && editorSession === s) editorShowConflict();
-       } else if (result.kind !== "cancelled") s.error = savedErrorText(result);
-       return;
+     if (!result.ok && result.kind === "conflict") {
+-      await reconcileSavedCollection();
+       retried = true;
+       result = await commitSaved({ type: "save-as-separate", collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });
+       if (generation !== sheetGeneration || !pageOpen) return;

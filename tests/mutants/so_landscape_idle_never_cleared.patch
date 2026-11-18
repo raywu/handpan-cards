@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13854,7 +13854,6 @@ function editorRenderBody() {
-     status.removeAttribute("data-conflict");
-     status.removeAttribute("data-kind");
-   }
+@@ -13954,7 +13954,6 @@ function editorRenderBody() {
+   if (!s.error) s.lastError = "";
+   status.textContent = "";
+   status.removeAttribute("data-kind");
 -  status.removeAttribute("data-idle");
-   if (keptSeparate) {
-     status.setAttribute("data-conflict", s.conflict);
-     editorEl("editor-conflict-msg").textContent = t(editorConflictMessageKey(s.conflict));
+   if (s.error) {
+     status.setAttribute("data-kind", "error");
+     status.textContent = s.error;

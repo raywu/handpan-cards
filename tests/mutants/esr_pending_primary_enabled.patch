@@ -1,5 +1,5 @@
-# kills: both submit actions are disabled while Save as separate is pending
-# suite: node --test --test-name-pattern both.submit.actions.are.disabled tests/editor_e2e.test.js
+# kills: CAS7 Save stays disabled while the automatic copy waits
+# suite: node --test --test-name-pattern ^CAS7.Save.stays.disabled tests/editor_e2e.test.js
 # fault: The primary Save action stays enabled while a save is queued.
 diff --git a/index.html b/index.html
 --- a/index.html

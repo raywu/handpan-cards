@@ -1,16 +1,15 @@
-# kills: a Delete after the scale vanished elsewhere shows the deleted banner and a retry never deletes the fallback
-# suite: node --test --test-name-pattern ^a.Delete.after.the.scale.vanished.elsewhere tests/editor_e2e.test.js
-# A mutant: a clean editor rebinds to the fallback when its scale vanished.
-#
+# kills: CAS11 a Delete refused because the scale is gone closes the editor silently and never deletes the saved fallback; CAS15
+# suite: node --test --test-name-pattern ^CAS1[15].a.Delete tests/editor_e2e.test.js
+# fault: Every target counts as present, so a clean editor rebinds to the fallback when its scale vanished.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15332,7 +15332,7 @@ savedSnapshotListener=event=>{
-     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
-     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);
-     const changed=!savedEqual(target,editingBase.selection) || editingBase.collectionId!==savedState.collectionId || entry?.revision!==editingBase.revision;
--    if(changed && !savedEqual(target,editingBase.selection) && !(editingBase.selection.kind==="builtin" && target.kind==="saved" && target.id===savedState.slots[editingBase.selection.id])){
-+    if(false){
-       session.conflict=editorConflictKind();editorRender();
-     }else if(changed && latest){
-       const tab=session.tab, wasArmed=session.delArmed;
+@@ -15478,7 +15478,7 @@ function updateSavedStatus() {
+ let editorRebind=null;
+ function editorTargetExists(){
+   const sel=editingBase.selection,target=savedResolve(sel,savedState,savedEntries);
+-  return savedEqual(target,sel)||(sel.kind==="builtin"&&target.kind==="saved"&&target.id===savedState.slots[sel.id]);
++  return true;
+ }
+ async function deleteDeck(id) {
+   if(!editingBase)return;

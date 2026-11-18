@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15084,7 +15084,7 @@
+@@ -15204,7 +15204,7 @@ function editorDraftMoved(s, saved) {
    if (s.naming && editorSetName(saved, editorEl("editor-name").value).value !== saved) return true;
    return editorEl("editor-line").value.trim() !== editorLineText(saved);
  }
 -const editorHasChanges = (s) => editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present);
 +const editorHasChanges = (s) => editorIsDirty(s.base, s.history.present);
- async function editorSave(separate = false) {
-   separate = separate === true;
+ async function editorSave() {
    const s = editorSession;
+   if (!s || s.saving || savePending) return;
