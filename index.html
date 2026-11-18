@@ -14789,6 +14789,7 @@ function editorDragRestore() {
   root.classList.add("settling");
   clearTimeout(editorSettleTimer);
   editorSettleTimer = setTimeout(() => root.classList.remove("settling"), 250);
+  editorSaveIntoView();
 }
 function editorDragCancel() {
   if (editorDrag) editorDragEnd(null);
@@ -14985,8 +14986,8 @@ function editorDragEnd(e) {
   else if (plan.refuse) s.error = plan.refuse;
   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
   editorRender();
-  if (e) requestAnimationFrame(() => { if (!editorDrag || !editorDrag.live) { editorDragRestore(); editorSaveIntoView(); } });
-  else { editorDragRestore(); editorSaveIntoView(); }
+  if (e) requestAnimationFrame(() => { if (!editorDrag || !editorDrag.live) editorDragRestore(); });
+  else editorDragRestore();
 }
 function editorSaveIntoView() {
   const save = editorEl("editor-save");
