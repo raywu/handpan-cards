@@ -1,6 +1,7 @@
-# kills: CAS11 a Delete refused because the scale is gone closes the editor silently and never deletes the saved fallback; CAS15
-# suite: node --test --test-name-pattern ^CAS1[15].a.Delete tests/editor_e2e.test.js
+# kills: CAS11 a Delete refused because the scale is gone closes the editor silently and never deletes the saved fallback
+# suite: node --test --test-name-pattern ^CAS11 tests/editor_e2e.test.js
 # fault: Every target counts as present, so a clean editor rebinds to the fallback when its scale vanished.
+# note: CAS11 a Delete refused because the scale is gone closes the editor silently and never deletes the saved fallback; CAS15
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
