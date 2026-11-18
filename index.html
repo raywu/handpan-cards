@@ -13984,6 +13984,7 @@ function editorSyncConflictRow(reset) {
   const root = editorEl("editor");
   const status = editorEl("editor-status");
   if (!root || !status) return;
+  let scroll0 = root.scrollTop;
   const live = !!(editorDrag && editorDrag.live);
   status.style.top = live ? "0" : "";
   status.style.bottom = live ? "auto" : "";
@@ -13993,7 +13994,7 @@ function editorSyncConflictRow(reset) {
     root.style.removeProperty("--ed-conflict-row");
     root.style.removeProperty("--ed-conflict-region");
     root.classList.remove("conflict-row");
-    if (wasRaised) root.scrollTop = 0;
+    if (wasRaised) root.scrollTop = scroll0 = 0;
   }
   const row = status.parentElement;
   if (!editorStackedLayout()) return;
@@ -14015,7 +14016,7 @@ function editorSyncConflictRow(reset) {
   const grown = row.offsetHeight - editorConflictRowAt;
   if (grown) {
     editorConflictRowAt += grown;
-    root.scrollTop = Math.max(0, root.scrollTop + grown);
+    root.scrollTop = Math.max(0, scroll0 + grown);
   }
 }
 let editorConflictRowAt = 0, editorRestRowAt = 0, editorStatusObserver = null;
