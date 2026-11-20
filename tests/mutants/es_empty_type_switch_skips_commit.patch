@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13020,7 +13020,7 @@ function editorStagePanType(m, kind) {
+@@ -13156,7 +13156,7 @@
    if (old.ding) next.ding = old.ding;
    if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
    const staged = editorWithStage(m, next);
--  const done = editorStageCommit(staged, next);
+-  const done = editorStageSettle(staged, next);
 +  const done = { ok: false };
-   return done.ok ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
+   return done.ok || done.code === "NO_ROOM" ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
  }
  function editorNameEntry(name, zone, label) {

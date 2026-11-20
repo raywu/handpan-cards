@@ -2078,3 +2078,32 @@ test("RCF-15: a pan-type switch back to a stage that cannot commit is refused fo
   assert.strictEqual(r.code, "NO_ROOM");
   assert.strictEqual(r.same, true, "the Neotone stage and the parked Standard stage are untouched");
 });
+
+test("RCF-15: dragging a staged bottom note to another angle is never refused for room, and a refused drag step leaves the model byte for byte as it was", () => {
+  const a = app();
+  asSession(a, "new");
+  const r = plain(a.get(`(() => {
+    const pool = ["A2", "B2", "C3", "E3"], ANG = [undefined, 100, 200, 135], out = { moves: 0, refused: [], changed: 0 };
+    for (const ding of ["D3", "F3"]) {
+      const walk = (m, path, d) => {
+        const st = editorStageOf(m);
+        const keep = JSON.stringify(m);
+        if (st.bottom.length >= 2) for (let i = 0; i < st.bottom.length; i++) for (let ang = 0; ang < 360; ang += 30) {
+          const plan = editorDropPlan(m, { from: "pan", ref: { ring: "bottom", i } }, { kind: "spot", ring: "bottom", angle: ang });
+          if (!plan.step) continue;
+          out.moves++;
+          const res = plan.step(m);
+          if (!res.ok) out.refused.push(ding + path + " " + i + "->" + ang + " " + res.code);
+          if (JSON.stringify(m) !== keep) out.changed++;
+        }
+        if (d < 3) for (const b of pool.filter((x) => x !== ding)) if (!st.bottom.includes(b)) for (const g of ANG) { const q = editorPlace(m, "bottom", b, g); if (q.ok && editorIsEmpty(q.value)) walk(q.value, path + " " + b + "@" + g, d + 1); }
+      };
+      walk(editorReplaceDing(editorEmptyModel(), ding).value, "", 0);
+    }
+    out.refused = out.refused.slice(0, 5);
+    return out;
+  })()`));
+  assert.ok(r.moves > 1000, "the drags ran: " + r.moves);
+  assert.deepStrictEqual(r.refused, []);
+  assert.strictEqual(r.changed, 0);
+});
