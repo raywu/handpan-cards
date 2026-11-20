@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13009,7 +13009,7 @@
-     full.rim.push(pick);
-   }
-   const trial = editorStageCommit(m, full);
+@@ -13012,7 +13012,7 @@ function editorStageSettle(m, stage, landedKey) {
+   const done = editorStageCommit(m, stage, landedKey);
+   if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !editorStageAngles(stage)) return done;
+   const trial = editorStageCommit(m, editorStageTrial(stage));
 -  return trial.code === "NO_ROOM" ? trial : done;
 +  return done;
  }
- function editorStageCommit(m, stage, landedKey) {
-   const std = stage.kind === "standard";
+ // A remove can free the room a pin relied on. While the stage could not be completed, the first pin
+ // (tap order) whose clearing alone completes it is cleared, else the newest pin; a pin the commit keeps stays.
