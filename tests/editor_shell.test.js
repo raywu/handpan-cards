@@ -1908,3 +1908,48 @@ test("RCF-11: an add the pinned angle has no room for is refused, never silently
   a.run(`globalThis.__m = editorEmptyModel(); __m = editorPlace(__m, "bottom", "A2", 270).value; globalThis.__x = editorPlace(__m, "bottom", "B2", 270); true`);
   assert.strictEqual(a.get("__x.ok"), false);
 });
+
+const STAGE_SCENARIO = [["bottom", "A2"], ["bottom", "B2", 100], ["bottom", "C3"]];
+
+test("RCF-14: a free bottom note that would drop a staged pin is refused up front with the no-room words and nothing added", () => {
+  const a = app();
+  asSession(a, "new");
+  a.run(`globalThis.__m = editorReplaceDing(editorEmptyModel(), "D3").value; for (const [r, n, g] of ${JSON.stringify(STAGE_SCENARIO.slice(0, 2))}) __m = editorPlace(__m, r, n, g).value; globalThis.__r = editorPlace(__m, "bottom", "C3"); true`);
+  assert.strictEqual(a.get("__r.ok"), false);
+  assert.strictEqual(a.get("__r.code"), "NO_ROOM");
+  assert.deepStrictEqual(plain(a.get("__m.stage.bottom")), ["A2", "B2"], "nothing added");
+  assert.deepStrictEqual(plain(a.get("__m.stage.angles")), [270, 100]);
+});
+
+test("RCF-14: the preview of every accepted stage edit shows the stored pins, so the fifth note commits", () => {
+  const a = app();
+  asSession(a, "new");
+  a.run(`globalThis.__m = editorReplaceDing(editorEmptyModel(), "D3").value; for (const [r, n, g] of ${JSON.stringify(STAGE_SCENARIO)}) { const p = editorPlace(__m, r, n, g); if (p.ok) __m = p.value; } true`);
+  const shown = solvedOf(a);
+  assert.strictEqual(shown.A2.angle, 270);
+  assert.strictEqual(shown.B2.angle, 100);
+  a.run(`globalThis.__f = editorPlace(__m, "rim", "A3"); true`);
+  assert.strictEqual(a.get("__f.ok"), true, "no refusal at the fifth note");
+});
+
+test("RCF-14: over every tap order and angle choice of three bottom notes, all placements accepted means the commit is accepted", () => {
+  const a = app();
+  asSession(a, "new");
+  const bad = a.get(`(() => {
+    const names = ["A2", "B2", "C3"], choices = [undefined, 100, 200];
+    const perms = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+    const bad = [];
+    for (const p of perms) for (const c0 of choices) for (const c1 of choices) for (const c2 of choices) {
+      const cs = [c0, c1, c2];
+      for (const dingFirst of [true, false]) {
+      let m = dingFirst ? editorReplaceDing(editorEmptyModel(), "D3").value : editorEmptyModel(), ok = true;
+      for (const k of p) { const r = editorPlace(m, "bottom", names[k], cs[k]); if (!r.ok) { ok = false; break; } m = r.value; }
+      if (!ok) continue;
+      if (!dingFirst) { const r = editorReplaceDing(m, "D3"); if (!r.ok) { bad.push(p.join("") + ":" + cs.join(",") + ":ding"); continue; } m = r.value; }
+      for (const n of ["A3", "Bb3", "C4", "D4"]) { const r = editorPlace(m, "rim", n); if (!r.ok) { ok = false; bad.push(p.join("") + ":" + cs.join(",") + ":" + n); break; } m = r.value; }
+      }
+    }
+    return bad;
+  })()`);
+  assert.deepStrictEqual(plain(bad), []);
+});

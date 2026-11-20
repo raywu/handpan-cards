@@ -1,0 +1,15 @@
+# kills: RCF-14: a free bottom note that would drop a staged pin is refused up front with the no-room words and nothing added
+# suite: node --test --test-name-pattern RCF.14..a.free.bottom.note.that.would.drop tests/editor_shell.test.js
+# fault: The strict stage check runs only when the push itself carries an angle, so a free note after a staged pin is accepted and the preview silently drops the pin.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13203,7 +13203,7 @@ function editorAdd(m, ring, name, angle) {
+   if (m.options.profile) return editorNeoInsert(m, ring, name);
+   if (editorIsEmpty(m)) {
+     const staged = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
+-    const pinned = staged.ok && ring === "bottom" && editorIsEmpty(staged.value) ? editorStageAnglesOf(staged.value).lastIndexOf(true) : -1;
++    const pinned = staged.ok && Number.isFinite(angle) && ring === "bottom" && editorIsEmpty(staged.value) ? editorStageAnglesOf(staged.value).lastIndexOf(true) : -1;
+     return pinned !== -1 && (!editorGhostSolve(staged.value, true).ok || !editorStageFitsCommit(staged.value))
+       ? editorNoRoom(staged.value, "bottom", pinned, editorStageOf(staged.value).angles[pinned]) : staged;
+   }

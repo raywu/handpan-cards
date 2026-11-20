@@ -13189,13 +13189,23 @@ function editorGhostSolve(m, strict) {
   return { ok: true, value: { ...solved.value, fields: out, staged: true, hasDing } };
 }
 const editorPartsOf = (m) => Object.fromEntries(EDITOR_RINGS.map((ring) => [ring, editorNames(m, ring)]));
+// The preview seats the stage in tap order and the commit in pitch order, so a pinned stage is also
+// tried as the commit would build it (the ding and first rim note stand in until they are chosen).
+function editorStageFitsCommit(m) {
+  const stage = editorClone(editorStageOf(m));
+  if (!stage.ding) stage.ding = "D3";
+  if (!stage.rim.length) stage.rim = ["A3"];
+  return editorStageCommit(m, stage).code !== "NO_ROOM";
+}
+const editorStageAnglesOf = (m) => (editorStageOf(m).angles || []).map(Number.isFinite);
 function editorAdd(m, ring, name, angle) {
   if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
   if (m.options.profile) return editorNeoInsert(m, ring, name);
   if (editorIsEmpty(m)) {
     const staged = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
-    return staged.ok && Number.isFinite(angle) && ring === "bottom" && editorIsEmpty(staged.value) && !editorGhostSolve(staged.value, true).ok
-      ? editorNoRoom(staged.value, "bottom", editorNames(staged.value, "bottom").length - 1, angle) : staged;
+    const pinned = staged.ok && ring === "bottom" && editorIsEmpty(staged.value) ? editorStageAnglesOf(staged.value).lastIndexOf(true) : -1;
+    return pinned !== -1 && (!editorGhostSolve(staged.value, true).ok || !editorStageFitsCommit(staged.value))
+      ? editorNoRoom(staged.value, "bottom", pinned, editorStageOf(staged.value).angles[pinned]) : staged;
   }
   const parts = editorPartsOf(m);
   parts[ring].push(String(name));

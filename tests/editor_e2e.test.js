@@ -6451,6 +6451,37 @@ function run() {
       });
     });
 
+    describe("a staged pin is never dropped from the preview (round 3)", () => {
+      const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+      const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+      const spotAt = async (ring, deg) => clientOf(...polar(await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`), deg));
+      const dingAt = async () => clientOf(0, -(await b.eval(`return editorSolve(editorSession.history.present).value.geom.ding_dy;`)));
+      const tap = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
+      const bottoms = () => b.eval(`const s = editorSolve(editorSession.history.present); return Object.fromEntries(Object.values(s.value.fields).filter((f) => f[3] === "bottom").map((f) => [f[0] + f[1], f[4]]));`);
+
+      test("D3 ding, A2 free, B2 tapped at 100, then a free C3: the preview keeps both pins, the pushes are refused or all fit, and the fifth note commits", async () => {
+        await fresh();
+        await openAdd(3);
+        await b.click('.tray-note[data-name="D"]');
+        await tap(await dingAt());
+        await b.click("#editor-oct-down");
+        await b.click('.tray-note[data-name="A"]');
+        await place("bottom");
+        await b.click('.tray-note[data-name="B"]');
+        await tap(await spotAt("bottom", 100));
+        await b.click("#editor-oct-up");
+        await b.click('.tray-note[data-name="C"]');
+        await place("bottom");
+        const stage = await b.eval(`return editorSession.history.present.stage;`);
+        const shown = await bottoms();
+        assert.strictEqual(shown.A2, 270, "the preview keeps the 270 pin");
+        assert.strictEqual(shown.B2, 100, "the preview keeps the tapped pin");
+        await b.click('.tray-note[data-name="A"]');
+        await tap(await spotAt("rim", 20));
+        assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), false, "the fifth note committed: " + JSON.stringify(stage));
+      });
+    });
+
     for (const [w, h] of [[320, 568], [375, 667], [844, 390]]) {
       test(`L2 ${w}x${h}: the placeholder moves nothing and covers no pan circle`, async () => {
         await fresh(w, h);
