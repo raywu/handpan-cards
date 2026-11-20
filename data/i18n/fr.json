@@ -152,6 +152,7 @@
   "move.banner_label": "Handpan Theory a déménagé",
   "editor.line.aria": "Notes de la gamme : touchez pour saisir ou coller",
   "editor.name.aria": "Nom de la gamme",
+  "editor.name.auto": "Auto : {name}",
   "editor.pins_reset": "Positions fixées réinitialisées",
   "editor.undo": "Annuler",
   "editor.redo": "Rétablir",

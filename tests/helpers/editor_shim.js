@@ -15,7 +15,7 @@ const SHIM = `(() => {
     const model = editorModelFor(edit, kind);
     const failed = model.ok === false;
     const start = failed ? editorEmptyModel() : model;
-    editorSession = { history: editorHistoryNew(start), base: start, editing: false, error: failed ? reasonText(model) : "",
+    editorSession = { kind, history: editorHistoryNew(start), base: start, editing: false, error: failed ? reasonText(model) : "",
       notice: false, saving: false, dialog: false, held: null, sel: null, zone: null, say: "", tab: "scale", menu: false, naming: false, nameTouched: false };
     el("scale-box").value = failed || !edit ? "" : editorLineText(start);
     el("scale-name").value = start.options.name || "";

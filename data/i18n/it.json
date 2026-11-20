@@ -152,6 +152,7 @@
   "move.banner_label": "Handpan Theory si è spostato",
   "editor.line.aria": "Note della scala: tocca per scrivere o incollare",
   "editor.name.aria": "Nome della scala",
+  "editor.name.auto": "Autom.: {name}",
   "editor.pins_reset": "Fissaggi ripristinati",
   "editor.undo": "Annulla",
   "editor.redo": "Ripeti",

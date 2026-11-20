@@ -148,6 +148,7 @@
   "move.banner_label": "Handpan Theory は移転しました",
   "editor.line.aria": "スケールの音：タップして入力または貼り付け",
   "editor.name.aria": "スケール名",
+  "editor.name.auto": "自動: {name}",
   "editor.pins_reset": "固定をリセットしました",
   "editor.undo": "元に戻す",
   "editor.redo": "やり直す",
