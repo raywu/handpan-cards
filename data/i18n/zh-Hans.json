@@ -148,6 +148,7 @@
   "move.banner_label": "Handpan Theory 已迁移",
   "editor.line.aria": "音阶的音：点按以输入或粘贴",
   "editor.name.aria": "音阶名称",
+  "editor.name.auto": "自动：{name}",
   "editor.pins_reset": "固定位置已重置",
   "editor.undo": "撤销",
   "editor.redo": "重做",

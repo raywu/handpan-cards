@@ -204,12 +204,12 @@ test("U2c-3 (U2b nit 3): a typed seat order is honoured by a commit, as the lega
 test("U2c-4: the tray's octave and flats are model view state, one Undo step each, and never make the scale dirty (SE-14)", () => {
   const a = app();
   withModel(a, SCALE);
-  assert.deepStrictEqual(plain(a.get("editorView(__m)")), { flats: false, oct: 4 });
+  assert.deepStrictEqual(plain(a.get("editorView(__m)")), { flats: false, oct: 3 });
   a.run(`globalThis.__h = editorHistoryNew(__m); globalThis.__r = editorApply(__h, (m) => editorSetView(m, { flats: true })); true`);
   assert.strictEqual(a.get("__r.history.past.length"), 1);
-  assert.deepStrictEqual(plain(a.get("editorView(__r.history.present)")), { flats: true, oct: 4 });
+  assert.deepStrictEqual(plain(a.get("editorView(__r.history.present)")), { flats: true, oct: 3 });
   assert.strictEqual(a.get("editorIsDirty(__m, __r.history.present)"), false);
-  assert.deepStrictEqual(plain(a.get("editorView(editorUndo(__r.history).present)")), { flats: false, oct: 4 });
+  assert.deepStrictEqual(plain(a.get("editorView(editorUndo(__r.history).present)")), { flats: false, oct: 3 });
   a.run(`globalThis.__o = editorApply(__r.history, (m) => editorSetView(m, { oct: 5 })).history; true`);
   assert.strictEqual(a.get("__o.past.length"), 2);
   assert.strictEqual(a.get("editorExport(__o.present).s"), a.get("editorExport(__m).s"), "the export never carries the view");
@@ -1746,4 +1746,141 @@ describe("SO-R inventory", () => {
       }
     }
   });
+});
+
+/* ---- RCF: a new scale opens at octave 3 and its first bottom note keeps its place (TRI-59 rc-fixes) ---- */
+const asSession = (a, kind) => a.run(`editorSession = ${kind ? `{ kind: ${JSON.stringify(kind)} }` : "null"}; true`);
+const stageOf = (a, expr) => plain(a.get(`(${expr}).value.stage`));
+const placeAll = (a, calls) => a.run(`globalThis.__m = editorEmptyModel(); ${calls.map(([ring, name, angle]) => `__m = editorPlace(__m, ${JSON.stringify(ring)}, ${JSON.stringify(name)}${angle === undefined ? "" : ", " + angle}).value;`).join(" ")} true`);
+const RIM = ["A3", "Bb3", "C4", "D4", "E4"].map((n) => ["rim", n]);
+
+test("RCF-1: the editor's octave stepper opens on 3 for every model", () => {
+  const a = app();
+  assert.strictEqual(a.get("EDITOR_VIEW.oct"), 3);
+  assert.strictEqual(a.get("editorView(editorEmptyModel()).oct"), 3);
+  withModel(a, SCALE);
+  assert.strictEqual(a.get("editorView(__m).oct"), 3);
+});
+
+test("RCF-2: a new scale's first bottom note on the empty stage is staged at 270 and the stage carries the angle", () => {
+  const a = app();
+  asSession(a, "new");
+  placeAll(a, [["bottom", "A2"]]);
+  assert.deepStrictEqual(plain(a.get("__m.stage")), { kind: "standard", rim: [], inner: [], bottom: ["A2"], angles: [270] });
+  assert.strictEqual(solvedOf(a).A2.angle, 270, "the ghost draws it at 270");
+  placeAll(a, [["bottom", "A2"], ["bottom", "B2"]]);
+  assert.deepStrictEqual(plain(a.get("__m.stage.angles")), [270, null], "only the first pushed bottom note carries the default");
+});
+
+test("RCF-3: committing a staged new scale pins the 270 note, keeps it U1 and registers the pin", () => {
+  const a = app();
+  asSession(a, "new");
+  placeAll(a, [["bottom", "A2"], ["bottom", "B2"], ["ding", "D3"], ...RIM].filter(([r]) => r !== "ding"));
+  a.run(`__m = editorReplaceDing(__m, "D3").value; true`);
+  assert.strictEqual(plain(a.get("editorIsEmpty(__m)")), false);
+  assert.deepStrictEqual(plain(a.get("__m.options.angles")), { bottom: [270, null] });
+  assert.deepStrictEqual(plain(a.get("__m.pins")), [{ ring: "bottom", i: 0 }]);
+  assert.strictEqual(a.get("__m.stage"), undefined);
+  const sol = solvedOf(a);
+  assert.strictEqual(sol.A2.angle, 270);
+  assert.strictEqual(sol.A2.label, "U1");
+});
+
+test("RCF-4: a committed new scale with no bottom notes takes the 270 default on its first bottom placement only", () => {
+  const a = app();
+  asSession(a, "new");
+  withModel(a, SCALE);
+  a.run(`globalThis.__p = editorPlace(__m, "bottom", "A2"); true`);
+  assert.deepStrictEqual(plain(a.get("__p.value.options.angles")), { bottom: [270] });
+  assert.deepStrictEqual(plain(a.get("__p.value.pins")), [{ ring: "bottom", i: 0 }]);
+  a.run(`globalThis.__q = editorPlace(__p.value, "bottom", "B2"); true`);
+  const sol = solvedOf(a, "__q.value");
+  assert.strictEqual(sol.A2.angle, 270, "the second note leaves the 270 note where it is");
+  assert.strictEqual(sol.A2.label, "U1", "and the 270 note stays U1");
+  assert.notStrictEqual(sol.B2.angle, 270);
+});
+
+test("RCF-5: the default is for a NEW scale only, in both directions", () => {
+  for (const kind of ["saved", "builtin", null]) {
+    const a = app();
+    asSession(a, kind);
+    withModel(a, SCALE);
+    assert.strictEqual(a.get(`editorPlace(__m, "bottom", "A2").value.options.angles`), undefined, String(kind));
+    a.run(`globalThis.__m = editorEmptyModel(); __m = editorPlace(__m, "bottom", "A2").value; true`);
+    assert.strictEqual(a.get("__m.stage.angles"), undefined, "no stage angles for " + kind);
+  }
+  const a = app();
+  asSession(a, "new");
+  withModel(a, SCALE);
+  assert.deepStrictEqual(plain(a.get(`editorPlace(__m, "bottom", "A2").value.options.angles`)), { bottom: [270] });
+});
+
+test("RCF-6: typed-then-tapped, a loaded scale and the typed line never get the default", () => {
+  const a = app();
+  asSession(a, "new");
+  withModel(a, "[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5");
+  const tapped = plain(a.get(`editorPlace(__m, "bottom", "C3")`));
+  asSession(a, null);
+  assert.deepStrictEqual(tapped, plain(a.get(`editorPlace(__m, "bottom", "C3")`)), "same as with no session at all");
+  asSession(a, "new");
+  a.run(`globalThis.__m = editorCommitText(editorEmptyModel(), "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4").value; true`);
+  assert.strictEqual(a.get("__m.options.angles"), undefined, "the typed line stores no angle");
+});
+
+test("RCF-7: a tapped or dragged bottom angle is kept on the empty stage and wins over the default, in every session", () => {
+  for (const kind of ["new", "saved", null]) {
+    const a = app();
+    asSession(a, kind);
+    placeAll(a, [["bottom", "A2", 100], ["bottom", "B2"]]);
+    const want = kind === "new" ? [100, null] : [100, null];
+    assert.deepStrictEqual(plain(a.get("__m.stage.angles")), want, String(kind));
+    placeAll(a, [["bottom", "A2", 100], ["bottom", "B2", 200], ["rim", "A3"], ["rim", "Bb3"], ["rim", "C4"], ["rim", "D4"]]);
+    a.run(`__m = editorReplaceDing(__m, "D3").value; true`);
+    assert.deepStrictEqual(plain(a.get("__m.options.angles")), { bottom: [100, 200] }, String(kind));
+  }
+});
+
+test("RCF-8: staged bottom angles stay aligned through set, swap and remove", () => {
+  const a = app();
+  asSession(a, "new");
+  placeAll(a, [["bottom", "A2", 100], ["bottom", "B2", 200], ["bottom", "C3", 300]]);
+  a.run(`__m = editorReplace(__m, "bottom", 1, "G2").value; true`);
+  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["A2", "G2", "C3"], [100, 200, 300]], "set keeps the slot's angle");
+  a.run(`__m = editorSwapNames(__m, { ring: "bottom", i: 0 }, { ring: "bottom", i: 2 }).value; true`);
+  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["C3", "G2", "A2"], [100, 200, 300]], "swap trades names, each slot keeps its angle");
+  a.run(`__m = editorRemove(__m, "bottom", 0).value; true`);
+  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["G2", "A2"], [200, 300]]);
+  a.run(`__m = editorRemove(editorRemove(__m, "bottom", 0).value, "bottom", 0).value; true`);
+  assert.strictEqual(a.get("__m.stage.angles"), undefined, "the key is omitted when no angle is left");
+});
+
+test("RCF-9: Neotone is excluded, and a staged Neotone switched back to Standard gets no default", () => {
+  const a = app();
+  asSession(a, "new");
+  a.run(`globalThis.__m = editorPanType(editorEmptyModel(), "neotone").value; for (const n of ["A3", "B3"]) __m = editorPlace(__m, "rim", n).value; __m = editorPlace(__m, "bottom", "A2").value; true`);
+  assert.strictEqual(a.get("__m.stage.angles"), undefined);
+  assert.strictEqual(a.get("editorSetAngle(__m, 'bottom', 0, 100).ok"), false, "editorSetAngle refuses a Neotone model");
+  a.run(`__m = editorPanType(__m, "standard").value; true`);
+  assert.strictEqual(a.get("__m.stage.angles"), undefined, "switched back: no default");
+  assert.deepStrictEqual(plain(a.get("__m.stage.bottom")), ["A2"]);
+});
+
+test("RCF-10: Reset spacing undoes the default, and retyping the line says Pins reset", () => {
+  const a = app();
+  asSession(a, "new");
+  withModel(a, SCALE);
+  a.run(`globalThis.__m = editorPlace(__m, "bottom", "A2").value; true`);
+  assert.strictEqual(plain(a.get("editorResetLabel(__m, null, null).enabled")), true);
+  a.run(`globalThis.__r = editorResetSpacing(__m, ["bottom"]).value; true`);
+  assert.strictEqual(a.get("__r.options.angles"), undefined);
+  assert.strictEqual(solvedOf(a, "__r").A2.angle, 90);
+  const retyped = plain(a.get(`editorCommitText(__m, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 | C5 D5")`));
+  assert.deepStrictEqual(retyped.notice, { pinsReset: true });
+});
+
+test("RCF-11: an add the pinned angle has no room for is refused, never silently unpinned", () => {
+  const a = app();
+  asSession(a, "new");
+  a.run(`globalThis.__m = editorEmptyModel(); __m = editorPlace(__m, "bottom", "A2", 270).value; globalThis.__x = editorPlace(__m, "bottom", "B2", 270); true`);
+  assert.strictEqual(a.get("__x.ok"), false);
 });

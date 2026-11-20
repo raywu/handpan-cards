@@ -71,9 +71,10 @@ function run() {
     await b.waitFor(`${APP_READY_EXPR} && booted === true && document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
       { timeout: 15000, label: "the app to boot" });
   }
-  const openAdd = async () => {
+  const openAdd = async (oct = 4) => {
     await b.eval(`openScaleSheet(addChip); return true;`);
     await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor panel" });
+    if (oct !== 3) await b.eval(`const h = editorSession.history; h.present.view = { ...h.present.view, oct: ${oct} }; editorRender(); return true;`);
   };
   const openBuiltin = async () => {
     await b.eval(`const d = allDeckViews().find((v) => savedEqual(v.selection, selection)).deck; openEditSheet(d, addChip); return true;`);
@@ -295,7 +296,7 @@ function run() {
       await tapPoint(await spotAt("rim", 135), true);
       await b.click('.tray-note[data-name="A"]');
       await tapPoint(await spotAt("bottom", 90), true);
-      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o] }, await statusText());
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o], angles: [90] }, await statusText());
       await b.click("#editor-type-neotone");
       assert.deepStrictEqual(await stageOf(), { kind: "neotone", ding: "C" + o, main: ["D" + o, "E" + o], mutant: ["A" + o] }, await statusText());
       const shape = await b.eval(`const map = editorSession.history.present.options.profile.map; return [map.slice(0, 9).filter(Boolean).length, map.slice(9).filter(Boolean).length, [...document.querySelectorAll("#editor-pan svg text")].map((e) => e.textContent).join(" ")];`);
@@ -306,7 +307,7 @@ function run() {
       assert.deepStrictEqual(help, ["Mutant notes pair with tonefields: note N goes in tonefield N."]);
       await b.click("#editor-hint-close");
       await b.click("#editor-type-standard");
-      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o] });
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o], angles: [90] });
       assert.strictEqual(await stillEmpty(), true);
     });
 
@@ -1196,7 +1197,7 @@ function run() {
         await place("bottom");
         let m = await model();
         assert.strictEqual(Object.values(m.fields).filter((f) => f[3] === "bottom").length, 1);
-        assert.strictEqual(m.options.angles, undefined, "an area add is auto, never pinned");
+        assert.deepStrictEqual(m.options.angles, { bottom: [270] }, "the first bottom note of a new scale is stored at 270 (rc-fixes L3-C)");
         await hold("C");
         for (let k = 0; k < 3; k++) await b.click("#editor-oct-up");
         await place("inner");
@@ -3686,11 +3687,12 @@ function run() {
       await typeLine(BOTTOMS);
       const auto = await b.eval(`return editorAutoName(editorSession.history.present);`);
       assert.ok(auto.length > 0);
-      assert.strictEqual(await placeholder(), auto);
+      const hint = (name) => b.eval(`return t("editor.name.auto", { name: ${JSON.stringify(name)} });`);
+      assert.strictEqual(await placeholder(), await hint(auto));
       assert.strictEqual(await nameIs(), "", "the field itself stays blank until a name is typed");
       await b.click("#editor-type-neotone");
       const neo = await placeholder();
-      assert.strictEqual(neo, auto + " Neotone Mutant");
+      assert.strictEqual(neo, await hint(auto + " Neotone Mutant"));
     });
 
     test("Enter commits the name as one Undo step, drops the keyboard, and Undo takes it back", async () => {
@@ -3901,7 +3903,8 @@ function run() {
       await openAdd();
       await typeLine(BOTTOMS);
       await b.click("#editor-type-neotone");
-      const shown = await placeholder();
+      const shown = await b.eval(`return editorAutoName(editorSession.history.present);`);
+      assert.strictEqual(await placeholder(), await b.eval(`return t("editor.name.auto", { name: ${JSON.stringify(shown)} });`));
       await b.click("#editor-save");
       await closed();
       const seeded = await lastSaved();
@@ -6297,6 +6300,151 @@ function run() {
       assert.strictEqual(await b.eval(`return editorSession === null;`), true);
       assert.strictEqual(await sawBanner(), false);
       assert.strictEqual(await savedCount(), 0, "nothing else was deleted");
+    });
+  });
+
+  describe("RC fixes: octave 3, the name placeholder and the first bottom note (TRI-59 rc-fixes)", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const LANGS = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+    const placeholder = () => b.eval(`return document.getElementById("editor-name").placeholder;`);
+    const octave = () => b.eval(`return document.getElementById("editor-oct").textContent;`);
+    const bottomAngles = () => b.eval(`const a = editorSession.history.present.options.angles; return a && a.bottom ? a.bottom : null;`);
+    const kind = () => b.eval(`return editorSession.kind;`);
+
+    test("L1 every editor opens on octave 3: Add, a built-in, and the accessible name", async () => {
+      await fresh();
+      await openAdd(3);
+      assert.strictEqual(await octave(), "3");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-oct").getAttribute("aria-label");`), "Octave 3");
+      await b.click("#editor-back");
+      await openBuiltin();
+      assert.strictEqual(await octave(), "3");
+    });
+
+    test("L1 tapping a tray chip on a new scale places an octave 3 note", async () => {
+      await fresh();
+      await openAdd(3);
+      await b.click('.tray-note[data-name="D"]');
+      assert.strictEqual(await b.eval(`return editorSession.held.k !== undefined && editorHeldName();`), "D3");
+    });
+
+    test("L2 the name box hints the auto name once the scale is valid, and stays empty while the stage is empty or only staged", async () => {
+      await fresh();
+      await openAdd(3);
+      assert.strictEqual(await placeholder(), "");
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), true, "only staged");
+      assert.strictEqual(await placeholder(), "", "no hint while only staged");
+      await b.click("#editor-back");
+      await b.eval(`const d = document.getElementById("editor-dialog"); if (d && !d.hasAttribute("hidden")) { const x = d.querySelector("button"); if (x) x.click(); } return true;`);
+      await fresh();
+      await openAdd(3);
+      await typeLine(SCALE);
+      const auto = await b.eval(`return editorAutoName(editorSession.history.present);`);
+      assert.strictEqual(await placeholder(), await b.eval(`return t("editor.name.auto", { name: ${JSON.stringify(auto)} });`));
+      assert.strictEqual(await placeholder(), "Auto: " + auto);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "", "the box itself stays empty");
+      assert.strictEqual(await b.eval(`return editorSession.history.present.options.name || "";`), "", "the hint is never stored");
+    });
+
+    test("L3 a new scale's first tapped bottom note is stored at 270 and registered as a pin; a second note keeps it U1", async () => {
+      await fresh();
+      await openAdd(3);
+      await typeLine(SCALE);
+      assert.strictEqual(await kind(), "new");
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.deepStrictEqual(await bottomAngles(), [270]);
+      assert.strictEqual(await b.eval(`return editorSession.history.present.pins.some((p) => p.ring === "bottom");`), true);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-reset").disabled;`), false, "Reset spacing is enabled");
+      await b.click('.tray-note[data-name="B"]');
+      await place("bottom");
+      const r = await b.eval(`const f = editorSolve(editorSession.history.present).value.fields; const o = {}; for (const id of Object.keys(f)) if (f[id][3] === "bottom") o[f[id][0] + f[id][1]] = { a: f[id][4], l: f[id][5] }; return o;`);
+      assert.strictEqual(r.A3.a, 270);
+      assert.strictEqual(r.A3.l, "U1");
+    });
+
+    test("L3 on the empty stage a new scale's first bottom note is staged at 270 and the ghost draws it there", async () => {
+      await fresh();
+      await openAdd(3);
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.deepStrictEqual(await b.eval(`return editorSession.history.present.stage.angles;`), [270]);
+      assert.strictEqual(await b.eval(`const f = editorSolve(editorSession.history.present).value.fields; return Object.values(f).find((x) => x[3] === "bottom")[4];`), 270);
+    });
+
+    test("L3 editing a saved scale and a built-in never takes the default, a typed bottom never does either", async () => {
+      await fresh();
+      await openBuiltin();
+      assert.strictEqual(await kind(), "builtin");
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.strictEqual(await bottomAngles(), null);
+      await b.click("#editor-back");
+      await fresh();
+      await openAdd(3);
+      await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+      const expected = await b.eval(`const keep = editorSession, m = keep.history.present; editorSession = null; const r = editorPlace(m, "bottom", "B3"); editorSession = keep; return r.value.options.angles.bottom;`);
+      await b.click('.tray-note[data-name="B"]');
+      await place("bottom");
+      assert.deepStrictEqual(await bottomAngles(), expected, "the same as a placement with no new-scale session");
+    });
+
+    test("L3 a Save that keeps the editor open ends the new-scale default", async () => {
+      await fresh();
+      await openAdd(3);
+      await typeLine(SCALE);
+      await b.eval(`window.__sv = editorSave(); document.getElementById("editor-line").value = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"; return true;`);
+      await b.waitFor(`!!editorSession && editorSession.kind === "saved"`, { label: "the session to stop being new" });
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.strictEqual(await bottomAngles(), null);
+    });
+
+    for (const [w, h] of [[320, 568], [375, 667], [844, 390]]) {
+      test(`L2 ${w}x${h}: the placeholder moves nothing and covers no pan circle`, async () => {
+        await fresh(w, h);
+        await openAdd(3);
+        await b.eval(`return document.fonts.ready.then(() => true);`);
+        await typeLine(SCALE);
+        await pause(250);
+        const geo = () => b.eval(`const inerts = [...document.querySelectorAll("[inert]")]; inerts.forEach((e) => e.removeAttribute("inert"));
+          try {
+            const R = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.width, r.height]; };
+            const pan = document.getElementById("editor-pan"), q = pan.getBoundingClientRect();
+            const pts = [[0.5, 0.5], [0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]].map(([fx, fy]) => { const h = document.elementFromPoint(q.left + q.width * fx, q.top + q.height * fy); return !!h && pan.contains(h); });
+            return { name: R(document.getElementById("editor-name")), tabs: R(document.getElementById("editor-tabs")), pts };
+          } finally { inerts.forEach((e) => e.setAttribute("inert", "")); }`);
+        const withHint = await geo();
+        assert.match(await placeholder(), /^Auto: /);
+        await b.eval(`document.getElementById("editor-name").placeholder = ""; return true;`);
+        const rest = await geo();
+        for (const k of ["name", "tabs"]) withHint[k].forEach((v, i) => assert.ok(Math.abs(v - rest[k][i]) <= 1, `${k}[${i}] ${v} vs ${rest[k][i]}`));
+        assert.deepStrictEqual(withHint.pts, [true, true, true, true, true], "the pan is hit at its centre and four insets");
+      });
+    }
+
+    describe("with real fonts", () => {
+      let saved = null;
+      before(async () => { saved = b; b = await launch({ foregroundSettle: true, realFonts: true }); });
+      after(async () => { const mine = b; b = saved; await mine.close(); });
+      for (const lang of LANGS) {
+        test(`L2 ${lang} 320x568: the placeholder text fits the name box on one line`, async () => {
+          await fresh(320, 568);
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          await openAdd(3);
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          await typeLine("[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5");
+          await pause(250);
+          const r = await b.eval(`const n = document.getElementById("editor-name"), c = getComputedStyle(n), cv = document.createElement("canvas").getContext("2d");
+            cv.font = c.fontStyle + " " + c.fontWeight + " " + c.fontSize + " " + c.fontFamily;
+            const inner = n.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight);
+            return { text: n.placeholder, w: cv.measureText(n.placeholder).width, inner };`);
+          assert.ok(r.text.length > 0 && r.w <= r.inner, lang + ": " + JSON.stringify(r));
+          assert.strictEqual(r.text, await b.eval(`return t("editor.name.auto", { name: editorAutoName(editorSession.history.present) });`));
+        });
+      }
     });
   });
 
