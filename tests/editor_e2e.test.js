@@ -6402,6 +6402,55 @@ function run() {
       assert.strictEqual(await bottomAngles(), null);
     });
 
+    describe("staged bottom notes tapped out of pitch order (review round 1)", () => {
+      const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+      const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+      const spotAt = async (ring, deg) => clientOf(...polar(await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`), deg));
+      const dingAt = async () => clientOf(0, -(await b.eval(`return editorSolve(editorSession.history.present).value.geom.ding_dy;`)));
+      const tap = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
+      const solved = () => b.eval(`const s = editorSolve(editorSession.history.present); return Object.fromEntries(Object.values(s.value.fields).filter((f) => f[3] === "bottom").map((f) => [f[0] + f[1], [f[4], f[5]]]));`);
+      const buildTop = async () => {
+        await b.click('.tray-note[data-name="D"]');
+        await tap(await dingAt());
+        for (const [n, deg] of [["A", 20], ["B", 60], ["C", 100], ["D", 140]]) {
+          await b.click('.tray-note[data-name="' + n + '"]');
+          await tap(await spotAt("rim", deg));
+        }
+      };
+
+      test("tapped angles: A at 100 then a lower C at 200 keep their angles when the scale completes", async () => {
+        await fresh();
+        await openAdd(3);
+        await b.click('.tray-note[data-name="A"]');
+        await tap(await spotAt("bottom", 100));
+        await b.click("#editor-oct-down");
+        await b.click('.tray-note[data-name="C"]');
+        await tap(await spotAt("bottom", 200));
+        await b.click("#editor-oct-up");
+        const preview = await solved();
+        await buildTop();
+        assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), false, "the scale completed");
+        const after = await solved();
+        assert.deepStrictEqual([after.A3[0], after.C2[0]], [preview.A3[0], preview.C2[0]], "no swap at commit");
+        assert.deepStrictEqual([after.A3[0], after.C2[0]], [100, 200]);
+      });
+
+      test("the 270 default stays on the note pushed first when a lower note follows", async () => {
+        await fresh();
+        await openAdd(3);
+        await b.click('.tray-note[data-name="A"]');
+        await place("bottom");
+        await b.click("#editor-oct-down");
+        await b.click('.tray-note[data-name="C"]');
+        await place("bottom");
+        await b.click("#editor-oct-up");
+        await buildTop();
+        assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), false, "the scale completed");
+        const after = await solved();
+        assert.deepStrictEqual(after.A3, [270, "U1"]);
+      });
+    });
+
     for (const [w, h] of [[320, 568], [375, 667], [844, 390]]) {
       test(`L2 ${w}x${h}: the placeholder moves nothing and covers no pan circle`, async () => {
         await fresh(w, h);

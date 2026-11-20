@@ -13014,7 +13014,15 @@ function editorStageTidyAngles(st) {
   const list = Array.from({ length: st.bottom.length }, (_, k) => (st.angles[k] === undefined ? null : st.angles[k]));
   if (list.every((a) => a === null)) delete st.angles; else st.angles = list;
 }
-const editorStageAngles = (st) => (st.angles && st.angles.some((a) => a !== null) ? { bottom: st.angles.slice() } : null);
+// The engine seats a loaded bottom ring in pitch order, so the commit hands it the angles in that order;
+// the ghost seats its stand-in notes in tap order and takes them as stored.
+const editorStageAngles = (st, tapOrder) => {
+  if (!st.angles || !st.angles.some((a) => a !== null)) return null;
+  if (tapOrder) return { bottom: st.angles.slice() };
+  const midi = (n) => editorNameEntry(n, "bottom")[2];
+  const order = st.bottom.map((n, k) => k).sort((x, y) => midi(st.bottom[x]) - midi(st.bottom[y]));
+  return { bottom: order.map((k) => st.angles[k]) };
+};
 const editorStageRepeat = (a, b) => ({ ok: false, code: "NOTE_REPEATED", reason: HPE.core.REASONS.NOTE_REPEATED.reason.split("<A>").join(a).split("<B>").join(b) });
 // Placing a note in a ring the stage already holds, or on the rim and cyclops together, is
 // the engine's NOTE_REPEATED; a bottom copy of a top note is allowed.
@@ -13162,7 +13170,7 @@ function editorGhostSolve(m, strict) {
     fillBottom.forEach((n, k) => { if (n) map[NEO_MAIN + k] = editorNeoKeyOfName("bottom", n).key; });
     options = { ...options, profile: { ...options.profile, map } };
   }
-  const staged = std && editorStageAngles(st);
+  const staged = std && editorStageAngles(st, true);
   const place = staged && { ...options, angles: { bottom: Array.from({ length: fillBottom.length }, (_, k) => (staged.bottom[k] === undefined ? null : staged.bottom[k])) } };
   const loaded = editorLoad(text, place || options);
   if (!loaded.ok) return loaded;

@@ -1832,12 +1832,36 @@ test("RCF-7: a tapped or dragged bottom angle is kept on the empty stage and win
     const a = app();
     asSession(a, kind);
     placeAll(a, [["bottom", "A2", 100], ["bottom", "B2"]]);
-    const want = kind === "new" ? [100, null] : [100, null];
-    assert.deepStrictEqual(plain(a.get("__m.stage.angles")), want, String(kind));
+    assert.deepStrictEqual(plain(a.get("__m.stage.angles")), [100, null], String(kind));
     placeAll(a, [["bottom", "A2", 100], ["bottom", "B2", 200], ["rim", "A3"], ["rim", "Bb3"], ["rim", "C4"], ["rim", "D4"]]);
     a.run(`__m = editorReplaceDing(__m, "D3").value; true`);
     assert.deepStrictEqual(plain(a.get("__m.options.angles")), { bottom: [100, 200] }, String(kind));
   }
+});
+
+test("RCF-12: staged bottom notes tapped out of pitch order keep their own angles through the commit", () => {
+  const a = app();
+  asSession(a, "new");
+  placeAll(a, [["bottom", "A2", 100], ["bottom", "C2", 200], ["rim", "A3"], ["rim", "Bb3"], ["rim", "C4"], ["rim", "D4"]]);
+  const before = solvedOf(a);
+  assert.deepStrictEqual([before.A2.angle, before.C2.angle], [100, 200], "the preview");
+  a.run(`__m = editorReplaceDing(__m, "D3").value; true`);
+  assert.strictEqual(a.get("editorIsEmpty(__m)"), false);
+  assert.deepStrictEqual(plain(a.get("__m.options.angles")), { bottom: [200, 100] }, "stored in the engine's pitch order");
+  const after = solvedOf(a);
+  assert.deepStrictEqual([after.A2.angle, after.C2.angle], [100, 200], "the committed scale");
+});
+
+test("RCF-13: the 270 default stays on the note pushed first when a lower note follows it", () => {
+  const a = app();
+  asSession(a, "new");
+  placeAll(a, [["bottom", "A2"], ["bottom", "C2"], ["rim", "A3"], ["rim", "Bb3"], ["rim", "C4"], ["rim", "D4"]]);
+  const before = solvedOf(a);
+  assert.deepStrictEqual([before.A2.angle, before.A2.label], [270, "U1"], "the preview");
+  a.run(`__m = editorReplaceDing(__m, "D3").value; true`);
+  const after = solvedOf(a);
+  assert.deepStrictEqual([after.A2.angle, after.A2.label], [270, "U1"], "the committed scale");
+  assert.deepStrictEqual(plain(a.get("__m.pins")), [{ ring: "bottom", i: 1 }]);
 });
 
 test("RCF-8: staged bottom angles stay aligned through set, swap and remove", () => {
