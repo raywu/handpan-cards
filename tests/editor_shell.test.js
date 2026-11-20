@@ -2179,6 +2179,9 @@ const RCF16_SCAN = (cfg) => `(() => {
         const st = editorStageOf(m);
         st.bottom.forEach((n, i) => { const q = editorRemove(m, "bottom", i); if (!q.ok) { out.removeRefused.push(path + " rm " + n); return; }
           if (editorIsEmpty(q.value)) { out.dingSet++; const d = editorReplaceDing(q.value, ding); if (!d.ok && d.code === "NO_ROOM" && out.late.length < 5) out.late.push(path + " rm " + n + " ding " + ding + " => " + d.reason); } });
+        for (const ring of ["rim", "inner"]) st[ring].forEach((n, i) => { out.rimInnerRm++; const q = editorRemove(m, ring, i); if (!q.ok) { out.removeRefused.push(path + " rm " + ring + " " + n); return; }
+          if (editorIsEmpty(q.value)) { const d = editorReplaceDing(q.value, ding); if (!d.ok && d.code === "NO_ROOM" && out.late.length < 5) out.late.push(path + " rm " + ring + " " + n + " ding " + ding + " => " + d.reason); } });
+        if (depth < cfg.dingUnset) for (const [ring, n] of [["rim", "E4"], ["rim", "A4"], ["inner", "F5"]]) if (!st.rim.includes(n) && !st.inner.includes(n)) { const q = editorPlace(m, ring, n); if (q.ok && editorIsEmpty(q.value)) wk(q.value, path + " " + ring + " " + n, depth + 1); }
         if (depth < cfg.dingUnset) for (const b of pool) if (!st.bottom.includes(b)) for (const g of cfg.angles) { const q = editorPlace(m, "bottom", b, g === null ? undefined : g); if (q.ok && editorIsEmpty(q.value)) wk(q.value, path + " " + b + "@" + g, depth + 1); }
       };
       wk(editorEmptyModel(), "(unset " + ding + ")", 0);
@@ -2245,7 +2248,7 @@ test("RCF-16: over 14 dings and every push and remove path to depth 5, a remove 
   assert.deepStrictEqual(r.mismatch, [], "preview and commit disagree on a pinned angle");
   assert.ok(r.cleared >= 1000, "removes that cleared a pin: " + r.cleared);
   assert.ok(r.dingSet > 100, "ding-unset removes reached a ding set: " + r.dingSet);
-  assert.ok(r.rimInnerRm >= 0);
+  assert.ok(r.rimInnerRm > 100, "rim and inner removes ran: " + r.rimInnerRm);
 });
 
 test("RCF-16: the clear is minimal and never clears a pin the commit would keep", () => {
