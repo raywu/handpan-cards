@@ -1,4 +1,4 @@
-# kills: staged bottom notes tapped out of pitch order keep their own angles through the commit
+# kills: RCF-12: staged bottom notes tapped out of pitch order keep their own angles through the commit
 # suite: node --test --test-name-pattern staged.bottom.notes.tapped.out.of.pitch.order tests/editor_shell.test.js
 # fault: The commit hands the engine the stage angles in tap order instead of the order the engine seats the bottom ring (pitch).
 diff --git a/index.html b/index.html
