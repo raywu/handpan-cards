@@ -12983,10 +12983,33 @@ function editorWithStage(m, stage) {
   return { ...m, options, stage };
 }
 // A stage edit: the edit may refuse (a result with ok false) or change the cloned stage.
-function editorStageEdit(m, edit, landedKey) {
+function editorStageEdit(m, edit, landedKey, lenient) {
   const stage = editorClone(editorStageOf(m));
   const res = edit(stage);
-  return res && res.ok === false ? res : editorStageCommit(m, stage, landedKey);
+  if (res && res.ok === false) return res;
+  return lenient ? editorStageCommit(m, stage, landedKey) : editorStageSettle(m, stage, landedKey);
+}
+// An accepted staged edit must be completable: the stage plus the ding (D3 unset) and the fifth on the
+// rim must commit. The fifth stands in at the ding's own pitch class, so a stage no real fifth could
+// complete is refused here, at the note that caused it, and never at the fifth.
+function editorStageSettle(m, stage, landedKey) {
+  const done = editorStageCommit(m, stage, landedKey);
+  if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !editorStageAngles(stage)) return done;
+  const midi = (n) => editorNameEntry(n, "rim")[2];
+  const name = (x) => EDITOR_TRAY.sharps[x % 12] + (Math.floor(x / 12) - 1);
+  const top = [...stage.rim, ...stage.inner].map(midi);
+  const dingMidi = stage.ding ? midi(stage.ding) : top.length && Math.min(...top) <= midi("D3") ? Math.min(...top) - 7 : midi("D3");
+  const full = editorClone(stage);
+  full.ding = stage.ding || name(dingMidi);
+  const fifth = dingMidi + 7;
+  if (!top.some((x) => x % 12 === fifth % 12)) full.rim.push(name(fifth));
+  if (!full.rim.length) {
+    const taken = [...full.rim, ...full.inner].map(midi);
+    const pick = [name(fifth), name(fifth + 12), ...EDITOR_GHOST.rim].find((n) => midi(n) > dingMidi && !taken.includes(midi(n)));
+    full.rim.push(pick);
+  }
+  const trial = editorStageCommit(m, full);
+  return trial.code === "NO_ROOM" ? trial : done;
 }
 function editorStageCommit(m, stage, landedKey) {
   const std = stage.kind === "standard";
@@ -13133,8 +13156,8 @@ function editorStagePanType(m, kind) {
   if (old.ding) next.ding = old.ding;
   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
   const staged = editorWithStage(m, next);
-  const done = editorStageCommit(staged, next);
-  return done.ok ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
+  const done = editorStageSettle(staged, next);
+  return done.ok || done.code === "NO_ROOM" ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
 }
 function editorNameEntry(name, zone, label) {
   const at = EDITOR_NAME_RE.exec(String(name));
@@ -13189,14 +13212,6 @@ function editorGhostSolve(m, strict) {
   return { ok: true, value: { ...solved.value, fields: out, staged: true, hasDing } };
 }
 const editorPartsOf = (m) => Object.fromEntries(EDITOR_RINGS.map((ring) => [ring, editorNames(m, ring)]));
-// The preview seats the stage in tap order and the commit in pitch order, so a pinned stage is also
-// tried as the commit would build it (the ding and first rim note stand in until they are chosen).
-function editorStageFitsCommit(m) {
-  const stage = editorClone(editorStageOf(m));
-  if (!stage.ding) stage.ding = "D3";
-  if (!stage.rim.length) stage.rim = ["A3"];
-  return editorStageCommit(m, stage).code !== "NO_ROOM";
-}
 const editorStageAnglesOf = (m) => (editorStageOf(m).angles || []).map(Number.isFinite);
 function editorAdd(m, ring, name, angle) {
   if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
@@ -13204,7 +13219,7 @@ function editorAdd(m, ring, name, angle) {
   if (editorIsEmpty(m)) {
     const staged = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
     const pinned = staged.ok && ring === "bottom" && editorIsEmpty(staged.value) ? editorStageAnglesOf(staged.value).lastIndexOf(true) : -1;
-    return pinned !== -1 && (!editorGhostSolve(staged.value, true).ok || !editorStageFitsCommit(staged.value))
+    return pinned !== -1 && !editorGhostSolve(staged.value, true).ok
       ? editorNoRoom(staged.value, "bottom", pinned, editorStageOf(staged.value).angles[pinned]) : staged;
   }
   const parts = editorPartsOf(m);
@@ -13214,7 +13229,7 @@ function editorAdd(m, ring, name, angle) {
 function editorRemove(m, ring, i) {
   if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
   if (m.options.profile) return editorRemoveNeotone(m, ring, i);
-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { st[ring].splice(i, 1); if (ring === "bottom" && st.angles) { st.angles.splice(i, 1); editorStageTidyAngles(st); } });
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { st[ring].splice(i, 1); if (ring === "bottom" && st.angles) { st.angles.splice(i, 1); editorStageTidyAngles(st); } }, undefined, true);
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
   return editorResize(m, ring, parts, { remove: i });

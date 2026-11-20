@@ -1,0 +1,15 @@
+# kills: RCF-15: FAIL scenarios by name: tap-order angles, a free note after a pin, and the fifth after ding F3 or E3 is never refused
+# suite: node --test --test-name-pattern RCF.15..FAIL.scenarios.by.name tests/editor_shell.test.js
+# fault: The settle step builds its trial commit and then ignores it, so a staged bottom note the real fifth could not be committed with is accepted and refused only at the fifth.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13009,7 +13009,7 @@
+     full.rim.push(pick);
+   }
+   const trial = editorStageCommit(m, full);
+-  return trial.code === "NO_ROOM" ? trial : done;
++  return done;
+ }
+ function editorStageCommit(m, stage, landedKey) {
+   const std = stage.kind === "standard";
