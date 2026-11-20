@@ -152,7 +152,7 @@
   "move.banner_label": "Handpan Theory ist umgezogen",
   "editor.line.aria": "Töne der Skala - antippen zum Tippen oder Einfügen",
   "editor.name.aria": "Skalenname",
-  "editor.name.auto": "Auto: {name}",
+  "editor.name.auto": "Autom.: {name}",
   "editor.pins_reset": "Fixierungen zurückgesetzt",
   "editor.undo": "Rückgängig",
   "editor.redo": "Wiederholen",
