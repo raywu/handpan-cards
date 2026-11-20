@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12889,7 +12889,7 @@
+@@ -13005,7 +13005,7 @@ function editorStageCommit(m, stage, landedKey) {
      built = editorNeoBuild(staged, { rim: stage.main, inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
    }
    if (!built.ok) return built.code === "NO_FIFTH" ? { ok: true, value: staged } : built;
 -  return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
 +  return built;
  }
- const editorStageRepeat = (a, b) => ({ ok: false, code: "NOTE_REPEATED", reason: HPE.core.REASONS.NOTE_REPEATED.reason.split("<A>").join(a).split("<B>").join(b) });
- // Placing a note in a ring the stage already holds, or on the rim and cyclops together, is
+ // A Standard stage's bottom angles run parallel to its bottom notes (null for none); the key is
+ // absent when no note carries one. They are the placement's own angle, decided at push time.

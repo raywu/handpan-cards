@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12880,7 +12880,7 @@
+@@ -12991,7 +12991,7 @@ function editorStageEdit(m, edit, landedKey) {
  function editorStageCommit(m, stage, landedKey) {
    const std = stage.kind === "standard";
    const staged = editorWithStage(m, stage);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (!stage.ding || !(std ? stage.rim.length : stage.main.length)) return { ok: true, value: editorWithStage(m, editorBlankStage(stage.kind)) };
    let built;
    if (std) {
-     const loaded = editorLoad(editorText(m, stage, stage.ding), { ...m.options, seats: null, angles: null });
+     const angles = editorStageAngles(stage);

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12888,7 +12888,7 @@
+@@ -13004,7 +13004,7 @@ function editorStageCommit(m, stage, landedKey) {
    } else {
      built = editorNeoBuild(staged, { rim: stage.main, inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
    }
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (!built.ok) return built;
    return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
  }
- const editorStageRepeat = (a, b) => ({ ok: false, code: "NOTE_REPEATED", reason: HPE.core.REASONS.NOTE_REPEATED.reason.split("<A>").join(a).split("<B>").join(b) });
+ // A Standard stage's bottom angles run parallel to its bottom notes (null for none); the key is

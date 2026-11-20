@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12976,7 +12976,7 @@ function editorSetAnchor(m, to) {
+@@ -13368,7 +13368,7 @@ function editorSetAnchor(m, to) {
    if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
    const next = editorClone(m);
    if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  return { ok: true, value: next };
  }
  /* ---- the tray and tap placement (U2c) ---- */
- const EDITOR_VIEW = { flats: false, oct: 4 };
+ const EDITOR_VIEW = { flats: false, oct: 3 };
