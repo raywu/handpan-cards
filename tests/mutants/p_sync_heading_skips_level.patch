@@ -1,0 +1,15 @@
+# kills: the signed-in heading is an h3 under the page's h2
+# suite: node --test --test-name-pattern ^the.signed.in.heading.is.an.h3 tests/app.test.js
+# Refs TRI-28: sign-in QA round 2. The signed-in heading jumps from h2 to h4 again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1912,7 +1912,7 @@ html.account-open, html.export-open{overflow:hidden}
+       </div>
+     </form>
+     <div id="sync-signed" hidden>
+-      <h3 id="sync-heading" tabindex="-1" aria-labelledby="sync-heading sync-account-email">Signed in</h3>
++      <h4 id="sync-heading" tabindex="-1" aria-labelledby="sync-heading sync-account-email">Signed in</h4>
+       <p id="sync-account-email"></p>
+       <button class="mode" type="button" id="sync-out">Sign out</button>
+       <div id="sync-danger">

@@ -1,0 +1,15 @@
+# kills: settle R3a: an equal-body pull with a concurrent edit stamps the plan-read revision
+# suite: node --test --test-name-pattern settle.R3a tests/sync.test.js
+# An observed update stamps the committed revision again, so a concurrent edit is marked in sync.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -272,7 +272,7 @@ HPE.sync = (function () {
+           continue;
+         }
+         localRevision = rev.get(u.localId);
+-      } else if (u.mode === "observed") localRevision = u.localRevision;
++      } else if (u.mode === "observed") localRevision = rev.has(u.localId) ? rev.get(u.localId) : u.localRevision;
+       else if (u.mode === "edited") localRevision = null;
+       else localRevision = before ? before.localRevision : null;
+       next.base[u.rid] = { rev: u.rev, localRevision };

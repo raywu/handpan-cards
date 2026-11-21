@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14688,7 +14688,7 @@ function panelStops() {
+@@ -19506,7 +19506,7 @@ function panelStops() {
    const col = document.querySelector("#settings-panel > .panel-col");
    const grid = typeof getComputedStyle === "function" && !!col && getComputedStyle(col).display === "flex";
-   return [settingsTrigger, document.getElementById("modeA"), document.getElementById("modeB"),
+   return [settingsTrigger, syncEl("sync-open"), document.getElementById("modeA"), document.getElementById("modeB"),
 -          document.getElementById("tier-basic"), document.getElementById("tier-intermediate"),
 +          document.getElementById("tier-intermediate"),
            document.getElementById("tier-advanced"), document.getElementById("seq-source-link"),

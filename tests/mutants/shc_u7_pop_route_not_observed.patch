@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13424,7 +13424,6 @@ window.addEventListener("popstate", () => {
+@@ -18233,7 +18233,6 @@ window.addEventListener("popstate", () => {
    // SAVE already selected and synced the committed scale. Observe the final
    // route after this app-owned pop, not its temporary pre-SAVE destination.
    if (pendingPop) { pendingPop = false; syncRoute(); return; }
 -  observeLinkRoute();
    if (aboutOpen) { hideAbout(); return; }
-   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
-   if (!sheetOpen) return;
+   if (subpage) { hideSubpage(); return; }
+   if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }

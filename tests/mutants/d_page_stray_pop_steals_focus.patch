@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13427,7 +13427,6 @@ window.addEventListener("popstate", () => {
-   observeLinkRoute();
+@@ -18237,7 +18237,6 @@ window.addEventListener("popstate", () => {
    if (aboutOpen) { hideAbout(); return; }
-   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
+   if (subpage) { hideSubpage(); return; }
+   if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }
 -  if (!sheetOpen) return;
    sheetRouted = false;
    hideSheet();

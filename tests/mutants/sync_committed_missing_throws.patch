@@ -1,0 +1,15 @@
+# kills: settle N2: a committed update whose entry is gone is held, not thrown
+# suite: node --test --test-name-pattern settle.N2 tests/sync.test.js
+# A committed update with no committed entry throws instead of holding.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -265,7 +265,7 @@ HPE.sync = (function () {
+       const before = next.base[u.rid];
+       let localRevision;
+       if (u.mode === "committed") {
+-        if (!rev.has(u.localId)) {
++        if (!rev.has(u.localId)) { throw new Error("sync: no committed revision for " + u.localId);
+           heldRids.add(u.rid);
+           const src = sources[u.localId];
+           if (src && src.rev !== null && src.rev !== undefined) hold = Math.min(hold, src.rev - 1);

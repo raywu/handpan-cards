@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17460,7 +17460,7 @@ function renderMoveBanner() {
+@@ -20495,7 +20495,7 @@ function renderMoveBanner() {
      moveBannerEl.appendChild(moveBannerMsg);
      moveBannerEl.appendChild(actions);
      const first = document.body.firstChild;
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +    document.body.appendChild(moveBannerEl);
      background.push(moveBannerEl);
      panelBackground.push(moveBannerEl);
-     if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);
+     if (sheetOpen || panelOpen || aboutOpen || subpage) setInert(true, [moveBannerEl]);

@@ -1,0 +1,15 @@
+# kills: polish: Escape closes the account page and Tab wraps inside it
+# suite: node --test --test-name-pattern ^polish:.Escape.closes tests/e2e_sync.test.js
+# Refs TRI-28: sign-in QA fixes. Tab is no longer trapped inside a sub-page.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -19804,7 +19804,7 @@ document.addEventListener("keydown", e => {
+   }
+   if (subpage) {
+     if (e.key === "Escape") { e.preventDefault(); closeSubpage(); }
+-    else if (e.key === "Tab") cycleTabStops(SUBPAGES[subpage].stops(), e);
++    else if (e.key === "Tab") return;
+     return;
+   }
+   // While the sheet is open it owns the keyboard: Escape closes it, and an

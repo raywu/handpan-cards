@@ -1,0 +1,15 @@
+# kills: after a save the account page counts the scales saved to the account, pluralised
+# suite: node --test --test-name-pattern ^after.a.save.the.account.page.counts tests/app.test.js
+# Refs TRI-28: sign-in QA round 2. The saved-count line never shows; the time line always does.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20646,7 +20646,7 @@ function syncLiveMessage(sc) {
+   if (!sc) return null;
+   if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
+   if (sc.pending) return { key: "sync.status.pending" };
+-  if (sc.syncedAt) return syncSavedCount(sc) ? { key: "sync.status.count", vars: { n: syncSavedCount(sc) } } : { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
++  if (sc.syncedAt) return false ? { key: "sync.status.count", vars: { n: syncSavedCount(sc) } } : { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
+   return null;
+ }
+ function syncDrop(note) {

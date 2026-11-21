@@ -1,0 +1,17 @@
+# kills: polish: live first-pull and pending outrank a cached success; no timestamp before a first success
+# Previously: polish status precedence (a running sync must outrank pending)
+# suite: node --test --test-name-pattern live.first-pull.and.pending tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20644,8 +20644,8 @@ function syncLiveMessage(sc) {
+   if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
+   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;
+   if (!sc) return null;
+-  if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
+   if (sc.pending) return { key: "sync.status.pending" };
++  if (sc.first || syncSyncing) return { key: "sync.status.syncing" };
+   if (sc.syncedAt) return syncSavedCount(sc) ? { key: "sync.status.count", vars: { n: syncSavedCount(sc) } } : { key: "sync.status.synced", vars: { time: new Date(sc.syncedAt).toLocaleTimeString(uiLang(), { hour: "2-digit", minute: "2-digit" }) } };
+   return null;
+ }
