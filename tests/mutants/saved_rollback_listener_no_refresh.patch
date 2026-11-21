@@ -9,6 +9,6 @@ diff --git a/index.html b/index.html
    if (chipsChanged) buildChips();
    if (chipsChanged && !backupPanel.hasAttribute("hidden")) paintBackup();
 -  updateSavedStatus();
-   if(!dirty && !sheetOpen){
+   if(!pageOpen){
      if(!savedEqual(oldSelection,selection) || beforeRow?.revision!==afterRow?.revision){setOrder();render();}
      // A navigation fragment can precede its hashchange handler. Snapshot

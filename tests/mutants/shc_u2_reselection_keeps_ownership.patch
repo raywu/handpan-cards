@@ -1,5 +1,5 @@
-# kills: SHC U2: same-ID SAVE and selection retire old LINK while new LINK carries committed angles
-# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.U2: tests/app.test.js
+# kills: SHC U2: reselecting the current scale, or A to B to A, retires the old LINK
+# suite: node --test --test-name-pattern ^SHC.U2: tests/app.test.js
 # Selecting the current scale no longer retires pending LINK.
 # Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
 diff --git a/index.html b/index.html

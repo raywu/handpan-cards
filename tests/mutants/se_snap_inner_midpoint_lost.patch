@@ -1,0 +1,15 @@
+# kills: SE snapTarget: inside the shell the radius picks inner over top at the midpoint of the two orbits
+# suite: node --test --test-name-pattern ^SE.snapTarget..inside.the.shell.the.radius.picks.inner.over.top.at.the.midpoint.of.the.two.orbits$ tests/layout.test.js
+# The inner/top split moves from the midpoint of the two orbits to the rim orbit.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -1024,7 +1024,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var rimOrb = geom.rim || RIM_PLAIN;
+       var innerOrb = geom.inner || INNER_ORB;
+       var onFan = (occupancy.inner || []).length > 0 || allowInnerAngle;
+-      zone = onFan && radius < (rimOrb + innerOrb) / 2 && innerInSpan(norm(Math.atan2(pt[1], pt[0]) / DEG))
++      zone = onFan && radius < rimOrb && innerInSpan(norm(Math.atan2(pt[1], pt[0]) / DEG))
+         ? "inner" : "top";
+     }
+     var ring = occupancy[zone] || [];

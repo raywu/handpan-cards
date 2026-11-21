@@ -1,0 +1,15 @@
+# kills: P0 name focus 375x360: focused by a real tap, Name is fully in view with the toolbar; unfocused the pan is at least 120 and the toolbar stays in view
+# suite: node --test --test-name-pattern ^P0.name.focus.375x360 tests/editor_e2e.test.js
+# fault: Focusing Name no longer releases the pan floor, so the keyboard-open editor pushes Name out of view.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1067,7 +1067,7 @@
+ }
+ /* Keyboard-open short portrait (R5/R6): while Name has focus the 120px floor gives way so Name and the toolbar stay in view. */
+ @media (max-height:420px) and (max-width:559.98px){
+-  #scale-sheet.onepanel #editor:has(#editor-name:focus) .editor-panbox{height:max(0px, calc(100vh - 340px)); height:max(0px, calc(100dvh - var(--ed-kname, 340px)))}
++  #scale-sheet.onepanel #editor:has(#editor-name:focus-never) .editor-panbox{height:max(0px, calc(100vh - 340px)); height:max(0px, calc(100dvh - var(--ed-kname, 340px)))}
+ }
+ /* The dragged note. Fixed, so the plate's edge does not clip it; it lives in the
+    band, outside the SVG, and never takes a pointer. */

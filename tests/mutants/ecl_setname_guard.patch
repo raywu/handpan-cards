@@ -1,0 +1,15 @@
+# kills: ECL10 an unfinished rename blocks a remote snapshot from rebinding the clean editor
+# suite: node --test --test-name-pattern ^ECL10.an.unfinished.rename tests/editor_e2e.test.js
+# fault: A remote snapshot rebinds a clean editor even while an unfinished rename sits in the name field.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15525,7 +15525,7 @@ savedSnapshotListener=event=>{
+   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
+   selection=savedResolve(selection,savedState,savedEntries);
+   const session=editorSession;
+-  if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
++  if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present)){
+     const target=savedResolve(editingBase.selection,savedState,savedEntries);
+     const entry=target.kind==="saved"?savedEntries.get(target.id):null;
+     const latest=entry?entry.deck:DECKS.find(d=>d.id===target.id);

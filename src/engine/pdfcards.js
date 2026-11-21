@@ -502,7 +502,8 @@ HPE.pdfcards = (function () {
       return { id: id, name: v[0], oct: v[1], label: v[5], st: st(id) };
     }
     if (hasMut) {
-      pd.angles.forEach(function (ang) {
+      pd.angles.forEach(function (base) {
+        var ang = (base + (g.turn || 0)) % 360;
         var t = { theta: ang, orbit: pd.main.orbit, r: pd.main.r,
                   main: main[ang] === undefined ? null : entry(main[ang]),
                   lens: mut[ang] === undefined ? null : entry(mut[ang]) };

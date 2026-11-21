@@ -1,0 +1,15 @@
+# kills: SE-I1-5: an edit command that would turn a slot owner into a v6 row is refused
+# suite: node --test --test-name-pattern ^SE-I1-5..an.edit.command.that.would.turn.a.slot.owner.into.a.v6.row.is.refused$ tests/editor_model.test.js
+# fault: An edit of a slot owner into a pinned v6 record is applied, so the row keeps replaces.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11433,7 +11433,7 @@
+   const attachCandidate = (row, deckValue = candidate.deck) => views.set(row.instanceId,
+     { ...row, deck: deckValue, meaning: candidate.meaning, identity: candidate.identity });
+   const held = command.type === "edit" && candidate && candidate.ok ? existing() : null;
+-  if (held && candidate.record.v === INNER_RECORD_VERSION && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
++  if (false && candidate.record.v === INNER_RECORD_VERSION && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
+   if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
+     if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
+     const inventoryIdentity = staged.identities.get(candidate.deck.id);

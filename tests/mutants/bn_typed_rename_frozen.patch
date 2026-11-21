@@ -1,0 +1,15 @@
+# kills: BN-M9: a typed line that only adds or removes bottom names freezes the rest (rim and cyclops pins kept, no pinsReset); a rename with no stable match and a line that changes another ring respread
+# suite: node --test --test-name-pattern ^BN.M9..a.typed.line.that.only.adds.or.removes.bottom.names.freezes.the.rest..rim.and.cyclops.pins.kept..no.pinsReset...a.rename.with.no.stable.match.and.a.line.that.changes.another.ring.respread$ tests/editor_model.test.js
+# A rename (removal and addition in one gap) is diffed instead of falling back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13655,7 +13655,7 @@
+   const removed = was.map((n, i) => (now.includes(n) ? -1 : i)).filter((i) => i >= 0);
+   const added = now.map((n, j) => (was.includes(n) ? -1 : j)).filter((j) => j >= 0);
+   const oldGaps = removed.map((i) => was.slice(0, i).filter((n) => now.includes(n)).length);
+-  if (added.some((j) => oldGaps.includes(now.slice(0, j).filter((n) => was.includes(n)).length))) return null;
++  if (false) return null;
+   let cur = m, notice;
+   const step = (names, change) => {
+     const parts = editorPartsOf(cur);

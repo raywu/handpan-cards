@@ -1,0 +1,15 @@
+# kills: EHC hint card 360x640: the open card covers the tabs and carries the close button at its top right
+# suite: node --test --test-name-pattern ^EHC.hint.card tests/editor_e2e.test.js
+# fault: The tab strip always stacks above the hint card, so the counts row sits under the Layout tab.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -950,7 +950,7 @@
+ #editor-region::-webkit-scrollbar{display:none}
+ @media (max-height:420px){#editor-region{margin-top:0}}
+ #editor.dragging #editor-region{overflow:hidden}
+-#editor-tabs{flex:0 0 auto; display:flex; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:3; background:#F6F4ED}
++#editor-tabs{flex:0 0 auto; display:flex; box-sizing:border-box; gap:0; border-bottom:1px solid #8A847B; margin-bottom:12px; position:sticky; top:0; z-index:5; background:#F6F4ED}
+ #editor-tabs .edtab{flex:1 1 0; min-height:44px; border:none; border-radius:0; background:none; color:#5E5850; font-weight:600;
+   border-bottom:3px solid transparent; margin-bottom:-1px}
+ #scale-sheet #editor-tabs .edtab{background:none; color:#5E5850; border-color:transparent}

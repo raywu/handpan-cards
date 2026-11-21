@@ -1,0 +1,16 @@
+# kills: AF save on screen 838x390 seat: after a touch drop Save is fully in view and hit at its centre
+# suite: node --test --test-name-pattern AF.save.on.screen tests/editor_e2e.test.js
+# fault: A drop no longer scrolls Save into view, so Save stays below the fold in phone landscape.
+# note: AF save on screen: after a touch drop in phone landscape Save is fully in view
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15042,7 +15042,7 @@ function editorDragEnd(e) {
+ }
+ function editorSaveIntoView() {
+   const save = editorEl("editor-save");
+-  if (save && window.matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px)").matches) save.scrollIntoView({ block: "nearest" });
++  if (save && window.matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px)").matches) void save;
+ }
+ function editorDragUp(e) {
+   if (editorDrag && e.pointerId === editorDrag.id) editorDragEnd(e.type === "pointerup" ? e : null);

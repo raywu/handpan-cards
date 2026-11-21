@@ -1,0 +1,15 @@
+# kills: ECL13 a system Back with an invalid uncommitted notes line asks first
+# suite: node --test --test-name-pattern ^ECL13.a.system.Back tests/editor_e2e.test.js
+# fault: The Back paths test only the committed model, so an invalid line still being typed closes the page without the Save changes prompt.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15204,7 +15204,7 @@ function editorDraftMoved(s, saved) {
+   if (s.naming && editorSetName(saved, editorEl("editor-name").value).value !== saved) return true;
+   return editorEl("editor-line").value.trim() !== editorLineText(saved);
+ }
+-const editorHasChanges = (s) => editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present);
++const editorHasChanges = (s) => editorIsDirty(s.base, s.history.present);
+ async function editorSave() {
+   const s = editorSession;
+   if (!s || s.saving || savePending) return;

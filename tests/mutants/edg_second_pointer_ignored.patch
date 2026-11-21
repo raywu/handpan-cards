@@ -1,0 +1,15 @@
+# kills: edg a second pointer cancels the drag and puts the note back
+# suite: node --test --test-name-pattern ^edg.a.second.pointer tests/editor_e2e.test.js
+# fault: A second pointer pressing during a drag is ignored instead of cancelling it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14920,7 +14920,7 @@
+   editorEl("editor-pan").onclick = editorPanClick;
+   editorEl("editor-pan").onkeydown = editorPanKey;
+   editorEl("editor-pan").addEventListener("focusin", editorPanFocus);
+-  editorEl("editor").addEventListener("pointerdown", (e) => { if (editorDrag && e.pointerId !== editorDrag.id) { e.stopImmediatePropagation(); editorDragEnd(null); } });
++  editorEl("editor").addEventListener("pointerdown", (e) => {  });
+   editorEl("editor").addEventListener("pointerdown", editorDragDown);
+   editorEl("editor").addEventListener("contextmenu", (e) => { if (editorDrag) e.preventDefault(); });
+   editorEl("editor-oct-down").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct - 1 });

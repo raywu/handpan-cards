@@ -1,0 +1,14 @@
+# kills: PA: the v9 constants are 9 and 7, and recordVersion is 7 only for profile plus between
+# suite: node --test --test-name-pattern ^PA..the.v9.constants.are.9.and.7 tests/share.test.js
+# why: recordVersion answers 7 for any seed with anchor between, profile or not.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -693,6 +693,7 @@
+ 
+   function recordVersion(seed) {
+     var opts = (seed && seed.options) || {};
++    if (opts.anchor === "between") return PROFILE_ANCHOR_RECORD_VERSION;
+     if (opts.profile !== undefined && opts.profile !== null) {
+       return opts.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION;
+     }

@@ -1,0 +1,15 @@
+# kills: RCF-16: remove the 270 note and the fifth still commits
+# suite: node --test --test-name-pattern RCF.16..remove.the.270.note tests/editor_shell.test.js
+# fault: A remove is accepted without clearing the pin it freed, so the fifth is refused late.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13251,7 +13251,7 @@ function editorAdd(m, ring, name, angle) {
+ function editorRemove(m, ring, i) {
+   if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
+   if (m.options.profile) return editorRemoveNeotone(m, ring, i);
+-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { st[ring].splice(i, 1); if (ring === "bottom" && st.angles) { st.angles.splice(i, 1); editorStageTidyAngles(st); } editorStageClearPins(m, st); });
++  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { st[ring].splice(i, 1); if (ring === "bottom" && st.angles) { st.angles.splice(i, 1); editorStageTidyAngles(st); } });
+   const parts = editorPartsOf(m);
+   parts[ring].splice(i, 1);
+   return editorResize(m, ring, parts, { remove: i });

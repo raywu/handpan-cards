@@ -1,0 +1,14 @@
+# kills: U2f-3 (D4, OQA): a placed note released outside the pan is removed; the ding never is; a miss inside the pan snaps back
+# suite: node --test --test-name-pattern ^U2f-3. tests/editor_shell.test.js
+# fault: A placed note dropped off the pan is removed instead of snapping back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15805,6 +15805,7 @@
+     const to = target.kind === "ding" ? { ring: "ding", i: 0 } : { ring: target.ring, i: target.i };
+     return to.ring === ref.ring && to.i === ref.i ? snap : { trade: [ref, to] };
+   }
++  if (target.kind === "off" && ref.ring !== "ding") return { step: (x) => editorRemove(x, ref.ring, ref.i), say: "" };
+   if (target.kind !== "spot" || ref.ring === "ding") return snap;
+   if (target.ring === ref.ring) {
+     return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined

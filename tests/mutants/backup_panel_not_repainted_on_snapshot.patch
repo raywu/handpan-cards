@@ -4,9 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15569,5 +15569,4 @@
+@@ -14865,7 +14865,6 @@ savedSnapshotListener=event=>{
+     !savedEqual(event.previous.hidden, savedState.hidden) ||
+     !savedEqual(oldSelection, selection);
    if (chipsChanged) buildChips();
 -  if (chipsChanged && !backupPanel.hasAttribute("hidden")) paintBackup();
    updateSavedStatus();
-   if(!dirty && !sheetOpen){
+   if(!pageOpen){
      if(!savedEqual(oldSelection,selection) || beforeRow?.revision!==afterRow?.revision){setOrder();render();}

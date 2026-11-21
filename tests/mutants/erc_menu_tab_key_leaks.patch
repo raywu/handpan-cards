@@ -1,0 +1,15 @@
+# kills: menu: an outside tap closes it, and Tab closes it and returns focus to the button
+# suite: node --test --test-name-pattern ^menu:.an.outside.tap tests/editor_e2e.test.js
+# fault: Tab inside the menu is also handled by the sheet focus cycle, jumping focus to Back.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16258,7 +16258,7 @@ function editorMenuKey(e) {
+   const s = editorSession;
+   if (!s || !s.menu) return;
+   if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); editorCloseMenu(true); return; }
+-  if (e.key === "Tab") { editorCloseMenu(true); e.preventDefault(); e.stopPropagation(); return; }
++  if (e.key === "Tab") { editorCloseMenu(true); e.preventDefault(); return; }
+   const items = editorMenuItems().filter((b) => !b.disabled);
+   const at = items.indexOf(document.activeElement);
+   const to = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 }[e.key];

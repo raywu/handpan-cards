@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16779,7 +16779,6 @@ document.addEventListener("keydown", e => {
-       if (drawerOpen && pickRef) putDownPick();
+@@ -15397,7 +15397,6 @@ document.addEventListener("keydown", e => {
+       if (editorSession) editorEscape();
        else closeScaleSheet();
      }
 -    return;

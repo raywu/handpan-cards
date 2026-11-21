@@ -1,0 +1,15 @@
+# kills: TRI59d A2: on Neotone, with and without mutant notes, both anchor buttons are shown and enabled, aria-pressed follows, and between turns the pan
+# suite: node --test --test-name-pattern ^TRI59d.A2..on.Neotone tests/editor_e2e.test.js
+# why: The Neotone anchor pair is hidden again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16092,7 +16092,7 @@ function editorRenderLayout(m) {
+   const rows = [["editor-anchor-one", anchor === "one"], ["editor-anchor-between", anchor === "between"]];
+   for (const [id, on] of rows) {
+     const el = editorEl(id);
+-    el.hidden = false;
++    el.hidden = !!m.options.profile;
+     el.classList.toggle("on", on);
+     el.setAttribute("aria-pressed", String(on));
+     el.disabled = off;

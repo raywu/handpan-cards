@@ -1,0 +1,15 @@
+# kills: OQB click elsewhere after drop fires (
+# suite: node --test --test-name-pattern ^OQB.click.elsewhere.after.drop.fires tests/editor_e2e.test.js
+# fault: The click eater after a drop ignores the next press and swallows every click.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16264,8 +16264,6 @@ function editorDragEnd(e) {
+   };
+   const eat = (ev) => { stopEating(); ev.stopPropagation(); ev.preventDefault(); };
+   window.addEventListener("click", eat, true);
+-  window.addEventListener("pointerdown", stopEating, true);
+-  window.addEventListener("keydown", stopEating, true);
+   if (d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+   if (d.src.chip) d.src.chip.classList.remove("dragging");
+   const s = editorSession;

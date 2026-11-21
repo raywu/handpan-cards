@@ -1,0 +1,15 @@
+# kills: LS 844x390: an open dialog locks the column's scroll
+# suite: node --test --test-name-pattern ^LS.844x390..an.open.dialog tests/editor_e2e.test.js
+# fault: In phone landscape an open Save changes dialog no longer locks the column, so the page behind it still scrolls under a wheel or swipe.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1085,7 +1085,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:repeat(6, max-content) minmax(0,1fr);
+     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar" "pan ."}
+   #scale-sheet.onepanel #editor::-webkit-scrollbar{display:none}
+-  #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
++  #scale-sheet.onepanel #editor.dragging{overflow:hidden}
+   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
+   #editor-counts{grid-area:counts}
+   #editor .editor-statusrow{grid-area:region; align-self:start; height:0; min-height:0; z-index:5}

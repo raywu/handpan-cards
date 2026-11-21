@@ -1,0 +1,15 @@
+# kills: TRI59d A1: the editor drag snap reads the turned angles from geom.turn
+# suite: node --test --test-name-pattern ^TRI59d.A1..the.editor.drag.snap tests/app.test.js
+# why: The drag hit-test is handed a geometry with no turn, so a turned pan snaps to the frozen angles.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15582,7 +15582,7 @@ function editorHitAtPlaced(solved, pt, model) {
+     const key = profile.map[from + k];
+     return key === null ? undefined : Object.keys(fields).find((id) => fields[id][3] !== "ding" && profileKeyOf(fields[id]) === key);
+   });
+-  const target = HPE.layout.snapTarget(geom, pt, { panKind: "profile", occupancy: { ding: undefined, main: slotIds(0), mutant: slotIds(NEO_MAIN) } });
++  const target = HPE.layout.snapTarget({ ...geom, turn: 0 }, pt, { panKind: "profile", occupancy: { ding: undefined, main: slotIds(0), mutant: slotIds(NEO_MAIN) } });
+   if (!target) return { kind: "off" };
+   if (target.zone === "ding") return { kind: "ding" };
+   const ring = target.zone === "main" ? "rim" : "bottom";

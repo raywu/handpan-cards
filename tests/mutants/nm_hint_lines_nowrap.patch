@@ -1,0 +1,15 @@
+# kills: NM hint fit en: both Neotone hint lines fit
+# suite: node --test --test-name-pattern ^NM.hint.fit tests/editor_e2e.test.js
+# fault: The Neotone hint lines stop wrapping, so a line runs past the right edge of the hint card in every locale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -968,7 +968,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-undo.covered{visibility:hidden}
+ #editor .editor-toolbar .rs-short{display:none}
+ @media (max-width:599px){#editor .editor-toolbar .rs-full{display:none} #editor .editor-toolbar .rs-short{display:inline}}
+-#editor-hint{margin:0; font:500 12px/1.35 "Nunito Sans"; display:flex; flex-direction:column}
++#editor-hint{margin:0; font:500 12px/1.35 "Nunito Sans"; display:flex; flex-direction:column; white-space:nowrap}
+ #editor-pan .ehit{fill:transparent; pointer-events:none}
+ #editor-pan .etarget{fill:none; stroke:var(--accent,#c9a25a); stroke-width:3; stroke-dasharray:6 5; opacity:.8; pointer-events:none}
+ #editor-pan .editor-landing{fill:color-mix(in srgb,var(--accent,#c9a25a) 14%,transparent); stroke:var(--accent,#c9a25a); stroke-width:3; stroke-dasharray:6 4; pointer-events:none}

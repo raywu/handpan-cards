@@ -1,0 +1,15 @@
+# kills: SE-G3: savedCandidate stages a pinned-cyclops candidate as v6 and refuses every other pairing
+# suite: node --test --test-name-pattern ^SE-G3..savedCandidate.stages.a.pinned-cyclops.candidate.as.v6.and.refuses.every.other.pairing$ tests/editor_model.test.js
+# fault: Stage a pinned-cyclops candidate under the v4 version rule.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11546,7 +11546,7 @@ const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
+ const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+ const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
+   o.angles.inner.some(a => a !== null && a !== undefined);
+-const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
++const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : SHARE_VERSION;
+ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
+ // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
+ // its own version check on the wire format (share.js step 2), so this is the

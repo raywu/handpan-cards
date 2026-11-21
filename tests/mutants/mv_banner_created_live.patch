@@ -1,14 +1,14 @@
 # kills: a banner created after a modal is already open starts inert, and goes live when the modal closes
-# suite: node --test --test-name-pattern=created.after.a.modal tests/app.test.js
-# why: a banner created while a modal is open is never made inert.
+# suite: node --test --test-name-pattern ^a.banner.created.after.a.modal.is.already.open.starts.inert,.and.goes.live.when.the.modal.closes$ tests/app.test.js
+# A banner created while a modal is open is never made inert. Re-anchored on pageOpen (was sheetOpen).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17463,7 +17463,6 @@ function renderMoveBanner() {
+@@ -16098,7 +16098,6 @@
      if (first) document.body.insertBefore(moveBannerEl, first); else document.body.appendChild(moveBannerEl);
      background.push(moveBannerEl);
      panelBackground.push(moveBannerEl);
--    if (sheetOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);
+-    if (pageOpen || panelOpen || aboutOpen) setInert(true, [moveBannerEl]);
      window.addEventListener("resize", placeMoveBanner);
    }
    const info = moveUrl(), host = new URL(MOVE_TARGET).hostname;

@@ -37,10 +37,10 @@ FLOORS = {
     # python
     "tests/test_deck_data.py": 28,
     "tests/test_pdf_build.py": 9,
-    "tests/test_gen_deck.py": 32,
-    "tests/test_print.py": 55,
+    "tests/test_gen_deck.py": 33,
+    "tests/test_print.py": 59,
     "tests/test_render_agreement.py": 60,
-    "tests/test_fixture_integrity.py": 47,
+    "tests/test_fixture_integrity.py": 50,
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
     "tests/test_suite_health.py": 31,
@@ -48,42 +48,39 @@ FLOORS = {
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 16,
-    "tests/test_icons.py": 6,
-    "tests/test_scale_pages.py": 130,
-    "tests/test_site_files.py": 14,
+    "tests/test_icons.py": 19,
+    "tests/test_scale_pages.py": 158,
+    "tests/test_site_files.py": 20,
     "tests/test_ci_scope.py": 36,
     # node
-    "tests/app.test.js": 1140,
-    "tests/seat_sweeps_tap_add.test.js": 3,
-    "tests/seat_sweeps_tap_edit.test.js": 3,
-    "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 637,
+    "tests/app.test.js": 660,
+    "tests/e2e.test.js": 404,
     "tests/harness.test.js": 67,
-    "tests/drawer_grid.test.js": 3,
-    "tests/drawer_seats.test.js": 28,
-    "tests/drawer_drag.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 103,
+    "tests/core.test.js": 123,
     "tests/import.test.js": 131,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
-    "tests/layout.test.js": 144,
+    "tests/layout.test.js": 174,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 55,
-    "tests/share.test.js": 113,
-    "tests/link_corpus.test.js": 7,
-    "tests/storage_corpus.test.js": 18,
-    "tests/preview.test.js": 14,
+    "tests/share.test.js": 154,
+    "tests/link_corpus.test.js": 14,
+    "tests/editor_model.test.js": 52,
+    "tests/editor_shell.test.js": 109,
+    "tests/editor_e2e.test.js": 402,
+    "tests/editor_freeze.test.js": 8,
+    "tests/storage_corpus.test.js": 25,
+    "tests/preview.test.js": 2,
     "tests/pdf.test.js": 16,
-    "tests/pdfcards.test.js": 80,
+    "tests/pdfcards.test.js": 81,
     "tests/coverage_merge.test.js": 18,
     "tests/mutation_harness.test.js": 54,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 59,
     "tests/swipe.test.js": 21,
-    "tests/scale.test.js": 14,
-    "tests/sandbox_events.test.js": 5,
-    "tests/persist.test.js": 7,
+    "tests/scale.test.js": 15,
+    "tests/persist.test.js": 11,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
@@ -91,7 +88,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40

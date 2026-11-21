@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13541,9 +13541,7 @@ function showSheet(opener) {
-   resyncSheet(true);
-   applyKbOffset();
+@@ -15132,9 +15132,7 @@ function showSheet(opener) {
+   sheetPreTagged = !reuseEntry;
+   if (sheetPreTagged) history.replaceState({ ...history.state, preSheet: true }, "", location.href);
    if (reuseEntry) history.replaceState({ scalePage: true }, "", sheetRoute());
 -  else history.pushState({ scalePage: true }, "", sheetRoute());
    reuseEntry = false;

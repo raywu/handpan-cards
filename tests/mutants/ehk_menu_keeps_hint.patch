@@ -1,0 +1,14 @@
+# kills: EHK1 the menu opened from the keyboard with the hint open closes the hint first
+# suite: node --test --test-name-pattern ^EHK1. tests/editor_e2e.test.js
+# fault: Opening the menu leaves the hint card open over it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14162,7 +14162,6 @@ function editorOpenMenu() {
+   const s = editorSession;
+   editorCommitName();
+   if (!s || s.dialog || s.editing || s.menu) return;
+-  if (s.hint) editorSetAreas(false);
+   s.menu = true;
+   editorEl("editor-menu").removeAttribute("hidden");
+   editorEl("editor-more").setAttribute("aria-expanded", "true");

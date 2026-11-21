@@ -1,0 +1,15 @@
+# kills: a staged-only editor closes silently
+# suite: node --test --test-name-pattern a.staged-only.editor.closes.silently tests/editor_e2e.test.js
+# fault: A staged-only pan counts as an edit, so Back asks.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13464,7 +13464,7 @@ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
+ const editorCanSave = (m) => !editorIsEmpty(m);
+ const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
+ const editorBare = (m) => {
+-  const { view, stage, ...rest } = m;
++  const { view, ...rest } = m;
+   const o = { ...rest.options };
+   if (editorIsEmpty(m)) delete o.profile;
+   if (o.anchor === "one") delete o.anchor;

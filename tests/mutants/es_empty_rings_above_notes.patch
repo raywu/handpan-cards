@@ -1,0 +1,16 @@
+# kills: the empty Standard pan paints staged notes above every area ring: at each note centre and where a ring crosses its edge the note is the topmost thing, filled
+# suite: node --test --test-name-pattern the.empty.Standard.pan.paints.staged.notes.above tests/editor_e2e.test.js
+# fault: The empty-state area rings are drawn above the staged notes again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14274,8 +14274,7 @@
+       if (!empty && ringIds(fields, ring).length && !picked) continue;
+       const orb = editorOrbit(geom, ring);
+       const area = `<circle class="etarget${picked ? " picked" : ""}${empty ? " eempty" : ""}" data-ring="${ring}" cx="0" cy="0" r="${(orb * 100).toFixed(2)}"/>`;
+-      if (empty) under += area;
+-      else out += area;
++      out += area;
+     }
+     for (const ring of zones) {
+       out += `<circle class="ekey" cx="0" cy="0" r="${(editorOrbit(geom, ring) * 100).toFixed(2)}" role="button" aria-pressed="${s.zone === ring}" ${tab("zone:" + ring)} aria-label="${escapeHtml(editorAreaLabel(m, ring))}"/>`;

@@ -1,0 +1,16 @@
+# kills: TRI59d A1: editorCommitOptions keeps between on a profile model and nothing else new
+# suite: node --test --test-name-pattern ^TRI59d.A1..editorCommitOptions tests/app.test.js
+# why: SAVE commits a profile model without its anchor, so the turn is lost on save.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15723,7 +15723,8 @@ function editorCommitOptions(m) {
+   const kept = { palette: m.options.palette || 0 };
+   if (m.options.name !== undefined) kept.name = m.options.name;
+   kept.profile = m.options.profile;
+-  if (m.options.anchor === "between") kept.anchor = "between";
++  if (false) kept.anchor = "between";
++
+   return kept;
+ }
+ // A built-in never takes its own slot: it saves a new scale (D15).

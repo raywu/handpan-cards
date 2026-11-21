@@ -1,0 +1,15 @@
+# kills: OQA drag off removes with undo toast; OQA release to remove ghost: past the margin the ghost says so, release removes in one step, the chip restores
+# suite: node --test --test-name-pattern ^OQA.drag.off.removes.with tests/editor_e2e.test.js
+# fault: The ghost never turns to remove past the pan edge.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16179,7 +16179,7 @@ function editorDragMove(e) {
+   d.ghost.style.top = e.clientY + "px";
+   const target = editorDropTarget(e, d.src);
+   const state = d.src.from === "pan" && target.kind === "outside"
+-    ? (editorDropPlan(editorSession.history.present, { from: "pan", ref: d.src.ref }, target).refuse ? "refuse" : "remove") : "";
++    ? (editorDropPlan(editorSession.history.present, { from: "pan", ref: d.src.ref }, target).refuse ? "refuse" : "") : "";
+   d.ghost.className = "editor-ghost" + (state ? " " + state : "");
+   d.ghost.textContent = state === "remove" ? editorDragName(d.src) + " \u00B7 " + t("editor.release_remove") : editorDragName(d.src);
+   const pt = editorPanPoint(e);

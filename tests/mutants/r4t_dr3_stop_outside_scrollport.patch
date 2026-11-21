@@ -1,15 +1,16 @@
-# kills: DR3 browser: real Tab skips the hidden step buttons and every stop lands inside the scrollport at 380x667, and BACK moves no scroll
-# suite: node --test --test-name-pattern ^DR3.browser..real.Tab.skips.the.hidden.step.buttons.and.every.stop.lands.inside.the.scrollport.at.380x667..and.BACK.moves.no.scroll$ tests/drawer_seats.test.js
-# Tab lands on the next stop without scrolling it into view, so a stop below the fold stays outside the scrollport.
+# kills: Tab brings every stop into the panel's scrollport on a short screen 375x440
+# suite: node --test --test-name-pattern ^Tab.brings.every.stop.*375x440 tests/editor_e2e.test.js
+# Tab lands on the next stop without scrolling it into view, so a stop below the fold stays outside the scrollport
+# cycleTabStops focuses with preventScroll. Re-anchored 2026-11-12 on the editor panel.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14340,7 +14340,7 @@ function cycleTabStops(stops, e) {
+@@ -15115,7 +15115,7 @@
    const i = stops.indexOf(document.activeElement);
    const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
    e.preventDefault();
 -  stops[next].focus();
 +  stops[next].focus({ preventScroll: true });
  }
- // Tab is trapped inside: the sheet's own controls, in visual order.
- sheet.addEventListener("keydown", e => {
+ 
+ /* ---------------- interaction ---------------- */

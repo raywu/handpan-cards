@@ -1,12 +1,15 @@
 # kills: AO: syncRoute and hashchange write nothing while About is open
 # suite: node --test --test-name-pattern ^AO:.syncRoute.and.hashchange.write.nothing tests/app.test.js
-# Lane O. syncRoute() writes the deck route over #about while About is open.
-# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
+# syncRoute() writes the deck route over #about while About is open. Pinned to syncRoute (the same guard line is also in the hashchange listener). Re-anchored on pageOpen (was sheetOpen).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15099,3 +15099,3 @@ let lastAcknowledgedRouteHash = null;
+@@ -15821,7 +15821,7 @@
+ let booted = false;
+ let lastAcknowledgedRouteHash = null;
  function syncRoute() {
--  if (sheetOpen || aboutOpen) return;
-+  if (sheetOpen) return;
+-  if (pageOpen || aboutOpen) return;
++  if (pageOpen) return;
    if(pendingRecoveryShare!==null && location.hash===SHARE_PREFIX+pendingRecoveryShare){
+     shareCopy.disabled=true;
+     shareCopy.title=t("saved.importFailure");
