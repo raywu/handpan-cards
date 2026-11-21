@@ -331,6 +331,28 @@ function run() {
       assert.ok(r.hit.some((h) => h.startsWith("B2@")), "the free note is hit as itself: " + JSON.stringify(r));
     });
 
+    for (const [w, h] of [[390, 844], [844, 390]]) {
+      test(`RCF-F5 ${w}x${h}: tap order D3, E3@135, B2, C3@200 is accepted, and the preview draws B2, C3 and E3 with hit refs naming each drawn note`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        const r = await b.eval(`const log = []; editorSession.history = editorApply(editorSession.history, (m) => [(x) => editorReplaceDing(x, "D3"), (x) => editorPlace(x, "bottom", "E3", 135), (x) => editorPlace(x, "bottom", "B2"), (x) => editorPlace(x, "bottom", "C3", 200)].reduce((r, f) => { if (r.ok === false) return r; const q = f(r.value); log.push(q.ok === false ? q.code : "ok"); return q; }, { ok: true, value: m })).history;
+          editorRender();
+          const m = editorSession.history.present, st = editorStageOf(m);
+          const svg = document.querySelector("#editor-pan svg");
+          const view = editorGhostSolve(m).value;
+          const drawn = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff").map((n) => [+n.getAttribute("cx") / 100, -(+n.getAttribute("cy")) / 100]);
+          const hit = drawn.map((pt) => { const ref = editorHitAt(view, pt, null, m); return ref.kind === "note" ? editorNames(m, ref.ring)[ref.i] + "@" + Math.round(((Math.atan2(pt[1], pt[0]) * 180 / Math.PI) + 360) % 360) : ref.kind; });
+          const q = editorPlace(m, "rim", "A3"); const sol = editorSolve(q.value).value.fields;
+          const commit = Object.values(sol).filter((f) => f[3] === "bottom" && (f[0] + f[1] === "E3" || f[0] + f[1] === "C3")).map((f) => f[0] + f[1] + "@" + Math.round(f[4])).sort();
+          return { log, angles: st.angles, bottom: st.bottom, hit: hit.sort(), commit, committed: !editorIsEmpty(q.value) };`);
+        assert.deepStrictEqual(r.log, ["ok", "ok", "ok", "ok"], "every tap accepted: " + JSON.stringify(r));
+        assert.deepStrictEqual(r.angles, [135, null, 200]);
+        assert.strictEqual(r.committed, true, "the fifth commits");
+        for (const n of ["B2@", "C3@", "E3@"]) assert.ok(r.hit.some((x) => x.startsWith(n)), n + " is drawn and hit as itself: " + JSON.stringify(r));
+        assert.deepStrictEqual(r.hit.filter((x) => /^(E3|C3)@/.test(x)), r.commit, "drawn pinned notes sit at the committed angles: " + JSON.stringify(r));
+      });
+    }
+
     test("the empty Standard pan paints staged notes above every area ring: at each note centre and where a ring crosses its edge the note is the topmost thing, filled", async () => {
       await fresh(390, 844);
       await openAdd();

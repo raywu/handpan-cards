@@ -13239,10 +13239,7 @@ function editorAdd(m, ring, name, angle) {
   if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
   if (m.options.profile) return editorNeoInsert(m, ring, name);
   if (editorIsEmpty(m)) {
-    const staged = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
-    const pinned = staged.ok && ring === "bottom" && editorIsEmpty(staged.value) ? editorStageAnglesOf(staged.value).lastIndexOf(true) : -1;
-    return pinned !== -1 && !editorGhostSolve(staged.value, true).ok
-      ? editorNoRoom(staged.value, "bottom", pinned, editorStageOf(staged.value).angles[pinned]) : staged;
+    return editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
   }
   const parts = editorPartsOf(m);
   parts[ring].push(String(name));

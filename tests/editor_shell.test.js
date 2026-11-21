@@ -2251,6 +2251,94 @@ test("RCF-16: over 14 dings and every push and remove path to depth 5, a remove 
   assert.ok(r.rimInnerRm > 100, "rim and inner removes ran: " + r.rimInnerRm);
 });
 
+// A staged push is accepted exactly when the commit the stage must later reach accepts it
+// (editorStageEdit, i.e. settle plus trial); the tap-order strict ghost refuses nothing.
+const RCF5_SCAN = (cfg) => `(() => {
+  const cfg = ${JSON.stringify(cfg)};
+  const PCS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const midi = (n) => editorNameEntry(n, "bottom")[2];
+  const nameOf = (x) => PCS[x % 12] + (Math.floor(x / 12) - 1);
+  const out = { states: 0, pushes: 0, refused: 0, strictOnly: 0, late: [], removeRefused: [], previewBad: 0, noGeom: 0, throws: 0, hits: 0, hitBad: [], ex: [] };
+  const hitCheck = (m) => { const g = editorGhostSolve(m); if (!g.ok) { out.previewBad++; return; } const v = g.value;
+    if (!v.geom) { out.noGeom++; return; }
+    for (const id of Object.keys(v.fields)) { const f = v.fields[id]; if (f[3] === "ding") continue; const a = f[4] * Math.PI / 180;
+      let ref; try { ref = editorHitAt(v, [v.geom[f[3]] * Math.cos(a), v.geom[f[3]] * Math.sin(a)], null, m); } catch (e) { out.throws++; continue; }
+      if (ref.kind !== "note") continue; out.hits++;
+      const nm = editorNames(m, ref.ring)[ref.i]; if (nm !== f[0] + f[1] && out.hitBad.length < 5) out.hitBad.push(f[0] + f[1] + " hit as " + nm); } };
+  for (const ding of cfg.dings) {
+    const pool = cfg.pool.filter((b) => b !== ding);
+    const fifth = nameOf(midi(ding) + 7);
+    const seen = new Set();
+    const walk = (m, path, d) => {
+      const key = JSON.stringify(m.stage); if (seen.has(key)) return; seen.add(key); out.states++;
+      hitCheck(m);
+      const st = editorStageOf(m);
+      const f = editorPlace(m, "rim", fifth);
+      if (!f.ok && f.code === "NO_ROOM" && out.late.length < 5) out.late.push(path + " => " + f.reason);
+      for (const b of pool) if (!st.bottom.includes(b)) for (const g of cfg.angles) { const ang = g === null ? undefined : g;
+        const q = editorPlace(m, "bottom", b, ang); out.pushes++;
+        const t = editorStageEdit(m, (s) => editorStagePush(s, "bottom", b, ang));
+        if (!q.ok) { out.refused++; if (t.ok) { out.strictOnly++; if (out.ex.length < 4) out.ex.push(path + " +" + b + "@" + g); } }
+        else if (editorIsEmpty(q.value) && d < cfg.depth) walk(q.value, path + " " + b + "@" + g, d + 1); }
+      if (d < cfg.depth) st.bottom.forEach((n, i) => { const q = editorRemove(m, "bottom", i); if (!q.ok) { if (out.removeRefused.length < 5) out.removeRefused.push(path + " rm " + n); } else if (editorIsEmpty(q.value)) walk(q.value, path + " rm " + n, d + 1); });
+    };
+    walk(editorReplaceDing(editorEmptyModel(), ding).value, "(" + ding + ")", 0);
+  }
+  return out;
+})()`;
+
+test("RCF-F5: a staged push the commit accepts is accepted, and its pins are kept through the commit", () => {
+  const a = app();
+  asSession(a, "new");
+  a.run(RCF16_RUN);
+  const r = plain(a.get(`(() => {
+    const one = __rcf16([["ding", "D3"], ["bottom", "A2"], ["bottom", "E3", 135], ["bottom", "B2"], ["bottom", "C3", 200], ["rm", "bottom", 0], ["bottom", "A2"]]);
+    const two = __rcf16([["ding", "D3"], ["bottom", "E3", 135], ["bottom", "B2"], ["bottom", "C3", 200]]);
+    const fin = (run) => { const q = editorPlace(run.m, "rim", "A3"); const sol = q.ok && !editorIsEmpty(q.value) ? editorSolve(q.value) : null;
+      const angs = sol && sol.ok ? ringIds(sol.value.fields, "bottom").map((id) => sol.value.fields[id][0] + sol.value.fields[id][1] + "@" + sol.value.fields[id][4]).sort() : null;
+      return { fifth: q.ok, angs }; };
+    return { one: one.log, oneAngles: editorStageOf(one.m).angles, oneFinal: fin(one), two: two.log, twoAngles: editorStageOf(two.m).angles, twoFinal: fin(two) };
+  })()`));
+  assert.deepStrictEqual(r.one.slice(1), ["ok", "ok", "ok", "ok", "ok", "ok"], "remove then a free A2 accepted: " + r.one);
+  assert.deepStrictEqual(r.two.slice(1), ["ok", "ok", "ok"], "push-only C3 accepted: " + r.two);
+  assert.deepStrictEqual(r.twoAngles, [135, null, 200], "the pins stay as tapped");
+  assert.strictEqual(r.twoFinal.fifth, true, "the fifth commits");
+  assert.ok(r.twoFinal.angs.includes("E3@135") && r.twoFinal.angs.includes("C3@200"), "the commit keeps both pins: " + r.twoFinal.angs);
+  assert.strictEqual(r.oneFinal.fifth, true, "the fifth commits after the remove path");
+  assert.ok(r.oneAngles.includes(135), "the remove path keeps its pin: " + r.oneAngles);
+});
+
+for (let g = 0; g < 4; g++) {
+  test(`RCF-F5: staged push agrees with the staged commit over every state, and the preview of every new state hit-names its drawn note (group ${g + 1} of 4)`, () => {
+    const a = app();
+    asSession(a, "new");
+    const dings = RCF15_DINGS.filter((_, k) => k % 4 === g);
+    const r = plain(a.get(RCF5_SCAN({ dings, pool: ["A2", "B2", "C3", "D3", "E3", "G3"], depth: 5, angles: [null, 100, 200, 135] })));
+    assert.ok(r.pushes > 5000, "pushes tried: " + r.pushes);
+    assert.ok(r.refused > 100, "refusals exist (the settle still refuses): " + r.refused);
+    assert.strictEqual(r.strictOnly, 0, "pushes refused although the commit accepts them: " + JSON.stringify(r.ex));
+    assert.deepStrictEqual(r.late, [], "late refusals at the fifth");
+    assert.deepStrictEqual(r.removeRefused, [], "refused removes");
+    assert.strictEqual(r.previewBad, 0, "preview not ok");
+    assert.strictEqual(r.noGeom, 0, "preview without geom");
+    assert.strictEqual(r.throws, 0, "editorHitAt throws");
+    assert.deepStrictEqual(r.hitBad, [], "drawn note and hit ref disagree");
+    assert.ok(r.hits > 1000, "hit probes ran: " + r.hits);
+  });
+}
+
+test("RCF-F5: a push the settle refuses is still refused and names the pin", () => {
+  const a = app();
+  asSession(a, "new");
+  a.run(RCF16_RUN);
+  const r = plain(a.get(`(() => { const run = __rcf16([["ding", "D3"], ["bottom", "A2", 270], ["bottom", "B2", 100], ["bottom", "C3", 200], ["bottom", "E3", 200]]);
+    const st = editorStageOf(run.m); return { log: run.log, bottom: st.bottom }; })()`));
+  assert.deepStrictEqual(r.log.slice(1), ["ok", "ok", "ok", "NO_ROOM"], "the fourth note is refused: " + r.log);
+  assert.deepStrictEqual(r.bottom, ["A2", "B2", "C3"], "the refusal changed nothing");
+  const msg = plain(a.get(`(() => { let m = editorEmptyModel(); for (const [n, g] of [["A2", 270], ["B2", 100], ["C3", 200]]) m = editorPlace(m, "bottom", n, g).value; m = editorReplaceDing(m, "D3").value; return editorPlace(m, "bottom", "E3", 200).reason; })()`));
+  assert.match(msg, /E3 has no room at 200 degrees/);
+});
+
 test("RCF-16: the clear is minimal and never clears a pin the commit would keep", () => {
   const a = app();
   asSession(a, "new");
