@@ -2327,6 +2327,40 @@ for (let g = 0; g < 4; g++) {
   });
 }
 
+const RCF6_PROBE = (pinned) => `(() => {
+  editorSession = { kind: "new" };
+  const drawn = (m) => { const g = editorGhostSolve(m); return g.ok ? Object.values(g.value.fields).filter((f) => f[3] === "bottom").map((f) => f[0] + f[1] + "@" + Math.round(f[4])) : null; };
+  const want = (m) => { const st = editorStageOf(m); return st.angles.map((x, i) => (x === null || x === undefined ? null : st.bottom[i] + "@" + x)).filter(Boolean); };
+  let m = editorEmptyModel(); const log = [];
+  for (const [n, g] of [["A2", undefined], ["B2", undefined], [${JSON.stringify(pinned)}, 135], ["C3", undefined]]) {
+    const q = editorPlace(m, "bottom", n, g); log.push(q.ok ? "ok" : "NO");
+    if (q.ok) m = q.value;
+  }
+  const out = { log, want: want(m), drawn: drawn(m) };
+  const walk = { states: 0, bad: [] }, seen = new Set();
+  const go = (mm, p, d) => { const k = JSON.stringify(mm.stage); if (seen.has(k)) return; seen.add(k); walk.states++;
+    const st = editorStageOf(mm);
+    if (st.angles) { const d0 = drawn(mm), w0 = want(mm); if (!d0 || w0.some((w) => !d0.includes(w))) { if (walk.bad.length < 4) walk.bad.push(p + " want " + w0 + " drawn " + d0); } }
+    if (d >= 4) return;
+    for (const b of ["A2", "B2", "C3", "D3", "E3", "G3", "F3"]) if (!st.bottom.includes(b)) for (const g of [undefined, 100, 135, 200, 270]) { const q = editorPlace(mm, "bottom", b, g); if (q.ok && editorIsEmpty(q.value)) go(q.value, p + " " + b + "@" + g, d + 1); } };
+  go(editorEmptyModel(), "(no ding)", 0);
+  out.walk = walk;
+  return out;
+})()`;
+
+for (const pinned of ["D3", "E3", "G3"]) {
+  test(`RCF-F6: with no ding set, the preview draws every pinned bottom note at its stored angle (${pinned} at 135)`, () => {
+    const a = app();
+    asSession(a, "new");
+    const r = plain(a.get(RCF6_PROBE(pinned)));
+    assert.deepStrictEqual(r.log, ["ok", "ok", "ok", "ok"], "all four taps accepted: " + r.log);
+    assert.ok(r.want.includes("A2@270") && r.want.includes(pinned + "@135"), "pins stored: " + r.want);
+    assert.ok(r.drawn && r.want.every((w) => r.drawn.includes(w)), "drawn at pin: want " + r.want + " drawn " + r.drawn);
+    assert.deepStrictEqual(r.walk.bad, [], "no-ding scan, drawn note off its pin");
+    assert.ok(r.walk.states > 50, "states scanned: " + r.walk.states);
+  });
+}
+
 test("RCF-F5: a push the settle refuses is still refused and names the pin", () => {
   const a = app();
   asSession(a, "new");
