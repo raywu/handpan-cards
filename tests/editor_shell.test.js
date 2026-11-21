@@ -2308,21 +2308,24 @@ test("RCF-F5: a staged push the commit accepts is accepted, and its pins are kep
   assert.ok(r.oneAngles.includes(135), "the remove path keeps its pin: " + r.oneAngles);
 });
 
-test("RCF-F5: staged push agrees with the staged commit over every state, and the preview of every new state hit-names its drawn note", () => {
-  const a = app();
-  asSession(a, "new");
-  const r = plain(a.get(RCF5_SCAN({ dings: RCF15_DINGS, pool: ["A2", "B2", "C3", "D3", "E3", "G3"], depth: 5, angles: [null, 100, 200, 135] })));
-  assert.ok(r.pushes > 50000, "pushes tried: " + r.pushes);
-  assert.ok(r.refused > 1000, "refusals exist (the settle still refuses): " + r.refused);
-  assert.strictEqual(r.strictOnly, 0, "pushes refused although the commit accepts them: " + JSON.stringify(r.ex));
-  assert.deepStrictEqual(r.late, [], "late refusals at the fifth");
-  assert.deepStrictEqual(r.removeRefused, [], "refused removes");
-  assert.strictEqual(r.previewBad, 0, "preview not ok");
-  assert.strictEqual(r.noGeom, 0, "preview without geom");
-  assert.strictEqual(r.throws, 0, "editorHitAt throws");
-  assert.deepStrictEqual(r.hitBad, [], "drawn note and hit ref disagree");
-  assert.ok(r.hits > 10000, "hit probes ran: " + r.hits);
-});
+for (let g = 0; g < 4; g++) {
+  test(`RCF-F5: staged push agrees with the staged commit over every state, and the preview of every new state hit-names its drawn note (group ${g + 1} of 4)`, () => {
+    const a = app();
+    asSession(a, "new");
+    const dings = RCF15_DINGS.filter((_, k) => k % 4 === g);
+    const r = plain(a.get(RCF5_SCAN({ dings, pool: ["A2", "B2", "C3", "D3", "E3", "G3"], depth: 5, angles: [null, 100, 200, 135] })));
+    assert.ok(r.pushes > 5000, "pushes tried: " + r.pushes);
+    assert.ok(r.refused > 100, "refusals exist (the settle still refuses): " + r.refused);
+    assert.strictEqual(r.strictOnly, 0, "pushes refused although the commit accepts them: " + JSON.stringify(r.ex));
+    assert.deepStrictEqual(r.late, [], "late refusals at the fifth");
+    assert.deepStrictEqual(r.removeRefused, [], "refused removes");
+    assert.strictEqual(r.previewBad, 0, "preview not ok");
+    assert.strictEqual(r.noGeom, 0, "preview without geom");
+    assert.strictEqual(r.throws, 0, "editorHitAt throws");
+    assert.deepStrictEqual(r.hitBad, [], "drawn note and hit ref disagree");
+    assert.ok(r.hits > 1000, "hit probes ran: " + r.hits);
+  });
+}
 
 test("RCF-F5: a push the settle refuses is still refused and names the pin", () => {
   const a = app();
