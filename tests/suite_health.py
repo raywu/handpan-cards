@@ -84,6 +84,7 @@ FLOORS = {
     "tests/sequence.test.js": 59,
     "tests/swipe.test.js": 21,
     "tests/sync.test.js": 178,
+    "tests/sync_opaque_probe.test.js": 7,
     "tests/scale.test.js": 14,
     "tests/sandbox_events.test.js": 5,
     "tests/persist.test.js": 7,
