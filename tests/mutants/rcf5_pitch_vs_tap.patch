@@ -1,0 +1,18 @@
+# kills: RCF-F5: staged push agrees with the staged commit over every state, and the preview of every new state hit-names its drawn note
+# suite: node --test --test-name-pattern RCF.F5..staged.push.agrees tests/editor_shell.test.js
+# fault: The strict ghost refusal returns for a push that is the lowest pitch only, so one tap order is still refused although the commit accepts it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13239,7 +13239,10 @@ function editorAdd(m, ring, name, angle) {
+   if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
+   if (m.options.profile) return editorNeoInsert(m, ring, name);
+   if (editorIsEmpty(m)) {
+-    return editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
++    const staged = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
++    const pinned = staged.ok && ring === "bottom" && editorIsEmpty(staged.value) ? editorStageAnglesOf(staged.value).lastIndexOf(true) : -1;
++    return pinned !== -1 && editorStageOf(staged.value).bottom.every((n) => editorNameEntry(name, "bottom")[2] <= editorNameEntry(n, "bottom")[2]) && !editorGhostSolve(staged.value, true).ok
++      ? editorNoRoom(staged.value, "bottom", pinned, editorStageOf(staged.value).angles[pinned]) : staged;
+   }
+   const parts = editorPartsOf(m);
+   parts[ring].push(String(name));
