@@ -890,4 +890,141 @@ function run() {
       assert.notStrictEqual(await msg(), sent, kind);
     }
   });
+
+  const SYNC_LOCK_NAME = "hpfc.sync";
+  const SAVED_LOCK_NAME = "handpan-cards:saved-scales:v1";
+  const until = async (fn, label, timeout = 5000) => {
+    const deadline = Date.now() + timeout;
+    for (;;) {
+      if (await fn().catch(() => false)) return;
+      if (Date.now() > deadline) throw new Error("timed out waiting for " + label);
+      await sleep(40);
+    }
+  };
+  const lockCounts = name => b.eval(`return navigator.locks.query().then(s => ({ held: s.held.filter(l => l.name === ${JSON.stringify(name)}).length, pending: s.pending.filter(l => l.name === ${JSON.stringify(name)}).length }));`);
+  const visibilityJs = hidden => `(function () { Object.defineProperty(document, "hidden", { configurable: true, get: function () { return ${hidden}; } }); Object.defineProperty(document, "visibilityState", { configurable: true, get: function () { return ${JSON.stringify(hidden ? "hidden" : "visible")}; } }); document.dispatchEvent(new Event("visibilitychange")); return 1; })()`;
+  const setHidden = (hidden, frame = false) => frame ? frameJs(visibilityJs(hidden)) : b.eval(`return ${visibilityJs(hidden)};`);
+  const frameHolder = () => frameJs("syncHolder");
+  const sidecar = () => b.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)}));`);
+  const pushedBy = tab => b.eval(`return JSON.parse(localStorage.getItem("__sblog") || "[]").filter(l => l.path === "/rest/v1/rpc/push_scales" && l.tab === ${JSON.stringify(tab)}).length;`);
+  const clearLog = () => b.eval(`localStorage.setItem("__sblog", "[]");`);
+  const SCALE_PENDING = "(F3) C4 D4 Eb4 F4 G4 Ab4 Bb4";
+  const SCALE_SHOWN = "(G3) D4 Eb4 F4 G4 A4 Bb4 C5";
+  const SCALE_FRAME = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const SCALE_REGAIN = "(C3) G3 Bb3 C4 D4 Eb4 F4 G4 Bb4";
+  const queuedFrame = async () => { await openFrame(); await until(async () => (await lockCounts(SYNC_LOCK_NAME)).pending === 1, "tab B queued for the lock"); };
+
+  test("two tabs: a hidden holder releases the lock and the visible tab becomes holder", async () => {
+    await signedSynced();
+    await queuedFrame();
+    assert.strictEqual(await frameHolder(), false);
+    await setHidden(true);
+    await until(frameHolder, "the visible tab B holding the lock after tab A hid");
+    assert.strictEqual(await b.eval(`return syncHolder;`), false, "the hidden tab A no longer thinks it holds the lock");
+    assert.deepStrictEqual(await lockCounts(SYNC_LOCK_NAME), { held: 1, pending: 0 });
+  });
+
+  test("two tabs: a hidden tab never queues for the lock", async () => {
+    await fresh();
+    await openFrame();
+    await setHidden(true);
+    await frameJs(`window.__rel = null; navigator.locks.request(${JSON.stringify(SYNC_LOCK_NAME)}, function () { return new Promise(function (r) { window.__rel = r; }); }).catch(function () {}); 0`);
+    await until(() => frameJs("!!window.__rel"), "the stub holder");
+    await b.eval(`const w = document.getElementById("tabB").contentWindow; w.eval(${JSON.stringify(`localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar({}))});`)});`);
+    await sleep(400);
+    assert.deepStrictEqual(await lockCounts(SYNC_LOCK_NAME), { held: 1, pending: 0 }, "no request from the hidden tab");
+    assert.strictEqual(await b.eval(`return syncLockAsked;`), false);
+    await setHidden(false);
+    await until(async () => (await lockCounts(SYNC_LOCK_NAME)).pending === 1, "the visible tab queueing");
+    await setHidden(true);
+    await frameJs("window.__rel()");
+    await sleep(400);
+    assert.deepStrictEqual(await lockCounts(SYNC_LOCK_NAME), { held: 0, pending: 0 }, "a request aborted by hiding is never granted");
+    assert.strictEqual(await b.eval(`return syncHolder;`), false);
+  });
+
+  test("two tabs: a hidden holder with an unpushed save marks it pending and the next holder pushes it", async () => {
+    await signedSynced();
+    await b.eval(`const t = window.setTimeout; window.setTimeout = function (f, ms) { return t.apply(window, [f, ms === 2000 ? 60000 : ms].concat([].slice.call(arguments, 2))); };`);
+    await queuedFrame();
+    await addScale(SCALE_PENDING);
+    await sleep(300);
+    await clearLog();
+    assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).pending;`), false);
+    const pending = await b.eval(`${visibilityJs(true)}; return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).pending;`);
+    assert.strictEqual(pending, true, "the hide wrote pending synchronously");
+    await until(async () => (await pushedBy("B")) >= 1, "tab B pushing the save");
+    assert.strictEqual(await pushedBy("top"), 0, "the hidden tab pushed nothing");
+    await until(async () => (await sidecar()).pending === false, "pending cleared by the push");
+  });
+
+  test("two tabs: a hidden holder mid-cycle stops writing and a mid-pull hide leaves no duplicate scale", async () => {
+    await fresh();
+    const baseCount = await b.eval(`return savedState.entries.length;`);
+    const row = { scale_id: "33333333-3333-4333-8333-333333333333", rev: 5, record: { v: 4, s: "(E3) B3 D4 E4 F#4 G4 A4 B4 D5", o: { palette: 0, mirror: false, mirrorBottom: false, anchor: "one", parent: null } }, deleted: false };
+    const remote = `(function () { var o = window.fetch; window.fetch = function (u, opt) { var m = /saved_scales\\?.*rev=gt\\.(\\d+)/.exec(String(u)); if (m) return Promise.resolve({ status: 200, ok: true, json: function () { return Promise.resolve(Number(m[1]) < 5 ? [${JSON.stringify(row)}] : []); } }); return o(u, opt); }; return 1; })()`;
+    await openFrame();
+    await b.eval(`return ${remote};`);
+    await frameJs(remote);
+    await frameJs(`window.__sl = null; navigator.locks.request(${JSON.stringify(SAVED_LOCK_NAME)}, function () { return new Promise(function (r) { window.__sl = r; }); }); 0`);
+    await until(() => frameJs("!!window.__sl"), "tab B holding the scale lock");
+    await signIn();
+    await until(async () => (await lockCounts(SAVED_LOCK_NAME)).pending >= 1, "tab A's commit waiting on the scale lock");
+    await setHidden(true);
+    await frameJs("window.__sl()");
+    await until(frameHolder, "tab B holding the sync lock after tab A settled and released");
+    await until(async () => !!(await sidecar()).base["33333333-3333-4333-8333-333333333333"], "the settle recorded the pulled scale");
+    await sleep(1200);
+    assert.strictEqual(await b.eval(`return syncHolder;`), false, "tab A wrote nothing more and released the lock");
+    assert.strictEqual(await b.eval(`return savedState.entries.length;`), baseCount + 1, "tab A has one copy");
+    assert.strictEqual(await frameJs("savedState.entries.length"), baseCount + 1, "tab B has one copy");
+  });
+
+  test("two tabs: a visible tab shows Changes not yet saved 10 s after an unpushed save, also after a reload", async () => {
+    await fresh();
+    await openFrame();
+    await b.eval(`window.__held = false; navigator.locks.request(${JSON.stringify(SYNC_LOCK_NAME)}, function () { window.__held = true; return new Promise(function () {}); }); localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar({}))});`);
+    await until(() => b.eval(`return window.__held === true;`), "the top window holding the lock");
+    await addScale(SCALE_SHOWN, true);
+    const line = () => frameJs(`document.getElementById("sync-msg").textContent`);
+    assert.notStrictEqual(await line(), "Changes not yet saved to your account", "not shown straight after the save");
+    await until(async () => (await line()) === "Changes not yet saved to your account", "the not-saved line 10 s after the save", 15000);
+    assert.strictEqual(await frameHolder(), false);
+    await frameJs(`location.reload(); 0`);
+    await sleep(300);
+    await until(() => b.eval(`const w = document.getElementById("tabB").contentWindow; return w.document.readyState === "complete" && w.eval("typeof syncHolder") === "boolean" && w.eval("savedState.entries.length") > 0;`), "tab B rebooted");
+    await until(async () => (await line()) === "Changes not yet saved to your account", "the not-saved line after the reload", 15000);
+  });
+
+  test("two tabs: no tab writes the sync state after it released the lock", async () => {
+    await signedSynced();
+    await queuedFrame();
+    await b.eval(`window.__w = []; const s = Storage.prototype.setItem; Storage.prototype.setItem = function (k) { if (k === ${JSON.stringify(KEY)}) window.__w.push(k); return s.apply(this, arguments); };`);
+    await b.eval(`const s = JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})); s.accessExp = 0; localStorage.setItem(${JSON.stringify(KEY)}, JSON.stringify(s));`);
+    await gateFetch("/auth/v1/token");
+    await b.eval(`syncKick(true); return 1;`);
+    await b.waitFor(`window.__gated === 1`, { label: "the token refresh held" });
+    await setHidden(true);
+    await releaseGate();
+    await until(frameHolder, "tab B holding the lock after tab A released it");
+    assert.strictEqual((await sidecar()).refresh, "ref2", "the refreshed session was kept");
+    await sleep(500);
+    await b.eval(`window.__w = [];`);
+    await addScale(SCALE_FRAME, true);
+    await until(async () => (await pushedBy("B")) >= 1, "tab B pushing the new save");
+    await sleep(300);
+    assert.deepStrictEqual(await b.eval(`return window.__w;`), [], "the released tab wrote no sync state");
+    assert.ok(await sidecar(), "the next holder is not signed out");
+  });
+
+  test("one tab: hide then show regains the lock and pushes a save", async () => {
+    await signedSynced();
+    await setHidden(true);
+    await until(async () => (await lockCounts(SYNC_LOCK_NAME)).held === 0, "no holder while the only tab is hidden");
+    await setHidden(false);
+    await until(() => b.eval(`return syncHolder === true;`), "the shown tab holding the lock again");
+    await clearLog();
+    await addScale(SCALE_REGAIN);
+    await until(async () => (await pushedBy("top")) >= 1, "the save pushed");
+  });
 }
