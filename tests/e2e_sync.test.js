@@ -210,8 +210,13 @@ function run() {
       await click("scale-next");
       await wait(`visible("scale-panel-layout")`, "the Layout tab");
     }
-    await b.click("#scale-generate");
-    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet closing" });
+    if (frame) {
+      await click("scale-generate");
+      await wait(`document.getElementById("scale-sheet").hasAttribute("hidden")`, "the sheet closing");
+    } else {
+      await b.click("#scale-generate");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet closing" });
+    }
   }
 
   test("a saved scale is pushed after sign-in, and sign-out keeps it", async () => {
@@ -912,8 +917,10 @@ function run() {
   const sidecar = () => b.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)}));`);
   const pushedBy = tab => b.eval(`return JSON.parse(localStorage.getItem("__sblog") || "[]").filter(l => l.path === "/rest/v1/rpc/push_scales" && l.tab === ${JSON.stringify(tab)}).length;`);
   const clearLog = () => b.eval(`localStorage.setItem("__sblog", "[]");`);
-  const SCALE_A = "(D3) A3 C4 D4 E4 F4 G4 A4 C5";
-  const SCALE_B = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const SCALE_PENDING = "(F3) C4 D4 Eb4 F4 G4 Ab4 Bb4";
+  const SCALE_SHOWN = "(G3) D4 Eb4 F4 G4 A4 Bb4 C5";
+  const SCALE_FRAME = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
+  const SCALE_REGAIN = "(C3) G3 Bb3 C4 D4 Eb4 F4 G4 Bb4";
   const queuedFrame = async () => { await openFrame(); await until(async () => (await lockCounts(SYNC_LOCK_NAME)).pending === 1, "tab B queued for the lock"); };
 
   test("two tabs: a hidden holder releases the lock and the visible tab becomes holder", async () => {
@@ -949,7 +956,7 @@ function run() {
     await signedSynced();
     await b.eval(`const t = window.setTimeout; window.setTimeout = function (f, ms) { return t.apply(window, [f, ms === 2000 ? 60000 : ms].concat([].slice.call(arguments, 2))); };`);
     await queuedFrame();
-    await addScale(SCALE_A);
+    await addScale(SCALE_PENDING);
     await sleep(300);
     await clearLog();
     assert.strictEqual(await b.eval(`return JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).pending;`), false);
@@ -975,7 +982,7 @@ function run() {
     await setHidden(true);
     await frameJs("window.__sl()");
     await until(frameHolder, "tab B holding the sync lock after tab A settled and released");
-    await until(async () => Object.keys((await sidecar()).base).length === 1, "the settle recorded the pulled scale");
+    await until(async () => !!(await sidecar()).base["33333333-3333-4333-8333-333333333333"], "the settle recorded the pulled scale");
     await sleep(1200);
     assert.strictEqual(await b.eval(`return syncHolder;`), false, "tab A wrote nothing more and released the lock");
     assert.strictEqual(await b.eval(`return savedState.entries.length;`), baseCount + 1, "tab A has one copy");
@@ -987,7 +994,7 @@ function run() {
     await openFrame();
     await b.eval(`window.__held = false; navigator.locks.request(${JSON.stringify(SYNC_LOCK_NAME)}, function () { window.__held = true; return new Promise(function () {}); }); localStorage.setItem(${JSON.stringify(KEY)}, ${JSON.stringify(bSidecar({}))});`);
     await until(() => b.eval(`return window.__held === true;`), "the top window holding the lock");
-    await addScale(SCALE_A, true);
+    await addScale(SCALE_SHOWN, true);
     const line = () => frameJs(`document.getElementById("sync-msg").textContent`);
     assert.notStrictEqual(await line(), "Changes not yet saved to your account", "not shown straight after the save");
     await until(async () => (await line()) === "Changes not yet saved to your account", "the not-saved line 10 s after the save", 15000);
@@ -1012,7 +1019,7 @@ function run() {
     assert.strictEqual((await sidecar()).refresh, "ref2", "the refreshed session was kept");
     await sleep(500);
     await b.eval(`window.__w = [];`);
-    await addScale(SCALE_B, true);
+    await addScale(SCALE_FRAME, true);
     await until(async () => (await pushedBy("B")) >= 1, "tab B pushing the new save");
     await sleep(300);
     assert.deepStrictEqual(await b.eval(`return window.__w;`), [], "the released tab wrote no sync state");
@@ -1026,7 +1033,7 @@ function run() {
     await setHidden(false);
     await until(() => b.eval(`return syncHolder === true;`), "the shown tab holding the lock again");
     await clearLog();
-    await addScale(SCALE_A);
+    await addScale(SCALE_REGAIN);
     await until(async () => (await pushedBy("top")) >= 1, "the save pushed");
   });
 }
