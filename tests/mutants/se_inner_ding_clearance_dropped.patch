@@ -1,0 +1,15 @@
+# kills: SE: a pinned inner angle near the fan ends is BAD_NOTE: its number would sit inside the ding (clearance below INNER_CLEARANCE), never clamped
+# suite: node --test --test-name-pattern ^SE..a.pinned.inner.angle.near.the.fan.ends.is.BAD.NOTE tests/layout.test.js
+# A pinned inner angle at the fan ends is accepted although its number sits inside the ding.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -670,7 +670,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     };
+     var at = angleOf(i);
+     if (!innerInSpan(at)) return ids[i];
+-    if (at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
++    if (false && at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
+     var floor = innerFloor(geom, ids.map(function (id) { return fields[id][4]; }));
+     var k;
+     for (k = 0; k < ids.length; k += 1) {

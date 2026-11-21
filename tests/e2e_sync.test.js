@@ -210,8 +210,10 @@ function run() {
       await click("scale-next");
       await wait(`visible("scale-panel-layout")`, "the Layout tab");
     }
-    await b.click("#scale-generate");
-    await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet closing" });
+    const save = editor ? "editor-save" : "scale-generate";
+    await wait(`visible(${JSON.stringify(save)}) && !document.getElementById(${JSON.stringify(save)}).disabled`, "the scale save control");
+    await click(save);
+    await wait(`document.getElementById("scale-sheet").hasAttribute("hidden")`, "the sheet closing");
   }
 
   test("a saved scale is pushed after sign-in, and sign-out keeps it", async () => {
@@ -246,13 +248,7 @@ function run() {
     await frameJs("syncKick(true)");
     await sleep(200);
     assert.deepStrictEqual((await log()).filter(l => l.path.startsWith("/auth/v1/token")), [], "the other tab makes no token call");
-    await frameJs(`(async () => {
-      document.getElementById("settings-trigger").click();
-      document.getElementById("deck-add").click();
-      const box = document.getElementById("scale-box"); box.value = "(D3) A3 C4 D4 E4 F4 G4 A4 C5"; box.dispatchEvent(new Event("input", { bubbles: true }));
-      const next = document.getElementById("scale-next"); if (!next.hidden) next.click();
-      document.getElementById("scale-generate").click();
-    })()`);
+    await addScale("(D3) A3 C4 D4 E4 F4 G4 A4 C5", true);
     await b.waitFor(`JSON.parse(localStorage.getItem("__sblog") || "[]").some(l => l.path === "/rest/v1/rpc/push_scales")`, { timeout: 10000, label: "the lock tab pushing" });
     const calls = (await log()).filter(l => l.path.startsWith("/auth/v1/token") || l.path === "/rest/v1/rpc/push_scales");
     assert.ok(calls.length >= 1);

@@ -1,0 +1,15 @@
+# kills: T0 source hash: the drag, hit and drop functions and their constants are byte-identical
+# suite: node --test --test-name-pattern ^T0.source.hash: tests/editor_freeze.test.js
+# editorDragDown accepts a secondary mouse button, one byte of its guard.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16702,7 +16702,7 @@ function editorDragSource(e) {
+ }
+ function editorDragDown(e) {
+   const s = editorSession;
+-  if (!s || s.dialog || s.editing || editorDrag || e.button > 0) return;
++  if (!s || s.dialog || s.editing || editorDrag || e.button > 1) return;
+   if (e.pointerType === "touch" && !DRAG_ON_TOUCH) return;
+   const src = editorDragSource(e);
+   if (!src) return;

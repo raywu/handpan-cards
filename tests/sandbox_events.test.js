@@ -5,7 +5,8 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { boot } = require("./helpers/sandbox.js");
+const { boot: sandboxBoot } = require("./helpers/sandbox.js");
+const boot = (opts = {}) => sandboxBoot({ onePanel: false, ...opts });
 
 function sheetBody(app) {
   const body = app.sandbox.document.querySelector(".sheetbody");

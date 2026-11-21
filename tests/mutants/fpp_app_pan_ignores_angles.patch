@@ -7,10 +7,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11744,7 +11744,9 @@ function pan(d, ch, opts) {
+@@ -12539,7 +12539,9 @@ function pan(d, ch, opts) {
      const isB = zone === "bottom";
      const orb = R * (slot && slot[3] === "mutant" ? slot[4] : isB ? g.bottom : zone === "inner" ? g.inner : g.rim);
-     const rr  = R * (isB ? g.r_bnote : g.r_note);
+     const rr  = R * (isB ? g.r_bnote : g.r_note) * (scale ? scale[zone] : 1);
 -    const [x, y] = P(orb, ang);
 +    const o = Object.assign({}, d.options || {}); delete o.angles;
 +    const home = (o.seats || interactive) ? null : HPE.layout.solve(d.fields, o).value;

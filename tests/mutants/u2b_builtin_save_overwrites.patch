@@ -1,0 +1,15 @@
+# kills: U2b-14: the save command is separate for a built-in, an edit for a saved scale, an import for a new one (D15)
+# suite: node --test --test-name-pattern ^U2b-14..the.save.command.is.separate.for.a.built-in..an.edit.for.a.saved.scale..an.import.for.a.new.one..D15.$ tests/editor_shell.test.js
+# fault: Saving an edited built-in takes the edit path instead of a new handle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15308,7 +15308,7 @@ function editorCommitOptions(m) {
+ // A built-in never takes its own slot: it saves a new scale (D15).
+ function editorSaveCommand(base, neotone, ownsSlot) {
+   if (!base) return { type: "import", selectedInstanceId: selection.kind === "saved" ? selection.id : null };
+-  if (base.selection.kind === "builtin" || (neotone && ownsSlot)) return { type: "save-as-separate" };
++  if (neotone && ownsSlot) return { type: "save-as-separate" };
+   return { type: "edit", instanceId: base.selection.id, expectedRevision: base.revision };
+ }
+ 

@@ -1,0 +1,15 @@
+# kills: U2a-X1: exchanging two bottom notes trades their solved angles exactly as the sheet does, pinning both
+# suite: node --test --test-name-pattern ^U2a-X1:.exchanging.two.bottom.notes.trades.their.solved.angles.exactly.as.the.sheet.does..pinning.both$ tests/editor_model.test.js
+# fault: Each exchanged note keeps its own angle instead of taking the other's.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15147,7 +15147,7 @@ function editorExchangeAngles(m, ring, i, j) {
+   const current = editorAnglesOf(here, ring);
+   const next = editorClone(m);
+   const list = (next.options.angles && next.options.angles[ring]) || current.map(() => null);
+-  list[i] = stepOf(current[j]);
++  list[i] = stepOf(current[i]);
+   list[j] = stepOf(current[i]);
+   next.options.angles = { ...next.options.angles, [ring]: list };
+   for (const k of [i, j]) if (!next.pins.some((p) => p.ring === ring && p.i === k)) next.pins.push({ ring, i: k });

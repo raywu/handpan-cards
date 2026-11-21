@@ -1,0 +1,15 @@
+# kills: test_date_is_the_copy_updated_everywhere
+# suite: python3 -m unittest -k test_date_is_the_copy_updated_everywhere tests.test_zh_scale_pages
+# A zh page shows the generator's UPDATED constant instead of the copy file's updated date.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -797,7 +797,7 @@
+     z = load_zh()[script]
+     avail = avail if avail is not None else discover(list(rows_by_slug.values()))
+     scripts = [sc for sc in SCRIPTS if row["slug"] in avail[sc]]
+-    updated = copy["updated"]
++    updated = UPDATED
+     name = row["name"]
+     pre = "/" + prefix(script)
+     url = SITE + prefix(script) + "scales/%s/" % row["slug"]

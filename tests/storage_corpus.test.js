@@ -13,11 +13,12 @@
 //
 // Known failures on main are `todo: "<fixing PR>"`: node:test reports them
 // without failing, and the fixing PR removes the todo, which is its proof.
-const { test } = require("node:test");
+const { test, onePanelFor } = require("./helpers/legacy_pin.js").forFile(__filename);
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
-const { boot } = require("./helpers/sandbox.js");
+const { boot: sandboxBoot } = require("./helpers/sandbox.js");
+const boot = (opts = {}) => sandboxBoot({ onePanel: onePanelFor(), ...opts });
 
 const APP_ROOT = process.env.HPFC_APP_ROOT || path.join(__dirname, "..");
 const HTML = fs.readFileSync(path.join(APP_ROOT, "index.html"), "utf8");
@@ -651,11 +652,11 @@ const rgRaw = async (app) => app.getAsync(`(async () => {
   const db = await new Promise((res, rej) => { const q = indexedDB.open("hpfc.saved-scales.v1"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
   return new Promise((res, rej) => { const q = db.transaction("collections").objectStore("collections").get("current"); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
 })()`);
-const rgBytes = (raw) => JSON.parse(raw).entries.filter((e) => typeof e.record.v === "number" && e.record.v > 5).map((e) => JSON.stringify(e));
+const rgBytes = (raw) => JSON.parse(raw).entries.filter((e) => typeof e.record.v === "number" && e.record.v > 6).map((e) => JSON.stringify(e));
 
 // Saves every wanted row the normal way, then rewrites the record version of the
 // paired ones in place: the envelope shape (ids, ordinals) stays valid. A number
-// above 5 or a string version is stored as given.
+// above 6 or a string version is stored as given.
 const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href, extra = {}) => {
   const { createOrigin } = require("./helpers/sandbox.js");
   const origin = createOrigin({ storage: {} });
@@ -682,10 +683,10 @@ const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href, extra = {})
   }`);
   return origin;
 };
-const rgNewer = (env) => env.entries.filter((e) => typeof e.record.v === "number" && e.record.v > 5);
+const rgNewer = (env) => env.entries.filter((e) => typeof e.record.v === "number" && e.record.v > 6);
 
-test("RG: record 6 and 7 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit", async () => {
-  const origin = await rgOrigin([6, 7, 4], ["ACOUSTIC ONE", "ACOUSTIC TWO"], undefined, { replaces: { "ACOUSTIC V4 2": "kurd" } });
+test("RG: record 7 and 8 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit", async () => {
+  const origin = await rgOrigin([7, 8, 4], ["ACOUSTIC ONE", "ACOUSTIC TWO"], undefined, { replaces: { "ACOUSTIC V4 2": "kurd" } });
   const app = await sharedBoot(origin, NEW_HTML);
   assert.ok(envelopeOf(app).entries.some((e) => e.record.o && e.record.o.replaces === "kurd"), "the seeded replacement is stored");
   const seeded = rgNewer(envelopeOf(app));
@@ -736,13 +737,13 @@ test("RG: record 6 and 7 rows seeded into storage stay byte-identical through bo
 });
 
 test("RG: the notice counts only rows above the app's newest record version", async () => {
-  const origin = await rgOrigin([4, 6, 7, 8, "7"]);
+  const origin = await rgOrigin([4, 5, 7, 8, 9, "7"]);
   const app = await sharedBoot(origin, NEW_HTML);
   const status = app.els["saved-status"];
-  assert.strictEqual(status.textContent, RG_NOTICE.other(3), "v6, v7 and v8 are counted; v5, v4 and a non-number v are not");
+  assert.strictEqual(status.textContent, RG_NOTICE.other(3), "v7, v8 and v9 are counted; v5, v4 and a non-number v are not");
   assert.strictEqual(status.hidden, false);
 
-  const one = await sharedBoot(await rgOrigin([6]), NEW_HTML);
+  const one = await sharedBoot(await rgOrigin([7]), NEW_HTML);
   assert.strictEqual(one.els["saved-status"].textContent, RG_NOTICE.one);
 
   const none = await sharedBoot(await rgOrigin([4, 5]), NEW_HTML);
@@ -763,7 +764,7 @@ const rgMoveBoot = async (origin, href, referrer) => {
 
 test("RG: a move from the old host carries newer rows byte-identical, and a junk object row passes through as opaque", async () => {
   const { createOrigin } = require("./helpers/sandbox.js");
-  const origin = await rgOrigin([6, 7, 8], ["ACOUSTIC ONE"], "https://old.example/index.html");
+  const origin = await rgOrigin([7, 8, 9], ["ACOUSTIC ONE"], "https://old.example/index.html");
   const old = await rgMoveBoot(origin, "https://old.example/index.html", "");
   const oldEnv = envelopeOf(old);
   const sent = rgNewer(oldEnv).map((e) => e.record);
@@ -786,7 +787,7 @@ test("RG: a move from the old host carries newer rows byte-identical, and a junk
 });
 
 test("RG: the backup names the rows it leaves out, and with only newer rows it is not empty and cannot be exported", async () => {
-  const mixed = await sharedBoot(await rgOrigin([6, 7]), NEW_HTML);
+  const mixed = await sharedBoot(await rgOrigin([7, 8]), NEW_HTML);
   mixed.els["backup-open"].click();
   const text = mixed.els["backup-text"].value;
   assert.ok(text.includes(RG_BACKUP(2)), "the file says two newer scales are not in it");
@@ -811,19 +812,19 @@ test("RG: the backup names the rows it leaves out, and with only newer rows it i
 
 test("RG: with no readable rows the newer line shows once, as the no-file line, whether or not seeded scales are hidden", async () => {
   const count = (app) => (app.els["backup-text"].value + "\n" + app.els["backup-status"].textContent).split("from a newer version").length - 1;
-  const two = await sharedBoot(await rgOrigin([6, 7], []), NEW_HTML);
+  const two = await sharedBoot(await rgOrigin([7, 8], []), NEW_HTML);
   two.els["backup-open"].click();
   assert.strictEqual(two.els["backup-status"].textContent, RG_BACKUP_NONE(2));
   assert.strictEqual(count(two), 1);
 
-  const hiddenOnly = await sharedBoot(await rgOrigin([6, 7, 8], [], undefined, { hidden: ["amara"] }), NEW_HTML);
+  const hiddenOnly = await sharedBoot(await rgOrigin([7, 8, 9], [], undefined, { hidden: ["amara"] }), NEW_HTML);
   hiddenOnly.els["backup-open"].click();
   assert.strictEqual(hiddenOnly.els["backup-status"].textContent, RG_BACKUP_NONE(3));
   assert.ok(hiddenOnly.els["backup-text"].value.includes("Hidden seeded scales"), "the hidden note is still listed");
   assert.strictEqual(count(hiddenOnly), 1, "the newer line appears once");
   for (const id of ["backup-copy", "backup-share", "backup-download"]) assert.strictEqual(hiddenOnly.els[id].disabled, true, id);
 
-  const mixed = await sharedBoot(await rgOrigin([6, 7], ["ACOUSTIC ONE"], undefined, { hidden: ["amara"] }), NEW_HTML);
+  const mixed = await sharedBoot(await rgOrigin([7, 8], ["ACOUSTIC ONE"], undefined, { hidden: ["amara"] }), NEW_HTML);
   mixed.els["backup-open"].click();
   assert.strictEqual(mixed.els["backup-status"].textContent, "");
   assert.strictEqual(count(mixed), 1, "with a file the line is in the file, once");

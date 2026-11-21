@@ -381,36 +381,42 @@ beneath it; the PR is touched by the integrator only after the lane returns `pen
 | "two tabs: sign-out" e2e is one document | defer | e2e owner file untouched here; record for the Q lane |
 | FLOOR for `app.test.js` on dev 1152 vs A2's 1221 | IN SCOPE (dev PR) | set the dev row from the measured dev count, not copied from main; section 8 |
 
-## 8. Dev PR #1003 re-merge procedure
+## 8. DEV rebuild and exact-head CI procedure (owner-approved vehicle)
 
-Facts verified: `tests/editor_model.test.js` exists on `origin/dev`, not on `origin/main`; its
-`DIRECT_READERS` array (test U2a-F3) lacks `tests/e2e_sync.test.js`; `tests/e2e_sync.test.js` contains the
-string `index.html`; CI does not run on a PR into `dev`.
+Current M candidate H is 555bac651869df7ecfbd280b958132b241e10ab4. Owner explicitly approved
+ONE held main-target CI-only PR for exact D head; this grants no main merge. Current DEV8d08667a
+is an ancestor of existing D7e3b356f, verified read-only. Never start D from origin/dev or reset
+an existing worktree/branch: preserve ordinary fast-forward history from existing D.
 
-1. After lane C is green on M (PR #1001) at head H, create a detached worktree
-   (`git worktree add --detach`, never `cp -r`) at the EXISTING #1003 head `7e3b356f` (NOT `origin/dev`:
-   `7e3b356f` is not an ancestor of dev 8d08667a, so a push from a dev-based tree is non-fast-forward and
-   invites a force-push, R1). Merge H into it (merge commit); resolve engine, `DECKS` and I18N regions by
-   taking either side and re-running the generator tools. Then add the step-2 commit on top. Never
-   force-push.
-2. Add `"tests/e2e_sync.test.js"` to `DIRECT_READERS` in `tests/editor_model.test.js` (dev-only commit; the
-   array is sorted by `deepStrictEqual` after `.sort()`, so position is free).
-3. Set `tests/suite_health.py` rows from MEASURED counts in this merge worktree (dev base 1152 plus the net
-   new `app.test.js` tests from A2 and this subplan), not main's 1221. Record the measured numbers in the PR
-   body.
-4. Dev gate, run in that worktree, all must pass before D is pushed:
-   - `node --test tests/editor_model.test.js` (U2a-F3 green)
-   - `python3 -m unittest tests.test_suite_health`
-   - `python3 tests/suite_health.py --emit-js <scratch>/js.json` (one run; the FULL suite may starve the
-     browser, so e2e skips are acceptable only where `E2E_FILES` allows; do not claim an e2e result)
-   - `python3 tools/validate.py`
-   - `git apply --check` of EVERY `tests/mutants/a2_*.patch` and every new or refreshed
-     `tests/mutants/sync_*.patch` in this worktree (CI runs no mutation on dev, R7)
-5. Push as new commits to `claude/login-sync-a2-dev` (no force); verify `gh pr view 1003 --json headRefOid`
-   equals the local tip (re-query once if it lags). D merges only when: `validate` green on M at H; an
-   independent reviewer PASS or PASS_WITH_NITS at H and at the D head; not CONFLICTING; then the served DEV
-   check per `docs/testing/browser.md`. M stays open until the owner says merge.
-6. If #1003 would conflict, close nothing; push the merge commit with dev (stale-CONFLICTING note in memory).
+1. Scheduling amendment independently READY: after fresh M code PASS at frozen H, isolated LOCAL
+   D preparation may run while M CI is pending. Detached WT starts at7e3b356f and ordinarily merges H.
+   Hold D publication until FULL M validate success and reviewer reads its final exact-H conclusion.
+   If H changes/fails preserve prep, incorporate only corrected verified H by ordinary merge, refresh
+   affected local evidence; no force/reset/amend. This changes scheduling, never a release gate.
+2. Preserve generated-source rules; no app/engine conflict occurred in this preparation. Resolve only
+   the floor table from D's own baseline: app1152, sync48 and its pgenv3 row. Measure final per-file counts,
+   raise owned app/sync rows from actual output, retain every unrelated D floor. Do not copy M1280.
+3. Add tests/e2e_sync.test.js to DIRECT_READERS in tests/editor_model.test.js, retain U2a-F3's assertion.
+   In D WT run node --test tests/app.test.js; node --test tests/sync.test.js;
+   node --test tests/editor_model.test.js; node --test tests/mutation_harness.test.js (full54);
+   python3 -m unittest tests.test_suite_health;
+   python3 tools/validate.py; git apply --check on EVERY remaining a2_/sync_ patch.
+   Record actual executed/pass/fail/skip/cancel counts. No duplicate local ALLFILES/emit-js/full-Mac job.
+4. Once M gates pass, commit/push ordinarily to existing claude/login-sync-a2-dev; verify local tip,
+   actual1003 head and ONE held main-target CI ONLY / DO NOT MERGE vehicle all equal D_H. PRs say
+   Refs TRI-28. Require FULL validate success at EXACT D_H on that vehicle: full JS/browser suites,
+   suite-health and full mutation; inspect executed jobs, required counts/skips and artifacts.
+   A doc-only or incomplete run is insufficient. No thresholds, required suites or timeout budgets waived.
+5. Fresh independent D reviewer at verified D_H reads that exact CI conclusion and checks integration
+   against actual DEV base, client identity, generated source, tests, floors and retained editor behavior.
+   Any change requires new exact-head CI/review. Both M and CI-only vehicle stay unmerged into main.
+6. Re-read actual DEV/head and ancestry immediately before integration. If it moved, ordinary-merge it,
+   refresh checks, CI and review. Require not CONFLICTING, then gh pr merge 1003 --merge, no branch deletion.
+   Verify merge tree equals reviewed D tree, actual served DEV revision/content and affected journeys
+   under serialized browser lease/runbook. Only then notify owner LOGIN RC QA ready, editor QA later;
+   never include a main-merge request in that ready ping. Owner device QA is not automated evidence.
+7. CI-only vehicle may close UNMERGED after all gates and DEV integration; retain its branch, which
+   remains unmerged into main. No close of994; no production credential, deploy command or migration.
 
 ## 9. Findings beyond the reviewer's two (summary)
 
@@ -445,15 +451,19 @@ Recovery.
 Reviewer brief (per memory `reviewer-brief-quotes-plan-verbatim`): paste section 6's acceptance rows and
 section 2's invariants unchanged; no added rules, no conditional criteria, no nit-fixing before the final
 review; brief states branch, base, verified head SHA, ownership, and that CI at that SHA is the evidence.
-Reviewer is a fresh swarm-reviewer on Opus, `/review` read-and-report only. FAIL needs a concrete scenario.
+Reviewer is a fresh independent context applying the installed review contract read-and-report only;
+no unavailable model tier or native slash invocation is claimed. FAIL needs a concrete scenario.
 
-Exact-head CI evidence required: `gh run list --commit <H> --workflow validate.yml` conclusion `success`
-for M; for D, the section 8 step 4 outputs pasted in the PR body plus the served-DEV check.
+Exact-head CI evidence required: successful FULL validate on M at H AND on the owner-approved
+CI-only vehicle at D_H, plus fresh independent review at each verified head reading its exact CI
+conclusion. Local selected checks supplement these gates. Served DEV evidence follows integration.
+Installed review contracts are applied by fresh Codex contexts read/report only; no native Claude
+invocation or unavailable named-model tier is claimed. Section21 is the operative acceptance contract.
 
-Continuation point: when `/plan-eng-review` of this file passes, dispatch lane E on
-`claude/login-sync-a2` from head 6c960269717acb63f5d6e18621eacdf2151f5fc1; write the T-ENG tests first.
-Stop: after lane C returns green and both reviews pass, stop and hand the owner the M PR (#1001) with
-the About-copy lane queued; do not merge M, do not enable prod, do not touch schema.
+Continuation: local D preparation from7e3 merging frozen H, then measured checks; publication waits
+for M gates. Stop after gated DEV integration/served checks and owner login QA notification; await actual
+owner QA before editor baseline QA. M stays held; About privacy localization in all8tables and production
+email setup remain later prerequisites (email after DEV QA). Never enable prod or touch schema.
 
 ## 11. Open questions for the owner (genuine trade-offs)
 
@@ -1139,3 +1149,13 @@ not the canonical CI-header selection. Complete local mutation_harness54/54 now 
 apply. Add that existing full54-test check before publication, no test/harness/threshold changes.
 Application, engine andapp-test bytes unchanged from independently reviewed a064. New exact-head
 fullCI and fresh review still required; Dprep3be remains unpublished until correctedM gates pass.
+
+
+D recovery/served-check supplement: privacy-reviewed historical parent plan is archived at
+2026-11-05-login-sync-v2.md withsourcehash/redactionbanner; owner original remains untouched.
+Owner DEV QA retains parent14's two-device save/reload/delete, offline-conflict preservation,
+local-data-kept-on-signout andAddN/Notnow checks. Test only disposable scales; an empty spare
+browserprofile can exercise full restoration without clearing personal Safari history. No agent
+performs realaccount deletion, bulkdata removal orproductionsetup. Actualbackend/phone/VoiceOver/
+keyboardownerQA is distinct from the fullystubbedthree-case served probe; no success is inferred.
+CorrectedlocalDmetadataharness54/54 passes. Publication stillwaitsM555 fullCIandreviewerfinalread.

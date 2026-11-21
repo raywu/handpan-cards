@@ -1,0 +1,15 @@
+# kills: test_the_drift_check_sees_a_missing_stale_and_current_page
+# suite: python3 -m unittest -k test_the_drift_check_sees_a_missing_stale_and_current_page tests.test_zh_scale_pages
+# --all stops writing the zh hub, so a committed hub can be missing while the per-page bytes still match.
+diff --git a/tools/gen_scale_page.py b/tools/gen_scale_page.py
+--- a/tools/gen_scale_page.py
++++ b/tools/gen_scale_page.py
+@@ -1010,7 +1010,7 @@ def main(argv):
+         if slugs:
+             pages = pages_for(slugs, rows, script=script, avail=avail)
+             results += [emit(os.path.join(out, s, "index.html"), pages[s], check, stdout) for s in slugs]
+-        if "--hub" in argv or ("--all" in argv and every):
++        if "--hub" in argv:
+             results.append(emit(os.path.join(out, "index.html"), hub_page(rows, script, avail), check, stdout))
+         return max(results)
+     if "--serenity" in argv:

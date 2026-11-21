@@ -1,0 +1,11 @@
+# kills: test_publish_copies_each_optional_path_independently
+# suite: python3 -m unittest -k test_publish_copies_each_optional_path_independently tests.test_site_files
+# publish.sh stops copying the zh-hans dir, so a built zh-Hans page never ships.
+diff --git a/tools/publish.sh b/tools/publish.sh
+--- a/tools/publish.sh
++++ b/tools/publish.sh
+@@ -18,3 +18,3 @@
+-for d in zh-hant zh-hans fonts; do
++for d in zh-hant fonts; do
+   if [ -d "$d" ]; then
+     cp -R "$d" "$out/$d"

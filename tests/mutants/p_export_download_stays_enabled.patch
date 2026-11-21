@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16375,7 +16375,7 @@
+@@ -18725,7 +18725,7 @@
    document.getElementById("backup-signin").textContent = t("backup.signIn");
    paintBackupHint();
    document.getElementById("backup-share").hidden = typeof navigator.share !== "function";

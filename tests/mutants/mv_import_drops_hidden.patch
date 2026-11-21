@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17571,7 +17571,7 @@ async function moveImport(code) {
+@@ -17611,7 +17611,7 @@ async function moveImport(code) {
      if (read.ok) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), read });
      else if (savedObject(row.r)) items.push({ key: row.i + ":" + await moveDigest(moveCanon(row.r)), opaque: row.r });
    }

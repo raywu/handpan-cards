@@ -1,0 +1,14 @@
+# kills: Back, the ... button and the dialog save all commit a pending name first
+# suite: node --test --test-name-pattern=Back..the.....button tests/editor_e2e.test.js
+# fault: the menu opener commits a pending name first is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16263,7 +16263,6 @@ function editorTabKey(e) {
+ const editorMenuItems = () => [...editorEl("editor-menu").querySelectorAll('[role="menuitem"]')];
+ function editorOpenMenu() {
+   const s = editorSession;
+-  editorCommitName();
+   if (!s || s.dialog || s.editing || s.menu) return;
+   s.menu = true;
+   editorEl("editor-menu").removeAttribute("hidden");

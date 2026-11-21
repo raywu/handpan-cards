@@ -1,5 +1,5 @@
-# kills: RG: record 6 and 7 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit
-# suite: node --test --test-name-pattern ^RG..record.6.and.7.rows.seeded tests/storage_corpus.test.js
+# kills: RG: record 7 and 8 rows seeded into storage stay byte-identical through boot, SAVE, DELETE, RESET and an edit
+# suite: node --test --test-name-pattern ^RG..record.7.and.8.rows.seeded tests/storage_corpus.test.js
 # why: A RESET that keeps only rows with a visible view drops the opaque rows the app cannot show.
 diff --git a/index.html b/index.html
 --- a/index.html

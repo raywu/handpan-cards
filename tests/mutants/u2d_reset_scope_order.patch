@@ -1,0 +1,16 @@
+# kills: U2d-8 (D18): the reset scope is the selected note's zone, else the selected zone, else every pinned zone; a rim note or the ding gives none
+# suite: node --test --test-name-pattern ^U2d-8. tests/editor_shell.test.js
+# fault: The zone is tried before the selected note, so a selected note resets the wrong zone.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15347,8 +15347,8 @@ function editorPlace(m, ring, name, angle) {
+ }
+ const editorPinnedIn = (m, ring) => m.pins.some((p) => p.ring === ring);
+ function editorResetRings(m, sel, zone) {
+-  if (sel) return EDITOR_PINNABLE.includes(sel.ring) ? [sel.ring] : [];
+   if (zone) return [zone];
++  if (sel) return EDITOR_PINNABLE.includes(sel.ring) ? [sel.ring] : [];
+   return EDITOR_PINNABLE.filter((ring) => editorPinnedIn(m, ring));
+ }
+ function editorResetLabel(m, sel, zone) {

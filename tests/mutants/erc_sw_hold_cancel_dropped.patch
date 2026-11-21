@@ -1,0 +1,14 @@
+# kills: a press held past the hold time is not a swipe, even when it then moves far and fast
+# suite: node --test --test-name-pattern ^a.press.held.past.the.hold.time tests/editor_e2e.test.js
+# fault: A press held past the hold time and then moved far and fast still switches tabs.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17021,7 +17021,6 @@
+     if (!g) return;
+     const ts = e.touches, p = ts && ts.length === 1 && ts[0].identifier === g.id && ts[0];
+     if (!p || !eligible() || Math.abs(body.scrollTop - g.top) > 8) { stop(); return; }
+-    if (!g.moved && e.timeStamp - g.at >= HOLD_MS) { stop(); return; }
+     if (Math.hypot(p.clientX - g.x, p.clientY - g.y) > HOLD_SLOP) g.moved = true;
+     const dx = p.clientX - g.x, dy = p.clientY - g.y;
+     const v = swipeVerdict(g, true, dx, dy, e.timeStamp - g.at);

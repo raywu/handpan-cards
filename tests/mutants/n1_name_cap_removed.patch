@@ -1,0 +1,15 @@
+# kills: N1-M1: editorSetName writes options.name trimmed, caps it at 40 characters, and a blank clears it
+# suite: node --test --test-name-pattern=^N1.M1: tests/editor_model.test.js
+# fault: the setter caps a name at 40 code points is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15471,7 +15471,7 @@ function editorSetPalette(m, palette) {
+ }
+ const EDITOR_NAME_MAX = 40;
+ function editorSetName(m, text) {
+-  const name = Array.from(String(text).trim()).slice(0, EDITOR_NAME_MAX).join("").trim();
++  const name = Array.from(String(text).trim()).join("").trim();
+   if ((m.options.name || "") === name) return { ok: true, value: m };
+   const next = editorClone(m);
+   if (name) next.options.name = name; else delete next.options.name;

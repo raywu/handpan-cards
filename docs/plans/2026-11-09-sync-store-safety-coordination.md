@@ -141,8 +141,43 @@ Local source stays391db225, app1280/1280/scoped101/101/engine178/178, validatorP
 Next: ordinary finalcandidatepush, exact-headfullCI andfreshreview; both main-targetPRsheld.
 
 
+DEV local preparation scheduling independently READY: frozenM a064 has freshcodePASS while
+validate42641567851 runs. Detachedprep starts7e3, ordinarily mergesH. Only floor conflict; preserve
+pgenv3 andmeasure Dapp/sync fromown1152/48 baselines. DIRECT_READERS add e2e_sync. All remote
+publication waitsMfullCI+reviewer'sfinalconclusion; exactDfullCI/freshreview/served/ownerQA unchanged.
+No force/main/deploy/migration/production credentials. Any changed H holds publication and refreshes
+local/CI/review evidence. Plan8/10 now carry owner-approved exact-DheadCI-only procedure.
+
+
+D preparation measured evidence:app1280/1280,sync178/178,combinedsync+editor234/234,
+zero skips/cancels. Owned app/sync floor rows raised from D1152/48 to measured1280/178;
+pgenv3 andeveryunrelatedrowretained. Full client region andpure syncengine byte-identical
+to independentlyreviewedM a064; existingDeditor/data preserved. Remaininglocalvalidator/
+unithealth/patchchecks runbeforemergecommit. StillnoDpublicationbeforeMfinalCI/reviewerread.
+
+
 M a064 fullCI failure was ONLY3central-mutant #kills/#suite metadata, notapp/browser behavior:
 app1280,e2e643,syncbrowser10 and4mutationshardspassed. Header-onlyfix8f0340cc preservesallbodies,
 3canonicalclean1/kill1 proofs, fullmutation_harness54/54,45apply. Existingfull54harnessnowmandatory
 localprepublication; rootmissedheaderlintfirsttime. NewexactMheadCI/freshreview required.
 Dprep3be45204 clean/local, publicationheld; ordinarymergecorrectedverifiedM beforelaterDgates.
+
+
+Current D preparation incorporates independently code-PASS M555bac65 (validate42648100530 pending)
+by ordinary merge into preserved3be prep. Only simultaneous coordination-note appends conflicted;
+both retained. No application/engine/app-test delta versus3be. Full54 mutation-harness check now
+required locally before publication; no headerbody/threshold/test weakening. RemoteD remains7e3.
+
+
+Corrected D16281fb full mutation_harness54/54 PASS, no skips/cancels; app/engine/test bytes
+unchanged versus locallygreen3be. Parent2026-11-05-login-sync-v2 was canonical-local/untracked:
+archivecopy independentlyprivacy-reviewed SAFE; originalunchanged, private inbox/accountdetail
+andkeyvaluesredacted. Banner points to currentLinear+section21, no historicalsetup authorization.
+Boundedserved probe /private/tmp/tri28-served-sync-probe.test.js independentlyREADY: aftergates
+andexclusivehostlease, existingCDPhelper+existingrun_node_file runner; exactly3requiredtests:
+actualbrowser-deliveredHTMLhash+unsignedinvalidemail/noOTP; fullystubbedUIlogin/firstpull;
+same-userresetduringGETgt10preservesfirst/cursor0 followedbyvalidGET0. Allappfetchesstubbed
+beforedocscript, cleanownedprofile/PIDreaped, fallbackfonts380x800. Thisisnotrealbackend/native
+Safari/deviceQA. Sourceandrawreceiptlocalartifacts, notavailableinafreshclone; permanentCI
+tests/e2e_sync.test.js andappOSregressionsremainreproduciblecoreevidence. DoNOTexecuteprobe
+beforebothCI/reviewgates+DEVintegration+servedbyteidentity. Mainandproductionactionstayheld.

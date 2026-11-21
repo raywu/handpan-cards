@@ -1,0 +1,15 @@
+# kills: TRI59b a drop restores the panel even when a new press has already begun, but not while that press is a live drag
+# suite: node --test --test-name-pattern ^TRI59b.a.drop.restores tests/editor_e2e.test.js
+# fault: A press begun in the frame after a drop stops the panel coming back, leaving it hidden.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16839,7 +16839,7 @@ function editorDragEnd(e) {
+   else if (plan.refuse) s.error = plan.refuse;
+   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
+   editorRender();
+-  if (e) requestAnimationFrame(() => { if (!editorDrag || !editorDrag.live) editorDragRestore(); });
++  if (e) requestAnimationFrame(() => { if (!editorDrag) editorDragRestore(); });
+   else editorDragRestore();
+ }
+ function editorDragUp(e) {

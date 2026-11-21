@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16376,7 +16376,7 @@
+@@ -18726,7 +18726,7 @@
    paintBackupHint();
    document.getElementById("backup-share").hidden = typeof navigator.share !== "function";
    for (const b of backupButtons) b.disabled = !rows;

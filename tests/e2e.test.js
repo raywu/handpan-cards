@@ -12,7 +12,10 @@
 // If no Chromium is present the whole suite skips with a printed reason
 // (CONTRACT: ./tests/run.sh must work anywhere).
 
-const { test, describe, before, after, afterEach } = require("node:test");
+const { describe, before, after, afterEach } = require("node:test");
+const { apply: applyOnePanel } = require("./helpers/editor_flag.js");
+const { test, legacyNow } = require("./helpers/legacy_pin.js").forFile(__filename);
+const pinFlag = (html) => (legacyNow() ? applyOnePanel(String(html), false) : html);
 const assert = require("node:assert");
 const http = require("node:http");
 const fs = require("node:fs");
@@ -55,7 +58,7 @@ function run() {
     const inject = "<script>(function(){var p=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(){" +
       "var fail=false;try{fail=localStorage.getItem('moveFail')==='1'&&String(arguments[0]).indexOf('importedIds')>=0;}catch(e){}" +
       "if(fail)throw new Error('injected write failure');return p.apply(this,arguments);};})();</script>";
-    return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
+    return pinFlag(fs.readFileSync(path.join(REPO, "index.html"), "utf8"))
       .replace(/^const MOVE_FROM = .*;$/m, () => `const MOVE_FROM = ${JSON.stringify(moveMode.from)};`)
       .replace(/^const MOVE_TARGET = .*;$/m, () => `const MOVE_TARGET = ${JSON.stringify(moveMode.target)};`)
       .replace(/const MOVE_CAP = \d+;/, () => `const MOVE_CAP = ${moveMode.cap || 20000};`)
@@ -67,7 +70,7 @@ function run() {
     const wrap = (v) => (typeof v === "string" ? "\u27e6" + v + "\u27e7"
       : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, "\u27e6" + x + "\u27e7"])));
     const de = Object.fromEntries(Object.entries(en).map(([k, v]) => [k, wrap(v)]));
-    return fs.readFileSync(path.join(REPO, "index.html"), "utf8")
+    return pinFlag(fs.readFileSync(path.join(REPO, "index.html"), "utf8"))
       .replace(/const I18N = \{.*\};/, () => "const I18N = " + JSON.stringify({ en, de }) + ";");
   }
 
@@ -103,7 +106,7 @@ function run() {
         const type = file.endsWith(".html") ? "text/html; charset=utf-8"
           : file.endsWith(".js") ? "text/javascript" : "application/octet-stream";
         res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
-        res.end(buf);
+        res.end(file === path.join(REPO, "index.html") ? pinFlag(buf.toString("utf8")) : buf);
       });
     });
     server.on("error", (e) => { spawnError = e; });
@@ -21137,11 +21140,15 @@ function run() {
       assert.deepStrictEqual(arrived, [...records].sort(byName));
     });
 
-    test("move: a NEEDS_NEWER_APP record in the payload travels as an opaque row and the rest import", async () => {
+    test("move: a NEEDS_NEWER_APP record in the payload is carried as opaque bytes and the rest import", async () => {
       on(); await clearOrigin(NEW());
-      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), { v: 99, s: "future", o: {} }]])}&then=`, OLD() + "/");
+      const future = { v: 99, s: "future", o: {} };
+      await go(`${NEW()}/index.html#move=${payloadOf([[uid(1), rec("GOOD")], [uid(2), future]])}&then=`, OLD() + "/");
       await b.waitFor(noticeShown, { label: "the notice" });
-      assert.deepStrictEqual(names(await nativeSavedEnvelope(b)), ["GOOD", undefined]);
+      const rows = (await nativeSavedEnvelope(b)).entries.map((row) => row.record);
+      assert.strictEqual(rows.length, 2);
+      assert.ok(rows.some((r) => r.o.name === "GOOD"));
+      assert.deepStrictEqual(rows.find((r) => r.v === 99), future);
     });
 
     test("move: the notice shows the singular and plural counts only after the write commits", async () => {
@@ -21280,7 +21287,7 @@ function run() {
           c.close(); return true;`);
         await post(rgRecords([7]), 2);
         await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("1 saved scale was made in a newer version")`, { timeout: 5000, label: "the one-row notice" });
-        await post(rgRecords([7, 6]), 3);
+        await post(rgRecords([7, 8]), 3);
         await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("2 saved scales were made in a newer version")`, { timeout: 5000, label: "the two-row notice" });
       } finally { await b.send("Target.closeTarget", { targetId }, false); }
     });
@@ -21288,7 +21295,7 @@ function run() {
     test("RG: the notice and the backup line fit at 320x568 in every locale", async () => {
       try {
         await b.setViewport(320, 568, true);
-        await rgLoad(rgRecords([6, 7, 8]));
+        await rgLoad(rgRecords([7, 8, 9]));
         const langs = await b.eval(`return LANGS.slice();`);
         assert.strictEqual(langs.length, 8);
         for (const lang of langs) {
@@ -21305,7 +21312,7 @@ function run() {
           assert.ok(line.length > 0 && line !== "backup.file_newer" && !line.includes("{n}"), `${lang}: the backup line is filled in`);
           const text = await b.eval(`document.getElementById("backup-text").value = backupText(); return backupText();`);
           assert.ok(text.includes(line), `${lang}: the backup file carries the line`);
-          const m = await b.eval(`openSubpage("export"); paintBackup(t("backup.file_newer_none", { n: 3 }));
+          const m = await b.eval(`if (subpage) hideSubpage(); openSubpage("export"); paintBackup(t("backup.file_newer_none", { n: 3 }));
             const el = document.getElementById("backup-status"), q = el.getBoundingClientRect();
             return { text: el.textContent, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight, w: q.width, left: q.left, right: q.right, vw: innerWidth, doc: document.documentElement.scrollWidth };`);
           const none = await b.eval(`return t("backup.file_newer_none", { n: 3 });`);

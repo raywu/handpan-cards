@@ -1,0 +1,15 @@
+# kills: OQA zone split midpoint: radius picks the zone, an empty cyclops included; past the bottom reach is off
+# suite: node --test --test-name-pattern ^OQA.zone.split.midpoint tests/editor_shell.test.js
+# fault: The off-pan margin is zero.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15420,7 +15420,7 @@ function editorResetSpacing(m, rings) {
+ // notes come next (D22); then the zone under the pointer decides.
+ const EDITOR_HIT_AREA = 0.43;
+ const EDITOR_SCALE = { rim: 0.85, inner: 0.75, bottom: 0.85 };
+-const EDITOR_OFF_MARGIN = 0.08;
++const EDITOR_OFF_MARGIN = 0;
+ function editorDrawnReach(geom, ring) {
+   if (ring === "ding") return geom.r_ding;
+   return (ring === "bottom" ? geom.r_bnote || 0.1 : geom.r_note) * (geom.place ? 1 : EDITOR_SCALE[ring]);
