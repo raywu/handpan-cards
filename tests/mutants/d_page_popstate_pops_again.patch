@@ -5,13 +5,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15209,8 +15209,7 @@ window.addEventListener("popstate", () => {
-   if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
+@@ -16101,8 +16101,7 @@ window.addEventListener("popstate", (e) => {
+   if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }
    if (!pageOpen) return;
    if (editorBackstop()) return;
 -  sheetRouted = false;
 -  hideSheet();
 +  closeScaleSheet();
  });
-
+ 
  // Removing a deck the user is LOOKING AT would otherwise leave the practice

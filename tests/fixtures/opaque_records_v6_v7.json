@@ -1,0 +1,71 @@
+{
+  "source": {
+    "branch": "claude/editor-rc-int",
+    "sha": "2971e9bb",
+    "writer": "scaleRecord in index.html: v = HPE.share.recordVersion(seed), s = HPE.core.formatSeed(seed.fields), o = seed.options"
+  },
+  "records": {
+    "v6": {
+      "v": 6,
+      "s": "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 | F5 G5 [Ab5]",
+      "o": {
+        "palette": 0,
+        "parent": null,
+        "name": "",
+        "mirror": false,
+        "angles": {
+          "inner": [
+            0,
+            40,
+            80
+          ]
+        }
+      }
+    },
+    "v7": {
+      "v": 7,
+      "s": "(D3) A3 C4 D4 E4 F4 G4 A4 C5",
+      "o": {
+        "palette": 0,
+        "parent": null,
+        "name": "",
+        "mirror": false,
+        "anchor": "between",
+        "profile": {
+          "id": "paired",
+          "rev": 2,
+          "map": [
+            "r57",
+            "r60",
+            "r62",
+            "r64",
+            "r65",
+            "r67",
+            "r69",
+            "r72",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      }
+    }
+  },
+  "readableV4": {
+    "v": 4,
+    "s": "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+    "o": {
+      "palette": 0,
+      "parent": null,
+      "name": "",
+      "mirror": false
+    }
+  }
+}

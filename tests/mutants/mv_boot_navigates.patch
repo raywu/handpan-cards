@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17509,7 +17509,7 @@
-   } catch(e) {}
+@@ -18605,7 +18605,7 @@ const moveFlow=!MOVE_ARMED||movePayload===null ? null : Promise.resolve(initiali
    return {};
  });
  const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot()).then(()=>{moveReport(flow.result);renderMoveBanner();})) :
 -  (initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot())).then(renderMoveBanner);
 +  (initialization&&typeof initialization.then==="function" ? initialization.then(finishSavedBoot) : Promise.resolve(finishSavedBoot())).then(()=>{renderMoveBanner();if(MOVE_ON_OLD)moveGo();});
+ savedReady.then(syncBoot);
  
  </script>

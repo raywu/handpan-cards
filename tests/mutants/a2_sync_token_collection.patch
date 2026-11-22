@@ -1,0 +1,15 @@
+# kills: T-APP-M8-collection-swap: same generation and mode still abort the old cycle
+# suite: node --test --test-reporter=tap --test-name-pattern T-APP-M8-collection-swap tests/app.test.js
+# Refs TRI-28: client store authority boundary.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18243,7 +18243,7 @@ const syncSession = (sc, body) => ({ ...sc, refresh: body.refresh_token, access:
+   accessExp: Date.now() + (Number(body.expires_in) > 0 ? Number(body.expires_in) : 3600) * 1000 });
+ function syncStoreToken() {
+   if (!SYNC_CFG || !savedState || savedMode !== "durable" || savedState.migration?.temporary) return null;
+-  return savedAuthorityGeneration + ":" + savedState.collectionId;
++  return savedAuthorityGeneration;
+ }
+ const syncActive = () => syncStoreToken() !== null;
+ function syncScope() {

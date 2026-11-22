@@ -80,6 +80,7 @@ A chord-card system for handpans, two outputs from one data source:
   `tools/regen_engine_corpus.js` in the same commit as any deliberate change.
 - **GA measurement id:** also change `SHIPPED_GA_ID`, the shipped-id test in
   `tests/app.test.js` and `tests/mutants/dg_loader_refuses_shipped_id.patch`.
+- **UI feature:** before any mock or plan, a one-page brief in docs/plans/ (job, keep-from-main list, controls in/out, viewports with numeric targets, non-goals); the owner approves it; plans and reviews cite it; a change to it is an owner decision recorded in it.
 
 ## Release and CI gates
 
@@ -96,6 +97,7 @@ A chord-card system for handpans, two outputs from one data source:
   `claude/dev-unrevert-<lane>` PR before the next main-to-dev sync. The owner's
   dev-merge grant covers `claude/dev-sync-*`, `claude/dev-revert-*` and
   `claude/dev-unrevert-*` PRs.
+- At most two releases hold open main PRs at once (one UI, one non-UI). A release whose gates have passed is merged or explicitly re-ordered by the owner within a day; new lanes wait.
 - Before deleting a lane branch confirm `gh pr list --head <b> --base main --state merged`.
 - DEV: https://handpan-cards-dev.pages.dev/ (from `dev`, noindex). Analytics never run
   on DEV or local hosts (`analyticsAllowed()`; conditions in `docs/CARD-SPEC.md`).

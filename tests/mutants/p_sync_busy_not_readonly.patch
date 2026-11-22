@@ -1,0 +1,16 @@
+# kills: polish: sending, signing in and resending disable competing controls, keep values and focus, and set aria-busy
+# Previously: polish busy field is read-only, not disabled
+# suite: node --test --test-name-pattern sending.+signing.+resending tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20827,7 +20827,7 @@ function syncPaint() {
+     if (held && held !== field && panel && panel.contains(held) && held.tagName === "BUTTON") field.focus();
+   }
+   for (const id of ["sync-send", "sync-verify", "sync-other"]) { const el = syncEl(id); if (el) el.disabled = syncBusy; }
+-  for (const id of ["sync-email", "sync-code"]) { const el = syncEl(id); if (el) el.readOnly = syncBusy && el === field; }
++  for (const id of ["sync-email", "sync-code"]) { const el = syncEl(id); if (el) el.readOnly = false; }
+   syncPaintResend();
+   const msg = syncLiveMessage(sc);
+   const main = syncEl("sync-entry-main"), sub = syncEl("sync-entry-sub"), entryErr = syncEl("sync-entry-err");

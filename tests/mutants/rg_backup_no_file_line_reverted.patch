@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15808,7 +15808,7 @@
-   document.getElementById("backup-session").hidden = savedMode !== "session";
+@@ -16376,7 +16376,7 @@
+   paintBackupHint();
    document.getElementById("backup-share").hidden = typeof navigator.share !== "function";
    for (const b of backupButtons) b.disabled = !rows;
 -  backupStatus.textContent = message !== undefined ? message : rows ? "" : newer ? t("backup.file_newer_none", { n: newer }) : t("backup.empty");

@@ -1,0 +1,14 @@
+# kills: sync: revival on a device that used the id gets a fresh local id plus alias and pushes to the remote id (R1-1)
+# suite: node --test --test-name-pattern revival.on.a.device.that.used.the.id tests/sync.test.js
+# A revived scale gets a fresh local id but no alias, so it pushes to the wrong remote id.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -126,7 +126,6 @@ HPE.sync = (function () {
+           if (B) {
+             if (R.rev > B.rev) {
+               const op = insert(R, "revive", { id: fresh() });
+-              alias[op.id] = rid;
+               baseUpdates.push({ rid, localId: op.id, rev: R.rev, mode: "committed", site: "revive-base" });
+             }
+             continue;

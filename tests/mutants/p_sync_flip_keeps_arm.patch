@@ -1,0 +1,15 @@
+# kills: two tabs: a state flip in the other tab drops this tab's state-bound message and flags
+# Previously: none (new guard)
+# suite: node --test --test-name-pattern state.flip.in.the.other tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish. Mutation: a sign-out in another tab leaves the Delete arm set.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20792,7 +20792,6 @@ function syncPaint() {
+   if (!open) return;
+   const sc = syncLoad();
+   if (!syncMsgFits(syncMsg, sc)) { syncMsg = null; syncField = null; }
+-  if (!sc && syncDeleteArmed) { clearTimeout(syncDeleteArmed); syncDeleteArmed = null; }
+   if (sc && syncStep !== "email") { syncStep = "email"; syncEmail = ""; syncResendAt = 0; }
+   const show = syncActive();
+   open.hidden = !show;

@@ -33,7 +33,8 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next", 
   "scale-sheet",
   "deck-add", "deck-restore",
   "backup-open", "backup-panel", "backup-intro", "backup-session", "backup-restore", "backup-text", "backup-share", "backup-copy",
-  "backup-download", "backup-status", "backup-last",
+  "backup-download", "backup-status", "backup-last", "backup-signin",
+  "account", "account-close", "export", "export-close",
   // The footer lip (plan 2026-10-19-sheet-tabs 3.7).
   "scale-swipe-cue",
   // controls, plus its header trigger and scrim.
@@ -563,6 +564,7 @@ function makeLocation(href) {
  * @param {object} opts
  *   storage        - seed object for localStorage (default empty)
  *   throwOnStorage - make localStorage throw, exercising the private-mode guard
+ *   throwOnKeys    - make reads of only the listed localStorage keys throw
  *   random         - deterministic replacement for Math.random
  *   href           - initial location (default "https://example.test/index.html")
  *   userAgent      - navigator.userAgent (default a desktop Chrome string)
@@ -871,7 +873,7 @@ function boot(opts = {}) {
 
   const sandbox = {
     localStorage: {
-      getItem(k) { if (opts.throwOnStorage) throw new Error("denied"); return k in store ? store[k] : null; },
+      getItem(k) { if (opts.throwOnStorage || opts.throwOnKeys?.includes(String(k))) throw new Error("denied"); return k in store ? store[k] : null; },
       setItem(k, v) { if (opts.throwOnStorage) throw new Error("denied"); store[k] = String(v); },
       removeItem(k) { if (opts.throwOnStorage) throw new Error("denied"); delete store[k]; },
     },
@@ -997,7 +999,7 @@ function boot(opts = {}) {
       if (opts.origin.events === "auto") setTimeout(() => opts.origin.flushStorageEvents(), 0);
     };
     const check = (operation, key, value) => {
-      if (opts.throwOnStorage) throw new Error("denied");
+      if (opts.throwOnStorage || (operation === "getItem" && opts.throwOnKeys?.includes(key))) throw new Error("denied");
       const failure = opts.storageFault && opts.storageFault({ operation, key, value });
       if (failure) throw failure;
     };

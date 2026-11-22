@@ -1,0 +1,15 @@
+# kills: zh-Hant says 複製 for the copy action, never 拷貝
+# suite: node --test --test-name-pattern ^zh.Hant.says tests/app.test.js
+# Refs TRI-28: sign-in QA round 2. The copy action reads 拷貝 again.
+diff --git a/data/i18n/zh-Hant.json b/data/i18n/zh-Hant.json
+--- a/data/i18n/zh-Hant.json
++++ b/data/i18n/zh-Hant.json
+@@ -355,7 +355,7 @@
+   "backup.restore": "點按連結即可還原該音階。",
+   "backup.text.aria": "已儲存音階的連結",
+   "backup.share": "分享",
+-  "backup.copy": "複製",
++  "backup.copy": "拷貝",
+   "backup.download": "下載 .TXT",
+   "backup.empty": "還沒有可匯出的已儲存音階。",
+   "backup.copied": "已複製。請貼到備忘錄或郵件中。",

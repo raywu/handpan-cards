@@ -1,0 +1,15 @@
+# kills: polish: the export page has plain restore copy and COPY and DOWNLOAD look and act disabled with no saved scales
+# suite: node --test --test-name-pattern ^polish:.the.export.page.has.plain tests/e2e_sync.test.js
+# Refs TRI-28: sign-in QA round 2. Disabled COPY and DOWNLOAD look enabled.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1278,8 +1278,6 @@ html.account-open, html.export-open{overflow:hidden}
+   background:#F6F4ED; color:#8A847B; border-color:#8A847B; opacity:1}
+ 
+ #scale-sheet .sheetlabel,#scale-sheet .sheethint {color:#5E5850}
+-#export .mode:disabled, #export .mode:disabled:hover{background:#F6F4ED; color:#8A847B; border-color:#8A847B; cursor:default}
+-
+ /* field-guide:end */
+ 
+ /* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */

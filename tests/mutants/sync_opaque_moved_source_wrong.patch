@@ -1,0 +1,14 @@
+# kills: settle N1: a skipped moved-copy insert keeps a finite cursor and names the remote id
+# suite: node --test --test-name-pattern settle.N1 tests/sync.test.js
+# The moved copy keeps the synthetic source (local id, undefined rev) so the cursor goes NaN.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -109,7 +109,6 @@ HPE.sync = (function () {
+     const keepOpaque = (R, L) => {
+       const moved = insert({ scale_id: L.id, record: L.record }, "unreadable-remote", { id: fresh(), remoteId: null, record: clone(L.record) });
+       moved.remoteId = moved.id;
+-      sources[moved.id] = { rid: R.scale_id, rev: R.rev };
+       ops.push({ op: "overwrite", id: L.id, remoteId: R.scale_id, expectedRevision: L.revision, record: clone(R.record), opaque: true, requires: moved.id });
+       sources[L.id] = { rid: R.scale_id, rev: R.rev };
+       baseUpdates.push({ rid: R.scale_id, localId: L.id, rev: R.rev, mode: "committed", site: "keepOpaque" });

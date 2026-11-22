@@ -1,0 +1,15 @@
+# kills: settle: a skipped last-visible remove is deferred, keeping base and alias
+# suite: node --test --test-name-pattern settle..a.skipped.last.visible.remove.is.deferred tests/sync.test.js
+# A skipped last-visible remove is settled like a stale one, so it is not deferred.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -249,7 +249,7 @@ HPE.sync = (function () {
+         keptRids.add(src.rid);
+         if (own(next.alias, s.id)) alias[s.id] = next.alias[s.id];
+       }
+-      if (op.op === "remove" && s.reason === "last-visible") {
++      if (op.op === "remove" && s.reason === "never") {
+         deferNow.push({ rid: src.rid, rev: src.rev, expectedRevision: op.expectedRevision });
+         continue;
+       }

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15821,7 +15821,7 @@
+@@ -17204,7 +17204,7 @@ let routeRefused = false;
  let booted = false;
  let lastAcknowledgedRouteHash = null;
  function syncRoute() {
--  if (pageOpen || aboutOpen) return;
-+  if (pageOpen) return;
+-  if (pageOpen || aboutOpen || subpage) return;
++  if (pageOpen || subpage) return;
    if(pendingRecoveryShare!==null && location.hash===SHARE_PREFIX+pendingRecoveryShare){
      shareCopy.disabled=true;
      shareCopy.title=t("saved.importFailure");

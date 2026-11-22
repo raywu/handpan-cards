@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15940,7 +15940,7 @@
+@@ -17323,7 +17323,7 @@ function routeToDeck(routed) {
  
  window.addEventListener("hashchange", async () => {
    observeLinkRoute();
--  if (pageOpen || aboutOpen) return;
-+  if (pageOpen) return;
-   if (location.hash === routeFor(deck())) {
-     lastAcknowledgedRouteHash = location.hash;
+-  if (pageOpen || aboutOpen || subpage) return;
++  if (pageOpen || subpage) return;
+   if (location.hash === EXPORT_ROUTE || location.hash === ACCOUNT_ROUTE) {
+     routedSubpage(location.hash === EXPORT_ROUTE ? "export" : "account");
      return;
