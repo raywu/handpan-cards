@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18414,7 +18414,7 @@ function syncChanged() {
+@@ -18584,7 +18584,7 @@ function syncChanged() {
    syncTimer = setTimeout(() => { syncKick(false); }, 2000);
  }
  function syncStartLock() {
--  if (!syncActive() || syncLockAsked || !syncLoad()) return;
-+  if (syncLockAsked || !syncLoad()) return;
+-  if (!syncActive() || syncLockAsked || document.hidden || !syncLoad()) return;
++  if (syncLockAsked || document.hidden || !syncLoad()) return;
    let locks = null;
    try { locks = navigator.locks; } catch (e) {}
    if (!locks || typeof locks.request !== "function") return;
