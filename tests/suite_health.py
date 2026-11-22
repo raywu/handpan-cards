@@ -54,17 +54,9 @@ FLOORS = {
     "tests/test_site_files.py": 20,
     "tests/test_ci_scope.py": 36,
     # node
-<<<<<<< HEAD
-    "tests/app.test.js": 660,
+    "tests/app.test.js": 785,
     "tests/e2e.test.js": 404,
-=======
-    "tests/app.test.js": 1287,
-    "tests/seat_sweeps_tap_add.test.js": 3,
-    "tests/seat_sweeps_tap_edit.test.js": 3,
-    "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 637,
-    "tests/e2e_sync.test.js": 33,
->>>>>>> origin/main
+    "tests/e2e_sync.test.js": 50,
     "tests/harness.test.js": 67,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
     "tests/core.test.js": 123,
@@ -89,17 +81,12 @@ FLOORS = {
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 59,
     "tests/swipe.test.js": 21,
-<<<<<<< HEAD
-    "tests/scale.test.js": 15,
-    "tests/persist.test.js": 11,
-=======
     "tests/sync.test.js": 178,
     "tests/sync_opaque_probe.test.js": 7,
     "tests/sync_v6_v7.test.js": 9,
-    "tests/scale.test.js": 14,
-    "tests/persist.test.js": 7,
+    "tests/scale.test.js": 15,
+    "tests/persist.test.js": 11,
     "tests/pgenv.test.js": 3,
->>>>>>> origin/main
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
@@ -107,11 +94,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-<<<<<<< HEAD
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js"}
-=======
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js", "tests/e2e_sync.test.js"}
->>>>>>> origin/main
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/e2e_sync.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40
