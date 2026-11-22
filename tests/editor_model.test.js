@@ -177,10 +177,10 @@ const model = (app) => (text, options) => plain(app.get(`(() => { const r = edit
 // grep of a call shape). A NEW direct reader fails here, so the inventory cannot
 // grow silently.
 const DIRECT_READERS = [
-  "tests/app.test.js", "tests/coverage_merge.test.js", "tests/e2e.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/editor_shell.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
+  "tests/app.test.js", "tests/coverage_merge.test.js", "tests/e2e.test.js", "tests/e2e_sync.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/editor_shell.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
   "tests/helpers/dump_app_render.js", "tests/helpers/so_status_inventory.js", "tests/layout.test.js", "tests/link_corpus.test.js",
   "tests/mutation_harness.test.js", "tests/pdfcards.test.js", "tests/select.test.js",
-  "tests/sequence.test.js", "tests/storage_corpus.test.js", "tests/swipe.test.js",
+  "tests/sequence.test.js", "tests/storage_corpus.test.js", "tests/swipe.test.js", "tests/sync_opaque_probe.test.js", "tests/sync_v6_v7.test.js",
 ];
 test("U2a-F3: no suite starts reading index.html directly without joining the inventory", () => {
   const root = path.join(__dirname, "..");
