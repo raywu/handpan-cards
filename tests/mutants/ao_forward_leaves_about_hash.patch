@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15256,7 +15256,7 @@ window.addEventListener("popstate", (e) => {
-   if (pageOpen && returnPop) { returnPop = false; return; }
+@@ -16098,7 +16098,7 @@ window.addEventListener("popstate", (e) => {
    if (pageOpen && editorPasteGuard(e.state)) return;
    if (aboutOpen) { hideAbout(); return; }
--  if (location.hash === ABOUT_ROUTE) { syncRoute(); return; }
-+
+   if (subpage) { hideSubpage(); return; }
+-  if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }
++  if ((location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }
    if (!pageOpen) return;
    if (editorBackstop()) return;
    sheetRouted = false;
