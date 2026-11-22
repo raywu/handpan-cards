@@ -310,5 +310,7 @@
   },
   "backup.file_newer_none": {
     "other": "有 {n} 個來自較新版本的音階無法在此備份。它們仍儲存在此瀏覽器裡。"
-  }
+  },
+  "about.back": "← 返回",
+  "about.back.aria": "返回練習畫面"
 }

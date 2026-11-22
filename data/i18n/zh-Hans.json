@@ -310,5 +310,7 @@
   },
   "backup.file_newer_none": {
     "other": "有 {n} 个来自更新版本的音阶无法在此备份。它们仍保存在此浏览器里。"
-  }
+  },
+  "about.back": "← 返回",
+  "about.back.aria": "返回练习界面"
 }

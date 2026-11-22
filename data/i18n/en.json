@@ -317,5 +317,7 @@
   "backup.file_newer_none": {
     "one": "1 scale from a newer version can't be backed up here. It stays saved in this browser.",
     "other": "{n} scales from a newer version can't be backed up here. They stay saved in this browser."
-  }
+  },
+  "about.back": "← BACK",
+  "about.back.aria": "Back to the practice screen"
 }

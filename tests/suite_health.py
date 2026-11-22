@@ -95,6 +95,7 @@ FLOORS = {
 =======
     "tests/sync.test.js": 178,
     "tests/sync_opaque_probe.test.js": 7,
+    "tests/sync_v6_v7.test.js": 9,
     "tests/scale.test.js": 14,
     "tests/persist.test.js": 7,
     "tests/pgenv.test.js": 3,

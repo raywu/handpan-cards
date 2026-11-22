@@ -317,5 +317,7 @@
   "backup.file_newer_none": {
     "one": "1 gamme d’une version plus récente ne peut pas être sauvegardée ici. Elle reste enregistrée dans ce navigateur.",
     "other": "{n} gammes d’une version plus récente ne peuvent pas être sauvegardées ici. Elles restent enregistrées dans ce navigateur."
-  }
+  },
+  "about.back": "← RETOUR",
+  "about.back.aria": "Retour à l’écran d’entraînement"
 }
