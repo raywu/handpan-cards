@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1686,7 +1686,7 @@ html.about-open{overflow:hidden}
- <div id="settings-panel" aria-labelledby="settings-title" hidden>
+@@ -2218,7 +2218,7 @@ html.account-open, html.export-open{overflow:hidden}
    <h2 id="settings-title" class="sr-only">Settings</h2>
+   <button class="mode" type="button" id="sync-open" aria-haspopup="dialog" hidden><span id="sync-entry-main">Sign in</span><span id="sync-entry-sub" aria-hidden="true">Save your scales</span><span id="sync-entry-err" aria-hidden="true" hidden>Not saved to account</span></button>
    <div class="panel-group">
 -    <h3 class="panel-heading">Flash cards</h3>
 +    <h3 class="panel-heading">Practice</h3>

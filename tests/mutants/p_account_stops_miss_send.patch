@@ -1,0 +1,15 @@
+# kills: polish: Escape closes the account page and Tab wraps inside it
+# suite: node --test --test-name-pattern ^polish:.Escape.closes tests/e2e_sync.test.js
+# Refs TRI-28: sign-in QA fixes. Send code is missing from the account page tab stops.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -19622,7 +19622,7 @@ aboutSection.addEventListener("click", e => {
+ // close = hide + pendingPop + history.back(). About keeps its own code.
+ const ACCOUNT_ROUTE = "#account";
+ const EXPORT_ROUTE = "#export";
+-const accountStops = () => ["account-close", "sync-email", "sync-send", "sync-code", "sync-verify", "sync-other", "sync-resend",
++const accountStops = () => ["account-close", "sync-email", "sync-code", "sync-verify", "sync-other", "sync-resend",
+   "sync-retry", "sync-out", "sync-delete"].map(syncEl).filter(isStop);
+ const exportStops = () => ["export-close", "backup-text", "backup-share", "backup-copy", "backup-download"]
+   .map(id => document.getElementById(id)).filter(isStop);

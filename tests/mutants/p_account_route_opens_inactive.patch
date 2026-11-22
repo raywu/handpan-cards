@@ -1,0 +1,14 @@
+# kills: #account is ignored when sync is inactive (a production host)
+# suite: node --test --test-name-pattern ^#account.is.ignored.when.sync.is.inactive tests/app.test.js
+# Refs TRI-28: sign-in page. A typed #account route opens the page although sync is inactive.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -19673,7 +19673,6 @@ function closeSubpage() {
+ function routedSubpage(name) {
+   if (subpage || aboutOpen || sheetOpen) return;
+   history.replaceState(history.state, "", location.pathname + location.search + routeInfo(deck()).route);
+-  if (name === "account" && !syncActive()) return;
+   openSubpage(name);
+ }
+ document.getElementById("account-close").onclick = closeSubpage;

@@ -1,0 +1,17 @@
+# kills: sync: a held localOnly row does not move the cursor past it; rows before it do
+# kills: sync: a localOnly scale released after the account gained the same id converges with both bodies and no conflict loop
+# kills: sync: bounded two-device model holds no-loss, convergence and no endless conflict (depth 3)
+# suite: node --test --test-name-pattern held.localOnly.row tests/sync.test.js
+# A held localOnly row no longer stops the pull cursor.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -114,7 +114,7 @@
+     for (const R of remote) {
+       const rid = R.scale_id, B = base[rid], L = byRid.get(rid);
+       if (L && localOnly.has(L.id)) { held = true; continue; }
+-      if (!held && R.rev > cursor) cursor = R.rev;
++      if (R.rev > cursor) cursor = R.rev;
+       if (!R.deleted && deferred.has(rid)) deferred.delete(rid);
+ 
+       if (!R.deleted) {

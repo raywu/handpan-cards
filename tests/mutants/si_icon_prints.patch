@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1557,7 +1557,7 @@
+@@ -1746,7 +1746,7 @@ html.account-open, html.export-open{overflow:hidden}
    .scene{transform:none!important}
    #app{display:block; height:auto}
-   #about{display:none}
+   #about, #account, #export{display:none}
 -  #share-copy, #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner{display:none}
 +  #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner{display:none}
  }

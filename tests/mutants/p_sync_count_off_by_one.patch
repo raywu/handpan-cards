@@ -1,0 +1,15 @@
+# kills: after a save the account page counts the scales saved to the account, pluralised
+# suite: node --test --test-name-pattern ^after.a.save.the.account.page.counts tests/app.test.js
+# Refs TRI-28: sign-in QA round 2. The count includes a phantom scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20639,7 +20639,7 @@ function syncStatus(kind) {
+   syncPaint();
+ }
+ const syncMsgFits = (msg, sc) => !msg || msg.signedIn == null || msg.signedIn === !!sc;
+-const syncSavedCount = sc => Object.keys(sc.base || {}).length;
++const syncSavedCount = sc => Object.keys(sc.base || {}).length + 1;
+ function syncLiveMessage(sc) {
+   if (syncDeleteArmed && sc) return { key: "sync.deleteArmed" };
+   if (syncMsg && syncMsg.key.indexOf("sync.status.") !== 0) return syncMsg;

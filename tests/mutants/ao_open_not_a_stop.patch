@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16681,7 +16681,7 @@ function panelStops() {
-   const backup = backupPanel.hasAttribute("hidden") ? [] :
-     ["backup-text", "backup-share", "backup-copy", "backup-download"].map(id => document.getElementById(id));
-   const scales = [document.getElementById("deck-add"), restoreBtn, document.getElementById("backup-open"), ...backup];
+@@ -19501,7 +19501,7 @@ const desktopMQ = window.matchMedia("(min-width:1024px) and (min-height:700px)")
+ function panelStops() {
+   const prints = [...settingsPanel.querySelectorAll(".prints button")];
+   const scales = [document.getElementById("deck-add"), restoreBtn, document.getElementById("backup-open")];
 -  const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"], #about-open')];
 +  const res = [...settingsPanel.querySelectorAll('#settings-panel a.mode[id^="res-"]')];
    const lang = document.getElementById("lang-select");

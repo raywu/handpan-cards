@@ -7,11 +7,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1554,7 +1554,6 @@ html.about-open{overflow:hidden}
+@@ -1743,7 +1743,6 @@ html.account-open, html.export-open{overflow:hidden}
    /* The safe-area padding is an on-screen notch reservation and has no meaning
       on paper; left in, it shifts every page by the device's insets. */
    body{margin:0; padding:0; background:#fff; display:block}
 -  .scene{transform:none!important}
    #app{display:block; height:auto}
-   #about{display:none}
+   #about, #account, #export{display:none}
    #share-copy, #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner{display:none}

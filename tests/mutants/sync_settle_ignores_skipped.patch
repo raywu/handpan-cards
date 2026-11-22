@@ -1,0 +1,15 @@
+# kills: settle: a skipped stale overwrite keeps the base and the cursor so the local edit pushes
+# suite: node --test --test-name-pattern settle..a.skipped.stale.overwrite.keeps.the.base tests/sync.test.js
+# settlePull ignores the skipped list, so a skipped overwrite is settled as committed and the edit is stranded.
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -241,7 +241,7 @@ HPE.sync = (function () {
+     const heldRids = new Set(), keptRids = new Set(), deferNow = [];
+     const alias = clone(plan.alias);
+     let hold = Infinity;
+-    for (const s of skipped || []) {
++    for (const s of []) {
+       const op = ops.get(s.id), src = sources[s.id];
+       if (!op || !src || (op.op === "remove" && s.reason === "missing")) continue;
+       if (op.op === "insert") delete alias[s.id];

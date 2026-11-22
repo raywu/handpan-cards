@@ -1,0 +1,14 @@
+# kills: T-ENG-S3-fresh-store: unheld base cannot infer deletion
+# suite: node --test --test-name-pattern T-ENG-S3-fresh-store tests/sync.test.js
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -305,7 +305,7 @@ HPE.sync = (function () {
+   }
+ 
+   function planPush(input) {
+-    const ctx = input.ctx || {}, local = input.local || [], sc = trustedBase(input.sidecar, local, ctx);
++    const ctx = input.ctx || {}, local = input.local || [], sc = normalized(input.sidecar);
+     const localOnly = new Set(sc.localOnly), rows = [], meta = {};
+     const live = new Set();
+     for (const e of local) {

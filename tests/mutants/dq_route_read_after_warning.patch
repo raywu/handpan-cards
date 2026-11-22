@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15519,7 +15519,7 @@ function finishSavedBoot() {
-   const routed=routedDeckId();
-   const incomingShare=location.hash.indexOf(SHARE_PREFIX)===0;
+@@ -21014,7 +21014,7 @@ function finishSavedBoot() {
    const incomingAdd=location.hash===ADD_ROUTE;
+   const incomingExport=location.hash===EXPORT_ROUTE;
+   incomingAccount=location.hash===ACCOUNT_ROUTE;
 -  const wanted=routed || storedAtBoot;
 +  const wanted=storedAtBoot;
    const finish=()=>{

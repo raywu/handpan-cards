@@ -1,0 +1,15 @@
+# kills: polish: the export page has plain restore copy and COPY and DOWNLOAD look and act disabled with no saved scales
+# suite: node --test --test-name-pattern ^polish:.the.export.page.has.plain tests/e2e_sync.test.js
+# Refs TRI-28: sign-in QA round 2. Disabled COPY and DOWNLOAD look enabled.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1643,8 +1643,6 @@ html.account-open, html.export-open{overflow:hidden}
+ #settings-panel .mode:disabled, #scale-sheet .mode:disabled, #settings-panel .prints button:disabled{
+   background:#F6F4ED; color:#8A847B; border-color:#8A847B; opacity:1}
+ 
+-#export .mode:disabled, #export .mode:disabled:hover{background:#F6F4ED; color:#8A847B; border-color:#8A847B; cursor:default}
+-
+ #scale-sheet #scale-title{color:#242424}
+ #scale-sheet .sheetlabel, #scale-sheet .sheethint, #scale-sheet #scale-parse, #scale-sheet #scale-refusal,
+ #scale-sheet #scale-msg, #scale-sheet #scale-or span, #scale-sheet #scale-fields-note, #scale-sheet #scale-line-note,

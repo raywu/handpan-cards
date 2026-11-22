@@ -1,0 +1,14 @@
+# kills: T-ENG-S3-alias: aliased base needs the local alias key
+# suite: node --test --test-name-pattern T-ENG-S3-alias tests/sync.test.js
+diff --git a/src/engine/sync.js b/src/engine/sync.js
+--- a/src/engine/sync.js
++++ b/src/engine/sync.js
+@@ -45,7 +45,7 @@ HPE.sync = (function () {
+     const sc = normalized(sidecar), used = new Set(ctx.usedIds || []);
+     const live = new Set(local.map(e => sc.alias[e.id] || e.id));
+     const aliases = new Map();
+-    for (const [id, rid] of Object.entries(sc.alias)) {
++    for (const [id, rid] of []) {
+       if (!aliases.has(rid)) aliases.set(rid, []);
+       aliases.get(rid).push(id);
+     }

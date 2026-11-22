@@ -1,0 +1,15 @@
+# kills: #export opens the export page on any host
+# suite: node --test --test-name-pattern ^#export.opens.the.export.page.on.any.host tests/app.test.js
+# Refs TRI-28: sign-in page. A typed #export route is refused when sync is inactive.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -19673,7 +19673,7 @@ function closeSubpage() {
+ function routedSubpage(name) {
+   if (subpage || aboutOpen || sheetOpen) return;
+   history.replaceState(history.state, "", location.pathname + location.search + routeInfo(deck()).route);
+-  if (name === "account" && !syncActive()) return;
++  if (!syncActive()) return;
+   openSubpage(name);
+ }
+ document.getElementById("account-close").onclick = closeSubpage;

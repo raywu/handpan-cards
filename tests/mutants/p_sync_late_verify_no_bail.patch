@@ -1,0 +1,15 @@
+# kills: two tabs: a send, verify or resend that completes after a state flip changes nothing
+# Previously: none (new guard)
+# suite: node --test --test-name-pattern completes.after.a.state.flip tests/e2e_sync.test.js
+# Refs TRI-28: login/sync UI polish. Mutation: a verify that completes after another tab signed in shows its error or overwrites that session.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -20796,7 +20796,6 @@ async function syncSubmit() {
+   syncBusy = true; syncBusyKind = "verify"; syncPaint();
+   const r = await syncFetch("/auth/v1/verify", { method: "POST", body: { email: syncEmail, token, type: "email" } });
+   syncBusy = false; syncBusyKind = null;
+-  if (!!syncLoad() !== was) { syncPaint(); return; }
+   if (!r.ok || !r.json || !r.json.access_token || !r.json.user) {
+     const expired = r.json && (r.json.error_code === "otp_expired" || r.json.msg_code === "otp_expired");
+     syncSay(expired ? "sync.err.expired" : syncAuthError(r, "sync.err.badCode"), undefined, "sync-code");

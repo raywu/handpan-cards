@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1362,7 +1362,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- #about ol, #about ul{margin:0; padding-left:20px}
- #about li{margin:0 0 4px}
- #about a{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1.5px; text-underline-offset:3px}
--#about a:hover{text-decoration-thickness:2.5px}
- #about ul a, #about a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
+@@ -1588,7 +1588,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #about ol, #about ul,#account ol,#export ol,#account ul,#export ul{margin:0; padding-left:20px}
+ #about li,#account li,#export li{margin:0 0 4px}
+ #about a,#account a,#export a{color:#f6f4ed; font-weight:600; text-decoration:underline; text-decoration-color:#f5c78e; text-decoration-thickness:1.5px; text-underline-offset:3px}
+-#about a:hover,#account a:hover,#export a:hover{text-decoration-thickness:2.5px}
++#account a:hover,#export a:hover{text-decoration-thickness:2.5px}
+ #about ul a, #about a[href^="mailto:"],#account ul a,#export ul a,#account a[href^="mailto:"],#export a[href^="mailto:"]{display:flex; align-items:center; min-height:44px}
  html.about-open{overflow:hidden}
- 
+ #account{scroll-padding-top:var(--account-head-h, 0px)}
