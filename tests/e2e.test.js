@@ -536,7 +536,7 @@ function run() {
   // off it, so the assertion still fails on exactly the regression it was
   // written for.
   async function selectDeck(i, meta) {
-    const sel = `#decks .chip:nth-child(${i + 1})`;
+    const sel = `#decks .chip:nth-child(${i + 1} of [data-selection-id])`;
     const hit = await b.eval(`
       const el = document.querySelector(${JSON.stringify(sel)});
       el.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -618,7 +618,7 @@ function run() {
 
   // M2, 2026-09-28: "+ Add a scale" moved out of the strip into the settings
   // panel, so #decks must hold deck chips and nothing else.
-  test("#decks contains only deck chips - + ADD is not one of them", async () => {
+  test("#decks holds deck chips and, first, the + SCALE pill - the panel's + ADD is not in it", async () => {
     await freshLoad();
     const info = await b.eval(`
       const nav = document.getElementById("decks");
@@ -627,12 +627,14 @@ function run() {
           nav.contains(document.getElementById("deck-add")),
         childCount: nav.children.length,
         chipCount: nav.querySelectorAll(".chip").length,
+        firstIsPill: nav.firstElementChild.id === "strip-add",
         addInPanel: !!document.querySelector("#settings-panel #deck-add"),
       };
     `);
     assert.strictEqual(info.addInStrip, false, "#deck-add is still inside #decks");
-    assert.strictEqual(info.childCount, info.chipCount,
-      "#decks has a child that is not a .chip");
+    assert.strictEqual(info.firstIsPill, true, "the pill is not the first child");
+    assert.strictEqual(info.childCount, info.chipCount + 1,
+      "#decks has a child that is neither a .chip nor the pill");
     assert.strictEqual(info.addInPanel, true,
       "#deck-add did not move into the settings panel");
   });
@@ -3390,9 +3392,8 @@ function run() {
           atStart: +atStart.toFixed(2), atEnd: +atEnd.toFixed(2), maxScroll,
         };
       `);
-      // #decks holds deck chips only now (M2, 2026-09-28: "+ Add a scale"
-      // moved into the settings panel) - every built-in and six customs.
-      assert.strictEqual(row.chips, (await decksMeta()).length + 6, "every built-in and six customs");
+      // #decks holds the + SCALE pill and then every built-in and six customs.
+      assert.strictEqual(row.chips, (await decksMeta()).length + 6 + 1, "the pill, every built-in and six customs");
       assert.strictEqual(row.tops.length, 1, `the chip row wrapped onto ${row.tops.length} lines`);
       assert.strictEqual(row.wraps, false, "the chip row grew taller than one line");
       assert.strictEqual(row.rowScrolls, true, "nine chips at 380px should scroll horizontally");
@@ -12970,11 +12971,11 @@ function run() {
               assert.strictEqual(new Set(labels).size,labels.length,"FINAL labels, including literal suffix names, must be distinct");
               for(const row of matrix.entries.filter(x=>x.expectedToken)) {
                 const index=matrix.expectedCustomOrdinalsNewestFirst.indexOf(row.displayOrdinal);
-                const selector="#decks .chip:nth-child("+(index+1)+")",m=await ink(p,selector,{control:true});
+                const selector="#decks .chip:nth-child("+(index+1)+" of [data-selection-id])",m=await ink(p,selector,{control:true});
                 assert.ok(m.text.endsWith(SV.labels.separator+row.expectedToken),"literal full ASCII suffix on its own control: "+row.expectedToken);
                 assert.ok(m.aria.includes(row.expectedToken),"accessible name includes the same full suffix");discriminatorControls++;
               }
-              const presetSelector="#decks .chip:nth-child("+(matrix.entries.length+3)+")",preset=await ink(p,presetSelector,{control:true});
+              const presetSelector="#decks .chip:nth-child("+(matrix.entries.length+3)+" of [data-selection-id])",preset=await ink(p,presetSelector,{control:true});
               assert.ok(preset.text.endsWith(SV.labels.separator+"P3")&&preset.aria.includes("P3"),"literal third-preset discriminator survives layout");discriminatorControls++;
               cells++;
             }
@@ -14440,6 +14441,192 @@ function run() {
           assert.ok(m.left >= 0 && m.right <= m.vw && m.doc <= m.vw, `${lang}: the backup status fits the viewport`);
         }
       } finally { await b.setViewport(...DEFAULT_VIEWPORT); }
+    });
+  });
+
+
+  describe("add-scale pill (+ SCALE, first child of #decks; TRI-80)", () => {
+    const PILL_CAP = 112;
+    const SHARE_CODE = "4A4GpAI11Co13D214D215D216D217D211D213DGem2J49CGan2GenB30iCYmpB3GiDImsB3SxEmgT2O_m";
+    const pillRect = `(() => { const p = document.getElementById("strip-add"); if (!p) return null; const r = p.getBoundingClientRect(); const s = getComputedStyle(p);
+      return { l: r.left, r: r.right, w: r.width, h: r.height, display: s.display }; })()`;
+    const frame = `(() => { const card = document.querySelector("#card, .card"); const c = card.getBoundingClientRect(); const d = document.getElementById("decks").getBoundingClientRect();
+      return { cl: c.left, ct: c.top, cw: c.width, ch: c.height, dh: d.height, dt: d.top, cardW: getComputedStyle(document.documentElement).getPropertyValue("--card-w") }; })()`;
+    const hidePill = `(() => { const s = document.createElement("style"); s.id = "t-hide-pill"; s.textContent = "#strip-add{display:none!important}"; document.head.appendChild(s); })()`;
+    const showPill = `(() => { document.getElementById("t-hide-pill")?.remove(); })()`;
+    const VIEWPORTS = [[375, 667, true], [360, 640, true], [320, 568, true], [844, 390, true], [667, 375, true], [1440, 680, false], [1024, 600, false], [1023, 700, false], [1024, 699, false]];
+
+    test("geometry: card rect, --card-w and strip height are identical with and without the pill; pill is 44px+ tall", async () => {
+      await freshLoad();
+      try {
+        for (const [w, h, mobile] of VIEWPORTS) {
+          await b.setViewport(w, h, mobile);
+          await b.settle();
+          const withPill = await b.eval(`return ${frame};`);
+          const pr = await b.eval(`return ${pillRect};`);
+          assert.ok(pr && pr.display !== "none", `${w}x${h}: the pill is present`);
+          assert.ok(pr.h >= 44, `${w}x${h}: pill height ${pr.h} >= 44`);
+          await b.eval(`${hidePill}; return true;`);
+          await b.settle();
+          const without = await b.eval(`return ${frame};`);
+          await b.eval(`${showPill}; return true;`);
+          assert.deepStrictEqual(withPill, without, `${w}x${h}: card rect, --card-w and strip height unchanged by the pill`);
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("breakpoint: absent and unfocusable at 1280x800 and 1024x700, present just below it", async () => {
+      await freshLoad();
+      try {
+        for (const [w, h, gone] of [[1280, 800, true], [1024, 700, true], [1023, 700, false], [1024, 699, false], [1440, 680, false], [1024, 600, false]]) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          const state = await b.eval(`const p = document.getElementById("strip-add"); p.focus();
+            return { display: getComputedStyle(p).display, focused: document.activeElement === p };`);
+          assert.strictEqual(state.display === "none", gone, `${w}x${h}: display ${state.display}`);
+          assert.strictEqual(state.focused, !gone, `${w}x${h}: focusable only when shown`);
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("docked: chip x-positions equal those of a strip with no pill at all (1280x800, 1024x700)", async () => {
+      await freshLoad();
+      try {
+        for (const [w, h] of [[1280, 800], [1024, 700]]) {
+          await b.setViewport(w, h, false);
+          await b.settle();
+          const xs = `[...document.querySelectorAll("#decks .chip")].map(c => Math.round(c.getBoundingClientRect().left * 10) / 10)`;
+          const before = await b.eval(`return ${xs};`);
+          await b.eval(`window.__pill = document.getElementById("strip-add"); window.__pill.remove(); return true;`);
+          const after = await b.eval(`return ${xs};`);
+          await b.eval(`document.getElementById("decks").insertBefore(window.__pill, document.getElementById("decks").firstChild); return true;`);
+          assert.deepStrictEqual(before, after, `${w}x${h}: first chip keeps its centring (#strip-add + *)`);
+        }
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("behaviour: click opens the editor; Cancel returns focus to the pill; the pill is never selected, never in the chip count", async () => {
+      await freshLoad();
+      await b.setViewport(375, 667, true);
+      try {
+        const counts = await b.eval(`return { chips: document.querySelectorAll("#decks .chip").length, kids: document.getElementById("decks").children.length };`);
+        assert.strictEqual(counts.kids, counts.chips + 1);
+        await b.click("#strip-add");
+        await b.waitFor(`document.getElementById("scale-sheet").hidden === false`, { label: "editor open" });
+        const inertNow = () => b.eval(`const p = document.getElementById("strip-add"); return !!p.closest("[inert]") && !p.hidden && getComputedStyle(p).display !== "none";`);
+        assert.strictEqual(await inertNow(), true, "pill inert (not hidden) under the editor");
+        await b.eval(`closeScaleSheet(); return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hidden === true`, { label: "editor closed" });
+        assert.strictEqual(await b.eval(`return document.activeElement.id;`), "strip-add");
+        const sel = await b.eval(`const p = document.getElementById("strip-add"); return { cur: p.getAttribute("aria-current"), cls: p.className, inert: p.inert };`);
+        assert.deepStrictEqual(sel, { cur: null, cls: "", inert: false });
+        assert.strictEqual(await b.eval(`return !document.getElementById("strip-add").closest("[inert]");`), true, "pill live again after the editor closes");
+        await b.click("#settings-trigger");
+        await b.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
+        assert.strictEqual(await inertNow(), true, "pill inert (not hidden) under the panel");
+        await b.click("#about-open");
+        await b.waitFor(`getComputedStyle(document.getElementById("about")).display !== "none"`, { label: "about open" });
+        assert.strictEqual(await inertNow(), true, "pill inert (not hidden) under About");
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("a drag that starts on the pill does not swipe the card", async () => {
+      await freshLoad();
+      await b.setViewport(375, 667, true);
+      try {
+        const before = await b.eval(`return document.getElementById("count").textContent;`);
+        await b.eval(`const p = document.getElementById("strip-add"); const r = p.getBoundingClientRect();
+          for (const [t, x] of [["pointerdown", r.left + 10], ["pointermove", r.left + 120], ["pointerup", r.left + 220]])
+            p.dispatchEvent(new PointerEvent(t, { bubbles: true, clientX: x, clientY: r.top + 20, pointerId: 7, pointerType: "touch" }));
+          return true;`);
+        await b.settle();
+        assert.strictEqual(await b.eval(`return document.getElementById("count").textContent;`), before);
+      } finally { await b.setViewport(900, 900, false); }
+    });
+
+    test("print: the pill is not printed", async () => {
+      await freshLoad();
+      await b.send("Emulation.setEmulatedMedia", { media: "print" });
+      try {
+        assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("strip-add")).display;`), "none");
+      } finally { await b.send("Emulation.setEmulatedMedia", { media: "" }); }
+    });
+
+    test("colours: the pill differs from .chip and .chip.on; text contrast >= 4.5:1", async () => {
+      await freshLoad();
+      const c = await b.eval(`const g = (el) => { const s = getComputedStyle(el); return { bg: s.backgroundColor, fg: s.color }; };
+        return { pill: g(document.getElementById("strip-add")), chip: g(document.querySelector("#decks .chip:not(.on)")), on: g(document.querySelector("#decks .chip.on")) };`);
+      assert.notDeepStrictEqual(c.pill, c.chip);
+      assert.notDeepStrictEqual(c.pill, c.on);
+      const lum = (rgb) => { const [r, g, bl] = rgb.match(/\d+(\.\d+)?/g).slice(0, 3).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+      const [hi, lo] = [lum(c.pill.bg), lum(c.pill.fg)].sort((x, y) => y - x);
+      assert.ok((hi + 0.05) / (lo + 0.05) >= 4.5, `contrast ${(hi + 0.05) / (lo + 0.05)}`);
+    });
+
+    test("entry states D13: the pill is fully visible on a default load at 375x667 and 320x568; other states are recorded", async () => {
+      const visible = `(() => { const p = document.getElementById("strip-add").getBoundingClientRect(); const d = document.getElementById("decks").getBoundingClientRect();
+        return { fully: p.left >= d.left - 0.5 && p.right <= d.right + 0.5, pl: Math.round(p.left), pr: Math.round(p.right), dl: Math.round(d.left), dr: Math.round(d.right), scroll: Math.round(document.getElementById("decks").scrollLeft) }; })()`;
+      const states = [
+        ["default", null, URL + "?e=default"],
+        ["#deck=pygmy", null, URL + "?e=deck#deck=pygmy"],
+        ["#s= link", null, URL + "?e=s#s=" + SHARE_CODE],
+        ["#add", null, URL + "?e=add#add"],
+      ];
+      const report = [];
+      try {
+        for (const [w, h] of [[375, 667], [320, 568]]) {
+          for (const [name, , target] of states) {
+            await freshLoad();
+            await b.setViewport(w, h, true);
+            await navigate(target);
+            await b.settle();
+            report.push(`PILL_ENTRY ${w}x${h} ${name} ${JSON.stringify(await b.eval(`return ${visible};`))}`);
+          }
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          await b.eval(`selectDeck(allDeckViews()[allDeckViews().length - 1].selection); return true;`);
+          await navigate(URL + "?e=persist");
+          await b.settle();
+          report.push(`PILL_ENTRY ${w}x${h} persisted-last ${JSON.stringify(await b.eval(`return ${visible};`))}`);
+          await freshLoad();
+          await b.setViewport(w, h, true);
+          const dflt = await b.eval(`return ${visible};`);
+          assert.strictEqual(dflt.fully, true, `${w}x${h}: pill fully visible on default load ${JSON.stringify(dflt)}`);
+        }
+      } finally { await b.setViewport(900, 900, false); console.log(report.join("\n")); }
+    });
+
+    describe("labels at 320x568 with the web fonts loaded", () => {
+      let rb = null;
+      before(async () => {
+        rb = await launch({ realFonts: true });
+        assert.ok(rb, "real-font browser");
+        await rb.goto(URL);
+        await rb.eval(`return document.fonts.ready.then(() => true);`);
+        const fonts = await rb.eval(`return Promise.all(["600 12px 'Nunito Sans'", "700 12px 'Nunito Sans'"].map(s => document.fonts.load(s))).then(() => [...document.fonts].filter(f => f.status === "loaded").length);`);
+        assert.ok(fonts >= 2, "the Nunito Sans faces loaded");
+      });
+      after(async () => { if (rb) await rb.close(); });
+
+      test("every language: pill width <= " + PILL_CAP + "px, the label is in the accessible name, and the CJK pill uses the CJK stack", async () => {
+        await rb.setViewport(320, 568, true);
+        const langs = await rb.eval(`return LANGS.slice();`);
+        assert.strictEqual(langs.length, 8);
+        const rows = [];
+        for (const lang of langs) {
+          await rb.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          await rb.eval(`return document.fonts.ready.then(() => true);`);
+          await rb.settle();
+          const m = await rb.eval(`const p = document.getElementById("strip-add"); const r = p.getBoundingClientRect();
+            return { label: p.textContent, aria: p.getAttribute("aria-label"), w: Math.round(r.width * 10) / 10, h: r.height, lang: p.getAttribute("lang"), font: getComputedStyle(p).fontFamily };`);
+          rows.push({ lang, ...m });
+          assert.ok(m.w <= PILL_CAP, `${lang}: pill ${m.w}px > ${PILL_CAP}px (${m.label})`);
+          const word = m.label.replace(/^[+＋]\s*/, "").toLowerCase();
+          assert.ok(m.aria.toLowerCase().includes(word), `${lang}: aria "${m.aria}" must contain visible "${word}"`);
+          if (/^(ja|zh)/.test(lang)) assert.match(m.font, /PingFang|Hiragino|YaHei|Noto Sans CJK|Yu Gothic|JhengHei/, `${lang}: CJK stack`);
+        }
+        console.log("PILL_WIDTHS " + JSON.stringify(rows));
+      });
     });
   });
 

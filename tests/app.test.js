@@ -982,10 +982,13 @@ opBudget("nineteen field maximum", 130);
 const REASONS_OF = (app, code) => app.get(
   `[HPE.core.REASONS[${JSON.stringify(code)}].reason].concat(Object.values(HPE.core.REASONS[${JSON.stringify(code)}].alternates || {}))`);
 
+/** The strip's selection chips: the "+ SCALE" pill (#strip-add) is a child of #decks but not a scale. */
+function realChips(app) { return app.els.decks.children.filter((c) => c.id !== "strip-add"); }
+
 /** The strip's children, as [{label, on, id}] in document order - "+ ADD"
  *  included, because it is one of them now. */
 function stripRow(app) {
-  return app.els.decks.children.map((c) => ({
+  return realChips(app).map((c) => ({
     label: (c._html || c._text || "").replace(/<[^>]*>/g, "").trim(),
     on: c.classList.contains("on"),
     id: c.id,
@@ -7425,7 +7428,7 @@ describe("share url", () => {
     const on = chipRow(app).filter((c) => c.on);
     assert.strictEqual(on.length, 1);
     assert.strictEqual(on[0].label, "C# HIJAZ 9 / S1", "same-name built-in and saved instance remain distinguishable");
-    const selectedChip=app.els.decks.children.find(c=>c.classList.contains("on"));
+    const selectedChip=realChips(app).find(c=>c.classList.contains("on"));
     assert.strictEqual(selectedChip.getAttribute("data-selection-kind"),"saved");
     assert.strictEqual(selectedChip.getAttribute("data-selection-id"),d.instanceId);
   });
@@ -7464,11 +7467,11 @@ describe("share url", () => {
     const app = bootGA();
     const calls = app.history.calls.length;
     const events = gaEvents(app).length;
-    const chips = app.els.decks.children.slice();
+    const chips = realChips(app).slice();
     await hashChange(app,app.location.hash, { force: true });
     assert.strictEqual(app.history.calls.length, calls);
     assert.strictEqual(gaEvents(app).length, events);
-    assert.deepStrictEqual(app.els.decks.children, chips);
+    assert.deepStrictEqual(realChips(app), chips);
     assert.strictEqual(app.get("selection.id"), "kurd");
   });
 
@@ -9271,9 +9274,9 @@ describe("I18N", () => {
     assert.strictEqual(contract.provenance.baselineCommit, "1510ea369573078e6296fe873edb6f538c3212a3");
     assert.strictEqual(contract.keyCount, 250);
     const savedKeys=["saved.ackPending","saved.failure","saved.importFailure","saved.legacy","saved.presetToken","saved.recovery","saved.resetConflict","saved.resetFailure","saved.savedToken","saved.session","saved.sessionAckPending","saved.sessionImportAckPending","saved.temporary"];
-    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria","footer.shuffle_off","footer.shuffle_on","seq.no_playable","about.back","about.back.aria","about.title","sheet.your_scale","sheet.note_by_note","sheet.lip.aria","sheet.duplicate","sheet.hit_label","sheet.only_note","sheet.mirror_reflow"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.name.aria","editor.name.auto","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria","editor.hint.place","editor.hint.ding","editor.hint.toggle","editor.hint.toggle.aria","editor.hint.close","editor.tabs.aria","editor.accidentals.aria","editor.sharps","editor.more.aria","editor.menu.delete","editor.menu.delete_armed","editor.count.rim","editor.count.inner","editor.count.bottom","editor.count.ding","editor.count.main","editor.count.mutant","editor.neo.pair_help","editor.neo.builtin","editor.neo.name_hint","editor.say.stage_need_ding","editor.say.stage_need_fifth","editor.say.ding_first","editor.rebound","editor.say.del_kept","editor.note.aria_ding_empty","editor.area.aria.rim",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","file_newer","file_newer_none"].map(k=>"backup."+k),"saved.newer",...neotoneKeys],addedPluralKeys=["move.notice","move.banner","saved.newer","backup.file_newer","backup.file_newer_none"];
+    const retiredKeys=["panel.res_amy_bottom","panel.res_amy_bottom.aria","panel.res_amy_prog","panel.res_amy_prog.aria","footer.shuffle_off","footer.shuffle_on","seq.no_playable","about.back","about.back.aria","about.title","sheet.your_scale","sheet.note_by_note","sheet.lip.aria","sheet.duplicate","sheet.hit_label","sheet.only_note","sheet.mirror_reflow"],neotoneKeys=["sheet.layout_mode", "sheet.mode_standard", "sheet.neotone_check", "sheet.mode_neotone", "sheet.neotone_inner_extra", "sheet.neotone_top_extra", "sheet.neotone_both_extra", "sheet.neotone_extra_mutant", "sheet.neotone_extra_main", "sheet.neotone_and", "sheet.neotone_pair_help", "sheet.neotone_unused", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_name_label", "sheet.neotone_name_suffix", "sheet.neotone_name_suffix_plain", "sheet.neotone_name_hint", "sheet.drawer_hint_neotone", "sheet.tonefield_label", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_empty", "sheet.neotone_demo", "sheet.neotone_picked", "sheet.neotone_swapped", "sheet.neotone_moved", "sheet.neotone_other_ring", "sheet.neotone_input_inner", "reason.NEOTONE_INPUT", "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT"],addedKeys=["panel.explore","header.share","sheet.mirror_keeps_numbers","move.notice","move.failed","move.banner","move.banner_empty","move.banner_overcap","move.go","move.go_plain","move.dismiss","move.banner_label","move.deadline","move.deadline_empty","panel.pdf_menu","panel.pdf_easy","panel.pdf_easy_medium","panel.pdf_all","editor.line.aria","editor.name.aria","editor.name.auto","editor.pins_reset","editor.undo","editor.redo","editor.remove","editor.reset","editor.save","editor.dlg.title","editor.dlg.body","editor.dlg.save","editor.dlg.discard","editor.dlg.keep","editor.empty","editor.pan.aria","editor.pantype","editor.standard","editor.neotone","editor.held","editor.cancel","editor.say.swapped","editor.say.ding_swap","editor.say.ding_replace","editor.say.replaced","editor.say.removed","editor.say.went_back","editor.release_remove","editor.say.ding_stays","editor.say.same_zone","editor.say.zone_is_full","editor.say.no_room","editor.zone_full","editor.say.placed","editor.say.added","editor.say.picked","editor.say.zone_inner","editor.say.zone_bottom","editor.say.ding_required","editor.say.rim_min","editor.say.moved","editor.say.nudged","editor.area.aria.inner","editor.area.aria.bottom","editor.neo.field_empty","editor.neo.own_row","editor.seats_reset","editor.tray.aria","editor.octave","editor.octave_label","editor.dragging","editor.octave_down","editor.octave_up","editor.flats","editor.palette","editor.palette_n","editor.layout.aria","editor.note.aria","editor.note.aria_ding","editor.zone.rim","editor.zone.inner","editor.zone.bottom","editor.zone.ding","editor.ding_bottom_only","editor.full.rim","editor.full.inner","editor.full.bottom","editor.crowded","editor.reset.inner","editor.reset.bottom","editor.reset_both","editor.reset_both_aria","editor.hint.place","editor.hint.ding","editor.hint.toggle","editor.hint.toggle.aria","editor.hint.close","editor.tabs.aria","editor.accidentals.aria","editor.sharps","editor.more.aria","editor.menu.delete","editor.menu.delete_armed","editor.count.rim","editor.count.inner","editor.count.bottom","editor.count.ding","editor.count.main","editor.count.mutant","editor.neo.pair_help","editor.neo.builtin","editor.neo.name_hint","editor.say.stage_need_ding","editor.say.stage_need_fifth","editor.say.ding_first","editor.rebound","editor.say.del_kept","editor.note.aria_ding_empty","editor.area.aria.rim",...["open","intro","session","restore","text.aria","share","copy","download","empty","copied","shared","select","downloaded","last","file_title","file_hidden","file_newer","file_newer_none"].map(k=>"backup."+k),"saved.newer","fab.label","fab.aria",...neotoneKeys],addedPluralKeys=["move.notice","move.banner","saved.newer","backup.file_newer","backup.file_newer_none"];
     const legacySheetKeys=["compose.DING_EMPTY", "compose.DING_ONE", "compose.DOUBLE_B", "compose.DUPLICATE_NOTE.ding", "compose.DUPLICATE_NOTE.inner", "compose.DUPLICATE_NOTE.top", "compose.INNER_BELOW_TOP", "compose.IN_BOTTOM", "compose.IN_TOP", "compose.NOT_ABOVE_DING", "compose.NOT_A_NOTE", "compose.NO_FIFTH", "compose.NO_OCTAVE_FITS", "compose.OCTAVES_GUESSED", "compose.OCTAVES_GUESSED_INNER", "compose.OUT_OF_RANGE", "compose.SOLFEGE", "compose.TOP_EMPTY", "compose.TYPE_NOTES_ONLY", "sheet.anchor_hint", "sheet.angle_next", "sheet.angle_next.aria", "sheet.angle_prev", "sheet.angle_prev.aria", "sheet.angles_reset", "sheet.at", "sheet.bottom", "sheet.bottom_now_has", "sheet.bottom_now_has_angles", "sheet.bottom_now_has_both", "sheet.bottom_opt", "sheet.cancelled", "sheet.counts", "sheet.del_armed", "sheet.del_idle", "sheet.ding", "sheet.drawer.aria", "sheet.drawer_hint", "sheet.drawer_hint_neotone", "sheet.drawer_hint_slide", "sheet.drop_swap", "sheet.field_msg", "sheet.fields_follow", "sheet.fields_head", "sheet.fields_stale", "sheet.fine_hide", "sheet.fine_show", "sheet.generating", "sheet.in_way", "sheet.inner", "sheet.inner_below", "sheet.inner_follows", "sheet.inner_short", "sheet.layout_changed", "sheet.layout_hint_empty", "sheet.layout_reset", "sheet.layout_unsaved_add", "sheet.layout_unsaved_edit", "sheet.line_follows", "sheet.line_label", "sheet.line_stale", "sheet.line_sub", "sheet.lip_show", "sheet.list_and", "sheet.mirror_bottom", "sheet.mirror_bottom_off", "sheet.mirror_bottom_on", "sheet.mirror_hint", "sheet.mirror_keeps_numbers", "sheet.mirror_top", "sheet.mirror_top_off", "sheet.mirror_top_on", "sheet.mode_standard", "sheet.moved_to", "sheet.name_label", "sheet.neotone_and", "sheet.neotone_both_extra", "sheet.neotone_builtin", "sheet.neotone_builtin_plain", "sheet.neotone_demo", "sheet.neotone_empty", "sheet.neotone_extra_main", "sheet.neotone_extra_mutant", "sheet.neotone_inner_extra", "sheet.neotone_input_inner", "sheet.neotone_moved", "sheet.neotone_name_hint", "sheet.neotone_name_label", "sheet.neotone_other_ring", "sheet.neotone_pair_help", "sheet.neotone_picked", "sheet.neotone_range", "sheet.neotone_rearrange", "sheet.neotone_ring_main", "sheet.neotone_ring_mutant", "sheet.neotone_swapped", "sheet.neotone_top_extra", "sheet.neotone_unused", "sheet.next", "sheet.next_note", "sheet.next_seat", "sheet.no_free_place", "sheet.no_two_ring", "sheet.not_moved", "sheet.octave_sentence", "sheet.or", "sheet.or.aria", "sheet.order_hint", "sheet.orientation", "sheet.palette", "sheet.palette_n", "sheet.pan_example", "sheet.pan_held", "sheet.parse_hint", "sheet.parse_summary", "sheet.parse_zone", "sheet.pick_bottom_many", "sheet.pick_bottom_many_fine", "sheet.pick_bottom_one", "sheet.pick_bottom_one_fine", "sheet.pick_keys", "sheet.pick_note", "sheet.pick_tap", "sheet.pick_tap_seat", "sheet.place.bottom", "sheet.place.left", "sheet.place.lower_left", "sheet.place.lower_right", "sheet.place.right", "sheet.place.top", "sheet.place.upper_left", "sheet.place.upper_right", "sheet.prev_note", "sheet.prev_seat", "sheet.preview.aria", "sheet.put_down", "sheet.put_down_kept", "sheet.put_down_kept_moves", "sheet.reset_layout", "sheet.rim_follows", "sheet.ring_back", "sheet.ring_bottom", "sheet.ring_inner", "sheet.ring_reset", "sheet.ring_rim", "sheet.save", "sheet.saving", "sheet.seat_is_now", "sheet.seat_renumber", "sheet.seat_stays", "sheet.seats_angles_reset", "sheet.seats_reset", "sheet.stays", "sheet.stays_at", "sheet.swapped", "sheet.tablist", "sheet.tonefield_label", "sheet.too_close_so", "sheet.too_close_steps", "sheet.top", "sheet.zone_bottom", "sheet.zone_inner", "sheet.zone_top"];
-    assert.strictEqual(Object.keys(en).length,contract.keyCount+13-retiredKeys.length+addedKeys.length-legacySheetKeys.length,"frozen base plus the thirteen approved saved-variants messages, less the four retired Amy keys and the eleven dead keys the Editor RC I1 sweep retired (no reference in index.html, src or tools), less the legacy scale sheet keys the Editor RC U2j-2r sweep removed with the sheet, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the editor tab, menu and zone-count keys (Editor RC W3 P1), the eighteen backup.* keys (Safari storage lane B plus backup.file_newer and backup.file_newer_none), saved.newer (rollback guard) and the Neotone keys (Neotone lane U2)");
+    assert.strictEqual(Object.keys(en).length,contract.keyCount+13-retiredKeys.length+addedKeys.length-legacySheetKeys.length,"frozen base plus the thirteen approved saved-variants messages, less the four retired Amy keys and the eleven dead keys the Editor RC I1 sweep retired (no reference in index.html, src or tools), less the legacy scale sheet keys the Editor RC U2j-2r sweep removed with the sheet, plus panel.explore (menu Resources redesign), header.share (native share), sheet.mirror_keeps_numbers, move.notice / move.failed / the click-to-move banner keys (domain move handoff), the four panel.pdf_* tier-menu keys, the editor tab, menu and zone-count keys (Editor RC W3 P1), the eighteen backup.* keys (Safari storage lane B plus backup.file_newer and backup.file_newer_none), saved.newer (rollback guard), the Neotone keys (Neotone lane U2) and the two \"+ SCALE\" pill keys fab.label and fab.aria (TRI-80)");
     for(const key of savedKeys)assert.strictEqual(typeof en[key],"string",key+" is a required new scalar message");
     for(const key of ["about.back","about.back.aria"])for(const l of ALL)assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir,l+".json"),"utf8"))[key],undefined,l+" dropped "+key+" (no reference in index.html)");
     const baseKeys=Object.keys(en).filter(key=>!savedKeys.includes(key)&&!addedKeys.includes(key)).concat(retiredKeys,legacySheetKeys.filter(key=>!addedKeys.includes(key)&&!savedKeys.includes(key)));
@@ -9862,12 +9865,12 @@ describe("SHC asynchronous LINK ownership", () => {
   // dispatch never promises to return asynchronous listener completion.
   async function submit(app) { return app.getAsync("runGenerate()"); }
   function editSelected(app) {
-    const selected = app.els.decks.children.find(c => c.classList.contains("on"));
+    const selected = realChips(app).find(c => c.classList.contains("on"));
     assert.ok(selected, "selected instance has a chip"); selected.onclick();
     assert.strictEqual(app.sheetOpen(), true, "selected chip opens Edit");
   }
   async function clickAt(app, index) {
-    const chip = app.els.decks.children[index]; assert.ok(chip, "literal expected chip index exists");
+    const chip = realChips(app)[index]; assert.ok(chip, "literal expected chip index exists");
     await chip.onclick();
   }
   function rename(app, name) {
@@ -10384,13 +10387,13 @@ describe("SHC asynchronous LINK ownership", () => {
         // Literal fixture input order is oldest first; custom strip is newest
         // first. Bind each expected token to its own control, not a substring
         // search that could accidentally find a sibling's literal name.
-        const chip=app.els.decks.children[c.names.length-1-i];
+        const chip=realChips(app)[c.names.length-1-i];
         assert.ok(chip && strip(chip.innerHTML||chip.textContent).endsWith(SV.labels.separator+token),"literal fixture collision suffix is visible on its own control: "+token);
         assert.ok((chip.getAttribute("aria-label")||strip(chip.innerHTML)).includes(token),"accessible label retains "+token);
       }
       if(c.expectedPresetToken) {
         assert.strictEqual(c.presetId,"amara","this frozen preset case targets the third built-in slot");
-        const preset=app.els.decks.children[c.names.length+2];
+        const preset=realChips(app)[c.names.length+2];
         assert.ok(preset && strip(preset.innerHTML||preset.textContent).endsWith(SV.labels.separator+c.expectedPresetToken),"preset disambiguation retains literal fixture token "+c.expectedPresetToken);
         assert.ok((preset.getAttribute("aria-label")||strip(preset.innerHTML)).includes(c.expectedPresetToken));
       }
@@ -10525,14 +10528,14 @@ describe("SHC asynchronous LINK ownership", () => {
   test("SV12 U1: Back Escape and Save return focus to a connected surviving instance chip", async () => {
     for(const action of ["back","escape","save"]) {
       const {app}=await seeded([SV.portableRecords.amaraA],{},{layout:true});
-      const original=app.els.decks.children.find(c=>c.classList.contains("on"));original.focus();
+      const original=realChips(app).find(c=>c.classList.contains("on"));original.focus();
       editSelected(app);
       if(action==="save"){rename(app,"FOCUS RETURN");await submit(app);}
       else if(action==="back")app.els["scale-back"].click();
       else app.keydown("Escape");
       assert.strictEqual(app.sheetOpen(),false);
       const active=app.sandbox.document.activeElement;
-      assert.ok(app.els.decks.children.includes(active),action+" focus must belong to the current chip strip, never a detached opener");
+      assert.ok(realChips(app).includes(active),action+" focus must belong to the current chip strip, never a detached opener");
       assert.strictEqual(active.getAttribute("data-selection-id"),iid(1));
     }
   });
@@ -10631,7 +10634,7 @@ describe("SHC asynchronous LINK ownership", () => {
       const {app}=await load({storage:{hpfc:JSON.stringify({lang}),[SV_KEY]:JSON.stringify(input)}});
       const locale=JSON.parse(fs.readFileSync(path.join(ROOT,"data/i18n",lang+".json"),"utf8"));
       for(const [i,token] of c.expectedSavedTokens.entries()) {
-        const chip=app.els.decks.children[c.names.length-1-i],visible=strip(chip.innerHTML||chip.textContent);
+        const chip=realChips(app)[c.names.length-1-i],visible=strip(chip.innerHTML||chip.textContent);
         const accessible=chip.getAttribute("aria-label")||visible;
         assert.ok(accessible.includes(visible),"accessible name retains the entire visible label");
         assert.notStrictEqual(accessible,visible,"saved discriminator needs a readable explanation beyond its unexplained token");
@@ -10640,7 +10643,7 @@ describe("SHC asynchronous LINK ownership", () => {
         assert.ok(accessible.includes(locale["saved.savedToken"].replace("{token}",token)),lang+" explains literal saved token "+token);
       }
       if(c.expectedPresetToken) {
-        const chip=app.els.decks.children[c.names.length+2],visible=strip(chip.innerHTML||chip.textContent),accessible=chip.getAttribute("aria-label")||visible;
+        const chip=realChips(app)[c.names.length+2],visible=strip(chip.innerHTML||chip.textContent),accessible=chip.getAttribute("aria-label")||visible;
         assert.ok(accessible.includes(visible));assert.notStrictEqual(accessible,visible,"preset token also needs explanation");
         assert.strictEqual(typeof locale["saved.presetToken"],"string");
         assert.ok(accessible.includes(locale["saved.presetToken"].replace("{token}",c.expectedPresetToken)));
@@ -11188,7 +11191,7 @@ describe("SHC asynchronous LINK ownership", () => {
 
   test("SV17 U1: preference acknowledgments and unchanged rereads preserve chip nodes while collection changes remain visible", async () => {
     const {app}=await seeded([SV.portableRecords.amaraA,SV.portableRecords.amaraB]);
-    const nodes=()=>[...app.els.decks.children];
+    const nodes=()=>[...realChips(app)];
     const ids=()=>nodes().map(chip=>chip.getAttribute("data-selection-id"));
     const unchanged=(before,label)=>{
       const after=nodes();assert.strictEqual(after.length,before.length,label+": chip count");
@@ -12964,5 +12967,124 @@ describe("backup: back up saved scales", () => {
     const ids = () => app.get("panelStops().map((e) => e.id)");
     assert.ok(ids().includes("backup-open"));
     assert.ok(!ids().includes("backup-copy"));
+  });
+});
+
+/* ------------------------------------------------ "+ SCALE" pill (TRI-80) */
+describe("add-scale pill: first child of the strip", () => {
+  const REAL_ID = "G-TEST123456";
+  const bootPill = (opts = {}) => boot({ html: withGaId(REAL_ID), webdriver: false, href: "https://example.test/index.html", ...opts });
+  const pillOf = (app) => app.els.decks.children[0];
+  const events = (app) => JSON.parse(JSON.stringify(Array.from(app.get("window.dataLayer"))))
+    .filter((e) => e[0] === "event").map((e) => ({ name: e[1], params: e[2] }));
+  const pillRealChips = (app) => app.els.decks.children.filter((c) => c.getAttribute("data-selection-id"));
+
+  test("the pill is the first child, is not a .chip and carries no selection attributes", async () => {
+    const app = boot();
+    const pill = pillOf(app);
+    assert.strictEqual(pill.id, "strip-add");
+    assert.ok(!pill.classList.contains("chip"), "a .chip class would shift every positional chip selector");
+    assert.strictEqual(pill.getAttribute("data-selection-id"), null);
+    assert.strictEqual(pill.getAttribute("data-selection-kind"), null);
+    assert.strictEqual(pill.getAttribute("aria-current"), null);
+    assert.strictEqual(pill.getAttribute("aria-haspopup"), "dialog");
+    assert.strictEqual(pill.getAttribute("aria-label"), app.get('t("fab.aria")'));
+    assert.strictEqual((pill._text || pill._html || "").replace(/<[^>]*>/g, "").trim(), app.get('t("fab.label")'));
+    assert.ok(pillRealChips(app).length > 0 && app.els.decks.children.length === pillRealChips(app).length + 1);
+  });
+
+  test("the pill is rebuilt exactly once per buildChips and stays first", async () => {
+    const app = boot();
+    app.run("buildChips();buildChips()");
+    assert.strictEqual(app.els.decks.children.filter((c) => c.id === "strip-add").length, 1);
+    assert.strictEqual(pillOf(app).id, "strip-add");
+  });
+
+  test("clicking the pill opens the editor with the pill as opener; Escape returns focus to the pill", async () => {
+    const app = boot();
+    pillOf(app).click();
+    assert.strictEqual(app.sheetOpen(), true);
+    app.keydown("Escape");
+    assert.strictEqual(app.sheetOpen(), false);
+    assert.strictEqual(app.activeId(), "strip-add");
+  });
+
+  test("Save from a pill-opened editor focuses the new chip, not the pill", async () => {
+    const app = bootPill();
+    pillOf(app).click();
+    app.type(AMARA_STRING);
+    await generateClick(app);
+    assert.notStrictEqual(app.activeId(), "strip-add");
+    assert.ok(app.get('document.activeElement.classList.contains("on")'), "the new chip is focused");
+  });
+
+  test("the pill is never selected: selecting any scale leaves it unmarked", async () => {
+    const app = boot();
+    app.run('selectDeck("pygmy")');
+    const pill = pillOf(app);
+    assert.ok(!pill.classList.contains("on"));
+    assert.strictEqual(pill.getAttribute("aria-current"), null);
+    assert.strictEqual(pillRealChips(app).filter((c) => c.classList.contains("on")).length, 1);
+  });
+
+  test("a rebuild while the pill has focus leaves focus on the (new) pill", async () => {
+    const app = boot();
+    pillOf(app).focus();
+    app.run("buildChips()");
+    app.run("savedSnapshotListener({previous:null,source:'local'})");
+    assert.strictEqual(app.activeId(), "strip-add", "focusedRemoved must not fire for a null data-selection-id");
+  });
+
+  test("the pill's lang follows the UI language, not the strip's English island", async () => {
+    const app = boot({ storage: { hpfc: JSON.stringify({ lang: "ja" }) } });
+    assert.strictEqual(app.get('document.getElementById("decks").getAttribute("lang")'), "en");
+    assert.strictEqual(pillOf(app).getAttribute("lang"), "ja");
+    const en = boot();
+    assert.strictEqual(pillOf(en).getAttribute("lang"), null, "no lang attribute needed when the UI is English");
+  });
+
+  test("scale_add_open carries add_source strip, menu and link; scale_create repeats it; edit sends none", async () => {
+    const app = bootPill();
+    let n = events(app).length;
+    pillOf(app).click();
+    assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_add_open"), [{ name: "scale_add_open", params: { add_source: "strip" } }]);
+    app.type(AMARA_STRING);
+    n = events(app).length;
+    await generateClick(app);
+    assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_create").map((e) => e.params.add_source), ["strip"]);
+
+    const menu = bootPill();
+    n = events(menu).length;
+    menu.els["deck-add"].click();
+    assert.deepStrictEqual(events(menu).slice(n).filter((e) => e.name === "scale_add_open"), [{ name: "scale_add_open", params: { add_source: "menu" } }]);
+    menu.type(AMARA_STRING);
+    n = events(menu).length;
+    await generateClick(menu);
+    assert.deepStrictEqual(events(menu).slice(n).filter((e) => e.name === "scale_create").map((e) => e.params.add_source), ["menu"]);
+
+    const link = await durableBoot({ html: withGaId(REAL_ID), webdriver: false, href: "https://example.test/index.html#add" });
+    assert.deepStrictEqual(events(link).filter((e) => e.name === "scale_add_open"), [{ name: "scale_add_open", params: { add_source: "link" } }]);
+  });
+
+  test("an edit session never sends add_source, even after a pill-opened session was cancelled", async () => {
+    const app = bootPill();
+    pillOf(app).click();
+    app.keydown("Escape");
+    const n = events(app).length;
+    app.run('openEditSheet(deck(), document.querySelector("#decks .chip.on"))');
+    assert.ok(!events(app).slice(n).some((e) => e.name === "scale_add_open"));
+    assert.ok(!events(app).slice(n).some((e) => e.params && "add_source" in e.params));
+  });
+
+  test("source: no #strip-add rule carries a 1024/700 literal; the docked block hides it; print hides it", async () => {
+    const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    const rules = html.replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]*#strip-add[^{}]*\{[^}]*\}/g) || [];
+    assert.ok(rules.length >= 3, "base rule, docked hide, print hide");
+    for (const r of rules) assert.ok(!/1024px|700px/.test(r), r);
+    const docked = html.split("@media (min-width:1024px) and (min-height:700px){").slice(1).filter((b) => /#strip-add\{display:none\}/.test(b.slice(0, 1500)));
+    assert.strictEqual(docked.length, 1, "exactly one sidebar block carries the hide rule");
+    const printBlock = html.slice(html.indexOf("@media print{"));
+    assert.ok(/#strip-add/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print hides the pill");
+    assert.ok(/:lang\(ja\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hant\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hans\)[^{]*#strip-add/.test(html), "CJK font rules list #strip-add");
   });
 });

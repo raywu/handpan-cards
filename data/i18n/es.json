@@ -39,6 +39,8 @@
   "panel.watch_youtube": "Ver en YouTube",
   "panel.scales": "Escalas",
   "panel.add": "+ AÑADIR ESCALA",
+  "fab.label": "+ ESCALA",
+  "fab.aria": "Añadir escala",
   "panel.reset_idle": "RESTABLECER ESCALAS INICIALES",
   "panel.reset_armed": "PULSA DE NUEVO PARA RESTABLECER",
   "panel.reset_warning": "Pulsa de nuevo para restablecer las escalas iniciales. Se perderán tus cambios en ellas.",

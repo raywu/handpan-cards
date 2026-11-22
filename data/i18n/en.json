@@ -39,6 +39,8 @@
   "panel.watch_youtube": "Watch on YouTube",
   "panel.scales": "Scales",
   "panel.add": "+ ADD A SCALE",
+  "fab.label": "+ SCALE",
+  "fab.aria": "Add a scale",
   "panel.reset_idle": "RESET SEEDED SCALES",
   "panel.reset_armed": "TAP AGAIN TO RESET",
   "panel.reset_warning": "Tap again to restore all seeded scales. Your edits to them will be gone.",
