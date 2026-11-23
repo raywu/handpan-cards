@@ -42,6 +42,8 @@
   "panel.watch_youtube": "在 YouTube 观看",
   "panel.scales": "音阶",
   "panel.add": "＋ 添加音阶",
+  "fab.label": "＋ 音阶",
+  "fab.aria": "添加音阶",
   "panel.reset_idle": "恢复内置音阶",
   "panel.reset_armed": "再点按一次恢复",
   "panel.reset_warning": "再点按一次会恢复所有内置音阶，对它们所做的修改都会丢失。",

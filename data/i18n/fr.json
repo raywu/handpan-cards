@@ -42,6 +42,8 @@
   "panel.watch_youtube": "Voir sur YouTube",
   "panel.scales": "Gammes",
   "panel.add": "+ AJOUTER UNE GAMME",
+  "fab.label": "+ GAMME",
+  "fab.aria": "Ajouter une gamme",
   "panel.reset_idle": "RÉTABLIR LES GAMMES D’ORIGINE",
   "panel.reset_armed": "TOUCHEZ DE NOUVEAU POUR RÉTABLIR",
   "panel.reset_warning": "Touchez de nouveau pour rétablir toutes les gammes d’origine. Vos modifications seront perdues.",

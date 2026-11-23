@@ -1,0 +1,15 @@
+# kills: source: no #strip-add rule carries a 1024/700 literal; the docked block hides it; print hides it
+# (the pill is absent and unfocusable on the docked sidebar layout)
+# suite: node --test --test-name-pattern ^source:.no.#strip-add.rule tests/app.test.js
+# The docked media block no longer hides #strip-add, so it shows beside the docked sidebar.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -444,7 +444,6 @@ a.mode{text-decoration:none}
+    shows without JS ever clearing `hidden`. */
+ @media (min-width:1024px) and (min-height:700px){
+   #settings-trigger, #settings-scrim{display:none}
+-  #strip-add{display:none}
+   #strip-add + *{margin-left:auto}
+   /* Reviewer finding F1: the 640px-only header rule above (line 163-165)
+      lets header - and the deck-chip strip inside it - run out to

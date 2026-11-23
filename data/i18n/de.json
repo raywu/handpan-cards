@@ -42,6 +42,8 @@
   "panel.watch_youtube": "YouTube",
   "panel.scales": "Skalen",
   "panel.add": "+ SKALA HINZUFÜGEN",
+  "fab.label": "+ SKALA",
+  "fab.aria": "Skala hinzufügen",
   "panel.reset_idle": "STANDARDSKALEN ZURÜCKSETZEN",
   "panel.reset_armed": "ZUM ZURÜCKSETZEN ERNEUT TIPPEN",
   "panel.reset_warning": "Tippe noch einmal, um alle Standardskalen wiederherzustellen. Deine Änderungen daran gehen verloren.",

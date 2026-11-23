@@ -1,0 +1,15 @@
+# kills: the pill is never selected: selecting any scale leaves it unmarked
+# suite: node --test --test-name-pattern ^the.pill.is.never.selected tests/app.test.js
+# The pill is given the .on class like a selected chip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12566,7 +12566,7 @@ function buildChips() {
+   nav.innerHTML="";
+   let active=null;
+   const pill=stripAdd=document.createElement("button");
+-  pill.type="button";pill.id="strip-add";pill.setAttribute("aria-haspopup","dialog");
++  pill.type="button";pill.id="strip-add";pill.className="on";pill.setAttribute("aria-haspopup","dialog");
+   if(uiLang()!=="en")pill.setAttribute("lang",uiLang());
+   pill.textContent=t("fab.label");pill.setAttribute("aria-label",t("fab.aria"));
+   pill.onclick=()=>{closePanel();openScaleSheet(pill,"strip");};

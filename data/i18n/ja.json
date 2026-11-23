@@ -42,6 +42,8 @@
   "panel.watch_youtube": "YouTubeで見る",
   "panel.scales": "スケール",
   "panel.add": "＋ スケールを追加",
+  "fab.label": "＋ スケール",
+  "fab.aria": "スケールを追加",
   "panel.reset_idle": "標準スケールをリセット",
   "panel.reset_armed": "もう一度タップでリセット",
   "panel.reset_warning": "もう一度タップすると、標準スケールがすべて元に戻ります。標準スケールに加えた変更は失われます。",
