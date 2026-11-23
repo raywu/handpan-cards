@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10751,7 +10751,6 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)reconcileS
+@@ -12983,7 +12983,6 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)reconcileS
  function selectDeck(wanted, persist = true, trackSelection = true) {
    navigationGeneration++;
    pendingRecoveryShare=null;
@@ -12,4 +12,3 @@ diff --git a/index.html b/index.html
    if (typeof wanted === "string") wanted = savedEntries.has(wanted) ? {kind:"saved",id:wanted} : {kind:"builtin",id:wanted};
    const a = document.activeElement;
    const pillFocused = a?.id === "strip-add";
-   const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || (!pillFocused && [...document.getElementById("decks").children].includes(a)));
