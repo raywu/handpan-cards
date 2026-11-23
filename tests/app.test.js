@@ -22368,7 +22368,7 @@ describe("add-scale pill: first child of the strip", () => {
     const docked = html.split("@media (min-width:1024px) and (min-height:700px){").slice(1).filter((b) => /#strip-add\{display:none\}/.test(b.slice(0, 1500)));
     assert.strictEqual(docked.length, 1, "exactly one sidebar block carries the hide rule");
     const printBlock = html.slice(html.indexOf("@media print{"));
-    assert.ok(/#strip-add/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print hides the pill");
+    assert.ok(/#strip-add\{display:none\}/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print hides the pill");
     assert.ok(/#strip-add \+ \*\{margin-left:auto\}/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print compensates the hidden pill's auto margin");
     assert.ok(/#strip-add:focus-visible\{outline:2px solid #1a1814;outline-offset:-4px\}/.test(html), "the pill's focus ring sits inside its own box");
     assert.ok(/:lang\(ja\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hant\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hans\)[^{]*#strip-add/.test(html), "CJK font rules list #strip-add");
