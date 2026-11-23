@@ -22268,6 +22268,7 @@ describe("add-scale pill: first child of the strip", () => {
   test("closing an editor opened from a docked (hidden) pill does not target the pill", async () => {
     const app = boot();
     pillOf(app).click();
+    assert.strictEqual(app.sheetOpen(), true);
     app.run("desktopMQ.matches = true");
     app.keydown("Escape");
     assert.notStrictEqual(app.activeId(), "strip-add", "the docked pill is display:none; focus must fall to a chip or +ADD");
@@ -22276,6 +22277,7 @@ describe("add-scale pill: first child of the strip", () => {
   test("a hashchange to #add while the sheet is already open from the pill records no second scale_add_open and no link source", async () => {
     const app = bootPill();
     pillOf(app).click();
+    assert.strictEqual(app.sheetOpen(), true);
     const n = events(app).length;
     app.hashchange("#add");
     assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_add_open"), []);
@@ -22285,7 +22287,9 @@ describe("add-scale pill: first child of the strip", () => {
   test("a hashchange to #add on a closed sheet records add_source link", async () => {
     const app = bootPill();
     const n = events(app).length;
+    assert.strictEqual(app.sheetOpen(), false);
     app.hashchange("#add");
+    assert.strictEqual(app.sheetOpen(), true);
     assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_add_open"), [{ name: "scale_add_open", params: { add_source: "link" } }]);
   });
 
