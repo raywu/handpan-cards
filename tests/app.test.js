@@ -22297,6 +22297,18 @@ describe("add-scale pill: first child of the strip", () => {
     assert.ok(app.get('document.activeElement') === pillOf(app), "focus is on the live pill node, not a detached one with the same id");
   });
 
+  test("selecting a scale while a scale chip has focus targets the live selected chip", async () => {
+    const app = boot();
+    const oldChip = pillRealChips(app).find((c) => c.classList.contains("on"));
+    const wanted = app.get('DECKS.find(d => d.id !== selection.id).id');
+    oldChip.focus();
+    app.run('selectDeck(' + JSON.stringify(wanted) + ')');
+    const liveChip = pillRealChips(app).find((c) => c.classList.contains("on"));
+    assert.strictEqual(liveChip.getAttribute("data-selection-id"), wanted);
+    assert.notStrictEqual(liveChip, oldChip);
+    assert.strictEqual(app.get("document.activeElement"), liveChip, "selection focus belongs to the live selected chip");
+  });
+
   test("selecting a scale while the pill has focus leaves focus on the live pill", async () => {
     const app = boot();
     pillOf(app).focus();
@@ -22307,6 +22319,7 @@ describe("add-scale pill: first child of the strip", () => {
   test("closing an editor opened from a docked (hidden) pill does not target the pill", async () => {
     const app = boot();
     pillOf(app).click();
+    assert.strictEqual(app.sheetOpen(), true);
     app.run("desktopMQ.matches = true");
     app.keydown("Escape");
     assert.notStrictEqual(app.activeId(), "strip-add", "the docked pill is display:none; focus must fall to a chip or +ADD");
@@ -22315,6 +22328,7 @@ describe("add-scale pill: first child of the strip", () => {
   test("a hashchange to #add while the sheet is already open from the pill records no second scale_add_open and no link source", async () => {
     const app = bootPill();
     pillOf(app).click();
+    assert.strictEqual(app.sheetOpen(), true);
     const n = events(app).length;
     app.hashchange("#add");
     assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_add_open"), []);
@@ -22324,7 +22338,9 @@ describe("add-scale pill: first child of the strip", () => {
   test("a hashchange to #add on a closed sheet records add_source link", async () => {
     const app = bootPill();
     const n = events(app).length;
+    assert.strictEqual(app.sheetOpen(), false);
     app.hashchange("#add");
+    assert.strictEqual(app.sheetOpen(), true);
     assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_add_open"), [{ name: "scale_add_open", params: { add_source: "link" } }]);
   });
 

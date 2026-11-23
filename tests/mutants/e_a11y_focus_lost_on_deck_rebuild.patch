@@ -1,9 +1,6 @@
-# kills: GENERATE and SAVE CHANGES leave focus on the deck that was just made
-# suite: node --test --test-name-pattern GENERATE.and.SAVE.CHANGES.leave.focus.on.the.deck tests/e2e.test.js
-# The chip strip is rebuilt without re-homing focus, so the caret lands on
-# <body> (DELETE) or is left on "+ ADD" (GENERATE / SAVE CHANGES) instead of
-# on the deck that is now showing.
-# Retained behavior re-anchored for saved instances; exact intent is recorded in the lane evidence.
+# kills: selecting a scale while a scale chip has focus targets the live selected chip
+# suite: node --test --test-name-pattern ^selecting.a.scale.while.a.scale.chip.has.focus.targets.the.live.selected.chip$ tests/app.test.js
+# Fault: selection rebuilds the scale chips without restoring focus to the live selected chip.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

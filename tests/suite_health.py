@@ -55,7 +55,7 @@ FLOORS = {
     "tests/test_ci_scope.py": 36,
     "tests/test_sync_schema_lint.py": 9,
     # node
-    "tests/app.test.js": 1319,
+    "tests/app.test.js": 1320,
     "tests/seat_sweeps_tap_add.test.js": 3,
     "tests/seat_sweeps_tap_edit.test.js": 3,
     "tests/seat_sweeps_keys.test.js": 4,
