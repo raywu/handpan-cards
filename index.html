@@ -281,6 +281,7 @@ h1 svg{display:block; width:223.3px; max-width:100%; height:auto; margin:0 auto}
   font:700 12px/1 "Nunito Sans"; letter-spacing:.12em; color:#1a1814; background:#f6f4ed;
   cursor:pointer; position:relative; white-space:nowrap}
 #strip-add:active{background:#ddd9cf; border-color:#ddd9cf}
+#strip-add:focus-visible{outline:2px solid #1a1814;outline-offset:-4px}
 /* .modebar no longer lives in the header (menu-shell, 2026-09-28): the
    NAME->NOTES / NOTES->NAME toggle moved into the settings panel's
    "Flash cards" group, so this rule only ever lays out that panel group
@@ -565,12 +566,14 @@ a.mode{text-decoration:none}
    611/570 at 844x390 (41px) and 611/393 at 667x375 (218px) with one custom
    deck on the strip.
    2026-09-28 (M2, menu-add-scale): "+ Add a scale" moved out of the strip
-   into the settings panel, so a custom deck's strip is now four chips, not
-   five - and that is enough to close the gap on every row, including the
+   into the settings panel, so a custom deck's strip then had four chips, not
+   five - enough to close the gap on every measured row, including the
    narrowest: .decks scrollWidth/clientWidth is 767/767 at 844x390, 849/849
-   at 926x428, 590/590 at 667x375 and 1203/1203 at 1280x500. All four rows
-   fit; the overflow-x:auto scroll path exists for a wider custom name or a
-   future chip but nothing in the budget table currently exercises it.
+   at 926x428, 590/590 at 667x375 and 1203/1203 at 1280x500 (measured before
+   the + SCALE pill became the strip's first child; the pill adds one chip's
+   width on the narrow rows, so these are history, not the current budget).
+   All four rows fit at that measurement; none exercised the overflow-x:auto
+   scroll path. The current pill and wider custom names can need that path.
    Both ends stay reachable regardless, which is the thing that actually has
    to hold here: the auto margins on the end chips centre the row while it
    fits and collapse once it does not. tests/e2e.test.js "the landscape deck
@@ -1346,6 +1349,7 @@ html.account-open, html.export-open{overflow:hidden}
   #app{display:block; height:auto}
   #about, #account, #export{display:none}
   #share-copy, #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner, #strip-add{display:none}
+  #strip-add + *{margin-left:auto}
 }
 
 </style>
@@ -12327,12 +12331,14 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
   retireLinkUI();
   if (typeof wanted === "string") wanted = savedEntries.has(wanted) ? {kind:"saved",id:wanted} : {kind:"builtin",id:wanted};
   const a = document.activeElement;
-  const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || [...document.getElementById("decks").children].includes(a));
+  const pillFocused = a?.id === "strip-add";
+  const rehome = !!a && (a.id === "settings-trigger" || a.id === "deck-add" || (!pillFocused && [...document.getElementById("decks").children].includes(a)));
   selection = savedState ? savedResolve(wanted,savedState,savedEntries) : wanted;
   if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
   setOrder(); buildChips(); render(); syncRoute();
   if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
   if (rehome) document.querySelector("#decks .chip.on")?.focus();
+  if (pillFocused) stripAdd?.focus();
 }
 
 
@@ -15925,6 +15931,7 @@ async function editorSave() {
     }
     closeScaleSheet();
     selectDeck({ kind: "saved", id: result.instanceId }, false);
+    document.querySelector("#decks .chip.on")?.focus();
     track("scale_create", { note_count: Object.keys(d.fields).length, has_bottom: Object.values(d.fields).some((f) => f[3] === "bottom") ? 1 : 0, ...(addSource ? { add_source: addSource } : {}) });
     if (!retried) say((base ? t("sheet.updated", { name: d.name }) : t("sheet.generated", { n: d.chords.length })) + (warned.length ? " " + warned.join(" ") : ""), warned.length ? "warn" : "ok");
   } finally {
@@ -16064,8 +16071,8 @@ function hideSheet() {
   setInert(false, background);
   const openerTag=pageOpenerSelection;
   if(savedState){selection=savedResolve(selection,savedState,savedEntries);setOrder();buildChips();render();}
-  const liveOpener=openerTag?[...document.getElementById("decks").children].find(chip=>chip.getAttribute("data-selection-kind")===openerTag.kind && chip.getAttribute("data-selection-id")===openerTag.id):pageOpener;
-  const pillOpener=pageOpener&&pageOpener.id==="strip-add"?stripAdd:null;
+  const liveOpener=openerTag?[...document.getElementById("decks").children].find(chip=>chip.getAttribute("data-selection-kind")===openerTag.kind && chip.getAttribute("data-selection-id")===openerTag.id):(pageOpener?.id==="strip-add"?null:pageOpener);
+  const pillOpener=pageOpener?.id==="strip-add"&&!desktopMQ.matches?stripAdd:null;
   (pillOpener || liveOpener || document.querySelector("#decks .chip.on") || addChip).focus();
   pageOpener = null;pageOpenerSelection=null;sheetAddSource=null;
 }
@@ -16200,10 +16207,10 @@ document.getElementById("saved-temporary-use").onclick=()=>{
 savedSnapshotListener=event=>{
   if(!booted)return;
   const oldSelection=savedClone(selection), focused=document.activeElement;
-  const focusedTag=focused?.closest?.("#decks")?{kind:focused.getAttribute("data-selection-kind"),id:focused.getAttribute("data-selection-id")}:null;
+  const focusedPill=focused?.id==="strip-add";
+  const focusedTag=!focusedPill&&focused?.closest?.("#decks")?{kind:focused.getAttribute("data-selection-kind"),id:focused.getAttribute("data-selection-id")}:null;
   const beforeRow=event.previous?.entries.find(row=>row.instanceId===oldSelection.id);
   const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
-  const focusedPill=focused?.id==="strip-add";
   const focusedRemoved=!focusedPill && !!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
   selection=savedResolve(selection,savedState,savedEntries);
   const session=editorSession;

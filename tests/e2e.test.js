@@ -14474,6 +14474,14 @@ function run() {
     test("breakpoint: absent and unfocusable at 1280x800 and 1024x700, present just below it", async () => {
       await freshLoad();
       try {
+        await b.setViewport(380, 667, true);
+        await b.click("#strip-add");
+        await b.waitFor(`!document.getElementById("scale-sheet").hidden`, { label: "pill sheet open before docking" });
+        await b.setViewport(1280, 800, false);
+        await b.key("Escape", "Escape", 27);
+        await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "pill sheet closed after docking" });
+        assert.strictEqual(await b.eval(`const a = document.activeElement; return a === document.querySelector("#decks .chip.on") && a.getBoundingClientRect().width > 0;`), true,
+          "closing after docking focuses the visible selected scale instead of the hidden pill");
         for (const [w, h, gone] of [[1280, 800, true], [1024, 700, true], [1023, 700, false], [1024, 699, false], [1440, 680, false], [1024, 600, false]]) {
           await b.setViewport(w, h, false);
           await b.settle();
@@ -14517,6 +14525,20 @@ function run() {
         const sel = await b.eval(`const p = document.getElementById("strip-add"); return { cur: p.getAttribute("aria-current"), cls: p.className, inert: p.inert };`);
         assert.deepStrictEqual(sel, { cur: null, cls: "", inert: false });
         assert.strictEqual(await b.eval(`return !document.getElementById("strip-add").closest("[inert]");`), true, "pill live again after the editor closes");
+        for (const width of [320, 375, 380]) {
+          await b.setViewport(width, 667, true);
+          await b.key("Tab", "Tab", 9);
+          const ring = await b.eval(`const p = document.getElementById("strip-add"); p.focus();
+            const s = getComputedStyle(p), r = p.getBoundingClientRect(), strip = document.getElementById("decks").getBoundingClientRect();
+            return { visible: p.matches(":focus-visible"), width: parseFloat(s.outlineWidth), offset: parseFloat(s.outlineOffset),
+              style: s.outlineStyle, color: s.outlineColor, background: s.backgroundColor,
+              left: r.left, right: r.right, stripLeft: strip.left, stripRight: strip.right };`);
+          assert.ok(ring.visible && ring.width >= 2 && !["none", "hidden"].includes(ring.style), `${width}px: keyboard focus has a visible ring`);
+          assert.notStrictEqual(ring.color, ring.background, `${width}px: focus color differs from the pill background`);
+          assert.ok(ring.width + ring.offset <= 0, `${width}px: focus stays inside the pill rather than being clipped by the strip`);
+          assert.ok(ring.left >= ring.stripLeft - 1 && ring.right <= ring.stripRight + 1, `${width}px: the focused pill is inside the strip`);
+        }
+        await b.setViewport(375, 667, true);
         await b.click("#settings-trigger");
         await b.waitFor(`getComputedStyle(document.getElementById("settings-panel")).display !== "none"`, { label: "panel open" });
         assert.strictEqual(await inertNow(), true, "pill inert (not hidden) under the panel");
@@ -14526,17 +14548,20 @@ function run() {
       } finally { await b.setViewport(900, 900, false); }
     });
 
-    test("a drag that starts on the pill does not swipe the card", async () => {
+    test("a swipe on the card steps the scale and never selects the pill; a drag that starts on the pill does not swipe", async () => {
       await freshLoad();
       await b.setViewport(375, 667, true);
       try {
-        const before = await b.eval(`return document.getElementById("count").textContent;`);
-        await b.eval(`const p = document.getElementById("strip-add"); const r = p.getBoundingClientRect();
-          for (const [t, x] of [["pointerdown", r.left + 10], ["pointermove", r.left + 120], ["pointerup", r.left + 220]])
-            p.dispatchEvent(new PointerEvent(t, { bubbles: true, clientX: x, clientY: r.top + 20, pointerId: 7, pointerType: "touch" }));
-          return true;`);
+        const state = () => b.eval(`const p = document.getElementById("strip-add"); return { count: document.getElementById("count").textContent, cur: p.getAttribute("aria-current"), cls: p.className, on: document.querySelectorAll("#decks .chip.on").length, first: document.getElementById("decks").firstElementChild.id };`);
+        const before = await state();
+        await b.drag("#strip-add", [[60, 40], [120, 80], [200, 120]]);
         await b.settle();
-        assert.strictEqual(await b.eval(`return document.getElementById("count").textContent;`), before);
+        assert.deepStrictEqual(await state(), before, "a touch drag that starts on the pill changed something");
+        await b.swipe("#card", -120);
+        await b.waitFor(`document.getElementById("count").textContent !== ${JSON.stringify(before.count)}`, { label: "card swipe to step the scale" });
+        await b.settle();
+        const after = await state();
+        assert.deepStrictEqual({ ...after, count: before.count }, before, "the swipe must move the card only; the pill stays unselected, first, and one chip is on");
       } finally { await b.setViewport(900, 900, false); }
     });
 
@@ -14545,6 +14570,12 @@ function run() {
       await b.send("Emulation.setEmulatedMedia", { media: "print" });
       try {
         assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("strip-add")).display;`), "none");
+        const positions = `[...document.querySelectorAll("#decks .chip")].map(c => c.getBoundingClientRect().left)`;
+        const before = await b.eval(`return ${positions};`);
+        const without = await b.eval(`const p = document.getElementById("strip-add"), next = p.nextSibling; p.remove();
+          const xs = ${positions}; document.getElementById("decks").insertBefore(p, next); return xs;`);
+        assert.strictEqual(before.length, without.length);
+        before.forEach((x, i) => assert.ok(Math.abs(x - without[i]) <= 1, "print centers chips as if the hidden pill were absent"));
       } finally { await b.send("Emulation.setEmulatedMedia", { media: "" }); }
     });
 

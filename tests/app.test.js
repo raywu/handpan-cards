@@ -14476,6 +14476,52 @@ describe("add-scale pill: first child of the strip", () => {
     app.keydown("Escape");
     assert.strictEqual(app.sheetOpen(), false);
     assert.strictEqual(app.activeId(), "strip-add");
+    assert.ok(app.get('document.activeElement') === pillOf(app), "focus is on the live pill node, not a detached one with the same id");
+  });
+
+  test("selecting a scale while the pill has focus leaves focus on the live pill", async () => {
+    const app = boot();
+    pillOf(app).focus();
+    app.run('selectDeck("pygmy")');
+    assert.ok(app.get('document.activeElement') === pillOf(app), "selectDeck must not rehome focus off the pill");
+  });
+
+  test("closing an editor opened from a docked (hidden) pill does not target the pill", async () => {
+    const app = boot();
+    pillOf(app).click();
+    app.run("desktopMQ.matches = true");
+    app.keydown("Escape");
+    assert.notStrictEqual(app.activeId(), "strip-add", "the docked pill is display:none; focus must fall to a chip or +ADD");
+  });
+
+  test("a hashchange to #add while the sheet is already open from the pill records no second scale_add_open and no link source", async () => {
+    const app = bootPill();
+    pillOf(app).click();
+    const n = events(app).length;
+    app.hashchange("#add");
+    assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_add_open"), []);
+    assert.strictEqual(app.get("sheetAddSource"), "strip");
+  });
+
+  test("a hashchange to #add on a closed sheet records add_source link", async () => {
+    const app = bootPill();
+    const n = events(app).length;
+    app.hashchange("#add");
+    assert.deepStrictEqual(events(app).slice(n).filter((e) => e.name === "scale_add_open"), [{ name: "scale_add_open", params: { add_source: "link" } }]);
+  });
+
+  test("saving an edit emits scale_create with no add_source key", async () => {
+    const app = bootPill();
+    pillOf(app).click();
+    app.type(AMARA_STRING);
+    await generateClick(app);
+    app.run('openEditSheet(deck(), document.querySelector("#decks .chip.on"))');
+    app.type(AMARA_STRING + " E6");
+    const n = events(app).length;
+    await generateClick(app);
+    const created = events(app).slice(n).filter((e) => e.name === "scale_create");
+    assert.strictEqual(created.length, 1);
+    assert.ok(!("add_source" in created[0].params));
   });
 
   test("Save from a pill-opened editor focuses the new chip, not the pill", async () => {
@@ -14498,10 +14544,13 @@ describe("add-scale pill: first child of the strip", () => {
 
   test("a rebuild while the pill has focus leaves focus on the (new) pill", async () => {
     const app = boot();
+    pillOf(app).closest = (sel) => (sel === "#decks" ? app.els.decks : null);
+    app.run('{const q=document.querySelector.bind(document);document.querySelector=sel=>sel==="#decks .chip.on"?[...document.getElementById("decks").children].find(c=>c.classList.contains("on")):q(sel)}');
     pillOf(app).focus();
-    app.run("buildChips()");
+    assert.strictEqual(app.activeId(), "strip-add");
     app.run("savedSnapshotListener({previous:null,source:'local'})");
-    assert.strictEqual(app.activeId(), "strip-add", "focusedRemoved must not fire for a null data-selection-id");
+    assert.strictEqual(app.activeId(), "strip-add", "the listener's own rebuild must hand focus to the new pill, not to the selected chip");
+    assert.ok(app.get('document.activeElement') === pillOf(app), "focus is on the live pill node");
   });
 
   test("the pill's lang follows the UI language, not the strip's English island", async () => {
@@ -14553,7 +14602,8 @@ describe("add-scale pill: first child of the strip", () => {
     const docked = html.split("@media (min-width:1024px) and (min-height:700px){").slice(1).filter((b) => /#strip-add\{display:none\}/.test(b.slice(0, 1500)));
     assert.strictEqual(docked.length, 1, "exactly one sidebar block carries the hide rule");
     const printBlock = html.slice(html.indexOf("@media print{"));
-    assert.ok(/#strip-add/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print hides the pill");
+    assert.ok(/#strip-add\{display:none\}/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print hides the pill");
+    assert.ok(/#strip-add \+ \*\{margin-left:auto\}/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print compensates the hidden pill's auto margin");
     assert.ok(/:lang\(ja\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hant\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hans\)[^{]*#strip-add/.test(html), "CJK font rules list #strip-add");
   });
 });
