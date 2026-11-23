@@ -54,7 +54,7 @@ FLOORS = {
     "tests/test_site_files.py": 20,
     "tests/test_ci_scope.py": 36,
     # node
-    "tests/app.test.js": 800,
+    "tests/app.test.js": 801,
     "tests/e2e.test.js": 415,
     "tests/e2e_sync.test.js": 50,
     "tests/harness.test.js": 67,
