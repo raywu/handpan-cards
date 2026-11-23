@@ -5,9 +5,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16168,7 +16168,7 @@ savedSnapshotListener=event=>{
+@@ -16174,7 +16174,7 @@ savedSnapshotListener=event=>{
+   const beforeRow=event.previous?.entries.find(row=>row.instanceId===oldSelection.id);
    const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
-   const focusedPill=focused?.id==="strip-add";
    const focusedRemoved=!focusedPill && !!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
 -  selection=savedResolve(selection,savedState,savedEntries);
 +  selection=savedFallback(savedState,savedEntries);

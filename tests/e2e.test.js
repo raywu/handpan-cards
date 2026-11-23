@@ -530,8 +530,8 @@ function run() {
   }
 
   // Click the i-th deck chip and wait for the deck to actually change over.
-  // #decks holds deck chips only (M2, 2026-09-28: "+ Add a scale" moved into
-  // the settings panel), so deck i is the (i + 1)-th chip. The hit test below
+  // #decks holds the + SCALE pill first, then the deck chips (M2, 2026-09-28
+  // moved "+ Add a scale" into the settings panel). The hit test below
   // is what keeps this helper honest about the bug class the old "never
   // scroll" rule was protecting (row 214: something coming to rest ON TOP of
   // a chip). Scrolling moves a chip into the port; it cannot move an overlay
@@ -619,7 +619,7 @@ function run() {
   });
 
   // M2, 2026-09-28: "+ Add a scale" moved out of the strip into the settings
-  // panel, so #decks must hold deck chips and nothing else.
+  // panel, so #decks holds deck chips and, first, the + SCALE pill.
   test("#decks holds deck chips and, first, the + SCALE pill - the panel's + ADD is not in it", async () => {
     await freshLoad();
     const info = await b.eval(`
@@ -21412,17 +21412,20 @@ function run() {
       } finally { await b.setViewport(900, 900, false); }
     });
 
-    test("a drag that starts on the pill does not swipe the card", async () => {
+    test("a swipe on the card steps the scale and never selects the pill; a drag that starts on the pill does not swipe", async () => {
       await freshLoad();
       await b.setViewport(375, 667, true);
       try {
-        const before = await b.eval(`return document.getElementById("count").textContent;`);
-        await b.eval(`const p = document.getElementById("strip-add"); const r = p.getBoundingClientRect();
-          for (const [t, x] of [["pointerdown", r.left + 10], ["pointermove", r.left + 120], ["pointerup", r.left + 220]])
-            p.dispatchEvent(new PointerEvent(t, { bubbles: true, clientX: x, clientY: r.top + 20, pointerId: 7, pointerType: "touch" }));
-          return true;`);
+        const state = () => b.eval(`const p = document.getElementById("strip-add"); return { count: document.getElementById("count").textContent, cur: p.getAttribute("aria-current"), cls: p.className, on: document.querySelectorAll("#decks .chip.on").length, first: document.getElementById("decks").firstElementChild.id };`);
+        const before = await state();
+        await b.drag("#strip-add", [[60, 40], [120, 80], [200, 120]]);
         await b.settle();
-        assert.strictEqual(await b.eval(`return document.getElementById("count").textContent;`), before);
+        assert.deepStrictEqual(await state(), before, "a touch drag that starts on the pill changed something");
+        await b.swipe("#card", -120);
+        await b.waitFor(`document.getElementById("count").textContent !== ${JSON.stringify(before.count)}`, { label: "card swipe to step the scale" });
+        await b.settle();
+        const after = await state();
+        assert.deepStrictEqual({ ...after, count: before.count }, before, "the swipe must move the card only; the pill stays unselected, first, and one chip is on");
       } finally { await b.setViewport(900, 900, false); }
     });
 
