@@ -1,0 +1,15 @@
+# kills: scale_add_open carries add_source strip, menu and link; scale_create repeats it; edit sends none
+# suite: node --test --test-name-pattern ^scale_add_open.carries.add_source tests/app.test.js
+# scale_create also carries add_source on the edit path (runGenerate).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16146,7 +16146,7 @@
+     const d=savedEntries.get(result.instanceId).deck;
+     const warned=(d.warnings||[]).map(w=>reasonText(w));
+     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
+-    track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0,...(addSource?{add_source:addSource}:{})});
++    track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0,add_source:sheetAddSource});
+     say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");
+   } finally {
+     if(savePending===operation){savePending=null;if(generation===sheetGeneration){genBtn.textContent=label;refreshSavedSubmit();}}

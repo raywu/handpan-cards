@@ -42,6 +42,8 @@
   "panel.watch_youtube": "在 YouTube 觀看",
   "panel.scales": "音階",
   "panel.add": "＋ 新增音階",
+  "fab.label": "＋ 音階",
+  "fab.aria": "新增音階",
   "panel.reset_idle": "還原內建音階",
   "panel.reset_armed": "再點一次還原",
   "panel.reset_warning": "再點一次會還原所有內建音階，對它們所做的修改都會消失。",
