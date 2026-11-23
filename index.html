@@ -566,14 +566,14 @@ a.mode{text-decoration:none}
    611/570 at 844x390 (41px) and 611/393 at 667x375 (218px) with one custom
    deck on the strip.
    2026-09-28 (M2, menu-add-scale): "+ Add a scale" moved out of the strip
-   into the settings panel, so a custom deck's strip is now four chips, not
-   five - and that is enough to close the gap on every row, including the
+   into the settings panel, so a custom deck's strip then had four chips, not
+   five - enough to close the gap on every measured row, including the
    narrowest: .decks scrollWidth/clientWidth is 767/767 at 844x390, 849/849
    at 926x428, 590/590 at 667x375 and 1203/1203 at 1280x500 (measured before
    the + SCALE pill became the strip's first child; the pill adds one chip's
-   width on the narrow rows, so these are history, not the current budget). All four rows
-   fit; the overflow-x:auto scroll path exists for a wider custom name or a
-   future chip but nothing in the budget table currently exercises it.
+   width on the narrow rows, so these are history, not the current budget).
+   All four rows fit at that measurement; none exercised the overflow-x:auto
+   scroll path. The current pill and wider custom names can need that path.
    Both ends stay reachable regardless, which is the thing that actually has
    to hold here: the auto margins on the end chips centre the row while it
    fits and collapse once it does not. tests/e2e.test.js "the landscape deck
