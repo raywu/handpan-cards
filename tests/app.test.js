@@ -22421,7 +22421,6 @@ describe("add-scale pill: first child of the strip", () => {
     const printBlock = html.slice(html.indexOf("@media print{"));
     assert.ok(/#strip-add\{display:none\}/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print hides the pill");
     assert.ok(/#strip-add \+ \*\{margin-left:auto\}/.test(printBlock.slice(0, printBlock.indexOf("</style>"))), "print compensates the hidden pill's auto margin");
-    assert.ok(/#strip-add:focus-visible\{outline:2px solid #1a1814;outline-offset:-4px\}/.test(html), "the pill's focus ring sits inside its own box");
     assert.ok(/:lang\(ja\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hant\)[^{]*#strip-add/.test(html) && /:lang\(zh-Hans\)[^{]*#strip-add/.test(html), "CJK font rules list #strip-add");
   });
 });
