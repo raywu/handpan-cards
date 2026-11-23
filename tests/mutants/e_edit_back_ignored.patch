@@ -8,9 +8,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13574,7 +13574,7 @@ savedSnapshotListener=event=>{
+@@ -16232,7 +16232,7 @@ savedSnapshotListener=event=>{
  // also recognises "deck-add".
- addChip.onclick = () => { closePanel(); openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger); };
+ addChip.onclick = () => { closePanel(); openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger, "menu"); };
  // The page's way out. Same handler Escape runs, so there is one close path.
 -backBtn.onclick = () => closeScaleSheet();
 +backBtn.onclick = () => { if (!editingId) closeScaleSheet(); };

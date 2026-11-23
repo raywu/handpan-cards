@@ -42,6 +42,8 @@
   "panel.watch_youtube": "Guarda su YouTube",
   "panel.scales": "Scale",
   "panel.add": "+ AGGIUNGI UNA SCALA",
+  "fab.label": "+ SCALA",
+  "fab.aria": "Aggiungi una scala",
   "panel.reset_idle": "RIPRISTINA SCALE PREDEFINITE",
   "panel.reset_armed": "TOCCA ANCORA PER RIPRISTINARE",
   "panel.reset_warning": "Tocca di nuovo per ripristinare tutte le scale predefinite. Le tue modifiche andranno perse.",
