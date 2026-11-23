@@ -5,12 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1622,7 +1622,7 @@
-   .scene{transform:none!important}
-   #app{display:block; height:auto}
+@@ -1350,3 +1350,3 @@ html.account-open, html.export-open{overflow:hidden}
    #about, #account, #export{display:none}
 -  #share-copy, #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner, #strip-add{display:none}
 +  #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner, #strip-add{display:none}
- }
- 
- </style>
+   #strip-add + *{margin-left:auto}

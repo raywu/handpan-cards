@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15925,7 +15925,7 @@ async function editorSave() {
-     }
+@@ -15932,7 +15932,7 @@ async function editorSave() {
      closeScaleSheet();
      selectDeck({ kind: "saved", id: result.instanceId }, false);
+     document.querySelector("#decks .chip.on")?.focus();
 -    track("scale_create", { note_count: Object.keys(d.fields).length, has_bottom: Object.values(d.fields).some((f) => f[3] === "bottom") ? 1 : 0, ...(addSource ? { add_source: addSource } : {}) });
 +    track("scale_create", { note_count: Object.keys(d.fields).length, has_bottom: Object.values(d.fields).some((f) => f[3] === "bottom") ? 1 : 0, add_source: sheetAddSource });
      if (!retried) say((base ? t("sheet.updated", { name: d.name }) : t("sheet.generated", { n: d.chords.length })) + (warned.length ? " " + warned.join(" ") : ""), warned.length ? "warn" : "ok");
