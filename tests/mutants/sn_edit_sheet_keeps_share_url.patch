@@ -5,21 +5,21 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13248,7 +13248,7 @@ function setInert(on, targets) {
+@@ -15853,7 +15853,7 @@
    }
  }
  function showSheet(opener) {
 -  retireLinkUI();
 +  if(!editingBase)retireLinkUI();else ++linkUIGeneration;
    sheetOpener = opener || addChip;
-   sheetOpenerSelection=[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
+   sheetOpenerSelection=sheetOpener.id!=="strip-add"&&[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
    sheet.removeAttribute("hidden");
-@@ -13354,7 +13354,7 @@ function openScaleSheet(opener) {
+@@ -15978,7 +15978,7 @@
  // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
  // deck, seeded or custom.
  function openEditSheet(d, opener) {
 -  shareUrl.setAttribute("hidden", "");
 +
+   sheetAddSource = null;
    resetSheetState(d);
    showSheet(opener);
-   // [eng-review 2, 2A] warnings have ONE producer and were copied onto the deck
