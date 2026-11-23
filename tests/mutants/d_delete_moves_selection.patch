@@ -5,10 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15523,7 +15523,7 @@ savedSnapshotListener=event=>{
-   const beforeRow=event.previous?.entries.find(row=>row.instanceId===oldSelection.id);
+@@ -16205,7 +16205,7 @@ savedSnapshotListener=event=>{
    const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
-   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
+   const focusedPill=focused?.id==="strip-add";
+   const focusedRemoved=!focusedPill && !!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
 -  selection=savedResolve(selection,savedState,savedEntries);
 +  selection=savedFallback(savedState,savedEntries);
    const session=editorSession;

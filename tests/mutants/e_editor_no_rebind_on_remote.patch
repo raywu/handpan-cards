@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15525,7 +15525,7 @@ savedSnapshotListener=event=>{
-   const focusedRemoved=!!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
+@@ -16207,7 +16207,7 @@ savedSnapshotListener=event=>{
+   const focusedRemoved=!focusedPill && !!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
    selection=savedResolve(selection,savedState,savedEntries);
    const session=editorSession;
 -  if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
