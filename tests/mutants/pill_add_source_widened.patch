@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16146,7 +16146,7 @@
+@@ -16152,7 +16152,7 @@ async function runGenerate(separate = false) {
      const d=savedEntries.get(result.instanceId).deck;
      const warned=(d.warnings||[]).map(w=>reasonText(w));
-     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
+     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);document.querySelector("#decks .chip.on")?.focus();
 -    track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0,...(addSource?{add_source:addSource}:{})});
 +    track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0,add_source:sheetAddSource});
      say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");
