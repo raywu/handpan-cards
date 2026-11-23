@@ -7,13 +7,13 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18494,7 +18494,8 @@ async function runGenerate(separate = false) {
+@@ -18500,7 +18500,8 @@ async function runGenerate(separate = false) {
      if(!result.ok){if(result.kind==="conflict"){await reconcileSavedCollection();if(generation===sheetGeneration)showSavedConflict(true);}else if(result.kind!=="cancelled")showRefusal(savedErrorText(result));return;}
      if(result.published===false){showRefusal(savedPublicationText(result));return;}
      const d=savedEntries.get(result.instanceId).deck;
 -    const warned=(d.warnings||[]).map(w=>reasonText(w));
 +    const __again=generateDeck(String(scaleBox.value||""),{palette,mirror});
 +    const warned=((__again.ok?__again.value.warnings:d.warnings)||[]).map(w=>reasonText(w));
-     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);
+     closeScaleSheet();selectDeck({kind:"saved",id:result.instanceId},false);document.querySelector("#decks .chip.on")?.focus();
      track("scale_create",{note_count:Object.keys(d.fields).length,has_bottom:Object.values(d.fields).some(f=>f[3]==="bottom")?1:0,...(addSource?{add_source:addSource}:{})});
      say((base?t("sheet.updated",{name:d.name}):t("sheet.generated",{n:d.chords.length}))+(warned.length?" "+warned.join(" "):""),warned.length?"warn":"ok");
