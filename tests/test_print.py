@@ -7,6 +7,7 @@ is imported from ``hifi`` (CONTRACT rule 2); the two card dimensions and the
 page size below are quoted from docs/CARD-SPEC.md's print spec, which is what the
 pipeline is required to hit.
 """
+import json
 import math
 import sys
 import unittest
@@ -1276,11 +1277,13 @@ class NeotoneTurnTest(unittest.TestCase):
                 "1": ["C", 4, 0, "main", 0, "1"], "2": ["E", 4, 0, "mutant", 0, "2"]}
 
     def test_a_turned_card_places_main_and_mutant_at_the_turned_angle(self):
+        with open(paths.ROOT + "/tests/fixtures/paired_profile_v4.json", encoding="utf-8") as source:
+            profile = json.load(source)
         for turn in (0, 20):
-            angle = (hifi.PROFILE_DRAW["angles"][0] + turn) % 360
+            angle = (profile["angles"][0] + turn) % 360
             c = _LenientCanvas()
             hifi.draw_neo_pan(c, 0.0, 0.0, 100.0, self._spec(angle, turn), {"1"}, set(), True)
-            want = (round(100 * hifi.PROFILE_DRAW["main"]["orbit"] * math.cos(math.radians(angle)), 3),
-                    round(100 * hifi.PROFILE_DRAW["main"]["orbit"] * math.sin(math.radians(angle)), 3))
+            want = (round(100 * profile["main"]["orbit"] * math.cos(math.radians(angle)), 3),
+                    round(100 * profile["main"]["orbit"] * math.sin(math.radians(angle)), 3))
             got = {(round(ci["x"], 3), round(ci["y"], 3)) for ci in c.circles}
             self.assertIn(want, got, "turn %s" % turn)
