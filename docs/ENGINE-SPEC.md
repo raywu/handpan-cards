@@ -501,15 +501,23 @@ The field id and label scheme, read off all three built-ins in `index.html`:
   gone. `mirror` reflects the notes of the rim and inner rings about the vertical
   axis; `mirrorBottom` reflects the notes of the bottom ring and, when absent,
   follows `mirror`. A mirror moves no index number (owner 2026-10-30).
-- DECIDED(owner 2026-10, Rule N) A seat's index number belongs to the position,
-  not to the note: moving a note (`options.seats`) changes the name drawn there
-  and nothing else, on the plate and on the generated cards alike. The same
-  holds for `options.angles`: a bottom note placed at a chosen angle keeps its
-  seat's number. Under `options.angles` the bottom labels follow the
-  cyclic-order rule: sort the home seats and the placed angles, pick the
-  rotation of least total angular gap; on a tie, the one that turns the notes
-  furthest anticlockwise in total, then the lowest; give each home label to its
-  matched angle ("SO: the cyclic match wraps through 0 degrees: Eb3 at 355 keeps U3, and C3 at 20 with Eb3 at 0 reads C3 U3 and Eb3 U1"; "SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U6 Db3 U1 Eb3 U3 Bb3 U2 Db4 U5 Ab5 U4"; "SO: whole-ring turns of +30, +25 and -25 on Pygmy keep the home labels, and -30 puts the same seat numbers at the same angles, with MIRROR BOTTOM off and on").
+- DECIDED(owner 2026-11-17, bottom numbering) The bottom ring's U numbers follow the
+  drawn position: U1 is the note nearest bottom centre (270 degrees), then U2, U3 and so
+  on by distance from 270 going up; two notes the same distance away (within 0.11
+  degrees) go right first. This replaces the 2026-10 cyclic match. A moved note
+  takes its number from where it lands, with no swap back; MIRROR BOTTOM moves no
+  number off a position ("BN-L1: untouched rings of 1 to 116 notes read U1, U2, ... by index"; "BN-L3: a bottom note drawn at 270 reads U1 and one drawn at 90 reads the last number"; "BN-L4: two notes the same distance from bottom centre: the right one (290) reads the lower number"; "BN-L6: a slide that crosses a note renumbers by position, no swap back"; "BN-L7: Pygmy C3 slid 300 -> 285 shows U1; with MIRROR BOTTOM on C3 is drawn at 255 and reads U1, Db3 at 300 reads U2"). For `options.seats` a seat's index number still belongs to the position and moving a note changes only the name drawn there, on the plate and on the generated cards alike. The cyclops ring keeps its cyclic match ("BN-L10").
+- Editor freeze and collapse (owner 2026-11-17): adding or removing a bottom note on a
+  standard bottom ring that holds a note and solves never moves the other bottom notes.
+  The editor writes every bottom note's solved angle (snapped about 270 to the 5 degree
+  grid, at most 2.5 degrees) into `options.angles.bottom` and pins each; an add with no
+  chosen position goes to the middle of the widest stretch, ties to the one nearest 270,
+  then right. When every note is back on its even spot the list and its pins are
+  dropped (collapse). A bottom-only typed edit is applied one note at a time and keeps
+  the rim and cyclops pins and shows no pinsReset notice (D3, F-B). A frozen ring keeps
+  its stored angles under a stored `mirrorBottom` (D4). A clashing add with a position
+  is refused as today; one with no position cannot clash (the cap is 12 notes, 15
+  degrees apart) and any other failure goes through `editorSettle` (ID3, F-D).
 
 ## 5. Legality invariants for a voicing
 
@@ -918,7 +926,7 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   reflects the explicit entries too through `HPE.layout.reflectAngles(angles)`
   (pure; each explicit `a` becomes `norm(180 - a)`, null stays null, it is its own
   inverse; owner 2026-10-31), so every note swaps sides and numbers stay with
-  positions (rule N cyclic match against the unmirrored home). MN2's rule S
+  positions (U numbers follow the drawn position, nearest bottom centre first). MN2's rule S
   (`holdForMirror`, hold the orphans) is SUPERSEDED and removed. Records and links
   need no conversion: `angles` always meant the drawn angle in its own frame, so
   RECORD_VERSION and the wire VERSION do not change. Tests: "MN3: reflectAngles
@@ -941,7 +949,7 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   [0, 360) or `null` for the solved angle, validated by `layout.readAngles`
   (any other shape is `BAD_NOTE`; an absent or all-null list reads as absent).
   The override is written last, after `mirrorBottom` and `seats`, into slot 4 of
-  the bottom fields, then relabels slot 5 of the bottom fields by the cyclic-order rule (Rule N; "SO: the five built-ins solve to byte-identical fields with no angles, all-null angles and their home angles written explicitly"); geometry is computed from the default placement, so
+  the bottom fields, then relabels slot 5 of the bottom fields by distance from bottom centre, right first on a tie (nearest bottom centre; "SO: the five built-ins solve to byte-identical fields with no angles, all-null angles and their home angles written explicitly"); geometry is computed from the default placement, so
   `geom` is byte-identical with and without it. A floor applies to the
   effective list (`layout.bottomClash`): two bottom notes closer than the
   smallest multiple of 5 strictly above their touching angle (capped by the
@@ -1057,7 +1065,8 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
   pinned; then the link is version 8 and the record version 6
   (`recordVersion` returns 6 exactly then, never with a profile; the app's
   record gates `newestRecordVersion`, `savedCandidate` and `readSavedRecord`
-  accept v6 only with pinned inner angles and no profile, and refuse 7+). With no pinned
+  accept v6 only with pinned inner angles and no profile; 18.6 states the full
+  4/5/6/7 rule, and a record above the newest version is refused). With no pinned
   inner angle the writer emits exactly today's version 6 bytes (`at-` stays a
   version 6 option and is also valid on version 8, refused on version 7).
 - Option order on version 8: palette-N, parent-<mode>, mirror | mirror-top |
@@ -1107,8 +1116,20 @@ Wire note: a v6 link spells index n as `palette-(n+1)`, read for `palette-2` to 
 
 The sandbox `ELEMENT_IDS` in `tools/sandbox.js` (re-exported by `tests/helpers/sandbox.js`) is the registry of
 record; e2e targets them. Phase 3 registered the nine below, and later phases
-have appended more (`scale-*` ids for the Phase 4 Edit sheet and the Phase 5/6
-sheets); the rule is that phases APPEND, never renumber or rename.
+appended more (`scale-*` ids for the Phase 4 Edit sheet and the Phase 5/6
+sheets); the rule was that phases APPEND, never renumber or rename.
+
+- DECIDED(editor RC, legacy sheet removal U2j) The legacy scale sheet and layout
+  drawer are gone, so their ids left `ELEMENT_IDS` (it lists only ids that are in the
+  markup and looked up by the app; test "SB-2 every served id is in the markup and is
+  looked up by the app") and moved to `LEGACY_IDS` in `tools/sandbox.js`, which the
+  strict `getElementById` still serves so the shipped-client fixture bytes boot. A
+  retired id is never reused. The ids listed below are therefore history. The scale
+  editor builds its DOM at runtime (`editorOpen`), so no `editor-*` id is registered in
+  `ELEMENT_IDS`; its tests run in the real browser (`tests/editor_e2e.test.js`) and on
+  the pure model (`tests/editor_model.test.js`, `tests/editor_shell.test.js`). The
+  append-only rule now applies to `ELEMENT_IDS` entries that remain in the markup; a
+  retirement moves the id to `LEGACY_IDS`.
 
 - DECIDED(plan "Open decisions", UI element ids row) The Phase 3 scale-input UI
   uses these element ids: `scale-sheet`, `scale-box`, `scale-parse`,
@@ -1120,7 +1141,8 @@ sheets); the rule is that phases APPEND, never renumber or rename.
   `scale-mirror` (MIRROR TOP), `scale-mirror-bottom`, `scale-fine-toggle`,
   `scale-fine`, `scale-note-prev`, `scale-note-next`, `scale-seat-prev`,
   `scale-seat-next`, `scale-layout-reset` (RESET LAYOUT), `scale-drawer-status`
-  and `scale-drawer-hint`; the registry in `tools/sandbox.js` is the record.
+  and `scale-drawer-hint`; the registry in `tools/sandbox.js` is the record, and
+  these ids now live in `LEGACY_IDS`.
 
 ## 16. Fixture schemas
 
@@ -1305,8 +1327,10 @@ only `r` keys; the mutant ring is `map[9..17]` (slots `s1..s9`) and holds only
 `b` keys; an `i` key, or a key in the other ring, is `PROFILE_MAP_INVALID`. On a scale with
 no bottom note, main entries past the rim count are null and the main half orders
 the Standard rim seats. With a
-profile, `mirror`, `mirrorBottom`, `anchor`, `seats` and `angles` must be
-absent. The sheet keeps the standard draft separately and drops it from the
+profile, `mirror`, `mirrorBottom`, `seats` and `angles` must be absent;
+`anchor` MAY be present and is `"one"` or `"between"`, and `parseSeed` accepts
+`"one"` and drops it (a profile with anchor `"one"` is the same seed as one
+with none). The sheet keeps the standard draft separately and drops it from the
 committed record. Validation lives only in `HPE.core.parseSeed`; `profile` joins
 its option whitelist (other unknown options still drop). Until
 `HPE.core.PROFILE_ENABLED` is true, `parseSeed` refuses `profile` with
@@ -1333,7 +1357,7 @@ values follow it.
 | `PROFILE_NOTE_MISSING` | error | `The Neotone layout leaves out one of your notes. Every note needs a tonefield.` |
 | `PROFILE_NOTE_TWICE` | error | `The Neotone layout places the same note in two tonefields.` |
 | `PROFILE_FULL` | error | `Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes.` |
-| `PROFILE_CONFLICT` | error | `Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it.` |
+| `PROFILE_CONFLICT` | error | `Neotone sets its own placement, so mirror, seats and angles cannot be combined with it.` |
 | `NEOTONE_INPUT` | error | `Neotone has 9 main tonefields. Remove the extra top note to save.` |
 
 ### 18.4 Proposal and layout
@@ -1356,7 +1380,18 @@ circle's centre distance and radius follow), with the ding at centre at
 tonefield n (number line `3-4-6-M4`). `ext` and the `f_*` keys are unchanged for
 standard decks, and renderers branch only on `geom.place`.
 
-### 18.5 Wire version 7
+`HPE.layout.solve` with a profile reads `options.anchor` of the seed. With a
+mutant note and anchor `"between"`, every main tonefield and its lens sit at the
+fixture angle plus `turn` = 180 / tonefields (20 degrees), reduced mod 360, and
+`geom.turn` is that number; with anchor `"one"` or absent `geom.turn` is absent.
+With no mutant note the plain solve receives the anchor, so rim notes take the
+Standard seat angles of that anchor and `geom.turn` is absent. `turn` never
+changes the map, labels, radii, orbits, `ext` or the print extent. Renderers
+(`HPE.pdfcards` `neoPlan`, `tools/hifi.py` `draw_neo_pan`) place the main and lens
+of tonefield k at `PROFILE.angles[k-1] + turn`; `HPE.layout.snapTarget` uses
+`geom.turn` the same way.
+
+### 18.5 Wire versions 7 and 9
 
 `HPE.share.VERSION` stays 6; `PROFILE_VERSION = 7`. `NEWEST` stays `VERSION`;
 decode reads up to `PROFILE_VERSION` only while `HPE.core.PROFILE_ENABLED` is on.
@@ -1378,13 +1413,32 @@ ring-correct but incomplete (or overfull) v7 link opens as the pitch-order propo
 keeps older links readable (owner acknowledgement pending). The grammar and token order do
 not change in rev 2; links v1 to v6 decode as standard layouts.
 
-### 18.6 Record version 5 and rule I1
+Wire version 9 (`PROFILE_ANCHOR_VERSION`): the version 7 grammar plus exactly one
+`between` segment after `pair-`. `encode` writes 9 if and only if the seed has a
+profile and `anchor` `"between"`; otherwise it writes 7 (profile) or 6 as before,
+so a profile with anchor `"one"` or none encodes byte-identically to version 7. A
+version 9 link without `pair-` and `between`, or with `mirror*`, `seats-`, `at-` or
+`ai-`, is `BAD_NOTE`; a version 7 link carrying `between` stays `BAD_NOTE`. In
+`decodeReadable` the `between` branch is tested before the profiled fall-through, so
+a profiled v9 link accepts `between` exactly once. `decodeSeed` admits 9 only while
+`HPE.core.PROFILE_ENABLED` is on. A client whose newest wire is below 9 answers a
+version 9 link with `NEEDS_NEWER_APP`; a version 10 or above is `NEEDS_NEWER_APP`.
+
+### 18.6 Record versions 4, 5, 6 and 7, and rule I1
 
 `RECORD_VERSION` stays 4. `PROFILE_RECORD_VERSION = 5` is used for a record
-whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4 or 5:
-the app never chooses it. `savedCandidate` accepts 4 for a standard record and
-5 for a profile record, and refuses 5 without a profile or 4 with one;
-`savedMeaning` appends the canonical profile map (null for a standard record, so
+whose `o.profile` is set, and `HPE.share.recordVersion(seed)` returns 4, 5, 6 or 7
+(test "SE: recordVersion is 6 for a pinned inner angle, 4 without, 5 for a profile" covers 4, 5 and 6; the TRI59d tests below cover 7).
+The app derives the version through `recordVersionFor(options, profiled)` in
+`index.html`: a profile record is 7 when its anchor is `"between"` and 5 otherwise; a
+standard record is 6 when an inner angle is pinned and 4 otherwise. `savedCandidate`
+requires `record.v === recordVersionFor(options, profiled)`, so it accepts 4, 5, 6 and 7
+only in those pairings and refuses 5 with an anchor, 7 without one, 5 or 7 without a
+profile, 6 with a profile or without a pinned inner angle, and 4 with a profile (tests
+"TRI59d savedCandidate stages a between profile as record 7 and refuses the wrong
+pairings", "TRI59d record 7 is read exactly when the record is a profile carrying
+between", both in `tests/persist.test.js`). `savedMeaning` appends the canonical profile
+map (null for a standard record, so
 the meaning of every existing record is unchanged).
 
 Rule I1: a profile record never carries `replaces` and never owns a seeded
@@ -1395,13 +1449,37 @@ opaque. Reason: a shipped client treats a record it cannot read as an opaque row
 kept byte-for-byte, but fails its slot-authority check, and so protects the
 whole library, when an opaque row owns a slot.
 
+`PROFILE_ANCHOR_RECORD_VERSION = 7`, returned by `recordVersion` if and only if the
+seed has a profile and `anchor` `"between"`. Rule I1 applies unchanged; a version 7
+record with `replaces` is read as opaque. A client that does not know 7 keeps the
+record opaque, byte-for-byte.
+
+Rule I1 also covers `INNER_RECORD_VERSION = 6` (pinned inner angles): a version 6
+record with `replaces` is read as opaque, `savedCandidate` refuses a version 6
+candidate for `replace-builtin`, an `edit` that would make a slot owner a version 6
+row is refused, and the editor saves a slot owner with pinned inner angles as a
+separate scale (tests SE-I1-1 to SE-I1-5 in `tests/editor_model.test.js`).
+
 ### 18.7 Fixtures that pin the contract
 
 `tests/fixtures/paired_profile_v4.json` (fixture rev 4; v1, v2 and v3 are superseded
 and kept) and `tests/fixtures/shipped_client_ee5438d0.html.txt` (a verbatim
 `git show ee5438d0:index.html`, the shipped client for the mixed-version
-isolation suite). All are sha256-pinned in `tests/test_fixture_integrity.py`; a
+isolation suite), `tests/fixtures/paired_anchor_links_v9.json` (hand-written
+profile-plus-between links) and `tests/fixtures/share_links_v1/v7.json` and `v8.json`
+(frozen links encoded at `caaec83b`). All are sha256-pinned in `tests/test_fixture_integrity.py`; a
 change is a new revision, never an in-place edit.
+
+Four release-safety fixtures from the editor RC are pinned the same way:
+`tests/fixtures/shipped_client_a4ecfc2e.html.txt` (main's `index.html` at `a4ecfc2e`, the
+oracle for the "PAU-I" and "SE-I1-4" tests), `tests/fixtures/shipped_client_4b432f04.html.txt`
+(main's `index.html` with the rollback guard, the oracle for "PAU-I" and "RC-G-RC"),
+`tests/fixtures/editor_pan_v1.json` and `tests/fixtures/engine_parity_golden_v1.json`. Their sha256 values are in
+`RELEASE_SAFETY_FIXTURE_SHA256` and checked by
+`TestReleaseSafetyFixturePins.test_each_fixture_matches_its_pinned_sha256` in
+`tests/test_fixture_integrity.py`. A sanctioned regeneration of `editor_pan_v1.json`
+(`tools/regen_editor_pan_fixture.js`) must update its pin in
+`RELEASE_SAFETY_FIXTURE_SHA256` in the same commit; the others are never edited.
 
 Two revisions are counted separately. The map rev (`options.profile.rev`) is the
 map format: rev 2, and served DEV produced rev 1 maps (flag on since #752), so rev

@@ -91,7 +91,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     },
     PROFILE_CONFLICT: {
       kind: "error",
-      reason: "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it."
+      reason: "Neotone sets its own placement, so mirror, seats and angles cannot be combined with it."
     },
     NEOTONE_INPUT: {
       kind: "error",
@@ -919,7 +919,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function readProfile(raw, options, fields) {
     if (raw === undefined || raw === null) return ok(undefined);
     if (!HPE.core.PROFILE_ENABLED) return scaleErr("PROFILE_UNKNOWN");
-    var placement = ["mirrorBottom", "anchor", "seats", "angles"];
+    var placement = ["mirrorBottom", "seats", "angles"];
     if (options.mirror === true) return scaleErr("PROFILE_CONFLICT");
     for (var c = 0; c < placement.length; c += 1) {
       var given = options[placement[c]];
@@ -1022,7 +1022,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
     var profile = readProfile(options ? options.profile : undefined, options || {}, fields);
     if (!profile.ok) return profile;
-    if (profile.value) opts.value.profile = profile.value;
+    if (profile.value) {
+      opts.value.profile = profile.value;
+      if (opts.value.anchor === "one") delete opts.value.anchor;
+    }
     // The field ids in typed order (tops, then bottoms), for the importer's
     // source-to-field mapping. Not enumerable: it is a reading aid, not part of
     // the seed, so equality, spreading and serialising of a seed ignore it.

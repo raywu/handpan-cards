@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15248,7 +15248,6 @@
+@@ -13098,7 +13098,6 @@ function editorNeoInsert(m, ring, name) {
  function editorNeoMove(m, from, to) {
    const map = m.options.profile.map;
    if (!Number.isInteger(from) || !Number.isInteger(to) || map[from] === null || map[from] === undefined || to < 0 || to >= NEO_SLOTS) return editorRefusal("move");
 -  if (editorNeoRingOf(from) !== editorNeoRingOf(to)) return editorNeoOwnRow();
    if (from === to) return { ok: true, value: m };
    if (to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
-   const next = map.slice();
+   if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoMove(st, from, to));

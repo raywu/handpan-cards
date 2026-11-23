@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15310,7 +15310,7 @@ function editorSwapNames(m, a, b) {
-   if (refs.some((r) => !r || (r.ring !== "ding" && (!EDITOR_RINGS.includes(r.ring) || !editorInRing(m, r.ring, r.i))))) return editorRefusal("swap");
+@@ -13301,7 +13301,7 @@ function editorSwapNames(m, a, b) {
+   if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageSwap(st, a, b));
    const entries = editorEntries(m);
    const get = (r) => (r.ring === "ding" ? entries.ding : entries[r.ring][r.i].name);
 -  const set = (r, name) => { if (r.ring === "ding") entries.ding = name; else entries[r.ring][r.i].name = name; };

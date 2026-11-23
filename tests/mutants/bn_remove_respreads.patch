@@ -1,0 +1,15 @@
+# kills: BN-M3: removing a bottom note keeps every other note where it is drawn
+# suite: node --test --test-name-pattern ^BN.M3..removing.a.bottom.note.keeps.every.other.note.where.it.is.drawn$ tests/editor_model.test.js
+# A remove takes today's respread path.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12934,7 +12934,7 @@
+   return editorSettle(next, {});
+ }
+ function editorResize(m, ring, parts, change) {
+-  if (editorFrozenCase(m, ring)) return editorResizeFrozen(m, ring, parts, change);
++  if (editorFrozenCase(m, ring) && change.add) return editorResizeFrozen(m, ring, parts, change);
+   const loaded = editorLoad(editorText(m, parts), { ...m.options, seats: null, angles: null });
+   if (!loaded.ok) return loaded;
+   const next = loaded.value;

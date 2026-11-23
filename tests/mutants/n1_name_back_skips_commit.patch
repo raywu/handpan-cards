@@ -9,6 +9,6 @@ diff --git a/index.html b/index.html
    const s = editorSession;
    if (!s) { closeScaleSheet(); return; }
 -  editorCommitName();
-   if (editorIsDirty(s.base, s.history.present)) editorShowDialog(true);
+   if (editorHasChanges(s)) editorShowDialog(true);
    else closeScaleSheet();
  }

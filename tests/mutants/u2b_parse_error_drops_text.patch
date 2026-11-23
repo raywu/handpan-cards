@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16002,7 +16002,7 @@ function editorRender() {
+@@ -13986,7 +13986,7 @@ function editorRenderBody() {
    const m = s.history.present;
    const empty = editorIsEmpty(m);
    const line = editorEl("editor-line");
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  line.value = editorLineText(m);
    const nameBox = editorEl("editor-name");
    if (!s.naming) nameBox.value = m.options.name || "";
-   nameBox.placeholder = editorAutoName(m);
+   const auto = editorAutoName(m);

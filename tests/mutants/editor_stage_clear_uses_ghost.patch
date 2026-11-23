@@ -1,0 +1,15 @@
+# kills: RCF-16: a pin the commit keeps is kept, and the preview shows the angles the commit gets
+# suite: node --test --test-name-pattern RCF.16..a.pin.the.commit.keeps tests/editor_shell.test.js
+# fault: The clear also treats a strict-ghost failure as stuck, so it clears a pin the commit would keep.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13017,7 +13017,7 @@ function editorStageSettle(m, stage, landedKey) {
+ // A remove can free the room a pin relied on. While the stage could not be completed, the first pin
+ // (tap order) whose clearing alone completes it is cleared, else the newest pin; a pin the commit keeps stays.
+ function editorStageClearPins(m, st) {
+-  const stuck = (t) => editorStageSettle(m, t).code === "NO_ROOM";
++  const stuck = (t) => editorStageSettle(m, t).code === "NO_ROOM" || (!!t.ding && !editorGhostSolve(editorWithStage(m, t), true).ok);
+   while (st.angles && stuck(st)) {
+     const pins = st.angles.map((a, k) => (a === null ? -1 : k)).filter((k) => k !== -1);
+     const alone = pins.find((k) => { const t = editorClone(st); t.angles[k] = null; editorStageTidyAngles(t); return !stuck(t); });

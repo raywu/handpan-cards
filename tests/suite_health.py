@@ -37,10 +37,10 @@ FLOORS = {
     # python
     "tests/test_deck_data.py": 28,
     "tests/test_pdf_build.py": 9,
-    "tests/test_gen_deck.py": 32,
-    "tests/test_print.py": 55,
+    "tests/test_gen_deck.py": 33,
+    "tests/test_print.py": 59,
     "tests/test_render_agreement.py": 60,
-    "tests/test_fixture_integrity.py": 47,
+    "tests/test_fixture_integrity.py": 50,
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
     "tests/test_sync_schema_lint.py": 14,
@@ -49,51 +49,46 @@ FLOORS = {
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 16,
-    "tests/test_icons.py": 6,
-    "tests/test_scale_pages.py": 130,
-    "tests/test_site_files.py": 14,
+    "tests/test_icons.py": 19,
+    "tests/test_scale_pages.py": 159,
+    "tests/test_site_files.py": 31,
     "tests/test_ci_scope.py": 36,
-    "tests/test_sync_schema_lint.py": 9,
+    "tests/test_web_fonts.py": 10,
+    "tests/test_zh_scale_pages.py": 30,
     # node
-    "tests/app.test.js": 1287,
-    "tests/seat_sweeps_tap_add.test.js": 3,
-    "tests/seat_sweeps_tap_edit.test.js": 3,
-    "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 637,
-    "tests/e2e_sync.test.js": 33,
+    "tests/app.test.js": 801,
+    "tests/e2e.test.js": 415,
+    "tests/e2e_sync.test.js": 50,
     "tests/harness.test.js": 67,
-    "tests/drawer_grid.test.js": 3,
-    "tests/drawer_seats.test.js": 28,
-    "tests/drawer_drag.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 103,
+    "tests/core.test.js": 123,
     "tests/import.test.js": 131,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
-    "tests/layout.test.js": 163,
+    "tests/layout.test.js": 174,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 55,
-    "tests/share.test.js": 149,
-    "tests/link_corpus.test.js": 7,
-    "tests/editor_model.test.js": 38,
-    "tests/editor_shell.test.js": 51,
-    "tests/editor_e2e.test.js": 129,
-    "tests/editor_freeze.test.js": 9,
-    "tests/storage_corpus.test.js": 18,
-    "tests/preview.test.js": 14,
+    "tests/share.test.js": 154,
+    "tests/link_corpus.test.js": 14,
+    "tests/editor_model.test.js": 52,
+    "tests/editor_shell.test.js": 109,
+    "tests/editor_e2e.test.js": 588,
+    "tests/editor_freeze.test.js": 8,
+    "tests/storage_corpus.test.js": 25,
+    "tests/preview.test.js": 2,
     "tests/pdf.test.js": 16,
-    "tests/pdfcards.test.js": 80,
+    "tests/pdfcards.test.js": 81,
     "tests/coverage_merge.test.js": 18,
     "tests/mutation_harness.test.js": 54,
     "tests/pdf_builtin.test.js": 13,
     "tests/sequence.test.js": 59,
     "tests/swipe.test.js": 21,
-    "tests/pgenv.test.js": 3,
     "tests/sync.test.js": 178,
     "tests/sync_opaque_probe.test.js": 7,
-    "tests/scale.test.js": 14,
-    "tests/sandbox_events.test.js": 5,
-    "tests/persist.test.js": 7,
+    "tests/sync_v6_v7.test.js": 9,
+    "tests/scale.test.js": 15,
+    "tests/persist.test.js": 11,
+    "tests/pgenv.test.js": 3,
 }
 
 # The e2e suites are the only ones allowed to vanish: they skip themselves
@@ -101,7 +96,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js", "tests/e2e_sync.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/e2e_sync.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40
@@ -217,8 +212,7 @@ def check_python():
 # clearance tests (2026-10-21) took the file past 300s on CI, so it became 420s;
 # the combined sheet-polish release (every test bounded by its own 90s-or-less
 # timeout, so no hang) overran 420s on CI, so it became 900s; the file then ran
-# 849-897s on CI (2026-11-10) and the sign-in QA fixes (2026-11-11) took it past
-# 900s (base ran 873s), so it is 1500s. Every node file now prints its wall clock (timed_run) so the next
+# 849-897s on CI (2026-11-10), so it is 1500s. Every node file now prints its wall clock (timed_run) so the next
 # sizing is measured. tests/mutation_check.sh
 # keeps its own 180s SUITE_TIMEOUT: it runs a filtered subset per mutant, never
 # the whole file. NODE_SUITE_TIMEOUT overrides this one.

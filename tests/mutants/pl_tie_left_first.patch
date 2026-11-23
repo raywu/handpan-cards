@@ -1,0 +1,15 @@
+# kills: BN-L4: two notes the same distance from bottom centre: the right one (290) reads the lower number
+# suite: node --test --test-name-pattern ^BN.L4..two.notes.the.same.distance.from.bottom.centre..the.right.one..290..reads.the.lower.number$ tests/layout.test.js
+# On a distance tie the left note takes the lower number.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -813,7 +813,7 @@
+       var kx = key(x);
+       var ky = key(y);
+       if (Math.abs(kx.d - ky.d) > 0.11) return kx.d - ky.d;
+-      if (kx.right !== ky.right) return kx.right ? -1 : 1;
++      if (kx.right !== ky.right) return kx.right ? 1 : -1;
+       return x - y;
+     });
+     for (var k = 0; k < order.length; k += 1) fields[ids[order[k]]][5] = source[ids[k]][5];

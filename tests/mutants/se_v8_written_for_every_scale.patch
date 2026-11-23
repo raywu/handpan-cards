@@ -4,12 +4,12 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -342,7 +342,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -346,7 +346,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      var scale = scaleSegment(seed.fields);
      var profiled = opts.profile !== undefined && opts.profile !== null;
      var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
 -    var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
 +    var wire = String(profiled ? PROFILE_VERSION : INNER_VERSION);
+     var between = profiled && opts.anchor === "between";
+     if (between) wire = String(PROFILE_ANCHOR_VERSION);
      var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
-     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
-     function option(text) {

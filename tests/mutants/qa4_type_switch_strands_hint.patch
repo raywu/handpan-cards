@@ -1,0 +1,23 @@
+# kills: QA4 hint after type switch: the info button is in the visible Scale name row after a pan-type tap from Layout
+# suite: node --test --test-name-pattern QA4.hint.after tests/editor_e2e.test.js
+# fault: Only editorSetTab re-parents the info button (not the tab render), so a pan-type tap from Layout strands it in the hidden panel.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13999,7 +13999,7 @@ function editorRenderTabs() {
+     if (on) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
+   }
+   const tog = editorEl("editor-hint-toggle"), row = editorEl("editor-panel-" + s.tab).querySelector(".editor-hintrow");
+-  if (tog && row && tog.parentNode !== row) {
++  if (tog && row && false) {
+     const had = document.activeElement === tog;
+     row.appendChild(tog);
+     if (had) tog.focus();
+@@ -14055,6 +14055,7 @@ function editorSetTab(tab, focus) {
+   editorCloseMenu();
+   s.tab = tab;
+   editorRenderTabs();
++  editorEl(tab === "scale" ? "editor-panel-scale" : "editor-panel-layout").querySelector(".editor-hintrow").appendChild(editorEl("editor-hint-toggle"));
+   if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
+   editorPlaceAreas();
+   if (focus) editorEl("editor-tab-" + tab).focus();

@@ -1,5 +1,5 @@
-# kills: U2a-X1: exchanging two bottom notes trades their solved angles exactly as the sheet does, pinning both
-# suite: node --test --test-name-pattern ^U2a-X1:.exchanging.two.bottom.notes.trades.their.solved.angles.exactly.as.the.sheet.does..pinning.both$ tests/editor_model.test.js
+# kills: U2a-X1: exchanging two bottom notes matches the recorded sheet output, pinning both
+# suite: node --test --test-name-pattern ^U2a-X1:.exchanging.two.bottom.notes.matches.the.recorded.sheet.output..pinning.both$ tests/editor_model.test.js
 # fault: Each exchanged note keeps its own angle instead of taking the other's.
 diff --git a/index.html b/index.html
 --- a/index.html

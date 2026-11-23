@@ -68,7 +68,7 @@ const SENTENCES = {
   PROFILE_NOTE_MISSING: { "": "The Neotone layout leaves out one of your notes. Every note needs a tonefield." },
   PROFILE_NOTE_TWICE: { "": "The Neotone layout places the same note in two tonefields." },
   PROFILE_FULL: { "": "Neotone holds at most 9 top notes and 9 bottom notes and no inner notes. Remove some notes." },
-  PROFILE_CONFLICT: { "": "Neotone sets its own placement, so mirror, anchor, seats and angles cannot be combined with it." },
+  PROFILE_CONFLICT: { "": "Neotone sets its own placement, so mirror, seats and angles cannot be combined with it." },
   NEOTONE_INPUT: { "": "Neotone has 9 main tonefields. Remove the extra top note to save." }
 };
 

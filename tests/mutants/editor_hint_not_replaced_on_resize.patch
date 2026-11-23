@@ -1,0 +1,14 @@
+# kills: P0 hint resize: an open Hint block is re-placed over the controls area when the viewport rotates
+# suite: node --test --test-name-pattern ^P0.hint.resize tests/editor_e2e.test.js
+# fault: The resize handler no longer re-places the open Hint block.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14028,7 +14028,6 @@ function editorRegionAtEnd() {
+ function editorRegionResize() {
+   const rg = editorSession && editorEl("editor-region");
+   if (!rg) return;
+-  editorPlaceAreas();
+   if (rg.contains(document.activeElement)) {
+     if (document.activeElement.id === "editor-name") requestAnimationFrame(() => document.activeElement.scrollIntoView({ block: "nearest" }));
+     return;

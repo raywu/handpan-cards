@@ -1,0 +1,15 @@
+# kills: QA2 hint 390x844: the info button sits below the strip; the open overlay is clear of the button and has an x at its top right that closes it
+# suite: node --test --test-name-pattern QA2.hint tests/editor_e2e.test.js
+# fault: A tap on the overlay's x does not close it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14854,7 +14854,7 @@ function editorWire() {
+     editorEl("editor-hint-close").focus();
+   };
+   editorEl("editor-hint-close").onclick = () => {
+-    editorSetAreas(false);
++    editorSetAreas(true);
+     editorEl("editor-hint-toggle").focus();
+   };
+   nameBox.addEventListener("focusin", () => requestAnimationFrame(() => nameBox.scrollIntoView({ block: "nearest" })));

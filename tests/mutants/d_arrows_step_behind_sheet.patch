@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17607,7 +17607,6 @@ document.addEventListener("keydown", e => {
-       else if (editorSession) editorEscape();
+@@ -15397,7 +15397,6 @@ document.addEventListener("keydown", e => {
+       if (editorSession) editorEscape();
        else closeScaleSheet();
      }
 -    return;

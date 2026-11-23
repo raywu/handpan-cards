@@ -1,10 +1,10 @@
-# kills: drag ux E4: a placed note is highlighted after a drag, a tap, a zone add, a ding swap, a trade and the keyboard, and not after Undo
+# kills: drag ux E4: a placed note is highlighted after a drag, a tap, a tap on a zone, a tap on the ding, a trade by two taps and the keyboard, and not after Undo
 # suite: node --test --test-name-pattern ^drag.ux.E4 tests/editor_e2e.test.js
 # fault: The flash is dropped before the pan renders.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15974,7 +15974,7 @@
+@@ -13961,7 +13961,7 @@ function editorDo(step, say, mark) {
    const prev = s.history.present;
    s.history = res.history;
    s.error = "";
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  s.flash = null;
    s.landed = res.notice && res.notice.landed !== undefined ? res.notice.landed : null;
    s.notice = !!(res.notice && res.notice.pinsReset);
-   s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : say || "";
+   if (res.notice && res.notice.stageRefused) s.error = res.notice.stageRefused;

@@ -1,14 +1,15 @@
 # kills: a pop with no page open is not an invitation to close something
 # suite: node --test --test-name-pattern ^a.pop.with.no.page.open.is.not.an.invitation.to.close.something$ tests/app.test.js
-# The popstate listener loses its guard and runs hideSheet() on every back press.
+# The popstate listener loses its no-page-open guard and runs hideSheet() on every back press. Re-anchored on pageOpen (was sheetOpen).
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18237,7 +18237,6 @@ window.addEventListener("popstate", () => {
+@@ -16099,7 +16099,7 @@ window.addEventListener("popstate", (e) => {
    if (aboutOpen) { hideAbout(); return; }
    if (subpage) { hideSubpage(); return; }
    if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }
--  if (!sheetOpen) return;
+-  if (!pageOpen) return;
++
+   if (editorBackstop()) return;
    sheetRouted = false;
    hideSheet();
- });

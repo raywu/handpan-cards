@@ -5,21 +5,20 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15853,7 +15853,7 @@
+@@ -15979,7 +15979,7 @@ function setInert(on, targets) {
    }
  }
  function showSheet(opener) {
 -  retireLinkUI();
 +  if(!editingBase)retireLinkUI();else ++linkUIGeneration;
-   sheetOpener = opener || addChip;
-   sheetOpenerSelection=sheetOpener.id!=="strip-add"&&[...document.getElementById("decks").children].includes(sheetOpener)?{kind:sheetOpener.getAttribute("data-selection-kind"),id:sheetOpener.getAttribute("data-selection-id")}:null;
+   pageOpener = opener || addChip;
+   pageOpenerSelection=pageOpener.id!=="strip-add"&&[...document.getElementById("decks").children].includes(pageOpener)?{kind:pageOpener.getAttribute("data-selection-kind"),id:pageOpener.getAttribute("data-selection-id")}:null;
    sheet.removeAttribute("hidden");
-@@ -15978,7 +15978,7 @@
+@@ -16026,7 +16026,6 @@ function openScaleSheet(opener, source) {
  // The Edit path [design-review 7A]: the SAME sheet, prefilled from the selected
  // deck, seeded or custom.
  function openEditSheet(d, opener) {
 -  shareUrl.setAttribute("hidden", "");
-+
    sheetAddSource = null;
-   resetSheetState(d);
+   beginSheetSession(d);
    showSheet(opener);

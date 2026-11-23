@@ -1,0 +1,15 @@
+# kills: CAS1 a Save refused because the scale changed elsewhere saves the draft as a new scale with no message
+# suite: node --test --test-name-pattern ^CAS1.a.Save.refused.because.the.scale.changed.elsewhere tests/editor_e2e.test.js
+# fault: A refused Save shows the failure and stops instead of saving the draft as a new scale.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15228,7 +15228,7 @@ async function editorSave() {
+     let retried = false;
+     let result = await commitSaved({ ...command, collectionId: !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
+     if (generation !== sheetGeneration || !pageOpen) return;
+-    if (!result.ok && result.kind === "conflict") {
++    if (false) {
+       await reconcileSavedCollection();
+       retried = true;
+       result = await commitSaved({ type: "save-as-separate", collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });

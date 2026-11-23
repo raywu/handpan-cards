@@ -1,0 +1,15 @@
+# kills: PA: a crafted v9 link decodes, and every shape the grammar forbids is BAD_NOTE
+# suite: node --test --test-name-pattern ^PA..a.crafted.v9.link.decodes tests/share.test.js
+# why: A version 7 link carrying between is read instead of refused.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -523,7 +523,7 @@
+           rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
+           map: pairMap
+         };
+-      } else if (anchored && o === "between") {
++      } else if (profiled && o === "between") {
+         at = OPTION_ORDER.between;
+         betweens += 1;
+         options.anchor = "between";

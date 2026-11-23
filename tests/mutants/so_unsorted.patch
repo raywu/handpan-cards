@@ -1,5 +1,5 @@
-# kills: SO: an angles swap of Db3 and Db4 on Pygmy draws U5 at 60 and U2 at 240, as the seats swap does
-# suite: node --test --test-name-pattern ^SO..an.angles.swap.of.Db3.and.Db4.on.Pygmy.draws.U5.at.60.and.U2.at.240..as.the.seats.swap.does$ tests/layout.test.js
+# kills: BN-L10: the cyclops ring keeps its cyclic match: F4@10 = 6, G4@60 = 8, Ab4@105 = 7, C5@165 = 5
+# suite: node --test --test-name-pattern ^BN.L10..the.cyclops.ring.keeps.its.cyclic.match..F4.10...6..G4.60...8..Ab4.105...7..C5.165...5$ tests/layout.test.js
 # The home seats are matched unsorted.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js

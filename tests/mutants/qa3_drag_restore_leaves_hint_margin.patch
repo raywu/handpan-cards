@@ -1,0 +1,14 @@
+# kills: QA3 hint row 390x844: after a tray drag ends the info button is still centred on the name input
+# suite: node --test --test-name-pattern QA3.hint.row.390x844:.after.a.tray.drag tests/editor_e2e.test.js
+# fault: editorDragRestore leaves a margin-top on the info button, so it sits off the name input's centre after a drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14608,6 +14608,7 @@ function editorDragRestore() {
+   const root = editorEl("editor");
+   if (!root) return;
+   root.classList.remove("dragging");
++  editorEl("editor-hint-toggle").style.marginTop = "10px";
+   root.classList.add("settling");
+   clearTimeout(editorSettleTimer);
+   editorSettleTimer = setTimeout(() => root.classList.remove("settling"), 250);

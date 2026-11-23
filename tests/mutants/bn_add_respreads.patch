@@ -1,0 +1,15 @@
+# kills: BN-M1: a drop on an untouched bottom ring puts the note at the drop angle and keeps every other note where it is drawn (symmetric snap), in one model
+# suite: node --test --test-name-pattern ^BN.M1..a.drop.on.an.untouched.bottom.ring.puts.the.note.at.the.drop.angle.and.keeps.every.other.note.where.it.is.drawn..symmetric.snap...in.one.model$ tests/editor_model.test.js
+# An add stores an unplaced note instead of the frozen list's new angle.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12914,7 +12914,7 @@
+   const list = editorFreezeBottom(m);
+   const at = change.add ? editorNames(next, ring).findIndex((n) => !editorNames(m, ring).includes(n)) : change.remove;
+   const dropped = change.add && change.angle !== undefined;
+-  if (change.add) list.splice(at, 0, snapSym(dropped ? change.angle : editorWidestMidpoint(list)));
++  if (change.add) list.splice(at, 0, null);
+   else list.splice(at, 1);
+   o.angles = { ...o.angles, bottom: list };
+   next.pins = m.pins.filter((p) => !(p.ring === ring && p.i === at && !change.add)).map((p) => (p.ring === ring && p.i >= at && change.add ? { ring, i: p.i + 1 } : p.ring === ring && p.i > at ? { ring, i: p.i - 1 } : p));

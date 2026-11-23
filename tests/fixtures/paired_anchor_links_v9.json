@@ -1,0 +1,24 @@
+{
+ "wireVersion": 9,
+ "note": "Hand-written profile-plus-between links. Append-only: a link here must open the same scale forever.",
+ "entries": [
+  {
+   "id": "kurd-between",
+   "link": "9/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/*D+AEOLIAN+10/pair-r57.r58.r60.r62.r64.r65.r67.r69.r72.-.-.-.-.-.-.-.-.-/between/35e987",
+   "anchor": "between",
+   "deckId": "custom:cb5fe66a"
+  },
+  {
+   "id": "kurd-between-named-palette",
+   "link": "9/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4_C5/My+pan/palette-3/pair-r57.r58.r60.r62.r64.r65.r67.r69.r72.-.-.-.-.-.-.-.-.-/between/a3c6be",
+   "anchor": "between",
+   "deckId": "custom:cb5fe66a"
+  },
+  {
+   "id": "hijaz-between-parent",
+   "link": "9/(Cs3)_Gs3_B3_Cs4_D4_F4_Fs4_Gs4_B4/*C%23+PHRYGIAN+9/parent-phrygian/pair-r56.r59.r61.r62.r65.r66.r68.r71.-.-.-.-.-.-.-.-.-.-/between/236d7f",
+   "anchor": "between",
+   "deckId": "custom:626198f8"
+  }
+ ]
+}

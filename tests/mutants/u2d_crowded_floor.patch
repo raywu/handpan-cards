@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15342,7 +15342,7 @@
+@@ -13328,7 +13328,7 @@ function editorPlace(m, ring, name, angle) {
    const placed = editorPlaceAt(m, ring, name, angle);
-   if (!placed.ok || !capped) return placed;
+   if (!placed.ok || !capped || editorIsEmpty(placed.value)) return placed;
    const floor = HPE.layout.labelFloor(editorSolve(placed.value).value.geom);
 -  if (!(floor < HPE.layout.LABEL_FLOOR_PT)) return placed;
 +  if (!(floor > HPE.layout.LABEL_FLOOR_PT)) return placed;
