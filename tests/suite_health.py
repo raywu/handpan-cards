@@ -56,7 +56,7 @@ FLOORS = {
     "tests/test_web_fonts.py": 10,
     "tests/test_zh_scale_pages.py": 30,
     # node
-    "tests/app.test.js": 800,
+    "tests/app.test.js": 801,
     "tests/e2e.test.js": 415,
     "tests/e2e_sync.test.js": 50,
     "tests/harness.test.js": 67,

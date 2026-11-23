@@ -4,9 +4,12 @@
 diff --git a/tools/indexnow.py b/tools/indexnow.py
 --- a/tools/indexnow.py
 +++ b/tools/indexnow.py
-@@ -47,3 +47,3 @@
+@@ -38,7 +38,7 @@ def main(argv=None):
+     ap.add_argument("--sitemap", default=os.path.join(ROOT, "sitemap.xml"))
+     ap.add_argument("--key-file", default=KEY_FILE)
      args = ap.parse_args(argv)
 -    if args.host != HOST:
 +    if False:
          print("indexnow: only %s is allowed, got %s" % (HOST, args.host), file=sys.stderr)
          return 2
+     key = read_key(args.key_file)
