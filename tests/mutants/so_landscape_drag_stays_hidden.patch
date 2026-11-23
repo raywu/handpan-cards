@@ -1,0 +1,14 @@
+# kills: SO: en 844x390: the idle prompt leaves the tab labels showing and a message still covers them
+# suite: node --test --test-name-pattern ^SO:.en.844x390..the.idle.prompt tests/editor_e2e.test.js
+# fault: A drag from the empty scale never clears the idle mark, so its message stays hidden in phone landscape.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14765,7 +14765,6 @@ function editorDragLift(d) {
+   if (d.src.chip) d.src.chip.classList.add("dragging");
+   const status = editorEl("editor-status");
+   status.removeAttribute("data-kind");
+-  status.removeAttribute("data-idle");
+   status.textContent = t("editor.dragging", { name: editorDragName(d.src) });
+ }
+ function editorDragMove(e) {

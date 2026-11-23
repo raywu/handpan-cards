@@ -1,0 +1,15 @@
+# kills: QA3 hint row 390x844: at rest the info button shares the name input's row, centred, transparent and flush right, and it never covers a control on either tab
+# suite: node --test --test-name-pattern QA3.hint.row.*at.rest tests/editor_e2e.test.js
+# fault: The info circle is pushed to the button's right edge instead of centred.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -914,7 +914,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ @media (max-width:420px){#editor-status{min-height:48px}}
+ #editor .editor-hintrow{display:flex; align-items:center; gap:var(--sp-2)}
+ #editor-hint-toggle{position:relative; z-index:4; flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
+-  display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
++  display:flex; align-items:center; justify-content:flex-end; background:none; border:0; box-shadow:none; color:#5E5850}
+ #scale-sheet #editor-hint-toggle, #scale-sheet #editor-hint-toggle:hover, #scale-sheet #editor-hint-toggle:active{background:none}
+ #editor-hint-toggle[hidden], #editor-hint-close[hidden]{display:none}
+ #editor-hint-close{position:absolute; z-index:6; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;

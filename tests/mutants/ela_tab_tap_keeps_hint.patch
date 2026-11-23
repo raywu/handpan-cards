@@ -1,0 +1,15 @@
+# kills: counts: both hint lines render under the counts on both tabs
+# suite: node --test --test-name-pattern counts.*both.hint.lines tests/editor_e2e.test.js
+# fault: Switching tabs closes the open hint card, so the hint no longer follows the tab switch.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14104,7 +14104,7 @@
+   s.tab = tab;
+   editorRenderTabs();
+   if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
+-  editorPlaceAreas();
++  editorSetAreas(false);
+   if (focus) editorEl("editor-tab-" + tab).focus();
+   return true;
+ }

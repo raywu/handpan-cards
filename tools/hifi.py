@@ -481,8 +481,10 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
         return BLUE if s == "root" else GREEN
 
     if has_mut:
-        tones = [(a, pd["main"]["orbit"], pd["main"]["r"], main.get(a),
-                  mut.get(a)) for a in pd["angles"]]
+        turn = g.get("turn", 0)
+        tones = [((a + turn) % 360, pd["main"]["orbit"], pd["main"]["r"],
+                  main.get((a + turn) % 360), mut.get((a + turn) % 360))
+                 for a in pd["angles"]]
     else:
         tones = [(pl[0], pl[1], pl[2], int(k), None)
                  for k, pl in sorted(place.items(), key=lambda kv: int(kv[0]))]

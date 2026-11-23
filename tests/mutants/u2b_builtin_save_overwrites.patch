@@ -6,10 +6,10 @@ diff --git a/index.html b/index.html
 +++ b/index.html
 @@ -15308,7 +15308,7 @@ function editorCommitOptions(m) {
  // A built-in never takes its own slot: it saves a new scale (D15).
- function editorSaveCommand(base, neotone, ownsSlot) {
+ function editorSaveCommand(base, unreadable, ownsSlot) {
    if (!base) return { type: "import", selectedInstanceId: selection.kind === "saved" ? selection.id : null };
--  if (base.selection.kind === "builtin" || (neotone && ownsSlot)) return { type: "save-as-separate" };
-+  if (neotone && ownsSlot) return { type: "save-as-separate" };
+-  if (base.selection.kind === "builtin" || (unreadable && ownsSlot)) return { type: "save-as-separate" };
++  if (unreadable && ownsSlot) return { type: "save-as-separate" };
    return { type: "edit", instanceId: base.selection.id, expectedRevision: base.revision };
  }
  

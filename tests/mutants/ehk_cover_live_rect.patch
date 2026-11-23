@@ -1,0 +1,15 @@
+# kills: EHK2 320x400 with the hint open Tab and Shift+Tab never land on a control under the card
+# suite: node --test --test-name-pattern ^EHK2.320x400 tests/editor_e2e.test.js
+# fault: The cover check reads the live rect and ignores the scroll Tab focus will cause.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14934,7 +14934,7 @@ function editorHintCovers(el) {
+   const a = editorEl("editor-areas").getBoundingClientRect(), r = el.getBoundingClientRect(), x = r.left + r.width / 2;
+   let y = r.top + r.height / 2;
+   for (let p = el.parentElement; p && p !== editorEl("editor"); p = p.parentElement) {
+-    if (p.scrollHeight <= p.clientHeight || !/auto|scroll/.test(getComputedStyle(p).overflowY)) continue;
++    continue;
+     const c = p.getBoundingClientRect();
+     if (y + r.height / 2 > c.bottom) y -= y + r.height / 2 - c.bottom;
+     else if (y - r.height / 2 < c.top) y += c.top - (y - r.height / 2);

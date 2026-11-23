@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15928,7 +15928,7 @@ function editorWithOverlay(markup, m, solved) {
+@@ -14186,7 +14186,7 @@ function editorWithOverlay(markup, m, solved) {
+     out += `<circle class="etarget eempty" data-ring="ding" cx="0" cy="${dy}" r="${dr}"/>`;
+     out += `<circle class="ekey" cx="0" cy="${dy}" r="${dr}" role="button" ${tab("ding:0")} aria-label="${escapeHtml(t("editor.note.aria_ding_empty"))}"/>`;
    }
-   const standard = editorKindOf(m) === "standard";
-   if (!standard && geom.place) out += editorNeoMarks(m, fields, geom);
 -  if (s && standard) {
 +  if (s && s.held && standard) {
-     for (const ring of ["inner", "bottom"]) {
+     const zones = empty ? EDITOR_RINGS : ["inner", "bottom"];
+     for (const ring of zones) {
        const picked = s.zone === ring;
-       if (ringIds(fields, ring).length && !picked) continue;

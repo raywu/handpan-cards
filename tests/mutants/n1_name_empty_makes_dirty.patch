@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15728,7 +15728,6 @@ const editorBare = (m) => {
-   const o = { ...rest.options };
+@@ -13455,7 +13455,6 @@ const editorBare = (m) => {
+   if (editorIsEmpty(m)) delete o.profile;
    if (o.anchor === "one") delete o.anchor;
    if (o.mirrorBottom === !!o.mirror) delete o.mirrorBottom;
 -  if (!o.name) delete o.name;

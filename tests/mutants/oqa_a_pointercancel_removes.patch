@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16774,7 +16774,7 @@ function editorDragEnd(e) {
-   else editorDragRestore();
+@@ -14993,7 +14993,7 @@ function editorSaveIntoView() {
+   if (save && window.matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px)").matches) save.scrollIntoView({ block: "nearest" });
  }
  function editorDragUp(e) {
 -  if (editorDrag && e.pointerId === editorDrag.id) editorDragEnd(e.type === "pointerup" ? e : null);

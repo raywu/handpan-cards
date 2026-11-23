@@ -47,12 +47,12 @@ test("SE-G1: a v6 record is read exactly when angles.inner is pinned and the rec
   assert.strictEqual(read(app, { v: 9, s: SCALE, o: PIN }).ok, false, "record 9 is protected");
 });
 
-test("SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 7", () => {
+test("SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 8", () => {
   for (const flag of [true, false]) {
     const app = appBoot();
     app.run(`HPE.core.PROFILE_ENABLED = ${flag}`);
     assert.strictEqual(app.get("checkShareVersion(6).ok"), true, "PROFILE_ENABLED=" + flag);
-    assert.strictEqual(plain(app.get("checkShareVersion(7)")).code, "NEEDS_NEWER_APP");
+    assert.strictEqual(plain(app.get("checkShareVersion(8)")).code, "NEEDS_NEWER_APP");
     assert.strictEqual(read(app, { v: 6, s: SCALE, o: PIN }).ok, true, "PROFILE_ENABLED=" + flag);
   }
 });
@@ -168,45 +168,25 @@ test("SE-R4-1: a v6 record round-trips byte-equal through moveUrl and moveImport
 // ---- U2a: the editor model, its edit primitives, Undo/Redo and the flag ----
 // docs/plans/2026-11-06-scale-editor-u2-split.md section 3 (U2a); the oracles are
 // the golden parity fixture, the share fixtures and the engine itself.
-const flagHelper = require("./helpers/editor_flag.js");
 const GOLDEN = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "engine_parity_golden_v1.json"), "utf8"));
 const CORPUS = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "engine_corpus_v1.json"), "utf8"));
 const js = (v) => JSON.stringify(v);
 const model = (app) => (text, options) => plain(app.get(`(() => { const r = editorLoad(${js(text)}, ${js(options)}); return r; })()`));
 
-test("U2a-F1: the flag helper substitutes the one ONE_PANEL line, length-preserving, and refuses any other count", () => {
-  assert.strictEqual((HTML.match(/const ONE_PANEL = (?:true |false);/g) || []).length, 1);
-  const on = flagHelper.apply(HTML, true);
-  assert.strictEqual(on.length, HTML.length);
-  assert.ok(on.includes("const ONE_PANEL = true ;"));
-  assert.strictEqual(flagHelper.apply(flagHelper.apply(on, false), true), HTML);
-  assert.throws(() => flagHelper.apply("no flag here", true), /exactly one/);
-  assert.throws(() => flagHelper.apply("const ONE_PANEL = false;\nconst ONE_PANEL = false;", true), /exactly one/);
-});
-
-test("U2a-F2: the flag ships on (U2h), and boot({onePanel}) flips it without moving a byte", () => {
-  assert.strictEqual(appBoot().get("ONE_PANEL"), true);
-  assert.strictEqual(appBoot({ onePanel: false }).get("ONE_PANEL"), false);
-  assert.strictEqual(appBoot({ onePanel: true }).get("ONE_PANEL"), true);
-});
-
 // The suites that name index.html themselves, enumerated from the tree (not by one
-// grep of a call shape). Wrapping each loader in editor_flag.apply belongs to the lane
-// that turns the flag on (U2h): until then a NEW direct reader fails here, so the
-// inventory cannot grow silently, and every default boot() is already covered by
-// boot({onePanel}).
+// grep of a call shape). A NEW direct reader fails here, so the inventory cannot
+// grow silently.
 const DIRECT_READERS = [
-  "tests/app.test.js", "tests/coverage_merge.test.js", "tests/drawer_drag.test.js", "tests/drawer_grid.test.js",
-  "tests/drawer_seats.test.js", "tests/e2e.test.js", "tests/e2e_sync.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/editor_shell.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
-  "tests/helpers/dump_app_render.js", "tests/layout.test.js", "tests/link_corpus.test.js",
-  "tests/mutation_harness.test.js", "tests/pdfcards.test.js", "tests/sandbox_events.test.js", "tests/select.test.js",
-  "tests/sequence.test.js", "tests/storage_corpus.test.js", "tests/swipe.test.js", "tests/sync_opaque_probe.test.js",
+  "tests/app.test.js", "tests/coverage_merge.test.js", "tests/e2e.test.js", "tests/e2e_sync.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/editor_shell.test.js", "tests/harness.test.js", "tests/helpers/cdp.js",
+  "tests/helpers/dump_app_render.js", "tests/helpers/so_status_inventory.js", "tests/layout.test.js", "tests/link_corpus.test.js",
+  "tests/mutation_harness.test.js", "tests/pdfcards.test.js", "tests/select.test.js",
+  "tests/sequence.test.js", "tests/storage_corpus.test.js", "tests/swipe.test.js", "tests/sync_opaque_probe.test.js", "tests/sync_v6_v7.test.js",
 ];
 test("U2a-F3: no suite starts reading index.html directly without joining the inventory", () => {
   const root = path.join(__dirname, "..");
   const files = [...fs.readdirSync(__dirname).filter((f) => f.endsWith(".js")).map((f) => "tests/" + f),
     ...fs.readdirSync(path.join(__dirname, "helpers")).filter((f) => f.endsWith(".js")).map((f) => "tests/helpers/" + f)];
-  const named = files.filter((f) => !/editor_model\.test\.js$|editor_flag\.js$/.test(f) &&
+  const named = files.filter((f) => !/editor_model\.test\.js$/.test(f) &&
     fs.readFileSync(path.join(root, f), "utf8").includes("index.html")).sort();
   assert.deepStrictEqual(named, [...DIRECT_READERS].sort());
 });
@@ -313,10 +293,10 @@ test("U2a-P7: a v7 profile link and a v8 pinned-cyclops link (with at-, ai- and 
   assert.strictEqual(plain(app.get(`editorExport(editorLoadShare(${js(v7)}).value).record`)).v, 5);
 });
 
-test("U2a-P4b: a v9 link is refused through the existing needs-newer path", () => {
+test("U2a-P4b: a v10 link is refused through the existing needs-newer path", () => {
   const app = appBoot();
   const v8 = PIN8(app);
-  const forged = "9" + v8.slice(1);
+  const forged = "A" + v8.slice(1);
   const via = plain(app.get(`(() => { const a = HPE.share.decode(${js(forged)}); const b = editorLoadShare(${js(forged)}); return { a: a.code, b: b.code, ok: b.ok }; })()`));
   assert.strictEqual(via.a, "NEEDS_NEWER_APP");
   assert.strictEqual(via.b, "NEEDS_NEWER_APP");
@@ -378,24 +358,25 @@ test("U2a-M1: adding or removing a note resets that ring's seats to solved and k
 
 test("U2a-M2: a pinned angle survives a count change; a clash the change creates unpins the newest pin (D18)", () => {
   const app = appBoot();
-  const kept = run(app, `${LOAD("[A2] [B2] " + BASE.slice(0), { angles: { bottom: [240, null] } })}
-    const added = editorAdd(m0, "bottom", "C3");
+  const kept = run(app, `${LOAD(BASE, { angles: { inner: [150, null] } })}
+    const added = editorAdd(m0, "inner", "E5");
     return { angles: added.value.options.angles, notice: added.notice };`);
-  assert.deepStrictEqual(kept.angles, { bottom: [240, null, null] }, "the pin stays, the newcomer is auto");
+  assert.deepStrictEqual(kept.angles, { inner: [150, null, null] }, "the pin stays, the newcomer is auto");
   assert.strictEqual(kept.notice, undefined);
-  const clash = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [210, null] } })}
-    const added = editorAdd(m0, "bottom", "C3");
+  const clash = run(app, `${LOAD(BASE, { angles: { inner: [125, null] } })}
+    const added = editorAdd(m0, "inner", "E5");
     return { ok: added.ok, angles: added.value.options.angles, notice: added.notice, solved: editorExport(added.value).solve.ok };`);
   assert.strictEqual(clash.ok, true);
   assert.strictEqual(clash.angles, undefined, "the clashing pin is gone and the empty list dropped");
-  assert.deepStrictEqual(clash.notice, { unpinned: [{ ring: "bottom", i: 0 }] });
+  assert.deepStrictEqual(clash.notice, { unpinned: [{ ring: "inner", i: 0 }] });
   assert.strictEqual(clash.solved, true);
-  const newest = run(app, `${LOAD(WITH_BOTTOM, { angles: { bottom: [240, null] } })}
-    const second = editorSetAngle(m0, "bottom", 1, 100);
-    const added = editorAdd(second.value, "bottom", "C3");
-    return { pins: second.value.pins, angles: added.value.options.angles, notice: added.notice };`);
-  assert.deepStrictEqual(newest.notice.unpinned[0], { ring: "bottom", i: 1 }, "the pin set last goes first");
-  assert.deepStrictEqual(newest.angles, { bottom: [240, null, null] }, "the older pin stays when removing the newest clears the clash");
+  const newest = run(app, `${LOAD(BASE, { angles: { inner: [150, null] } })}
+    const second = editorSetAngle(m0, "inner", 1, 55);
+    const added = editorAdd(second.value, "inner", "E5");
+    return { ok: second.ok, pins: second.value.pins, angles: added.value.options.angles, notice: added.notice };`);
+  assert.strictEqual(newest.ok, true);
+  assert.deepStrictEqual(newest.notice.unpinned[0], { ring: "inner", i: 1 }, "the pin set last goes first");
+  assert.deepStrictEqual(newest.angles, { inner: [150, null, null] }, "the older pin stays when removing the newest clears the clash");
 });
 
 test("U2a-M3: primitives are pure and refuse without changing the model", () => {
@@ -526,82 +507,75 @@ test("U2a-H3: an action that changes nothing adds no Undo step", () => {
   assert.strictEqual(r.real, 1, "a real change still adds its step");
 });
 
-// The legacy sheet's own functions are the oracle: the same scale and options are put in the
-// sheet's globals, the sheet's function runs, and the model must land on the same lists.
-const LEGACY = (text, opts) => `
-  const seed = HPE.core.parseSeed(${js(text)}).value;
-  const opts = ${js(opts || {})};
-  lastSeed = seed;
-  layoutSeats = opts.seats ? JSON.parse(JSON.stringify(opts.seats)) : null;
-  layoutAngles = opts.angles ? JSON.parse(JSON.stringify(opts.angles)) : null;
-  lastSolved = HPE.layout.solve({ fields: seed.fields, options: { ...seed.options, ...opts } }).value;
-  resyncSheet = () => {}; paintLayout = () => {};`;
-const legacy = (app, text, opts, call) => run(app, `${LEGACY(text, opts)}
-  const ok = ${call}; return { ok, angles: (layoutAngles && layoutAngles.bottom) || null, seats: layoutSeats };`);
+// The retired sheet's own functions were the oracle. Every literal in X1-X5 below was recorded by
+// running origin/main's (a4ecfc2e) swapSeats and slideNote on the same scale and options with the
+// sheet's globals set, ok flag included; the live oracle is gone with the sheet, the literals stay.
 const modelRun = (app, text, opts, call) => run(app, `${LOAD(text, opts)}
+  const before = JSON.stringify(m0);
   const r = ${call};
-  if (!r.ok) return { ok: false, code: r.code, kept: JSON.stringify(m0) === JSON.stringify(m0) };
+  if (!r.ok) return { ok: false, code: r.code, kept: JSON.stringify(m0) === before };
   const o = r.value.options;
   return { ok: true, angles: (o.angles && o.angles.bottom) || null, seats: o.seats || null,
     inner: (o.angles && o.angles.inner) || null, link: editorExport(r.value).code,
-    solved: editorExport(r.value).solve.ok, noop: JSON.stringify(r.value) === JSON.stringify(m0) };`);
+    solved: editorExport(r.value).solve.ok, noop: JSON.stringify(r.value) === before, kept: JSON.stringify(m0) === before };`);
 const BOTTOM3 = "[A2] [B2] [C3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4";
 
-test("U2a-X1: exchanging two bottom notes trades their solved angles exactly as the sheet does, pinning both", () => {
+test("U2a-X1: exchanging two bottom notes matches the recorded sheet output, pinning both", () => {
   const app = appBoot();
   const cases = [
-    { opts: { angles: { bottom: [null, 240, null] } }, i: 0, j: 1, expect: [240, 330, null] },
-    { opts: { angles: { bottom: [null, null, 240] } }, i: 0, j: 1, expect: null },
-    { opts: { angles: { bottom: [60, 240, null] } }, i: 1, j: 0, expect: [240, 60, null] },
+    { opts: { angles: { bottom: [null, 240, null] } }, i: 0, j: 1, recorded: { ok: true, angles: [240, 330, null], seats: null } },
+    { opts: { angles: { bottom: [null, null, 240] } }, i: 0, j: 1, recorded: { ok: true, angles: [210, 330, 240], seats: null } },
+    { opts: { angles: { bottom: [60, 240, null] } }, i: 1, j: 0, recorded: { ok: true, angles: [240, 60, null], seats: null } },
   ];
   for (const c of cases) {
     const label = js(c.opts) + " " + c.i + "," + c.j;
-    const want = legacy(app, BOTTOM3, c.opts, `swapSeats("bottom", ${c.i}, ${c.j})`);
-    assert.strictEqual(want.ok, true, label);
-    if (c.expect) assert.deepStrictEqual(want.angles, c.expect, label + " the sheet's own result");
+    const want = c.recorded;
     const viaExchange = modelRun(app, BOTTOM3, c.opts, `editorExchangeAngles(m0, "bottom", ${c.i}, ${c.j})`);
     const viaSwap = modelRun(app, BOTTOM3, c.opts, `editorSwapSeats(m0, "bottom", ${c.i}, ${c.j})`);
     for (const got of [viaExchange, viaSwap]) {
-      assert.strictEqual(got.ok, true, label);
+      assert.strictEqual(got.ok, want.ok, label);
       assert.deepStrictEqual(got.angles, want.angles, label + " angles");
       assert.deepStrictEqual(got.seats, want.seats, label + " seats");
       assert.strictEqual(got.solved, true, label);
       assert.strictEqual(got.noop, false, label + " the exchange changed the model");
+      assert.strictEqual(got.kept, true, label + " the input model is untouched");
     }
-    assert.strictEqual(viaExchange.link, viaSwap.link, label + " one link");
+    const wantCode = "at-" + want.angles.map((a) => (a === null ? "" : a)).join(",");
+    for (const got of [viaExchange, viaSwap]) assert.ok(got.link.includes(wantCode), label + " the link carries the recorded angles " + wantCode + ": " + got.link);
   }
   const first = modelRun(app, BOTTOM3, cases[0].opts, 'editorExchangeAngles(m0, "bottom", 0, 1)');
   assert.ok(first.link.includes("at-240,330,"), "the link carries both traded angles: " + first.link);
 });
 
-test("U2a-X2: an exchange the 5 degree steps cannot hold is refused as the sheet refuses it", () => {
+test("U2a-X2: an exchange the 5 degree steps cannot hold is refused and moves nothing, as the recorded sheet output is", () => {
   const app = appBoot();
   const n = 23;
   const notes = Array.from({ length: n }, (_, k) => `[${"CDEFGAB"[k % 7]}${1 + Math.floor(k / 7)}]`).join(" ");
   const text = notes + " (A3) C4 D4 E4 F4";
   const opts = { angles: { bottom: Array.from({ length: n }, (_, k) => (k === 22 ? 90 : null)) } };
+  const recorded = { ok: false, angles: opts.angles.bottom, seats: null };
   for (const [a, b] of [[0, 2], [2, 0]]) {
-    const want = legacy(app, text, opts, `swapSeats("bottom", ${a}, ${b})`);
-    assert.strictEqual(want.ok, false, "the sheet refuses " + a + "," + b);
-    assert.deepStrictEqual(want.angles, opts.angles.bottom, "and moves nothing");
     for (const fn of ["editorExchangeAngles", "editorSwapSeats"]) {
       const got = modelRun(app, text, opts, `${fn}(m0, "bottom", ${a}, ${b})`);
-      assert.strictEqual(got.ok, false, fn + " " + a + "," + b);
+      assert.strictEqual(got.ok, recorded.ok, fn + " " + a + "," + b);
+      assert.strictEqual(got.kept, true, fn + " " + a + "," + b + " moves nothing");
+      const after = run(app, `${LOAD(text, opts)} ${fn}(m0, "bottom", ${a}, ${b}); return m0.options.angles.bottom;`);
+      assert.deepStrictEqual(after, recorded.angles, fn + " " + a + "," + b + " the pins stay where they were");
     }
   }
 });
 
-test("U2a-X3: a seat swap follows the sheet: seats without bottom pins, the angle trade with them", () => {
+test("U2a-X3: a seat swap matches the recorded sheet output: seats without bottom pins, the angle trade with them", () => {
   const app = appBoot();
   const cases = [
-    { text: BASE, opts: {}, ring: "rim", i: 0, j: 3 },
-    { text: WITH_BOTTOM, opts: { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, ring: "rim", i: 1, j: 2 },
-    { text: BOTTOM3, opts: {}, ring: "bottom", i: 0, j: 2 },
-    { text: BOTTOM3, opts: { seats: { bottom: [1, 0, 2] } }, ring: "bottom", i: 0, j: 1 },
+    { text: BASE, opts: {}, ring: "rim", i: 0, j: 3, recorded: { ok: true, seats: { rim: [3, 1, 2, 0, 4, 5, 6, 7] }, angles: null } },
+    { text: WITH_BOTTOM, opts: { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7] } }, ring: "rim", i: 1, j: 2, recorded: { ok: true, seats: { rim: [1, 2, 0, 3, 4, 5, 6, 7] }, angles: null } },
+    { text: BOTTOM3, opts: {}, ring: "bottom", i: 0, j: 2, recorded: { ok: true, seats: { bottom: [2, 1, 0] }, angles: null } },
+    { text: BOTTOM3, opts: { seats: { bottom: [1, 0, 2] } }, ring: "bottom", i: 0, j: 1, recorded: { ok: true, seats: null, angles: null } },
   ];
   for (const c of cases) {
     const label = c.ring + " " + c.i + "," + c.j + " " + js(c.opts);
-    const want = legacy(app, c.text, c.opts, `swapSeats(${js(c.ring)}, ${c.i}, ${c.j})`);
+    const want = c.recorded;
     const got = modelRun(app, c.text, c.opts, `editorSwapSeats(m0, ${js(c.ring)}, ${c.i}, ${c.j})`);
     assert.strictEqual(got.ok, want.ok, label);
     assert.deepStrictEqual(got.seats, want.seats, label + " seats");
@@ -612,34 +586,34 @@ test("U2a-X3: a seat swap follows the sheet: seats without bottom pins, the angl
   assert.strictEqual(cyclops.angles, null);
 });
 
-test("U2a-X4: pinning a bottom note on a ring with a custom seat order first pins every note where it sits, as the sheet does", () => {
+test("U2a-X4: pinning a bottom note on a ring with a custom seat order matches the recorded sheet output: every note is pinned where it sits first", () => {
   const app = appBoot();
   const seated = { seats: { bottom: [1, 0, 2] } };
-  const want = legacy(app, BOTTOM3, seated, `slideNote({ ring: "bottom", i: 2 }, 95, "nudge", 1)`);
-  assert.deepStrictEqual(want.angles, [210, 330, 95], "the sheet's own result");
-  assert.strictEqual(want.seats, null, "the seat order is folded into the angles");
+  const want = { ok: true, angles: [210, 330, 95], seats: null };
   const got = modelRun(app, BOTTOM3, seated, 'editorSetAngle(m0, "bottom", 2, 95)');
-  assert.strictEqual(got.ok, true);
-  assert.deepStrictEqual(got.angles, want.angles);
-  assert.strictEqual(got.seats, null);
+  assert.strictEqual(got.ok, want.ok);
+  assert.deepStrictEqual(got.angles, want.angles, "the sheet's own result");
+  assert.strictEqual(got.seats, want.seats, "the seat order is folded into the angles");
   assert.strictEqual(got.solved, true);
+  const plainWant = { ok: true, angles: [null, 300, null], seats: null };
   const plain3 = modelRun(app, BOTTOM3, {}, 'editorSetAngle(m0, "bottom", 1, 300)');
-  const plainWant = legacy(app, BOTTOM3, {}, `slideNote({ ring: "bottom", i: 1 }, 300, "nudge", 1)`);
+  assert.strictEqual(plain3.ok, plainWant.ok);
   assert.deepStrictEqual(plain3.angles, plainWant.angles, "no seat order: only the one note is pinned");
-  assert.deepStrictEqual(plain3.angles, [null, 300, null]);
+  assert.strictEqual(plain3.seats, plainWant.seats);
 });
 
-test("U2a-X5: pinning a note where it already sits changes nothing unless a seat order is being folded", () => {
+test("U2a-X5: pinning a note where it already sits changes nothing, as the recorded sheet output does, unless a seat order is being folded", () => {
   const app = appBoot();
   const solvedAt = run(app, `${LOAD(BOTTOM3)}
     const s = HPE.layout.solve({ fields: m0.fields, options: m0.options }).value;
     return ringIds(s.fields, "bottom").map((id) => s.fields[id][4]);`);
-  const want = legacy(app, BOTTOM3, {}, `slideNote({ ring: "bottom", i: 1 }, ${solvedAt[1]}, "nudge", 1)`);
-  assert.strictEqual(want.angles, null, "the sheet pins nothing");
+  assert.deepStrictEqual(solvedAt, [330, 210, 90], "the solved angles the sheet's slideNote was recorded against");
+  const want = { ok: true, angles: null, seats: null };
   const got = modelRun(app, BOTTOM3, {}, `editorSetAngle(m0, "bottom", 1, ${solvedAt[1]})`);
-  assert.strictEqual(got.ok, true);
+  assert.strictEqual(got.ok, want.ok);
   assert.strictEqual(got.noop, true);
-  assert.strictEqual(got.angles, null);
+  assert.strictEqual(got.angles, want.angles, "the sheet pins nothing");
+  assert.strictEqual(got.seats, want.seats);
 });
 
 test("U2a-X6: the inner ring folds its seat order into pins the same way", () => {
@@ -766,4 +740,316 @@ test("N1-M7: a profiled model keeps its name through the save options, and the p
     const back = editorPanType(model, "standard").value;
     return { kept: editorCommitOptions(model).name, profile: !!editorCommitOptions(model).profile, back: back.options.name };`);
   assert.deepStrictEqual(r, { kept: "Mine", profile: true, back: "Mine" });
+});
+
+const MAIN_A4 = fs.readFileSync(path.join(__dirname, "fixtures", "shipped_client_a4ecfc2e.html.txt"), "utf8");
+
+// docs/ENGINE-SPEC.md 18.6 rule I1: a record the shipped client cannot read never owns a seeded slot.
+test("SE-I1-1: readSavedRecord refuses a v6 record that carries replaces, and still reads a v6 record without it", () => {
+  const app = appBoot();
+  assert.strictEqual(read(app, { v: 6, s: SCALE, o: { ...PIN, replaces: "kurd" } }).ok, false);
+  assert.strictEqual(read(app, { v: 6, s: SCALE, o: { ...PIN } }).ok, true);
+});
+
+test("SE-I1-2: savedCandidate refuses a pinned (v6) candidate for replace-builtin, and accepts it for save-as-separate", () => {
+  const app = appBoot();
+  const run = (type) => plain(app.get(`(() => { const b = buildGenerated(${JSON.stringify(SCALE)}, ${JSON.stringify(PIN)});
+    const c = savedCandidate({ type: ${JSON.stringify(type)}, candidate: { record: scaleRecord(seedOf(b.value)), deck: b.value } });
+    return { ok: c.ok, v: c.record && c.record.v }; })()`));
+  assert.strictEqual(run("replace-builtin").ok, false);
+  const sep = run("save-as-separate");
+  assert.strictEqual(sep.ok, true);
+  assert.strictEqual(sep.v, 6);
+});
+
+test("SE-I1-3: editorSaveCommand sends a slot owner with an unreadable (pinned or Neotone) record to save-as-separate", () => {
+  const app = appBoot();
+  assert.deepStrictEqual(plain(app.get(`editorSaveCommand({ selection: { kind: "saved", id: "u1" }, revision: 3 }, true, true)`)), { type: "save-as-separate" });
+  assert.strictEqual(app.get(`editorSaveCommand({ selection: { kind: "saved", id: "u1" }, revision: 3 }, false, true).type`), "edit");
+});
+
+test("SE-I1-4: main a4ecfc2e writes a slot owner; the RC saves it with pinned inner angles; the owner row stays v4, the pinned save is a separate row, and a4ecfc2e is not protected", async () => {
+  const origin = createOrigin({ storage: {} });
+  const m = await sharedBoot(origin, MAIN_A4);
+  await m.getAsync(`generateDeck(${JSON.stringify("(D3) A3 C4 D4 E4 F4 G4 A4 C5")}, { name: "ACOUSTIC" })`);
+  await settle();
+  const r1 = await m.getAsync(`(async () => { const b = buildGenerated(${JSON.stringify(SCALE)}, { name: "MYKURD" });
+    const c = savedCandidate({ type: "replace-builtin", candidate: { record: scaleRecord(seedOf(b.value)), deck: b.value } });
+    const r = await commitSaved({ type: "replace-builtin", collectionId: savedState.collectionId, seedId: DEFAULT_DECK,
+      expectedSlotStateRevision: savedState.slotStateRevision, expectedOwnerId: savedState.slots[DEFAULT_DECK] || null, candidate: c });
+    return { ok: r.ok }; })()`);
+  assert.strictEqual(r1.ok, true);
+  await settle();
+  const e0 = envelopeOf(m);
+  const ownerId = e0.slots[Object.keys(e0.slots)[0]];
+  const ownerRow = e0.entries.find((e) => e.instanceId === ownerId);
+  const rc = await sharedBoot(origin, HTML);
+  const res = await rc.getAsync(`(async () => {
+    const owner = savedEntries.get(${JSON.stringify(ownerId)});
+    const b = buildGenerated(${JSON.stringify(SCALE)}, { angles: { inner: [125, 55] }, name: "MYKURD" });
+    const base = { selection: { kind: "saved", id: ${JSON.stringify(ownerId)} }, revision: owner.revision };
+    const command = editorSaveCommand(base, innerPinned(b.value.options), true);
+    const candidate = { record: scaleRecord(seedOf(b.value)), deck: b.value };
+    const r = await commitSaved({ ...command, collectionId: savedState.collectionId, candidate });
+    return { ok: r.ok, type: command.type };
+  })()`);
+  await settle();
+  assert.deepStrictEqual(plain(res), { ok: true, type: "save-as-separate" });
+  const e1 = envelopeOf(rc);
+  assert.deepStrictEqual(e1.entries.find((e) => e.instanceId === ownerId).record, ownerRow.record, "the slot owner row is untouched");
+  const v6 = e1.entries.filter((e) => e.record.v === 6);
+  assert.strictEqual(v6.length, 1);
+  assert.strictEqual(v6[0].record.o.replaces, undefined, "the pinned row owns no slot");
+  const m2 = await sharedBoot(origin, MAIN_A4);
+  assert.notStrictEqual(m2.get("savedMode"), "protected", "a4ecfc2e is not protected");
+  assert.ok(m2.get("savedEntries.size") > 0, "a4ecfc2e still shows saved scales");
+});
+
+test("SE-I1-5: an edit command that would turn a slot owner into a v6 row is refused", async () => {
+  const origin = createOrigin({ storage: {} });
+  const rc = await sharedBoot(origin, HTML);
+  await rc.getAsync(`generateDeck(${JSON.stringify("(D3) A3 C4 D4 E4 F4 G4 A4 C5")}, { name: "ACOUSTIC" })`);
+  await settle();
+  const res = await rc.getAsync(`(async () => { const b = buildGenerated(${JSON.stringify(SCALE)}, { name: "MYKURD" });
+    const c = savedCandidate({ type: "replace-builtin", candidate: { record: scaleRecord(seedOf(b.value)), deck: b.value } });
+    const r = await commitSaved({ type: "replace-builtin", collectionId: savedState.collectionId, seedId: DEFAULT_DECK,
+      expectedSlotStateRevision: savedState.slotStateRevision, expectedOwnerId: savedState.slots[DEFAULT_DECK] || null, candidate: c });
+    const id = r.instanceId, rev = savedEntries.get(id).revision;
+    const p = buildGenerated(${JSON.stringify(SCALE)}, { angles: { inner: [125, 55] }, name: "MYKURD" });
+    const e = await commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: rev,
+      candidate: { record: scaleRecord(seedOf(p.value)), deck: p.value } });
+    return { placed: r.ok, ok: e.ok, v: savedEntries.get(id).record.v }; })()`);
+  assert.strictEqual(res.placed, true);
+  assert.strictEqual(res.ok, false);
+  assert.strictEqual(res.v, 4);
+});
+
+/* ---- BN (TRI-59): bottom notes stay put on add and remove ---- */
+const BN_BOT = ["A2", "B2", "C3", "E3", "F3", "G3", "Bb2", "Db3", "Eb3", "Gb3", "Ab3", "B3"];
+const bnText = (n) => (n ? BN_BOT.slice(0, n).map((x) => `[${x}]`).join(" ") + " " : "") + BASE;
+const BN_FN = `const drawn = (m) => { const s = editorSolve(m); return s.ok ? editorAnglesOf(s, "bottom") : null; };
+  const norm = (a) => ((a % 360) + 360) % 360;
+  const near = (a, b) => { const d = Math.abs(norm(a - b)); return Math.min(d, 360 - d); };
+  const right = (a) => norm(a - 270) < 180;
+  const byName = (m) => { const names = editorNames(m, "bottom"), at = drawn(m); return Object.fromEntries(names.map((n, k) => [n, at[k]])); };
+  const sameWithin = (before, after) => Object.keys(before).every((n) => after[n] !== undefined && near(before[n], after[n]) <= 2.5 + 1e-9 && right(before[n]) === right(after[n]));
+  const widest = (angles) => { const s = angles.map(norm).sort((a, b) => a - b); let best = null;
+    s.forEach((a, k) => { const gap = (s[(k + 1) % s.length] - a + 360) % 360 || 360; const mid = norm(a + gap / 2);
+      const c = { mid, gap, d: near(mid, 270), r: right(mid) };
+      if (!best || c.gap > best.gap + 1e-9 || (Math.abs(c.gap - best.gap) < 1e-9 && (c.d < best.d - 1e-9 || (Math.abs(c.d - best.d) < 1e-9 && c.r && !best.r)))) best = c; });
+    return best.mid; };`;
+
+test("BN-M1: a drop on an untouched bottom ring puts the note at the drop angle and keeps every other note where it is drawn (symmetric snap), in one model", () => {
+  const app = appBoot();
+  for (let n = 1; n <= 11; n += 1) {
+    const r = run(app, `${BN_FN} ${LOAD(bnText(n), {})}
+      const before = byName(m0);
+      for (const angle of [270, 345, 15, 195, 165, 120, 60, 300, 240]) {
+        const placed = editorPlaceAt(m0, "bottom", ${js(BN_BOT[n])}, angle);
+        if (!placed.ok) continue;
+        const after = byName(placed.value);
+        return { angle, at: after[${js(BN_BOT[n])}], kept: sameWithin(before, after), size: Object.keys(after).length, stored: placed.value.options.angles.bottom.length };
+      }
+      return null;`);
+    assert.ok(r, `n=${n} has a free drop angle`);
+    assert.strictEqual(r.at, r.angle, `n=${n} the new note is where it was dropped`);
+    assert.strictEqual(r.kept, true, `n=${n} the others stay within the snap`);
+    assert.strictEqual(r.size, n + 1);
+    assert.strictEqual(r.stored, n + 1, `n=${n} every note is stored`);
+  }
+});
+
+test("BN-M2: an add with no position lands in the middle of the widest empty stretch (nearest bottom centre, right first on a tie); the others stay", () => {
+  const app = appBoot();
+  for (let n = 1; n <= 11; n += 1) {
+    const r = run(app, `${BN_FN} ${LOAD(bnText(n), {})}
+      const before = byName(m0);
+      const added = editorAdd(m0, "bottom", ${js(BN_BOT[n])});
+      const after = byName(added.value);
+      const others = { ...after }; delete others[${js(BN_BOT[n])}];
+      return { ok: added.ok, want: widest(Object.values(others)), at: after[${js(BN_BOT[n])}], kept: sameWithin(before, after), notice: added.notice };`);
+    assert.strictEqual(r.ok, true, `n=${n}`);
+    const gap = Math.abs(r.at - r.want);
+    assert.ok(Math.min(gap, 360 - gap) <= 2.5 + 1e-9, `n=${n} lands in the middle of the widest stretch of the frozen ring (${r.want}), got ${r.at}`);
+    assert.strictEqual(r.kept, true, `n=${n}`);
+    assert.strictEqual(r.notice, undefined, `n=${n} the add never unpins or resets anything`);
+  }
+  const two = run(app, `${LOAD(bnText(2), {})} const a = editorAdd(m0, "bottom", "C3"); return a.value.options.angles;`);
+  assert.deepStrictEqual(two, { bottom: [0, 180, 270] }, "the 90 and 270 midpoints tie; the one nearest bottom centre wins");
+  const one = run(app, `${LOAD(bnText(1), {})} const a = editorAdd(m0, "bottom", "B2"); return a.value.options.angles;`);
+  assert.deepStrictEqual(one, { bottom: [90, 270] });
+});
+
+test("BN-M3: removing a bottom note keeps every other note where it is drawn", () => {
+  const app = appBoot();
+  for (let n = 2; n <= 12; n += 1) {
+    for (let i = 0; i < n; i += 1) {
+      const r = run(app, `${BN_FN} ${LOAD(bnText(n), {})}
+        const before = byName(m0);
+        const removed = editorRemove(m0, "bottom", ${i});
+        const after = byName(removed.value);
+        delete before[editorNames(m0, "bottom")[${i}]];
+        return { ok: removed.ok, kept: sameWithin(before, after), count: Object.keys(after).length, pins: removed.value.pins.filter((p) => p.ring === "bottom").length };`);
+      assert.strictEqual(r.ok, true, `n=${n} i=${i}`);
+      assert.strictEqual(r.kept, true, `n=${n} i=${i}`);
+      assert.strictEqual(r.count, n - 1);
+      assert.strictEqual(r.pins, n - 1, `n=${n} i=${i} every kept note is pinned`);
+    }
+  }
+});
+
+test("BN-M4: an add or remove that leaves every note on its even spot stores no bottom list and no bottom pins, and the link has no angle field", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(bnText(2), {})}
+    const grown = editorAdd(m0, "bottom", "C3");
+    const back = editorRemove(grown.value, "bottom", 2);
+    return { angles: back.value.options.angles, pins: back.value.pins, link: editorExport(back.value).code, grownLink: editorExport(grown.value).code };`);
+  assert.strictEqual(r.angles, undefined);
+  assert.deepStrictEqual(r.pins, []);
+  assert.doesNotMatch(r.link, /at-/);
+  assert.match(r.grownLink, /at-0,180,270/);
+});
+
+test("BN-M5: a drop onto a taken spot is refused as no room and leaves the model unchanged; a no-position add never refuses for room", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(bnText(3), {})}
+    const snap = JSON.stringify(m0);
+    const clash = editorPlaceAt(m0, "bottom", "E3", 200);
+    const onTop = editorPlaceAt(m0, "bottom", "E3", 90);
+    return { clash: { ok: clash.ok, code: clash.code, reason: clash.reason }, onTop: onTop.ok, same: snap === JSON.stringify(m0) };`);
+  assert.strictEqual(r.clash.ok, false);
+  assert.strictEqual(r.clash.code, "NO_ROOM");
+  assert.match(r.clash.reason, /E3 has no room at 200/);
+  assert.strictEqual(r.onTop, false);
+  assert.strictEqual(r.same, true);
+  const crowded = run(app, `${LOAD(bnText(11), {})}
+    const a = editorAdd(m0, "bottom", "B3");
+    return { ok: a.ok, code: a.code, notice: a.notice, count: a.ok && a.value.options.angles.bottom.length };`);
+  assert.strictEqual(crowded.ok, true, "the 12th note goes through editorSettle, which has room at the widest midpoint");
+  assert.strictEqual(crowded.notice, undefined);
+  assert.strictEqual(crowded.count, 12);
+});
+
+test("BN-M6: a swapped bottom ring freezes from its drawn angles with no seatsReset notice; rim seats still reset", () => {
+  const app = appBoot();
+  const r = run(app, `${BN_FN} ${LOAD(bnText(2), { seats: { bottom: [1, 0] } })}
+    const before = byName(m0);
+    const added = editorAdd(m0, "bottom", "C3");
+    const rim = editorLoad(${js(bnText(2))}, { seats: { rim: [1, 0, 2, 3, 4, 5, 6, 7], bottom: [1, 0] } }).value;
+    const rimAdd = editorAdd(rim, "rim", "B4");
+    return { before, after: byName(added.value), notice: added.notice, seats: added.value.options.seats, rimNotice: rimAdd.notice, rimSeats: rimAdd.value.options.seats };`);
+  assert.strictEqual(r.after.A2, r.before.A2);
+  assert.strictEqual(r.after.B2, r.before.B2);
+  assert.strictEqual(r.notice, undefined);
+  assert.strictEqual(r.seats, undefined);
+  assert.deepStrictEqual(r.rimNotice, { seatsReset: "rim" });
+  assert.deepStrictEqual(r.rimSeats, { bottom: [1, 0] });
+});
+
+test("BN-M7: with MIRROR BOTTOM stored, an add reads the drawn (mirrored) angles and nothing moves", () => {
+  const app = appBoot();
+  for (let n = 1; n <= 8; n += 1) {
+    const r = run(app, `${BN_FN} ${LOAD(bnText(n), { mirrorBottom: true })}
+      const before = byName(m0);
+      const added = editorAdd(m0, "bottom", ${js(BN_BOT[n])});
+      return { ok: added.ok, kept: sameWithin(before, byName(added.value)), mirror: added.value.options.mirrorBottom };`);
+    assert.strictEqual(r.ok, true, `n=${n}`);
+    assert.strictEqual(r.kept, true, `n=${n} mirrored notes stay where drawn`);
+    assert.strictEqual(r.mirror, true, `n=${n} the stored option is carried`);
+  }
+});
+
+test("BN-M8: a Neotone model resizes as before: no bottom angles are ever stored", () => {
+  const app = appBoot();
+  app.run("HPE.core.PROFILE_ENABLED = true");
+  const r = run(app, `const base = editorLoad(${js("(C#3) G#3 B3 C#4 D4 F4 F#4 G#4 B4")}, {}).value;
+    const neo = editorPanType(base, "neotone");
+    if (!neo.ok) return { refused: neo.code };
+    const added = editorAdd(neo.value, "bottom", "C3");
+    const removed = editorRemove(neo.value, "rim", 0);
+    const put = editorNeoPut(neo.value, NEO_MAIN, "A3");
+    const placed = put.ok ? editorPlaceAt(put.value, "bottom", "E3", 100) : null;
+    const mutantPlace = placed && placed.ok ? editorNames(placed.value, "bottom") : (placed ? placed.code : "no mutant");
+    return { mutantPlace, kind: editorKindOf(neo.value), addAngles: added.ok ? added.value.options.angles : null, rmAngles: removed.ok ? removed.value.options.angles : null };`);
+  assert.strictEqual(r.refused, undefined);
+  assert.strictEqual(r.kind, "neotone");
+  assert.strictEqual(r.addAngles === null || r.addAngles === undefined, true);
+  assert.strictEqual(r.rmAngles === null || r.rmAngles === undefined, true);
+  assert.deepStrictEqual(r.mutantPlace, ["E3", "A3"], "a positioned add beside a Neotone bottom mutant note takes today's path, not the freeze");
+});
+
+test("BN-M9: a typed line that only adds or removes bottom names freezes the rest (rim and cyclops pins kept, no pinsReset); a rename with no stable match and a line that changes another ring respread", () => {
+  const app = appBoot();
+  const commit = (text, options, typed) => run(app, `${BN_FN} ${LOAD(text, options)}
+    const before = byName(m0);
+    const r = editorCommitText(m0, ${js(typed)});
+    return { ok: r.ok, notice: r.notice, before, after: r.ok ? byName(r.value) : null, pins: r.ok ? r.value.pins : null, angles: r.ok ? r.value.options.angles : null };`);
+  const add2 = commit(bnText(2), {}, bnText(4));
+  assert.strictEqual(add2.ok, true);
+  assert.deepStrictEqual(add2.after, { A2: 0, B2: 180, C3: 270, E3: 90 }, "two added notes are placed one by one at the widest-stretch midpoint: 270 first, then 90");
+  assert.strictEqual(add2.notice, undefined);
+  const drop = commit(bnText(3), {}, bnText(3).replace("[B2] ", ""));
+  assert.deepStrictEqual(drop.after, { A2: drop.before.A2, C3: drop.before.C3 }, "removing B2 keeps A2 and C3 where they are");
+  const both = commit(bnText(3), {}, bnText(4).replace("[B2] ", ""));
+  assert.strictEqual(both.ok, true);
+  assert.strictEqual(both.after.A2, both.before.A2);
+  assert.strictEqual(both.after.C3, both.before.C3);
+  assert.strictEqual(Object.keys(both.after).length, 3);
+  const pinned = commit(bnText(3), { angles: { inner: [150, null] } }, bnText(2));
+  assert.strictEqual(pinned.ok, true);
+  assert.strictEqual(pinned.notice, undefined, "a bottom-only typed edit shows no pinsReset notice");
+  assert.deepStrictEqual(pinned.angles.inner, [150, null], "the cyclops pin is kept");
+  assert.ok(pinned.pins.some((p) => p.ring === "inner" && p.i === 0));
+  const rename = commit(bnText(3), { angles: { inner: [150, null] } }, bnText(3).replace("[B2]", "[Bb2]"));
+  assert.strictEqual(rename.ok, true);
+  assert.deepStrictEqual(rename.notice, { pinsReset: true }, "a rename with no stable match respreads");
+  assert.strictEqual(rename.angles, undefined);
+  const other = commit(bnText(3), { angles: { inner: [150, null] } }, bnText(3).replace("A4 |", "|"));
+  assert.deepStrictEqual(other.notice, { pinsReset: true }, "a line that changes another ring keeps pinsReset");
+  const seatsOf = (text, typed) => run(app, `${BN_FN} ${LOAD(text, {})}
+    const r = editorCommitText(m0, ${js(typed)});
+    return { ok: r.ok, seats: r.ok ? r.value.options.seats : null };`);
+  const RIM_PITCH = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const RIM_SWAP = "(D3) Bb3 A3 C4 D4 E4 F4 G4 A4 | C5 D5";
+  const swapIn = seatsOf("[A2] [B2] " + RIM_PITCH, "[A2] [B2] [C3] " + RIM_SWAP);
+  assert.strictEqual(swapIn.ok, true);
+  assert.deepStrictEqual(swapIn.seats && swapIn.seats.rim, [1, 0, 2, 3, 4, 5, 6, 7], "a rim swap typed with a bottom add is applied");
+  const swapOut = seatsOf("[A2] [B2] " + RIM_SWAP, "[A2] [B2] [C3] " + RIM_PITCH);
+  assert.strictEqual(swapOut.ok, true);
+  assert.strictEqual(swapOut.seats, undefined, "typing the rim back in pitch order with a bottom add clears the swap");
+});
+
+test("BN-M10: an add to an empty bottom ring stays untouched (no position) or gives the RC's model (drop angle)", () => {
+  const app = appBoot();
+  const r = run(app, `${LOAD(bnText(0), {})}
+    const a = editorAdd(m0, "bottom", "A2");
+    const placed = editorPlaceAt(m0, "bottom", "A2", 100);
+    const rc = editorSetAngle(editorAdd(m0, "bottom", "A2").value, "bottom", 0, 100, true);
+    return { auto: a.value.options.angles, pins: a.value.pins, placed: placed.value.options.angles, same: JSON.stringify(placed.value) === JSON.stringify(rc.value) };`);
+  assert.strictEqual(r.auto, undefined);
+  assert.deepStrictEqual(r.pins, []);
+  assert.deepStrictEqual(r.placed, { bottom: [100] });
+  assert.strictEqual(r.same, true);
+});
+
+test("BN-M11: freezing an untouched ring keeps every U label for 1 to 12 notes, both anchors, mirror off and on; a note moves at most 2.5 degrees", () => {
+  const app = appBoot();
+  for (const anchor of ["one", "between"]) {
+    for (const mirrorBottom of [false, true]) {
+      for (let n = 1; n <= 12; n += 1) {
+        const r = run(app, `${LOAD(bnText(n), { anchor, mirrorBottom })}
+          const solved = editorSolve(m0);
+          const labels = (s) => ringIds(s.value.fields, "bottom").map((id) => s.value.fields[id][5]);
+          const angles = editorFreezeBottom(m0);
+          const frozen = editorLoad(${js(bnText(n))}, { anchor: ${js(anchor)}, mirrorBottom: ${mirrorBottom}, angles: { bottom: angles } });
+          const after = frozen.ok ? editorSolve(frozen.value) : null;
+          const drawn = editorAnglesOf(solved, "bottom");
+          const gap = (a, b) => { const d = Math.abs(((a - b) % 360 + 360) % 360); return Math.min(d, 360 - d); };
+          return { ok: !!after && after.ok, same: !!after && after.ok && JSON.stringify(labels(after)) === JSON.stringify(labels(solved)), shift: Math.max(...drawn.map((a, k) => gap(a, angles[k]))) };`);
+        assert.strictEqual(r.ok, true, `${anchor} mirror=${mirrorBottom} n=${n} solves`);
+        assert.strictEqual(r.same, true, `${anchor} mirror=${mirrorBottom} n=${n} keeps every label`);
+        assert.ok(r.shift <= 2.5 + 1e-9, `${anchor} mirror=${mirrorBottom} n=${n} shifts ${r.shift}`);
+      }
+    }
+  }
 });

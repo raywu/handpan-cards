@@ -1,0 +1,15 @@
+# kills: PA: a profile with none or one anchor stays a byte-identical v7 link
+# suite: node --test --test-name-pattern ^PA..a.profile.with.none.or.one.anchor tests/share.test.js
+# why: Every profile link is written as version 9.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -348,7 +348,7 @@
+     var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
+     var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
+     var between = profiled && opts.anchor === "between";
+-    if (between) wire = String(PROFILE_ANCHOR_VERSION);
++    if (profiled) wire = String(PROFILE_ANCHOR_VERSION);
+     var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
+     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
+     function option(text) {

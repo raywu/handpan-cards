@@ -1,0 +1,15 @@
+# kills: RCF-F5: staged push agrees with the staged commit over every state, and the preview of every new state hit-names its drawn note (group 1 of 4)
+# suite: node --test --test-name-pattern RCF.F5..staged.push.agrees.*group.1 tests/editor_shell.test.js
+# fault: The non-strict preview drops geom on the commit-seating fallback, so a pinned preview cannot be hit-tested.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13219,7 +13219,7 @@ function editorGhostSolve(m, strict) {
+       const rf = rs.value.fields, seated = { 0: rf[0] };
+       const seat = (zone, names) => { const ids = ringIds(rf, zone); names.forEach((n, k) => { const src = ids.find((id) => rf[id][0] + rf[id][1] === n); if (src !== undefined) seated[ids[k]] = rf[src]; }); };
+       seat("rim", rim); seat("inner", inner); seat("bottom", bottom);
+-      return { ok: true, value: { ...rs.value, fields: seated, staged: true, hasDing } };
++      return { ok: true, value: { ...rs.value, geom: undefined, fields: seated, staged: true, hasDing } };
+     }
+     const plain = editorLoad(text, options);
+     solved = HPE.layout.solve({ fields: plain.value.fields, options: plain.value.options });

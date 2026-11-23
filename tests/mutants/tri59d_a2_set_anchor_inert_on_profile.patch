@@ -1,0 +1,15 @@
+# kills: TRI59d A2: a Neotone model takes the anchor like Standard, one is the absent default, and the pan type carries it
+# suite: node --test --test-name-pattern ^TRI59d.A2..a.Neotone.model tests/editor_shell.test.js
+# why: editorSetAnchor is inert on a profile again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15376,7 +15376,7 @@ function editorSetName(m, text) {
+ const editorToggleRefused = () => ({ ok: false, code: "TOGGLE_REFUSED", reason: t("sheet.toggle_refused") });
+ function editorSetAnchor(m, to) {
+   if (to !== "one" && to !== "between") return editorRefusal(to);
+-  if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
++  if (m.options.profile || editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
+   const next = editorClone(m);
+   if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
+   return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();

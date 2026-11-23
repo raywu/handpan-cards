@@ -1,0 +1,15 @@
+# kills: RCF-15: FAIL scenarios by name: tap-order angles, a free note after a pin, and the fifth after ding F3 or E3 is never refused
+# suite: node --test --test-name-pattern RCF.15..FAIL.scenarios.by.name tests/editor_shell.test.js
+# fault: The settle step builds its trial commit and then ignores it, so a staged bottom note the real fifth could not be committed with is accepted and refused only at the fifth.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13012,7 +13012,7 @@ function editorStageSettle(m, stage, landedKey) {
+   const done = editorStageCommit(m, stage, landedKey);
+   if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !editorStageAngles(stage)) return done;
+   const trial = editorStageCommit(m, editorStageTrial(stage));
+-  return trial.code === "NO_ROOM" ? trial : done;
++  return done;
+ }
+ // A remove can free the room a pin relied on. While the stage could not be completed, the first pin
+ // (tap order) whose clearing alone completes it is cleared, else the newest pin; a pin the commit keeps stays.

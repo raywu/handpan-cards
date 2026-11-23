@@ -10,7 +10,6 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { launch, findBrowser, APP_READY_EXPR, assertNoUncaught } = require("./helpers/cdp.js");
-const { apply } = require("./helpers/editor_flag.js");
 
 const REPO = path.resolve(__dirname, "..");
 const BROWSER = findBrowser();
@@ -24,7 +23,6 @@ function run() {
   let server = null;
   let b = null;
   let base = "";
-  let flagOn = true;
   let dragTouch = true;
   let magPinned = true;
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
@@ -39,7 +37,7 @@ function run() {
         if (err) { res.writeHead(404).end(); return; }
         const html = rel === "index.html";
         res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? apply(buf.toString("utf8"), flagOn).replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+        res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
       });
     });
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -51,6 +49,7 @@ function run() {
       const need = /^#editor-(redo|remove|reset|delete)\b/.test(selector) ? ["editor-menu", "editor-more"]
         : /^#editor-(palette|swatches|anchor-)/.test(selector) ? ["editor-panel-layout", "editor-tab-layout"] : null;
       if (need && await b.eval(`const e = document.getElementById(${JSON.stringify(need[0])}); return !!e && e.hidden;`)) await rawClick("#" + need[1]);
+      await b.eval(`const e = document.querySelector(${JSON.stringify(selector)}); if (e && e.closest && e.closest("#editor-region") && !e.closest("#editor-tabs")) e.scrollIntoView({ block: "nearest" }); return true;`);
       return rawClick(selector, ...rest);
     };
   });
@@ -58,10 +57,13 @@ function run() {
     if (b) await b.close();
     if (server) await new Promise((r) => server.close(r));
   });
-  afterEach(() => assertNoUncaught());
+  afterEach(async () => {
+    try {
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 0, y: 0, button: "left", buttons: 0, clickCount: 1 });
+    } finally { assertNoUncaught(); }
+  });
 
   async function fresh(width = 375, height = 667, on = true, touchDrag = true) {
-    flagOn = on;
     dragTouch = touchDrag;
     await b.setViewport(width, height, width < 700);
     await b.send("Storage.clearDataForOrigin", { origin: new URL(base).origin, storageTypes: "indexeddb,local_storage" });
@@ -69,9 +71,10 @@ function run() {
     await b.waitFor(`${APP_READY_EXPR} && booted === true && document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`,
       { timeout: 15000, label: "the app to boot" });
   }
-  const openAdd = async () => {
+  const openAdd = async (oct = 4) => {
     await b.eval(`openScaleSheet(addChip); return true;`);
     await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor panel" });
+    if (oct !== 3) await b.eval(`const h = editorSession.history; h.present.view = { ...h.present.view, oct: ${oct} }; editorRender(); return true;`);
   };
   const openBuiltin = async () => {
     await b.eval(`const d = allDeckViews().find((v) => savedEqual(v.selection, selection)).deck; openEditSheet(d, addChip); return true;`);
@@ -95,7 +98,7 @@ function run() {
     editorRender(); return editorSession.history.present.pins.length;`);
 
   describe("D13 layout", () => {
-    const IDS = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
+    const IDS = ["editor-back", "editor-line", "editor-pan", "editor-hint-toggle", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
       "editor-save", "editor-tray"];
 
     test("375x667: header, line, pan, area slot, toolbar and tray slot are all reachable with no scroll", async () => {
@@ -114,8 +117,9 @@ function run() {
       for (const id of ["editor-back", "editor-undo", "editor-more", "editor-save", "editor-tab-scale", "editor-tab-layout"]) {
         assert.ok(r.boxes[id].h >= 44 && r.boxes[id].w >= 44, id + " is a 44px target: " + JSON.stringify(r.boxes[id]));
       }
-      const order = ["editor-back", "editor-line", "editor-pan", "editor-areas", "editor-tabs", "editor-panels", "editor-undo"].map((id) => r.boxes[id].top);
-      assert.deepStrictEqual([...order].sort((x, y) => x - y), order, "header, line, pan, counts, tabs, panel, toolbar read top to bottom");
+      const order = ["editor-back", "editor-line", "editor-pan", "editor-tabs", "editor-hint-toggle", "editor-undo"].map((id) => r.boxes[id].top);
+      assert.deepStrictEqual([...order].sort((x, y) => x - y), order, "header, line, pan, status row, tabs, toolbar read top to bottom (the panels scroll under the pinned strip)");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "the counts and hint start collapsed");
     });
 
     test("1280x800 renders clean: nothing overflows and every part is in view", async () => {
@@ -178,12 +182,456 @@ function run() {
   });
 
   describe("D10 empty scale", () => {
-    test("a new scale opens empty: the empty copy shows and Save is disabled", async () => {
+    const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+    const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+    const geomOf = (key) => b.eval(`return editorSolve(editorSession.history.present).value.geom[${JSON.stringify(key)}];`);
+    const spotAt = async (ring, deg) => clientOf(...polar(await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`), deg));
+    const dingAt = async () => clientOf(0, -(await geomOf("ding_dy")));
+    const slotAt = (slot) => b.eval(`const g = editorSolve(editorSession.history.present).value.geom; const p = neoSlotPoint(${slot}, null, g.turn);
+      const q = new DOMPoint(p.x, p.y).matrixTransform(document.querySelector("#editor-pan svg").getScreenCTM()); return { x: q.x, y: q.y };`);
+    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const statusText = () => b.eval(`return document.getElementById("editor-status").textContent;`);
+    const stageOf = () => b.eval(`return JSON.parse(JSON.stringify((({ other, ...st }) => st)(editorStageOf(editorSession.history.present))));`);
+    const octave = () => b.eval(`return editorView(editorSession.history.present).oct;`);
+    const stillEmpty = () => b.eval(`return editorIsEmpty(editorSession.history.present);`);
+    const saveDisabled = () => b.eval(`return document.getElementById("editor-save").disabled;`);
+    const tapPoint = async (pt, touch) => {
+      if (touch) {
+        const t0 = Date.now() / 1000;
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y, radiusX: 4, radiusY: 4, force: 1, id: 1 }], timestamp: t0 });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t0 + 0.05 });
+      } else for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 });
+    };
+    const gesture = async (from, to, kind) => {
+      const at = (k) => ({ x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+      if (kind === "touch") {
+        await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...from, id: 1 }] });
+        for (const k of [0.25, 0.5, 0.75, 1]) await b.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...at(k), id: 1 }] });
+        await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      } else {
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...from, button: "left", buttons: 1, clickCount: 1 });
+        for (const k of [0.25, 0.5, 0.75, 1]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at(k), button: "left", buttons: 1 });
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...to, button: "left", buttons: 0, clickCount: 1 });
+      }
+      await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the pan to finish settling after the drag" });
+    };
+    const targets = () => b.eval(`const hits = [...document.querySelectorAll("#editor-pan .etarget")];
+      const small = hits.filter((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height) < 24; }).length;
+      return { rings: hits.map((e) => e.dataset.ring).sort(), small, slots: document.querySelectorAll("#editor-pan .eslot").length,
+        mut: document.querySelectorAll("#editor-pan .eslot[data-mut]").length, wait: document.querySelectorAll("#editor-pan .eslot.unavailable").length };`);
+
+    test("a new scale opens as an empty pan: both type buttons enabled, Standard pressed, the ding and every zone drawn, the prompt in the status, Save disabled", async () => {
       await fresh();
       await openAdd();
-      const r = await b.eval(`const e = document.getElementById("editor-empty"); return { shown: !!e && !e.hasAttribute("hidden") && e.textContent.trim().length > 0,
-        save: document.getElementById("editor-save").disabled };`);
-      assert.deepStrictEqual(r, { shown: true, save: true });
+      const r = await b.eval(`const q = (id) => document.getElementById(id);
+        return { std: [q("editor-type-standard").disabled, q("editor-type-standard").getAttribute("aria-pressed")], neo: [q("editor-type-neotone").disabled, q("editor-type-neotone").getAttribute("aria-pressed")],
+          save: q("editor-save").disabled, overlay: !!q("editor-empty"), prompt: q("editor-status").textContent.startsWith(t("editor.empty")) };`);
+      assert.deepStrictEqual(r, { std: [false, "true"], neo: [false, "false"], save: true, overlay: false, prompt: true });
+      const t1 = await targets();
+      assert.deepStrictEqual(t1.rings, ["bottom", "ding", "inner", "rim"]);
+      assert.strictEqual(t1.small, 0, "every drawn target is at least 24px across");
+      assert.strictEqual(t1.slots, 0);
+    });
+
+    for (const [w, h] of [[375, 667], [360, 640]]) {
+      test(`the empty pan targets stay at least 24px across at ${w}x${h}, Standard and Neotone`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        const sizes = () => b.eval(`const dims = [...document.querySelectorAll("#editor-pan .etarget, #editor-pan .ekey, #editor-pan .eslot")].map((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height); });
+          return { n: dims.length, min: Math.min(...dims) };`);
+        const std = await sizes();
+        await b.eval(`document.getElementById("editor-type-neotone").click(); return true;`);
+        const neo = await sizes();
+        assert.ok(std.n > 0 && std.min >= 24, "Standard targets " + JSON.stringify(std));
+        assert.ok(neo.n > 0 && neo.min >= 24, "Neotone targets " + JSON.stringify(neo));
+      });
+    }
+
+    test("Neotone is one tap away while empty: the ding and 18 slots, the 9 mutant slots waiting for a main field; Standard switches back", async () => {
+      await fresh();
+      await openAdd();
+      await b.click("#editor-type-neotone");
+      const on = await b.eval(`const q = (id) => document.getElementById(id); return [q("editor-type-neotone").getAttribute("aria-pressed"), q("editor-type-standard").getAttribute("aria-pressed"), q("editor-save").disabled];`);
+      assert.deepStrictEqual(on, ["true", "false", true]);
+      const t1 = await targets();
+      assert.deepStrictEqual([t1.rings, t1.slots, t1.mut, t1.wait], [["ding"], 18, 9, 9]);
+      await b.click("#editor-type-standard");
+      const t2 = await targets();
+      assert.deepStrictEqual([t2.rings, t2.slots], [["bottom", "ding", "inner", "rim"], 0]);
+    });
+
+    test("switching pan type and back keeps the staged notes: ding C and two rim notes by tap at 390x844 return at the same rings after Neotone and Standard", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      const o = await octave();
+      await b.click('.tray-note[data-name="C"]');
+      await tapPoint(await dingAt(), true);
+      await b.click('.tray-note[data-name="D"]');
+      await tapPoint(await spotAt("rim", 45), true);
+      await b.click('.tray-note[data-name="E"]');
+      await tapPoint(await spotAt("rim", 135), true);
+      const hits = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit")].map((c) => [c.dataset.ring, c.dataset.i, c.getAttribute("cx"), c.getAttribute("cy")].join(":"));`);
+      const before = await hits();
+      assert.deepStrictEqual((await stageOf()).rim, ["D" + o, "E" + o], await statusText());
+      assert.strictEqual(before.length, 3);
+      await b.click("#editor-type-neotone");
+      assert.deepStrictEqual((await stageOf()).main, ["D" + o, "E" + o]);
+      assert.strictEqual((await stageOf()).ding, "C" + o);
+      await b.click("#editor-type-standard");
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: [] }, await statusText());
+      assert.deepStrictEqual(await hits(), before);
+      assert.strictEqual(await stillEmpty(), true);
+      assert.strictEqual(await saveDisabled(), true);
+    });
+
+    test("Neotone on an empty Standard pan maps the staged notes (owner 2026-11-15): at 390x844 a ding, two rim notes and a bottom note become two main fields and a mutant, and the info overlay explains the pairing", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      const o = await octave();
+      await b.click('.tray-note[data-name="C"]');
+      await tapPoint(await dingAt(), true);
+      await b.click('.tray-note[data-name="D"]');
+      await tapPoint(await spotAt("rim", 45), true);
+      await b.click('.tray-note[data-name="E"]');
+      await tapPoint(await spotAt("rim", 135), true);
+      await b.click('.tray-note[data-name="A"]');
+      await tapPoint(await spotAt("bottom", 90), true);
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o], angles: [90] }, await statusText());
+      await b.click("#editor-type-neotone");
+      assert.deepStrictEqual(await stageOf(), { kind: "neotone", ding: "C" + o, main: ["D" + o, "E" + o], mutant: ["A" + o] }, await statusText());
+      const shape = await b.eval(`const map = editorSession.history.present.options.profile.map; return [map.slice(0, 9).filter(Boolean).length, map.slice(9).filter(Boolean).length, [...document.querySelectorAll("#editor-pan svg text")].map((e) => e.textContent).join(" ")];`);
+      assert.deepStrictEqual(shape.slice(0, 2), [2, 1]);
+      for (const n of ["D", "E", "A"]) assert.ok(shape[2].includes(n), shape[2]);
+      await b.click("#editor-hint-toggle");
+      const help = await b.eval(`return [...document.querySelectorAll("#editor-hint .neo-help")].map((e) => e.textContent);`);
+      assert.deepStrictEqual(help, ["Mutant notes pair with tonefields: note N goes in tonefield N."]);
+      await b.click("#editor-hint-close");
+      await b.click("#editor-type-standard");
+      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o], angles: [90] });
+      assert.strictEqual(await stillEmpty(), true);
+    });
+
+    test("RCF-16: after a remove the preview in the browser draws each staged note where the commit puts it, and a hit on a drawn note names that note", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => [(x) => editorReplaceDing(x, "D3"), (x) => editorPlace(x, "bottom", "A2"), (x) => editorPlace(x, "bottom", "E3", 135), (x) => editorPlace(x, "bottom", "B2"), (x) => editorPlace(x, "bottom", "C3", 200), (x) => editorRemove(x, "bottom", 0)].reduce((r, f) => (r.ok === false ? r : f(r.value)), { ok: true, value: m })).history;
+        editorRender(); return true;`);
+      const r = await b.eval(`const m = editorSession.history.present, st = editorStageOf(m);
+        const svg = document.querySelector("#editor-pan svg");
+        const view = editorGhostSolve(m).value;
+        const drawn = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff").map((n) => [+n.getAttribute("cx") / 100, -(+n.getAttribute("cy")) / 100]);
+        const hit = drawn.map((pt) => { const ref = editorHitAt(view, pt, null, m); return ref.kind === "note" ? editorNames(m, ref.ring)[ref.i] + "@" + Math.round(((Math.atan2(pt[1], pt[0]) * 180 / Math.PI) + 360) % 360) : ref.kind; });
+        const q = editorPlace(m, "rim", "A3"); const sol = editorSolve(q.value).value.fields;
+        const commit = Object.values(sol).filter((f) => f[3] === "bottom" && (f[0] + f[1] === "E3" || f[0] + f[1] === "C3")).map((f) => f[0] + f[1] + "@" + Math.round(f[4])).sort();
+        return { angles: st.angles, drawn: drawn.length, hit: hit.sort(), commit, committed: !editorIsEmpty(q.value) };`);
+      assert.deepStrictEqual(r.angles, [135, null, 200]);
+      assert.strictEqual(r.committed, true);
+      assert.strictEqual(r.hit.filter((h) => h.includes("@")).length, 3, "three staged notes are drawn: " + JSON.stringify(r));
+      assert.deepStrictEqual(r.hit.filter((h) => /^(E3|C3)@/.test(h)), r.commit, "drawn pinned notes sit at the committed angles, named by their own hit: " + JSON.stringify(r));
+      assert.ok(r.hit.some((h) => h.startsWith("B2@")), "the free note is hit as itself: " + JSON.stringify(r));
+    });
+
+    for (const [w, h] of [[390, 844], [844, 390]]) {
+      test(`RCF-F5 ${w}x${h}: tap order D3, E3@135, B2, C3@200 is accepted, and the preview draws B2, C3 and E3 with hit refs naming each drawn note`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        const r = await b.eval(`const log = []; editorSession.history = editorApply(editorSession.history, (m) => [(x) => editorReplaceDing(x, "D3"), (x) => editorPlace(x, "bottom", "E3", 135), (x) => editorPlace(x, "bottom", "B2"), (x) => editorPlace(x, "bottom", "C3", 200)].reduce((r, f) => { if (r.ok === false) return r; const q = f(r.value); log.push(q.ok === false ? q.code : "ok"); return q; }, { ok: true, value: m })).history;
+          editorRender();
+          const m = editorSession.history.present, st = editorStageOf(m);
+          const svg = document.querySelector("#editor-pan svg");
+          const view = editorGhostSolve(m).value;
+          const drawn = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff").map((n) => [+n.getAttribute("cx") / 100, -(+n.getAttribute("cy")) / 100]);
+          const hit = drawn.map((pt) => { const ref = editorHitAt(view, pt, null, m); return ref.kind === "note" ? editorNames(m, ref.ring)[ref.i] + "@" + Math.round(((Math.atan2(pt[1], pt[0]) * 180 / Math.PI) + 360) % 360) : ref.kind; });
+          const q = editorPlace(m, "rim", "A3"); const sol = editorSolve(q.value).value.fields;
+          const commit = Object.values(sol).filter((f) => f[3] === "bottom" && (f[0] + f[1] === "E3" || f[0] + f[1] === "C3")).map((f) => f[0] + f[1] + "@" + Math.round(f[4])).sort();
+          return { log, angles: st.angles, bottom: st.bottom, hit: hit.sort(), commit, committed: !editorIsEmpty(q.value) };`);
+        assert.deepStrictEqual(r.log, ["ok", "ok", "ok", "ok"], "every tap accepted: " + JSON.stringify(r));
+        assert.deepStrictEqual(r.angles, [135, null, 200]);
+        assert.strictEqual(r.committed, true, "the fifth commits");
+        for (const n of ["B2@", "C3@", "E3@"]) assert.ok(r.hit.some((x) => x.startsWith(n)), n + " is drawn and hit as itself: " + JSON.stringify(r));
+        assert.deepStrictEqual(r.hit.filter((x) => /^(E3|C3)@/.test(x)), r.commit, "drawn pinned notes sit at the committed angles: " + JSON.stringify(r));
+      });
+    }
+
+    test("the empty Standard pan paints staged notes above every area ring: at each note centre and where a ring crosses its edge the note is the topmost thing, filled", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => [(x) => editorReplaceDing(x, "C3"), (x) => editorPlace(x, "rim", "D3"), (x) => editorPlace(x, "rim", "G#3"), (x) => editorPlace(x, "rim", "B3"), (x) => editorPlace(x, "inner", "F4"), (x) => editorPlace(x, "bottom", "A2")].reduce((r, f) => (r.ok === false ? r : f(r.value)), { ok: true, value: m })).history;
+        editorRender();
+        const st = document.createElement("style"); st.textContent = "#editor-pan svg > circle, #editor-pan .etarget{pointer-events:all !important}"; document.head.appendChild(st); return true;`);
+      const r = await b.eval(`const svg = document.querySelector("#editor-pan svg"), ctm = svg.getScreenCTM();
+        const px = (x, y) => { const q = new DOMPoint(x, y).matrixTransform(ctm); return [q.x, q.y]; };
+        const rings = [...svg.querySelectorAll(".etarget.eempty:not([data-ring=ding])")].map((e) => +e.getAttribute("r"));
+        const notes = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff");
+        const top = (x, y) => { const [cx, cy] = px(x, y); return document.elementFromPoint(cx, cy); };
+        const onNote = (e, n) => e === n || (e && e.tagName === "text" && !!(n.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING));
+        const out = { notes: notes.length, rings: rings.length, centres: [], crossings: 0, wrong: [], fills: [], order: [] };
+        for (const n of notes) {
+          const x = +n.getAttribute("cx"), y = +n.getAttribute("cy"), r = +n.getAttribute("r");
+          out.fills.push(getComputedStyle(n).fill);
+          if (!onNote(top(x, y), n)) out.centres.push([x, y]);
+          for (const R of rings) {
+            const d = Math.hypot(x, y);
+            if (Math.abs(d - R) >= r) continue;
+            const a = (R * R - r * r + d * d) / (2 * d), h = Math.sqrt(Math.max(0, R * R - a * a));
+            const mx = a * x / d, my = a * y / d;
+            for (const sgn of [1, -1]) {
+              const ix = mx + sgn * h * -y / d, iy = my + sgn * h * x / d;
+              const ex = ix + (x - ix) * 0.12, ey = iy + (y - iy) * 0.12;
+              out.crossings += 1;
+              if (!onNote(top(ex, ey), n)) out.wrong.push([ex, ey, (top(ex, ey) || {}).outerHTML]);
+            }
+          }
+        }
+        for (const e of svg.querySelectorAll(".etarget.eempty:not([data-ring=ding])")) for (const n of notes) out.order.push(!!(e.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING));
+        const ring = getComputedStyle(svg.querySelector(".etarget.eempty[data-ring=rim]"));
+        out.ring = { opacity: +ring.opacity, width: parseFloat(ring.strokeWidth), stroke: ring.stroke };
+        return out;`);
+      assert.strictEqual(r.notes, 6, "the ding circle + 3 rim + inner + bottom: " + JSON.stringify(r));
+      assert.deepStrictEqual(r.centres, [], "every note centre is the note itself");
+      assert.ok(r.crossings >= 6, "rings cross the notes in this fixture: " + r.crossings);
+      assert.deepStrictEqual(r.wrong, [], "no ring line is on top of a note");
+      assert.ok(r.order.length > 0 && r.order.every(Boolean), "every area ring precedes every note in paint order");
+      assert.ok(r.fills.every((f) => f !== "none" && f !== "rgba(0, 0, 0, 0)"), "every note is solid: " + JSON.stringify(r.fills));
+      assert.ok(r.ring.opacity < 1 && r.ring.opacity >= 0.5 && r.ring.width <= 2 && r.ring.stroke === "rgb(226, 112, 5)", "the rings are softer but still orange: " + JSON.stringify(r.ring));
+    });
+
+    for (const kind of ["mouse", "touch"]) {
+      test(`${kind} tap on the empty Standard pan: the ding first (no leading space), then a fifth on the rim commits the scale`, async () => {
+        await fresh();
+        await openAdd();
+        const o = await octave();
+        await b.click('.tray-note[data-name="D"]');
+        await tapPoint(await dingAt(), kind === "touch");
+        assert.match(await statusText(), new RegExp(`^D${o} is the ding\\.`));
+        assert.strictEqual((await stageOf()).ding, "D" + o);
+        assert.strictEqual(await saveDisabled(), true);
+        await b.click('.tray-note[data-name="A"]');
+        await tapPoint(await spotAt("rim", 45), kind === "touch");
+        assert.strictEqual(await text(), `(D${o}) A${o}`, await statusText());
+        assert.strictEqual(await saveDisabled(), false);
+        assert.strictEqual(await b.eval(`return "stage" in editorSession.history.present;`), false);
+      });
+
+      test(`${kind} drag on the empty Standard pan: rim, inner and bottom notes stage before the ding, the ding drop commits`, async () => {
+        await fresh();
+        await openAdd();
+        const o = await octave();
+        await gesture(await chipAt("A"), await spotAt("rim", 45), kind);
+        assert.deepStrictEqual((await stageOf()).rim, ["A" + o], await statusText());
+        assert.match(await statusText(), /ding/i);
+        await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
+        assert.deepStrictEqual((await stageOf()).inner, ["E" + o]);
+        await gesture(await chipAt("G"), await spotAt("bottom", 200), kind);
+        assert.deepStrictEqual((await stageOf()).bottom, ["G" + o]);
+        await gesture(await chipAt("D"), await dingAt(), kind);
+        assert.strictEqual(await stillEmpty(), false, await statusText());
+        assert.deepStrictEqual(await b.eval(`const m = editorSession.history.present; return [editorNames(m, "rim"), editorNames(m, "inner"), editorNames(m, "bottom"), editorDingOf(m)];`),
+          [["A" + o], ["E" + o], ["G" + o], "D" + o]);
+      });
+
+      test(`${kind} tap and drag on the empty Neotone pan: the ding, then a main note dropped on field 5 lands in field 1, then a mutant on slot 10`, async () => {
+        await fresh();
+        await openAdd();
+        await b.click("#editor-type-neotone");
+        const o = await octave();
+        await b.click('.tray-note[data-name="D"]');
+        await tapPoint(await dingAt(), kind === "touch");
+        assert.match(await statusText(), new RegExp(`^D${o} is the ding\\.`));
+        await gesture(await chipAt("A"), await slotAt(4), kind);
+        assert.strictEqual(await stillEmpty(), false, await statusText());
+        assert.deepStrictEqual(await b.eval(`return editorSession.history.present.options.profile.map.slice(0, 9).map((k) => k !== null);`),
+          [true, false, false, false, false, false, false, false, false]);
+        await b.click('.tray-note[data-name="E"]');
+        const slot9 = await slotAt(9);
+        await b.eval(`window.__ev = []; const ab = { pointerdown: "pd", pointerup: "pu", pointercancel: "pc", touchstart: "ts", touchend: "te", mousedown: "md", click: "ck" };
+          for (const type of Object.keys(ab)) window.addEventListener(type, (e) => window.__ev.push({ n: ab[type] + (e.defaultPrevented ? "!" : ""), t: Math.round(performance.now()) }), true); return true;`);
+        await b.waitFor(`document.getAnimations().length === 0 && !document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the pan to be idle before the slot 10 tap" });
+        await b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true))));`);
+        const clicked = () => b.eval(`return window.__ev.some((x) => x.n.startsWith("ck"));`);
+        await tapPoint(slot9, kind === "touch");
+        let retry = 0;
+        if (kind === "touch") {
+          await b.waitFor(`window.__ev.some((x) => x.n.startsWith("ck"))`, { timeout: 600, label: "the slot 10 click" }).catch(() => {});
+          if (!(await clicked())) {
+            retry = 1;
+            console.log("slot10 retry=1: the touch tap produced no click, tapping once more");
+            await tapPoint(slot9, true);
+          }
+        }
+        await b.waitFor(`editorSession.history.present.options.profile.map[9] !== null`, { timeout: 2000, label: "slot 10 to take the mutant" }).catch(async (err) => {
+          const s = await b.eval(`const ev = window.__ev, pu = ev.find((x) => x.n.startsWith("pu")), ck = ev.find((x) => x.n.startsWith("ck"));
+            return "slot10 ev=" + ev.map((x) => x.n).join(",") + " ck=" + (ck ? (pu ? ck.t - pu.t : "?") + "ms" : "none") + " dn=" + (pu && ev[0] ? pu.t - ev[0].t : "?") + "ms" + " retry=${retry} v=" + navigator.userAgent.replace(/^.*Chrome\\/(\\d+).*$/, "$1") + " held=" + +!!editorSession.held + " st=" + document.getElementById("editor-status").textContent.slice(0, 12);`).catch(() => "slot10 diag-err");
+          throw new Error(s);
+        });
+        assert.strictEqual(await b.eval(`return editorSession.history.present.options.profile.map[9] !== null;`), true, await statusText());
+      });
+    }
+
+    test("an empty Neotone pan built by drag (the ding, a main note, a mutant), saved, reloaded and reopened keeps the notes and the record", async () => {
+      await fresh();
+      await openAdd();
+      await b.click("#editor-type-neotone");
+      const o = await octave();
+      await gesture(await chipAt("D"), await dingAt(), "mouse");
+      await gesture(await chipAt("A"), await slotAt(4), "mouse");
+      await gesture(await chipAt("E"), await slotAt(9), "mouse");
+      const shape = () => b.eval(`const m = editorSession.history.present;
+        return { text: document.getElementById("editor-line").value, map: m.options.profile.map.map((k) => k !== null), ding: editorDingOf(m), neotone: document.getElementById("editor-type-neotone").getAttribute("aria-pressed") };`);
+      const built = await shape();
+      assert.deepStrictEqual([built.map.slice(0, 9).filter(Boolean).length, built.map.slice(9).filter(Boolean).length, built.ding, built.neotone], [1, 1, "D" + o, "true"], JSON.stringify(built));
+      assert.strictEqual(await saveDisabled(), false);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      assert.strictEqual(await b.eval(`return savedState.entries.length;`), 1, "one record saved");
+      await b.send("Page.navigate", { url: base });
+      await b.waitFor(`${APP_READY_EXPR} && booted === true && document.querySelectorAll("#decks .chip:not(#deck-add)").length > 0`, { timeout: 15000, label: "the app to boot" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      assert.deepStrictEqual(await shape(), built, "the saved scale reopens as the same Neotone arrangement");
+    });
+
+    test("Neotone: a main note before the ding stages, a mutant slot with no main field takes nothing, the ding drop commits", async () => {
+      await fresh();
+      await openAdd();
+      await b.click("#editor-type-neotone");
+      const o = await octave();
+      await gesture(await chipAt("E"), await slotAt(9), "mouse");
+      assert.deepStrictEqual((await stageOf()).mutant, [], await statusText());
+      await gesture(await chipAt("A"), await slotAt(2), "mouse");
+      assert.deepStrictEqual((await stageOf()).main, ["A" + o]);
+      assert.match(await statusText(), /ding/i);
+      await gesture(await chipAt("D"), await dingAt(), "mouse");
+      assert.strictEqual(await stillEmpty(), false, await statusText());
+    });
+
+    test("390x844: committing the scale moves the pan by at most 1px (A4 measurement)", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      const probe = () => b.eval(`const svg = document.querySelector("#editor-pan svg"); const r = svg.getBoundingClientRect(); const m = svg.getScreenCTM();
+        const g = editorSolve(editorSession.history.present).value.geom; const ding = new DOMPoint(0, g.ding_dy * 100).matrixTransform(m);
+        return { left: r.left, top: r.top, w: r.width, h: r.height, dx: ding.x, dy: ding.y };`);
+      await gesture(await chipAt("E"), await spotAt("inner", 90), "mouse");
+      await gesture(await chipAt("G"), await spotAt("bottom", 200), "mouse");
+      await gesture(await chipAt("A"), await spotAt("rim", 45), "mouse");
+      const before = await probe();
+      await gesture(await chipAt("D"), await dingAt(), "mouse");
+      assert.strictEqual(await stillEmpty(), false, await statusText());
+      const after = await probe();
+      const shift = Math.max(...Object.keys(before).map((k) => Math.abs(after[k] - before[k])));
+      console.log("A4 commit shift at 390x844 (px):", shift.toFixed(2), JSON.stringify({ before, after }));
+      assert.ok(shift <= 1, "the pan moved " + shift + "px on commit: " + JSON.stringify({ before, after }));
+    });
+
+    test("a ding placed on the empty pan says it is the ding, never ' removed.'; replacing it later keeps the replace wording", async () => {
+      await fresh();
+      await openAdd();
+      await b.click('.tray-note[data-name="D"]');
+      await tapPoint(await dingAt());
+      const first = await statusText();
+      assert.doesNotMatch(first, /removed/);
+      assert.strictEqual(first.startsWith(" "), false);
+      await b.click('.tray-note[data-name="C"]');
+      await tapPoint(await dingAt());
+      assert.match(await statusText(), /^D\d removed\. C\d is the ding\./);
+    });
+
+    test("Back with only staged notes closes with no prompt; Back after a committed scale with an edit still asks", async () => {
+      await fresh();
+      await openAdd();
+      await gesture(await chipAt("A"), await spotAt("rim", 45), "mouse");
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), false);
+      assert.strictEqual(await sheetHidden(), true);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true);
+    });
+
+    test("a saved scale that fails to decode opens on the empty pan with its error and keeps the dirty guard: Back asks with nothing staged", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection));
+        openEditSheet({ ...view.deck, options: { ...view.deck.options, profile: { id: "bogus", rev: 2, map: [] } } }, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the broken scale" });
+      const r = await b.eval(`const s = editorSession; return { error: !!s.error, empty: editorIsEmpty(s.history.present), failed: s.base.failed === true };`);
+      assert.deepStrictEqual(r, { error: true, empty: true, failed: true });
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true, "Back on a failed-decode session prompts");
+    });
+
+    test("keyboard: the empty pan is one roving tab stop over the ding and each zone, each with a localised name", async () => {
+      await fresh();
+      await openAdd();
+      const keys = () => b.eval(`return [...document.querySelectorAll("#editor-pan [data-fk]")].map((e) => [e.dataset.fk, e.getAttribute("aria-label"), e.getAttribute("tabindex")]);`);
+      const en = await keys();
+      assert.deepStrictEqual(en.map((k) => k[0]), ["ding:0", "zone:rim", "zone:inner", "zone:bottom"]);
+      assert.strictEqual(en.filter((k) => k[2] === "0").length, 1);
+      assert.ok(en.every((k) => k[1] && k[1].length > 3), JSON.stringify(en));
+      await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+      await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+      await b.eval(`editorRender(); return true;`);
+      const de = await keys();
+      assert.deepStrictEqual(de.map((k) => k[0]), en.map((k) => k[0]));
+      assert.ok(de[0][1] !== en[0][1] && de[1][1] !== en[1][1], "the ding and rim stops are renamed in German: " + JSON.stringify(de));
+    });
+
+    test("I18N: under a pseudo table no visible editor text is English, panel and unsaved-changes dialog", async () => {
+      await fresh();
+      await b.eval(`const wrap = (v) => typeof v === "string" ? "\\u27e6" + v + "\\u27e7" : Object.fromEntries(Object.entries(v).map(([k, s]) => [k, "\\u27e6" + s + "\\u27e7"]));
+        I18N.de = Object.fromEntries(Object.entries(I18N.en).map(([k, v]) => [k, wrap(v)]));
+        const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+      await b.waitFor(`document.documentElement.lang === "de"`, { label: "pseudo German" });
+      await openAdd();
+      const scan = (label) => b.eval(`const out = [];
+        const words = (s) => { let v = String(s), p; do { p = v; v = v.replace(/\\u27e6[^\\u27e6\\u27e7]*\\u27e7/g, ""); } while (v !== p); return /[A-Za-z]{3,}/.test(v); };
+        const root = document.getElementById("editor");
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) { if (n.parentElement.closest("textarea, script, style")) continue; if (words(n.nodeValue)) out.push("text:" + n.nodeValue); }
+        for (const el of root.querySelectorAll("*")) for (const a of ["aria-label", "title", "placeholder"]) { if (el.id === "editor-name" && a === "placeholder") continue; const v = el.getAttribute(a); if (v && words(v)) out.push(el.id + "@" + a + ":" + v); }
+        return out;`).then((left) => assert.deepStrictEqual(left, [], label + ": " + JSON.stringify(left.slice(0, 8))));
+      await scan("empty");
+      await typeLine(SCALE);
+      await scan("typed");
+      await b.eval(`editorSession.held = { name: "C4" }; editorRender(); return true;`);
+      await scan("a note held");
+      await b.click("#editor-type-neotone");
+      await scan("neotone");
+      await b.eval(`editorShowDialog(true); return true;`);
+      await scan("unsaved-changes dialog");
+    });
+
+    test("the empty prompt fits the status row in all eight locales at 390, 375 and 360 with the real fonts", async () => {
+      const prev = b;
+      b = await launch({ foregroundSettle: true, realFonts: true });
+      try {
+        for (const width of [390, 375, 360]) {
+          await fresh(width, 844);
+          await openAdd();
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          const langs = await b.eval(`return [...document.getElementById("lang-select").options].map((o) => o.value).filter((v) => v !== "auto");`);
+          assert.strictEqual(langs.length, 8);
+          for (const lang of langs) {
+            await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+            await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
+            for (const kind of ["standard", "neotone"]) {
+              await b.click("#editor-type-" + kind);
+              const bad = await b.eval(`const out = []; const st = document.getElementById("editor-status"); const ed = document.getElementById("editor");
+                const q = st.getBoundingClientRect(); if (st.scrollWidth > st.clientWidth + 0.5 || q.right > innerWidth || q.bottom > innerHeight) out.push("status");
+                if (ed.scrollWidth > ed.clientWidth || ed.scrollHeight > ed.clientHeight) out.push("panel scroll");
+                return out;`);
+              assert.deepStrictEqual(bad, [], width + " " + lang + " " + kind);
+            }
+          }
+        }
+      } finally {
+        await b.close();
+        b = prev;
+      }
     });
   });
 
@@ -191,6 +639,8 @@ function run() {
     test("read-only until tapped; Enter on the focused line also starts editing", async () => {
       await fresh();
       await openBuiltin();
+      assert.deepStrictEqual(await b.eval(`return ["editor-line", "editor-name"].map((id) => document.getElementById(id)?.getAttribute("spellcheck"));`), ["false", "false"],
+        "the note line and the name field switch spellcheck off, so note names are not red-underlined");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-line").readOnly;`), true);
       await b.click("#editor-line");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-line").readOnly;`), false);
@@ -433,6 +883,30 @@ function run() {
     });
   });
 
+  describe("D15 Save while a name is typed", () => {
+    test("a name typed while Save is pending keeps the editor open and the typed text", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the first save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "PENDING VALID";
+        n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+      await b.eval(`navigator.locks.request("handpan-cards:saved-scales:v1", () => new Promise((r) => { window.__rel = r; })); return true;`);
+      await b.waitFor(`typeof window.__rel === "function"`, { label: "the saved-scales lock held" });
+      await b.eval(`document.getElementById("editor-save").click(); return true;`);
+      await b.waitFor(`!!savePending`, { label: "Save to wait on the lock" });
+      await b.eval(`const n = document.getElementById("editor-name"); n.dispatchEvent(new Event("focus")); n.value = "TYPED DURING SAVE";
+        n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      await b.eval(`window.__rel(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the pending Save to finish" });
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "TYPED DURING SAVE");
+    });
+  });
+
   describe("U2c the tray and tap placement", () => {
     const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
     const rimNames = () => b.eval(`return editorNames(editorSession.history.present, "rim");`);
@@ -517,7 +991,80 @@ function run() {
       await b.click("#editor-oct-down");
       await tapSpot(...polar(1.15, 150));
       m = await model();
-      assert.deepStrictEqual(m.options.angles.bottom.filter((a) => a !== null), [150]);
+      assert.deepStrictEqual(m.options.angles.bottom.filter((a) => a !== null), [150, 90]);
+    });
+
+    const BN_ROWS = `const s = editorSolve(editorSession.history.present).value; return ringIds(s.fields, "bottom").map((id) => ({ n: s.fields[id][0] + s.fields[id][1], a: s.fields[id][4], l: s.fields[id][5] }));`;
+    const bnRows = async () => Object.fromEntries((await b.eval(BN_ROWS)).map((r) => [r.n, r]));
+
+    test("BN-E1 (QA video 1): a note added next to E3 on the side nearer bottom centre reads U1; E3 stays at its angle and reads U2", async () => {
+      await setup("[E3] " + SCALE);
+      const before = await bnRows();
+      assert.strictEqual(before.E3.l, "U1");
+      await hold("D#");
+      await b.click("#editor-oct-down");
+      await tapSpot(...polar(1.15, 140));
+      const after = await bnRows();
+      assert.strictEqual(after.E3.a, before.E3.a, "E3 did not move");
+      assert.strictEqual(after["D#3"].a, 140);
+      assert.strictEqual(after["D#3"].l, "U1", "the note nearest bottom centre reads U1");
+      assert.strictEqual(after.E3.l, "U2");
+    });
+
+    test("BN-E2 (QA video 2): a note moved across its neighbours takes its number from where it lands; nothing swaps back", async () => {
+      await setup("[A2] [B2] [C3] " + SCALE);
+      const before = await bnRows();
+      assert.deepStrictEqual([before.A2.a, before.B2.a, before.C3.a], [330, 210, 90]);
+      await tapNote("bottom", 2);
+      await tapSpot(...polar(1.15, 240));
+      const after = await bnRows();
+      assert.strictEqual(after.C3.a, 240);
+      assert.deepStrictEqual([after.C3.l, after.A2.l, after.B2.l], ["U1", "U2", "U3"], "distance from 270: C3 30, then A2 and B2 at 60 (right first)");
+      assert.deepStrictEqual([after.A2.a, after.B2.a], [330, 210], "the others stay");
+    });
+
+    test("BN-E3: removing a bottom note leaves the others where they are drawn on the screen", async () => {
+      await setup("[A2] [B2] [C3] " + SCALE);
+      const at = async (i) => noteAt("bottom", i);
+      const [a, c] = [await at(0), await at(2)];
+      await tapNote("bottom", 1);
+      await b.click("#editor-remove");
+      assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["A2", "C3"]);
+      assert.deepStrictEqual([await at(0), await at(1)], [a, c], "A2 and C3 did not move by a pixel");
+    });
+
+    test("BN-E4: a scale with MIRROR BOTTOM stored (record and share link) keeps its numbers on positions, and a bottom add keeps its stored angles", async () => {
+      for (const via of ["record", "link"]) {
+        await setup("[A2] [B2] [C3] " + SCALE);
+        const shape = await b.eval(`const base = editorLoad("[A2] [B2] [C3] " + ${JSON.stringify(SCALE)}, { mirrorBottom: true }).value;
+          const e = editorExport(base);
+          const loaded = ${JSON.stringify(via)} === "record" ? editorLoadRecord({ v: e.record.v, s: e.record.s, o: e.record.o }) : editorLoadShare(e.code);
+          if (!loaded.ok) return { code: loaded.code };
+          editorSession.history = editorHistoryNew(loaded.value); editorRender(); return { mirror: loaded.value.options.mirrorBottom };`);
+        assert.strictEqual(shape.mirror, true, via);
+        const before = await bnRows();
+        const rank = Object.values(before).sort((x, y) => Math.abs(((x.a - 270 + 540) % 360) - 180) - Math.abs(((y.a - 270 + 540) % 360) - 180) || (((x.a - 270 + 360) % 360) < 180 ? -1 : 1));
+        assert.deepStrictEqual(rank.map((r) => r.l), ["U1", "U2", "U3"], via + ": numbers follow the drawn positions");
+        await hold("E");
+        await b.click("#editor-oct-down");
+        await place("bottom");
+        const after = await bnRows();
+        for (const n of ["A2", "B2", "C3"]) assert.strictEqual(after[n].a, before[n].a, `${via} ${n} stays`);
+        assert.strictEqual((await model()).options.mirrorBottom, true);
+      }
+    });
+
+    test("BN-E5: a held note placed on the bottom area (no position) goes to the middle of the widest stretch, nearest bottom centre", async () => {
+      await setup("[A2] " + SCALE);
+      await hold("G");
+      await b.click("#editor-oct-down");
+      await place("bottom");
+      assert.deepStrictEqual((await model()).options.angles.bottom, [90, 270]);
+      await setup("[A2] [B2] " + SCALE);
+      await hold("G");
+      await b.click("#editor-oct-down");
+      await place("bottom");
+      assert.deepStrictEqual((await model()).options.angles.bottom, [0, 180, 270]);
     });
 
     test("SE-9: a tray note tapped next to a pinned bottom note never overlaps it", async () => {
@@ -540,6 +1087,37 @@ function run() {
       assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
       await b.click("#editor-notice-undo");
       assert.strictEqual((await model()).options.seats, undefined);
+    });
+
+    test("with the Undo chip showing, Tab never lands on or stalls at the covered toolbar Undo", async () => {
+      await setup(SCALE);
+      await tapNote("rim", 0);
+      await tapNote("rim", 1);
+      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo") && getComputedStyle(document.getElementById("editor-undo")).visibility;`), "hidden");
+      const seen = [];
+      for (let i = 0; i < 40; i++) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await b.eval(`const a = document.activeElement; return a.id || a.outerHTML.slice(0, 80);`));
+      }
+      assert.ok(seen.includes("editor-notice-undo"), "the chip is a stop: " + JSON.stringify(seen));
+      assert.ok(!seen.includes("editor-undo"), "the covered Undo is never a stop: " + JSON.stringify(seen));
+      assert.ok(seen.every((x, i) => i === 0 || x !== seen[i - 1]), "focus moves on every Tab, a hidden stop would swallow one: " + JSON.stringify(seen));
+    });
+
+    test("MT first Tab from the control before the covered Undo moves focus on at once and never stalls", async () => {
+      await setup(SCALE);
+      await tapNote("rim", 0);
+      await tapNote("rim", 1);
+      const prev = await b.eval(`const raw = [...document.querySelectorAll("#editor button, #editor input, #editor [tabindex]")];
+        const before = raw.slice(0, raw.indexOf(document.getElementById("editor-undo"))).filter((el) => el.tabIndex >= 0 && !el.disabled && el.getClientRects().length && !el.closest("[inert],[hidden]") && getComputedStyle(el).visibility !== "hidden").pop();
+        before.focus();
+        window.__mtFrom = before;
+        return before.id || before.outerHTML.slice(0, 80);`);
+      assert.strictEqual(await b.eval(`return document.activeElement === window.__mtFrom && document.getElementById("editor-undo").classList.contains("covered");`), true, "the start focus took effect on " + prev + " and the toolbar Undo is covered");
+      await b.key("Tab", "Tab", 9);
+      const r = await b.eval(`const a = document.activeElement; return { moved: a !== window.__mtFrom, covered: a.id === "editor-undo", at: a.id || a.outerHTML.slice(0, 80) };`);
+      assert.ok(r.moved, "the first Tab from " + prev + " left focus where it was: " + JSON.stringify(r));
+      assert.ok(!r.covered, "the first Tab landed on the covered toolbar Undo: " + JSON.stringify(r));
     });
 
     test("Remove deletes the selected note and Undo restores it; tapping the selection again deselects it", async () => {
@@ -609,7 +1187,7 @@ function run() {
 
     test("D23 copy: a rim or cyclops note dropped on the ding is refused with a plain message; the hint line still carries the ding cue", async () => {
       await setup("[A2] " + SCALE);
-      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent);`), ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.", "Drop or tap a note on the ding to swap it with the root."]);
+      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent);`), ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.", "Drop or tap a bottom note on the ding to swap it with the root."]);
       const before = await model();
       await tapNote("rim", 0);
       await tapNote("ding", 0);
@@ -674,7 +1252,7 @@ function run() {
         await place("bottom");
         let m = await model();
         assert.strictEqual(Object.values(m.fields).filter((f) => f[3] === "bottom").length, 1);
-        assert.strictEqual(m.options.angles, undefined, "an area add is auto, never pinned");
+        assert.deepStrictEqual(m.options.angles, { bottom: [270] }, "the first bottom note of a new scale is stored at 270 (rc-fixes L3-C)");
         await hold("C");
         for (let k = 0; k < 3; k++) await b.click("#editor-oct-up");
         await place("inner");
@@ -762,10 +1340,10 @@ function run() {
         await hold("E");
         await b.click("#editor-oct-down");
         await place("bottom");
-        assert.strictEqual((await model()).pins.length, 3, "the add keeps the pins");
+        assert.strictEqual((await model()).pins.length, 5, "the add freezes the ring: every bottom note pinned");
         assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 4);
         assert.match(await linkOf(), /at-/);
-        const unpinnedIdx = await b.eval(`const a = editorSession.history.present.options.angles.bottom; return a.findIndex((x) => x === null);`);
+        const unpinnedIdx = await b.eval(`return editorNames(editorSession.history.present, "bottom").indexOf("E3");`);
         await tapNote("bottom", unpinnedIdx);
         assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
         const before = await model();
@@ -1255,10 +1833,13 @@ function run() {
           await fresh(w, h);
           await openAdd();
           await typeLine(SCALE);
+          await b.click("#editor-hint-toggle");
+          await b.waitFor(`!document.getElementById("editor-areas").hidden`);
           assert.strictEqual(await zoneCount("rim"), "Rim 8/12");
           assert.strictEqual(await zoneCount("inner"), "Cyclops 2/6");
           assert.strictEqual(await zoneCount("bottom"), "Bottom 0/12");
           for (const l of await lineBoxes("#editor-counts .zc")) assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": '" + l.text + "' is at most two line boxes, " + l.h + " vs " + l.lh);
+          for (const f of await b.eval(`return [...document.querySelectorAll("#editor-counts .zc")].map((e) => ({ text: e.textContent, sw: e.scrollWidth, cw: e.clientWidth }));`)) assert.ok(f.cw > 0 && f.sw <= f.cw,w + ": '" + f.text + "' does not overflow its box, scrollWidth " + f.sw + " vs clientWidth " + f.cw);
           await typeLine("(D3) " + RIM12 + " | C6");
           assert.strictEqual(await zoneCount("rim"), "Rim 12/12 Full");
           assert.strictEqual(await b.eval(`return document.querySelectorAll('#editor-counts [data-zone="rim"] b').length;`), 1);
@@ -1703,7 +2284,7 @@ function run() {
           await typeLine(SCALE);
           const r = await b.eval(`const ed = document.getElementById("editor"); const svg = document.querySelector(".editor-panbox svg").getBoundingClientRect();
             const cs = getComputedStyle(ed); const col = ed.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-            const below = [...ed.querySelectorAll("#editor-areas, .editor-toolbar, #editor-tray")].map((e) => e.getBoundingClientRect().top);
+            const below = [...ed.querySelectorAll("#editor-tabs, .editor-toolbar, #editor-tray")].map((e) => e.getBoundingClientRect().top);
             const panBox = document.querySelector(".editor-panbox").getBoundingClientRect();
             return { size: Math.min(svg.width, svg.height), top: Math.min(...below), panBottom: svg.bottom, want: Math.min(col, panBox.width, panBox.height), scrollOk: document.documentElement.scrollWidth <= document.documentElement.clientWidth, edw: ed.getBoundingClientRect().width };`);
           assert.ok(r.top >= r.panBottom - 1, w + ": controls start at " + r.top + " under the pan bottom " + r.panBottom);
@@ -1845,48 +2426,54 @@ function run() {
       assert.strictEqual(await b.eval(`const q = (id) => document.getElementById(id).getBoundingClientRect(); return Math.abs(q("editor-sharps").top - q("editor-flats").top) < 2 && q("editor-flats").left >= q("editor-sharps").right - 1;`), true, "Sharps then Flats on one row");
       assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "Scale tab");
       await b.click("#editor-tab-layout");
-      assert.deepStrictEqual(await inView(["editor-palette", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
-      assert.deepStrictEqual(await big(["editor-palette", "editor-anchor-one", "editor-anchor-between"]), [true, true, true]);
+      assert.deepStrictEqual(await inView(["editor-swatches", "editor-anchor-one", "editor-anchor-between"], 375, 667), []);
+      assert.deepStrictEqual(await big(["editor-swatches", "editor-anchor-one", "editor-anchor-between"]), [true, true, true]);
       assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "Layout tab");
     });
 
-    test("the palette chip opens ten 44px swatches in the Layout tab, with no scroll at 375x667, and a pick recolours the chip and closes", async () => {
+    test("EPF: the Layout tab shows ten 44px palette dots under a visible label with no chip, with no scroll at 375x667, and one tap picks", async () => {
       await setup(BOTTOM);
-      const dot = () => b.eval(`return getComputedStyle(document.querySelector("#editor-palette .pal-dot")).backgroundImage;`);
-      const fillBefore = await dot();
-      await b.click("#editor-palette");
-      const open = await b.eval(`const g = document.getElementById("editor-swatches"); const dots = [...g.querySelectorAll("button")];
-        return { n: dots.length, tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), notes: document.getElementById("editor-panel-scale").hasAttribute("hidden"),
-          pressed: document.getElementById("editor-palette").getAttribute("aria-expanded"), names: dots.slice(0, 2).map((d) => d.getAttribute("aria-label")) };`);
-      assert.deepStrictEqual(open, { n: 10, tall: true, notes: true, pressed: "true", names: ["Card palette 1", "Card palette 2"] });
-      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "swatches open");
-      assert.deepStrictEqual(await inView(["editor-swatches", "editor-save", "editor-palette"], 375, 667), []);
+      await b.click("#editor-tab-layout");
+      const flat = await b.eval(`const g = document.getElementById("editor-swatches"); const dots = [...g.querySelectorAll("button")];
+        const label = document.getElementById("editor-palette-label"); const lq = label.getBoundingClientRect();
+        return { chip: document.getElementById("editor-palette"), n: dots.length, shown: !g.hidden && g.offsetParent !== null,
+          tall: dots.every((d) => { const q = d.getBoundingClientRect(); return q.width >= 44 && q.height >= 44; }), names: dots.slice(0, 2).map((d) => d.getAttribute("aria-label")),
+          labelled: g.getAttribute("aria-labelledby") === "editor-palette-label", ownLabel: g.hasAttribute("aria-label"), labelShown: lq.width > 0 && lq.height > 0, labelText: label.textContent,
+          notes: document.getElementById("editor-panel-scale").hasAttribute("hidden") };`);
+      assert.deepStrictEqual(flat, { chip: null, n: 10, shown: true, tall: true, names: ["Palette 1", "Palette 2"], labelled: true, ownLabel: false, labelShown: true, labelText: "Palette", notes: true });
+      assert.deepStrictEqual(await noScroll(375, 667), { page: true, panel: true }, "dots always shown");
+      assert.deepStrictEqual(await inView(["editor-palette-label", "editor-swatches", "editor-save", "editor-anchor-one"], 375, 667), []);
       const past = await pastLen();
       await b.click('#editor-swatches button[data-palette="9"]');
-      assert.strictEqual((await model()).options.palette, 9);
+      assert.strictEqual((await model()).options.palette, 9, "one tap picks");
       assert.match(await code(), /\/palette-10\//);
       assert.strictEqual(await pastLen(), past + 1, "one Undo step");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true, "a pick closes the swatches");
-      assert.notStrictEqual(await dot(), fillBefore, "the chip took the new colours");
-      await b.click("#editor-palette");
+      assert.deepStrictEqual(await b.eval(`const g = document.getElementById("editor-swatches"); return [g.hidden, g.offsetParent !== null, g.querySelector('[data-palette="9"]').getAttribute("aria-pressed"), g.querySelector('[data-palette="0"]').getAttribute("aria-pressed")];`),
+        [false, true, "true", "false"], "the group stays open and marks the pick");
       await b.click('#editor-swatches button[data-palette="0"]');
       assert.strictEqual((await model()).options.palette, 0);
       assert.strictEqual((await code()).includes("palette-"), false, "palette 0 writes no option");
       assert.strictEqual(await pastLen(), past + 2);
       await clickUndo();
       assert.strictEqual((await model()).options.palette, 9);
+      assert.strictEqual(await b.eval(`return document.querySelector('#editor-swatches [data-palette="9"]').getAttribute("aria-pressed");`), "true", "undo moves the mark");
     });
 
-    test("picking the current palette closes the swatches and adds no Undo step; the chip toggles them shut", async () => {
+    test("EPF: the page layer paints an opaque ground and a disabled mode control dims", async () => {
+      await setup(BOTTOM);
+      const seen = await b.eval(`const bg = getComputedStyle(document.getElementById("scale-sheet")).backgroundColor;
+        const x = document.createElement("button"); x.className = "mode"; x.disabled = true; document.getElementById("settings-panel").appendChild(x);
+        const dim = getComputedStyle(x).color; x.remove();
+        return { bg, dim };`);
+      assert.deepStrictEqual(seen, { bg: "rgb(246, 244, 237)", dim: "rgb(138, 132, 123)" });
+    });
+
+    test("EPF: picking the current palette adds no Undo step and keeps the dots shown", async () => {
       await setup(BOTTOM);
       const past = await pastLen();
-      await b.click("#editor-palette");
       await b.click('#editor-swatches button[data-palette="0"]');
       assert.strictEqual(await pastLen(), past);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true);
-      await b.click("#editor-palette");
-      await b.click("#editor-palette");
-      assert.strictEqual(await b.eval(`return [document.getElementById("editor-swatches").hidden, getComputedStyle(document.getElementById("editor-notes")).display];`).then((r) => r[0]), true);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").offsetParent !== null;`), true);
     });
 
     test("the anchor splits notes 1 and 2, aria-pressed follows, and a repeat adds no step", async () => {
@@ -1911,12 +2498,27 @@ function run() {
       assert.deepStrictEqual(sizes, [true, true]);
     });
 
-    test("a palette pick closes the swatches while the text line is being edited", async () => {
+    test("EPF: a palette pick applies while the text line is being edited, and is refused while a dialog is open", async () => {
       await setup(BOTTOM);
-      await b.click("#editor-palette");
+      await b.click("#editor-tab-layout");
       await b.eval(`editorSession.editing = true; return true;`);
       await b.click('#editor-swatches button[data-palette="3"]');
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), true);
+      assert.strictEqual((await model()).options.palette, 3);
+      await b.eval(`editorSession.editing = false; editorSession.dialog = true; return true;`);
+      await b.eval(`document.querySelector('#editor-swatches [data-palette="5"]').click(); return true;`);
+      assert.strictEqual((await model()).options.palette, 3, "a pick under a dialog is refused");
+    });
+
+    test("EPF: a palette pick is refused while a rejected text line is still being edited, and the error stays visible", async () => {
+      await setup(BOTTOM);
+      await typeLine("A3 QQ9");
+      const kind = () => b.eval(`const s = document.getElementById("editor-status"); return [s.getAttribute("data-kind"), s.textContent.trim().length > 0, editorSession.editing];`);
+      assert.deepStrictEqual(await kind(), ["error", true, true]);
+      const before = (await model()).options.palette || 0;
+      await b.click("#editor-tab-layout");
+      await b.eval(`document.querySelector('#editor-swatches [data-palette="4"]').click(); return true;`);
+      assert.deepStrictEqual(await kind(), ["error", true, true], "the banner stays and editing is still on");
+      assert.strictEqual((await model()).options.palette || 0, before, "the palette is unchanged");
     });
   });
 
@@ -1952,8 +2554,11 @@ function run() {
             await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: "locale applied" });
             await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
             const bad = await b.eval(`const out = [];
-              for (const btn of document.querySelectorAll("#editor-tabs button, #editor .editor-toolbar button")) {
+              for (const btn of document.querySelectorAll("#editor-tabs button, #editor .editor-toolbar button, #editor-hint-toggle")) {
                 if (!btn.offsetParent) continue;
+                if (btn.id === "editor-hint-toggle" && (btn.getBoundingClientRect().height < 44 || btn.getBoundingClientRect().width < 44)) out.push("hint toggle under 44px");
+                const row = document.getElementById("editor-tabs").getBoundingClientRect();
+                if (btn.id === "editor-hint-toggle" && (btn.getBoundingClientRect().right > row.right + 0.5 || document.documentElement.scrollWidth > innerWidth)) out.push("hint toggle overflows");
                 const box = btn.getBoundingClientRect();
                 const range = document.createRange(); range.selectNodeContents(btn);
                 for (const r of range.getClientRects()) {
@@ -1961,6 +2566,15 @@ function run() {
                 }
                 const size = parseFloat(getComputedStyle(btn).fontSize);
                 if (size < 10.5) out.push(btn.id + " font " + size);
+              }
+              const rowBox = document.getElementById("editor-counts").getBoundingClientRect();
+              const zcs = [...document.querySelectorAll("#editor-counts .zc")];
+              if (!zcs.length) out.push("no count labels");
+              for (const zc of zcs) {
+                const box = zc.getBoundingClientRect();
+                if (box.left < rowBox.left - 0.5 || box.right > rowBox.right + 0.5 || box.right > innerWidth + 0.5) out.push("count " + zc.dataset.zone + ":" + zc.textContent);
+                if (zc.getClientRects().length > 1) out.push("count wraps " + zc.dataset.zone + ":" + zc.textContent);
+                if (zc.scrollWidth > zc.clientWidth + 0.5 && zc.clientWidth > 0) out.push("count clipped " + zc.dataset.zone + ":" + zc.textContent);
               }
               return out;`);
             assert.deepStrictEqual(bad, [], width + " " + lang);
@@ -2124,15 +2738,13 @@ function run() {
       assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 2, "typing keeps the field's own undo");
     });
 
-    test("the text line opens on Enter; the palette chip and its swatches work from the keyboard", async () => {
+    test("the text line opens on Enter; the palette dots work from the keyboard", async () => {
       await setup();
       await b.eval(`document.getElementById("editor-line").focus(); return true;`);
       await enter();
       assert.strictEqual(await b.eval(`return editorSession.editing;`), true);
       await press("Escape", "Escape", 27);
       await b.click("#editor-tab-layout");
-      await b.eval(`document.getElementById("editor-palette").focus(); return true;`);
-      await enter();
       assert.strictEqual(await b.eval(`return document.getElementById("editor-swatches").hidden;`), false);
       await b.eval(`document.querySelector('#editor-swatches [data-palette="3"]').focus(); return true;`);
       await space();
@@ -2165,6 +2777,30 @@ function run() {
       await b.eval(`document.getElementById("editor-back").focus(); return true;`);
       await press("Tab", "Tab", 9, 8);
       assert.strictEqual(await b.eval(`return !!document.activeElement.closest("#editor");`), true, "Shift+Tab wraps backward");
+    });
+
+    for (const [tw, th] of [[375, 548], [375, 440]]) test(`Tab brings every stop into the panel's scrollport on a short screen ${tw}x${th}`, async () => {
+      await fresh(tw, th);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-tab-layout");
+      assert.deepStrictEqual(await b.eval(`const root = document.getElementById("editor");
+        const off = root.appendChild(document.createElement("button")); off.id = "zz-off"; off.disabled = true;
+        const none = root.appendChild(document.createElement("button")); none.id = "zz-none"; none.style.display = "none";
+        const ids = editorTabStops().map((e) => e.id); off.remove(); none.remove();
+        return ids.filter((id) => id.startsWith("zz-"));`), [], "a disabled or unlaid-out control is no Tab stop");
+      const stops = await b.eval(`return editorTabStops().length;`);
+      await b.eval(`document.getElementById("editor-back").focus(); return true;`);
+      const outside = [];
+      for (let k = 0; k < stops; k += 1) {
+        await press("Tab", "Tab", 9);
+        const out = await b.eval(`const a = document.activeElement, q = a.getBoundingClientRect(), inRegion = !!a.closest("#editor-region") && !a.closest("#editor-tabs");
+          const p = document.getElementById(inRegion ? "editor-region" : "editor").getBoundingClientRect();
+          const top = inRegion ? document.getElementById("editor-tabs").getBoundingClientRect().bottom : p.top;
+          return q.top < top - 1 || q.bottom > p.bottom + 1 ? (a.id || a.className) : null;`);
+        if (out) outside.push(out);
+      }
+      assert.deepStrictEqual(outside, []);
     });
   });
 
@@ -2234,7 +2870,13 @@ function run() {
             await pause(300);
             assert.strictEqual(await isDragging(), true, how);
             if (how === "cancel") await touch("touchCancel");
-            else if (how === "escape") { await b.key("Escape", "Escape", 27); await touch("touchEnd"); }
+            else if (how === "escape") {
+              await b.key("Escape", "Escape", 27);
+              await pause(500);
+              assert.strictEqual(await isDragging(), false, "Escape alone ends the drag");
+              assert.strictEqual(await live(), false, "Escape alone ends the drag");
+              await touch("touchEnd");
+            }
             else {
               await touch("touchMove", how === "off" ? to : await spotNow((await geom()).rim, 22.5));
               await touch("touchEnd");
@@ -2291,8 +2933,9 @@ function run() {
       });
     }
 
-    test("drag ux E4: a placed note is highlighted after a drag, a tap, a zone add, a ding swap, a trade and the keyboard, and not after Undo", async () => {
+    test("drag ux E4: a placed note is highlighted after a drag, a tap, a tap on a zone, a tap on the ding, a trade by two taps and the keyboard, and not after Undo", async () => {
       const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
+      const tapPt = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
       await setup(SCALE_);
       await liftFrom(await chipAt("B"), await noteAt("rim", 0));
       await touch("touchMove", await spotNow((await geom()).rim, 22.5));
@@ -2302,22 +2945,22 @@ function run() {
       await clickUndo();
       assert.deepStrictEqual(await marked(), [], "not after Undo");
       await b.click('.tray-note[data-name="B"]');
-      await place("rim");
-      assert.deepStrictEqual(await marked(), ["rim8"], "zone add");
+      await tapPt(await spotNow((await geom()).rim - 0.08, 20));
+      assert.deepStrictEqual(await marked(), ["rim8"], "zone tap");
       await clickUndo();
       await b.click('.tray-note[data-name="B"]');
       const gm = await geom();
       const pt = await b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${gm.rim} * 100 * Math.cos(0.4), -${gm.rim} * 100 * Math.sin(0.4)).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
-      for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, ...pt, button: "left", clickCount: 1 });
+      await tapPt(pt);
       assert.strictEqual((await marked()).length, 1, "tap to place");
       await clickUndo();
       await b.click("#editor-oct-down");
       await b.click('.tray-note[data-name="G"]');
-      await b.eval(`editorPlaceHeld({ kind: "ding" }, editorSession.history.present); return true;`);
-      assert.deepStrictEqual(await marked(), ["ding0"], "ding swap");
+      await tapPt(await spotNow((await geom()).ding, -90));
+      assert.deepStrictEqual(await marked(), ["ding0"], "ding tap");
       await clickUndo();
-      await b.eval(`editorSession.sel = { ring: "rim", i: 0 }; editorRender(); return true;`);
-      await b.eval(`editorTrade(editorSession.history.present, { ring: "rim", i: 0 }, { ring: "rim", i: 1 }); editorRender(); return true;`);
+      await tapPt(await noteAt("rim", 0));
+      await tapPt(await noteAt("rim", 1));
       assert.deepStrictEqual(await marked(), ["rim0", "rim1"], "trade, both ends");
       await clickUndo();
       await b.eval(`document.querySelector('#editor-pan [data-fk="rim:0"]').focus(); return true;`);
@@ -2536,7 +3179,7 @@ function run() {
       await b.click("#editor-type-neotone");
     };
 
-    test("PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are gone, and the Neotone pair is hidden, never disabled", async () => {
+    test("PL-a the Layout row holds only the two anchor buttons, Rotate and Mirror are gone, and the Neotone pair is shown like Standard's", async () => {
       for (const [w, h] of [[320, 568], [375, 667], [820, 1180]]) {
         await fresh(w, h);
         await openAdd();
@@ -2554,7 +3197,7 @@ function run() {
         await b.click("#editor-type-neotone");
         await b.click("#editor-tab-layout");
         const neo = await row();
-        assert.deepStrictEqual([neo.ids, neo.gone, neo.greyed], [[], [true, true, true, true], 0], "Neotone " + w + ": the pair is hidden, not disabled");
+        assert.deepStrictEqual([neo.ids, neo.gone, neo.greyed, neo.targets, neo.inView, neo.scroll], [["editor-anchor-one", "editor-anchor-between"], [true, true, true, true], 0, true, true, true], "Neotone " + w + ": the pair is shown, enabled, 44px, in view and the panel does not scroll");
         await b.click("#editor-type-standard");
         await b.click("#editor-tab-layout");
         assert.deepStrictEqual((await row()).ids, ["editor-anchor-one", "editor-anchor-between"], "back on Standard");
@@ -2699,7 +3342,7 @@ function run() {
             await b.eval(`editorRender(); return document.fonts.ready.then(() => true);`);
             await b.click("#editor-type-neotone");
             const bad = await b.eval(`const out = [];
-              for (const id of ["editor-oct-label", "editor-oct", "editor-sharps", "editor-flats", "editor-anchor-one", "editor-anchor-between", "editor-palette", "editor-more"]) {
+              for (const id of ["editor-oct-label", "editor-oct", "editor-sharps", "editor-flats", "editor-anchor-one", "editor-anchor-between", "editor-palette-label", "editor-more"]) {
                 const e = document.getElementById(id); if (!e || !e.offsetParent) continue;
                 const box = e.getBoundingClientRect();
                 if (e.scrollWidth > e.clientWidth + 0.5) out.push(id + " scrollWidth");
@@ -2710,7 +3353,7 @@ function run() {
               return out;`);
             assert.deepStrictEqual(bad, [], width + " " + lang);
             await b.click("#editor-tab-layout");
-            assert.deepStrictEqual(await b.eval(`const out = []; for (const id of ["editor-anchor-one", "editor-anchor-between", "editor-palette"]) { const e = document.getElementById(id); if (e && e.offsetParent && e.scrollWidth > e.clientWidth + 0.5) out.push(id); } return out;`), [], width + " " + lang + " layout");
+            assert.deepStrictEqual(await b.eval(`const out = []; for (const id of ["editor-anchor-one", "editor-anchor-between", "editor-palette-label", "editor-swatches"]) { const e = document.getElementById(id); if (e && e.offsetParent && e.scrollWidth > e.clientWidth + 0.5) out.push(id); } return out;`), [], width + " " + lang + " layout");
             await b.click("#editor-more");
             assert.deepStrictEqual(await b.eval(`const m = document.getElementById("editor-menu").getBoundingClientRect(); return [...document.querySelectorAll("#editor-menu [role=menuitem]")].filter((e) => { const q = e.getBoundingClientRect(); return e.scrollWidth > e.clientWidth + 0.5 || q.left < 0 || q.right > innerWidth; }).map((e) => e.id);`), [], width + " " + lang + " menu");
             await b.key("Escape", "Escape", 27);
@@ -2757,9 +3400,11 @@ function run() {
       await setup(SCALE);
       assert.deepStrictEqual(await b.eval(`const inside = (p, id) => document.getElementById(p).contains(document.getElementById(id));
         return ["editor-notes", "editor-oct", "editor-sharps", "editor-flats"].map((id) => inside("editor-panel-scale", id));`), [true, true, true, true]);
-      assert.strictEqual(await visible("editor-palette"), false, "the palette is not on the Scale tab");
+      assert.strictEqual(await visible("editor-swatches"), false, "the palette is not on the Scale tab");
+      assert.strictEqual(await visible("editor-palette-label"), false, "nor its label");
       await b.click("#editor-tab-layout");
-      assert.strictEqual(await visible("editor-palette"), true);
+      assert.strictEqual(await visible("editor-swatches"), true);
+      assert.strictEqual(await visible("editor-palette-label"), true);
       assert.strictEqual(await visible("editor-notes"), false);
       assert.deepStrictEqual(await b.eval(`return ["editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById("editor-panel-layout").contains(document.getElementById(id)));`), [true, true]);
     });
@@ -2777,8 +3422,7 @@ function run() {
 
     test("tabs: choosing a palette swatch keeps the Layout tab", async () => {
       await setup(SCALE);
-      await b.click("#editor-palette");
-      assert.strictEqual(await tabNow(), "layout");
+      await b.click("#editor-tab-layout");
       await b.click("#editor-swatches button");
       assert.strictEqual(await tabNow(), "layout");
     });
@@ -2795,9 +3439,12 @@ function run() {
     test("counts: both hint lines render under the counts on both tabs", async () => {
       await setup(SCALE);
       const hint = () => b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent + ":" + (e.offsetParent !== null));`);
-      const want = ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.:true", "Drop or tap a note on the ding to swap it with the root.:true"];
+      const want = ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.:true", "Drop or tap a bottom note on the ding to swap it with the root.:true"];
+      assert.ok((await hint()).every((x) => x.endsWith(":false")), "collapsed until the Hint button is pressed");
+      await b.click("#editor-hint-toggle");
       assert.deepStrictEqual(await hint(), want);
-      await b.click("#editor-tab-layout");
+      await b.eval(`return editorSetTab("layout");`);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-panel-layout").hidden;`), false, "the Layout tab is showing");
       assert.deepStrictEqual(await hint(), want);
       assert.strictEqual(await b.eval(`return !document.getElementById("editor-panels").contains(document.getElementById("editor-hint"));`), true, "the hint sits outside both panels");
     });
@@ -2914,6 +3561,7 @@ function run() {
         assert.strictEqual(await tabNow(), "layout", "tab strip");
         await swipeBy("#editor-panel-layout", 120);
         assert.strictEqual(await tabNow(), "scale", "Layout panel");
+        await b.click("#editor-hint-toggle");
         await swipeBy("#editor-counts", -120);
         assert.strictEqual(await tabNow(), "layout", "counts row");
         await b.eval(`editorSetTab("scale"); return true;`);
@@ -2962,7 +3610,7 @@ function run() {
         assert.strictEqual(await tabNow(), "scale", "pan");
         await swipeBy(".tray-note", -120);
         assert.strictEqual(await tabNow(), "scale", "tray note");
-        await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); return true;`);
+        await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); i.scrollIntoView({ block: "center" }); return true;`);
         await swipeBy("#probe-input", -120);
         assert.strictEqual(await tabNow(), "scale", "text field");
       });
@@ -3076,7 +3724,7 @@ function run() {
       await fresh(375, 667);
       await openAdd();
       const r = await b.eval(`const n = document.getElementById("editor-name"), panel = document.getElementById("editor-panel-scale"), c = getComputedStyle(n), box = n.getBoundingClientRect();
-        return { first: panel.firstElementChild === n, inTray: panel.querySelector("#editor-tray") !== null, size: parseFloat(c.fontSize), h: box.height, max: n.maxLength,
+        return { first: panel.firstElementChild.firstElementChild === n, inTray: panel.querySelector("#editor-tray") !== null, size: parseFloat(c.fontSize), h: box.height, max: n.maxLength,
           aria: n.getAttribute("aria-label"), wide: box.width, stops: editorTabStops().indexOf(n) };`);
       assert.strictEqual(r.first, true, "the name is the first thing in the Scale panel");
       assert.ok(r.size >= 16, "font-size " + r.size + " must not zoom iOS");
@@ -3094,11 +3742,12 @@ function run() {
       await typeLine(BOTTOMS);
       const auto = await b.eval(`return editorAutoName(editorSession.history.present);`);
       assert.ok(auto.length > 0);
-      assert.strictEqual(await placeholder(), auto);
+      const hint = (name) => b.eval(`return t("editor.name.auto", { name: ${JSON.stringify(name)} });`);
+      assert.strictEqual(await placeholder(), await hint(auto));
       assert.strictEqual(await nameIs(), "", "the field itself stays blank until a name is typed");
       await b.click("#editor-type-neotone");
       const neo = await placeholder();
-      assert.strictEqual(neo, auto + " Neotone Mutant");
+      assert.strictEqual(neo, await hint(auto + " Neotone Mutant"));
     });
 
     test("Enter commits the name as one Undo step, drops the keyboard, and Undo takes it back", async () => {
@@ -3309,7 +3958,8 @@ function run() {
       await openAdd();
       await typeLine(BOTTOMS);
       await b.click("#editor-type-neotone");
-      const shown = await placeholder();
+      const shown = await b.eval(`return editorAutoName(editorSession.history.present);`);
+      assert.strictEqual(await placeholder(), await b.eval(`return t("editor.name.auto", { name: ${JSON.stringify(shown)} });`));
       await b.click("#editor-save");
       await closed();
       const seeded = await lastSaved();
@@ -3338,6 +3988,47 @@ function run() {
       assert.ok(!blank.name, "a blank the user chose is not re-seeded");
     });
 
+    test("TRI59d A2: on Neotone, with and without mutant notes, both anchor buttons are shown and enabled, aria-pressed follows, and between turns the pan", async () => {
+      const NEO_LINE = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+      const MUTANT_LINE = "[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]";
+      for (const line of [NEO_LINE, MUTANT_LINE]) {
+        await fresh();
+        await openAdd();
+        await typeLine(line);
+        await b.click("#editor-type-neotone");
+        await b.click("#editor-tab-layout");
+        const read = () => b.eval(`const g = (id) => document.getElementById(id);
+          return { shown: ["editor-anchor-one", "editor-anchor-between"].map((id) => !g(id).hidden && g(id).offsetParent !== null),
+            off: ["editor-anchor-one", "editor-anchor-between"].map((id) => g(id).disabled || g(id).hasAttribute("aria-disabled")),
+            pressed: ["editor-anchor-one", "editor-anchor-between"].map((id) => g(id).getAttribute("aria-pressed")),
+            anchor: editorSession.history.present.options.anchor || "one",
+            turn: editorSolve(editorSession.history.present).value.geom.turn || 0,
+            map: editorSession.history.present.options.profile.map.slice() };`);
+        const before = await read();
+        assert.deepStrictEqual([before.shown, before.off, before.pressed], [[true, true], [false, false], ["true", "false"]], line);
+        await b.click("#editor-anchor-between");
+        const after = await read();
+        assert.deepStrictEqual([after.shown, after.off, after.pressed, after.anchor], [[true, true], [false, false], ["false", "true"], "between"], line);
+        assert.deepStrictEqual(after.map, before.map, "the arrangement is untouched");
+        if (line === MUTANT_LINE) assert.deepStrictEqual([before.turn, after.turn, (await (async () => { await b.click("#editor-anchor-one"); return (await read()).turn; })())], [0, 20, 0], "between turns a pan with mutants");
+        if (line === MUTANT_LINE) await b.click("#editor-anchor-between");
+        await b.click("#editor-anchor-one");
+        const back = await read();
+        assert.deepStrictEqual([back.pressed, back.anchor], [["true", "false"], "one"], line);
+      }
+    });
+
+    test("TRI59d A2: Pygmy to Neotone with between, SAVE writes record 7", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine("[C3] [Db3] [Eb3] (F3) G3 Ab3 [Bb3] C4 [Db4] Eb4 F4 G4 Ab4 C5 Eb5 [Ab5]");
+      await b.click("#editor-tab-layout");
+      await b.click("#editor-anchor-between");
+      await b.click("#editor-type-neotone");
+      assert.strictEqual(await b.eval(`return editorSession.history.present.options.anchor;`), "between", "the pan type switch carries between");
+      assert.strictEqual(await b.eval(`return editorCommitOptions(editorSession.history.present).anchor;`), "between");
+    });
+
     test("PLa-N2: with no notes both anchor buttons are disabled on each pan type, and with notes they are enabled on Standard", async () => {
       await fresh();
       await openAdd();
@@ -3348,17 +4039,2550 @@ function run() {
       await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorCommitText(m, "")).history; editorRender(); return true;`);
       assert.deepStrictEqual(await state(), [true, true], "back to empty");
     });
-  });
 
-  describe("flag off", () => {
-    test("with the flag off no editor panel is ever built and the legacy sheet opens", async () => {
-      await fresh(375, 667, false);
-      await b.eval(`openScaleSheet(addChip); return true;`);
-      const r = await b.eval(`return { editor: !!document.getElementById("editor"), line: !!document.getElementById("editor-line"),
-        legacy: getComputedStyle(document.querySelector("#scale-sheet .sheetsurf")).display !== "none", cls: document.getElementById("scale-sheet").classList.contains("onepanel") };`);
-      assert.deepStrictEqual(r, { editor: false, line: false, legacy: true, cls: false });
+    test("empty Neotone anchors: on an empty Neotone pan both anchor buttons are disabled, and they enable once a main note is placed", async () => {
+      await fresh();
+      await openAdd();
+      await b.click("#editor-type-neotone");
+      const state = () => b.eval(`return ["editor-anchor-one", "editor-anchor-between"].map((id) => document.getElementById(id).disabled);`);
+      assert.deepStrictEqual(await state(), [true, true], "an empty Neotone pan");
+      await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+      assert.deepStrictEqual(await state(), [false, false], "a Neotone pan with notes");
     });
   });
+
+  describe("Editor RC W5a quieter tab, error banner, name field", () => {
+    const RIM12 = "A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5";
+    const FULL = "(D3) " + RIM12 + " | C6";
+    const setup = async (line, w = 375, h = 667) => { await fresh(w, h); await openAdd(); await typeLine(line); };
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const refuse = async () => {
+      await b.click('.tray-note[data-name="F"]');
+      await b.click("#editor-oct-up");
+      await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the refusal" });
+    };
+    const rect = (sel) => b.eval(`const q = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { top: q.top, bottom: q.bottom, left: q.left, right: q.right, height: q.height };`);
+    const style = (sel, props) => b.eval(`const c = getComputedStyle(document.querySelector(${JSON.stringify(sel)})); return ${JSON.stringify(props)}.map((p) => c[p]);`);
+
+    test("ETS: the selected tab is not filled: underline and strong text on it, muted text on the other, no .on class, no fill on hover or press", async () => {
+      await setup(SCALE);
+      for (const sel of ["scale", "layout"]) {
+        if (sel === "layout") await b.click("#editor-tab-layout");
+        const other = sel === "scale" ? "layout" : "scale";
+        const [bg, under, color, classes, weight] = await b.eval(`const c = getComputedStyle(document.getElementById("editor-tab-${sel}"));
+          return [c.backgroundColor, c.borderBottomColor, c.color, document.getElementById("editor-tab-${sel}").className, c.fontWeight];`);
+        assert.strictEqual(bg, "rgba(0, 0, 0, 0)", sel + " selected tab has no fill");
+        assert.strictEqual(under, "rgb(103, 86, 181)", sel + " underline");
+        assert.strictEqual(color, "rgb(36, 36, 36)");
+        assert.strictEqual(weight, "600");
+        assert.ok(!classes.split(" ").includes("on"), sel + " carries no .on: " + classes);
+        const [obg, ounder, ocolor] = await b.eval(`const c = getComputedStyle(document.getElementById("editor-tab-${other}")); return [c.backgroundColor, c.borderBottomColor, c.color];`);
+        assert.strictEqual(obg, "rgba(0, 0, 0, 0)");
+        assert.strictEqual(ounder, "rgba(0, 0, 0, 0)");
+        assert.strictEqual(ocolor, "rgb(94, 88, 80)", "the unselected tab is muted");
+      }
+      const at = await b.eval(`const q = document.getElementById("editor-tab-scale").getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 };`);
+      await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at });
+      assert.strictEqual((await style("#editor-tab-scale", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "no fill on hover");
+      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...at, button: "left", clickCount: 1 });
+      assert.strictEqual((await style("#editor-tab-scale", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "no fill while pressed");
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...at, button: "left", clickCount: 1 });
+    });
+
+    test("EMP: the status line sits between the pan and the counts, within 16px of the pan, and stays in view with no scroll at 375x667 and 320x568", async () => {
+      for (const [w, h] of [[375, 667], [320, 568]]) {
+        await setup(FULL, w, h);
+        await refuse();
+        const r = await b.eval(`const pb = document.querySelector("#editor .editor-panbox"); const st = document.getElementById("editor-status");
+          const de = document.documentElement, ed = document.getElementById("editor");
+          const row = st.parentNode;
+          return { order: pb.nextElementSibling === row && row.className === "editor-statusrow" && row.nextElementSibling.id === "editor-areas", gap: st.getBoundingClientRect().top - pb.getBoundingClientRect().bottom,
+            inView: st.getBoundingClientRect().top >= 0 && st.getBoundingClientRect().bottom <= ${h} && st.getBoundingClientRect().right <= ${w},
+            page: de.scrollHeight === ${h} && de.scrollWidth === ${w}, panel: ed.scrollHeight <= ed.clientHeight && ed.scrollWidth <= ed.clientWidth };`);
+        assert.strictEqual(r.order, true, w + " DOM order");
+        assert.ok(r.gap >= -0.5 && r.gap <= 16, w + " gap " + r.gap);
+        assert.deepStrictEqual([r.inView, r.page, r.panel], [true, true, true], w + " " + JSON.stringify(r));
+      }
+    });
+
+    test("EMP: landscape 1280x800 puts the status in the right column between the line and the counts", async () => {
+      await setup(FULL, 1280, 800);
+      await refuse();
+      await b.click("#editor-hint-toggle");
+      const r = await b.eval(`const q = (s) => document.querySelector(s).getBoundingClientRect(); const pan = q("#editor .editor-panbox"), st = q("#editor-status");
+        return { right: st.left >= pan.right - 1, belowLine: st.top >= q("#editor-line").bottom - 1, aboveCounts: st.bottom <= q("#editor-areas").top + 1, aboveTabs: st.bottom <= q("#editor-tabs").top + 1 };`);
+      assert.deepStrictEqual(r, { right: true, belowLine: true, aboveCounts: true, aboveTabs: true });
+    });
+
+    test("EMP: an error is an ink banner at 14px and a notice is plain text", async () => {
+      await setup(FULL);
+      await refuse();
+      const [bg, color, size] = await style("#editor-status", ["backgroundColor", "color", "fontSize"]);
+      assert.deepStrictEqual([bg, color, size], ["rgb(36, 36, 36)", "rgb(255, 255, 255)", "14px"]);
+      assert.deepStrictEqual(await style("#editor-status", ["cursor", "borderTopLeftRadius"]), ["auto", "8px"]);
+      const wide = await b.eval(`const q = document.getElementById("editor-status").getBoundingClientRect(), e = document.querySelector("#editor .editor-statusrow").getBoundingClientRect(); return q.width / e.width > 0.8;`);
+      assert.strictEqual(wide, true, "full-width banner");
+      await b.eval(`editorSession.error = ""; editorSession.held = null; editorSession.say = "Pins reset."; editorSession.plainSay = "Pins reset."; editorRender(); return true;`);
+      assert.strictEqual((await style("#editor-status", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "a notice has no banner");
+    });
+
+    test("EMP: the arrival cue replays for a different error, not for a re-render of the same one, and again after a clear", async () => {
+      await setup(FULL);
+      const arrive = () => b.eval(`return document.getElementById("editor-status").classList.contains("arrive");`);
+      const strip = () => b.eval(`document.getElementById("editor-status").classList.remove("arrive"); return true;`);
+      const say = (text) => b.eval(`editorSession.error = ${JSON.stringify(text)}; editorRender(); return true;`);
+      await say("First error.");
+      assert.strictEqual(await arrive(), true, "first error arrives");
+      await strip();
+      await say("First error.");
+      assert.strictEqual(await arrive(), false, "an unchanged re-render does not replay");
+      await say("Second error.");
+      assert.strictEqual(await arrive(), true, "a different error replays");
+      await strip();
+      await say("");
+      await say("Second error.");
+      assert.strictEqual(await arrive(), true, "the same text after a clear replays");
+      assert.notStrictEqual((await style("#editor-status", ["animationName"]))[0], "none");
+    });
+
+    test("EMP: no arrival animation under reduced motion", async () => {
+      await setup(FULL);
+      await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+      try {
+        await b.eval(`editorSession.error = "Reduced."; editorRender(); return true;`);
+        assert.strictEqual((await style("#editor-status", ["animationName"]))[0], "none");
+      } finally {
+        await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+      }
+    });
+
+    for (const [w, h, key] of [[320, 568, "editor.full.rim"], [375, 667, "editor.crowded"]]) {
+      test(`EMP: a two-line German error does not move the pan at ${w}x${h} or overflow sideways`, async () => {
+        await setup(FULL, w, h);
+        await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+        await b.eval(`editorRender(); return true;`);
+        const before = await rect("#editor .editor-panbox");
+        const long = await b.eval(`return I18N.de[${JSON.stringify(key)}].replace("{max}", "12");`);
+        await b.eval(`editorSession.error = ${JSON.stringify(long)}; editorRender(); return true;`);
+        const lines = await b.eval(`const st = document.getElementById("editor-status"); return Math.round((st.getBoundingClientRect().height - 8) / 20);`);
+        assert.ok(lines >= 1);
+        const after = await rect("#editor .editor-panbox");
+        assert.ok(Math.abs(after.height - before.height) <= 1, `pan height ${before.height} -> ${after.height} (${lines} lines)`);
+        assert.deepStrictEqual(await b.eval(`const ed = document.getElementById("editor"), st = document.getElementById("editor-status"); return [ed.scrollWidth <= ed.clientWidth, st.scrollWidth <= st.clientWidth + 1];`), [true, true]);
+      });
+    }
+
+    for (const w of [375, 390]) {
+      test(`SC ${w} wide: a two-line German error fits the status row without clipping, and the status row keeps its height`, async () => {
+        await setup(FULL, w, 700);
+        await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+        await b.eval(`editorRender(); return true;`);
+        const row = () => b.eval(`const r = document.querySelector("#editor .editor-statusrow").getBoundingClientRect(), st = document.getElementById("editor-status"); return { h: r.height, sh: st.scrollHeight, ch: st.clientHeight, sth: st.getBoundingClientRect().height };`);
+        const before = await row();
+        const long = await b.eval(`return I18N.de["editor.crowded"].replace("{max}", "12");`);
+        await b.eval(`editorSession.error = ${JSON.stringify(long)}; editorRender(); return true;`);
+        const after = await row();
+        assert.ok(after.sth >= 48 - 1 && after.sth > 40, "the banner holds two lines: " + JSON.stringify(after));
+        assert.ok(after.sh <= after.ch + 1, "no clipped text: " + JSON.stringify(after));
+        assert.strictEqual(after.h, before.h, "the status row does not grow: " + JSON.stringify([before, after]));
+      });
+    }
+
+    describe("live drag", () => {
+      before(() => { magPinned = false; });
+      after(() => { magPinned = true; });
+      const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+      test("EMP: mid-drag at 390x844 the scaled pan box does not cover the status, which stays the top hit", async () => {
+        await setup(SCALE, 390, 844);
+        const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        const to = await b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="rim"][data-i="0"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        await touch("touchStart", chip);
+        for (const k of [0.15, 0.3]) await touch("touchMove", { x: chip.x + (to.x - chip.x) * k, y: chip.y + (to.y - chip.y) * k });
+        await pause(500);
+        try {
+          const r = await b.eval(`const pb = document.querySelector("#editor .editor-panbox").getBoundingClientRect(), st = document.getElementById("editor-status"), sq = st.getBoundingClientRect();
+            const hit = document.elementFromPoint(sq.left + sq.width / 2, sq.top + sq.height / 2);
+            return { dragging: document.getElementById("editor").classList.contains("dragging"), mag: parseFloat(getComputedStyle(document.querySelector("#editor .editor-panbox")).getPropertyValue("--ed-mag")) || 1,
+              overlap: pb.bottom > sq.top + 0.5, hit: hit === st || st.contains(hit), text: st.textContent };`);
+          assert.strictEqual(r.dragging, true);
+          assert.ok(r.mag > 1.05, "the pan did grow: " + r.mag);
+          assert.strictEqual(r.overlap, false, "the pan box ends above the status: " + JSON.stringify(r));
+          assert.strictEqual(r.hit, true);
+          assert.match(r.text, /Dragging/);
+        } finally {
+          await touch("touchEnd");
+          await pause(400);
+        }
+      });
+    });
+
+    test("N-b: focusing the scale name keeps half-typed, invalid notes text in the notes field", async () => {
+      await setup(SCALE);
+      await b.click("#editor-line");
+      await b.eval(`const l = document.getElementById("editor-line"); l.value = "A3 Bb3 C4 QQ9"; l.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      await b.click("#editor-name");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-line").value;`), "A3 Bb3 C4 QQ9", "the typed text survives");
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), true, "still editing");
+      await b.eval(`document.getElementById("editor-line").value = ${JSON.stringify(SCALE)}; return true;`);
+      await b.click("#editor-line");
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual(await b.eval(`return editorSession.editing;`), false);
+      assert.strictEqual(await text(), SCALE, "a valid text still commits");
+    });
+  });
+
+  describe("Editor RC I1 fit probe, absolute mode", () => {
+    test("panel_fit --absolute: the editor cell runs for ja and de at 375 and 320 and reports no failure", async () => {
+      const pf = require("../tools/probe/panel_fit.js");
+      const r = await pf.runEditorAbsolute({ html: fs.readFileSync(path.join(REPO, "index.html"), "utf8"), fontMode: "fallback", langs: ["ja", "de"], log: () => {} });
+      assert.strictEqual(r.rows.length, 2 * pf.EDITOR_CELLS.length * 2, "lang x cell x profile");
+      assert.deepStrictEqual(r.failures, []);
+      assert.ok(r.panelH > 100 && r.panelH < 400, "the panel height measurement is a real number: " + r.panelH);
+    });
+  });
+
+  describe("Editor pan size (TRI-59 pan lane)", () => {
+    const rects = (w, h) => b.eval(`const q = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: r.width, h: r.height }; };
+      const de = document.documentElement, ed = document.getElementById("editor"), rg = document.getElementById("editor-region");
+      return { svg: q("#editor-pan svg"), box: q(".editor-panbox"), bar: q(".editor-toolbar"), tray: q("#editor-tray"), name: q("#editor-name"), tabs: q("#editor-tabs"),
+        page: de.scrollHeight === ${h} && de.scrollWidth === ${w}, panel: ed.scrollHeight <= ed.clientHeight && ed.scrollWidth <= ed.clientWidth,
+        grid: getComputedStyle(ed).display === "grid", region: rg ? { top: rg.getBoundingClientRect().top, h: rg.clientHeight, sh: rg.scrollHeight, st: rg.scrollTop, oy: getComputedStyle(rg).overflowY } : null };`);
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const open = async (w, h) => { await fresh(w, h); await openBuiltin(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
+
+    // Targets: the plan's S1 formula with the option B sticky strip (tray beats the 200 floor, 120 is the hard floor),
+    // derived by rect probe on this lane's build. 0.95 x target is the floor each test enforces.
+    const STACKED = [[390, 844, 362, 380], [430, 932, 402, 422], [375, 667, 203, 212, 200], [360, 640, 176, 186], [375, 548, 120, 126], [320, 568, 120, 126], [768, 1024, 480, 504]];
+    for (const [w, h, target, upper, lower = 0.95 * target] of STACKED) {
+      test(`P0 ${w}x${h}: the drawn pan holds its sized height (${lower} to ${upper}px, so a zero flex basis fails), the page never scrolls and the toolbar is in view`, async () => {
+        await open(w, h);
+        const r = await rects(w, h);
+        const side = Math.min(r.svg.w, r.svg.h);
+        assert.ok(side >= lower && side <= upper, `${w}x${h}: drawn pan ${r.svg.w}x${r.svg.h}, wanted ${lower} to ${upper}`);
+        assert.ok(r.page, "no page scroll");
+        assert.ok(r.bar.top >= 0 && r.bar.bottom <= h, "toolbar in view " + JSON.stringify(r.bar));
+      });
+    }
+
+    test("QA1 every editor input with placeholder text paints it lighter than typed text, in main's drawer placeholder grey (#8A847B)", async () => {
+      await open(390, 844);
+      const r = await b.eval(`const out = [];
+        for (const el of document.querySelectorAll("#editor input, #editor textarea")) {
+          if (!el.placeholder) continue;
+          out.push({ id: el.id, ph: getComputedStyle(el, "::placeholder").color, ink: getComputedStyle(el).color, op: getComputedStyle(el, "::placeholder").opacity });
+        }
+        return out;`);
+      assert.ok(r.some((x) => x.id === "editor-name"), "the name field carries a placeholder: " + JSON.stringify(r));
+      for (const x of r) {
+        assert.notStrictEqual(x.ph, x.ink, x.id + " placeholder must differ from typed text");
+        assert.strictEqual(x.ph, "rgb(138, 132, 123)", x.id + " placeholder colour");
+        assert.strictEqual(x.op, "1", x.id + " placeholder opacity");
+      }
+    });
+
+    test("QA1 design parity with main's drawer: muted text is #5E5850 and a disabled control is grey ink on the sheet ground at full opacity", async () => {
+      await open(390, 844);
+      const r = await b.eval(`const c = (s, p) => getComputedStyle(document.querySelector(s))[p];
+        return { undoOff: document.getElementById("editor-undo").disabled, tab: c("#editor-tab-layout", "color"), label: c("#editor-palette-label", "color"),
+          op: c("#editor-undo", "opacity"), ink: c("#editor-undo", "color"), bg: c("#editor-undo", "backgroundColor") };`);
+      assert.strictEqual(r.undoOff, true, "undo starts disabled");
+      assert.strictEqual(r.tab, "rgb(94, 88, 80)", "inactive tab muted ink");
+      assert.strictEqual(r.label, "rgb(94, 88, 80)", "palette label muted ink");
+      assert.strictEqual(r.op, "1", "disabled controls are not faded a second time");
+      assert.strictEqual(r.ink, "rgb(138, 132, 123)", "disabled ink");
+      assert.strictEqual(r.bg, "rgb(246, 244, 237)", "disabled ground");
+    });
+
+    test("QA1 390x844: at least 12px between the tab strip and the first row on both tabs", async () => {
+      await open(390, 844);
+      const gap = (first) => b.eval(`const t = document.getElementById("editor-tabs").getBoundingClientRect(), f = document.querySelector(${JSON.stringify(first)}).getBoundingClientRect(); return f.top - t.bottom;`);
+      const scale = await gap("#editor-name");
+      assert.ok(scale >= 12 - 0.01, "scale tab gap " + scale);
+      await b.click("#editor-tab-layout");
+      const layout = await gap("#editor-layout");
+      assert.ok(layout >= 12 - 0.01, "layout tab gap " + layout);
+    });
+
+    test("P0 guards: 1280x800 keeps its grid pan (574) and 375x360, 360x330 and 540x400 stay stacked with a pan of at least 120", async () => {
+      await open(1280, 800);
+      let r = await rects(1280, 800);
+      assert.ok(r.grid && Math.min(r.svg.w, r.svg.h) >= 0.95 * 574 && Math.min(r.svg.w, r.svg.h) <= 574 + 2, "1280x800 grid pan " + r.svg.h);
+      for (const [w, h] of [[375, 360], [360, 330], [540, 400]]) {
+        await open(w, h);
+        r = await rects(w, h);
+        assert.strictEqual(r.grid, false, `${w}x${h} stays stacked`);
+        assert.ok(r.svg.h >= 120 - 1, `${w}x${h} pan ${r.svg.h}`);
+        assert.ok(r.page && r.bar.top >= 0 && r.bar.bottom <= h, `${w}x${h} toolbar in view, no page scroll`);
+      }
+    });
+
+    for (const [w, h, target] of [[926, 428, 347], [844, 390, 309], [667, 375, 294], [568, 320, 206]]) {
+      test(`P0 phone landscape ${w}x${h}: the pan does not collapse (>= 0.95 x ${target}), the grid is on, tabs in view, toolbar reachable, controls scroll as one column (#editor, LS 2026-11-15)`, async () => {
+        await open(w, h);
+        const r = await rects(w, h);
+        assert.ok(r.grid, "two-column grid");
+        assert.ok(r.svg.h >= 0.95 * target && r.svg.h >= 200, `drawn pan ${r.svg.h}`);
+        assert.ok(r.page, "no page scroll");
+        assert.ok(r.tabs.top >= 0 && r.tabs.bottom <= h, "tabs in view at rest");
+        await b.eval(`document.querySelector("#editor .editor-toolbar").scrollIntoView({ block: "nearest" }); return true;`);
+        const bar = await b.eval(`const r = document.querySelector("#editor .editor-toolbar").getBoundingClientRect(); return { top: r.top, bottom: r.bottom };`);
+        assert.ok(bar.top >= 0 && bar.bottom <= h, "the toolbar is in view once scrolled to: " + JSON.stringify(bar));
+        assert.ok(r.region && r.region.oy === "visible" && r.region.h > 0 && r.region.st === 0, "the region no longer scrolls: " + JSON.stringify(r.region));
+        assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor")).overflowY;`), "auto", "the column scrolls as one box");
+        assert.ok(r.svg.right <= r.tabs.left + 1 || r.svg.left >= r.tabs.right - 1, "the pan and the controls do not overlap");
+      });
+    }
+
+    test("P0 landscape phone: no magnification when a note is dragged (the pan already reaches the editor bottom)", async () => {
+      await open(844, 390);
+      const before = await rects(844, 390);
+      assert.ok(before.svg.h >= 0.95 * 309);
+      const mag = await b.eval(`return editorDragMeasure();`);
+      assert.ok(mag <= 1.02, "magnification " + mag);
+    });
+
+    test("P0 region: the controls scroll inside #editor-region, the tab strip stays pinned, the region rests with the name clear of the strip, and the page does not scroll", async () => {
+      await open(375, 548);
+      const r = await rects(375, 548);
+      assert.ok(r.region && r.region.oy === "auto" && r.region.sh > r.region.h, "375x548 region overflows: " + JSON.stringify(r.region));
+      const rest = await b.eval(`const rg = document.getElementById("editor-region"), n = document.getElementById("editor-name").getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
+        return { rest: editorRegionRest(rg), clear: n.top >= t.bottom - 0.5 };`);
+      assert.ok(Math.abs(r.region.st - rest.rest) <= 1 && r.region.st < r.region.sh - r.region.h && rest.clear, "rests short of its end with the name clear of the strip: " + JSON.stringify([r.region, rest]));
+      assert.ok(r.tray.top >= r.region.top && r.tray.top < r.bar.top, "the tray starts in view at rest");
+      assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor-tabs")).position;`), "sticky");
+      assert.ok(Math.abs(r.tabs.top - r.region.top) <= 1, "the strip is pinned at the region top");
+      assert.ok(r.page && r.panel, "neither the page nor #editor scrolls");
+      await b.click("#editor-tab-layout");
+      await pause(100);
+      const l = await rects(375, 548);
+      assert.strictEqual(l.region.st, 0, "a tab switch opens the chosen panel from the top of the region");
+    });
+
+    test("P0 tabs: a tap near every tab's right edge lands on that tab (the info button sits in the name row, not the strip)", async () => {
+      await open(375, 667);
+      const tabs = await b.eval(`return EDITOR_TABS.slice();`);
+      assert.ok(tabs.length >= 2, "the tab list is read from the app: " + JSON.stringify(tabs));
+      for (const tab of tabs) {
+        await b.click("#editor-tab-" + tab);
+        const hit = await b.eval(`const t = document.getElementById("editor-tab-${tab}").getBoundingClientRect(), h = document.getElementById("editor-hint-toggle").getBoundingClientRect();
+          const e = document.elementFromPoint(t.right - 2, t.top + t.height / 2), m = e && e.closest("[role=tab], #editor-hint-toggle");
+          return { id: m ? m.id : null, clear: h.top >= t.bottom - 1, inStrip: document.getElementById("editor-tabs").contains(document.getElementById("editor-hint-toggle")) };`);
+        assert.deepStrictEqual(hit, { id: "editor-tab-" + tab, clear: true, inStrip: false }, tab);
+      }
+    });
+
+    test("P0 hint: counts and hint sit in a collapsed block, a 44px info button in the name row with aria-expanded toggles it in place, and the pan does not move", async () => {
+      await open(375, 667);
+      const st = () => b.eval(`const bt = document.getElementById("editor-hint-toggle"), a = document.getElementById("editor-areas"), r = bt.getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
+        return { exp: bt.getAttribute("aria-expanded"), ctl: bt.getAttribute("aria-controls"), hidden: a.hidden, h: r.height, w: r.width, inStrip: r.top >= t.bottom - 1,
+          pan: document.querySelector("#editor-pan svg").getBoundingClientRect().height, label: bt.getAttribute("aria-label"), inRegion: document.getElementById("editor-region").contains(a) };`);
+      const a = await st();
+      assert.deepStrictEqual([a.exp, a.ctl, a.hidden, a.inRegion], ["false", "editor-areas", true, false]);
+      assert.ok(a.h >= 44 && a.w >= 44 && a.inStrip && a.label.length > 0, JSON.stringify(a));
+      await b.click("#editor-hint-toggle");
+      const o = await st();
+      assert.deepStrictEqual([o.exp, o.hidden], ["true", false]);
+      assert.ok(Math.abs(o.pan - a.pan) < 1, "the pan keeps its size");
+      assert.ok(await b.eval(`const r = document.getElementById("editor-areas").getBoundingClientRect(); return r.top >= document.getElementById("editor-status").getBoundingClientRect().bottom - 1 && r.bottom >= document.getElementById("editor-region").getBoundingClientRect().bottom - 1 && getComputedStyle(document.getElementById("editor-areas")).position === "absolute";`), "the block opens under the status as an overlay spanning the region");
+    });
+
+    test("QA2 hint 390x844: the info button sits below the strip; the open overlay is clear of the button and has an x at its top right that closes it", async () => {
+      await open(390, 844);
+      const geo = () => b.eval(`const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
+        const bt = document.getElementById("editor-hint-toggle"), x = document.getElementById("editor-hint-close"), a = document.getElementById("editor-areas");
+        const texts = []; if (!a.hidden) { const w = document.createTreeWalker(a, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) { if (!n.textContent.trim()) continue; const rg = document.createRange(); rg.selectNodeContents(n); for (const q of rg.getClientRects()) texts.push({ l: q.left, t: q.top, r: q.right, b: q.bottom }); } }
+        return { bt: R(bt), btVis: getComputedStyle(bt).visibility !== "hidden" && !bt.hidden && bt.getClientRects().length > 0, x: x ? R(x) : null, xVis: !!x && x.getClientRects().length > 0, a: R(a), name: R(document.getElementById("editor-name")), tabs: R(document.getElementById("editor-tabs")), texts };`);
+      const hit = (p, q) => p.l < q.r && p.r > q.l && p.t < q.b && p.b > q.t;
+      const c = await geo();
+      assert.ok(c.bt.t >= c.tabs.b - 0.5, "button sits below the strip: " + JSON.stringify([c.bt, c.tabs]));
+      assert.ok(c.bt.w >= 44 && c.bt.h >= 40, "button keeps a usable target: " + JSON.stringify(c.bt));
+      await b.click("#editor-hint-toggle");
+      const o = await geo();
+      assert.ok(o.xVis && o.x, "the overlay has an x button");
+      assert.ok(!o.btVis || o.bt.l >= o.a.r || o.bt.r <= o.a.l || o.bt.b <= o.a.t || o.bt.t >= o.a.b, "the info button is not shown over the overlay");
+      assert.ok(o.x.r <= o.a.r + 0.5 && o.x.t >= o.a.t - 0.5 && o.x.r >= o.a.r - 24 && o.x.t <= o.a.t + 12, "x sits at the overlay top right: " + JSON.stringify([o.x, o.a, o.tabs]));
+      assert.ok(o.texts.length > 0);
+      for (const t of o.texts) {
+        assert.ok(!hit(t, o.x), "no overlay text under the x: " + JSON.stringify([t, o.x]));
+        if (o.btVis) assert.ok(!hit(t, o.bt), "no overlay text under the info button");
+      }
+      assert.ok(await b.eval(`const x = document.getElementById("editor-hint-close"), p = x.getBoundingClientRect(); return !!x.getAttribute("aria-label") && document.elementFromPoint(p.left + p.width / 2, p.top + p.height / 2).closest("#editor-hint-close") === x;`), "x is labelled and tappable");
+      await b.click("#editor-hint-close");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "x closes");
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "focus returns to the info button");
+      await b.click("#editor-hint-toggle");
+      await b.key("Escape", "Escape", 27);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "Escape closes");
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "Escape returns focus to the info button");
+    });
+
+    for (const [w, h] of [[390, 844], [375, 667], [360, 640], [320, 568], [667, 375], [844, 390]]) {
+      test(`QA3 hint row ${w}x${h}: at rest the info button shares the name input's row, centred, transparent and flush right, and it never covers a control on either tab`, async () => {
+        await open(w, h);
+        const geo = () => b.eval(`const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
+          const rg = R(document.getElementById("editor-region")), strip = R(document.getElementById("editor-tabs")), tg = document.getElementById("editor-hint-toggle");
+          const name = R(document.getElementById("editor-name")), vis = name.t >= strip.b - 0.5 && name.b <= rg.b + 0.5 && name.b > 0;
+          return { bt: R(tg), name, vis, strip, rg, row: R(tg.parentNode), ico: R(document.querySelector("#editor-hint-toggle .ico")), bg: getComputedStyle(tg).backgroundColor };`);
+        const covers = () => b.eval(`const tg = document.getElementById("editor-hint-toggle"), out = [], rg = document.getElementById("editor-region").getBoundingClientRect(), strip = document.getElementById("editor-tabs").getBoundingClientRect();
+          const panel = document.querySelector("#editor-panels > :not([hidden])");
+          for (const e of panel.querySelectorAll("button, input, [tabindex]")) {
+            if (e === tg) continue;
+            const r = e.getBoundingClientRect(); if (!r.width || !r.height) continue;
+            const x = r.left + r.width / 2, y = r.top + r.height / 2;
+            if (y < Math.max(rg.top, strip.bottom) || y > rg.bottom || y > innerHeight || x < 0 || x > innerWidth) continue;
+            const hit = document.elementFromPoint(x, y);
+            if (hit !== e && !e.contains(hit)) out.push((e.id || e.className) + " -> " + (hit && (hit.id || hit.className)));
+          }
+          return out;`);
+        const seen = async () => {
+          assert.strictEqual(await b.eval(`const rg = document.getElementById("editor-region"); return Math.abs(rg.scrollTop - editorRegionRest(rg)) <= 1;`), true, "measured at the region's rest position, not scrolled by the test");
+          return geo();
+        };
+        const c = await seen();
+        assert.ok(Math.abs((c.bt.t + c.bt.b) / 2 - (c.name.t + c.name.b) / 2) <= 1, "vertical centres match at rest: " + JSON.stringify(c));
+        assert.ok(Math.abs(c.bt.r - c.row.r) <= 0.5, "button right edge == name row right edge: " + JSON.stringify(c));
+        assert.ok(c.name.r + 4 <= c.bt.l + 0.5, "name ends a gap before the button: " + JSON.stringify(c));
+        assert.ok(Math.abs(c.bt.w - 44) <= 0.5 && Math.abs(c.bt.h - 44) <= 0.5, "44x44: " + JSON.stringify(c.bt));
+        assert.ok(Math.abs((c.ico.l + c.ico.r) / 2 - (c.bt.l + c.bt.r) / 2) <= 0.5, "circle centred in the button");
+        assert.ok(c.bg === "rgba(0, 0, 0, 0)" || c.bg === "transparent", "the info button background is transparent: " + c.bg);
+        assert.deepStrictEqual(await covers(), [], "the info button covers no Scale control");
+        await b.click("#editor-tab-layout");
+        await pause(100);
+        assert.deepStrictEqual(await covers(), [], "the info button covers no Layout control");
+        const p = await geo();
+        assert.ok(Math.abs(p.bt.r - p.row.r) <= 0.5, "flush right in the Layout row: " + JSON.stringify(p));
+        assert.ok(await b.eval(`return document.getElementById("editor-panel-layout").contains(document.getElementById("editor-hint-toggle"));`) && p.bt.w >= 44 && p.bt.h >= 44, "the info button is shown in the Layout row: " + JSON.stringify(p));
+        await b.click("#editor-tab-scale");
+        await pause(100);
+        const back = await seen();
+        assert.ok(Math.abs((back.bt.t + back.bt.b) / 2 - (back.name.t + back.name.b) / 2) <= 1, "centred again after switching back: " + JSON.stringify(back));
+        assert.deepStrictEqual(await covers(), [], "no Scale control covered after switching back");
+      });
+    }
+
+    test("QA3 hint toggle: hovering or pressing the info button leaves its background transparent", async () => {
+      await open(390, 844);
+      const bg = () => b.eval(`return getComputedStyle(document.getElementById("editor-hint-toggle")).backgroundColor;`);
+      const at = await b.eval(`const r = document.getElementById("editor-hint-toggle").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...at });
+      assert.ok(["rgba(0, 0, 0, 0)", "transparent"].includes(await bg()), "hover: " + await bg());
+      await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...at, button: "left", buttons: 1, clickCount: 1 });
+      assert.ok(["rgba(0, 0, 0, 0)", "transparent"].includes(await bg()), "pressed: " + await bg());
+      await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...at, button: "left", buttons: 0, clickCount: 1 });
+    });
+
+    test("QA4 hint after type switch: the info button is in the visible Scale name row after a pan-type tap from Layout", async () => {
+      await open(390, 844);
+      for (const kind of ["standard", "neotone", "standard"]) {
+        await b.click("#editor-tab-layout");
+        await pause(100);
+        await b.click("#editor-type-" + kind);
+        await pause(200);
+        const r = await b.eval(`const t = document.getElementById("editor-hint-toggle"), rc = t.getBoundingClientRect(), row = t.parentNode, sc = document.getElementById("editor-panel-scale"),
+          hit = document.elementFromPoint(rc.left + rc.width / 2, rc.top + rc.height / 2);
+          return { rects: t.getClientRects().length, w: rc.width, h: rc.height, rowOk: row.classList.contains("editor-hintrow") && sc.contains(row) && !sc.hidden, hit: hit === t || t.contains(hit), tab: editorSession.tab };`);
+        assert.ok(r.rects > 0 && r.w > 0 && r.h > 0, kind + " tap leaves the info button with a rect: " + JSON.stringify(r));
+        assert.ok(r.rowOk && r.tab === "scale", kind + " tap: the button is in the visible Scale hint row: " + JSON.stringify(r));
+        assert.ok(r.hit, kind + " tap: the button is hit at its centre: " + JSON.stringify(r));
+      }
+    });
+
+    test("QA4 hint focus: a focused info button stays focused when the tab changes", async () => {
+      await open(390, 844);
+      await b.eval(`document.getElementById("editor-hint-toggle").focus(); return editorSetTab("layout");`);
+      await pause(100);
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "focus survives the move to Layout");
+      await b.eval(`return editorSetTab("scale");`);
+      await pause(100);
+      assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-hint-toggle", "focus survives the move back to Scale");
+    });
+
+    test("QA3 hint row 390x844: after a tray drag ends the info button is still centred on the name input", async () => {
+      await open(390, 844);
+      await b.drag(".tray-note", [[0, 100, -150], [0, 200, -300]]);
+      await pause(500);
+      const r = await b.eval(`const q = (e) => { const r = document.getElementById(e).getBoundingClientRect(); return (r.top + r.bottom) / 2; };
+        return { name: q("editor-name"), bt: q("editor-hint-toggle"), dragging: document.getElementById("editor").classList.contains("dragging") };`);
+      assert.strictEqual(r.dragging, false);
+      assert.ok(Math.abs(r.name - r.bt) <= 1, JSON.stringify(r));
+    });
+
+    for (const [w, h] of [[390, 844], [390, 664]]) {
+      test(`SC ${w}x${h}: the first row of the Scale tab is fully visible under the strip, and the Hint info button takes no layout height`, async () => {
+        await open(w, h);
+        const read = () => b.eval(`const q = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; };
+          const bt = document.getElementById("editor-hint-toggle"), br = bt.getBoundingClientRect(), a = document.getElementById("editor-areas"), mid = document.elementFromPoint(br.left + br.width / 2, br.top + br.height / 2);
+          return { name: q("#editor-name"), tabs: q("#editor-tabs"), region: q("#editor-region"), tray: q("#editor-tray"), status: q("#editor .editor-statusrow"), pan: q("#editor-pan svg"), bar: q(".editor-toolbar"),
+            h: br.height, w: br.width, top: br.top, onTop: mid === bt || bt.contains(mid), exp: bt.getAttribute("aria-expanded"), ctl: bt.getAttribute("aria-controls"), hidden: a.hidden, tag: bt.tagName,
+            focusOutline: false, docH: document.documentElement.scrollHeight, ih: innerHeight };`);
+        const r = await read();
+        assert.ok(r.name.top >= r.tabs.bottom - 1 && r.name.top >= r.region.top - 0.5, `${w}x${h} the Name row is not clipped: ` + JSON.stringify(r));
+        assert.ok(r.tray.bottom <= r.region.bottom + 1, `${w}x${h} the tray is fully in the region: ` + JSON.stringify(r));
+        assert.ok(r.pan.bottom - r.pan.top >= 199, `${w}x${h} the pan keeps the 200px floor: ` + JSON.stringify(r.pan));
+        assert.ok(r.h >= 44 && r.w >= 44 && r.onTop, "a 44px target above the overlay: " + JSON.stringify(r));
+        assert.ok(r.top >= r.tabs.bottom - 1, "the info button sits below the tab strip");
+        await b.click("#editor-hint-toggle");
+        const o = await read();
+        assert.deepStrictEqual([o.exp, o.hidden, o.onTop], ["true", false, false], "open, and the info button gives way to the overlay's x");
+        for (const k of ["name", "tabs", "region", "tray", "status", "pan", "bar"]) assert.deepStrictEqual(o[k], r[k], `${k} does not move when the hint opens`);
+        await b.click("#editor-hint-close");
+        assert.strictEqual((await read()).hidden, true, "the x closes");
+        await b.click("#editor-hint-toggle");
+        await b.key("Escape", "Escape", 27);
+        assert.strictEqual((await read()).hidden, true, "Escape closes");
+        await b.click("#editor-hint-toggle");
+        await b.click("#editor-title");
+        assert.strictEqual((await read()).hidden, true, "a tap outside closes");
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-hint-toggle").getAttribute("aria-expanded");`), "false");
+      });
+    }
+
+    for (const [w, h] of [[375, 667], [360, 640]]) {
+      test(`SC ${w}x${h}: the first row of the Scale tab is fully visible under the strip and inside the region, and the tray stays in the region`, async () => {
+        await open(w, h);
+        const r = await b.eval(`const q = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; };
+          return { name: q("#editor-name"), tabs: q("#editor-tabs"), region: q("#editor-region"), tray: q("#editor-tray") };`);
+        assert.ok(r.name.top >= r.tabs.bottom - 1 && r.name.top >= r.region.top - 0.5, `${w}x${h} the Name row is not clipped: ` + JSON.stringify(r));
+        assert.ok(r.name.bottom <= r.tray.top + 0.5, `${w}x${h} the Name row sits above the tray: ` + JSON.stringify(r));
+        assert.ok(r.tray.bottom <= r.region.bottom + 1, `${w}x${h} the tray is fully in the region: ` + JSON.stringify(r));
+      });
+    }
+
+    for (const [w, h] of [[390, 844], [375, 667], [360, 640]]) {
+      test(`PF ${w}x${h}: a gap of at least 8px separates the status row (and the open hint) from the tab strip`, async () => {
+        await open(w, h);
+        const gap = () => b.eval(`const s = document.querySelector("#editor .editor-statusrow").getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect(); return t.top - s.bottom;`);
+        assert.ok(await gap() >= 8, `${w}x${h} rest gap ${await gap()}`);
+        await b.click("#editor-hint-toggle");
+        assert.ok(await gap() >= 8, `${w}x${h} hint open gap ${await gap()}`);
+      });
+
+      test(`PF ${w}x${h}: selecting Layout shows its panel from the top of the region, and Scale returns to its rest when shown`, async () => {
+        await open(w, h);
+        const read = () => b.eval(`const rg = document.getElementById("editor-region"), p = document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
+          return { st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, rest: editorRegionRest(rg), panelTop: p.top, tabsBottom: t.bottom, id: document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').id };`);
+        await b.eval(`document.getElementById("editor-panels").style.minHeight = "1400px"; editorRegionPin(); return true;`);
+        const a = await read();
+        assert.ok(a.max > 100 && Math.abs(a.st - a.rest) <= 2 && a.panelTop >= a.tabsBottom - 1, "the region overflows and Scale rests with its panel top clear of the strip: " + JSON.stringify(a));
+        await b.click("#editor-tab-layout");
+        await pause(150);
+        const l = await read();
+        assert.strictEqual(l.id, "editor-panel-layout");
+        assert.strictEqual(l.st, 0, `${w}x${h} Layout opens at scrollTop 0: ` + JSON.stringify(l));
+        assert.ok(l.panelTop >= l.tabsBottom - 1, "the Layout panel top is visible below the strip: " + JSON.stringify(l));
+        await b.click("#editor-tab-scale");
+        await pause(150);
+        const sc = await read();
+        assert.ok(Math.abs(sc.st - sc.rest) <= 2, "Scale chosen from the tab strip returns to its rest: " + JSON.stringify(sc));
+      });
+
+      test(`PF ${w}x${h}: the Hint block is an overlay on the whole controls area, nothing moves when it toggles, and a second tap or Escape closes it`, async () => {
+        await open(w, h);
+        const snap = () => b.eval(`const q = (s) => { const e = document.querySelector(s), r = e.getBoundingClientRect(); return [r.top, r.left, r.width, r.height].map((x) => Math.round(x * 10) / 10); };
+          const a = document.getElementById("editor-areas"), ar = a.getBoundingClientRect(), rg = document.getElementById("editor-region").getBoundingClientRect();
+          return { pan: q("#editor-pan svg"), tabs: q("#editor-tabs"), name: q("#editor-name"), tray: q("#editor-tray"), bar: q(".editor-toolbar"), status: q("#editor .editor-statusrow"),
+            hidden: a.hidden, pos: getComputedStyle(a).position, bg: getComputedStyle(a).backgroundColor, z: getComputedStyle(a).zIndex, exp: document.getElementById("editor-hint-toggle").getAttribute("aria-expanded"),
+            covers: ar.top <= rg.top + 1 && ar.bottom >= rg.bottom - 1 && ar.left <= rg.left + 1 && ar.right >= rg.right - 1, belowStatus: ar.top >= document.querySelector("#editor .editor-statusrow").getBoundingClientRect().bottom - 1 };`);
+        const before = await snap();
+        await b.click("#editor-hint-toggle");
+        const open1 = await snap();
+        assert.deepStrictEqual([open1.hidden, open1.exp, open1.pos], [false, "true", "absolute"]);
+        assert.ok(open1.covers && open1.belowStatus, "the overlay covers the region and starts under the status row: " + JSON.stringify(open1));
+        assert.ok(open1.bg !== "rgba(0, 0, 0, 0)" && Number(open1.z) > 3, "readable background above the sticky strip: " + open1.bg + " z " + open1.z);
+        for (const k of ["pan", "tabs", "name", "tray", "bar", "status"]) assert.deepStrictEqual(open1[k], before[k], `${k} does not move when the hint opens`);
+        await b.click("#editor-hint-close");
+        const closed = await snap();
+        assert.deepStrictEqual([closed.hidden, closed.exp], [true, "false"]);
+        for (const k of ["pan", "tabs", "name", "tray", "bar", "status"]) assert.deepStrictEqual(closed[k], before[k], `${k} does not move when the hint closes`);
+        await b.click("#editor-hint-toggle");
+        await b.key("Escape", "Escape", 27);
+        const esc = await snap();
+        assert.deepStrictEqual([esc.hidden, esc.exp], [true, "false"], "Escape closes the hint overlay");
+        assert.strictEqual(await b.eval(`return !!document.getElementById("editor");`), true, "Escape closed the overlay, not the editor");
+      });
+    }
+
+    // The Name field: a real tap focuses it at a tall viewport, then the soft keyboard shrinks the viewport (Android resize), as on the phone.
+    // At the short size itself the region is a few px tall, so Name cannot be tapped there unfocused (plan R4 H1: pan floor 120 beats tray-in-view).
+    test("P0 hint resize: an open Hint block is re-placed over the controls area when the viewport rotates", async () => {
+      await open(375, 667);
+      await b.click("#editor-hint-toggle");
+      await b.setViewport(844, 390, true);
+      await pause(500);
+      const covers = await b.eval(`const a = document.getElementById("editor-areas").getBoundingClientRect(), rg = document.getElementById("editor-region").getBoundingClientRect();
+        return !document.getElementById("editor-areas").hidden && a.top <= rg.top + 1 && a.bottom >= rg.bottom - 1 && a.left <= rg.left + 1 && a.right >= rg.right - 1 && a.width <= rg.width + 2;`);
+      assert.strictEqual(covers, true, "the overlay tracks the region after rotation");
+    });
+
+    for (const [w, h, kh] of [[375, 667, 360], [360, 640, 330]]) {
+      test(`P0 name focus ${w}x${kh}: focused by a real tap, Name is fully in view with the toolbar; unfocused the pan is at least 120 and the toolbar stays in view`, async () => {
+        await open(w, h);
+        await b.eval(`document.getElementById("editor-region").scrollTop = 0; return true;`);
+        await b.click("#editor-name");
+        assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-name");
+        await b.setViewport(w, kh, true);
+        await pause(500);
+        const f = await rects(w, kh);
+        assert.ok(f.name.top >= 0 && f.name.bottom <= kh && f.name.h >= 44, `${w}x${kh} Name in view: ` + JSON.stringify(f.name));
+        assert.ok(f.bar.top >= f.name.bottom - 1 && f.bar.bottom <= kh, "toolbar in view below Name");
+        assert.ok(await b.eval(`const t = document.getElementById("editor-tabs").getBoundingClientRect(), n = document.getElementById("editor-name").getBoundingClientRect(); return n.top >= t.bottom - 1;`), "Name is not covered by the pinned tab strip");
+        await b.eval(`document.activeElement.blur(); return true;`);
+        await pause(300);
+        const u = await rects(w, kh);
+        assert.ok(u.svg.h >= 119 && u.bar.top >= 0 && u.bar.bottom <= kh && u.page, `${w}x${kh} unfocused pan ${u.svg.h}`);
+        assert.ok(u.svg.h > f.svg.h, "focus released pan room to Name");
+      });
+    }
+
+    test("P0 name focus 844x390 (landscape phone): focusing Name leaves the pan unchanged", async () => {
+      await open(844, 390);
+      const a = await rects(844, 390);
+      await b.click("#editor-name");
+      if (await b.eval(`return document.activeElement.id !== "editor-name";`)) await b.eval(`document.getElementById("editor-name").focus(); return true;`);
+      await pause(300);
+      const f = await rects(844, 390);
+      assert.ok(Math.abs(f.svg.h - a.svg.h) < 1, `pan ${a.svg.h} -> ${f.svg.h}`);
+    });
+
+    test("P0 Tab at 375x360: Tab from the tab strip lands inside the region or the toolbar and the page never scrolls", async () => {
+      await open(375, 360);
+      await b.eval(`document.getElementById("editor-tab-scale").focus(); return true;`);
+      await b.key("Tab", "Tab", 9);
+      await pause(200);
+      const r = await b.eval(`const a = document.activeElement; return { id: a.id, inEditor: document.getElementById("editor").contains(a), page: document.documentElement.scrollTop === 0 && document.getElementById("editor").scrollTop === 0 };`);
+      assert.ok(r.inEditor && r.page, JSON.stringify(r));
+    });
+
+    test("P0 editorWireSwipe: a region scroll cancels the tab swipe (the scrollTop check points at the region)", async () => {
+      const src = fs.readFileSync(path.join(REPO, "index.html"), "utf8");
+      const m = src.slice(src.indexOf("function editorWireSwipe()"), src.indexOf("function editorDraftMoved"));
+      assert.ok(/const body = editorEl\("editor-region"\)/.test(m), "the swipe's scroll reference is the region");
+    });
+
+    test("P0 drag keeps E3: the drag magnification at 390x844 (a pan as wide as the column) stays inside the viewport width", async () => {
+      await open(390, 844);
+      const rest = (await rects(390, 844)).svg.w;
+      const mag = await b.eval(`return editorDragMeasure();`);
+      assert.ok(mag >= 1 && mag * rest * 250 / 278 <= 390 - 16 + 1, `mag ${mag} stays inside the viewport width`);
+    });
+  });
+
+  describe("editor drag guards", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+    const live = () => b.eval(`return !!(editorDrag && editorDrag.live);`);
+    const setup = async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(SCALE);
+    };
+    const liftLive = async () => {
+      await setup();
+      const from = await chipAt("B"), to = await noteAt("rim", 0);
+      await touch("touchStart", from);
+      for (const k of [0.15, 0.3]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+      await pause(300);
+      assert.strictEqual(await live(), true, "the drag is live");
+    };
+    const contextMenuPrevented = () => b.eval(`const ev = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.getElementById("editor-pan").dispatchEvent(ev); return ev.defaultPrevented;`);
+
+    test("edg contextmenu is suppressed during an editor drag and only then", async () => {
+      await setup();
+      assert.strictEqual(await contextMenuPrevented(), false, "no drag, the menu is left alone");
+      await liftLive();
+      assert.strictEqual(await contextMenuPrevented(), true, "a live drag swallows the context menu");
+      await touch("touchEnd");
+      await pause(120);
+      assert.strictEqual(await contextMenuPrevented(), false, "after the drop the menu is left alone again");
+    });
+
+    test("edg a second pointer cancels the drag and puts the note back", async () => {
+      await liftLive();
+      const before = await b.eval(`return JSON.stringify(editorSession.history.present.fields);`);
+      await b.eval(`document.querySelector("#editor-pan").dispatchEvent(new PointerEvent("pointerdown", { pointerId: 77, button: 0, bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorDrag === null;`), true, "the second pointer ended the drag");
+      assert.strictEqual(await b.eval(`return document.querySelectorAll(".editor-ghost").length;`), 0, "the ghost is gone");
+      await touch("touchEnd");
+      await pause(120);
+      assert.strictEqual(await b.eval(`return JSON.stringify(editorSession.history.present.fields);`), before, "nothing was placed");
+    });
+
+    test("edg another pointer pressed on a tray chip ends the drag and starts none of its own", async () => {
+      await liftLive();
+      await b.eval(`document.querySelector("#editor-tray .tray-note").dispatchEvent(new PointerEvent("pointerdown", { pointerId: 77, button: 0, bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorDrag === null;`), true, "the second press neither continues nor re-arms a drag");
+      await touch("touchEnd");
+      await pause(120);
+    });
+  });
+
+  describe("editor mouse drag guards", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const mouse = (type, pt, button = "left", buttons = 1) => b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button, buttons: type === "mouseReleased" ? 0 : buttons, clickCount: 1 });
+    const picked = () => b.eval(`return { sel: editorSession.sel, held: editorSession.held };`);
+    const setup = async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.eval(`editorSession.sel = null; editorSession.held = null; return true;`);
+    };
+
+    test("edm a click after a mouse drag picks nothing: it is eaten, so neither a selection nor a hold appears", async () => {
+      await setup();
+      const from = await noteAt("rim", 3);
+      await mouse("mousePressed", from);
+      await mouse("mouseMoved", { x: from.x + 40, y: from.y });
+      await mouse("mouseMoved", from);
+      await mouse("mouseReleased", from);
+      await pause(300);
+      assert.deepStrictEqual(await picked(), { sel: null, held: null });
+    });
+
+    test("edm a right-button press starts no drag and moves nothing", async () => {
+      await setup();
+      const from = await noteAt("rim", 3);
+      const before = await b.eval(`return JSON.stringify(editorSession.history.present.fields);`);
+      await mouse("mousePressed", from, "right", 2);
+      assert.strictEqual(await b.eval(`return editorDrag === null;`), true, "no drag state");
+      await mouse("mouseMoved", { x: from.x + 40, y: from.y }, "right", 2);
+      assert.strictEqual(await b.eval(`return editorDrag === null && document.querySelectorAll(".editor-ghost").length === 0;`), true, "no ghost");
+      await mouse("mouseReleased", { x: from.x + 40, y: from.y }, "right", 2);
+      await pause(200);
+      assert.strictEqual(await b.eval(`return JSON.stringify(editorSession.history.present.fields);`), before);
+    });
+
+    test("edm the drag threshold is 8px: 8px is a tap that selects, 9px is a drag that selects nothing", async () => {
+      await setup();
+      const from = await noteAt("rim", 3);
+      await mouse("mousePressed", from);
+      await mouse("mouseMoved", { x: from.x + 8, y: from.y });
+      await mouse("mouseReleased", { x: from.x + 8, y: from.y });
+      await pause(300);
+      assert.deepStrictEqual((await picked()).sel, { ring: "rim", i: 3 }, "8px is still a tap");
+      await setup();
+      const again = await noteAt("rim", 3);
+      await mouse("mousePressed", again);
+      await mouse("mouseMoved", { x: again.x + 9, y: again.y });
+      assert.strictEqual(await b.eval(`return !!(editorDrag && editorDrag.live);`), true, "9px is a drag");
+      await mouse("mouseMoved", again);
+      await mouse("mouseReleased", again);
+      await pause(300);
+      assert.deepStrictEqual(await picked(), { sel: null, held: null });
+    });
+  });
+
+  describe("Editor phone landscape: one scrolling column (LS, owner 2026-11-15)", () => {
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const open = async (w, h) => { await fresh(w, h); await openAdd(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
+    const atRest = (sel) => b.eval(`const e = document.querySelector(${JSON.stringify(sel)}), r = e.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { inside: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth, hit: !!hit && (hit === e || e.contains(hit)), top: r.top, bottom: r.bottom, ih: innerHeight };`);
+    const sweep = () => b.eval(`const bad = [], seen = [];
+      const els = [...document.querySelectorAll("#editor button, #editor input")].filter((e) => !e.closest("[hidden]") && !e.closest("#editor-menu") && e.id !== "editor-hint-close" && e.getClientRects().length);
+      for (const e of els) {
+        e.scrollIntoView({ block: "nearest" });
+        const r = e.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        seen.push(e.id || e.className);
+        if (!(hit === e || e.contains(hit)) || r.top < 0 || r.bottom > innerHeight) bad.push((e.id || e.className) + "@" + Math.round(r.top) + "-" + Math.round(r.bottom));
+      }
+      const p = document.querySelector("#editor-pan svg").getBoundingClientRect();
+      return { bad, n: seen.length, pan: p.top >= 0 && p.bottom <= innerHeight && p.height > 100, panRect: [p.top, p.bottom], ih: innerHeight, st: document.getElementById("editor").scrollTop };`);
+
+    for (const [w, h] of [[844, 390], [844, 340], [667, 375]]) {
+      test(`LS ${w}x${h}: at rest on Scale the name field, both tabs and the first tray chip are fully in view and hit at their centres, and the column is one scroll box at its top`, async () => {
+        await open(w, h);
+        const st = await b.eval(`const e = document.getElementById("editor"), rg = document.getElementById("editor-region");
+          return { oy: getComputedStyle(e).overflowY, top: e.scrollTop, rgOy: getComputedStyle(rg).overflowY, grid: getComputedStyle(e).display, tab: editorSession.tab };`);
+        assert.deepStrictEqual([st.oy, st.top, st.rgOy, st.grid, st.tab], ["auto", 0, "visible", "grid", "scale"], "the column scrolls as one, from its top: " + JSON.stringify(st));
+        for (const sel of ["#editor-name", "#editor-tab-scale", "#editor-tab-layout", ".tray-note"]) {
+          const r = await atRest(sel);
+          assert.ok(r.inside && r.hit, `${w}x${h} ${sel} in view and on top: ` + JSON.stringify(r));
+        }
+      });
+
+      test(`LS ${w}x${h}: every control on Scale and on Layout is reachable by scrolling the one column, and the pan stays in view`, async () => {
+        await open(w, h);
+        const s = await sweep();
+        assert.deepStrictEqual(s.bad, [], `${w}x${h} Scale: ` + JSON.stringify(s));
+        assert.ok(s.pan, "the pan stays in view while the column scrolls: " + JSON.stringify(s.panRect));
+        await b.click("#editor-tab-layout");
+        await pause(150);
+        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-swatches .dot").length;`), 10, "ten palette dots");
+        const l = await sweep();
+        assert.deepStrictEqual(l.bad, [], `${w}x${h} Layout: ` + JSON.stringify(l));
+        assert.ok(l.n >= 14 && l.pan, "every Layout control and dot was visited, the pan in view: " + JSON.stringify(l));
+        const back = await atRest("#editor-tab-scale");
+        assert.ok(back.inside && back.hit, "the tabs are reachable from the bottom of the column: " + JSON.stringify(back));
+      });
+
+      test(`LS ${w}x${h}: a Neotone switch from the Layout tab keeps the Layout tab`, async () => {
+        await open(w, h);
+        await b.click("#editor-tab-layout");
+        await pause(100);
+        for (const kind of ["neotone", "standard"]) {
+          await b.click("#editor-type-" + kind);
+          await pause(150);
+          const r = await b.eval(`return { tab: editorSession.tab, layout: !document.getElementById("editor-panel-layout").hidden, scale: document.getElementById("editor-panel-scale").hidden };`);
+          assert.deepStrictEqual(r, { tab: "layout", layout: true, scale: true }, kind + " keeps Layout: " + JSON.stringify(r));
+        }
+      });
+    }
+
+    test("LS 844x390: the toolbar is reachable at the end of the column and a chip dragged onto the pan still places a note", async () => {
+      await open(844, 390);
+      await typeLine(SCALE);
+      const bar = await b.eval(`const t = document.querySelector("#editor .editor-toolbar"); t.scrollIntoView({ block: "nearest" });
+        const r = t.getBoundingClientRect(), s = document.getElementById("editor-save").getBoundingClientRect(), hit = document.elementFromPoint(s.left + s.width / 2, s.top + s.height / 2);
+        return { bottom: r.bottom, ih: innerHeight, hit: !!hit && hit.id === "editor-save", p: getComputedStyle(t).position };`);
+      assert.ok(bar.hit && bar.bottom <= bar.ih && bar.p !== "sticky", "the toolbar follows the tray in flow and Save is hit when scrolled to: " + JSON.stringify(bar));
+      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
+      const rimCount = () => b.eval(`return editorNames(editorSession.history.present, "rim").length;`);
+      const before = await rimCount();
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
+      const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const to = await b.eval(`const g = editorSolve(editorSession.history.present).value.geom, o = editorOrbit(g, "rim"), svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+        const x = o * Math.cos(22.5 * Math.PI / 180) * 100, y = -o * Math.sin(22.5 * Math.PI / 180) * 100;
+        return { x: r.left + (x - vb.x) / vb.width * r.width, y: r.top + (y - vb.y) / vb.height * r.height };`);
+      const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+      await touch("touchStart", from);
+      for (const k of [0.15, 0.3, 0.6, 1]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+      await touch("touchEnd");
+      await pause(600);
+      assert.strictEqual(await rimCount(), before + 1, "the dropped chip became a rim note");
+    });
+
+    for (const [w, h, drop] of [[838, 390, "seat"], [838, 390, "ding"], [667, 375, "seat"], [667, 375, "ding"]]) {
+      test(`AF save on screen ${w}x${h} ${drop}: after a touch drop Save is fully in view and hit at its centre`, async () => {
+        await open(w, h);
+        await typeLine(SCALE);
+        await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
+        const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        const to = await b.eval(`const svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+          if (${JSON.stringify(drop)} === "ding") { const c = [...document.querySelectorAll("#editor-pan circle")].find((e) => /ding/.test(e.getAttribute("aria-label") || "")).getBoundingClientRect(); return { x: c.left + c.width / 2, y: c.top + c.height / 2 }; }
+          const g = editorSolve(editorSession.history.present).value.geom, o = editorOrbit(g, "rim");
+          const x = o * Math.cos(22.5 * Math.PI / 180) * 100, y = -o * Math.sin(22.5 * Math.PI / 180) * 100;
+          return { x: r.left + (x - vb.x) / vb.width * r.width, y: r.top + (y - vb.y) / vb.height * r.height };`);
+        const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
+        await touch("touchStart", from);
+        for (const k of [0.15, 0.3, 0.6, 1]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
+        await touch("touchEnd");
+        await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
+        for (const ms of [0, 500, 1500]) {
+          await pause(ms);
+          const r = await b.eval(`const e = document.getElementById("editor-save"), q = e.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+            return { top: q.top, bottom: q.bottom, ih: innerHeight, hit: !!hit && e.contains(hit), msg: document.getElementById("editor-status").textContent };`);
+          assert.ok(r.top >= 0 && r.bottom <= r.ih && r.hit, "Save is on screen after the drop: " + JSON.stringify(r));
+        }
+      });
+    }
+  });
+
+  describe("editor landscape dialog lock", () => {
+    test("LS 844x390: an open dialog locks the column's scroll", async () => {
+      await fresh(844, 390);
+      await openAdd();
+      await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+      await typeLine(SCALE);
+      const wheel = async () => {
+        const pt = await b.eval(`const r = document.getElementById("editor").getBoundingClientRect(); return { x: r.right - 40, y: r.top + r.height / 2 };`);
+        await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: pt.x, y: pt.y, deltaX: 0, deltaY: 300 });
+        await new Promise((done) => setTimeout(done, 300));
+        return b.eval(`return document.getElementById("editor").scrollTop;`);
+      };
+      assert.ok(await wheel() > 0, "the column scrolls under the wheel before any dialog");
+      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
+      await b.click("#editor-back");
+      await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+      const st = await b.eval(`const cs = getComputedStyle(document.getElementById("editor")); return { oy: cs.overflowY, ox: cs.overflowX, top: document.getElementById("editor").scrollTop };`);
+      assert.deepStrictEqual([st.oy, st.top], ["hidden", 0], "the column is overflow hidden while the dialog is open: " + JSON.stringify(st));
+      assert.strictEqual(await wheel(), 0, "a wheel over the column does not move it while the dialog is open");
+    });
+  });
+
+  const PORTRAIT_TABS_TOP = 369;
+  describe("Editor phone landscape: status row overlays the tabs (SO, owner 2026-11-16)", () => {
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+    const open = async (w, h) => { await fresh(w, h); await openAdd(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
+    const geo = () => b.eval(`const q = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height }; };
+      return { line: q("#editor-line"), tabs: q("#editor-tabs"), status: q("#editor-status"), ih: innerHeight, iw: innerWidth };`);
+    const refuse = async () => {
+      await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6");
+      await b.click('.tray-note[data-name="F"]');
+      await b.click("#editor-oct-up");
+      await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the refusal" });
+      await pause(300);
+    };
+    const near = (a, c) => Math.abs(a - c) <= 0.5;
+
+    for (const [w, h] of [[844, 390], [667, 375]]) {
+      test(`SO: landscape idle status row takes no height at ${w}x${h}`, async () => {
+        await open(w, h);
+        const g = await geo();
+        const gap = g.tabs.top - g.line.bottom;
+        assert.ok(gap <= 8, `${w}x${h} gap between the scale field and the tabs is ${gap}px: ` + JSON.stringify(g));
+      });
+    }
+
+    test("SO: landscape message overlays the tabs without shifting them", async () => {
+      await open(844, 390);
+      const idle = await geo();
+      await refuse();
+      const g = await geo();
+      for (const k of ["top", "bottom", "left", "right"]) assert.ok(near(g.tabs[k], idle.tabs[k]), `tab strip ${k} moved ${idle.tabs[k]} -> ${g.tabs[k]}`);
+      assert.ok(g.status.height > 0 && g.status.top >= g.line.bottom, "the message is visible below the scale field: " + JSON.stringify(g.status));
+      assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih && g.status.left >= 0 && g.status.right <= g.iw, "the message is inside the viewport: " + JSON.stringify(g.status));
+      assert.ok(near(g.status.left, g.tabs.left) && g.status.right >= g.tabs.right - 0.5 && g.status.right <= g.tabs.right + 12, "the message spans the tab strip edges: " + JSON.stringify([g.status, g.tabs]));
+      assert.ok(g.status.bottom <= g.tabs.bottom + 0.5 && g.status.bottom > g.tabs.top, "the message lies over the tab strip and no lower: " + JSON.stringify([g.status, g.tabs]));
+    });
+
+    test("SO: landscape tabs are clickable again once the message is cleared by the app", async () => {
+      await open(844, 390);
+      await typeLine(SCALE);
+      await b.click('.tray-note[data-name="F"]');
+      await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+      await b.click("#editor-cancel");
+      await b.waitFor(`document.getElementById("editor-status").textContent === ""`, { label: "the message to clear" });
+      const r = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return h === e || e.contains(h); });`);
+      assert.deepStrictEqual(r, [true, true], "both tabs are the hit target at their centres");
+      await b.click("#editor-tab-layout");
+      assert.strictEqual(await b.eval(`return editorSession.tab;`), "layout");
+    });
+
+    for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
+      test(`SO: en ${w}x${h}: the idle prompt leaves the tab labels showing and a message still covers them`, async () => {
+        await open(w, h);
+        const look = () => b.eval(`const st = document.getElementById("editor-status"); return { text: st.textContent, idle: st.hasAttribute("data-idle"), clip: getComputedStyle(st).clipPath };`);
+        const idle = await look();
+        assert.ok(idle.text.length > 0 && idle.idle && idle.clip !== "none", "the idle prompt stays in the status for screen readers and is hidden off the tab labels: " + JSON.stringify(idle));
+        await typeLine(SCALE);
+        await b.click("#editor-tab-scale");
+        await b.click('.tray-note[data-name="F"]');
+        await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+        const held = await look();
+        assert.ok(held.text.length > 0 && !held.idle && held.clip === "none", "a message after the idle prompt shows over the tabs: " + JSON.stringify(held));
+        await open(w, h);
+        const c = await b.eval(`const r = document.querySelector(".tray-note").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: c.x, y: c.y, button: "left", buttons: 1, clickCount: 1 });
+        for (let i = 1; i <= 6; i++) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x - 10 * i, y: c.y - 6 * i, button: "left", buttons: 1 });
+        const drag = { ...(await look()), dragging: await b.eval(`return document.getElementById("editor").classList.contains("dragging");`) };
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: c.x - 60, y: c.y - 36, button: "left", buttons: 0, clickCount: 1 });
+        assert.ok(drag.dragging && drag.text.length > 0 && !drag.idle && drag.clip === "none", "a drag from the empty scale shows its message over the tabs: " + JSON.stringify(drag));
+      });
+    }
+
+    const LANDSCAPE = [[844, 390], [667, 375]];
+    const STATES = {
+      empty: async () => true,
+      held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
+      error: async () => { await b.eval(`editorSession.error = "The rim is full at 12 notes. Remove one first."; editorRender(); return true;`); },
+      undo: async () => { await b.eval(`editorSession.say = "C4 removed."; editorRender(); return true;`); await b.waitFor(`!!document.getElementById("editor-notice-undo")`, { label: "the undo chip" }); },
+    };
+    const reset = () => b.eval(`const s = editorSession; s.error = ""; s.say = ""; s.notice = false; if (s.held) editorCancelHold(); editorRender(); return true;`);
+    describe("with real fonts", () => {
+      let saved = null;
+      before(async () => { saved = b; b = await launch({ foregroundSettle: true, realFonts: true }); });
+      after(async () => { const mine = b; b = saved; await mine.close(); });
+      for (const lang of ["en", "de"]) {
+        for (const [w, h] of LANDSCAPE) {
+          test(`SO: ${lang} ${w}x${h}: while a message shows a real click at each tab centre switches tabs and the message buttons stay tappable`, async () => {
+            await fresh(w, h);
+            if (lang === "de") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            for (const name of ["empty", "held", "error", "undo"]) {
+              if (name !== "empty") { await reset(); await typeLine(SCALE); }
+              await b.click("#editor-tab-scale");
+              await STATES[name]();
+              await pause(250);
+              const g = await geo();
+              assert.ok(g.status.bottom <= g.tabs.bottom + 0.5, `${name}: the message stays within the tab strip: ` + JSON.stringify([g.status, g.tabs]));
+              for (const id of ["layout", "scale", "layout"]) {
+                await b.click("#editor-tab-" + id);
+                assert.strictEqual(await b.eval(`return editorSession.tab;`), id, `${name} ${lang} ${w}x${h}: a click at the ${id} tab centre switched to it`);
+              }
+              const btn = { held: "#editor-cancel", undo: "#editor-notice-undo" }[name];
+              if (btn) {
+                const hit = await b.eval(`const e = document.querySelector(${JSON.stringify(btn)}), r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x));`);
+                assert.ok(hit, `${name} ${lang} ${w}x${h}: ${btn} takes its own tap`);
+              }
+              await reset();
+            }
+          });
+        }
+      }
+
+      test("SO: en 568x320: a typed out-of-order line shows its whole error in landscape", async () => {
+        await open(568, 320);
+        await typeLine("(D3) A3 C3 D4 E4");
+        await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the out-of-order error" });
+        await b.waitFor(`document.getElementById("editor-status").getAnimations().length === 0`, { label: "the message to settle" });
+        const r = await b.eval(`const st = document.getElementById("editor-status"), sr = st.getBoundingClientRect(), tb = document.getElementById("editor-tabs").getBoundingClientRect();
+          let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
+          for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
+            if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
+          return { text: st.textContent, top: sr.top, bottom: sr.bottom, tabsTop: tb.top, fits: st.scrollHeight <= st.clientHeight, clipped };`);
+        assert.ok(r.text.length > 0 && r.fits && r.clipped === 0, "the whole error is readable: " + JSON.stringify(r));
+        assert.ok(Math.abs(r.top - r.tabsTop) <= 0.5 && r.bottom <= 187.5, "the error starts on the tabs and ends by 187.5: " + JSON.stringify(r));
+      });
+
+      const LOCALES = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+      const SO_STATES = {
+        empty: async () => true,
+        held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
+        crowded: () => b.eval(`editorSession.error = t("editor.crowded", { pt: "5.5", floor: "6" }); editorRender(); return true;`),
+        picked: () => b.eval(`editorSession.say = t("editor.say.picked", { name: "C4" }); editorRender(); return true;`),
+        removed: () => b.eval(`editorDo((m) => editorRemove(m, "rim", 2), t("editor.say.removed", { name: "C4" })); editorRender(); return true;`),
+        rimfull: async () => {
+          await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+          await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
+        },
+      };
+      const FULL_RIM = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6";
+      for (const lang of LOCALES) {
+        for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
+          test(`SO: ${lang} ${w}x${h}: every landscape message is fully readable inside the tab strip and moves nothing`, async () => {
+            await fresh(w, h);
+            if (lang !== "en") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: lang });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            const frame = () => b.eval(`const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
+              return { tabs: q(document.getElementById("editor-tabs")), line: q(document.getElementById("editor-line")), pan: q(document.getElementById("editor-pan")) };`);
+            const read = () => b.eval(`const st = document.getElementById("editor-status"), sr = st.getBoundingClientRect(), tb = document.getElementById("editor-tabs").getBoundingClientRect(),
+              cs = getComputedStyle(st), hit = (a, r) => !(r.right <= a.left || r.left >= a.right || r.bottom <= a.top || r.top >= a.bottom);
+              let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
+              for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
+                if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
+              return { text: st.textContent, fits: st.scrollHeight <= st.clientHeight, h: sr.height, clipped, inStrip: sr.top >= tb.top - 0.5 && sr.bottom <= tb.bottom + 0.5, px: parseFloat(cs.fontSize),
+                overChip: [...document.querySelectorAll(".tray-note, #editor-name")].some((e) => hit(sr, e.getBoundingClientRect())) || hit(sr, document.getElementById("editor-line").getBoundingClientRect()) };`);
+            for (const name of Object.keys(SO_STATES)) {
+              if (name !== "empty") { await reset(); await typeLine(name === "rimfull" ? FULL_RIM : SCALE); await b.click("#editor-tab-scale"); }
+              const rest = await frame();
+              await SO_STATES[name]();
+              await pause(250);
+              await b.waitFor(`document.getElementById("editor-status").getAnimations().length === 0`, { label: "the message to settle" });
+              const r = await read();
+              const tag = `${name} ${lang} ${w}x${h}: ` + JSON.stringify(r);
+              if (name !== "empty") assert.ok(r.text.length > 0, "a message shows. " + tag);
+              assert.ok(r.fits && r.clipped === 0, "the message is not clipped. " + tag);
+              assert.ok(r.inStrip, "the message stays inside the tab strip. " + tag);
+              assert.ok(!r.overChip, "the message covers no chip, field or line. " + tag);
+              assert.ok(r.px >= 12, "the message font is at least 12px. " + tag);
+              assert.deepStrictEqual(await frame(), rest, "tabs, line and pan do not move. " + tag);
+              const centres = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
+              assert.deepStrictEqual(centres, [true, true], "a tap at each tab centre reaches its tab. " + tag);
+              const own = await b.eval(`return [...document.querySelectorAll("#editor-status button")].every((e) => { const q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
+              assert.ok(own, "Cancel and Undo take their own taps. " + tag);
+            }
+            await reset();
+          });
+        }
+      }
+
+      const { ROWS } = require("./helpers/so_status_inventory.js");
+      const RENDER_ROW = `
+        const ROW = __ROW__;
+        const s = editorSession, st = document.getElementById("editor-status"), ed = document.getElementById("editor"), K = window.__so;
+        const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
+        s.error = ""; s.say = ""; s.plainSay = ""; s.notice = false; if (s.held) editorCancelHold();
+        s.history = { ...s.history, present: K.full }; editorRender(); ed.scrollTop = 0;
+        const text = t(ROW.k, Object.assign({}, ROW.vars, { zone: t("editor.zone.inner") }));
+        if (ROW.mode === "error") s.error = text;
+        else if (ROW.mode === "plain") s.say = s.plainSay = text;
+        else if (ROW.mode === "undo") { s.say = text; s.plainSay = ""; }
+        else if (ROW.mode === "undo-empty") { s.history = { ...s.history, present: K.empty }; if (ROW.k === "editor.pins_reset") s.notice = true; else s.say = text; }
+        else if (ROW.mode === "held") document.querySelector('.tray-note[data-name="F"]').click();
+        else if (ROW.mode === "idle") s.history = { ...s.history, present: K.idle[ROW.k] };
+        if (ROW.mode === "drag") { editorRender(); st.removeAttribute("data-kind"); st.removeAttribute("data-idle"); st.textContent = text; } else editorRender();
+        ed.scrollTop = 0;
+        st.getAnimations().forEach((a) => a.finish());
+        const tabs = document.getElementById("editor-tabs"), line = document.getElementById("editor-line"), name = document.getElementById("editor-name");
+        const sr = st.getBoundingClientRect(), tb = tabs.getBoundingClientRect(), lb = line.getBoundingClientRect(), nr = name.getBoundingClientRect();
+        const hitsOwn = (e) => { const r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x)); };
+        let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
+        for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
+          if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
+        const crosses = [...document.querySelectorAll(".tray-note, #editor-pan")].some((e) => { const r = e.getBoundingClientRect(); return !(r.right <= sr.left + 0.5 || r.left >= sr.right - 0.5 || r.bottom <= sr.top + 0.5 || r.top >= sr.bottom - 0.5); });
+        const nameHit = document.elementFromPoint(nr.left + nr.width / 2, nr.top + 4);
+        const rest = { text: st.textContent, idle: st.hasAttribute("data-idle"), clipPath: getComputedStyle(st).clipPath, anim: st.getAnimations().length, clipped, h: sr.height, top: sr.top, bottom: sr.bottom,
+          tabsTop: tb.top, tabsBottom: tb.bottom, lineBottom: lb.bottom, crosses, frame: { tabs: q(tabs), line: q(line), pan: q(document.getElementById("editor-pan")) },
+          tabHits: ["editor-tab-scale", "editor-tab-layout"].map((id) => hitsOwn(document.getElementById(id))), nameHit: nameHit === name,
+          buttonsOwn: [...st.querySelectorAll("button")].every(hitsOwn) };
+        ed.scrollTop = ed.scrollHeight;
+        const sr2 = st.getBoundingClientRect(), tb2 = tabs.getBoundingClientRect();
+        const end = { scrollTop: ed.scrollTop, top: sr2.top, bottom: sr2.bottom, tabsTop: tb2.top };
+        ed.scrollTop = 0;
+        return { rest, end };`;
+      const SETUP_ROWS = `const s = editorSession, empty = editorEmptyModel(), full = s.history.present;
+        const stage = (extra) => editorWithStage(empty, { ...editorBlankStage("standard"), ...extra });
+        window.__so = { full, empty, idle: { "editor.empty": empty, "editor.say.stage_need_ding": stage({ rim: ["A3"] }), "editor.say.stage_need_fifth": stage({ ding: "D3" }) } };
+        return document.fonts.ready.then(() => true);`;
+      for (const lang of ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"]) {
+        for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
+          test(`SO: ${lang} ${w}x${h}: every editor message in the inventory is fully readable in landscape`, async () => {
+            await fresh(w, h);
+            if (lang !== "en") {
+              await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+              await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: lang });
+            }
+            await openAdd();
+            await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
+            await typeLine(SCALE);
+            await b.eval(SETUP_ROWS);
+            await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
+            const base = await b.eval(`const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
+              return { tabs: q(document.getElementById("editor-tabs")), line: q(document.getElementById("editor-line")), pan: q(document.getElementById("editor-pan")) };`);
+            for (const row of ROWS) {
+              const { rest: r, end } = await b.eval(RENDER_ROW.replace("__ROW__", () => JSON.stringify(row)));
+              const tag = `${row.mode} ${row.k} ${lang} ${w}x${h}: ` + JSON.stringify({ rest: r, end });
+              assert.ok(r.text.length > 0, "a message shows. " + tag);
+              assert.strictEqual(r.anim, 0, "the arrive animation has settled. " + tag);
+              if (row.mode === "idle") {
+                assert.ok(r.idle && r.clipPath !== "none", "the idle prompt is hidden from view and kept in the status. " + tag);
+                assert.strictEqual(r.text, await b.eval(`return t(${JSON.stringify(row.k)}, ${JSON.stringify(row.vars)});`), "the idle prompt text. " + tag);
+                continue;
+              }
+              assert.ok(!r.idle && r.clipPath === "none", "a message is not hidden. " + tag);
+              assert.strictEqual(r.clipped, 0, "no character is clipped. " + tag);
+              assert.ok(Math.abs(r.top - r.tabsTop) <= 0.5, "the message starts on the tab strip. " + tag);
+              assert.ok(r.top >= r.lineBottom - 0.5, "the message stays off the scale line. " + tag);
+              if (r.h <= 44) assert.ok(r.bottom <= r.tabsBottom + 0.5, "a short message stays inside the tab strip. " + tag);
+              assert.ok(r.bottom <= 187.5, "the message reaches at most 187.5. " + tag);
+              assert.ok(!r.crosses, "the message covers no tray chip or pan. " + tag);
+              assert.deepStrictEqual(r.frame, base, "tabs, line and pan do not move. " + tag);
+              assert.deepStrictEqual(r.tabHits, [true, true], "a tap at each tab centre reaches its tab. " + tag);
+              assert.ok(r.nameHit, "a tap near the top of the name field reaches it. " + tag);
+              assert.ok(r.buttonsOwn, "Cancel and Undo take their own taps. " + tag);
+              assert.ok(Math.abs(end.top - end.tabsTop) <= 0.5 && end.top >= -0.5, "scrolled to the end the message stays on the tabs. " + tag);
+              assert.ok(end.bottom - end.tabsTop <= 72.5, "scrolled to the end the message is at most 72.5px tall. " + tag);
+            }
+            await reset();
+          });
+        }
+      }
+    });
+
+    test("SO: portrait status row unchanged at 375x667", async () => {
+      await open(375, 667);
+      const g = await geo();
+      assert.strictEqual(Math.round(g.tabs.top * 10) / 10, PORTRAIT_TABS_TOP, "portrait tab strip top: " + JSON.stringify(g));
+    });
+  });
+
+  describe("editor armed delete", () => {
+    // Oracle recorded 2026-11-14 by reading main's armed delete from the fixture text:
+    //   grep -n 'scale-delete\[data-armed\]' tests/fixtures/shipped_client_a4ecfc2e.html.txt
+    // gives "#scale-sheet #scale-delete[data-armed]{color:#242424}" over the "#scale-delete" rule's "background:none",
+    // and main's armed label (sheet.del_armed) carries no icon glyph or element.
+    const MAIN = { color: "rgb(36, 36, 36)", backgroundColor: "rgba(0, 0, 0, 0)", icon: false };
+
+    test("ead the armed delete is main's ink with no fill, not red", async () => {
+      const fixture = fs.readFileSync(path.join(REPO, "tests/fixtures/shipped_client_a4ecfc2e.html.txt"), "utf8");
+      assert.ok(fixture.includes("#scale-sheet #scale-delete[data-armed]{color:#242424}"), "the oracle literal still matches main");
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      await b.click("#editor-delete");
+      const got = await b.eval(`const e = document.getElementById("editor-delete"), c = getComputedStyle(e);
+        return { armed: e.classList.contains("armed"), color: c.color, backgroundColor: c.backgroundColor,
+          icon: !!e.querySelector("svg, img, .ico") || !["none", "normal"].includes(getComputedStyle(e, "::before").content) };`);
+      assert.strictEqual(got.armed, true);
+      assert.deepStrictEqual({ color: got.color, backgroundColor: got.backgroundColor, icon: got.icon }, MAIN);
+    });
+  });
+
+  describe("editor Back prompt Save on an empty model", () => {
+    test("U2b n8 Save in the prompt on an emptied saved scale says why nothing was saved", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+      const before = await savedCount();
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => ({ ok: true, value: { ...m, fields: {}, pins: [] } })).history; editorRender(); return true;`);
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true);
+      await b.click("#editor-dlg-save");
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await dialogOpen(), false);
+      assert.strictEqual(await savedCount(), before, "nothing saved");
+      assert.match(await b.eval(`return editorSession.error;`), /^Place the ding/, "the session carries the reason as an error");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").getAttribute("data-kind");`), "error");
+    });
+  });
+
+  describe("editor save recovery", () => {
+    const saveScale = async (name) => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(name)};
+        n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the first save to close" });
+    };
+    const editSaved = async () => {
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+
+    describe("the Back dialog on an edited saved scale", () => {
+      const record = () => b.eval(`return JSON.stringify(savedState.entries.map((e) => [e.instanceId, e.revision, e.record]));`);
+      const toDialog = async () => {
+        await saveScale("ORIGINAL");
+        await editSaved();
+        await rename("EDITED");
+        await b.click("#editor-back");
+        assert.strictEqual(await dialogOpen(), true);
+      };
+
+      test("Discard closes and leaves the saved scale unchanged", async () => {
+        await saveScale("ORIGINAL");
+        const before = await record();
+        await editSaved();
+        await rename("EDITED");
+        await b.click("#editor-back");
+        assert.strictEqual(await dialogOpen(), true);
+        await b.click("#editor-dlg-discard");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Discard" });
+        await b.waitFor(`!savePending`, { label: "any write started by Discard to settle" });
+        assert.strictEqual(await record(), before, "the saved record and its revision are untouched");
+        assert.deepStrictEqual(await names(), ["ORIGINAL"]);
+      });
+
+      test("Save writes the edit once (revision +1, no copy) and closes", async () => {
+        await toDialog();
+        const rev = await b.eval(`return savedState.entries[0].revision;`);
+        await b.click("#editor-dlg-save");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close after Save" });
+        assert.deepStrictEqual(await names(), ["EDITED"], "one scale, renamed in place");
+        assert.strictEqual(await b.eval(`return savedState.entries[0].revision;`), rev + 1, "written exactly once");
+      });
+    });
+
+    describe("history back on the editor", () => {
+      const back = async () => {
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden") || !!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "back to settle" });
+      };
+
+      test("a dirty editor shows the dialog and Keep editing retains the edits and the history entry", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine(SCALE);
+        const route = await b.eval(`return location.hash;`);
+        await back();
+        assert.strictEqual(await dialogOpen(), true);
+        assert.strictEqual(await sheetHidden(), false);
+        await b.click("#editor-dlg-keep");
+        assert.strictEqual(await dialogOpen(), false);
+        assert.strictEqual(await sheetHidden(), false);
+        assert.match(await text(), /A4/);
+        assert.strictEqual(await b.eval(`return location.hash;`), route, "the page's history entry is back on the stack");
+        await back();
+        assert.strictEqual(await dialogOpen(), true, "a second back asks again");
+      });
+
+      test("a clean editor closes silently", async () => {
+        await fresh();
+        await openBuiltin();
+        await back();
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        assert.strictEqual(await dialogOpen(), false);
+      });
+
+      test("a staged-only editor closes silently", async () => {
+        await fresh();
+        await openAdd();
+        await b.eval(`const r = editorApply(editorSession.history, (m) => editorStageEdit(m, (st) => { editorStagePush(st, "rim", "A4"); }));
+          editorSession.history = r.history; editorRender(); return r.ok !== false;`);
+        const staged = await b.eval(`return editorStageNames(editorSession.history.present, "rim");`);
+        assert.deepStrictEqual(staged, ["A4"], "a note is really staged through the real stage path");
+        await back();
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
+        assert.strictEqual(await dialogOpen(), false);
+      });
+    });
+
+    describe("the Back dialog paints above every editor layer", () => {
+      const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+      const probe = () => b.eval(`const center = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+        const inerts = [...document.querySelectorAll("[inert]")];
+        inerts.forEach((el) => el.removeAttribute("inert"));
+        try {
+          const hit = (id) => { const el = document.getElementById(id); const [x, y] = center(el); const h = document.elementFromPoint(x, y); return !!h && el.contains(h); };
+          const [tx, ty] = center(document.getElementById("editor-tab-scale")), under = document.elementFromPoint(tx, ty);
+          return { save: hit("editor-dlg-save"), discard: hit("editor-dlg-discard"), keep: hit("editor-dlg-keep"),
+            tabsCovered: !!under && document.getElementById("editor-dialog").contains(under),
+            aboveEveryLayer: (() => { const dlg = document.getElementById("editor-dialog"), own = Number(getComputedStyle(dlg).zIndex);
+              return [...document.querySelectorAll("#editor *")].filter((el) => !dlg.contains(el) && getComputedStyle(el).position !== "static")
+                .every((el) => { const z = Number(getComputedStyle(el).zIndex); return Number.isNaN(z) || z < own; }); })() };
+        } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
+      const SIZES = [[360, 640], [375, 667], [390, 844], [844, 390]];
+      for (const [w, h] of SIZES) {
+        for (const state of ["scale", "layout", "info"]) {
+          test(`${w}x${h} ${state}: Save, Discard and Keep editing are hittable and the scrim covers the tabs`, async () => {
+            await fresh(w, h);
+            await openAdd();
+            await typeLine(NEO);
+            await b.click("#editor-type-neotone");
+            if (state === "layout") await b.click("#editor-tab-layout");
+            if (state === "info") await b.click("#editor-hint-toggle");
+            if (state === "layout") await b.eval(`history.back(); return true;`); else await b.click("#editor-back");
+            await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Back dialog" });
+            const r = await probe();
+            assert.deepStrictEqual(r, { save: true, discard: true, keep: true, tabsCovered: true, aboveEveryLayer: true }, JSON.stringify(r));
+          });
+        }
+      }
+    });
+  });
+
+  describe("editor keys and delete rebind", () => {
+    const saveOne = async (w, h) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const armedDelete = async () => {
+      await b.click("#editor-delete");
+      await b.eval(`return new Promise((r) => setTimeout(r, 500));`);
+      await b.click("#editor-delete");
+      await b.eval(`return new Promise((r) => setTimeout(r, 300));`);
+    };
+    for (const [w, h] of [[360, 640], [390, 844]]) {
+      test(`FA-06 ${w}x${h} after system Back with the menu open the dialog closes the menu and the first Escape leaves the Save-changes dialog and focus returns to Back`, async () => {
+        await saveOne(w, h);
+        await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "FA06 EDIT";
+          n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+        await b.click("#editor-more");
+        assert.strictEqual(await b.eval(`return editorSession.menu;`), true);
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Back dialog" });
+        assert.strictEqual(await b.eval(`return editorSession.menu;`), false, "opening the dialog closes the menu");
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-menu").hasAttribute("hidden");`), true, "the menu element is hidden");
+        await b.key("Escape", "Escape", 27);
+        assert.strictEqual(await dialogOpen(), false, "the first Escape leaves the dialog");
+        assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-back");
+      });
+    }
+
+    test("FA-07 with the hint open Tab moves focus on every step and never to a hidden control", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-hint-toggle");
+      await b.waitFor(`editorSession.hint === true`, { label: "the hint to open" });
+      const seen = [];
+      for (let i = 0; i < 8; i++) {
+        await b.key("Tab", "Tab", 9);
+        seen.push(await b.eval(`const a = document.activeElement, c = getComputedStyle(a);
+          return { id: a.id || a.outerHTML.slice(0, 120), hidden: c.visibility === "hidden" || c.display === "none" || a.getClientRects().length === 0 };`));
+      }
+      assert.ok(seen.every((x) => !x.hidden), JSON.stringify(seen));
+      assert.ok(seen.every((x, i) => i === 0 || x.id !== seen[i - 1].id), JSON.stringify(seen));
+    });
+
+    test("a remote edit of the open saved scale keeps a dirty editor's draft and does not reopen it", async () => {
+      await saveOne(375, 667);
+      await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5");
+      await b.eval(`document.activeElement.blur(); editorSession.__probe = "local"; return true;`);
+      const before = await b.eval(`const s = editorSession;
+        return { dirty: editorIsDirty(s.base, s.history.present), naming: !!s.naming, editing: !!s.editing, dialog: !!s.dialog,
+          nameMatches: editorSetName(s.history.present, document.getElementById("editor-name").value).value === s.history.present,
+          line: document.getElementById("editor-line").value, rev: editingBase.revision };`);
+      assert.strictEqual(before.dirty, true, "the notes edit makes the editor dirty");
+      assert.deepStrictEqual([before.naming, before.editing, before.dialog, before.nameMatches], [false, false, false, true]);
+      await b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+        built = buildGenerated(row.record.s, { ...row.record.o, name: "REMOTE RENAMED" });
+        return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+          candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => {
+          if (r.ok) savedSnapshotListener({ source: "remote", previous: savedState, current: savedState });
+          return r.ok === true; });`);
+      await b.waitFor(`savedState.entries.find((r) => r.instanceId === editingBase.selection.id).revision > ${before.rev}`, { label: "the remote revision" });
+      const after = await b.eval(`const s = editorSession;
+        return { same: s.__probe === "local", dirty: editorIsDirty(s.base, s.history.present),
+          line: document.getElementById("editor-line").value, name: document.getElementById("editor-name").value };`);
+      assert.strictEqual(after.same, true, "the editor session was not reopened");
+      assert.strictEqual(after.dirty, true);
+      assert.strictEqual(after.line, before.line, "the local draft survives");
+      assert.notStrictEqual(after.name, "REMOTE RENAMED", "the remote content did not overwrite the draft");
+    });
+  });
+
+  describe("editor layout at rest", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+    const TITLE_CASES = [[320, 568, "en"], [320, 568, "de"], [390, 844, "de"], [390, 844, "es"], [390, 844, "fr"], [390, 844, "it"]];
+    for (const [w, h, lang] of TITLE_CASES) {
+      for (const mode of ["add", "edit"]) {
+        test(`ELA title fit ${w}x${h} ${lang} ${mode}: h2#editor-title does not overflow`, async () => {
+          await fresh(w, h);
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          if (mode === "add") await openAdd(); else await openBuiltin();
+          await pause(150);
+          const r = await b.eval(`const e = document.getElementById("editor-title"); return { sw: e.scrollWidth, cw: e.clientWidth, text: e.textContent };`);
+          assert.ok(r.sw <= r.cw, "title fits: " + JSON.stringify(r));
+        });
+      }
+    }
+  });
+
+
+  describe("editor hint and menu at rest", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+    const POINTS = [[.25, .25], [.75, .25], [.5, .5], [.25, .75], [.75, .75]];
+    const liftInert = `const inerts = [...document.querySelectorAll("[inert]")]; inerts.forEach((el) => el.removeAttribute("inert"));`;
+    const dropInert = `inerts.forEach((el) => el.setAttribute("inert", ""));`;
+    const LONG_NAME = "Kurd R\u00e9 mineur - \u591c\u660e\u3051\u306e\u97f3\u968e \u00fc\u00f1\u00e7 \u00e9\u00e0\u00e8 \u00e7\u00f4\u00eb\u00ef\u00e2 40";
+    const openSaved = async (name) => {
+      await openAdd();
+      await typeLine(SCALE);
+      if (name) {
+        await b.click("#editor-name");
+        await b.eval(`const n = document.getElementById("editor-name"); n.value = ${JSON.stringify(name)}; n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+        await b.key("Enter", "Enter", 13);
+      }
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const samplePoints = (sel) => b.eval(`${liftInert}
+      try {
+        return [...document.querySelectorAll(${JSON.stringify(sel)})].map((el) => {
+          const r = el.getBoundingClientRect();
+          const miss = ${JSON.stringify(POINTS)}.filter(([fx, fy]) => {
+            const hit = document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy);
+            return !hit || !el.contains(hit);
+          }).length;
+          const h = document.elementFromPoint(r.left + r.width * .75, r.top + r.height * .25);
+          return { id: el.id || el.textContent.slice(0, 20), miss, over: h && (h.id || h.className) };
+        });
+      } finally { ${dropInert} }`);
+
+    for (const [w, h] of [[390, 844], [360, 640], [320, 568], [1280, 800]]) {
+      test(`EHM menu over toggle ${w}x${h}: with the menu open every item is hit at five points`, async () => {
+        await fresh(w, h);
+        await openSaved(LONG_NAME);
+        await b.click("#editor-delete");
+        await pause(250);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-menu").hidden;`), false, "the menu is open");
+        const rows = await samplePoints("#editor-menu, #editor-menu .menuitem");
+        const over = await b.eval(`${liftInert}
+          try {
+            const m = document.getElementById("editor-menu").getBoundingClientRect(), t = document.getElementById("editor-hint-toggle").getBoundingClientRect();
+            const l = Math.max(m.left, t.left), r = Math.min(m.right, t.right), tp = Math.max(m.top, t.top), bt = Math.min(m.bottom, t.bottom);
+            if (r <= l || bt <= tp) return { overlap: false };
+            const hit = document.elementFromPoint((l + r) / 2, (tp + bt) / 2);
+            return { overlap: true, inMenu: !!hit && document.getElementById("editor-menu").contains(hit), hit: hit && (hit.id || hit.className) };
+          } finally { ${dropInert} }`);
+        assert.ok(!over.overlap || over.inMenu, "the toggle paints over the open menu: " + JSON.stringify(over));
+        assert.ok(rows.length >= 2, "the menu has items");
+        const bad = rows.filter((r) => r.miss > 0);
+        assert.deepStrictEqual(bad, [], "menu items covered: " + JSON.stringify(bad));
+      });
+    }
+
+    const walkTabs = async (w, h, line = SCALE) => {
+      await fresh(w, h);
+      await openAdd(); await typeLine(line);
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
+      const probe = `${liftInert}
+        try {
+          const el = document.activeElement, r = el.getBoundingClientRect(), areas = document.getElementById("editor-areas");
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return { id: el.id || String(el.className.baseVal ?? el.className) || el.tagName, ok: !!hit && (el.contains(hit) || (!!el.closest("#editor-pan") && !areas.contains(hit))), hit: hit && (hit.id || String(hit.className.baseVal ?? hit.className)) };
+        } finally { ${dropInert} }`;
+      for (const shift of [false, true]) {
+        for (let i = 1; i <= 8; i++) {
+          const before = await b.eval(`const a = document.activeElement; return a.id || String(a.className.baseVal ?? a.className) || a.tagName;`);
+          const beforeEl = await b.eval(`window.__ehkPrev = document.activeElement; return true;`);
+          await b.eval(`document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: ${shift}, bubbles: true, cancelable: true })); return true;`);
+          await pause(40);
+          const moved = await b.eval(`return document.activeElement !== window.__ehkPrev;`);
+          assert.ok(beforeEl && moved, `${shift ? "Shift+" : ""}Tab ${i} from ${before} left focus where it was`);
+          const r = await b.eval(probe);
+          assert.ok(r.ok, `${shift ? "Shift+" : ""}Tab ${i} from ${before} lands under another element: ${JSON.stringify(r)}`);
+        }
+      }
+    };
+    for (const [w, h] of [[360, 640], [390, 844]]) {
+      test(`EHM tab skips covered ${w}x${h}: with the hint open Tab always lands on a reachable control`, async () => {
+        await walkTabs(w, h, NEO);
+      });
+    }
+    for (const [w, h] of [[844, 390], [320, 568], [320, 400]]) {
+      test(`EHK2 ${w}x${h} with the hint open Tab and Shift+Tab never land on a control under the card`, async () => {
+        await walkTabs(w, h);
+      });
+    }
+
+    test("EHK1 the menu opened from the keyboard with the hint open closes the hint first", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(NEO);
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      assert.strictEqual(await b.eval(`return editorSession.hint;`), true, "the hint is open");
+      await b.eval(`const m = document.getElementById("editor-more"); m.focus(); m.click(); return true;`);
+      await pause(100);
+      assert.strictEqual(await b.eval(`return editorSession.menu;`), true, "the menu is open");
+      assert.deepStrictEqual(await b.eval(`return [editorSession.hint, document.getElementById("editor-areas").hidden, document.getElementById("editor-hint-close").hidden];`), [false, true, true], "the hint closed");
+    });
+
+    test("EHK3 an armed Delete item shows the main pressed ink #5A49A6 while pressed", async () => {
+      await fresh(390, 844);
+      await openSaved();
+      await b.click("#editor-delete");
+      await pause(250);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-delete").classList.contains("armed");`), true, "the Delete is armed");
+      await b.send("DOM.enable");
+      await b.send("CSS.enable");
+      const doc = await b.send("DOM.getDocument", { depth: 0 });
+      const node = await b.send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: "#editor-delete" });
+      const ink = () => b.eval(`return getComputedStyle(document.getElementById("editor-delete")).color;`);
+      assert.strictEqual(await ink(), "rgb(36, 36, 36)", "at rest the armed ink is main's");
+      await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: ["active"] });
+      try {
+        await b.settle();
+        assert.strictEqual(await ink(), "rgb(90, 73, 166)");
+      } finally {
+        await b.send("CSS.forcePseudoState", { nodeId: node.nodeId, forcedPseudoClasses: [] });
+      }
+    });
+
+    test("EHK4 1280x800 the open hint card covers the tab strip", async () => {
+      await fresh(1280, 800);
+      await openAdd();
+      await typeLine(NEO);
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      const r = await b.eval(`${liftInert}
+        try {
+          const areas = document.getElementById("editor-areas");
+          return [...document.querySelectorAll("#editor-tabs .edtab")].map((el) => {
+            const q = el.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+            return { id: el.id, covered: !!hit && areas.contains(hit) };
+          });
+        } finally { ${dropInert} }`);
+      assert.ok(r.length > 0, "the tab strip exists");
+      assert.deepStrictEqual(r.filter((x) => !x.covered), [], "tabs not under the card: " + JSON.stringify(r));
+    });
+
+    test("EHM tab skips covered: closing the hint restores the covered controls to the Tab order", async () => {
+      await fresh(390, 844);
+      await openAdd();
+      await typeLine(NEO);
+      const stops = () => b.eval(`return editorTabStops().map((e) => e.id);`);
+      const closed = await stops();
+      await b.click("#editor-hint-toggle");
+      await pause(250);
+      await b.click("#editor-hint-close");
+      await pause(250);
+      assert.deepStrictEqual(await stops(), closed);
+      assert.ok(closed.includes("editor-name"));
+    });
+
+    for (const [w, h] of [[390, 844], [375, 667], [360, 640], [320, 568], [844, 390]]) {
+      test(`EHC hint card ${w}x${h}: the open card covers the tabs and carries the close button at its top right`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(NEO);
+        await b.click("#editor-hint-toggle");
+        await pause(250);
+        assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
+        const r = await b.eval(`${liftInert}
+          try {
+            const areas = document.getElementById("editor-areas"), card = areas.getBoundingClientRect();
+            const tabs = [...document.querySelectorAll("#editor-tabs .edtab")].map((el) => {
+              const q = el.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+              return { id: el.id, covered: !!hit && areas.contains(hit) };
+            });
+            const cb = document.getElementById("editor-hint-close"), c = cb.getBoundingClientRect();
+            const hit = document.elementFromPoint(c.left + c.width / 2, c.top + c.height / 2);
+            const strip = document.getElementById("editor-tabs").getBoundingClientRect();
+            return { tabs, closeHit: hit === cb, inside: c.left >= card.left - 1 && c.right <= card.right + 1 && c.top >= card.top - 1 && c.bottom <= card.bottom + 1,
+              closeTop: c.top - card.top, cardTop: card.top, stripTop: strip.top,
+              countsTop: document.getElementById("editor-counts").getBoundingClientRect().top - card.top,
+              stops: editorTabStops().map((e) => e.id) };
+          } finally { ${dropInert} }`);
+        assert.ok(r.tabs.length >= 2 && r.tabs.every((t) => t.covered), "tab buttons covered by the card: " + JSON.stringify(r.tabs));
+        assert.ok(r.closeHit, "the close button is hit at its centre: " + JSON.stringify(r));
+        assert.ok(r.inside, "the close button sits inside the card: " + JSON.stringify(r));
+        assert.ok(r.closeTop >= -1 && r.closeTop <= 12, "the close button is within 12px of the card top: " + r.closeTop);
+        assert.ok(r.cardTop <= r.stripTop + .5, "the card top is at or above the tab strip: " + JSON.stringify(r));
+        assert.ok(r.countsTop >= 0 && r.countsTop <= 24, "the counts row sits at the card top: " + r.countsTop);
+        assert.ok(!r.stops.some((id) => id === "editor-tab-scale" || id === "editor-tab-layout"), "Tab skips the covered tabs: " + JSON.stringify(r.stops));
+        assert.ok(r.stops.includes("editor-hint-close"), "the close button stays a Tab stop");
+      });
+    }
+
+    for (const lang of ["en", "de"]) {
+      test(`EHM delete space ${lang}: the armed delete item reads a space before the scale name`, async () => {
+        await fresh(390, 844);
+        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+        await openSaved();
+        await b.click("#editor-delete");
+        const got = await b.eval(`const e = document.getElementById("editor-delete"), n = e.querySelector(".del-name");
+          const tn = document.createTreeWalker(e, NodeFilter.SHOW_TEXT).nextNode(), rg = document.createRange();
+          rg.setStart(tn, 0); rg.setEnd(tn, tn.textContent.trimEnd().length);
+          const textRight = rg.getBoundingClientRect().right;
+          return { name: n && n.textContent, armed: e.classList.contains("armed"), gap: n ? n.getBoundingClientRect().left - textRight : null, text: e.innerText };`);
+        assert.strictEqual(got.armed, true);
+        assert.ok(got.name && got.name.length > 0, "the name span exists");
+        assert.ok(got.gap >= 2, "the rendered gap between the label and the name is a space wide: " + JSON.stringify(got));
+      });
+    }
+  });
+
+  describe("editor Neotone hint fit", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const LANGS = fs.readdirSync(path.join(REPO, "data/i18n")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+    for (const lang of LANGS) {
+      test(`NM hint fit ${lang}: both Neotone hint lines fit`, async () => {
+        for (const [w, h] of [[320, 568], [390, 844]]) {
+          await fresh(w, h);
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          await openAdd();
+          await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+          await b.click("#editor-type-neotone");
+          await b.click("#editor-hint-toggle");
+          await pause(250);
+          const r = await b.eval(`const card = document.getElementById("editor-areas"), c = card.getBoundingClientRect(), lines = [...document.querySelectorAll("#editor-hint .neo-help")];
+            return { n: lines.length, cardScroll: [card.scrollWidth - card.clientWidth, card.scrollHeight - card.clientHeight],
+              out: lines.map((l) => { const q = l.getBoundingClientRect(); return { text: l.textContent.slice(0, 24), over: Math.max(c.left - q.left, q.right - c.right, c.top - q.top, q.bottom - c.bottom, l.scrollWidth - l.clientWidth) }; }).filter((x) => x.over > 0.5) };`);
+          assert.strictEqual(r.n, 2, `${lang} ${w}x${h} shows both Neotone lines: ` + JSON.stringify(r));
+          assert.ok(r.cardScroll[0] <= 0 && r.cardScroll[1] <= 0, `${lang} ${w}x${h} the hint card does not scroll: ` + JSON.stringify(r));
+          assert.deepStrictEqual(r.out, [], `${lang} ${w}x${h} a Neotone line leaves the card: ` + JSON.stringify(r));
+        }
+      });
+    }
+  });
+
+  describe("editor name field at 320x568 (NF, owner 2026-11-17)", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const LANDSCAPE_NF = [[667, 375, { st: 0, edTop: 0, nt: 171, sb: 159, tt: 221 }], [844, 390, { st: 0, edTop: 0, nt: 171, sb: 159, tt: 221 }]];
+    const LANGS = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+    const crowd = () => b.eval(`editorSession.error = t("editor.crowded", { pt: "2.71", floor: "3.6" }); editorRender(); return true;`);
+    const geo = () => b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
+      inerts.forEach((el) => el.removeAttribute("inert"));
+      try {
+        const R = (e) => { const r = e.getBoundingClientRect(); return { t: r.top, b: r.bottom, l: r.left, r: r.right }; };
+        const ed = document.getElementById("editor"), rg = document.getElementById("editor-region"), name = document.getElementById("editor-name");
+        const n = R(name), strip = R(document.getElementById("editor-tabs")), reg = R(rg), tray = R(document.getElementById("editor-tray"));
+        const hits = [[n.l + 8, n.t + 3], [(n.l + n.r) / 2, n.t + 3], [(n.l + n.r) / 2, (n.t + n.b) / 2], [n.r - 8, n.b - 3]]
+          .map(([x, y]) => { const h = document.elementFromPoint(x, y); return h === name ? "self" : (h && (h.id || h.className)); });
+        return { n, strip, reg, tray, hits, st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, edTop: ed.scrollTop, kind: document.getElementById("editor-status").dataset.kind || "" };
+      } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
+    const openAt = async (w, h, lang) => {
+      await fresh(w, h);
+      await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+      await openAdd();
+      await b.eval(`return document.fonts.ready.then(() => true);`);
+      await typeLine(SCALE);
+      await pause(250);
+    };
+    const clear = (g, label) => {
+      assert.ok(g.n.t >= g.strip.b - 0.5, `${label}: the name's top is not under the tab strip: ` + JSON.stringify(g));
+      assert.ok(g.n.b <= g.reg.b + 0.5, `${label}: the name's bottom is inside the region: ` + JSON.stringify(g));
+      assert.deepStrictEqual(g.hits, ["self", "self", "self", "self"], `${label}: the name takes taps at its corners and centre: ` + JSON.stringify(g));
+    };
+    describe("with real fonts", () => {
+      let saved = null;
+      before(async () => { saved = b; b = await launch({ foregroundSettle: true, realFonts: true }); });
+      after(async () => { const mine = b; b = saved; await mine.close(); });
+      for (const lang of LANGS) {
+        test(`NF ${lang} 320x568: at rest and with the crowded error the name field sits fully below the tab strip and takes its own taps`, async () => {
+          await openAt(320, 568, lang);
+          clear(await geo(), `${lang} rest`);
+          await crowd();
+          await pause(250);
+          const g = await geo();
+          assert.strictEqual(g.kind, "error", "the crowded error shows: " + JSON.stringify(g));
+          clear(g, `${lang} crowded`);
+        });
+      }
+      test("NF en 320x568: scrolled to its end, a render leaves the region there and the octave row takes its taps", async () => {
+        await openAt(320, 568, "en");
+        const r = await b.eval(`const rg = document.getElementById("editor-region"); rg.scrollTop = rg.scrollHeight; const end = rg.scrollTop;
+          editorRender();
+          const o = [...document.querySelectorAll("#editor-panel-scale .editor-octaves .mode")].pop(), q = o.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+          return { end, st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, ok: !!hit && o.contains(hit), hit: hit && (hit.id || hit.className) };`);
+        assert.ok(r.max > 0 && r.end === r.st, "a render keeps the user's scroll: " + JSON.stringify(r));
+        assert.ok(r.ok, "the last octave button takes its own tap: " + JSON.stringify(r));
+      });
+      for (const [w, h] of [[360, 640], [375, 667], [390, 844]]) {
+        test(`NF guard ${w}x${h}: in every language the region still rests at its end with the name clear of the strip`, async () => {
+          for (const lang of LANGS) {
+            await openAt(w, h, lang);
+            const g = await geo();
+            assert.ok(Math.abs(g.st - g.max) <= 1, `${lang} ${w}x${h}: rests at its end: ` + JSON.stringify(g));
+            clear(g, `${lang} ${w}x${h}`);
+          }
+        });
+      }
+      for (const [w, h] of [[360, 640], [375, 667]]) {
+        test(`NF guard ${w}x${h} crowded: in every language the name field clears the strip while a two-line error shows`, async () => {
+          for (const lang of LANGS) {
+            await openAt(w, h, lang);
+            await crowd();
+            await pause(250);
+            const g = await geo();
+            assert.strictEqual(g.kind, "error", `${lang} ${w}x${h}: the crowded error shows: ` + JSON.stringify(g));
+            clear(g, `${lang} ${w}x${h} crowded`);
+          }
+        });
+      }
+      for (const [w, h] of [[320, 568], [375, 548]]) {
+        test(`NF tray ${w}x${h}: at rest the first note row is in view and the region scrolls to the tray's end`, async () => {
+          for (const lang of LANGS) {
+            await openAt(w, h, lang);
+            const r = await b.eval(`const R = (e) => e.getBoundingClientRect(), rg = document.getElementById("editor-region"), strip = R(document.getElementById("editor-tabs")), reg = R(rg), first = R(document.querySelector("#editor-notes button"));
+              const overflows = rg.scrollHeight > rg.clientHeight;
+              rg.scrollTop = rg.scrollHeight;
+              const oct = [...document.querySelectorAll(".editor-octaves button")].pop(), last = R(oct), reg2 = R(rg);
+              return { firstTop: first.top, firstBottom: first.bottom, stripBottom: strip.bottom, regBottom: reg.bottom, overflows, lastBottom: last.bottom, reg2Bottom: reg2.bottom };`);
+            assert.ok(r.firstTop >= r.stripBottom - 0.5 && r.firstBottom <= r.regBottom + 0.5, `${lang} ${w}x${h}: the first note row is in view at rest: ` + JSON.stringify(r));
+            assert.ok(r.overflows, `${lang} ${w}x${h}: the region scrolls: ` + JSON.stringify(r));
+            assert.ok(r.lastBottom <= r.reg2Bottom + 0.5, `${lang} ${w}x${h}: scrolled to its end the octave row is in view: ` + JSON.stringify(r));
+          }
+        });
+      }
+      for (const [w, h, want] of LANDSCAPE_NF) {
+        test(`NF guard ${w}x${h}: the landscape column is unchanged`, async () => {
+          await openAt(w, h, "en");
+          const g = await geo();
+          assert.deepStrictEqual({ st: g.st, edTop: g.edTop, nt: Math.round(g.n.t), sb: Math.round(g.strip.b), tt: Math.round(g.tray.t) }, want, JSON.stringify(g));
+        });
+      }
+    });
+  });
+
+  describe("editor cleanup", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const saveOne = async (w = 375, h = 667) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+    const backAndWait = async () => {
+      await b.eval(`history.back(); return true;`);
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden") || !!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "back to settle" });
+    };
+    const remoteEdit = (name) => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+      built = buildGenerated(row.record.s, { ...row.record.o, name: ${JSON.stringify(name)} });
+      return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+        candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
+    const broadcast = () => b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
+
+    test("ECL2 one Save with an unacknowledged write leaves exactly one copy", async () => {
+      await saveOne();
+      await rename("DRAFT COPY");
+      await b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
+      const before = await savedCount();
+      await b.eval(`window.__realCommit = commitSaved;
+        commitSaved = async (c, o) => { const r = await window.__realCommit(c, o); return c.type === "save-as-separate" && r.ok ? { ...r, published: false, persistence: "durable" } : r; };
+        document.getElementById("editor-save").click(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the save to finish" });
+      await b.eval(`commitSaved = window.__realCommit; return true;`);
+      assert.strictEqual(await savedCount(), before + 1, "one Save writes one copy");
+    });
+
+    describe("pasted navigation with the editor open", () => {
+      test("ECL3 a pasted link with a dirty editor asks, keeps the draft and leaves no dead history entry", async () => {
+        await fresh();
+        const first = await b.eval(`return navigation.currentEntry.key;`);
+        await openAdd();
+        await typeLine(SCALE);
+        const own = await b.eval(`return navigation.currentEntry.key;`);
+        const route = await b.eval(`return location.hash;`);
+        await b.eval(`location.hash = "#deck=kurd"; return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+        assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
+        assert.match(await text(), /A4/, "the draft survives");
+        await b.waitFor(`navigation.currentEntry.key === ${JSON.stringify(own)}`, { label: "the page's own entry to be current again" });
+        assert.strictEqual(await b.eval(`return location.hash;`), route, "the address bar is back on the page route");
+        await b.click("#editor-dlg-discard");
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "Discard to close the page" });
+        await b.waitFor(`navigation.currentEntry.key === ${JSON.stringify(first)}`, { label: "history to end where it started" });
+      });
+
+      test("ECL3 a pasted link with a clean editor does not ask", async () => {
+        await fresh();
+        await openBuiltin();
+        await b.eval(`location.hash = "#deck=kurd"; return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the clean editor to close" });
+        assert.strictEqual(await dialogOpen(), false);
+      });
+    });
+
+    test("ECL6 a dirty editor guards unloading and a clean one does not", async () => {
+      await fresh();
+      await openAdd();
+      const probe = () => b.eval(`const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented;`);
+      assert.strictEqual(await probe(), false, "an untouched editor leaves freely");
+      await typeLine(SCALE);
+      assert.strictEqual(await probe(), true, "a dirty editor asks the browser to confirm");
+    });
+
+    test("ECL6 a second Back while the Save changes dialog is up keeps the draft", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine(SCALE);
+      await backAndWait();
+      assert.strictEqual(await dialogOpen(), true);
+      await backAndWait();
+      assert.strictEqual(await dialogOpen(), true, "the dialog is still up");
+      assert.strictEqual(await sheetHidden(), false);
+      assert.match(await text(), /A4/);
+    });
+
+    test("ECL7 a Delete tap on a rebound slot-owner explains why the scale was not removed", async () => {
+      await fresh();
+      await openBuiltin();
+      const seed = await b.eval(`return editingBase.selection.id;`);
+      await b.click("#editor-delete");
+      assert.strictEqual(await b.eval(`return editorSession.delArmed;`), true);
+      await b.eval(`const built = buildGenerated(HPE.core.formatSeed(editingBase.deck.fields), { ...editingBase.deck.options, name: "OWNER Y", replaces: ${JSON.stringify(seed)} });
+        return commitSaved({ type: "replace-builtin", collectionId: savedState.collectionId, seedId: ${JSON.stringify(seed)}, expectedSlotStateRevision: editingBase.slotStateRevision, expectedOwnerId: null,
+          candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok);`);
+      await broadcast();
+      await b.waitFor(`editingBase.selection.kind === "saved"`, { label: "the editor to rebind to the slot owner" });
+      const r = await b.eval(`return { armed: editorSession.delArmed, status: document.getElementById("editor-status").textContent, say: editorSession.say };`);
+      assert.ok(!r.armed, "the rebind reset the armed Delete");
+      assert.ok(r.status.length > 0, "the status row says something: " + JSON.stringify(r));
+      assert.strictEqual(r.status, await b.eval(`return t("editor.rebound", { name: editedDeck().name });`));
+    });
+
+    test("ECL8 editing the name keeps an invalid-notes error on screen until the notes are valid", async () => {
+      await fresh();
+      await openAdd();
+      await typeLine("(D3) A3 Q9 nonsense", { commit: true });
+      const shown = await b.eval(`return { error: editorSession.error, status: document.getElementById("editor-status").textContent, editing: editorSession.editing };`);
+      assert.ok(shown.error && shown.status === shown.error, "notes error is shown: " + JSON.stringify(shown));
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "MY NAME";
+        n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+      const after = await b.eval(`return { error: editorSession.error, status: document.getElementById("editor-status").textContent };`);
+      assert.strictEqual(after.status, shown.status, "the error is still shown after the rename: " + JSON.stringify(after));
+      assert.strictEqual(after.error, shown.error);
+    });
+
+    for (const [w, h] of [[360, 640], [390, 844]]) {
+      test(`ECL9 ${w}x${h} a system Back closes the open menu, so Escape leaves the dialog and a second Escape never closes the editor`, async () => {
+        await saveOne(w, h);
+        await rename("ECL9 EDIT");
+        await b.click("#editor-more");
+        assert.strictEqual(await b.eval(`return editorSession.menu;`), true);
+        await backAndWait();
+        assert.strictEqual(await dialogOpen(), true);
+        await b.key("Escape", "Escape", 27);
+        const r = await b.eval(`return { dialog: editorSession.dialog, menu: editorSession.menu, hidden: document.getElementById("editor-menu").hasAttribute("hidden"),
+          expanded: document.getElementById("editor-more").getAttribute("aria-expanded"), focus: document.activeElement && document.activeElement.id };`);
+        assert.deepStrictEqual(r, { dialog: false, menu: false, hidden: true, expanded: "false", focus: "editor-back" }, JSON.stringify(r));
+        await b.key("Escape", "Escape", 27);
+        assert.strictEqual(await sheetHidden(), false, "the editor is still open");
+        assert.strictEqual(await dialogOpen(), true, "Escape on a dirty editor asks first");
+      });
+    }
+
+    for (const [w, h] of [[320, 568], [360, 640], [390, 844]]) {
+      test(`ECL9 RR3 ${w}x${h}: the info button's top edge is not under the tab strip, even with the region scrolled to its end`, async () => {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(SCALE);
+        await pause(250);
+        await b.eval(`const rg = document.getElementById("editor-region"); rg.scrollTop = rg.scrollHeight; return true;`);
+        const r = await b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
+          inerts.forEach((el) => el.removeAttribute("inert"));
+          try {
+            const el = document.getElementById("editor-hint-toggle"), q = el.getBoundingClientRect();
+            const hit = document.elementFromPoint(q.left + q.width / 2, q.top + 3);
+            return { ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
+          } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
+        assert.ok(r.ok, "info button top-centre + 3px hits itself: " + JSON.stringify(r));
+      });
+    }
+
+    test("ECL10 an unfinished rename blocks a remote snapshot from rebinding the clean editor", async () => {
+      await saveOne();
+      await b.eval(`editorSession.__probe = "local"; const n = document.getElementById("editor-name"); n.value = "TYPED NOT COMMITTED"; return true;`);
+      assert.strictEqual(await remoteEdit("REMOTE RENAMED"), true, "the remote edit committed");
+      await broadcast();
+      await pause(200);
+      const r = await b.eval(`return { same: editorSession.__probe === "local", name: document.getElementById("editor-name").value };`);
+      assert.deepStrictEqual(r, { same: true, name: "TYPED NOT COMMITTED" });
+    });
+
+    test("ECL11 a system Back with an uncommitted rename asks first", async () => {
+      await saveOne();
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "UNCOMMITTED"; n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorSession.naming;`), true, "the name field is mid-edit");
+      await backAndWait();
+      assert.strictEqual(await dialogOpen(), true, "the Save changes dialog asks");
+      assert.strictEqual(await sheetHidden(), false);
+    });
+
+  });
+
+  describe("editor test gaps CL-U", () => {
+    const saveOne = async (w = 375, h = 667) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+    const remoteEdit = (name) => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+      built = buildGenerated(row.record.s, { ...row.record.o, name: ${JSON.stringify(name)} });
+      return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+        candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
+    const chipLabel = () => b.eval(`return document.querySelector("#decks .chip.on").textContent;`);
+
+    test("CLU5 r3 an uncommitted rename guards unloading", async () => {
+      await saveOne();
+      const probe = () => b.eval(`const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented;`);
+      assert.strictEqual(await probe(), false, "a clean editor leaves freely");
+      await b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = "UNCOMMITTED"; n.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
+      assert.strictEqual(await b.eval(`return editorSession.naming;`), true, "the name field is mid-edit and uncommitted");
+      assert.strictEqual(await probe(), true, "a reload would lose the typed name, so the browser must ask");
+    });
+
+    test("CLU5 r4 a remote edit rebinding an unarmed clean editor shows no rebound message", async () => {
+      await saveOne();
+      assert.strictEqual(await b.eval(`return !editorSession.delArmed;`), true);
+      assert.strictEqual(await remoteEdit("REMOTE RENAMED"), true);
+      await b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
+      await b.waitFor(`document.getElementById("editor-name").value === "REMOTE RENAMED"`, { label: "the editor to rebind to the remote edit" });
+      const r = await b.eval(`return { status: document.getElementById("editor-status").textContent, say: editorSession.say };`);
+      assert.deepStrictEqual(r, { status: "", say: "" }, "nothing was armed, so nothing is explained: " + JSON.stringify(r));
+    });
+
+    describe("history guard", () => {
+      const raceDialog = async (button) => {
+        await fresh();
+        const first = await b.eval(`return navigation.currentEntry.key;`);
+        await openAdd();
+        await typeLine(SCALE);
+        await b.eval(`window.__realBack = history.back.bind(history); window.__held = 0; history.back = () => { window.__held++; };
+          location.hash = "#deck=kurd"; return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden")) && window.__held === 1`, { label: "the guard's own pop to be deferred" });
+        await b.click(button);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to close" });
+        await b.eval(`history.back = window.__realBack; const n = window.__held; window.__held = 0; for (let i = 0; i < n; i++) history.back(); return true;`);
+        await new Promise((r) => setTimeout(r, 600));
+        await b.eval(`openScaleSheet(addChip); return true;`);
+        await b.waitFor(`!!document.getElementById("editor-line") && !document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the page to reopen" });
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the next system Back to close the page" });
+        assert.strictEqual(await b.eval(`return navigation.currentEntry.key;`), first, "history ends where it started");
+      };
+
+      test("ECL12 after Discard in the Save changes dialog the next system Back closes the sheet", async () => {
+        await raceDialog("#editor-dlg-discard");
+      });
+
+      test("ECL12 after Save in the Save changes dialog the next system Back closes the sheet", async () => {
+        await raceDialog("#editor-dlg-save");
+      });
+
+      test("ECL13 a system Back with an invalid uncommitted notes line asks first", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine("zzz not a scale", { commit: false });
+        await b.eval(`history.back(); return true;`);
+        await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
+        assert.strictEqual(await sheetHidden(), false, "the draft page stays open");
+        assert.strictEqual(await text(), "zzz not a scale", "the line survives");
+      });
+
+      test("ECL13 BACK with an invalid uncommitted notes line asks first", async () => {
+        await fresh();
+        await openAdd();
+        await typeLine("zzz not a scale", { commit: false });
+        await b.eval(`editorBack(); return true;`);
+        assert.strictEqual(await dialogOpen(), true, "the Save changes dialog asks");
+        assert.strictEqual(await sheetHidden(), false);
+      });
+    });
+  });
+
+  describe("editor conflict auto-save (CAS)", () => {
+    const TO = { timeout: 60000 };
+    const TO13 = { timeout: 120000 };
+    const tap = async (sel) => { await b.eval(`const e = document.querySelector(${JSON.stringify(sel)}); if (e && e.scrollIntoView) e.scrollIntoView({ block: "nearest" }); return true;`); await b.click(sel); };
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const closedExpr = `document.getElementById("scale-sheet").hasAttribute("hidden")`;
+    const rename = (value) => b.eval(`const n = document.getElementById("editor-name"); n.focus(); n.value = ${JSON.stringify(value)};
+      n.dispatchEvent(new Event("input", { bubbles: true })); n.blur(); return true;`);
+    const names = () => b.eval(`return savedState.entries.map((e) => e.record.o.name).sort();`);
+    const saveNamed = async (name, w = 375, h = 667) => {
+      await fresh(w, h);
+      await openAdd();
+      await typeLine(SCALE);
+      await rename(name);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the first save to close" });
+    };
+    const editSaved = async () => {
+      await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
+    };
+    const openSaved = async (name, w, h) => { await saveNamed(name, w, h); await editSaved(); };
+    const remoteEdit = (name) => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id),
+      built = buildGenerated(row.record.s, { ...row.record.o, name: ${JSON.stringify(name)} });
+      return commitSaved({ type: "edit", collectionId: savedState.collectionId, instanceId: id, expectedRevision: row.revision,
+        candidate: { record: scaleRecord(seedOf(built.value)), deck: built.value } }).then((r) => r.ok === true);`);
+    const remoteDelete = () => b.eval(`const id = editingBase.selection.id, row = savedState.entries.find((r) => r.instanceId === id);
+      return commitSaved({ type: "delete", instanceId: id, expectedRevision: row.revision, collectionId: savedState.collectionId, ...editingBase.scope }).then((r) => r.ok === true);`);
+    const broadcast = () => b.eval(`savedSnapshotListener({ source: "remote", previous: savedState, current: savedState }); return true;`);
+    const staleRevision = () => b.eval(`editingBase = { ...editingBase, revision: editingBase.revision + 100 }; return true;`);
+    const watchBanner = () => b.eval(`window.__banner = false;
+      new MutationObserver(() => { if (document.getElementById("editor-conflict-msg")) window.__banner = true; }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+      return true;`);
+    const sawBanner = () => b.eval(`return window.__banner === true || !!document.getElementById("editor-conflict-msg");`);
+    const sayRevision = () => b.eval(`return announcementRevision;`);
+    const holdSecondCommit = () => b.eval(`const real = commitSaved; let n = 0; window.__real = real;
+      commitSaved = (c, o) => { n++; if (n === 2) return new Promise((res) => { window.__release = () => res(real(c, o)); }); return real(c, o); }; return true;`);
+    const armedDelete = async () => {
+      await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+      await b.click("#editor-delete");
+      await pause(500);
+      await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+      await b.click("#editor-delete");
+      await pause(300);
+    };
+    const NAME_OF = (n) => `savedState.entries.find((e) => e.record.o.name === ${JSON.stringify(n)})`;
+
+    test("CAS1 a Save refused because the scale changed elsewhere saves the draft as a new scale with no message", TO, async () => {
+      await saveNamed("ORIGINAL");
+      const originalRev = await b.eval(`return savedState.entries[0].revision;`);
+      await editSaved();
+      await rename("DRAFT COPY");
+      await staleRevision();
+      await watchBanner();
+      const said = await sayRevision();
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+      assert.strictEqual(await b.eval(`return ${NAME_OF("ORIGINAL")}.revision;`), originalRev, "the original row is untouched");
+      assert.strictEqual(await b.eval(`return selection.id === ${NAME_OF("DRAFT COPY")}.instanceId;`), true, "the new scale is selected");
+      assert.strictEqual(await sawBanner(), false, "no conflict banner ever showed");
+      assert.strictEqual(await sayRevision(), said, "no success line and no say line for the retried copy");
+    });
+
+    test("CAS2 a Save refused because the scale was deleted elsewhere saves the draft as a new scale", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      assert.strictEqual(await remoteDelete(), true, "the peer deleted the scale");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY"]);
+      assert.strictEqual(await sawBanner(), false);
+    });
+
+    test("CAS3 a Save refused by a whole-list change writes exactly one new scale", TO, async () => {
+      await openSaved("ORIGINAL");
+      const before = await savedCount();
+      await rename("DRAFT COPY");
+      await b.eval(`editingBase = { ...editingBase, collectionId: "00000000-0000-4000-8000-000000000000" }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+      assert.strictEqual(await savedCount(), before + 1, "exactly one new scale");
+    });
+
+    test("CAS4 a built-in Save refused by a whole-list change writes one new scale and leaves the built-in", TO, async () => {
+      await fresh(375, 667);
+      await openBuiltin();
+      await rename("BUILTIN DRAFT");
+      await b.eval(`editingBase = { ...editingBase, collectionId: "00000000-0000-4000-8000-000000000000" }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["BUILTIN DRAFT"]);
+      assert.strictEqual(await b.eval(`return savedState.hidden.length === 0 && savedEntries.size === 1 && savedState.entries[0].record.o.replaces === undefined;`), true, "the built-in is neither hidden nor replaced");
+    });
+
+    test("CAS5 a new scale refused by a whole-list change writes one new scale", TO, async () => {
+      await fresh(375, 667);
+      await openAdd();
+      await typeLine(SCALE);
+      await rename("NEW DRAFT");
+      await b.eval(`savedState = { ...savedState, collectionId: "00000000-0000-4000-8000-000000000000" }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["NEW DRAFT"]);
+      assert.strictEqual(await savedCount(), 1);
+    });
+
+    test("CAS6 a second refusal keeps the draft with the failure message and retries only once", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      await b.eval(`window.__calls = []; commitSaved = async (c) => { window.__calls.push(c.type); return { ok: false, kind: "conflict" }; }; return true;`);
+      await tap("#editor-save");
+      await b.waitFor(`window.__calls.length >= 2 && !savePending`, { label: "the retry to finish" });
+      await pause(300);
+      assert.deepStrictEqual(await b.eval(`return window.__calls;`), ["edit", "save-as-separate"]);
+      assert.strictEqual(await b.eval(`return editorSession.error === t("saved.failure");`), true, "the existing failure message shows");
+      assert.strictEqual(await sheetHidden(), false, "the draft stays open");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "DRAFT COPY");
+    });
+
+    test("CAS7 Save stays disabled while the automatic copy waits", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      await staleRevision();
+      await holdSecondCommit();
+      await tap("#editor-save");
+      await b.waitFor(`typeof window.__release === "function"`, { label: "the automatic copy to wait" });
+      assert.deepStrictEqual(await b.eval(`return [document.getElementById("editor-save").disabled, editorSubmitOff(editorSession, editorSession.history.present)];`), [true, true]);
+      await b.eval(`window.__release(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the held copy to finish" });
+      assert.deepStrictEqual(await names(), ["DRAFT COPY", "ORIGINAL"]);
+    });
+
+    test("CAS8 a draft that moved during the automatic copy keeps the editor open on the copy", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("DRAFT COPY");
+      await staleRevision();
+      await holdSecondCommit();
+      await tap("#editor-save");
+      await b.waitFor(`typeof window.__release === "function"`, { label: "the automatic copy to wait" });
+      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetName(m, "MOVED ON")).history; editorRender(); return true;`);
+      await b.eval(`window.__release(); return true;`);
+      await b.waitFor(`!savePending`, { label: "the held copy to finish" });
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open on the moved draft");
+      assert.strictEqual(await b.eval(`return editingBase.selection.id === ${NAME_OF("DRAFT COPY")}.instanceId;`), true, "the editor is bound to the copy");
+      assert.strictEqual(await b.eval(`return editorSession.error;`), "");
+      assert.strictEqual(await sawBanner(), false);
+    });
+
+    test("CAS9 a Save after a remote edit keeps the remote scale and makes a copy", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOCAL DRAFT");
+      assert.strictEqual(await remoteEdit("REMOTE WINNER"), true, "the remote edit committed");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["LOCAL DRAFT", "REMOTE WINNER"]);
+    });
+
+    test("CLU4 a missed broadcast then Save keeps the real winner and saves the draft as a new scale", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOSING LOCAL DRAFT");
+      await b.eval(`window.__stale = { state: savedClone(savedState), entries: [...savedEntries] }; return true;`);
+      assert.strictEqual(await remoteEdit("WINNING PEER"), true, "the peer edit committed");
+      await b.eval(`const st = window.__stale; savedState = st.state; savedEntries.clear(); for (const [k, v] of st.entries) savedEntries.set(k, v); buildChips(); return true;`);
+      assert.deepStrictEqual(await names(), ["ORIGINAL"], "this tab never heard the peer: it still holds the old row");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the automatic copy to close the sheet" });
+      assert.deepStrictEqual(await names(), ["LOSING LOCAL DRAFT", "WINNING PEER"]);
+      assert.strictEqual(await sawBanner(), false);
+    });
+
+    test("CAS10 a Delete refused because the scale changed elsewhere keeps it and says so", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOCAL DRAFT");
+      assert.strictEqual(await remoteEdit("REMOTE EDIT"), true);
+      const hidden = await b.eval(`return savedState.hidden.length;`);
+      await armedDelete();
+      await b.waitFor(`document.getElementById("editor-status").textContent === t("editor.say.del_kept")`, { label: "the kept line" });
+      assert.deepStrictEqual(await b.eval(`const d = document.getElementById("editor-delete"), st = document.getElementById("editor-status");
+        return { error: editorSession.error, kind: st.getAttribute("data-kind"), armed: d.classList.contains("armed") || editorSession.delArmed,
+          buttons: st.querySelectorAll("button").length, banner: !!document.getElementById("editor-conflict-msg") };`),
+        { error: "", kind: null, armed: false, buttons: 0, banner: false });
+      assert.deepStrictEqual(await names(), ["REMOTE EDIT"], "the scale still exists");
+      await armedDelete();
+      await armedDelete();
+      assert.deepStrictEqual(await names(), ["REMOTE EDIT"], "further taps never delete it");
+      assert.strictEqual(await b.eval(`return savedState.hidden.length;`), hidden);
+    });
+
+    test("CAS11 a Delete refused because the scale is gone closes the editor silently and never deletes the saved fallback", TO, async () => {
+      await openSaved("ORIGINAL");
+      await rename("LOCAL DRAFT");
+      assert.strictEqual(await remoteDelete(), true);
+      let said = await sayRevision();
+      await armedDelete();
+      await b.waitFor(closedExpr, { label: "the editor to close silently" });
+      assert.strictEqual(await sayRevision(), said, "no say line");
+      assert.strictEqual(await sawBanner(), false);
+      assert.strictEqual(await savedCount(), 0);
+      await fresh(375, 667);
+      await openAdd();
+      await typeLine(SCALE);
+      await rename("FALLBACK");
+      await tap("#editor-save");
+      await b.waitFor(closedExpr, { label: "the fallback save to close" });
+      await b.eval(`const v = allDeckViews().find((x) => x.selection.kind === "builtin"); selectDeck(v.selection, false); openEditSheet(v.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line") && editingBase.selection.kind === "builtin"`, { label: "the editor on a built-in" });
+      await rename("BUILTIN DRAFT");
+      await b.eval(`return commitSaved({ type: "hide-builtin", seedId: editingBase.selection.id, expectedSlotStateRevision: editingBase.slotStateRevision, expectedOwnerId: editingBase.ownerId, collectionId: savedState.collectionId }).then((r) => r.ok);`);
+      said = await sayRevision();
+      await armedDelete();
+      await b.waitFor(closedExpr, { label: "the editor to close silently on the hidden built-in" });
+      assert.strictEqual(await sayRevision(), said, "no say line");
+      assert.strictEqual(await sawBanner(), false);
+      assert.deepStrictEqual(await names(), ["FALLBACK"], "the saved fallback survives");
+    });
+
+    test("CAS12 a broadcast remote deletion of the open saved scale leaves the editor and its draft", TO, async () => {
+      await openSaved("ORIGINAL");
+      assert.strictEqual(await remoteDelete(), true);
+      await broadcast();
+      await pause(400);
+      assert.strictEqual(await sawBanner(), false, "no conflict banner");
+      assert.strictEqual(await sheetHidden(), false, "the editor stays open");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "ORIGINAL", "the draft stays in the field");
+    });
+
+    const CAS13_VIEWPORTS = [[375, 667], [390, 844], [430, 932], [768, 1024], [844, 390], [667, 375], [1024, 768]];
+    const CAS13_CASES = [...["en", "de", "fr", "it", "es", "ja", "zh-Hant", "zh-Hans"].map((l) => [320, 568, l]),
+      ...CAS13_VIEWPORTS.flatMap(([w, h]) => ["en", "de"].map((l) => [w, h, l]))];
+    for (const [w, h, lang] of CAS13_CASES) {
+      test(`CAS13 ${w}x${h} ${lang}: the delete line keeps the tabs and name within 1px and covers no pan circle`, TO13, async () => {
+        await fresh(w, h);
+        await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+        await openAdd();
+        await typeLine(SCALE);
+        await rename("ORIGINAL");
+        await tap("#editor-save");
+        await b.waitFor(closedExpr, { label: "the first save to close" });
+        await editSaved();
+        await rename("LOCAL DRAFT");
+        await pause(300);
+        const rects = () => b.eval(`const r = (el) => { const q = el.getBoundingClientRect(); return [q.left, q.top, q.width, q.height]; };
+          return { tabs: [...document.querySelectorAll("#editor-tabs > *")].map(r), name: r(document.getElementById("editor-name")) };`);
+        await b.eval(`document.getElementById("editor-more").scrollIntoView({ block: "nearest" }); return true;`);
+        await pause(200);
+        const rest = await rects();
+        assert.strictEqual(await remoteEdit("REMOTE EDIT"), true);
+        await armedDelete();
+        await b.waitFor(`document.getElementById("editor-status").textContent === t("editor.say.del_kept")`, { label: "the kept line" });
+        await b.eval(`return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));`);
+        const now = await rects();
+        const close = (a, c) => a.length === c.length && a.every((v, i) => Math.abs(v - c[i]) <= 1);
+        assert.ok(rest.tabs.length >= 2 && rest.tabs.every((q, i) => close(q, now.tabs[i])), "the tab strip is where it rested: " + JSON.stringify({ rest, now }));
+        assert.ok(close(rest.name, now.name), "the name field is where it rested: " + JSON.stringify({ rest, now }));
+        const bad = await b.eval(`const pan = document.getElementById("editor-pan"), svg = pan.querySelector("svg"), status = document.getElementById("editor-status"), bad = [];
+          const scan = (tag) => {
+            for (const c of pan.querySelectorAll("circle")) {
+              const q = c.getBoundingClientRect();
+              if (!q.width) continue;
+              for (const [fx, fy] of [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5]]) {
+                const hit = document.elementFromPoint(q.left + q.width * fx, q.top + q.height * fy);
+                if (hit && status.contains(hit)) bad.push(tag + ":" + (c.getAttribute("aria-label") || "") + "->" + (hit.id || hit.tagName));
+              }
+            }
+          };
+          scan("rest");
+          svg.scrollIntoView({ block: "center" });
+          scan("scrolled");
+          return { bad, n: pan.querySelectorAll("circle").length };`);
+        assert.ok(bad.n > 0 && bad.bad.length === 0, "the delete line covers no pan circle: " + JSON.stringify(bad));
+      });
+    }
+
+    test("CAS14 a Delete on a clean editor whose scale changed in a missed broadcast rebinds and shows the kept line", TO, async () => {
+      await openSaved("ORIGINAL");
+      assert.strictEqual(await remoteEdit("WINNER"), true, "the peer edit committed with no broadcast");
+      const generation = await b.eval(`return sheetGeneration;`);
+      await armedDelete();
+      await b.waitFor(`editorSession && editorSession.say === t("editor.say.del_kept")`, { label: "the kept line on the rebound session" });
+      assert.deepStrictEqual(await b.eval(`const st = document.getElementById("editor-status");
+        return { moved: sheetGeneration !== ${generation}, rebound: editorSession.say === t("editor.rebound", { name: "WINNER" }), armed: editorSession.delArmed,
+          kind: st.getAttribute("data-kind"), name: document.getElementById("editor-name").value, text: st.textContent === t("editor.say.del_kept") };`),
+        { moved: true, rebound: false, armed: false, kind: null, name: "WINNER", text: true });
+      assert.deepStrictEqual(await names(), ["WINNER"], "the scale is not deleted");
+
+      await openSaved("SECOND");
+      assert.strictEqual(await remoteEdit("SECOND WINNER"), true);
+      await b.eval(`window.__realRec = reconcileSavedCollection; reconcileSavedCollection = async () => { await new Promise((r) => { window.__relRec = r; }); return window.__realRec(); }; return true;`);
+      await armedDelete();
+      await b.waitFor(`typeof window.__relRec === "function"`, { label: "the reconcile to wait" });
+      await b.eval(`closeScaleSheet(); openScaleSheet(addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "a different session" });
+      await b.eval(`window.__relRec(); return true;`);
+      await pause(600);
+      assert.strictEqual(await b.eval(`return editorSession.say === "" && !document.getElementById("editor-status").textContent.includes(t("editor.say.del_kept"));`), true, "the new session gets no kept line");
+    });
+
+    test("CAS15 a Delete on a clean editor whose scale was removed elsewhere closes silently", TO, async () => {
+      await openSaved("ORIGINAL");
+      assert.strictEqual(await remoteDelete(), true, "the peer deleted the scale with no broadcast");
+      const said = await sayRevision();
+      await armedDelete();
+      await b.waitFor(closedExpr, { label: "the editor to close silently" });
+      assert.strictEqual(await sayRevision(), said, "no say line");
+      assert.strictEqual(await b.eval(`return editorSession === null;`), true);
+      assert.strictEqual(await sawBanner(), false);
+      assert.strictEqual(await savedCount(), 0, "nothing else was deleted");
+    });
+  });
+
+  describe("RC fixes: octave 3, the name placeholder and the first bottom note (TRI-59 rc-fixes)", () => {
+    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+    const LANGS = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+    const placeholder = () => b.eval(`return document.getElementById("editor-name").placeholder;`);
+    const octave = () => b.eval(`return document.getElementById("editor-oct").textContent;`);
+    const bottomAngles = () => b.eval(`const a = editorSession.history.present.options.angles; return a && a.bottom ? a.bottom : null;`);
+    const kind = () => b.eval(`return editorSession.kind;`);
+
+    test("L1 every editor opens on octave 3: Add, a built-in, and the accessible name", async () => {
+      await fresh();
+      await openAdd(3);
+      assert.strictEqual(await octave(), "3");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-oct").getAttribute("aria-label");`), "Octave 3");
+      await b.click("#editor-back");
+      await openBuiltin();
+      assert.strictEqual(await octave(), "3");
+    });
+
+    test("L1 tapping a tray chip on a new scale places an octave 3 note", async () => {
+      await fresh();
+      await openAdd(3);
+      await b.click('.tray-note[data-name="D"]');
+      assert.strictEqual(await b.eval(`return editorSession.held.k !== undefined && editorHeldName();`), "D3");
+    });
+
+    test("L2 the name box hints the auto name once the scale is valid, and stays empty while the stage is empty or only staged", async () => {
+      await fresh();
+      await openAdd(3);
+      assert.strictEqual(await placeholder(), "");
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), true, "only staged");
+      assert.strictEqual(await placeholder(), "", "no hint while only staged");
+      await b.click("#editor-back");
+      await b.eval(`const d = document.getElementById("editor-dialog"); if (d && !d.hasAttribute("hidden")) { const x = d.querySelector("button"); if (x) x.click(); } return true;`);
+      await fresh();
+      await openAdd(3);
+      await typeLine(SCALE);
+      const auto = await b.eval(`return editorAutoName(editorSession.history.present);`);
+      assert.strictEqual(await placeholder(), await b.eval(`return t("editor.name.auto", { name: ${JSON.stringify(auto)} });`));
+      assert.strictEqual(await placeholder(), "Auto: " + auto);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-name").value;`), "", "the box itself stays empty");
+      assert.strictEqual(await b.eval(`return editorSession.history.present.options.name || "";`), "", "the hint is never stored");
+    });
+
+    test("L3 a new scale's first tapped bottom note is stored at 270 and registered as a pin; a second note keeps it U1", async () => {
+      await fresh();
+      await openAdd(3);
+      await typeLine(SCALE);
+      assert.strictEqual(await kind(), "new");
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.deepStrictEqual(await bottomAngles(), [270]);
+      assert.strictEqual(await b.eval(`return editorSession.history.present.pins.some((p) => p.ring === "bottom");`), true);
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-reset").disabled;`), false, "Reset spacing is enabled");
+      await b.click('.tray-note[data-name="B"]');
+      await place("bottom");
+      const r = await b.eval(`const f = editorSolve(editorSession.history.present).value.fields; const o = {}; for (const id of Object.keys(f)) if (f[id][3] === "bottom") o[f[id][0] + f[id][1]] = { a: f[id][4], l: f[id][5] }; return o;`);
+      assert.strictEqual(r.A3.a, 270);
+      assert.strictEqual(r.A3.l, "U1");
+    });
+
+    test("L3 on the empty stage a new scale's first bottom note is staged at 270 and the ghost draws it there", async () => {
+      await fresh();
+      await openAdd(3);
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.deepStrictEqual(await b.eval(`return editorSession.history.present.stage.angles;`), [270]);
+      assert.strictEqual(await b.eval(`const f = editorSolve(editorSession.history.present).value.fields; return Object.values(f).find((x) => x[3] === "bottom")[4];`), 270);
+    });
+
+    test("L3 editing a saved scale and a built-in never takes the default, a typed bottom never does either", async () => {
+      await fresh();
+      await openBuiltin();
+      assert.strictEqual(await kind(), "builtin");
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.strictEqual(await bottomAngles(), null);
+      await b.click("#editor-back");
+      await fresh();
+      await openAdd(3);
+      await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4");
+      const expected = await b.eval(`const keep = editorSession, m = keep.history.present; editorSession = null; const r = editorPlace(m, "bottom", "B3"); editorSession = keep; return r.value.options.angles.bottom;`);
+      await b.click('.tray-note[data-name="B"]');
+      await place("bottom");
+      assert.deepStrictEqual(await bottomAngles(), expected, "the same as a placement with no new-scale session");
+    });
+
+    test("L3 a Save that keeps the editor open ends the new-scale default", async () => {
+      await fresh();
+      await openAdd(3);
+      await typeLine(SCALE);
+      await b.eval(`window.__sv = editorSave(); document.getElementById("editor-line").value = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4"; return true;`);
+      await b.waitFor(`!!editorSession && editorSession.kind === "saved"`, { label: "the session to stop being new" });
+      await b.click('.tray-note[data-name="A"]');
+      await place("bottom");
+      assert.strictEqual(await bottomAngles(), null);
+    });
+
+    describe("staged bottom notes tapped out of pitch order (review round 1)", () => {
+      const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+      const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+      const spotAt = async (ring, deg) => clientOf(...polar(await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`), deg));
+      const dingAt = async () => clientOf(0, -(await b.eval(`return editorSolve(editorSession.history.present).value.geom.ding_dy;`)));
+      const tap = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
+      const solved = () => b.eval(`const s = editorSolve(editorSession.history.present); return Object.fromEntries(Object.values(s.value.fields).filter((f) => f[3] === "bottom").map((f) => [f[0] + f[1], [f[4], f[5]]]));`);
+      const buildTop = async () => {
+        await b.click('.tray-note[data-name="D"]');
+        await tap(await dingAt());
+        for (const [n, deg] of [["A", 20], ["B", 60], ["C", 100], ["D", 140]]) {
+          await b.click('.tray-note[data-name="' + n + '"]');
+          await tap(await spotAt("rim", deg));
+        }
+      };
+
+      test("tapped angles: A at 100 then a lower C at 200 keep their angles when the scale completes", async () => {
+        await fresh();
+        await openAdd(3);
+        await b.click('.tray-note[data-name="A"]');
+        await tap(await spotAt("bottom", 100));
+        await b.click("#editor-oct-down");
+        await b.click('.tray-note[data-name="C"]');
+        await tap(await spotAt("bottom", 200));
+        await b.click("#editor-oct-up");
+        const preview = await solved();
+        await buildTop();
+        assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), false, "the scale completed");
+        const after = await solved();
+        assert.deepStrictEqual([after.A3[0], after.C2[0]], [preview.A3[0], preview.C2[0]], "no swap at commit");
+        assert.deepStrictEqual([after.A3[0], after.C2[0]], [100, 200]);
+      });
+
+      test("the 270 default stays on the note pushed first when a lower note follows", async () => {
+        await fresh();
+        await openAdd(3);
+        await b.click('.tray-note[data-name="A"]');
+        await place("bottom");
+        await b.click("#editor-oct-down");
+        await b.click('.tray-note[data-name="C"]');
+        await place("bottom");
+        await b.click("#editor-oct-up");
+        await buildTop();
+        assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), false, "the scale completed");
+        const after = await solved();
+        assert.deepStrictEqual(after.A3, [270, "U1"]);
+      });
+    });
+
+    describe("a staged pin is never dropped from the preview (round 3)", () => {
+      const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+      const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
+      const spotAt = async (ring, deg) => clientOf(...polar(await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`), deg));
+      const dingAt = async () => clientOf(0, -(await b.eval(`return editorSolve(editorSession.history.present).value.geom.ding_dy;`)));
+      const tap = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
+      const bottoms = () => b.eval(`const s = editorSolve(editorSession.history.present); return Object.fromEntries(Object.values(s.value.fields).filter((f) => f[3] === "bottom").map((f) => [f[0] + f[1], f[4]]));`);
+
+      test("D3 ding, A2 free, B2 tapped at 100, then a free C3: the preview keeps both pins, the pushes are refused or all fit, and the fifth note commits", async () => {
+        await fresh();
+        await openAdd(3);
+        await b.click('.tray-note[data-name="D"]');
+        await tap(await dingAt());
+        await b.click("#editor-oct-down");
+        await b.click('.tray-note[data-name="A"]');
+        await place("bottom");
+        await b.click('.tray-note[data-name="B"]');
+        await tap(await spotAt("bottom", 100));
+        await b.click("#editor-oct-up");
+        await b.click('.tray-note[data-name="C"]');
+        await place("bottom");
+        const stage = await b.eval(`return editorSession.history.present.stage;`);
+        const shown = await bottoms();
+        assert.strictEqual(shown.A2, 270, "the preview keeps the 270 pin");
+        assert.strictEqual(shown.B2, 100, "the preview keeps the tapped pin");
+        await b.click('.tray-note[data-name="A"]');
+        await tap(await spotAt("rim", 20));
+        assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), false, "the fifth note committed: " + JSON.stringify(stage));
+      });
+    });
+
+    for (const [w, h] of [[320, 568], [375, 667], [844, 390]]) {
+      test(`L2 ${w}x${h}: the placeholder moves nothing and covers no pan circle`, async () => {
+        await fresh(w, h);
+        await openAdd(3);
+        await b.eval(`return document.fonts.ready.then(() => true);`);
+        await typeLine(SCALE);
+        await pause(250);
+        const geo = () => b.eval(`const inerts = [...document.querySelectorAll("[inert]")]; inerts.forEach((e) => e.removeAttribute("inert"));
+          try {
+            const R = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.width, r.height]; };
+            const pan = document.getElementById("editor-pan"), q = pan.getBoundingClientRect();
+            const pts = [[0.5, 0.5], [0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]].map(([fx, fy]) => { const h = document.elementFromPoint(q.left + q.width * fx, q.top + q.height * fy); return !!h && pan.contains(h); });
+            return { name: R(document.getElementById("editor-name")), tabs: R(document.getElementById("editor-tabs")), pts };
+          } finally { inerts.forEach((e) => e.setAttribute("inert", "")); }`);
+        const withHint = await geo();
+        assert.match(await placeholder(), /^Auto: /);
+        await b.eval(`document.getElementById("editor-name").placeholder = ""; return true;`);
+        const rest = await geo();
+        for (const k of ["name", "tabs"]) withHint[k].forEach((v, i) => assert.ok(Math.abs(v - rest[k][i]) <= 1, `${k}[${i}] ${v} vs ${rest[k][i]}`));
+        assert.deepStrictEqual(withHint.pts, [true, true, true, true, true], "the pan is hit at its centre and four insets");
+      });
+    }
+
+    describe("with real fonts", () => {
+      let saved = null;
+      before(async () => { saved = b; b = await launch({ foregroundSettle: true, realFonts: true }); });
+      after(async () => { const mine = b; b = saved; await mine.close(); });
+      for (const lang of LANGS) {
+        test(`L2 ${lang} 320x568: the placeholder text fits the name box on one line`, async () => {
+          await fresh(320, 568);
+          await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          await openAdd(3);
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          await typeLine("[A2] [B2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5");
+          await pause(250);
+          const r = await b.eval(`const n = document.getElementById("editor-name"), c = getComputedStyle(n), cv = document.createElement("canvas").getContext("2d");
+            cv.font = c.fontStyle + " " + c.fontWeight + " " + c.fontSize + " " + c.fontFamily;
+            const inner = n.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight);
+            return { text: n.placeholder, w: cv.measureText(n.placeholder).width, inner };`);
+          assert.ok(r.text.length > 0 && r.w <= r.inner, lang + ": " + JSON.stringify(r));
+          assert.strictEqual(r.text, await b.eval(`return t("editor.name.auto", { name: editorAutoName(editorSession.history.present) });`));
+        });
+      }
+    });
+  });
+
 }
 
 function DECK_IDS_HAVE(builtinJson, id) {

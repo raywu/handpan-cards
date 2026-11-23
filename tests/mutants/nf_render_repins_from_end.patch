@@ -1,0 +1,15 @@
+# kills: NF en 320x568: scrolled to its end, a render leaves the region there and the octave row takes its taps
+# suite: node --test --test-name-pattern ^NF.en.320x568..scrolled.to.its.end tests/editor_e2e.test.js
+# fault: A render treats the scrolled-to-end region as at rest and snaps it back to the name row, moving the octave row from under the finger.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14150,7 +14150,7 @@
+ }
+ function editorRegionAtEnd() {
+   const rg = editorEl("editor-region");
+-  return !rg || Math.abs(rg.scrollTop - editorRegionRest(rg)) <= 2;
++  return !rg || rg.scrollHeight - rg.clientHeight - rg.scrollTop <= 2;
+ }
+ function editorRegionResize() {
+   const rg = editorSession && editorEl("editor-region");
