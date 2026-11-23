@@ -359,6 +359,19 @@ function run() {
   });
 
   describe("D15 Save", () => {
+    test("pill Save focuses the live selected saved-scale chip in the active editor", async () => {
+      await fresh(380, 667);
+      await b.click("#strip-add");
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "active editor opened by the pill" });
+      await typeLine(SCALE);
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "pill Save closed the active editor" });
+      assert.strictEqual(await b.eval(`const chip = document.querySelector("#decks .chip.on");
+        return selection.kind === "saved" && chip?.getAttribute("data-selection-id") === selection.id
+          && document.activeElement === chip && chip.getBoundingClientRect().width > 0;`), true,
+        "Save focuses the live selected saved-scale chip, not the pill or a detached opener");
+    });
+
     test("editing a built-in saves a NEW scale with a new handle and leaves the built-in alone", async () => {
       await fresh();
       const builtin = await b.eval(`return JSON.stringify(DECKS.map((d) => [d.id, d.name, Object.keys(d.fields).length]));`);

@@ -1,0 +1,14 @@
+# kills: pill Save focuses the live selected saved-scale chip in the active editor
+# suite: node --test --test-name-pattern pill.Save.focuses tests/editor_e2e.test.js
+# why: active-editor Save must focus the new live chip after preserving pill focus.
+diff --git b/index.html a/index.html
+--- b/index.html
++++ a/index.html
+@@ -17729,7 +17729,6 @@ async function editorSave() {
+     const warned = (d.warnings || []).map((w) => reasonText(w));
+     closeScaleSheet();
+     selectDeck({ kind: "saved", id: result.instanceId }, false);
+-    document.querySelector("#decks .chip.on")?.focus();
+     track("scale_create", { note_count: Object.keys(d.fields).length, has_bottom: Object.values(d.fields).some((f) => f[3] === "bottom") ? 1 : 0 });
+     say((base ? t("sheet.updated", { name: d.name }) : t("sheet.generated", { n: d.chords.length })) + (warned.length ? " " + warned.join(" ") : ""), warned.length ? "warn" : "ok");
+   } finally {
