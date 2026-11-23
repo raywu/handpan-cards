@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18916,7 +18916,7 @@ function finishSavedBoot() {
+@@ -21022,7 +21022,7 @@ function finishSavedBoot() {
          !(savedState?.slots[wanted] && savedState.slots[wanted]===selection.id) &&
          (wanted.indexOf("custom:")===0 || savedState?.hidden.includes(wanted)))
        say(t("boot.gone",{name:deck().name}),"warn");
 -    booted=true;bootStored=null;
 +    booted=true;
-     if(incomingAdd && savedMode!=="protected")openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger, "link");
+     if(incomingAdd && savedMode!=="protected")openScaleSheet(desktopMQ.matches ? addChip : settingsTrigger);
      else if(incomingExport)routedSubpage("export");
    };
