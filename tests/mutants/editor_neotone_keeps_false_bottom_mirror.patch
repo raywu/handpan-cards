@@ -1,0 +1,15 @@
+# kills: Neotone conversion E4: regression group
+# suite: node --test --test-name-pattern ^Neotone.conversion.E4: tests/editor_e2e.test.js
+# why: An explicit false bottom-mirror flag still conflicts with a Neotone profile.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14394,7 +14394,7 @@ function editorPanType(m, kind) {
+     return { ok: true, value: next };
+   }
+   delete next.options.mirror;
+-  delete next.options.mirrorBottom;
++  if (next.options.mirrorBottom) delete next.options.mirrorBottom;
+   const profile = editorProfileFor(next.fields);
+   if (!profile) return editorRefusal(t("editor.neotone"));
+   const hadPins = next.pins.length > 0;
