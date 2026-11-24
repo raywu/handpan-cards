@@ -754,6 +754,70 @@ function run() {
     });
   });
 
+  test("Neotone conversion E4: saved Standard flags do not block a real pan tap, Undo or Save", async () => {
+    const input = "(D3) D#3 A3 C4 D4 D#4 G#4 [E3] [E4] [F4] [F#4]";
+    for (const flags of [{ mirror: true }, { mirrorBottom: false }, { mirrorBottom: true }]) {
+      const label = JSON.stringify(flags);
+      await fresh(380, 667);
+      const seeded = await b.eval(`const options = { ...${label}, anchor: "between", palette: 3, name: "NEOTONE E4 QA" };
+        const built = buildGenerated(${JSON.stringify(input)}, options);
+        if (!built.ok) return { ok: false, code: built.code };
+        const record = { v: 4, s: HPE.core.formatSeed(built.value.fields), o: options };
+        return commitSaved({ type: "import", collectionId: savedState.collectionId,
+          selectedInstanceId: selection.kind === "saved" ? selection.id : null,
+          candidate: { record, deck: built.value } }).then((r) => ({ ok: r.ok, id: r.instanceId }));`);
+      assert.strictEqual(seeded.ok, true, label + ": valid Standard fixture is saved");
+      await b.eval(`const view = allDeckViews().find((v) => v.selection.kind === "saved" && v.selection.id === ${JSON.stringify(seeded.id)});
+        if (!view) throw new Error("saved Standard fixture missing"); selectDeck(view.selection, false); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the saved Standard editor" });
+      for (const [key, value] of Object.entries(flags)) {
+        assert.strictEqual(await b.eval(`return editorSession.history.present.options[${JSON.stringify(key)}];`), value, label + ": opened fixture retains " + key);
+      }
+      await b.click("#editor-oct-up");
+      assert.strictEqual(await b.eval(`return editorView(editorSession.history.present).oct;`), 4);
+      const original = await model();
+      await b.click("#editor-type-neotone");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-type-neotone").getAttribute("aria-pressed");`), "true");
+      const neo = await model();
+      await b.click('.tray-note[data-name="E"]');
+      const point = await b.eval(`const slot = document.querySelector('#editor-pan .eslot[data-slot="6"]');
+        if (!slot) throw new Error("empty main field missing"); const r = slot.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...point, id: 1 }] });
+      await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      assert.strictEqual(await b.eval(`return editorSession.error;`), "", label + ": a valid pan tap must not produce PROFILE_CONFLICT");
+      const added = await model();
+      assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "rim");`), ["D#3", "A3", "C4", "D4", "D#4", "E4", "G#4"], label);
+      assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["E3", "E4", "F4", "F#4"], label);
+      assert.deepStrictEqual(added.options.profile.map.slice(0, 6), neo.options.profile.map.slice(0, 6), "existing main fields keep their notes");
+      assert.strictEqual(added.options.profile.map[6], "r64");
+      assert.deepStrictEqual(added.options.profile.map.slice(9), neo.options.profile.map.slice(9), "mutant pairing survives placement");
+      assert.deepStrictEqual([added.options.anchor, added.options.palette], ["between", 3]);
+      await clickUndo();
+      assert.deepStrictEqual(await model(), neo, label + ": first Undo removes E4");
+      await clickUndo();
+      assert.deepStrictEqual(await model(), original, label + ": second Undo restores the original Standard flags");
+      await b.click("#editor-redo");
+      await b.click("#editor-redo");
+      assert.deepStrictEqual(await model(), added, label + ": Redo restores conversion and placement");
+      if (await b.eval(`return !document.getElementById("editor-menu").hidden;`)) await b.click("#editor-more");
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the valid Neotone save to close" });
+      assert.strictEqual(await b.eval(`return savedState.entries.length;`), 1, "the original saved scale is edited in place");
+      const saved = await b.eval(`const row = savedState.entries.find((e) => e.instanceId === ${JSON.stringify(seeded.id)});
+        return { valid: readSavedRecord(row.record).ok, map: row.record.o.profile.map, anchor: row.record.o.anchor, palette: row.record.o.palette };`);
+      assert.deepStrictEqual(saved, { valid: true, map: added.options.profile.map, anchor: "between", palette: 3 }, label);
+      await b.send("Page.navigate", { url: base });
+      await b.waitFor(`${APP_READY_EXPR} && booted === true`, { timeout: 15000, label: "the saved Neotone scale after reload" });
+      await b.eval(`const view = allDeckViews().find((v) => v.selection.kind === "saved" && v.selection.id === ${JSON.stringify(seeded.id)});
+        if (!view) throw new Error("saved Neotone scale missing after reload"); selectDeck(view.selection, false); openEditSheet(view.deck, addChip); return true;`);
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the reopened Neotone editor" });
+      assert.deepStrictEqual(await b.eval(`const m = editorSession.history.present; return { map: m.options.profile.map,
+        rim: editorNames(m, "rim"), bottom: editorNames(m, "bottom"), anchor: m.options.anchor, palette: m.options.palette };`),
+      { map: added.options.profile.map, rim: ["D#3", "A3", "C4", "D4", "D#4", "E4", "G#4"], bottom: ["E3", "E4", "F4", "F#4"], anchor: "between", palette: 3 }, label);
+    }
+  });
+
   describe("D10 the Back prompt", () => {
     test("a clean panel closes with no prompt", async () => {
       await fresh();

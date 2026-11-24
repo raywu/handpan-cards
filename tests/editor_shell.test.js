@@ -12,6 +12,42 @@ const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
 const app = () => boot();
 const withModel = (a, text, options = "undefined") => a.run(`globalThis.__m = editorLoad(${JSON.stringify(text)}, ${options}).value; true`);
 
+// CARD-SPEC Pan type and Mirror: conversion is one Undo step, Neotone owns
+// placement, and Undo restores the original mirrored Standard scale exactly.
+for (const flags of [{ mirror: true }, { mirrorBottom: false }, { mirrorBottom: true }]) {
+  test(`Neotone conversion E4: ${JSON.stringify(flags)} permits placement, export and exact Undo`, () => {
+    const a = app();
+    const input = "(D3) D#3 A3 C4 D4 D#4 G#4 [E3] [E4] [F4] [F#4]";
+    const options = { ...flags, anchor: "between", palette: 3 };
+    withModel(a, input, JSON.stringify(options));
+    const original = plain(a.get("__m"));
+    for (const [key, value] of Object.entries(flags)) assert.strictEqual(original.options[key], value, "fixture retains " + key);
+    a.run(`globalThis.__original = __m; globalThis.__h = editorHistoryNew(__m);
+      globalThis.__switched = editorApply(__h, (m) => editorPanType(m, "neotone")); true`);
+    assert.strictEqual(a.get("__switched.ok"), true);
+    assert.strictEqual(a.get("__switched.history.past.length"), 1);
+    const neo = plain(a.get("__switched.history.present"));
+    assert.deepStrictEqual(plain(a.get('editorNames(__switched.history.present, "rim")')), ["D#3", "A3", "C4", "D4", "D#4", "G#4"]);
+    assert.deepStrictEqual(plain(a.get('editorNames(__switched.history.present, "bottom")')), ["E3", "E4", "F4", "F#4"]);
+    assert.deepStrictEqual([neo.options.anchor, neo.options.palette], ["between", 3]);
+    a.run(`globalThis.__added = editorApply(__switched.history, (m) => editorAdd(m, "rim", "E4")); true`);
+    assert.strictEqual(a.get("__added.ok"), true, "a valid E4 addition must not be refused as a layout conflict: " + a.get("JSON.stringify(__added)"));
+    const added = plain(a.get("__added.history.present"));
+    assert.deepStrictEqual(plain(a.get('editorNames(__added.history.present, "rim")')), ["D#3", "A3", "C4", "D4", "D#4", "E4", "G#4"]);
+    assert.deepStrictEqual(plain(a.get('editorNames(__added.history.present, "bottom")')), ["E3", "E4", "F4", "F#4"], "the bottom E4 is a separate tonefield");
+    assert.deepStrictEqual(added.options.profile.map.slice(0, 6), neo.options.profile.map.slice(0, 6), "existing main fields keep their notes");
+    assert.strictEqual(added.options.profile.map[6], "r64");
+    assert.deepStrictEqual(added.options.profile.map.slice(9), neo.options.profile.map.slice(9), "mutant pairing is unchanged");
+    assert.deepStrictEqual([added.options.anchor, added.options.palette], ["between", 3]);
+    assert.strictEqual(a.get("editorLoadRecord(editorExport(__added.history.present).record).ok"), true, "the edited Neotone record is valid");
+    assert.strictEqual(a.get("editorLoadShare(editorExport(__added.history.present).code).ok"), true, "the edited scale has a valid share link");
+    assert.deepStrictEqual(plain(a.get("editorUndo(__added.history).present")), neo);
+    assert.deepStrictEqual(plain(a.get("editorUndo(editorUndo(__added.history)).present")), original, "Undo restores the original mirror flags and notes");
+    assert.deepStrictEqual(plain(a.get("__original")), original, "conversion and placement never mutate the original model");
+    assert.deepStrictEqual(plain(a.get("editorRedo(editorRedo(editorUndo(editorUndo(__added.history)))).present")), added);
+  });
+}
+
 test("U2b-1: the empty model has no notes and Save is not allowed on it", () => {
   const a = app();
   assert.deepStrictEqual(plain(a.get("editorEmptyModel()")), { fields: {}, options: {}, pins: [] });
