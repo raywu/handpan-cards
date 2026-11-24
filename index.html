@@ -14393,7 +14393,7 @@ function editorPanType(m, kind) {
     delete next.options.profile;
     return { ok: true, value: next };
   }
-  delete next.options.mirror;
+  next.options.mirror = false;
   delete next.options.mirrorBottom;
   const profile = editorProfileFor(next.fields);
   if (!profile) return editorRefusal(t("editor.neotone"));

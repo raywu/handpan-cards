@@ -1,5 +1,5 @@
-# kills: Neotone conversion E4: regression group
-# suite: node --test --test-name-pattern ^Neotone.conversion.E4: tests/editor_shell.test.js
+# kills: Neotone conversion E4: {"mirror":true} permits placement, export and exact Undo
+# suite: node --test --test-name-pattern ^Neotone.conversion.E4:.*mirror.:true tests/editor_shell.test.js
 # why: Keeping the Standard top-mirror flag makes a valid Neotone E4 addition fail.
 diff --git a/index.html b/index.html
 --- a/index.html
@@ -8,7 +8,7 @@ diff --git a/index.html b/index.html
      delete next.options.profile;
      return { ok: true, value: next };
    }
--  delete next.options.mirror;
+-  next.options.mirror = false;
    delete next.options.mirrorBottom;
    const profile = editorProfileFor(next.fields);
    if (!profile) return editorRefusal(t("editor.neotone"));
