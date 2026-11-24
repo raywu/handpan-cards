@@ -51,7 +51,7 @@ FLOORS = {
     "tests/test_pdf_parity.py": 16,
     "tests/test_icons.py": 19,
     "tests/test_scale_pages.py": 158,
-    "tests/test_site_files.py": 20,
+    "tests/test_site_files.py": 21,
     "tests/test_ci_scope.py": 36,
     # node
     "tests/app.test.js": 801,

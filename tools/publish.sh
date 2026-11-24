@@ -18,3 +18,6 @@ done
 if [ -n "${CF_PAGES_BRANCH:-}" ] && [ "$CF_PAGES_BRANCH" != "main" ]; then
   cp qa-seed.html "$out/qa-seed.html"
 fi
+if [ "${CF_PAGES_BRANCH:-}" = "claude/rc-upgrade" ] && [ -f editor-pan-experiment.html ]; then
+  cp editor-pan-experiment.html "$out/editor-pan-experiment.html"
+fi
