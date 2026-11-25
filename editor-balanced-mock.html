@@ -12562,7 +12562,7 @@ function pan(d, ch, opts) {
     s += `<circle r="${R*g.bottom}" fill="none" stroke="#e2e2e2" stroke-width="1.4" stroke-dasharray="4 4"/>`;
   s += `<circle r="${R}" fill="none" stroke="#000" stroke-width="2"/>`;
   if (g.inner_ring && !placed)
-    s += `<circle r="${R*g.inner_ring}" fill="none" stroke="#000" stroke-width="1"/>`;
+    s += `<circle r="${R*g.inner_ring}"${opts?.innerRingDy ? ` cy="${R*opts.innerRingDy}"` : ""} fill="none" stroke="#000" stroke-width="1"/>`;
 
   if (placed) s += neoSvg(d, sets, C, R);
   const numFs = placed ? 0 : numSize(R * g.r_note);
@@ -15067,7 +15067,8 @@ function editorRenderBody() {
     const geom = solved.value.geom;
     const target = solved.value.staged && !solved.value.hasDing ? editorTargetDing(geom, m) : null;
     const drawnGeom = target ? { ...geom, ding_dy: target.y, r_ding: target.r } : geom;
-    box.innerHTML = editorWithOverlay(pan({ geom: drawnGeom, fields, colors: { root: p.root, tone: p.tone } }, null, drawn), m, solved.value);
+    const paint = target && drawn ? { ...drawn, innerRingDy: target.y } : drawn;
+    box.innerHTML = editorWithOverlay(pan({ geom: drawnGeom, fields, colors: { root: p.root, tone: p.tone } }, null, paint), m, solved.value);
   } else box.innerHTML = "";
   s.flash = null;
   if (had) {
