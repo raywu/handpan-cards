@@ -13749,31 +13749,6 @@ function editorStageNeoMove(st, from, to) {
   st.mutant = row;
   return null;
 }
-function editorStageMapped(old, kind) {
-  if (kind === "neotone") {
-    const fits = !old.inner.length && old.rim.length <= NEO_MAIN && old.bottom.length <= old.rim.length;
-    return fits && old.rim.length ? { kind, main: [...old.rim], mutant: [...old.bottom] } : null;
-  }
-  const bottom = old.mutant.filter(Boolean);
-  return old.main.filter(Boolean).length === old.main.length && old.main.length ? { kind, rim: [...old.main], inner: [], bottom } : null;
-}
-// A staged switch maps the notes the way a committed one does (owner 2026-11-15): the rim to the
-// main fields in order, the bottom to the mutants, when nothing is on the cyclops and the stage
-// fits Neotone; otherwise each kind keeps its own staged notes (the leaving kind's stage rides
-// on the arriving one as `other`). The current ding goes both ways.
-function editorStagePanType(m, kind) {
-  const { other, ...old } = editorStageOf(m);
-  const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
-  const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
-  const mapped = unchanged ? null : editorStageMapped(old, kind);
-  const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
-  const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
-  if (old.ding) next.ding = old.ding;
-  if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
-  const staged = editorWithStage(m, next);
-  const done = editorStageSettle(staged, next);
-  return done.ok || done.code === "NO_ROOM" ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
-}
 function editorNameEntry(name, zone, label) {
   const at = EDITOR_NAME_RE.exec(String(name));
   const midi = 12 * (Number(at[2]) + 1) + EDITOR_SEMITONE[at[1][0]] + (at[1][1] === "#" ? 1 : at[1][1] === "b" ? -1 : 0);
@@ -14307,7 +14282,7 @@ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
 const editorCanSave = (m) => !editorIsEmpty(m);
 const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
 const editorBare = (m) => {
-  const { view, stage, ...rest } = m;
+  const { view, stage, layoutHints, ...rest } = m;
   const o = { ...rest.options };
   if (editorIsEmpty(m)) delete o.profile;
   if (o.anchor === "one") delete o.anchor;
@@ -14450,26 +14425,88 @@ function editorCommitText(m, text) {
 }
 // The pan type is one model change: Neotone proposes the profile and sets the
 // placement options aside, Standard removes the profile.
+function editorLayoutKey(ring, name) {
+  return ring + ":" + editorNameEntry(name, ring)[2];
+}
+function editorLinkedHints(m) {
+  const hints = editorClone(m.layoutHints || { neo: {}, bottom: {}, standard: {} });
+  const current = new Set(EDITOR_RINGS.flatMap(ring => editorNames(m, ring).map(name => editorLayoutKey(ring, name))));
+  for (const row of [hints.neo, hints.bottom]) {
+    for (const key of Object.keys(row)) if (!current.has(key)) delete row[key];
+  }
+  for (const ring of Object.keys(hints.standard || {})) {
+    if (hints.standard[ring].notes.some(key=>!current.has(key))) delete hints.standard[ring];
+  }
+  return hints;
+}
 function editorPanType(m, kind) {
   if (editorKindOf(m) === kind) return { ok: true, value: m };
-  if (editorIsEmpty(m)) return editorStagePanType(m, kind);
-  const next = editorClone(m);
-  if (kind === "standard") {
-    delete next.options.profile;
-    return { ok: true, value: next };
+  const notes = editorPartsOf(m);
+  if (kind === "neotone" && notes.inner.length)
+    return editorAreaRefusal("FIELDS_FULL", t("sheet.neotone_input_inner"));
+  if (kind === "neotone" && (notes.rim.length > NEO_MAIN || notes.bottom.length > NEO_MAIN))
+    return editorAreaRefusal("FIELDS_FULL", HPE.core.REASONS.PROFILE_FULL.reason);
+  const hints = editorLinkedHints(m);
+  if (m.options.profile) {
+    m.options.profile.map.forEach((key, slot) => {
+      if (key) hints.neo[editorNeoRingOf(slot) + ":" + key.slice(1)] = slot;
+    });
+  } else {
+    for (const ring of EDITOR_RINGS) {
+      const seats=m.options.seats?.[ring];
+      if (seats) hints.standard[ring]={notes:notes[ring].map(name=>editorLayoutKey(ring,name)),seats:seats.slice()};
+      else delete hints.standard[ring];
+    }
+    const angles = editorIsEmpty(m) ? editorStageOf(m).angles : m.options.angles?.bottom;
+    notes.bottom.forEach((name, i) => {
+      const key=editorLayoutKey("bottom", name);
+      if (Number.isFinite(angles?.[i])) hints.bottom[key]=angles[i]; else delete hints.bottom[key];
+    });
   }
-  next.options.mirror = false;
-  delete next.options.mirrorBottom;
-  const profile = editorProfileFor(next.fields);
-  if (!profile) return editorRefusal(t("editor.neotone"));
-  const hadPins = next.pins.length > 0;
-  next.options.profile = { ...profile, rev: 3 };
-  if (next.options.anchor === "one") delete next.options.anchor;
-  delete next.options.seats;
-  delete next.options.angles;
-  next.pins = [];
-  const solved = editorSolve(next);
-  return solved.ok ? { ok: true, value: next, ...(hadPins ? { notice: { pinsReset: true } } : {}) } : solved;
+  const stage = editorBlankStage(kind);
+  const ding = editorDingOf(m);
+  if (ding) stage.ding = ding;
+  if (kind === "standard") {
+    Object.assign(stage, notes);
+    stage.angles=notes.bottom.map(name=>hints.bottom[editorLayoutKey("bottom",name)] ?? null);
+    editorStageTidyAngles(stage);
+  } else {
+    for (const [ring,row,start] of [["rim",stage.main,0],["bottom",stage.mutant,NEO_MAIN]]) {
+      const remaining=[];
+      for (const name of notes[ring]) {
+        const slot=hints.neo[editorLayoutKey(ring,name)];
+        if (Number.isInteger(slot) && slot>=start && slot<start+NEO_MAIN && !row[slot-start]) row[slot-start]=name;
+        else remaining.push(name);
+      }
+      for (const name of remaining) {
+        const i=Array.from({length:NEO_MAIN},(_,k)=>k).find(k=>!row[k]);
+        row[i]=name;
+      }
+    }
+  }
+  const options={...m.options};
+  delete options.profile;
+  delete options.seats;
+  delete options.angles;
+  if (kind === "neotone") { delete options.mirror; delete options.mirrorBottom; }
+  const draft=editorWithStage({...m,fields:{},options,pins:[],layoutHints:hints},stage);
+  const result=editorStageSettle(draft,stage);
+  if (!result.ok) return editorAreaRefusal("SWITCH_LAYOUT",result.reason);
+  let value=result.value;
+  if (kind === "standard" && !editorIsEmpty(value)) {
+    const seats={};
+    for (const ring of Object.keys(hints.standard)) {
+      const hint=hints.standard[ring];
+      const keys=editorNames(value,ring).map(name=>editorLayoutKey(ring,name));
+      if (keys.length!==hint.notes.length||!keys.every(key=>hint.notes.includes(key))) continue;
+      seats[ring]=keys.map(key=>hint.seats[hint.notes.indexOf(key)]);
+    }
+    if (Object.keys(seats).length) {
+      const candidate={...value,options:{...value.options,seats}};
+      if (editorSolve(candidate).ok) value=candidate;
+    }
+  }
+  return {...result,value:{...value,layoutHints:hints}};
 }
 // What a Save commits: a Standard model's own options, or with a profile the
 // palette, name and profile alone (ENGINE-SPEC 18, rule I1), as commitOptions does.
@@ -14678,11 +14715,7 @@ function editorStatusNotes(box, s, m, empty) {
     box.appendChild(cancel);
   } else if (s.say || s.notice) {
     box.appendChild(document.createTextNode((s.say || t("editor.pins_reset")) + (empty ? " " + editorEmptyPrompt(m) : "")));
-    if (!s.say || s.say !== s.plainSay) {
-      const undo = editorNode("button", { id: "editor-notice-undo", type: "button", class: "mode", text: t("editor.undo") });
-      undo.onclick = editorUndoStep;
-      box.appendChild(undo);
-    }
+
   }
 }
 function editorRenderBody() {
@@ -14718,12 +14751,6 @@ function editorRenderBody() {
     status.setAttribute("data-idle", "");
   }
   if (statusFocus) (editorEl(statusFocus) || document.getElementById("drawerexp-handle"))?.focus({ preventScroll: true });
-  const chip = editorEl("editor-notice-undo");
-  const toolbarUndo = editorEl("editor-undo");
-  if (chip) {
-    if (document.activeElement === toolbarUndo) chip.focus();
-    toolbarUndo.classList.add("covered");
-  } else toolbarUndo.classList.remove("covered");
   const solved = editorSolve(m);
   const box = editorEl("editor-pan");
   const had = box.contains(document.activeElement) && document.activeElement.dataset ? document.activeElement.dataset.fk : null;
@@ -14798,11 +14825,16 @@ function editorDo(step, say, mark) {
   const s = editorSession;
   const keepView = (m) => {
     const res = step(m);
-    return res.ok && m.view && !res.value.view ? { ...res, value: { ...res.value, view: m.view } } : res;
+    if (!res.ok || res.value === m) return res;
+    const value = { ...res.value };
+    if (m.view && !value.view) value.view=m.view;
+    if (m.layoutHints && !value.layoutHints) value.layoutHints=m.layoutHints;
+    if (value.layoutHints) value.layoutHints=editorLinkedHints(value);
+    return { ...res, value };
   };
   const res = editorApply(s.history, keepView);
   if (!res.ok) {
-    s.error = ["TRADE", "AREA_FULL", "TOO_CROWDED", "NO_ROOM", "FIELD_EMPTY", "OWN_ROW", "FIELDS_FULL"].includes(res.code) ? res.reason : reasonText(res);
+    s.error = ["TRADE", "AREA_FULL", "TOO_CROWDED", "NO_ROOM", "FIELD_EMPTY", "OWN_ROW", "FIELDS_FULL", "SWITCH_LAYOUT"].includes(res.code) ? res.reason : reasonText(res);
     editorRender();
     return false;
   }
