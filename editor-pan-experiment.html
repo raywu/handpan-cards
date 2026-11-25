@@ -13600,7 +13600,7 @@ function editorStageTrial(stage) {
 }
 function editorStageSettle(m, stage, landedKey) {
   const done = editorStageCommit(m, stage, landedKey);
-  if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !editorStageAngles(stage)) return done;
+  if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !stage.ding || !editorStageAngles(stage)) return done;
   const trial = editorStageCommit(m, editorStageTrial(stage));
   return trial.code === "NO_ROOM" ? trial : done;
 }
@@ -13631,7 +13631,7 @@ function editorStageCommit(m, stage, landedKey) {
   } else {
     built = editorNeoBuild(staged, { rim: stage.main, inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
   }
-  if (!built.ok) return built.code === "NO_FIFTH" ? { ok: true, value: staged } : built;
+  if (!built.ok) return built.code === "NO_FIFTH" || (std && built.code === "NOTE_OUT_OF_ORDER") ? { ok: true, value: staged } : built;
   return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
 }
 // A Standard stage's bottom angles run parallel to its bottom notes (null for none); the key is
@@ -13838,6 +13838,11 @@ function editorAdd(m, ring, name, angle) {
 function editorRemove(m, ring, i) {
   if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
   if (m.options.profile) return editorRemoveNeotone(m, ring, i);
+  if (ring === "rim" && !editorIsEmpty(m) && editorNames(m, ring).length === 1) {
+    const stage = editorStandardDraft(m);
+    stage.rim.splice(i, 1);
+    return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
+  }
   if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { st[ring].splice(i, 1); if (ring === "bottom" && st.angles) { st.angles.splice(i, 1); editorStageTidyAngles(st); } editorStageClearPins(m, st); });
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
@@ -15163,13 +15168,13 @@ function editorDropPlan(m, src, target) {
     return snap;
   }
   const ref = src.ref;
-  if (target.kind === "ding" && ref.ring === "bottom" && editorIsEmpty(m) && !editorDingOf(m)) {
+  if (target.kind === "ding" && ref.ring !== "ding" && editorIsEmpty(m) && !editorDingOf(m)) {
     const name = editorNameAt(m, ref);
     return { step: (x) => editorStageEdit(x, (st) => {
       const bad = editorStageSet(st, { ring: "ding" }, name);
       if (bad) return bad;
-      st.bottom.splice(ref.i, 1);
-      if (st.angles) {
+      st[ref.ring].splice(ref.i, 1);
+      if (ref.ring === "bottom" && st.angles) {
         st.angles.splice(ref.i, 1);
         editorStageTidyAngles(st);
       }
@@ -15178,7 +15183,6 @@ function editorDropPlan(m, src, target) {
   }
   if (target.kind === "outside") {
     if (ref.ring === "ding") return m.options.profile && !editorIsEmpty(m) ? { refuse: t("editor.say.ding_required") } : { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
-    if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
     return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
   }
   if (target.kind === "note" || target.kind === "ding") {
@@ -15197,7 +15201,6 @@ function editorDropPlan(m, src, target) {
     return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
       ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
   }
-  if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
   const name = editorNameAt(m, ref);
   return { step: (x) => { const gone = editorRemove(x, ref.ring, ref.i); return gone.ok ? editorPlace(gone.value, target.ring, name, target.angle) : gone; }, say: t("editor.say.moved", { name }) };
 }
@@ -15236,6 +15239,18 @@ function editorPlaceHeld(hit, m, pointer) {
   if (placed && pointer) window.drawerExperiment?.tapPlaced(name);
   editorRender();
 }
+function editorDraftTrade(x, a, b) {
+  const toDing = a.ring === "ding" || b.ring === "ding";
+  if (toDing && !x.options.profile && !editorDingOf(x)) {
+    const ref = a.ring === "ding" ? b : a;
+    const plan = editorDropPlan(x, { from: "pan", ref }, { kind: "ding" });
+    if (plan.step) return plan.step(x);
+  }
+  const swap = editorSwapNames(x, a, b);
+  if (!toDing || x.options.profile || swap.ok || editorIsEmpty(x) || !["NOTE_OUT_OF_ORDER", "NO_FIFTH"].includes(swap.code)) return swap;
+  const draft = editorWithStage({ ...x, fields: {}, pins: [] }, editorStandardDraft(x));
+  return editorSwapNames(draft, a, b);
+}
 function editorTrade(m, a, b) {
   const s = editorSession;
   const names = [editorNameAt(m, a), editorNameAt(m, b)];
@@ -15255,15 +15270,10 @@ function editorTrade(m, a, b) {
     return editorDo(trade, t("editor.say.swapped", { a: names[0], b: names[1] }), true);
   }
   const toDing = a.ring === "ding" || b.ring === "ding";
-  if (toDing && (a.ring === "ding" ? b : a).ring !== "bottom") {
-    s.error = t("editor.ding_bottom_only");
-    editorRender();
-    return false;
-  }
   const dropped = a.ring === "ding" ? names[1] : names[0];
   const root = a.ring === "ding" ? names[0] : names[1];
-  const say = toDing ? t("editor.say.ding_swap", { a: dropped, b: root }) : t("editor.say.swapped", { a: names[0], b: names[1] });
-  return editorDo((x) => editorSwapNames(x, a, b), say, true);
+  const say = toDing ? (root ? t("editor.say.ding_swap", { a: dropped, b: root }) : t("editor.say.moved", { name: dropped })) : t("editor.say.swapped", { a: names[0], b: names[1] });
+  return editorDo((x) => editorDraftTrade(x, a, b), say, true);
 }
 function editorSelectTap(hit, m) {
   const s = editorSession;
@@ -15328,12 +15338,18 @@ function editorPanClick(e) {
   const pt = editorPanPoint(e);
   if (pt) { window.drawerExperiment?.clearReveal(); editorPanTap(pt, !!e.detail); }
 }
+function editorStandardDraft(m) {
+  const stage = editorBlankStage("standard");
+  stage.ding = editorDingOf(m);
+  for (const ring of EDITOR_RINGS) stage[ring] = editorNames(m, ring);
+  if (m.options.angles?.bottom) stage.angles = m.options.angles.bottom.slice();
+  return stage;
+}
 function editorClearDing(m) {
   if (editorIsEmpty(m)) return editorStageEdit(m, (stage) => { delete stage.ding; });
   if (m.options.profile) return editorAreaRefusal("DING_REQUIRED", t("editor.say.ding_required"));
-  const stage = editorBlankStage("standard");
-  for (const ring of EDITOR_RINGS) stage[ring] = editorNames(m, ring);
-  if (m.options.angles?.bottom) stage.angles = m.options.angles.bottom.slice();
+  const stage = editorStandardDraft(m);
+  delete stage.ding;
   return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
 }
 function editorRemoveSelected() {
@@ -15645,8 +15661,7 @@ function drawerProspective(m, src, target) {
   if (plan.trade) {
     const [a, b] = plan.trade;
     if (a.ring === b.ring && a.ring !== "ding") return editorSwapSeats(editorClone(m), a.ring, a.i, b.i);
-    if ((a.ring === "ding" || b.ring === "ding") && (a.ring === "ding" ? b : a).ring !== "bottom") return { ok: false, reason: t("editor.ding_bottom_only") };
-    return editorSwapNames(editorClone(m), a, b);
+    return editorDraftTrade(editorClone(m), a, b);
   }
   return { ok: true, snap: true };
 }
