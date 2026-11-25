@@ -13624,10 +13624,15 @@ function editorStageSettle(m, stage, landedKey) {
 function editorStageClearPins(m, st) {
   const stuck = (t) => editorStageSettle(m, t).code === "NO_ROOM";
   while (st.angles && stuck(st)) {
-    const pins = st.angles.map((a, k) => (a === null ? -1 : k)).filter((k) => k !== -1);
-    const alone = pins.find((k) => { const t = editorClone(st); t.angles[k] = null; editorStageTidyAngles(t); return !stuck(t); });
-    st.angles[alone === undefined ? pins[pins.length - 1] : alone] = null;
-    editorStageTidyAngles(st);
+    const pins = EDITOR_PINNABLE.flatMap(ring =>
+      (st.angles[ring] || []).flatMap((angle, i) => angle === null ? [] : [{ ring, i }]));
+    const alone = pins.find(({ ring, i }) => {
+      const trial = editorClone(st);
+      editorStagePin(trial, ring, i, null);
+      return !stuck(trial);
+    });
+    const { ring, i } = alone || pins[pins.length - 1];
+    editorStagePin(st, ring, i, null);
   }
 }
 function editorStageCommit(m, stage, landedKey) {
@@ -13640,8 +13645,8 @@ function editorStageCommit(m, stage, landedKey) {
     const loaded = editorLoad(editorText(m, stage, stage.ding), { ...m.options, seats: null, angles });
     built = loaded.ok ? editorSettle(loaded.value, {}) : loaded;
     if (built.ok && angles && built.notice && built.notice.unpinned) {
-      const lost = built.notice.unpinned.find((p) => p.ring === "bottom");
-      if (lost) return editorNoRoom(built.value, "bottom", lost.i, angles.bottom[lost.i]);
+      const lost = built.notice.unpinned[0];
+      if (lost) return editorNoRoom(built.value, lost.ring, lost.i, angles[lost.ring][lost.i]);
     }
   } else {
     built = editorNeoBuild(staged, { rim: stage.main.filter(Boolean), inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
@@ -13649,22 +13654,34 @@ function editorStageCommit(m, stage, landedKey) {
   if (!built.ok) return built.code === "NO_FIFTH" || built.code === "NOTE_OUT_OF_ORDER" ? { ok: true, value: staged } : built;
   return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
 }
-// A Standard stage's bottom angles run parallel to its bottom notes (null for none); the key is
-// absent when no note carries one. They are the placement's own angle, decided at push time.
+// Draft pins follow insertion order. The engine expects MIDI order within each ring.
 function editorStageTidyAngles(st) {
   if (!st.angles) return;
-  const list = Array.from({ length: st.bottom.length }, (_, k) => (st.angles[k] === undefined ? null : st.angles[k]));
-  if (list.every((a) => a === null)) delete st.angles; else st.angles = list;
+  editorTidy(st, "angles");
 }
-// The engine seats a loaded bottom ring in pitch order, so the commit hands it the angles in that order;
-// the ghost seats its stand-in notes in tap order and takes them as stored.
-const editorStageAngles = (st, tapOrder) => {
-  if (!st.angles || !st.angles.some((a) => a !== null)) return null;
-  if (tapOrder) return { bottom: st.angles.slice() };
-  const midi = (n) => editorNameEntry(n, "bottom")[2];
-  const order = st.bottom.map((n, k) => k).sort((x, y) => midi(st.bottom[x]) - midi(st.bottom[y]));
-  return { bottom: order.map((k) => st.angles[k]) };
-};
+function editorStagePin(st, ring, i, angle) {
+  st.angles ||= {};
+  const list = st.angles[ring] || [];
+  st.angles[ring] = st[ring].map((_, k) => k === i ? angle : list[k] ?? null);
+  editorStageTidyAngles(st);
+}
+function editorStageRemove(st, ring, i) {
+  st[ring].splice(i, 1);
+  st.angles?.[ring]?.splice(i, 1);
+  editorStageTidyAngles(st);
+}
+function editorStageAngles(st, insertionOrder) {
+  if (!st.angles) return null;
+  const result = {};
+  for (const ring of EDITOR_PINNABLE) {
+    const list = st.angles[ring];
+    if (!list) continue;
+    const order = st[ring].map((_, i) => i);
+    if (!insertionOrder) order.sort((a, b) => editorNameEntry(st[ring][a], ring)[2] - editorNameEntry(st[ring][b], ring)[2]);
+    result[ring] = order.map(i => list[i] ?? null);
+  }
+  return result;
+}
 const editorStageRepeat = (a, b) => ({ ok: false, code: "NOTE_REPEATED", reason: HPE.core.REASONS.NOTE_REPEATED.reason.split("<A>").join(a).split("<B>").join(b) });
 // Placing a note in a ring the stage already holds, or on the rim and cyclops together, is
 // the engine's NOTE_REPEATED; a bottom copy of a top note is allowed.
@@ -13677,12 +13694,10 @@ const editorStageNameOk = (name) => (EDITOR_NAME_RE.test(String(name)) ? null : 
 function editorStagePush(st, ring, name, angle) {
   const refused = editorStageNameOk(name) || editorStageClash(st, ring, name);
   if (refused) return refused;
-  const before = st[ring].length;
+  const i = st[ring].length;
   st[ring].push(String(name));
-  if (st.kind === "standard" && ring === "bottom") {
-    st.angles = Array.from({ length: before }, (_, k) => (st.angles && st.angles[k] !== undefined ? st.angles[k] : null));
-    st.angles.push(Number.isFinite(angle) ? stepOf(angle) : null);
-    editorStageTidyAngles(st);
+  if (st.kind === "standard" && EDITOR_PINNABLE.includes(ring) && (st.angles?.[ring] || Number.isFinite(angle))) {
+    editorStagePin(st, ring, i, Number.isFinite(angle) ? stepOf(angle) : null);
   }
   return null;
 }
@@ -13787,7 +13802,7 @@ function editorGhostSolve(m, strict) {
     options = { ...options, profile: { ...options.profile, map } };
   }
   const staged = std && editorStageAngles(st, true);
-  const place = staged && { ...options, angles: { bottom: Array.from({ length: fillBottom.length }, (_, k) => (staged.bottom[k] === undefined ? null : staged.bottom[k])) } };
+  const place = staged && { ...options, angles: staged };
   const loaded = editorLoad(text, place || options);
   if (!loaded.ok) return loaded;
   let solved = HPE.layout.solve({ fields: loaded.value.fields, options: loaded.value.options });
@@ -13821,12 +13836,23 @@ function editorGhostSolve(m, strict) {
   return { ok: true, value: { ...solved.value, fields: out, staged: true, hasDing } };
 }
 const editorPartsOf = (m) => Object.fromEntries(EDITOR_RINGS.map((ring) => [ring, editorNames(m, ring)]));
-const editorStageAnglesOf = (m) => (editorStageOf(m).angles || []).map(Number.isFinite);
+function editorStagePinsFit(m) {
+  const solved = editorGhostSolve(m);
+  if (!solved.ok) return false;
+  const angles = editorStageOf(m).angles || {};
+  return EDITOR_PINNABLE.every(zone => {
+    const drawn = editorAnglesOf(solved, zone);
+    return (angles[zone] || []).every((pin, i) => pin === null || pin === drawn[i]);
+  });
+}
 function editorAdd(m, ring, name, angle) {
   if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
   if (m.options.profile) return editorNeoInsert(m, ring, name);
   if (editorIsEmpty(m)) {
-    return editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
+    const added = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
+    if (ring === "inner" && Number.isFinite(angle) && added.ok && editorIsEmpty(added.value) && !editorStagePinsFit(added.value))
+      return editorNoRoom(added.value, ring, editorNames(added.value, ring).length - 1, angle);
+    return added;
   }
   const parts = editorPartsOf(m);
   parts[ring].push(String(name));
@@ -13840,7 +13866,7 @@ function editorRemove(m, ring, i) {
     stage.rim.splice(i, 1);
     return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
   }
-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { st[ring].splice(i, 1); if (ring === "bottom" && st.angles) { st.angles.splice(i, 1); editorStageTidyAngles(st); } editorStageClearPins(m, st); });
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); editorStageClearPins(m, st); });
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
   return editorResize(m, ring, parts, { remove: i });
@@ -13954,13 +13980,10 @@ function editorSetAngle(m, ring, i, angle, pin) {
   if (!EDITOR_PINNABLE.includes(ring) || !editorInRing(m, ring, i)) return editorRefusal(ring + i);
   if (angle !== null && !Number.isFinite(angle)) return editorRefusal(angle);
   if (editorIsEmpty(m)) {
-    if (ring !== "bottom") return { ok: true, value: m };
-    const next = editorStageEdit(m, st => {
-      st.angles ||= [];
-      st.angles[i] = angle === null ? null : stepOf(angle);
-      editorStageTidyAngles(st);
-    });
-    if (angle !== null && next.ok && editorIsEmpty(next.value) && !editorGhostSolve(next.value, true).ok)
+    const value = angle === null ? null : stepOf(angle);
+    if ((editorStageOf(m).angles?.[ring]?.[i] ?? null) === value) return { ok: true, value: m };
+    const next = editorStageEdit(m, st => editorStagePin(st, ring, i, value));
+    if (angle !== null && next.ok && editorIsEmpty(next.value) && !editorStagePinsFit(next.value))
       return editorNoRoom(m, ring, i, angle);
     return next;
   }
@@ -14152,7 +14175,7 @@ function editorPlaceAt(m, ring, name, angle) {
   const first = angle === undefined && editorFirstBottom(m, ring);
   const given = first ? EDITOR_FIRST_BOTTOM : angle;
   const added = editorAdd(m, ring, name, given);
-  if (!added.ok || given === undefined || !EDITOR_PINNABLE.includes(ring) || m.options.profile || editorIsEmpty(added.value) || (ring === "bottom" && editorIsEmpty(m))) return added;
+  if (!added.ok || given === undefined || !EDITOR_PINNABLE.includes(ring) || m.options.profile || editorIsEmpty(added.value) || editorIsEmpty(m)) return added;
   const at = editorNames(added.value, ring).indexOf(String(name));
   const pinned = editorSetAngle(added.value, ring, at, given, true);
   if (first && !pinned.ok) return added;
@@ -14493,7 +14516,7 @@ function editorPanType(m, kind) {
       if (seats) hints.standard[ring]={notes:notes[ring].map(name=>editorLayoutKey(ring,name)),seats:seats.slice()};
       else delete hints.standard[ring];
     }
-    const angles = editorIsEmpty(m) ? editorStageOf(m).angles : m.options.angles?.bottom;
+    const angles = (editorIsEmpty(m) ? editorStageOf(m).angles : m.options.angles)?.bottom;
     notes.bottom.forEach((name, i) => {
       const key=editorLayoutKey("bottom", name);
       if (Number.isFinite(angles?.[i])) hints.bottom[key]=angles[i]; else delete hints.bottom[key];
@@ -14504,7 +14527,7 @@ function editorPanType(m, kind) {
   if (ding) stage.ding = ding;
   if (kind === "standard") {
     Object.assign(stage, notes);
-    stage.angles=notes.bottom.map(name=>hints.bottom[editorLayoutKey("bottom",name)] ?? null);
+    stage.angles = { bottom: notes.bottom.map(name => hints.bottom[editorLayoutKey("bottom",name)] ?? null) };
     editorStageTidyAngles(stage);
   } else {
     for (const [ring,row,start] of [["rim",stage.main,0],["bottom",stage.mutant,NEO_MAIN]]) {
@@ -14752,10 +14775,9 @@ function editorFormStageResult(m, names) {
       stage.rim = names.top;
       stage.inner = names.inner;
       stage.bottom = names.bottom;
-      if (previous.angles) {
-        stage.angles = names.bottom.map(name => previous.angles[previous.bottom.indexOf(name)] ?? null);
-        editorStageTidyAngles(stage);
-      }
+      stage.angles = Object.fromEntries(EDITOR_PINNABLE.map(ring => [ring,
+        stage[ring].map(name => previous.angles?.[ring]?.[previous[ring].indexOf(name)] ?? null)]));
+      editorStageTidyAngles(stage);
       return;
     }
     for (const [key, ring, list] of [["top", "rim", "main"], ["bottom", "bottom", "mutant"]]) {
@@ -15607,11 +15629,7 @@ function editorDropPlan(m, src, target) {
     return { step: (x) => editorStageEdit(x, (st) => {
       const bad = editorStageSet(st, { ring: "ding" }, name);
       if (bad) return bad;
-      st[ref.ring].splice(ref.i, 1);
-      if (ref.ring === "bottom" && st.angles) {
-        st.angles.splice(ref.i, 1);
-        editorStageTidyAngles(st);
-      }
+      editorStageRemove(st, ref.ring, ref.i);
       editorStageClearPins(x, st);
     }), say: t("editor.say.moved", { name }) };
   }
@@ -15632,8 +15650,8 @@ function editorDropPlan(m, src, target) {
     }, say: t("editor.say.moved", { name }) };
   }
   if (target.ring === ref.ring) {
-    if (ref.ring === "bottom" && editorIsEmpty(m) && target.angle !== undefined &&
-        editorStageOf(m).angles?.[ref.i] === stepOf(target.angle)) return snap;
+    if (EDITOR_PINNABLE.includes(ref.ring) && editorIsEmpty(m) && target.angle !== undefined &&
+        editorStageOf(m).angles?.[ref.ring]?.[ref.i] === stepOf(target.angle)) return snap;
     return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
       ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
   }
@@ -15821,7 +15839,7 @@ function editorStandardDraft(m) {
   const stage = editorBlankStage("standard");
   stage.ding = editorDingOf(m);
   for (const ring of EDITOR_RINGS) stage[ring] = editorNames(m, ring);
-  if (m.options.angles?.bottom) stage.angles = m.options.angles.bottom.slice();
+  if (m.options.angles) stage.angles = editorClone(m.options.angles);
   return stage;
 }
 function editorClearDing(m) {
