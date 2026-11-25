@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copies the published allowlist into an empty output dir (default _site).
 # A copy, not a build step: every file is the committed bytes.
-# Experimental payload revision: rejected-drop-marker-20261124. Pages watches this publisher, not the companion page.
+# Experimental payload revision: rejected-drop-circle-20261125. Pages watches this publisher, not the companion page.
 set -eu
 cd "$(dirname "$0")/.."
 out="${1:-_site}"
