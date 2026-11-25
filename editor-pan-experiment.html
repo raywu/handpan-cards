@@ -15165,7 +15165,7 @@ function editorDropPlan(m, src, target) {
   const ref = src.ref;
   if (target.kind === "outside") {
     if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
-    if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+    if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
     return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
   }
   if (target.kind === "note" || target.kind === "ding") {
@@ -15177,7 +15177,7 @@ function editorDropPlan(m, src, target) {
     return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
       ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
   }
-  if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+  if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
   const name = editorNameAt(m, ref);
   return { step: (x) => { const gone = editorRemove(x, ref.ring, ref.i); return gone.ok ? editorPlace(gone.value, target.ring, name, target.angle) : gone; }, say: t("editor.say.moved", { name }) };
 }
@@ -15195,7 +15195,7 @@ function editorNeoDropPlan(m, src, target) {
   const ref = src.ref;
   if (target.kind === "outside") {
     if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
-    if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+    if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
     return { step: (x) => editorRemoveNeotone(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
   }
   if (ref.ring === "ding" || target.kind === "ding") return target.kind === "ding" && ref.ring === "ding" ? snap : { refuse: t("editor.neo.own_row") };
