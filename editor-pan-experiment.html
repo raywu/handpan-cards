@@ -4823,7 +4823,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (keys.length !== 3 || keys[0] !== "id" || keys[1] !== "map" || keys[2] !== "rev") {
       return scaleErr("PROFILE_MAP_INVALID");
     }
-    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2)) return scaleErr("PROFILE_UNKNOWN");
+    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2 && raw.rev !== 3)) return scaleErr("PROFILE_UNKNOWN");
 
     var byKey = {};
     var counts = { rim: 0, inner: 0, bottom: 0 };
@@ -4855,7 +4855,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         return scaleErr("PROFILE_MAP_INVALID");
       }
     }
-    if (pastSeats(map, fields)) {
+    if (raw.rev === 2 && pastSeats(map, fields)) {
       var moved = proposeProfileMap(fields);
       var proposed = { id: "paired", rev: 2, map: moved.map };
       if (moved.unplaced.length > 0) proposed.unplaced = moved.unplaced;
@@ -4865,7 +4865,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (key in byKey) {
       if (has(byKey, key) && !has(shape.value.seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
     }
-    return ok({ id: "paired", rev: 2, map: map });
+    return ok({ id: "paired", rev: raw.rev, map: map });
   }
 
   function parseSeed(input, options) {
@@ -7404,9 +7404,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         byKey[occurrenceKey(fields[id])] = id;
       }
     }
-    var mutants = hasMutants(profile);
+    var fixed = profile.rev === 3 || hasMutants(profile);
     var seatAngles = [];
-    if (!mutants) {
+    if (!fixed) {
       Object.keys(plain).filter(function (fid) { return plain[fid][3] === "rim"; })
         .sort(function (a, b) { return plain[a][2] - plain[b][2]; })
         .forEach(function (fid) { seatAngles.push(plain[fid][4]); });
@@ -7419,9 +7419,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var fid = byKey[profile.map[k]];
       var slot = k % PROFILE.tonefields;
       if (k < PROFILE.tonefields) {
-        if (!mutants && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
+        if (!fixed && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
         labels[fid] = String(k + 1);
-        place[fid] = mutants
+        place[fid] = fixed
           ? [angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
           : [seatAngles[k], geom.rim, geom.r_note, "main"];
       } else {
@@ -7430,7 +7430,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                       lensCentre(), PROFILE.mutant.r];
       }
     }
-    return { place: place, labels: labels, mutants: mutants };
+    return { place: place, labels: labels, fixed: fixed };
   }
 
   function solve(seedOrFields, options) {
@@ -7443,11 +7443,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       if (!profile.ok) return profile;
       var between = seedOptions.anchor === "between";
       var plain = solve({ fields: source, options: {} }, between ? { anchor: "between" } : {});
-      var turn = between && hasMutants(profile.value) ? PROFILE_TURN : 0;
+      var turn = between && (profile.value.rev === 3 || hasMutants(profile.value)) ? PROFILE_TURN : 0;
       var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields, turn);
       if (placed.ok === false) return placed;
       if (turn) plain.value.geom.turn = turn;
-      if (placed.mutants) {
+      if (placed.fixed) {
         plain.value.geom.r_ding = PROFILE.ding.r;
         plain.value.geom.ding_dy = PROFILE.ding.dy;
         plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
@@ -8705,6 +8705,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // v7. Written only when a profile seed has anchor "between".
   var PROFILE_ANCHOR_VERSION = 9;
   var PROFILE_ANCHOR_RECORD_VERSION = 7;
+  // Wire A (version 10) identifies exact Neotone slots independently of occupancy.
+  var FIXED_PROFILE_VERSION = 10;
+  var FIXED_PROFILE_RECORD_VERSION = 8;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -8957,6 +8960,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
     var between = profiled && opts.anchor === "between";
     if (between) wire = String(PROFILE_ANCHOR_VERSION);
+    if (profiled && opts.profile.rev === 3) wire = ALPHABET.charAt(FIXED_PROFILE_VERSION);
     var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
@@ -9101,7 +9105,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var options = { palette: 0, parent: null, mirror: false, name: name };
     var anchored = text.charAt(0) === "9";
-    var profiled = text.charAt(0) === "7" || anchored;
+    var fixed = text.charAt(0) === ALPHABET.charAt(FIXED_PROFILE_VERSION);
+    var profiled = text.charAt(0) === "7" || anchored || fixed;
     var pairs = 0;
     var betweens = 0;
     var rank = -1;
@@ -9128,10 +9133,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var pairMap = m[1].split(".").map(function (t) { return t === "-" ? null : t; });
         options.profile = {
           id: "paired",
-          rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
+          rev: fixed ? 3 : pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
           map: pairMap
         };
-      } else if (anchored && o === "between") {
+      } else if ((anchored || fixed) && o === "between") {
         at = OPTION_ORDER.between;
         betweens += 1;
         options.anchor = "between";
@@ -9252,6 +9257,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
     if (INDEX[text.charAt(0)] === INNER_VERSION && NEWEST >= ANGLES_VERSION) newest = INNER_VERSION;
     if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === PROFILE_ANCHOR_VERSION) newest = PROFILE_ANCHOR_VERSION;
+    if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === FIXED_PROFILE_VERSION) newest = FIXED_PROFILE_VERSION;
     var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
@@ -9302,6 +9308,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function recordVersion(seed) {
     var opts = (seed && seed.options) || {};
     if (opts.profile !== undefined && opts.profile !== null) {
+      if (opts.profile.rev === 3) return FIXED_PROFILE_RECORD_VERSION;
       return opts.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION;
     }
     return anglesField(opts.angles, "inner") !== "" ? INNER_RECORD_VERSION : RECORD_VERSION;
@@ -9314,6 +9321,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     VERSION: VERSION,
     PROFILE_VERSION: PROFILE_VERSION,
     PROFILE_ANCHOR_VERSION: PROFILE_ANCHOR_VERSION,
+    FIXED_PROFILE_VERSION: FIXED_PROFILE_VERSION,
+    FIXED_PROFILE_RECORD_VERSION: FIXED_PROFILE_RECORD_VERSION,
     PROFILE_ANCHOR_RECORD_VERSION: PROFILE_ANCHOR_RECORD_VERSION,
     INNER_VERSION: INNER_VERSION,
     INNER_RECORD_VERSION: INNER_RECORD_VERSION,
@@ -11328,10 +11337,11 @@ const SHARE_VERSION = HPE.share.RECORD_VERSION;
 const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
 const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
 const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
-const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+const FIXED_PROFILE_RECORD_VERSION = HPE.share.FIXED_PROFILE_RECORD_VERSION;
+const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(FIXED_PROFILE_RECORD_VERSION, PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
 const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
   o.angles.inner.some(a => a !== null && a !== undefined);
-const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
+const recordVersionFor = (o, profiled) => profiled ? HPE.share.recordVersion({ options: o }) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
 const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
 // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
 // its own version check on the wire format (share.js step 2), so this is the
@@ -11652,7 +11662,10 @@ function savedMeaning(deckValue) {
     normalizedSeats,
     angles.value ? angles.value.bottom : null];
   const inner = angles.value && angles.value.inner;
-  if (o.profile) meaning.push(o.profile.map);
+  if (o.profile) {
+    if (o.profile.rev === 3) meaning.push("fixed-profile");
+    meaning.push(o.profile.map);
+  }
   else if (inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
   return JSON.stringify(meaning);
 }
@@ -11661,7 +11674,7 @@ function readSavedRecord(record) {
   try {
     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
     const pinned = !profiled && innerPinned(record.o);
-    const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+    const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION || record.v === FIXED_PROFILE_RECORD_VERSION;
     if (record.v === INNER_RECORD_VERSION && savedOwn(record.o, "replaces")) return savedFailure("protected", "opaque-record");
     if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
@@ -13568,7 +13581,7 @@ function editorStageMap(st) {
 }
 function editorWithStage(m, stage) {
   const options = { ...m.options };
-  if (stage.kind === "neotone") options.profile = { ...(m.options.profile || { id: "paired", rev: 2 }), map: editorStageMap(stage) };
+  if (stage.kind === "neotone") options.profile = { ...(m.options.profile || { id: "paired", rev: 3 }), map: editorStageMap(stage) };
   else delete options.profile;
   return { ...m, options, stage };
 }
@@ -13791,7 +13804,8 @@ function editorGhostSolve(m, strict) {
   let options = { ...m.options, seats: null, angles: null };
   if (!std) {
     const map = new Array(NEO_SLOTS).fill(null);
-    fillRim.forEach((n, k) => { map[k] = editorNeoKeyOfName("rim", n).key; });
+    const occupied = Array.from(st.main.keys()).filter(k => st.main[k]);
+    fillRim.forEach((n, k) => { map[occupied[k] ?? 0] = editorNeoKeyOfName("rim", n).key; });
     fillBottom.forEach((n, k) => { if (n) map[NEO_MAIN + k] = editorNeoKeyOfName("bottom", n).key; });
     options = { ...options, profile: { ...options.profile, map } };
   }
@@ -13870,7 +13884,7 @@ const editorNeoSlotOf = (m, ref) => (editorIsEmpty(m) ? editorStageNeoSlotOf(edi
 const editorNeoEmptyField = (n) => editorAreaRefusal("FIELD_EMPTY", t("editor.neo.field_empty", { n }));
 const editorNeoOwnRow = () => editorAreaRefusal("OWN_ROW", t("editor.neo.own_row"));
 function editorNeoBuild(m, parts, map, landedKey) {
-  const compact = compactMain(map.slice());
+  const compact = m.options.profile.rev === 3 ? map.slice() : compactMain(map.slice());
   const profile = { ...m.options.profile, map: compact };
   const loaded = editorLoad(editorText(m, parts), { ...m.options, profile, seats: null, angles: null });
   if (!loaded.ok) return loaded;
@@ -13887,7 +13901,7 @@ function editorNeoKeyOfName(ring, name) {
 function editorNeoPut(m, slot, name) {
   const map = m.options.profile.map;
   if (!Number.isInteger(slot) || slot < 0 || slot >= NEO_SLOTS) return editorRefusal(slot);
-  if (slot >= NEO_MAIN && map[slot - NEO_MAIN] === null) return editorNeoEmptyField(slot - NEO_MAIN + 1);
+  if (m.options.profile.rev !== 3 && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null) return editorNeoEmptyField(slot - NEO_MAIN + 1);
   const ring = editorNeoRingOf(slot);
   const keyed = editorNeoKeyOfName(ring, name);
   if (!keyed.ok) return keyed;
@@ -13910,9 +13924,25 @@ function editorNeoInsert(m, ring, name) {
 function editorNeoMove(m, from, to) {
   const map = m.options.profile.map;
   if (!Number.isInteger(from) || !Number.isInteger(to) || map[from] === null || map[from] === undefined || to < 0 || to >= NEO_SLOTS) return editorRefusal("move");
-  if (editorNeoRingOf(from) !== editorNeoRingOf(to)) return editorNeoOwnRow();
+  if (editorNeoRingOf(from) !== editorNeoRingOf(to)) {
+    if (m.options.profile.rev !== 3) return editorNeoOwnRow();
+    return editorStageEdit(editorNeoIntoDraft(m), (st) => {
+      const a = from < NEO_MAIN ? st.main : st.mutant;
+      const b = to < NEO_MAIN ? st.main : st.mutant;
+      const ai = from % NEO_MAIN, bi = to % NEO_MAIN;
+      [a[ai], b[bi]] = [b[bi] || null, a[ai]];
+      for (const ring of ["rim", "bottom"]) {
+        const seen = new Set();
+        for (const name of (ring === "rim" ? st.main : st.mutant).filter(Boolean)) {
+          const key = editorNeoKeyOfName(ring, name).key;
+          if (seen.has(key)) return editorStageRepeat(name, name);
+          seen.add(key);
+        }
+      }
+    }, editorNeoKeyOfName(editorNeoRingOf(to), editorNameAt(m, editorNeoRef(m, from))).key);
+  }
   if (from === to) return { ok: true, value: m };
-  if (to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
+  if (m.options.profile.rev !== 3 && to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
   if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoMove(st, from, to));
   const next = map.slice();
   [next[from], next[to]] = [next[to], next[from]];
@@ -13920,7 +13950,8 @@ function editorNeoMove(m, from, to) {
 }
 function editorRemoveNeotone(m, ring, i) {
   if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoRemove(st, ring, i));
+  if (editorIsEmpty(m) || (m.options.profile.rev === 3 && ring === "rim" && editorNames(m, "rim").length === 1))
+    return editorStageEdit(editorNeoIntoDraft(m), (st) => editorStageNeoRemove(st, ring, i));
   const key = profileKeyOf(m.fields[ringIds(m.fields, ring)[i]]);
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
@@ -14382,7 +14413,12 @@ function editorCommitText(m, text) {
     const options = { ...carried };
     delete options.seats;
     delete options.angles;
-    return { ok: true, value: { fields: {}, options, pins: [] }, ...reset };
+    const blank={ fields: {}, options, pins: [] };
+    if (m.options.profile?.rev === 3) {
+      options.profile={ ...m.options.profile, map:Array(NEO_SLOTS).fill(null) };
+      return {ok:true,value:editorWithStage(blank,editorBlankStage("neotone")),...reset};
+    }
+    return { ok: true, value: blank, ...reset };
   }
   const loaded = editorLoad(trimmed, carried);
   if (!loaded.ok) return loaded;
@@ -14395,7 +14431,19 @@ function editorCommitText(m, text) {
   if (typed) next.options.seats = typed;
   if (m.options.profile) {
     const profile = editorProfileFor(next.fields);
-    if (profile) next.options.profile = profile;
+    if (profile && m.options.profile.rev === 3) {
+      const now = new Set(profile.map.filter(Boolean));
+      const map = m.options.profile.map.map(key => now.has(key) ? key : null);
+      for (const key of profile.map) {
+        if (!key || map.includes(key)) continue;
+        const start = key[0] === "r" ? 0 : NEO_MAIN;
+        const slot = map.findIndex((item, i) => item === null && i >= start && i < start + NEO_MAIN);
+        if (slot < 0) return editorAreaRefusal("FIELDS_FULL", HPE.core.REASONS.PROFILE_FULL.reason);
+        map[slot] = key;
+      }
+      next.options.profile = { ...profile, rev: 3, map };
+      delete next.options.seats;
+    } else if (profile) next.options.profile = profile;
   }
   const solved = editorSolve(next);
   return solved.ok ? { ok: true, value: next, ...reset } : solved;
@@ -14415,7 +14463,7 @@ function editorPanType(m, kind) {
   const profile = editorProfileFor(next.fields);
   if (!profile) return editorRefusal(t("editor.neotone"));
   const hadPins = next.pins.length > 0;
-  next.options.profile = profile;
+  next.options.profile = { ...profile, rev: 3 };
   if (next.options.anchor === "one") delete next.options.anchor;
   delete next.options.seats;
   delete next.options.angles;
@@ -14545,7 +14593,7 @@ function editorOpen(edit) {
       editorNode("div", { id: "editor-counts" },
         ...EDITOR_COUNTS.map((zone) => editorNode("span", { class: "zc", "data-zone": zone }))),
       editorNode("p", { id: "editor-hint" },
-        editorNode("span", { text: t("editor.hint.place") }), editorNode("span", { text: t("editor.hint.ding") }))),
+        editorNode("span", { text: t("editor.hint.place") }))),
     editorNode("button", { id: "editor-hint-close", type: "button", class: "mode", hidden: true, "aria-label": t("editor.hint.close"), text: "\u00D7" }),
     editorNode("div", { id: "editor-region" },
     editorNode("div", { id: "editor-tabs", role: "tablist", "aria-label": t("editor.tabs.aria") },
@@ -14582,6 +14630,8 @@ function editorOpen(edit) {
       editorNode("button", { id: "editor-more", type: "button", class: "mode", text: "\u2026", "aria-label": t("editor.more.aria"), "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "editor-menu" }),
       editorNode("div", { id: "editor-menu", role: "menu", tabindex: "-1", "aria-label": t("editor.more.aria"), hidden: true },
         editorMenuItem("editor-redo", "editor.redo"), editorMenuItem("editor-remove", "editor.remove"), editorMenuItem("editor-reset", "editor.reset"),
+        editorMenuItem("editor-placement-help", "editor.placement_help"),
+        editorMenuItem("editor-fixed-slots", "editor.fixed_slots"),
         ...(edit ? [editorNode("div", { class: "menu-sep", role: "separator" }), editorDeleteButton()] : []))),
     editorNode("div", { id: "editor-dialog", role: "alertdialog", "aria-modal": "true", "aria-labelledby": "editor-dlg-title", hidden: true },
       editorNode("div", { class: "dlg" },
@@ -14693,7 +14743,8 @@ function editorRenderBody() {
   editorRenderLayout(m);
   editorEl("editor-undo").disabled = !editorCanUndo(s.history);
   editorEl("editor-redo").disabled = !editorCanRedo(s.history);
-  editorEl("editor-remove").disabled = !s.sel || (s.sel.ring === "ding" && m.options.profile && !editorIsEmpty(m));
+  editorEl("editor-remove").disabled = !s.sel || (s.sel.ring === "ding" && m.options.profile && m.options.profile.rev !== 3 && !editorIsEmpty(m));
+  editorEl("editor-fixed-slots").hidden = !m.options.profile || m.options.profile.rev === 3;
   const reset = editorResetLabel(m, s.sel, s.zone);
   const resetBtn = editorEl("editor-reset");
   resetBtn.disabled = !reset.enabled;
@@ -14963,7 +15014,7 @@ function editorTabKey(e) {
   editorSetTab(EDITOR_TABS[to], true);
 }
 // The "..." menu: Redo, Remove note, Reset spacing, Delete. Focus moves in on open and back on close.
-const editorMenuItems = () => [...editorEl("editor-menu").querySelectorAll('[role="menuitem"]')];
+const editorMenuItems = () => [...editorEl("editor-menu").querySelectorAll('[role="menuitem"]:not([hidden])')];
 function editorOpenMenu() {
   const s = editorSession;
   editorCommitName();
@@ -15019,12 +15070,12 @@ function editorNeoPoint(m, fields, geom, id) {
 function editorNeoMarks(m, fields, geom, part) {
   const map = m.options.profile.map;
   const empty = editorIsEmpty(m);
-  const mutants = empty || map.slice(NEO_MAIN).some((k) => k !== null);
+  const mutants = m.options.profile.rev === 3 || empty || map.slice(NEO_MAIN).some((k) => k !== null);
   let out = "";
   if (part !== "landing") map.forEach((key, slot) => {
     if (key !== null || (!mutants && slot < NEO_MAIN)) return;
     const at = neoSlotPoint(slot, null, geom.turn);
-    const waiting = empty && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null;
+    const waiting = m.options.profile.rev !== 3 && empty && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null;
     out += `<circle class="eslot${waiting ? " unavailable" : ""}" data-slot="${slot}" cx="${at.x.toFixed(2)}" cy="${at.y.toFixed(2)}" r="${at.r.toFixed(2)}"${slot >= NEO_MAIN ? ' data-mut="1"' : ""} aria-hidden="true"/>`;
   });
   const landed = editorSession && editorSession.landed;
@@ -15188,7 +15239,7 @@ function editorDropPlan(m, src, target) {
     }), say: t("editor.say.moved", { name }) };
   }
   if (target.kind === "outside") {
-    if (ref.ring === "ding") return m.options.profile && !editorIsEmpty(m) ? { refuse: t("editor.say.ding_required") } : { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
+    if (ref.ring === "ding") return m.options.profile && m.options.profile.rev !== 3 && !editorIsEmpty(m) ? { refuse: t("editor.say.ding_required") } : { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
     return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
   }
   if (target.kind === "note" || target.kind === "ding") {
@@ -15210,8 +15261,8 @@ function editorDropPlan(m, src, target) {
   const name = editorNameAt(m, ref);
   return { step: (x) => { const gone = editorRemove(x, ref.ring, ref.i); return gone.ok ? editorPlace(gone.value, target.ring, name, target.angle) : gone; }, say: t("editor.say.moved", { name }) };
 }
-function editorNeoExchangeDing(m, slot) {
-  const draft = editorIsEmpty(m) ? m : editorWithStage({ ...m, fields: {}, pins: [] }, (() => {
+function editorNeoIntoDraft(m) {
+  return editorIsEmpty(m) ? m : editorWithStage({ ...m, fields: {}, pins: [] }, (() => {
     const stage = editorBlankStage("neotone"), map = m.options.profile.map;
     stage.ding = editorDingOf(m);
     for (let k = 0; k < NEO_SLOTS; k++) {
@@ -15221,7 +15272,9 @@ function editorNeoExchangeDing(m, slot) {
     }
     return stage;
   })());
-  return editorStageEdit(draft, (stage) => {
+}
+function editorNeoExchangeDing(m, slot) {
+  return editorStageEdit(editorNeoIntoDraft(m), (stage) => {
     const list = slot < NEO_MAIN ? stage.main : stage.mutant, i = slot % NEO_MAIN;
     const fromSlot = list[i], fromDing = stage.ding;
     if (fromDing) {
@@ -15245,8 +15298,8 @@ function editorNeoDropPlan(m, src, target) {
   }
   const ref = src.ref;
   if (target.kind === "outside") {
-    if (ref.ring === "ding") return m.options.profile && !editorIsEmpty(m) ? { refuse: t("editor.say.ding_required") } : { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
-    if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+    if (ref.ring === "ding") return m.options.profile && m.options.profile.rev !== 3 && !editorIsEmpty(m) ? { refuse: t("editor.say.ding_required") } : { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
+    if (m.options.profile.rev !== 3 && ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
     return { step: (x) => editorRemoveNeotone(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
   }
   if (ref.ring === "ding" || target.kind === "ding") {
@@ -15254,7 +15307,7 @@ function editorNeoDropPlan(m, src, target) {
     const slot = ref.ring !== "ding" ? editorNeoSlotOf(m, ref) :
       target.kind === "note" ? editorNeoSlotOf(m, target) : target.kind === "spot" ? target.slot : -1;
     if (slot < 0) return snap;
-    if (ref.ring === "ding" && slot >= NEO_MAIN && !m.options.profile.map[slot] && !m.options.profile.map[slot - NEO_MAIN]) {
+    if (m.options.profile.rev !== 3 && ref.ring === "ding" && slot >= NEO_MAIN && !m.options.profile.map[slot] && !m.options.profile.map[slot - NEO_MAIN]) {
       return { refuse: editorNeoEmptyField(slot - NEO_MAIN + 1).reason };
     }
     const name = editorNameAt(m, ref);
@@ -15264,7 +15317,7 @@ function editorNeoDropPlan(m, src, target) {
   const to = target.kind === "note" ? editorNeoSlotOf(m, target) : target.kind === "spot" ? target.slot : -1;
   if (to < 0) return snap;
   if (to === from) return snap;
-  return editorNeoRingOf(from) !== editorNeoRingOf(to) ? { refuse: t("editor.neo.own_row") }
+  return m.options.profile.rev !== 3 && editorNeoRingOf(from) !== editorNeoRingOf(to) ? { refuse: t("editor.neo.own_row") }
     : { step: (x) => editorNeoMove(x, from, to), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) };
 }
 function editorPlaceHeld(hit, m, pointer) {
@@ -15274,7 +15327,7 @@ function editorPlaceHeld(hit, m, pointer) {
   const name = editorHeldName();
   const placed = editorDo(plan.step, plan.say, true);
   if (placed) s.held = null;
-  if (placed && pointer) window.drawerExperiment?.tapPlaced(name);
+  if (placed && pointer && s.history.present !== m) window.drawerExperiment?.tapPlaced(name);
   editorRender();
 }
 function editorDraftTrade(x, a, b) {
@@ -15385,7 +15438,9 @@ function editorStandardDraft(m) {
 }
 function editorClearDing(m) {
   if (editorIsEmpty(m)) return editorStageEdit(m, (stage) => { delete stage.ding; });
-  if (m.options.profile) return editorAreaRefusal("DING_REQUIRED", t("editor.say.ding_required"));
+  if (m.options.profile) return m.options.profile.rev === 3 ?
+    editorStageEdit(editorNeoIntoDraft(m), (stage) => { delete stage.ding; }) :
+    editorAreaRefusal("DING_REQUIRED", t("editor.say.ding_required"));
   const stage = editorStandardDraft(m);
   delete stage.ding;
   return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
@@ -15456,7 +15511,7 @@ function editorCancelEdit() {
   editorRender();
 }
 function editorUndoStep() {
-  window.drawerExperiment?.clearReveal();
+  window.drawerExperiment?.clearPlacement();
   const s = editorSession;
   if (!s || !editorCanUndo(s.history)) return;
   s.history = editorUndo(s.history);
@@ -15470,6 +15525,7 @@ function editorUndoStep() {
   editorRender();
 }
 function editorRedoStep() {
+  window.drawerExperiment?.clearPlacement();
   const s = editorSession;
   if (!s || !editorCanRedo(s.history)) return;
   s.history = editorRedo(s.history);
@@ -15485,7 +15541,7 @@ function editorRedoStep() {
 function editorShowDialog(on) {
   const s = editorSession;
   s.dialog = on;
-  if (on) editorCloseMenu(false);
+  if (on) { editorCloseMenu(false); if (s.hint) editorSetAreas(false); }
   const dlg = editorEl("editor-dialog");
   if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");
   for (const node of editorEl("editor").children) if (node !== dlg) { node.inert = on; if (on) node.setAttribute("aria-hidden", "true"); else node.removeAttribute("aria-hidden"); }
@@ -15506,7 +15562,7 @@ function editorEscape() {
   if (editorDrag && editorDrag.live) editorDragEnd(null);
   else if (s.dialog) editorShowDialog(false);
   else if (s.menu) editorCloseMenu(true);
-  else if (s.hint) { editorSetAreas(false); editorEl("editor-hint-toggle").focus(); }
+  else if (s.hint) { editorSetAreas(false); editorEl("editor-more").focus(); }
   else if (s.naming) editorCancelName();
   else if (s.editing) editorCancelEdit();
   else if (s.held) editorCancelHold();
@@ -15789,7 +15845,7 @@ function editorDragEnd(e) {
   let placed = false;
   if (plan.trade) placed = editorTrade(m, plan.trade[0], plan.trade[1]);
   else if (plan.step) placed = editorDo(plan.step, plan.say, true);
-  if (placed && target.kind !== "outside") window.drawerExperiment?.revealDrop(movedName);
+  if (placed && s.history.present !== m && (plan.trade || plan.step) && target.kind !== "outside") window.drawerExperiment?.dragPlaced(movedName);
   else if (plan.refuse) s.error = plan.refuse;
   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
   editorRender();
@@ -15899,7 +15955,7 @@ function editorWire() {
   };
   editorEl("editor-hint-close").onclick = () => {
     editorSetAreas(false);
-    editorEl("editor-hint-toggle").focus();
+    editorEl("editor-more").focus();
   };
   nameBox.addEventListener("focusin", () => requestAnimationFrame(() => nameBox.scrollIntoView({ block: "nearest" })));
   window.addEventListener("resize", editorRegionResize);
@@ -15918,6 +15974,22 @@ function editorWire() {
   editorEl("editor-save").onclick = () => editorSave();
   editorEl("editor-remove").onclick = editorMenuPick(editorRemoveSelected);
   editorEl("editor-reset").onclick = editorMenuPick(editorResetTap);
+  editorEl("editor-placement-help").onclick = () => {
+    editorCloseMenu(false);
+    window.drawerExperiment?.setExpanded(true,{immediate:true});
+    editorSetAreas(true);
+    editorEl("editor-hint-close").focus();
+  };
+  editorEl("editor-fixed-slots").onclick = editorMenuPick(() => {
+    editorDo((m) => {
+      if (!m.options.profile || m.options.profile.rev === 3) return {ok:true,value:m};
+      const next=editorClone(m);
+      next.options.profile.rev=3;
+      const solved=editorSolve(next);
+      return solved.ok ? {ok:true,value:next} : solved;
+    },t("editor.fixed_slots_active"));
+    editorRender();
+  });
   for (const tab of EDITOR_TABS) {
     editorEl("editor-tab-" + tab).onclick = () => editorSetTab(tab, false);
     editorEl("editor-tab-" + tab).onkeydown = editorTabKey;
@@ -17676,7 +17748,7 @@ function placeMoveBanner() {
 const SYNC_ORIGINS = {"handpantheory.com":{url:"https://maidverpsglouqqfleby.supabase.co",key:"sb_publishable_3-1Zp601z_Lg5qAAFPMDqA_oxUGwaNq"},"handpan-cards-dev.pages.dev":{url:"https://cknlvnxyjwcjzzrmlhum.supabase.co",key:"sb_publishable_CCs-4Q1unP7f8RmNc5bdPQ_eWBZox53"}};
 const SYNC_KEY = "hpfc.sync.v1";
 const SYNC_LOCK = "hpfc.sync";
-const SYNC_CFG = !MOVE_ON_OLD && Object.prototype.hasOwnProperty.call(SYNC_ORIGINS, location.hostname) ? SYNC_ORIGINS[location.hostname] : null;
+const SYNC_CFG = null;
 const SYNC_RESEND_MS = 60000;
 const SYNC_ENTRY_ERRS = ["sync.err.cap", "sync.err.rate"];
 const syncCeilMinute = ms => Math.ceil(ms / 60000) * 60000;
@@ -18266,5 +18338,5 @@ const savedReady=moveFlow ? moveFlow.then(flow=>Promise.resolve(finishSavedBoot(
 savedReady.then(syncBoot);
 
 </script>
-<script>for(const [code,pair] of Object.entries({"en": ["Collapse controls", "Expand controls"], "de": ["Steuerung einklappen", "Steuerung ausklappen"], "es": ["Contraer controles", "Expandir controles"], "fr": ["Réduire les commandes", "Développer les commandes"], "it": ["Comprimi controlli", "Espandi controlli"], "ja": ["コントロールを折りたたむ", "コントロールを展開"], "zh-Hans": ["收起控制面板", "展开控制面板"], "zh-Hant": ["收合控制面板", "展開控制面板"]})){I18N[code]["editor.drawer.collapse"]=pair[0];I18N[code]["editor.drawer.expand"]=pair[1];}I18N.en["editor.hint.place"]="Drag a note onto the handpan.";I18N.en["editor.held"]="{name} ready to place.";((runtime)=>{function install(){const root=document.getElementById("editor");if(!root||window.drawerExperiment?.root===root)return;window.drawerExperiment?.dispose?.();new Function(runtime)();}new MutationObserver(install).observe(document.body,{childList:true,subtree:true});install();})("return (() => {\n  const root=document.getElementById('editor'), box=root.querySelector('.editor-panbox');\n  const region=root.querySelector('#editor-region'), toolbar=root.querySelector('.editor-toolbar');\n  const stage=document.createElement('div'); stage.className='panexp-stage';box.before(stage);stage.append(box);\n  const drawer=document.createElement('section');drawer.className='drawerexp';drawer.id='drawerexp';\n  const chrome=document.createElement('div');chrome.className='drawerexp-chrome';\n  const row=document.createElement('div');row.className='drawerexp-row';\n  const handle=document.createElement('button');handle.type='button';handle.id='drawerexp-handle';handle.className='mode';\n  handle.setAttribute('aria-controls','drawerexp-body');handle.innerHTML='<svg viewBox=\"0 0 32 8\" width=\"32\" height=\"8\" aria-hidden=\"true\"><path d=\"M4 4h24\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\"/></svg>';\n  row.append(handle);chrome.append(row);\n  const status=root.querySelector('.editor-statusrow');root.append(status,toolbar);\n  const body=document.createElement('div');body.className='drawerexp-body';body.id='drawerexp-body';body.append(region);\n  drawer.append(chrome,body);root.append(drawer);\n  const style=document.createElement('style');style.textContent=`\n  #scale-sheet.onepanel #editor{position:relative;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:6px;padding-bottom:0!important}\n  #editor .panexp-stage{position:relative;flex:0 0 auto;margin-inline:-10px;width:calc(100% + 20px);overflow:visible}\n  #editor .panexp-stage>.editor-panbox{height:100%!important;width:100%;min-height:0;transition:none;transform-origin:0 0}\n  #editor .drawerexp{position:absolute;z-index:8;bottom:var(--rail-height,60px);left:0;right:0;background:#F6F4ED;border-top:1px solid #8A847B;box-shadow:0 -5px 16px #24242414;transform:translateY(var(--drawerexp-offset,0px));transition:transform 180ms cubic-bezier(.2,.8,.2,1);isolation:isolate}\n  #editor .drawerexp-row{display:flex;gap:8px;align-items:center;min-height:44px;padding-inline:12px;box-sizing:border-box}\n  #editor #drawerexp-handle{display:flex;justify-content:center;align-items:center;flex:1 1 0;min-height:44px;min-width:44px;border:0;background:transparent;touch-action:none;cursor:ns-resize;color:#5E5850}\n  #editor .drawerexp-body{display:flex;flex-direction:column;max-height:var(--drawerexp-body-max,340px);overflow:auto;overscroll-behavior:contain;padding:0 12px 8px;box-sizing:border-box}\n  #editor #editor-region{display:flex!important;flex-direction:column;flex:0 0 auto;overflow:visible!important;margin:0!important;padding:0;min-height:0}\n  #editor #editor-tabs{position:static;flex:0 0 auto;margin-bottom:8px}\n  #editor #editor-panels{flex:0 0 auto}\n  #editor .editor-toolbar{position:absolute!important;inset:auto 0 0!important;z-index:10;display:flex;gap:8px;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));min-height:60px;background:#F6F4ED;border-top:1px solid #c7c1b6;box-sizing:border-box}\n  #editor-pan svg{overflow:visible!important}\n  #editor.dragging .editor-toolbar,#editor.settling .editor-toolbar{opacity:1;visibility:visible;transition:none}\n  #editor .editor-toolbar #editor-save{flex:2 1 0}\n  #editor .editor-toolbar #editor-undo{flex:1 1 0}\n  #editor .editor-statusrow{position:absolute!important;inset:auto 12px var(--feedback-bottom,116px)!important;transform:none!important;z-index:9;min-height:0!important;height:auto!important;width:auto;margin:0!important;pointer-events:none}\n  #editor #editor-status{position:relative!important;inset:auto!important;min-height:0;padding:0;margin:0;width:100%;pointer-events:none}\n  #editor #editor-status:not(:empty){padding:6px 8px 8px;box-sizing:border-box;background:#242424;color:#F6F4ED;border-radius:12px;box-shadow:0 5px 16px #0003;line-height:1.3}\n  #editor #editor-status[data-kind=error]{background:#242424;color:#fff;display:block;text-indent:20px}\n  #editor #editor-status[data-kind=error]::before{position:absolute;left:8px;top:6px;text-indent:0}\n  #editor #editor-status button{position:static!important;transform:none!important;flex:0 0 auto;pointer-events:auto}\n  #editor .placement-note-callout{display:inline-grid;place-items:center;min-width:38px;height:38px;margin-inline-end:8px;border:1px solid #c9a25a;border-radius:50%;color:#fff;vertical-align:middle}\n  #editor #editor-status:empty{display:none}\n  #editor.dragging .drawerexp-row button,#editor.dragging #editor-status button{pointer-events:none}\n  #editor.dragging #editor-areas,#editor.dragging #editor-tabs,#editor.dragging #editor-panels,#editor.dragging #editor-layout,#editor.dragging .editor-toolbar,#editor.dragging #editor-tray{transform:none!important;transition:none!important}\n  #editor-pan .eslot[data-mut],#editor-pan .etarget.eempty:not(.picked){stroke:var(--accent,#c9a25a);opacity:.8}\n  #editor-pan .etarget.eempty[data-ring=ding]{opacity:1}\n  #editor-pan .eslot.unavailable{opacity:.45}\n  @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}\n  @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}\n  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}\n  @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}\n  `;document.head.append(style);\n  const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,metrics:[],disposed:false,state:'OPEN'};\n  let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;\n  const reduced=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;\n  let tapRest=null, revealed=null, dropName=null;\n  api.tapArm=()=>{\n    if(!editorSession.held){api.cancelTapArm();return;}\n    const pan=box.getBoundingClientRect(), cover=drawer.getBoundingClientRect();\n    if(expanded&&pan.left<cover.right&&pan.right>cover.left&&pan.bottom>cover.top){\n      tapRest=expanded;setExpanded(false,{focus:true});\n    }\n  };\n  api.cancelTapArm=()=>{\n    if(tapRest!==null){const rest=tapRest;tapRest=null;setExpanded(rest,{focus:true});}\n  };\n  api.tapPlaced=name=>{\n    tapRest=null;\n    api.revealDrop(name);\n    setExpanded(false,{focus:true,immediate:true});\n    requestAnimationFrame(()=>{if(root.isConnected&&!editorDrag){layout();showDrop();}});\n  };\n  api.revealDrop=name=>{\n    const session=editorSession;\n    const notes=(session.flash||[]).filter(ref=>editorNameAt(session.history.present,ref)===name);\n    dropName={name,ref:notes.length===1?notes[0]:null,slot:session.landed};\n  };\n  api.clearReveal=()=>{\n    if(revealed===null)return;\n    root.querySelector('.placement-note-callout')?.remove();\n    revealed=null;box.style.transform='none';\n  };\n  function showDrop(){\n    const destination=dropName;dropName=null;\n    if(!destination)return;\n    const {name,ref,slot}=destination;\n    const svg=box.querySelector('svg');\n    const landed=Number.isInteger(slot)&&svg?.querySelector(`.editor-landing.editor-new[data-slot=\"${slot}\"]`);\n    const mark=landed||(ref&&svg?.querySelector(`.ehit[data-ring=\"${ref.ring}\"][data-i=\"${ref.i}\"]`));\n    if(!mark)return;\n    const dst=mark.getBoundingClientRect(),cover=drawer.getBoundingClientRect();\n    if(dst.right<=cover.left||dst.left>=cover.right)return;\n    const banner=root.querySelector('#editor-status');\n    const visibleTop=root.querySelector('.editor-line').getBoundingClientRect().bottom+4;\n    const visibleBottom=Math.min(cover.top,banner.textContent.trim()?banner.getBoundingClientRect().top:Infinity)-6;\n    const shift=Math.min(0,visibleBottom-dst.bottom-5);\n    if(!shift)return;\n    const shell=svg.querySelector(':scope>circle[r=\"100\"]')?.getBoundingClientRect();\n    if(shell&&(shell.top+shift<visibleTop||dst.top+shift<visibleTop)){\n      const origin=stage.getBoundingClientRect().top;\n      const maximum=(visibleBottom-visibleTop)/(dst.bottom+5-shell.top+3);\n      const scale=Math.min(1,maximum);\n      if(scale<.78){\n        const badge=document.createElement('span');\n        badge.className='placement-note-callout';\n        badge.textContent=name;\n        badge.setAttribute('aria-hidden','true');\n        banner.prepend(badge);\n        revealed={callout:true};\n        return;\n      }\n      revealed={shift:visibleTop-(origin+(shell.top-origin-3)*scale),scale};\n    }else revealed={shift,scale:1};\n    box.style.transform=`translateY(${revealed.shift}px) scale(${revealed.scale})`;\n  }\n  function sync(){\n    const railHeight=toolbar.offsetHeight;\n    root.style.setProperty(\"--rail-height\",railHeight+\"px\");\n    root.style.setProperty(\"--feedback-bottom\",(railHeight+(expanded?drawer.offsetHeight:chrome.offsetHeight)+10)+\"px\");\n    drawer.dataset.expanded=String(expanded);handle.setAttribute('aria-expanded',String(expanded));\n    handle.setAttribute('aria-label',t(expanded?'editor.drawer.collapse':'editor.drawer.expand'));\n    body.inert=!expanded;body.setAttribute('aria-hidden',String(!expanded));\n    drawer.style.setProperty('--drawerexp-offset',expanded?'0px':body.getBoundingClientRect().height+'px');\n  }\n  function setExpanded(next,{focus=false,immediate=false}={}){\n    const was=expanded;expanded=!!next;const g=++generation;clearTimeout(timer);\n    if(!expanded&&editorSession.hint)editorSetAreas(false);\n    if(!expanded&&body.contains(document.activeElement))handle.focus({preventScroll:true});\n    api.state=expanded?'OPENING':'SHUTTING';api.expanded=expanded;\n    if(immediate)drawer.style.transition='none';sync();\n    if(immediate){void drawer.offsetWidth;drawer.style.transition='';}\n    const finish=()=>{if(g!==generation||api.disposed)return;api.state=expanded?'OPEN':'SHUT';};\n    if(immediate||reduced())finish();else timer=setTimeout(finish,200);\n    if(focus&&was!==expanded)handle.focus({preventScroll:true});\n  }\n  function layout(){\n    if(!root.isConnected)return;\n    const vh=visualViewport?.height||innerHeight, rr=root.getBoundingClientRect();\n    const top=root.querySelector('.editor-line').getBoundingClientRect().bottom-rr.top+6;\n    drawer.style.setProperty('--drawerexp-body-max',Math.max(88,vh-rr.top-top-chrome.offsetHeight-toolbar.offsetHeight-8)+'px');sync();\n    if(root.classList.contains('dragging')||root.classList.contains('settling'))return;\n    const svg=document.querySelector('#editor-pan svg');if(!svg)return;\n    const bb=svg.getBBox(),pad=4;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};\n    svg.setAttribute('viewBox',`${frame.x} ${frame.y} ${frame.w} ${frame.h}`);\n    const h=Math.min(.5*innerHeight*frame.h/200,(root.clientWidth-8)*frame.h/frame.w,Math.max(80,vh-rr.top-top-56));\n    stage.style.height=`${Math.max(80,h)}px`;if(!revealed)box.style.transform='none';\n    const shell=svg.querySelector(':scope>circle[r=\"100\"][stroke=\"#000\"]');\n    if(shell)api.metrics.push({w:innerWidth,h:innerHeight,frame,shell:shell.getBoundingClientRect().height,expanded});\n  }\n  function camera(e){\n    if(!root.isConnected||!root.classList.contains('dragging')||(e&&(!editorDrag||e.pointerId!==editorDrag.id)))return;\n    if(e)pointer={x:e.clientX,y:e.clientY};\n    const r=stage.getBoundingClientRect(),svg=box.querySelector('svg'),matrix=svg?.getScreenCTM();\n    if(!matrix||!frame)return;\n    const previous=transform||{x:0,y:0,z:1};\n    const top=(matrix.f+matrix.d*frame.y-r.top-previous.y)/previous.z;\n    const bottom=(matrix.f+matrix.d*(frame.y+frame.h)-r.top-previous.y)/previous.z;\n    const band=root.querySelector('.editor-line').getBoundingClientRect().bottom+4;\n    const obstacles=[toolbar,chrome,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])];\n    const overlapsPan=el=>{const b=el.getBoundingClientRect();return b.left<r.right&&b.right>r.left;};\n    const limit=lowestClearance=Math.min(lowestClearance,...obstacles.filter(overlapsPan).map(el=>el.getBoundingClientRect().top-4));\n    const z=Math.min(api.zoom,Math.max(.1,(limit-band)/(bottom-top)));\n    let ax=.5,ay=0;if(pointer){ax=Math.max(0,Math.min(1,(pointer.x-r.left)/r.width));ay=Math.max(0,Math.min(1,(pointer.y-r.top)/r.height));}\n    const left=(matrix.e+matrix.a*frame.x-r.left-previous.x)/previous.z;\n    const right=(matrix.e+matrix.a*(frame.x+frame.w)-r.left-previous.x)/previous.z;\n    const minX=4-r.left-left*z,maxX=innerWidth-4-r.left-right*z;\n    const anchorX=-r.width*(z-1)*ax;\n    const x=minX<=maxX?Math.max(minX,Math.min(maxX,anchorX)):anchorX;\n    transform={x,y:Math.max(band-r.top-top*z,Math.min(limit-r.top-bottom*z,-r.height*(z-1)*ay)),z};paint();\n  }\n  function paint(){if(transform)box.style.transform=`translate(${transform.x}px,${transform.y}px) scale(${transform.z})`;}\n  function feedback(){\n    if(!root.classList.contains('dragging'))return;\n    const ghost=editorDrag?.ghost;if(ghost){const r=ghost.getBoundingClientRect(),dx=r.left<4?4-r.left:r.right>innerWidth-4?innerWidth-4-r.right:0;const lo=stage.getBoundingClientRect().top+4,hi=chrome.getBoundingClientRect().top-4,dy=r.top<lo?lo-r.top:r.bottom>hi?hi-r.bottom:0;ghost.style.left=(parseFloat(ghost.style.left)+dx)+'px';ghost.style.top=(parseFloat(ghost.style.top)+dy)+'px';}\n  }\n  api.covered=e=>[drawer,toolbar,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])].some(el=>{\n    const r=el.getBoundingClientRect();\n    return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;\n  });\n  let gesture=null,suppressClick=false;\n  function down(e){tapRest=null;api.clearReveal();suppressClick=false;if(!e.isPrimary||e.button>0||gesture||editorDrag)return;e.stopPropagation();gesture={id:e.pointerId,y:e.clientY,x:e.clientX,was:expanded};handle.setPointerCapture(e.pointerId);}\n  function move(e){if(!gesture||e.pointerId!==gesture.id)return;e.stopPropagation();if(e.cancelable)e.preventDefault();}\n  function up(e){if(!gesture||e.pointerId!==gesture.id)return;const g=gesture;gesture=null;e.stopPropagation();const dy=e.clientY-g.y,dx=e.clientX-g.x;if(e.type==='pointerup'&&Math.abs(dy)>=24&&Math.abs(dy)>Math.abs(dx)){suppressClick=true;setExpanded(dy<0,{focus:true});}else if(e.type!=='pointerup')setExpanded(g.was);}\n  function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}setExpanded(!expanded,{focus:true});}\n  handle.addEventListener('pointerdown',down);handle.addEventListener('pointermove',move);for(const n of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(n,up);handle.addEventListener('click',click);handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tapRest=null;api.clearReveal();suppressClick=false;e.preventDefault();e.stopPropagation();setExpanded(!expanded,{focus:true});}});\n  function focusIn(e){if(body.contains(e.target))setExpanded(true,{immediate:true});else if(e.target.closest?.('#editor-pan')){const r=e.target.getBoundingClientRect(),cover=drawer.getBoundingClientRect();if(r.right>cover.left&&r.left<cover.right&&r.bottom>cover.top&&r.top<Math.min(innerHeight,cover.bottom))setExpanded(false,{immediate:true});}}\n  function key(e){const s=editorSession;if(e.key==='Escape'&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}\n\n  function resize(){api.clearReveal();const rotation=innerWidth!==lastWidth||(innerWidth>innerHeight)!==lastOrientation;lastWidth=innerWidth;lastOrientation=innerWidth>innerHeight;gesture=null;if(rotation){dragRest=null;setExpanded(true,{immediate:true});}layout();}\n  root.addEventListener('focusin',focusIn);root.addEventListener('keydown',key,true);window.addEventListener('resize',resize);visualViewport?.addEventListener('resize',layout);\n  function onEditStart(e){\n    if(e.target.closest?.('#editor-region')||e.target.closest?.('#editor-undo,#editor-notice-undo'))api.clearReveal();\n  }\n  root.addEventListener('pointerdown',onEditStart,true);\n  api.prepareDrag=e=>{\n    if(!editorDrag?.live||e.pointerId!==editorDrag.id)return;\n    if(dragRest?.drag!==editorDrag){\n      tapRest=null;api.clearReveal();\n      dragRest={drag:editorDrag,expanded,focus:document.activeElement,scroll:body.scrollTop};\n      setExpanded(false,{immediate:true});\n    }\n    lowestClearance=Infinity;\n    camera(e);\n  };\n  api.refreshDrag=e=>{\n    const previous=lowestClearance;\n    camera(e);\n    return lowestClearance<previous;\n  };\n  const classObserver=new MutationObserver(()=>{\n    if(root.classList.contains('dragging'))return;\n    transform=null;pointer=null;lowestClearance=Infinity;if(!revealed)box.style.transform='none';\n    if(dragRest){\n      const rest=dragRest;dragRest=null;setExpanded(rest.expanded,{immediate:true});body.scrollTop=rest.scroll;\n      if(rest.focus?.isConnected&&(!body.contains(rest.focus)||rest.expanded))rest.focus.focus({preventScroll:true});\n    }\n    if(!root.classList.contains('settling')){layout();showDrop();}\n  });classObserver.observe(root,{attributes:true,attributeFilter:['class']});\n  const panObserver=new MutationObserver(()=>{if(root.classList.contains('dragging'))feedback();else layout();});panObserver.observe(document.getElementById('editor-pan'),{childList:true,subtree:true});\n  const statusObserver=new MutationObserver(()=>{sync();});statusObserver.observe(document.getElementById('editor-status'),{childList:true,subtree:true});\n  const lifetime=new MutationObserver(()=>{if(!root.isConnected)api.dispose();});lifetime.observe(document.body,{childList:true,subtree:true});\n  api.dispose=()=>{if(api.disposed)return;api.disposed=true;clearTimeout(timer);generation++;classObserver.disconnect();panObserver.disconnect();statusObserver.disconnect();lifetime.disconnect();root.removeEventListener('pointerdown',onEditStart,true);root.removeEventListener('focusin',focusIn);root.removeEventListener('keydown',key,true);window.removeEventListener('resize',resize);visualViewport?.removeEventListener('resize',layout);style.remove();};\n  api.focusField=id=>{const field=document.getElementById(id);if(!field||!body.contains(field))return false;const panel=field.closest('[role=tabpanel]');if(panel?.hidden)editorSetTab(panel.id==='editor-panel-scale'?'scale':'layout',false);setExpanded(true,{immediate:true});field.focus({preventScroll:true});return document.activeElement===field;};api.layout=layout;api.setExpanded=setExpanded;api.expanded=true;layout();setExpanded(true,{immediate:true});return api;\n})();\n");</script></body>
+<script>for(const [code,pair] of Object.entries({"en": ["Collapse controls", "Expand controls"], "de": ["Steuerung einklappen", "Steuerung ausklappen"], "es": ["Contraer controles", "Expandir controles"], "fr": ["Réduire les commandes", "Développer les commandes"], "it": ["Comprimi controlli", "Espandi controlli"], "ja": ["コントロールを折りたたむ", "コントロールを展開"], "zh-Hans": ["收起控制面板", "展开控制面板"], "zh-Hant": ["收合控制面板", "展開控制面板"]})){I18N[code]["editor.drawer.collapse"]=pair[0];I18N[code]["editor.drawer.expand"]=pair[1];}I18N.en["editor.hint.place"]="Drag a note onto the handpan.";I18N.en["editor.held"]="{name} ready to place.";for(const [code,copy] of Object.entries({"en": ["Open the drawer for the next note.", "Placement help", "Use fixed Neotone slots", "Fixed Neotone slots are active."], "de": ["Öffne die Steuerung für die nächste Note.", "Hilfe zur Platzierung", "Feste Neotone-Felder verwenden", "Feste Neotone-Felder sind aktiv."], "es": ["Abre los controles para colocar la siguiente nota.", "Ayuda de colocación", "Usar posiciones fijas de Neotone", "Las posiciones fijas de Neotone están activas."], "fr": ["Ouvrez les commandes pour placer la note suivante.", "Aide au placement", "Utiliser les positions fixes Neotone", "Les positions fixes Neotone sont actives."], "it": ["Apri i controlli per posizionare la prossima nota.", "Guida al posizionamento", "Usa le posizioni fisse Neotone", "Le posizioni fisse Neotone sono attive."], "ja": ["次の音を置くには操作パネルを開いてください。", "配置のヘルプ", "Neotoneの固定位置を使う", "Neotoneの固定位置を使用中です。"], "zh-Hans": ["打开控制面板以放置下一个音符。", "放置帮助", "使用 Neotone 固定位置", "已启用 Neotone 固定位置。"], "zh-Hant": ["開啟控制面板以放置下一個音符。", "放置說明", "使用 Neotone 固定位置", "已啟用 Neotone 固定位置。"]})){["next_note","placement_help","fixed_slots","fixed_slots_active"].forEach((key,i)=>I18N[code]["editor."+key]=copy[i]);}((runtime)=>{function install(){const root=document.getElementById("editor");if(!root||window.drawerExperiment?.root===root)return;window.drawerExperiment?.dispose?.();new Function(runtime)();}new MutationObserver(install).observe(document.body,{childList:true,subtree:true});install();})("return (() => {\n  const root=document.getElementById('editor'), box=root.querySelector('.editor-panbox');\n  const region=root.querySelector('#editor-region'), toolbar=root.querySelector('.editor-toolbar');\n  const stage=document.createElement('div'); stage.className='panexp-stage';box.before(stage);stage.append(box);\n  const drawer=document.createElement('section');drawer.className='drawerexp';drawer.id='drawerexp';\n  const chrome=document.createElement('div');chrome.className='drawerexp-chrome';\n  const row=document.createElement('div');row.className='drawerexp-row';\n  const handle=document.createElement('button');handle.type='button';handle.id='drawerexp-handle';handle.className='mode';\n  handle.setAttribute('aria-controls','drawerexp-body');handle.innerHTML='<svg viewBox=\"0 0 32 8\" width=\"32\" height=\"8\" aria-hidden=\"true\"><path d=\"M4 4h24\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\"/></svg>';\n  row.append(handle);chrome.append(row);\n  const status=root.querySelector('.editor-statusrow');root.append(status,toolbar);\n  const body=document.createElement('div');body.className='drawerexp-body';body.id='drawerexp-body';body.append(region);\n  drawer.append(chrome,body);root.append(drawer);\n  const style=document.createElement('style');style.textContent=`\n  #scale-sheet.onepanel #editor{position:relative;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:6px;padding-bottom:0!important}\n  #editor .panexp-stage{position:relative;flex:0 0 auto;margin-inline:-10px;width:calc(100% + 20px);overflow:visible}\n  #editor .panexp-stage>.editor-panbox{height:100%!important;width:100%;min-height:0;transition:none;transform-origin:0 0}\n  #editor .drawerexp{position:absolute;z-index:8;bottom:var(--rail-height,60px);left:0;right:0;background:#F6F4ED;border-top:1px solid #8A847B;box-shadow:0 -5px 16px #24242414;transform:translateY(var(--drawerexp-offset,0px));transition:transform 180ms cubic-bezier(.2,.8,.2,1);isolation:isolate}\n  #editor .drawerexp-row{display:flex;gap:8px;align-items:center;min-height:44px;padding-inline:12px;box-sizing:border-box}\n  #editor #drawerexp-handle{display:flex;justify-content:center;align-items:center;flex:1 1 0;min-height:44px;min-width:44px;border:0;background:transparent;touch-action:none;cursor:ns-resize;color:#5E5850}\n  #editor .drawerexp-body{display:flex;flex-direction:column;max-height:var(--drawerexp-body-max,340px);overflow:auto;overscroll-behavior:contain;padding:0 12px 8px;box-sizing:border-box}\n  #editor #editor-region{display:flex!important;flex-direction:column;flex:0 0 auto;overflow:visible!important;margin:0!important;padding:0;min-height:0}\n  #editor #editor-tabs{position:static;flex:0 0 auto;margin-bottom:8px}\n  #editor #editor-panels{flex:0 0 auto}\n  #editor .editor-toolbar{position:absolute!important;inset:auto 0 0!important;z-index:10;display:flex;gap:8px;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));min-height:60px;background:#F6F4ED;border-top:1px solid #c7c1b6;box-sizing:border-box}\n  #editor-pan svg{overflow:visible!important}\n  #editor.dragging .editor-toolbar,#editor.settling .editor-toolbar{opacity:1;visibility:visible;transition:none}\n  #editor .editor-toolbar #editor-save{flex:2 1 0}\n  #editor .editor-toolbar #editor-undo{flex:1 1 0}\n  #editor .editor-statusrow{position:absolute!important;inset:auto 12px var(--feedback-bottom,116px)!important;transform:none!important;z-index:9;min-height:0!important;height:auto!important;width:auto;margin:0!important;pointer-events:none}\n  #editor #editor-status{position:relative!important;inset:auto!important;min-height:0;padding:0;margin:0;width:100%;pointer-events:none}\n  #editor #editor-status:not(:empty){padding:6px 8px 8px;box-sizing:border-box;background:#242424;color:#F6F4ED;border-radius:12px;box-shadow:0 5px 16px #0003;line-height:1.3}\n  #editor #editor-status[data-kind=error]{background:#242424;color:#fff;display:block;text-indent:20px}\n  #editor #editor-status[data-kind=error]::before{position:absolute;left:8px;top:6px;text-indent:0}\n  #editor #editor-status button{position:static!important;transform:none!important;flex:0 0 auto;pointer-events:auto}\n  #editor .placement-note-callout{display:inline-grid;place-items:center;min-width:38px;height:38px;margin-inline-end:8px;border:1px solid #c9a25a;border-radius:50%;color:#fff;vertical-align:middle}\n  #editor .placement-next-note{display:block;font-weight:600}\n  #editor #editor-hint-toggle{display:none!important}\n  #editor #editor-areas,#editor #editor-hint-close{z-index:11}\n  #editor #editor-menu [hidden]{display:none!important}\n  #editor #editor-status:empty{display:none}\n  #editor.dragging .drawerexp-row button,#editor.dragging #editor-status button{pointer-events:none}\n  #editor.dragging #editor-areas,#editor.dragging #editor-tabs,#editor.dragging #editor-panels,#editor.dragging #editor-layout,#editor.dragging .editor-toolbar,#editor.dragging #editor-tray{transform:none!important;transition:none!important}\n  #editor-pan .eslot[data-mut],#editor-pan .etarget.eempty:not(.picked){stroke:var(--accent,#c9a25a);opacity:.8}\n  #editor-pan .etarget.eempty[data-ring=ding]{opacity:1}\n  #editor-pan .eslot.unavailable{opacity:.45}\n  @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}\n  @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}\n  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}\n  @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}\n  `;document.head.append(style);\n  const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,metrics:[],disposed:false,state:'OPEN'};\n  let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;\n  const reduced=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;\n  let tapRest=null, revealed=null, dropName=null, placement=null;\n  function syncReminder(){\n    const banner=root.querySelector('#editor-status');\n    const current=banner.querySelector('.placement-next-note');\n    const show=!expanded && !root.classList.contains('dragging') && placement &&\n      placement.model===editorSession.history.present && placement.say===editorSession.say && !editorSession.error;\n    if(show&&!current){\n      const line=document.createElement('span');\n      line.className='placement-next-note';\n      line.textContent=' '+t('editor.next_note');\n      let copy=banner.querySelector('.placement-confirmation');\n      if(!copy){\n        copy=document.createElement('span');copy.className='placement-confirmation';\n        const undo=banner.querySelector('#editor-notice-undo');\n        for(const node of [...banner.childNodes])if(node!==undo)copy.append(node);\n        banner.insertBefore(copy,undo);\n      }\n      copy.append(line);\n    }else if(!show&&current)current.remove();\n  }\n  api.clearPlacement=()=>{placement=null;dropName=null;api.clearReveal();syncReminder();};\n  api.dragPlaced=name=>{\n    placement={model:editorSession.history.present,say:editorSession.say,drag:dragRest?.drag};\n    api.revealDrop(name);\n  };\n  api.tapArm=()=>{\n    if(!editorSession.held){api.cancelTapArm();return;}\n    const pan=box.getBoundingClientRect(), cover=drawer.getBoundingClientRect();\n    if(expanded&&pan.left<cover.right&&pan.right>cover.left&&pan.bottom>cover.top){\n      tapRest=expanded;setExpanded(false,{focus:true});\n    }\n  };\n  api.cancelTapArm=()=>{\n    if(tapRest!==null){const rest=tapRest;tapRest=null;setExpanded(rest,{focus:true});}\n  };\n  api.tapPlaced=name=>{\n    tapRest=null;\n    api.dragPlaced(name);\n    setExpanded(false,{focus:true,immediate:true});\n    requestAnimationFrame(()=>{if(root.isConnected&&!editorDrag){syncReminder();layout();showDrop();}});\n  };\n  api.revealDrop=name=>{\n    const session=editorSession;\n    const notes=(session.flash||[]).filter(ref=>editorNameAt(session.history.present,ref)===name);\n    dropName={name,ref:notes.length===1?notes[0]:null,slot:session.landed};\n  };\n  api.clearReveal=()=>{\n    if(revealed===null)return;\n    root.querySelector('.placement-note-callout')?.remove();\n    revealed=null;box.style.transform='none';\n  };\n  function showDrop(){\n    const destination=dropName;dropName=null;\n    if(!destination)return;\n    const {name,ref,slot}=destination;\n    const svg=box.querySelector('svg');\n    const landed=Number.isInteger(slot)&&svg?.querySelector(`.editor-landing.editor-new[data-slot=\"${slot}\"]`);\n    const mark=landed||(ref&&svg?.querySelector(`.ehit[data-ring=\"${ref.ring}\"][data-i=\"${ref.i}\"]`));\n    if(!mark)return;\n    const dst=mark.getBoundingClientRect(),cover=drawer.getBoundingClientRect();\n    if(dst.right<=cover.left||dst.left>=cover.right)return;\n    const banner=root.querySelector('#editor-status');\n    const visibleTop=root.querySelector('.editor-line').getBoundingClientRect().bottom+4;\n    const visibleBottom=Math.min(cover.top,banner.textContent.trim()?banner.getBoundingClientRect().top:Infinity)-6;\n    const shift=Math.min(0,visibleBottom-dst.bottom-5);\n    if(!shift)return;\n    const shell=svg.querySelector(':scope>circle[r=\"100\"]')?.getBoundingClientRect();\n    if(shell&&(shell.top+shift<visibleTop||dst.top+shift<visibleTop)){\n      const origin=stage.getBoundingClientRect().top;\n      const maximum=(visibleBottom-visibleTop)/(dst.bottom+5-shell.top+3);\n      const scale=Math.min(1,maximum);\n      if(scale<.78){\n        const badge=document.createElement('span');\n        badge.className='placement-note-callout';\n        badge.textContent=name;\n        badge.setAttribute('aria-hidden','true');\n        banner.prepend(badge);\n        revealed={callout:true};\n        return;\n      }\n      revealed={shift:visibleTop-(origin+(shell.top-origin-3)*scale),scale};\n    }else revealed={shift,scale:1};\n    box.style.transform=`translateY(${revealed.shift}px) scale(${revealed.scale})`;\n  }\n  function sync(){\n    const railHeight=toolbar.offsetHeight;\n    root.style.setProperty(\"--rail-height\",railHeight+\"px\");\n    root.style.setProperty(\"--feedback-bottom\",(railHeight+(expanded?drawer.offsetHeight:chrome.offsetHeight)+10)+\"px\");\n    drawer.dataset.expanded=String(expanded);handle.setAttribute('aria-expanded',String(expanded));\n    handle.setAttribute('aria-label',t(expanded?'editor.drawer.collapse':'editor.drawer.expand'));\n    body.inert=!expanded;body.setAttribute('aria-hidden',String(!expanded));\n    drawer.style.setProperty('--drawerexp-offset',expanded?'0px':body.getBoundingClientRect().height+'px');\n  }\n  function setExpanded(next,{focus=false,immediate=false}={}){\n    const was=expanded;expanded=!!next;if(expanded){placement=null;dropName=null;}syncReminder();const g=++generation;clearTimeout(timer);\n    if(!expanded&&editorSession.hint)editorSetAreas(false);\n    if(!expanded&&body.contains(document.activeElement))handle.focus({preventScroll:true});\n    api.state=expanded?'OPENING':'SHUTTING';api.expanded=expanded;\n    if(immediate)drawer.style.transition='none';sync();\n    if(immediate){void drawer.offsetWidth;drawer.style.transition='';}\n    const finish=()=>{if(g!==generation||api.disposed)return;api.state=expanded?'OPEN':'SHUT';};\n    if(immediate||reduced())finish();else timer=setTimeout(finish,200);\n    if(focus&&was!==expanded)handle.focus({preventScroll:true});\n  }\n  function layout(){\n    if(!root.isConnected)return;\n    const vh=visualViewport?.height||innerHeight, rr=root.getBoundingClientRect();\n    const top=root.querySelector('.editor-line').getBoundingClientRect().bottom-rr.top+6;\n    drawer.style.setProperty('--drawerexp-body-max',Math.max(88,vh-rr.top-top-chrome.offsetHeight-toolbar.offsetHeight-8)+'px');sync();\n    if(root.classList.contains('dragging')||root.classList.contains('settling'))return;\n    const svg=document.querySelector('#editor-pan svg');if(!svg)return;\n    const bb=svg.getBBox(),pad=4;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};\n    svg.setAttribute('viewBox',`${frame.x} ${frame.y} ${frame.w} ${frame.h}`);\n    const h=Math.min(.5*innerHeight*frame.h/200,(root.clientWidth-8)*frame.h/frame.w,Math.max(80,vh-rr.top-top-56));\n    stage.style.height=`${Math.max(80,h)}px`;if(!revealed)box.style.transform='none';\n    const shell=svg.querySelector(':scope>circle[r=\"100\"][stroke=\"#000\"]');\n    if(shell)api.metrics.push({w:innerWidth,h:innerHeight,frame,shell:shell.getBoundingClientRect().height,expanded});\n  }\n  function camera(e){\n    if(!root.isConnected||!root.classList.contains('dragging')||(e&&(!editorDrag||e.pointerId!==editorDrag.id)))return;\n    if(e)pointer={x:e.clientX,y:e.clientY};\n    const r=stage.getBoundingClientRect(),svg=box.querySelector('svg'),matrix=svg?.getScreenCTM();\n    if(!matrix||!frame)return;\n    const previous=transform||{x:0,y:0,z:1};\n    const top=(matrix.f+matrix.d*frame.y-r.top-previous.y)/previous.z;\n    const bottom=(matrix.f+matrix.d*(frame.y+frame.h)-r.top-previous.y)/previous.z;\n    const band=root.querySelector('.editor-line').getBoundingClientRect().bottom+4;\n    const obstacles=[toolbar,chrome,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])];\n    const overlapsPan=el=>{const b=el.getBoundingClientRect();return b.left<r.right&&b.right>r.left;};\n    const limit=lowestClearance=Math.min(lowestClearance,...obstacles.filter(overlapsPan).map(el=>el.getBoundingClientRect().top-4));\n    const z=Math.min(api.zoom,Math.max(.1,(limit-band)/(bottom-top)));\n    let ax=.5,ay=0;if(pointer){ax=Math.max(0,Math.min(1,(pointer.x-r.left)/r.width));ay=Math.max(0,Math.min(1,(pointer.y-r.top)/r.height));}\n    const left=(matrix.e+matrix.a*frame.x-r.left-previous.x)/previous.z;\n    const right=(matrix.e+matrix.a*(frame.x+frame.w)-r.left-previous.x)/previous.z;\n    const minX=4-r.left-left*z,maxX=innerWidth-4-r.left-right*z;\n    const anchorX=-r.width*(z-1)*ax;\n    const x=minX<=maxX?Math.max(minX,Math.min(maxX,anchorX)):anchorX;\n    transform={x,y:Math.max(band-r.top-top*z,Math.min(limit-r.top-bottom*z,-r.height*(z-1)*ay)),z};paint();\n  }\n  function paint(){if(transform)box.style.transform=`translate(${transform.x}px,${transform.y}px) scale(${transform.z})`;}\n  function feedback(){\n    if(!root.classList.contains('dragging'))return;\n    const ghost=editorDrag?.ghost;if(ghost){const r=ghost.getBoundingClientRect(),dx=r.left<4?4-r.left:r.right>innerWidth-4?innerWidth-4-r.right:0;const lo=stage.getBoundingClientRect().top+4,hi=chrome.getBoundingClientRect().top-4,dy=r.top<lo?lo-r.top:r.bottom>hi?hi-r.bottom:0;ghost.style.left=(parseFloat(ghost.style.left)+dx)+'px';ghost.style.top=(parseFloat(ghost.style.top)+dy)+'px';}\n  }\n  api.covered=e=>[drawer,toolbar,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])].some(el=>{\n    const r=el.getBoundingClientRect();\n    return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;\n  });\n  let gesture=null,suppressClick=false;\n  function down(e){tapRest=null;api.clearReveal();suppressClick=false;if(!e.isPrimary||e.button>0||gesture||editorDrag)return;e.stopPropagation();gesture={id:e.pointerId,y:e.clientY,x:e.clientX,was:expanded};handle.setPointerCapture(e.pointerId);}\n  function move(e){if(!gesture||e.pointerId!==gesture.id)return;e.stopPropagation();if(e.cancelable)e.preventDefault();}\n  function up(e){if(!gesture||e.pointerId!==gesture.id)return;const g=gesture;gesture=null;e.stopPropagation();const dy=e.clientY-g.y,dx=e.clientX-g.x;if(e.type==='pointerup'&&Math.abs(dy)>=24&&Math.abs(dy)>Math.abs(dx)){suppressClick=true;dragRest=null;setExpanded(dy<0,{focus:true});}else if(e.type!=='pointerup')setExpanded(g.was);}\n  function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;setExpanded(!expanded,{focus:true});}\n  handle.addEventListener('pointerdown',down);handle.addEventListener('pointermove',move);for(const n of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(n,up);handle.addEventListener('click',click);handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tapRest=null;api.clearReveal();suppressClick=false;e.preventDefault();e.stopPropagation();dragRest=null;setExpanded(!expanded,{focus:true});}});\n  function focusIn(e){if(body.contains(e.target))setExpanded(true,{immediate:true});else if(e.target.closest?.('#editor-pan')){const r=e.target.getBoundingClientRect(),cover=drawer.getBoundingClientRect();if(r.right>cover.left&&r.left<cover.right&&r.bottom>cover.top&&r.top<Math.min(innerHeight,cover.bottom))setExpanded(false,{immediate:true});}}\n  function key(e){const s=editorSession;if(e.key==='Escape'&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}\n\n  function resize(){api.clearPlacement();const rotation=innerWidth!==lastWidth||(innerWidth>innerHeight)!==lastOrientation;lastWidth=innerWidth;lastOrientation=innerWidth>innerHeight;gesture=null;if(rotation){dragRest=null;setExpanded(true,{immediate:true});}layout();}\n  root.addEventListener('focusin',focusIn);root.addEventListener('keydown',key,true);window.addEventListener('resize',resize);visualViewport?.addEventListener('resize',layout);\n  function onEditStart(e){\n    if(e.target.closest?.('#editor-region'))api.clearPlacement();\n  }\n  root.addEventListener('pointerdown',onEditStart,true);\n  api.prepareDrag=e=>{\n    if(!editorDrag?.live||e.pointerId!==editorDrag.id)return;\n    if(dragRest?.drag!==editorDrag){\n      tapRest=null;api.clearPlacement();\n      dragRest={drag:editorDrag,expanded,focus:document.activeElement,scroll:body.scrollTop};\n      setExpanded(false,{immediate:true});\n    }\n    lowestClearance=Infinity;\n    camera(e);\n  };\n  api.refreshDrag=e=>{\n    const previous=lowestClearance;\n    camera(e);\n    return lowestClearance<previous;\n  };\n  const classObserver=new MutationObserver(()=>{\n    if(root.classList.contains('dragging'))return;\n    transform=null;pointer=null;lowestClearance=Infinity;if(!revealed)box.style.transform='none';\n    if(dragRest){\n      const rest=dragRest;dragRest=null;\n      const success=placement?.drag===rest.drag;\n      setExpanded(success?false:rest.expanded,{immediate:true});\n      body.scrollTop=rest.scroll;\n      if(success&&(!rest.focus?.isConnected||body.contains(rest.focus)))handle.focus({preventScroll:true});\n      else if(rest.focus?.isConnected&&(!body.contains(rest.focus)||!success&&rest.expanded))rest.focus.focus({preventScroll:true});\n    }\n    if(!root.classList.contains('settling')){layout();showDrop();}\n  });classObserver.observe(root,{attributes:true,attributeFilter:['class']});\n  const panObserver=new MutationObserver(()=>{if(root.classList.contains('dragging'))feedback();else layout();});panObserver.observe(document.getElementById('editor-pan'),{childList:true,subtree:true});\n  const statusObserver=new MutationObserver(()=>{syncReminder();sync();});statusObserver.observe(document.getElementById('editor-status'),{childList:true,subtree:true});\n  const lifetime=new MutationObserver(()=>{if(!root.isConnected)api.dispose();});lifetime.observe(document.body,{childList:true,subtree:true});\n  api.dispose=()=>{if(api.disposed)return;api.disposed=true;clearTimeout(timer);generation++;classObserver.disconnect();panObserver.disconnect();statusObserver.disconnect();lifetime.disconnect();root.removeEventListener('pointerdown',onEditStart,true);root.removeEventListener('focusin',focusIn);root.removeEventListener('keydown',key,true);window.removeEventListener('resize',resize);visualViewport?.removeEventListener('resize',layout);style.remove();};\n  api.focusField=id=>{const field=document.getElementById(id);if(!field||!body.contains(field))return false;const panel=field.closest('[role=tabpanel]');if(panel?.hidden)editorSetTab(panel.id==='editor-panel-scale'?'scale':'layout',false);setExpanded(true,{immediate:true});field.focus({preventScroll:true});return document.activeElement===field;};api.layout=layout;api.setExpanded=setExpanded;api.expanded=true;layout();setExpanded(true,{immediate:true});return api;\n})();\n");</script></body>
 </html>
