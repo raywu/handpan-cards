@@ -4952,7 +4952,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var fields = fieldsOf(seedOrFields);
     var ids = orderedIds(fields);
     var ding = fields["0"];
-    var line = [{ midi: ding[2], rank: 1, text: "(" + ding[0] + ding[1] + ")", inner: false }];
+    var line = ding ? [{ midi: ding[2], rank: 1, text: "(" + ding[0] + ding[1] + ")", inner: false }] : [];
     ids.bottom.forEach(function (id) {
       line.push({ midi: fields[id][2], rank: 0, text: "[" + fields[id][0] + fields[id][1] + "]", inner: false });
     });
@@ -14293,8 +14293,18 @@ const editorBare = (m) => {
 };
 const editorIsDirty = (base, m) => JSON.stringify(editorBare(base)) !== JSON.stringify(editorBare(m)) ||
   (editorIsEmpty(base) && editorIsEmpty(m) && (editorLineText(base) || editorLineText(m)) && JSON.stringify(editorStageOf(base)) !== JSON.stringify(editorStageOf(m)));
+function editorDraftLineText(m) {
+  const fields = {};
+  const ding = editorDingOf(m);
+  if (ding) fields[0] = editorNameEntry(ding, "ding");
+  let id = 1;
+  for (const ring of EDITOR_RINGS) {
+    for (const note of editorNames(m, ring)) fields[id++] = editorNameEntry(note, ring);
+  }
+  return HPE.core.formatSeed(fields);
+}
 const editorLineText = (m) => editorIsEmpty(m)
-  ? editorText(m, editorPartsOf(m), editorDingOf(m))
+  ? editorDraftLineText(m)
   : HPE.core.formatTyped(m.fields, m.options.seats);
 function editorAutoName(m) {
   if (editorIsEmpty(m)) return "";
