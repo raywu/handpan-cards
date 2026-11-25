@@ -15163,6 +15163,19 @@ function editorDropPlan(m, src, target) {
     return snap;
   }
   const ref = src.ref;
+  if (target.kind === "ding" && ref.ring === "bottom" && editorIsEmpty(m) && !editorDingOf(m)) {
+    const name = editorNameAt(m, ref);
+    return { step: (x) => editorStageEdit(x, (st) => {
+      const bad = editorStageSet(st, { ring: "ding" }, name);
+      if (bad) return bad;
+      st.bottom.splice(ref.i, 1);
+      if (st.angles) {
+        st.angles.splice(ref.i, 1);
+        editorStageTidyAngles(st);
+      }
+      editorStageClearPins(x, st);
+    }), say: t("editor.say.moved", { name }) };
+  }
   if (target.kind === "outside") {
     if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
     if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
