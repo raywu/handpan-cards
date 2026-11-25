@@ -15185,7 +15185,14 @@ function editorDropPlan(m, src, target) {
     const to = target.kind === "ding" ? { ring: "ding", i: 0 } : { ring: target.ring, i: target.i };
     return to.ring === ref.ring && to.i === ref.i ? snap : { trade: [ref, to] };
   }
-  if (target.kind !== "spot" || ref.ring === "ding") return snap;
+  if (target.kind !== "spot") return snap;
+  if (ref.ring === "ding") {
+    const name = editorDingOf(m);
+    return { step: (x) => {
+      const draft = editorClearDing(x);
+      return draft.ok ? editorPlace(draft.value, target.ring, name, target.angle) : draft;
+    }, say: t("editor.say.moved", { name }) };
+  }
   if (target.ring === ref.ring) {
     return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
       ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
@@ -15283,7 +15290,7 @@ function editorSelectTap(hit, m) {
 }
 function editorMoveSelected(hit, m) {
   const s = editorSession;
-  if (hit.kind === "spot" && (s.sel.ring === "ding" || (!m.options.profile && s.sel.ring === hit.ring && hit.angle === undefined))) {
+  if (hit.kind === "spot" && ((s.sel.ring === "ding" && m.options.profile) || (!m.options.profile && s.sel.ring === hit.ring && hit.angle === undefined))) {
     const name = editorNameAt(m, s.sel);
     s.error = "";
     s.say = s.plainSay = s.sel.ring === "ding" ? t("editor.say.ding_stays") : t("editor.say.same_zone", { name, zone: t("editor.zone." + hit.ring) });
