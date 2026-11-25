@@ -14682,7 +14682,7 @@ function editorRenderBody() {
   editorRenderLayout(m);
   editorEl("editor-undo").disabled = !editorCanUndo(s.history);
   editorEl("editor-redo").disabled = !editorCanRedo(s.history);
-  editorEl("editor-remove").disabled = !(s.sel && s.sel.ring !== "ding");
+  editorEl("editor-remove").disabled = !s.sel || (s.sel.ring === "ding" && m.options.profile && !editorIsEmpty(m));
   const reset = editorResetLabel(m, s.sel, s.zone);
   const resetBtn = editorEl("editor-reset");
   resetBtn.disabled = !reset.enabled;
@@ -15177,7 +15177,7 @@ function editorDropPlan(m, src, target) {
     }), say: t("editor.say.moved", { name }) };
   }
   if (target.kind === "outside") {
-    if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
+    if (ref.ring === "ding") return m.options.profile && !editorIsEmpty(m) ? { refuse: t("editor.say.ding_required") } : { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
     if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
     return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
   }
@@ -15207,7 +15207,7 @@ function editorNeoDropPlan(m, src, target) {
   }
   const ref = src.ref;
   if (target.kind === "outside") {
-    if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
+    if (ref.ring === "ding") return m.options.profile && !editorIsEmpty(m) ? { refuse: t("editor.say.ding_required") } : { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
     if (ref.ring === "rim" && editorNames(m, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
     return { step: (x) => editorRemoveNeotone(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
   }
@@ -15321,12 +15321,20 @@ function editorPanClick(e) {
   const pt = editorPanPoint(e);
   if (pt) { window.drawerExperiment?.clearReveal(); editorPanTap(pt, !!e.detail); }
 }
+function editorClearDing(m) {
+  if (editorIsEmpty(m)) return editorStageEdit(m, (stage) => { delete stage.ding; });
+  if (m.options.profile) return editorAreaRefusal("DING_REQUIRED", t("editor.say.ding_required"));
+  const stage = editorBlankStage("standard");
+  for (const ring of EDITOR_RINGS) stage[ring] = editorNames(m, ring);
+  if (m.options.angles?.bottom) stage.angles = m.options.angles.bottom.slice();
+  return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
+}
 function editorRemoveSelected() {
   const s = editorSession;
-  if (!s || !s.sel || s.sel.ring === "ding") return;
+  if (!s || !s.sel) return;
   const { ring, i } = s.sel;
   const name = editorNameAt(s.history.present, s.sel);
-  if (editorDo((m) => editorRemove(m, ring, i), t("editor.say.removed", { name }))) s.sel = null;
+  if (editorDo((m) => ring === "ding" ? editorClearDing(m) : editorRemove(m, ring, i), t("editor.say.removed", { name }))) s.sel = null;
   editorRender();
 }
 function editorResetTap() {
