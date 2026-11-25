@@ -13952,7 +13952,17 @@ function editorSetAngle(m, ring, i, angle, pin) {
   if (m.options.profile) return editorProfileConflict();
   if (!EDITOR_PINNABLE.includes(ring) || !editorInRing(m, ring, i)) return editorRefusal(ring + i);
   if (angle !== null && !Number.isFinite(angle)) return editorRefusal(angle);
-  if (editorIsEmpty(m)) return { ok: true, value: m };
+  if (editorIsEmpty(m)) {
+    if (ring !== "bottom") return { ok: true, value: m };
+    const next = editorStageEdit(m, st => {
+      st.angles ||= [];
+      st.angles[i] = angle === null ? null : stepOf(angle);
+      editorStageTidyAngles(st);
+    });
+    if (angle !== null && next.ok && editorIsEmpty(next.value) && !editorGhostSolve(next.value, true).ok)
+      return editorNoRoom(m, ring, i, angle);
+    return next;
+  }
   const here = editorSolve(m);
   if (!here.ok) return here;
   let base = m;
@@ -15599,6 +15609,8 @@ function editorDropPlan(m, src, target) {
     }, say: t("editor.say.moved", { name }) };
   }
   if (target.ring === ref.ring) {
+    if (ref.ring === "bottom" && editorIsEmpty(m) && target.angle !== undefined &&
+        editorStageOf(m).angles?.[ref.i] === stepOf(target.angle)) return snap;
     return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
       ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
   }
