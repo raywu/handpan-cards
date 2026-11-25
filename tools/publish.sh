@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copies the published allowlist into an empty output dir (default _site).
 # A copy, not a build step: every file is the committed bytes.
-# Experimental payload revision: editor-draft-pitch-order-20261125. Pages watches this publisher, not the companion page.
+# Experimental payload revision: editor-balanced-working-mock-20261125. Pages watches this publisher, not the companion page.
 set -eu
 cd "$(dirname "$0")/.."
 out="${1:-_site}"
@@ -21,4 +21,7 @@ if [ -n "${CF_PAGES_BRANCH:-}" ] && [ "$CF_PAGES_BRANCH" != "main" ]; then
 fi
 if [ "${CF_PAGES_BRANCH:-}" = "claude/rc-upgrade" ] && [ -f editor-pan-experiment.html ]; then
   cp editor-pan-experiment.html "$out/editor-pan-experiment.html"
+fi
+if [ "${CF_PAGES_BRANCH:-}" = "claude/rc-upgrade" ] && [ -f editor-balanced-mock.html ]; then
+  cp editor-balanced-mock.html "$out/editor-balanced-mock.html"
 fi
