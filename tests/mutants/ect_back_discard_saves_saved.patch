@@ -1,0 +1,15 @@
+# kills: Discard closes and leaves the saved scale unchanged
+# suite: node --test --test-name-pattern Discard.closes.and.leaves.the.saved.scale.unchanged tests/editor_e2e.test.js
+# fault: Discard on a saved scale writes the edit before closing.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14937,7 +14937,7 @@ function editorWire() {
+   }
+   editorWireSwipe();
+   editorEl("editor-dlg-keep").onclick = () => editorShowDialog(false);
+-  editorEl("editor-dlg-discard").onclick = () => closeScaleSheet();
++  editorEl("editor-dlg-discard").onclick = () => { if (editingBase) editorSave().then(closeScaleSheet); else closeScaleSheet(); };
+   editorEl("editor-dlg-save").onclick = () => {
+     const s = editorSession;
+     editorShowDialog(false);

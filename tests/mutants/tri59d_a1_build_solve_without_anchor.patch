@@ -1,0 +1,15 @@
+# kills: TRI59d A1: a v9 link draws turned and keeps main and mutant roles
+# suite: node --test --test-name-pattern ^TRI59d.A1..a.v9.link tests/app.test.js
+# why: The profile solve is not given the anchor, so a v9 link draws unturned.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11484,7 +11484,7 @@ function buildGenerated(text, options, guard) {
+     const clean = { id: profile.id, rev: profile.rev, map: profile.map.slice() };
+     const between = seed.value.options.anchor === "between";
+     const held = profile.unplaced && profile.unplaced.length;
+-    const placed = held ? null : HPE.layout.solve({ fields: seed.value.fields, options: between ? { profile: clean, anchor: "between" } : { profile: clean } }, {});
++    const placed = held ? null : HPE.layout.solve({ fields: seed.value.fields, options: { profile: clean } }, {});
+     if (placed && placed.ok) {
+       built.value.geom = placed.value.geom;
+       built.value.fields = placed.value.fields;

@@ -1,0 +1,13 @@
+# kills: U2f review: the landing ring for a tray note over an empty cyclops arc or bottom ring sits on that orbit with a note-sized radius, not on the pan centre
+# suite: node --test --test-name-pattern ^U2f.review tests/editor_e2e.test.js
+# fault: An empty cyclops or bottom ring has no orbit fallback, so the landing ring draws at the pan centre.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15741,5 +15741,5 @@ function editorOrbit(geom, ring) {
+ function editorOrbit(geom, ring) {
+-  return geom[ring] || (ring === "inner" ? 0.38 : 1.15);
++  return geom[ring];
+ }
+ function editorNoteReach(geom, ring) {
+   return ring === "bottom" ? geom.r_bnote || 0.1 : geom.r_note;

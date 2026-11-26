@@ -1,0 +1,15 @@
+# kills: read-only until tapped; Enter on the focused line also starts editing
+# suite: node --test --test-name-pattern ^read-only.until.tapped tests/editor_e2e.test.js
+# The note line loses spellcheck=false, so the browser red-underlines note names typed into it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13666,7 +13666,7 @@ function editorOpen(edit) {
+       editorNode("div", { class: "editor-type", role: "group", "aria-label": t("editor.pantype") },
+         button("editor-type-standard", "editor.standard"), button("editor-type-neotone", "editor.neotone"))),
+     editorNode("div", { class: "editor-line" },
+-      editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off", spellcheck: "false",
++      editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off",
+         "aria-label": t("editor.line.aria") })),
+     editorNode("div", { class: "editor-panbox" },
+       editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") })),

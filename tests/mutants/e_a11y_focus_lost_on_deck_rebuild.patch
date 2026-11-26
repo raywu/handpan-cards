@@ -4,12 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12602,7 +12602,7 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
-   if (persist && savedState) commitSaved({type:"prefer",collectionId:savedState.collectionId,selection:savedClone(selection)});
-   setOrder(); buildChips(); render(); syncRoute();
+@@ -12339,3 +12339,3 @@ function selectDeck(wanted, persist = true, trackSelection = true) {
    if(trackSelection)track("deck_select", selection.kind === "builtin" ? {deck_kind:"seeded",deck_id:selection.id} : {deck_kind:"custom"});
 -  if (rehome) document.querySelector("#decks .chip.on")?.focus();
 +
    if (pillFocused) stripAdd?.focus();
- }
- 

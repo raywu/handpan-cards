@@ -1958,8 +1958,9 @@ test("FPL: an override changes bottom slot 4 and nothing else", () => {
     const b = moved.value.fields[id];
     assert.equal(b[4], want[k], `U${k + 1} angle`);
     assert.deepStrictEqual(b.slice(0, 4), a.slice(0, 4));
-    assert.equal(b[5], a[5], `U${k + 1} keeps its label`);
   });
+  const labels = bnRank(want);
+  assert.deepEqual(ids.map((id) => moved.value.fields[id][5]), labels, "numbers follow the drawn position");
 });
 
 test("FPL: mirrorBottom reflects, seats permute, then angles override last", () => {
@@ -2128,6 +2129,22 @@ const soShow = (o) => {
 const soHome = (mirrorBottom) => soBottom(soSolve({ mirrorBottom })).map((n) => n.angle);
 const soNorm = (v) => ((v % 360) + 360) % 360;
 const soByAngle = (list) => list.map((n) => `${n.angle}=${n.label}`).sort().join(" ");
+/* BN: the bottom number of a note is its rank by distance from bottom centre
+ * (270), nearest first, right first on a tie (0.11 degrees tolerance). */
+const bnRank = (angles) => {
+  const gap = (a) => { const d = Math.abs(soNorm(a - 270)); return Math.min(d, 360 - d); };
+  const right = (a) => soNorm(a - 270) < 180;
+  const order = angles.map((a, i) => i).sort((x, y) => {
+    const dx = gap(angles[x]);
+    const dy = gap(angles[y]);
+    if (Math.abs(dx - dy) > 0.11) return dx - dy;
+    if (right(angles[x]) !== right(angles[y])) return right(angles[x]) ? -1 : 1;
+    return x - y;
+  });
+  const out = [];
+  order.forEach((i, k) => { out[i] = `U${k + 1}`; });
+  return out;
+};
 const soLcg = (seed) => {
   let s = seed;
   return () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
@@ -2162,56 +2179,18 @@ test("SO: every bottom pair swapped through angles labels the ring as the same s
   }
 });
 
-test("SO: a slide from the home layout that passes no other note keeps every bottom label", () => {
-  const home = soHome(false);
-  const labels = soBottom(soSolve({})).map((n) => n.label);
-  assert.equal(soShow({ angles: { bottom: [305, null, 5, null, 65, null] } }),
-    "C3@305=U1 Db3@240=U2 Eb3@5=U3 Bb3@180=U4 Db4@65=U5 Ab5@120=U6");
-  let accepted = 0;
-  for (let i = 0; i < 6; i += 1) {
-    for (const d of [-5, 5, -10, 10]) {
-      const entries = home.map(() => null);
-      entries[i] = soNorm(home[i] + d);
-      const r = soSolve({ angles: { bottom: entries } });
-      if (!r.ok) continue;
-      accepted += 1;
-      assert.deepEqual(soBottom(r).map((n) => n.label), labels, `note ${i} by ${d}`);
-    }
-  }
-  assert.ok(accepted > 10);
-});
-
-test("SO: a slide that crosses a note keeps the cyclic order: Eb3 to 90 reads Eb3 U5 and Db4 U3", () => {
+test("BN-L6: a slide that crosses a note renumbers by position, no swap back: Eb3 to 90 reads Eb3 U6, Bb3 U3 and Db4 U4", () => {
   assert.equal(soShow({ angles: { bottom: [null, null, 90, null, null, null] } }),
-    "C3@300=U1 Db3@240=U2 Eb3@90=U5 Bb3@180=U4 Db4@60=U3 Ab5@120=U6");
+    "C3@300=U1 Db3@240=U2 Eb3@90=U6 Bb3@180=U3 Db4@60=U4 Ab5@120=U5");
   assert.equal(soShow({ angles: { bottom: [null, null, null, 30, null, null] } }),
-    "C3@300=U1 Db3@240=U2 Eb3@0=U3 Bb3@30=U5 Db4@60=U6 Ab5@120=U4");
+    "C3@300=U1 Db3@240=U2 Eb3@0=U3 Bb3@30=U4 Db4@60=U5 Ab5@120=U6");
 });
 
-test("SO: the cyclic match wraps through 0 degrees: Eb3 at 355 keeps U3, and C3 at 20 with Eb3 at 0 reads C3 U3 and Eb3 U1", () => {
+test("SO: distance wraps through 0 degrees: Eb3 at 355 reads U3, and C3 at 20 with Eb3 at 0 reads C3 U4 and Eb3 U2", () => {
   assert.equal(soShow({ angles: { bottom: [null, null, 355, null, null, null] } }),
     "C3@300=U1 Db3@240=U2 Eb3@355=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
   assert.equal(soShow({ angles: { bottom: [20, null, null, null, null, null] } }),
-    "C3@20=U3 Db3@240=U2 Eb3@0=U1 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
-});
-
-test("SO: whole-ring turns of +30, +25 and -25 on Pygmy keep the home labels, and -30 puts the same seat numbers at the same angles, with MIRROR BOTTOM off and on", () => {
-  const minus30 = {
-    false: "C3@270=U2 Db3@210=U4 Eb3@330=U1 Bb3@150=U6 Db4@30=U3 Ab5@90=U5",
-    true: "C3@210=U4 Db3@270=U2 Eb3@150=U6 Bb3@330=U1 Db4@90=U5 Ab5@30=U3",
-  };
-  for (const mirrorBottom of [false, true]) {
-    const home = soHome(mirrorBottom);
-    const homeLabels = soBottom(soSolve({ mirrorBottom })).map((n) => n.label);
-    for (const d of [30, 25, -25]) {
-      const r = soBottom(soSolve({ mirrorBottom, angles: { bottom: home.map((a) => soNorm(a + d)) } }));
-      assert.deepEqual(r.map((n) => n.label), homeLabels, `turn ${d} mirrorBottom ${mirrorBottom}`);
-    }
-    const back = soSolve({ mirrorBottom, angles: { bottom: home.map((a) => soNorm(a - 30)) } });
-    assert.equal(soLine(back), minus30[mirrorBottom]);
-    const forward = soSolve({ mirrorBottom, angles: { bottom: home.map((a) => soNorm(a + 30)) } });
-    assert.equal(soByAngle(soBottom(back)), soByAngle(soBottom(forward)));
-  }
+    "C3@20=U4 Db3@240=U1 Eb3@0=U2 Bb3@180=U3 Db4@60=U5 Ab5@120=U6");
 });
 
 test("SO: under MIRROR BOTTOM the swap labels against the unmirrored home: Db3 at 120 reads U6 and Db4 at 300 reads U1", () => {
@@ -2230,11 +2209,9 @@ test("SO: rim seats and a bottom angles swap together label both rings by positi
   assert.notDeepEqual(plainRim(both), plainRim(soSolve({})));
 });
 
-test("SO: across every accepted single slide on Pygmy the bottom labels are a permutation in home cyclic order and depend only on the final angles", () => {
+test("SO: across every accepted single slide on Pygmy the bottom labels are the distance order of the final angles and depend only on them", () => {
   for (const mirrorBottom of [false, true]) {
-    const homeNotes = soBottom(soSolve({ mirrorBottom }));
-    const ringLabels = homeNotes.slice().sort((a, b) => a.angle - b.angle).map((n) => n.label);
-    const home = homeNotes.map((n) => n.angle);
+    const home = soBottom(soSolve({ mirrorBottom })).map((n) => n.angle);
     let accepted = 0;
     for (let i = 0; i < 6; i += 1) {
       for (let a = 0; a < 360; a += 5) {
@@ -2244,9 +2221,7 @@ test("SO: across every accepted single slide on Pygmy the bottom labels are a pe
         if (!r.ok) continue;
         accepted += 1;
         const notes = soBottom(r);
-        const around = notes.slice().sort((x, y) => x.angle - y.angle).map((n) => n.label);
-        const k = around.indexOf(ringLabels[0]);
-        assert.deepEqual(around.slice(k).concat(around.slice(0, k)), ringLabels, `note ${i} to ${a}`);
+        assert.deepEqual(notes.map((n) => n.label), bnRank(notes.map((n) => n.angle)), `note ${i} to ${a}`);
         const again = soBottom(soSolve({ mirrorBottom, angles: { bottom: entries.slice().reverse() } }));
         assert.equal(soByAngle(again), soByAngle(notes), `final angles only: note ${i} to ${a}`);
       }
@@ -2283,25 +2258,15 @@ test("SO: MIRROR BOTTOM over six explicit angles changes nothing: no note moves 
     "C3@300=U1 Db3@60=U5 Eb3@0=U3 Bb3@180=U4 Db4@240=U2 Ab5@120=U6");
 });
 
-test("MN: under angles, MIRROR BOTTOM moves only the null-entry notes, explicit notes stay, every number stays at its unmirrored angle", () => {
+test("MN: under angles, MIRROR BOTTOM moves only the null-entry notes, explicit notes stay, every number follows its drawn position", () => {
   const angles = { bottom: [270, null, null, null, null, 90] };
   const off = soBottom(soSolve({ angles }));
   const on = soBottom(soSolve({ mirrorBottom: true, angles }));
   assert.equal(on[0].angle, 270);
   assert.equal(on[5].angle, 90);
   assert.deepEqual(on.filter((n, i) => n.angle !== off[i].angle).map((n) => n.name), ["Db3", "Eb3", "Bb3", "Db4"]);
-  const plainAt = soByAngle(soBottom(soSolve({}))).split(" ");
-  const explicit = [270, 90];
-  for (const n of on.filter((x) => !explicit.includes(x.angle))) {
-    assert.ok(plainAt.includes(`${n.angle}=${n.label}`), `${n.name}@${n.angle}=${n.label} is not an unmirrored position number`);
-  }
-});
-
-test("SO: on a cost tie the bottom labels take the rotation that turns the notes furthest anticlockwise: Pygmy at 75 285 0 180 60 120 reads C3 U5 Db3 U2 Eb3 U1 Bb3 U4 Db4 U3 Ab5 U6, and mirrored at 75 285 180 0 120 60 reads C3 U5 Db3 U2 Eb3 U4 Bb3 U1 Db4 U6 Ab5 U3", () => {
-  assert.equal(soShow({ angles: { bottom: [75, 285, 0, 180, 60, 120] } }),
-    "C3@75=U5 Db3@285=U2 Eb3@0=U1 Bb3@180=U4 Db4@60=U3 Ab5@120=U6");
-  assert.equal(soShow({ mirrorBottom: true, angles: { bottom: [75, 285, 180, 0, 120, 60] } }),
-    "C3@75=U5 Db3@285=U2 Eb3@180=U4 Bb3@0=U1 Db4@120=U6 Ab5@60=U3");
+  assert.deepEqual(on.map((n) => n.label), bnRank(on.map((n) => n.angle)));
+  assert.deepEqual(off.map((n) => n.label), bnRank(off.map((n) => n.angle)));
 });
 
 test("SO: a swap from any accepted bottom layout trades only the two swapped labels, pinned at C3 140 and Bb3 105, with MIRROR BOTTOM off and on", () => {
@@ -2309,8 +2274,8 @@ test("SO: a swap from any accepted bottom layout trades only the two swapped lab
   const swapped = state.slice();
   swapped[0] = state[3];
   swapped[3] = state[0];
-  assert.equal(soShow({ angles: { bottom: state } }), "C3@140=U4 Db3@80=U5 Eb3@305=U2 Bb3@105=U6 Db4@65=U3 Ab5@340=U1");
-  assert.equal(soShow({ angles: { bottom: swapped } }), "C3@105=U6 Db3@80=U5 Eb3@305=U2 Bb3@140=U4 Db4@65=U3 Ab5@340=U1");
+  assert.equal(soShow({ angles: { bottom: state } }), "C3@140=U3 Db3@80=U6 Eb3@305=U1 Bb3@105=U5 Db4@65=U4 Ab5@340=U2");
+  assert.equal(soShow({ angles: { bottom: swapped } }), "C3@105=U5 Db3@80=U6 Eb3@305=U1 Bb3@140=U3 Db4@65=U4 Ab5@340=U2");
   for (const mirrorBottom of [false, true]) {
     const rand = soLcg(777);
     let checked = 0;
@@ -2338,13 +2303,6 @@ test("SO: a swap from any accepted bottom layout trades only the two swapped lab
   }
 });
 
-test("SO: a 5 degree nudge can rotate the numbering while the order around the ring is kept: Db3 240 to 235 relabels all six", () => {
-  assert.equal(soShow({ angles: { bottom: [300, 240, 0, 140, 285, 120] } }),
-    "C3@300=U3 Db3@240=U2 Eb3@0=U5 Bb3@140=U4 Db4@285=U1 Ab5@120=U6");
-  assert.equal(soShow({ angles: { bottom: [300, 235, 0, 140, 285, 120] } }),
-    "C3@300=U1 Db3@235=U4 Eb3@0=U3 Bb3@140=U6 Db4@285=U2 Ab5@120=U5");
-});
-
 /* MN3: MIRROR BOTTOM reflects every bottom note, hand-placed included (owner 2026-10-31). */
 const mn3Reflect = (entries) => plain(HPE.layout.reflectAngles({ bottom: entries })).bottom;
 const mn3Positions = (r) => soBottom(r).map((n) => `${n.angle}=${n.label}`).sort().join(" ");
@@ -2363,13 +2321,13 @@ test("MN3: reflectAngles reflects explicit entries across the vertical axis, kee
   }
 });
 
-test("MN3: Pygmy C3 slid 300 -> 285 shows U1; with MIRROR BOTTOM on C3 is at 255 and Db3 at 300, Db3 reads U1 and C3 U2", () => {
+test("BN-L7: Pygmy C3 slid 300 -> 285 shows U1; with MIRROR BOTTOM on C3 is drawn at 255 and reads U1, Db3 at 300 reads U2", () => {
   assert.equal(soLine(soSolve({ angles: { bottom: [285, null, null, null, null, null] } })),
     "C3@285=U1 Db3@240=U2 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
   const entries = mn3Reflect([285, null, null, null, null, null]);
   assert.deepEqual(entries, [255, null, null, null, null, null]);
   assert.equal(soLine(soSolve({ mirrorBottom: true, angles: { bottom: entries } })),
-    "C3@255=U2 Db3@300=U1 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5");
+    "C3@255=U1 Db3@300=U2 Eb3@180=U4 Bb3@0=U3 Db4@120=U6 Ab5@60=U5");
 });
 
 test("MN3: a reflected layout is the mirror image: every note at 180 minus its angle, in either frame, and reflecting back restores the identical solve", () => {
@@ -2387,12 +2345,6 @@ test("MN3: a reflected layout is the mirror image: every note at 180 minus its a
   }
 });
 
-test("MN3: a dev-only MN2 rule-S record [285,240] with MIRROR BOTTOM on reflects to [255,300] on the first toggle", () => {
-  assert.deepEqual(mn3Reflect([285, 240, null, null, null, null]), [255, 300, null, null, null, null]);
-  assert.equal(soLine(soSolve({ mirrorBottom: false, angles: { bottom: [255, 300, null, null, null, null] } })),
-    "C3@255=U2 Db3@300=U1 Eb3@0=U3 Bb3@180=U4 Db4@60=U5 Ab5@120=U6");
-});
-
 const MN3E = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
 const mn3Fixture = JSON.parse(fs.readFileSync(path.join(FIXTURES, "mirror_placed_v1.json"), "utf8"));
 const mn3Line = (r) => {
@@ -2401,18 +2353,20 @@ const mn3Line = (r) => {
 };
 const mn3Angles = (line) => line.replace(/=U\d+/g, "");
 
-test("MN3 release safety: records and v6 links with MIRROR BOTTOM and angles draw the same angles as origin/main and the same numbers as before MN3", () => {
+test("MN3 release safety: records and v6 links with MIRROR BOTTOM and angles draw the same angles as origin/main and numbers by drawn position", () => {
   assert.ok(mn3Fixture.cases.length >= 6);
   for (const c of mn3Fixture.cases) {
     const parsed = MN3E.core.parseSeed(c.record.s, {});
     assert.ok(parsed.ok, c.id);
-    const fromRecord = mn3Line(MN3E.layout.solve(parsed.value, c.record.o));
-    assert.equal(fromRecord, c.expected, `record ${c.id}`);
+    const recordSolved = MN3E.layout.solve(parsed.value, c.record.o);
+    const fromRecord = mn3Line(recordSolved);
+    assert.deepEqual(soBottom(recordSolved).map((n) => n.label), bnRank(soBottom(recordSolved).map((n) => n.angle)), `numbers by position ${c.id}`);
     assert.equal(mn3Angles(fromRecord), mn3Angles(c.mainExpected), `angles vs main ${c.id}`);
     const decoded = MN3E.share.decode(c.link);
     assert.ok(decoded.ok, `${c.id} ${decoded.code}`);
-    const fromLink = mn3Line(MN3E.layout.solve(decoded.value, {}));
-    assert.equal(fromLink, c.linkExpected, `link ${c.id}`);
+    const linkSolved = MN3E.layout.solve(decoded.value, {});
+    const fromLink = mn3Line(linkSolved);
+    assert.deepEqual(soBottom(linkSolved).map((n) => n.label), bnRank(soBottom(linkSolved).map((n) => n.angle)), `link numbers by position ${c.id}`);
     assert.equal(mn3Angles(fromLink), mn3Angles(c.mainLinkExpected), `link angles vs main ${c.id}`);
     assert.equal(MN3E.share.encode({ fields: parsed.value.fields, options: c.record.o }).value, c.link, `encode ${c.id}`);
   }
@@ -2767,4 +2721,529 @@ test("PL: solve with a profile ignores the caller's placement options, so none c
       assert.equal(JSON.stringify(PHPE.layout.solve(seed, options)), base, id + " " + JSON.stringify(options));
     }
   }
+});
+
+/* ---- Scale editor (TRI-59, lane E): pinned inner angles, per-ring reflect, snapTarget ---- */
+
+const SE_PYGMY = () => panFields(9, 2, 6);
+const innerIds = (fields) =>
+  Object.keys(fields).filter((id) => fields[id][3] === "inner").sort((a, b) => a - b);
+const innerAnglesOf = (fields) => innerIds(fields).map((id) => fields[id][4]);
+const seSolve = (options) => HPE.layout.solve(SE_PYGMY(), options);
+
+test("SE: readAngles takes {bottom?, inner?} and refuses any other key, wrong lengths and bad entries", () => {
+  const counts = { rim: 9, inner: 2, bottom: 6 };
+  const inner = HPE.layout.readAngles({ inner: [110, null] }, counts);
+  assert.equal(inner.ok, true);
+  assert.deepStrictEqual(plain(inner.value), { inner: [110, null] });
+  const both = HPE.layout.readAngles({ bottom: [0, null, null, null, null, null], inner: [null, 60] }, counts);
+  assert.deepStrictEqual(plain(both.value), { bottom: [0, null, null, null, null, null], inner: [null, 60] });
+  const onlyInner = HPE.layout.readAngles({ bottom: [null, null, null, null, null, null], inner: [60, null] }, counts);
+  assert.deepStrictEqual(plain(onlyInner.value), { inner: [60, null] }, "an all-null list reads as absent");
+  for (const absent of [{ inner: null }, { inner: [null, null] }, { bottom: null, inner: null }]) {
+    const res = HPE.layout.readAngles(absent, counts);
+    assert.equal(res.ok, true);
+    assert.equal(res.value, null);
+  }
+  const bad = [
+    { inner: [60] }, { inner: [60, null, null] }, { inner: [61, null] }, { inner: [-5, null] },
+    { inner: [360, null] }, { inner: ["60", null] }, { inner: "60" }, { inner: [1.5, null] },
+    { top: [60] }, { inner: [60, null], rim: [] },
+  ];
+  for (const value of bad) {
+    const res = HPE.layout.readAngles(value, counts);
+    assert.equal(res.ok, false, JSON.stringify(value));
+    assert.equal(res.code, "BAD_NOTE", JSON.stringify(value));
+  }
+  assert.equal(HPE.layout.readAngles({ inner: [] }, { rim: 5, inner: 0, bottom: 0 }).value, null);
+});
+
+test("SE: a pinned inner angle places that note there, leaves every other note and the geometry alone", () => {
+  const base = seSolve().value;
+  assert.deepStrictEqual(innerAnglesOf(base.fields), [128, 52]);
+  const moved = seSolve({ angles: { inner: [110, null] } });
+  assert.equal(moved.ok, true, moved.code);
+  assert.deepStrictEqual(innerAnglesOf(moved.value.fields), [110, 52]);
+  assert.deepStrictEqual(plain(moved.value.geom), plain(base.geom), "geometry is byte-identical");
+  for (const id of Object.keys(base.fields)) {
+    if (base.fields[id][3] === "inner") continue;
+    assert.deepStrictEqual(plain(moved.value.fields[id]), plain(base.fields[id]), `field ${id}`);
+  }
+  const nulls = seSolve({ angles: { inner: [null, null] } });
+  assert.deepStrictEqual(plain(nulls.value), plain(base), "an all-null inner list solves as the default");
+  const both = seSolve({ angles: { inner: [125, 50] } });
+  assert.deepStrictEqual(innerAnglesOf(both.value.fields), [125, 50]);
+  assert.deepStrictEqual(plain(both.value.geom), plain(base.geom));
+});
+
+test("SE: inner and bottom angles pin together, each ring on its own", () => {
+  const res = seSolve({ angles: { inner: [null, 60], bottom: [285, null, null, null, null, null] } });
+  assert.equal(res.ok, true, res.code);
+  assert.deepStrictEqual(innerAnglesOf(res.value.fields), [128, 60]);
+  assert.deepStrictEqual(bottomAnglesOf(res.value.fields), [285, 240, 0, 180, 60, 120]);
+});
+
+test("SE: an inner angle outside the top fan (past 180 degrees) is BAD_NOTE and is never clamped", () => {
+  for (const pair of [[110, null], [125, 50], [45, 125], [140, null]]) {
+    const res = seSolve({ angles: { inner: pair } });
+    assert.equal(res.ok, true, `${pair}: ${res.code}`);
+    assert.deepStrictEqual(innerAnglesOf(res.value.fields), [pair[0], pair[1] === null ? 52 : pair[1]], `${pair} is kept as given`);
+  }
+  for (const bad of [185, 190, 225, 270, 315, 355]) {
+    const res = seSolve({ angles: { inner: [bad, null] } });
+    assert.equal(res.ok, false, String(bad));
+    assert.equal(res.code, "BAD_NOTE", String(bad));
+  }
+});
+
+test("SE: a pinned inner angle near the fan ends is BAD_NOTE: its number would sit inside the ding (clearance below INNER_CLEARANCE), never clamped", () => {
+  for (const pair of [[180, 0], [0, 180], [5, 90], [175, 90], [180, null], [null, 0]]) {
+    const res = seSolve({ angles: { inner: pair } });
+    assert.equal(res.ok, false, String(pair));
+    assert.equal(res.code, "BAD_NOTE", String(pair));
+  }
+  for (const pin of [180, 0, 175]) {
+    const res = HPE.layout.solve(panFields(9, 1, 0), { angles: { inner: [pin] } });
+    assert.equal(res.code, "BAD_NOTE", `9/1/0 at ${pin}`);
+  }
+  assert.equal(HPE.layout.solve(panFields(9, 1, 0), { angles: { inner: [90] } }).ok, true, "the solved angle itself still passes");
+});
+
+test("SE: every accepted pinned inner angle keeps innerClearance at or above 0.01 (sweep over counts and 5-degree pins)", () => {
+  let accepted = 0;
+  let refused = 0;
+  for (const [rim, inner, bottom] of [[9, 1, 0], [9, 2, 6], [8, 1, 0], [7, 3, 4], [10, 2, 0], [6, 1, 0], [5, 4, 2]]) {
+    const home = HPE.layout.solve(panFields(rim, inner, bottom)).value;
+    assert.ok(HPE.layout.innerClearance(home.geom, innerAnglesOf(home.fields)) >= 0.01, `${rim}/${inner}/${bottom} home`);
+    for (let slot = 0; slot < inner; slot += 1) {
+      for (let angle = 0; angle <= 180; angle += 5) {
+        const list = new Array(inner).fill(null);
+        list[slot] = angle;
+        const res = HPE.layout.solve(panFields(rim, inner, bottom), { angles: { inner: list } });
+        if (!res.ok) {
+          assert.equal(res.code, "BAD_NOTE");
+          refused += 1;
+          continue;
+        }
+        accepted += 1;
+        const got = innerAnglesOf(res.value.fields);
+        const clearance = HPE.layout.innerClearance(res.value.geom, got);
+        assert.ok(clearance >= 0.01, `${rim}/${inner}/${bottom} slot ${slot} at ${angle}: clearance ${clearance}`);
+      }
+    }
+  }
+  assert.ok(accepted > 50 && refused > 20, `accepted ${accepted}, refused ${refused}`);
+});
+
+test("SE: innerClash names a rim note or a bottom note whose circle the pinned inner note would touch", () => {
+  const home = HPE.layout.solve(panFields(9, 1, 6)).value;
+  const clone = () => JSON.parse(JSON.stringify(home.fields));
+  const ofZone = (fields, zone) => Object.keys(fields).find((id) => fields[id][3] === zone);
+  const rimFields = clone();
+  const rimId = ofZone(rimFields, "rim");
+  rimFields[rimId][4] = 90;
+  const geom = JSON.parse(JSON.stringify(home.geom));
+  geom.rim = geom.inner + geom.r_note;
+  assert.equal(HPE.layout.innerClash(geom, rimFields, [90], 0), rimId, "a rim circle touching the pin");
+  geom.rim = geom.inner + 2 * geom.r_note + 0.05;
+  assert.equal(HPE.layout.innerClash(geom, rimFields, [90], 0), null, "clear of the rim circle");
+  const bottomFields = clone();
+  const bottomId = ofZone(bottomFields, "bottom");
+  bottomFields[bottomId][4] = 90;
+  const bgeom = JSON.parse(JSON.stringify(home.geom));
+  bgeom.bottom = bgeom.inner + bgeom.r_note;
+  assert.equal(HPE.layout.innerClash(bgeom, bottomFields, [90], 0), bottomId, "a bottom circle touching the pin");
+  assert.equal(HPE.layout.innerClash(home.geom, bottomFields, [90], 0), null, "the real bottom ring is far away");
+});
+
+test("SE: inner notes keep the touching floor: 55 degrees apart passes, 50 is BAD_NOTE", () => {
+  const gap = (a, b) => seSolve({ angles: { inner: [a, b] } });
+  assert.equal(gap(105, 50).ok, true, "55 apart");
+  assert.equal(gap(110, 50).ok, true, "60 apart");
+  assert.equal(gap(100, 50).code, "BAD_NOTE", "50 apart");
+  assert.equal(gap(90, 50).code, "BAD_NOTE", "40 apart");
+  assert.equal(gap(50, 50).code, "BAD_NOTE", "on top of each other");
+  assert.equal(seSolve({ angles: { inner: [105, null] } }).code, "BAD_NOTE", "53 from the other note's solved angle");
+  assert.equal(seSolve({ angles: { inner: [110, null] } }).ok, true, "58 from the other note's solved angle");
+});
+
+test("SE: an inner seats list beside pinned inner angles is BAD_NOTE; rim and bottom seats are still legal", () => {
+  const withInner = seSolve({ angles: { inner: [110, null] }, seats: { inner: [1, 0] } });
+  assert.equal(withInner.code, "BAD_NOTE");
+  assert.equal(seSolve({ angles: { inner: [110, null] }, seats: { rim: [8, 7, 6, 5, 4, 3, 2, 1, 0] } }).ok, true);
+  assert.equal(seSolve({ angles: { inner: [110, null] }, seats: { bottom: [5, 4, 3, 2, 1, 0] } }).ok, true);
+  assert.equal(seSolve({ angles: { bottom: [285, null, null, null, null, null] }, seats: { inner: [1, 0] } }).ok, true,
+    "inner seats are fine beside bottom angles");
+  assert.equal(seSolve({ angles: { bottom: [285, null, null, null, null, null] }, seats: { bottom: [5, 4, 3, 2, 1, 0] } }).code,
+    "BAD_NOTE", "bottom seats beside bottom angles are still refused");
+});
+
+test("SE: the number follows the seat: swapping the inner notes across the fan swaps their labels (Rule N)", () => {
+  const res = seSolve({ angles: { inner: [45, 125] } });
+  assert.equal(res.ok, true, res.code);
+  const f = res.value.fields;
+  assert.equal(f[10][4], 45);
+  assert.equal(f[11][4], 125);
+  assert.equal(f[10][5], "11", "the note at the old 52 seat reads 11");
+  assert.equal(f[11][5], "10", "the note at the old 128 seat reads 10");
+  const nudged = seSolve({ angles: { inner: [130, null] } }).value.fields;
+  assert.equal(nudged[10][5], "10");
+  assert.equal(nudged[11][5], "11");
+});
+
+test("SE: MIRROR TOP leaves a null inner entry on the mirrored solved angle and a pinned one where it is pinned", () => {
+  const mirrored = seSolve({ mirror: true, angles: { inner: [null, 110] } });
+  assert.equal(mirrored.ok, true, mirrored.code);
+  assert.equal(innerAnglesOf(mirrored.value.fields)[1], 110);
+  const solved = innerAnglesOf(seSolve({ mirror: true }).value.fields);
+  assert.deepStrictEqual(solved, [52, 128], "MIRROR TOP swaps the two solved inner angles");
+  assert.equal(innerAnglesOf(mirrored.value.fields)[0], solved[0]);
+});
+
+const seReflect = (angles, ring) => plain(HPE.layout.reflectAngles(angles, ring));
+
+test("SE: reflectAngles reflects the ring it is asked for and keeps the other ring as stored", () => {
+  const both = { bottom: [285, null], inner: [110, null, 20] };
+  assert.deepStrictEqual(seReflect(both, "inner"), { bottom: [285, null], inner: [70, null, 160] });
+  assert.deepStrictEqual(seReflect(both, "bottom"), { bottom: [255, null], inner: [110, null, 20] });
+  assert.deepStrictEqual(seReflect(both), { bottom: [255, null], inner: [110, null, 20] }, "bottom is the default ring");
+  assert.deepStrictEqual(seReflect({ bottom: [285, null] }), { bottom: [255, null] }, "a bottom-only input is unchanged from before");
+  assert.deepStrictEqual(seReflect({ inner: [110, null] }, "inner"), { inner: [70, null] });
+  assert.deepStrictEqual(seReflect({ inner: [110, null] }, "bottom"), { inner: [110, null] }, "no list for the ring: the rest is kept");
+  assert.equal(HPE.layout.reflectAngles(null, "inner"), null);
+  assert.equal(HPE.layout.reflectAngles({}, "inner"), null);
+  assert.deepStrictEqual(seReflect(seReflect(both, "inner"), "inner"), both, "its own inverse");
+});
+
+test("SE: a reflected inner pin lands at 180 minus the pinned angle", () => {
+  const entries = plain(HPE.layout.reflectAngles({ inner: [110, null] }, "inner"));
+  assert.deepStrictEqual(entries, { inner: [70, null] });
+  const on = seSolve({ mirror: true, angles: entries }).value.fields;
+  assert.equal(on[10][4], 70);
+});
+
+/* ---- snapTarget: the pure hit-test the editor's drag uses ---------------- */
+
+const dot = (orb, angle) => [orb * Math.cos(angle * DEG), orb * Math.sin(angle * DEG)];
+const seScene = () => {
+  const { geom, fields } = seSolve().value;
+  const ids = (zone) => Object.keys(fields).filter((id) => fields[id][3] === zone).sort((a, b) => a - b);
+  const ringOf = (zone) => ids(zone).map((id) => ({ id, angle: fields[id][4] }));
+  return {
+    geom,
+    occupancy: { ding: "0", top: ringOf("rim"), inner: ringOf("inner"), bottom: ringOf("bottom") },
+  };
+};
+const snap = (point, extra) => {
+  const { geom, occupancy } = seScene();
+  return plain(HPE.layout.snapTarget(geom, point, Object.assign({ panKind: "acoustic", occupancy, allowInnerAngle: false }, extra)));
+};
+
+test("SE snapTarget: the ding, a drawn circle and the empty bands each name their zone", () => {
+  const { geom } = seScene();
+  assert.deepStrictEqual(snap([0, -geom.ding_dy]), { zone: "ding", seat: 0, occupiedBy: "0" });
+  assert.deepStrictEqual(snap([0.05, -geom.ding_dy + 0.05]), { zone: "ding", seat: 0, occupiedBy: "0" });
+  assert.deepStrictEqual(snap(dot(geom.rim, 270)), { zone: "top", seat: 0, occupiedBy: "1" });
+  const rim7 = snap(dot(geom.rim, 33));
+  assert.equal(rim7.zone, "top");
+  assert.equal(rim7.occupiedBy, "7", "inside the drawn circle of the note at 30");
+  assert.deepStrictEqual(snap(dot(geom.inner, 128)), { zone: "inner", seat: 0, occupiedBy: "10" });
+  assert.deepStrictEqual(snap(dot(geom.bottom, 240)), { zone: "bottom", seat: 1, angle: 240, occupiedBy: "102" });
+});
+
+test("SE snapTarget: between two rim notes the target is the nearest seat and names who sits there", () => {
+  const { geom } = seScene();
+  const t = snap(dot(geom.rim, 250));
+  assert.equal(t.zone, "top");
+  assert.equal(t.occupiedBy, "1", "250 is 20 from both 230 and 270: the lower seat wins a tie");
+  const near = snap(dot(geom.rim, 256));
+  assert.deepStrictEqual(near, { zone: "top", seat: 0, occupiedBy: "1" });
+  assert.equal(near.angle, undefined, "the top ring takes seats, never an angle");
+});
+
+test("SE snapTarget: an empty inner spot takes the nearest seat, or a snapped angle when the angle is allowed", () => {
+  const { geom } = seScene();
+  const free = dot(geom.inner, 85);
+  assert.deepStrictEqual(snap(free), { zone: "inner", seat: 1, occupiedBy: "11" });
+  assert.deepStrictEqual(snap(free, { allowInnerAngle: true }), { zone: "inner", seat: 1, angle: 85, occupiedBy: "11" });
+  assert.equal(snap(dot(geom.inner, 86.4), { allowInnerAngle: true }).angle, 85, "snaps to 5 degrees");
+  assert.equal(snap(dot(geom.inner, 87.6), { allowInnerAngle: true }).angle, 90);
+  assert.equal(snap(dot(geom.inner, 2), { allowInnerAngle: true }).angle, 0);
+  const onNote = snap(dot(geom.inner, 128));
+  assert.deepStrictEqual(onNote, { zone: "inner", seat: 0, occupiedBy: "10" }, "a drawn inner circle carries no angle unless angles are allowed");
+  assert.equal(snap(dot(geom.inner, 128), { allowInnerAngle: true }).angle, 128);
+  const dragged = { ding: "0", top: [], inner: [{ id: "11", angle: 52 }], bottom: [] };
+  assert.equal(snap(dot(geom.inner, 110), { allowInnerAngle: true, occupancy: dragged }).occupiedBy, undefined, "58 from the only other note is clear");
+  assert.equal(snap(dot(geom.inner, 100), { allowInnerAngle: true, occupancy: dragged }).occupiedBy, "11", "48 from it is under the 55 floor");
+});
+
+test("SE snapTarget: the bottom band takes a snapped angle, names a note under the floor, and ends past the ring", () => {
+  const { geom } = seScene();
+  assert.deepStrictEqual(snap(dot(geom.bottom, 202)), { zone: "bottom", seat: 3, angle: 200 });
+  assert.equal(snap(dot(geom.bottom, 197.4)).angle, 195);
+  assert.equal(snap(dot(geom.bottom, 357.6)).angle, 0, "wraps to 0, never 360");
+  assert.deepStrictEqual(snap(dot(geom.bottom, 190)), { zone: "bottom", seat: 3, angle: 190, occupiedBy: "104" });
+  assert.equal(snap(dot(geom.bottom, 200)).occupiedBy, undefined, "20 degrees clear of 180 is above the 15 floor");
+  assert.equal(snap(dot(1.02, 200)).zone, "bottom");
+  assert.equal(snap(dot(1.8, 200)), null, "past the bottom band is off the pan");
+  assert.equal(snap([3, 3]), null);
+});
+
+test("SE snapTarget: inside the shell the radius picks inner over top at the midpoint of the two orbits", () => {
+  const { geom } = seScene();
+  const mid = (geom.inner + geom.rim) / 2;
+  assert.equal(snap(dot(mid - 0.03, 100)).zone, "inner");
+  assert.equal(snap(dot(mid + 0.03, 100)).zone, "top");
+  assert.equal(snap(dot(mid - 0.03, 270)).zone, "top", "the lower half has no inner fan");
+});
+
+const NEO_OCC = { ding: null, main: ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9"], mutant: [null, "b1", null, null, null, null, null, null, null] };
+const neo = (point) => plain(HPE.layout.snapTarget(seScene().geom, point, { panKind: "profile", occupancy: NEO_OCC, allowInnerAngle: false }));
+
+test("SE snapTarget: Neotone maps a point to the nearest main slot, the lens toward the centre, the ding, or off the pan", () => {
+  const P = HPE.layout.PROFILE;
+  assert.deepStrictEqual(neo(dot(P.main.orbit, P.angles[0])), { zone: "main", seat: 0, occupiedBy: "r1" });
+  assert.deepStrictEqual(neo(dot(P.main.orbit, P.angles[5] + 8)), { zone: "main", seat: 5, occupiedBy: "r6" });
+  assert.deepStrictEqual(neo(dot(0.536, P.angles[1])), { zone: "mutant", seat: 1, occupiedBy: "b1" });
+  assert.deepStrictEqual(neo(dot(0.536, P.angles[0])), { zone: "mutant", seat: 0 });
+  assert.deepStrictEqual(neo([0, 0]), { zone: "ding", seat: 0 });
+  assert.equal(neo(dot(0.9, 150)).zone, "main");
+  assert.equal(neo(dot(1.2, 150)), null);
+  assert.equal(neo([2, -2]), null);
+});
+
+/* ---- Neotone anchor (TRI-59 PL-b lane E): geom.turn, profileAngles ---------- */
+
+const NA_TURN = 180 / PAIRED.tonefields;
+const naNorm = (a) => ((a % 360) + 360) % 360;
+const naSeed = (str, anchor, map) => {
+  const seed = plSeed(str, map || plPropose(str));
+  const copy = plain(seed);
+  if (anchor !== undefined) copy.options.anchor = anchor;
+  return copy;
+};
+const naMutantSeeds = Object.entries(PL_NO_UNPLACED).filter(([, str]) => plPropose(str).slice(9).some(Boolean));
+
+test("NA: the Neotone profile ids readProfile accepts are exactly paired, and its angles are congruent mod 360/n with none in the half-step coset", () => {
+  const n = PAIRED.tonefields;
+  const step = 360 / n;
+  assert.equal(PHPE.layout.PROFILE.id, "paired");
+  const unknown = PHPE.core.parseSeed(PL_SEEDS.kurd, { profile: { id: "second", rev: 2, map: plPropose(PL_SEEDS.kurd) } });
+  assert.equal(unknown.code, "PROFILE_UNKNOWN");
+  const residues = PAIRED.angles.map((a) => ((a % step) + step) % step);
+  residues.forEach((r) => assert.ok(Math.abs(r - residues[0]) < 1e-9, "all congruent mod " + step));
+  PAIRED.angles.forEach((a) => {
+    const half = ((a % step) + step) % step;
+    assert.ok(Math.abs(half - step / 2) > 1e-9, "none in the half-step coset");
+  });
+  assert.equal(NA_TURN, 20);
+});
+
+test("NA: profileAngles(0) is the frozen angles and profileAngles(20) is each plus 20 mod 360", () => {
+  assert.deepEqual(plain(PHPE.layout.profileAngles(0)), PAIRED.angles);
+  assert.deepEqual(plain(PHPE.layout.profileAngles()), PAIRED.angles);
+  assert.deepEqual(plain(PHPE.layout.profileAngles(20)), PAIRED.angles.map((a) => naNorm(a + 20)));
+  assert.deepEqual(plain(PHPE.layout.PROFILE.angles), [270, 230, 310, 190, 350, 150, 30, 110, 70], "PROFILE is untouched");
+});
+
+test("NA: with a mutant note and between, every place angle is the fixture angle plus 20 and geom.turn is 20", () => {
+  assert.ok(naMutantSeeds.length >= 1);
+  for (const [id, str] of naMutantSeeds) {
+    const seed = naSeed(str, "between");
+    const r = PHPE.layout.solve(seed);
+    assert.equal(r.ok, true, id);
+    assert.equal(r.value.geom.turn, 20, id);
+    const map = seed.options.profile.map;
+    const idOf = {};
+    for (const fid of plNonDing(seed.fields)) idOf[ZL[seed.fields[fid][3]] + seed.fields[fid][2]] = fid;
+    map.forEach((key, k) => {
+      if (key === null) return;
+      const entry = plain(r.value.geom.place)[idOf[key]];
+      assert.equal(entry[0], naNorm(PAIRED.angles[k % 9] + 20), `${id} slot ${k}`);
+      assert.equal(entry[1], PAIRED.main.orbit, id);
+      assert.equal(entry[2], PAIRED.main.r, id);
+    });
+  }
+});
+
+test("NA: with one or no anchor geom.turn is absent and the output equals the unanchored output", () => {
+  for (const [id, str] of Object.entries(PL_NO_UNPLACED)) {
+    const bare = PHPE.layout.solve(naSeed(str));
+    assert.equal(bare.ok, true, id);
+    assert.equal("turn" in bare.value.geom, false, id);
+    const one = PHPE.layout.solve(naSeed(str, "one"));
+    assert.equal("turn" in one.value.geom, false, id);
+    assert.equal(JSON.stringify(one), JSON.stringify(bare), id);
+  }
+  for (const [id, str] of naMutantSeeds) {
+    const turned = PHPE.layout.solve(naSeed(str, "between")).value;
+    const bare = PHPE.layout.solve(naSeed(str)).value;
+    assert.equal(JSON.stringify(Object.keys(turned.geom).filter((k) => k !== "turn")), JSON.stringify(Object.keys(bare.geom)), id);
+    for (const key of Object.keys(bare.geom)) {
+      if (key !== "place") assert.deepEqual(plain(turned.geom[key]), plain(bare.geom[key]), id + " " + key);
+    }
+    for (const fid of Object.keys(bare.fields)) {
+      assert.deepEqual(plain(turned.fields[fid]).slice(5), plain(bare.fields[fid]).slice(5), id + " labels");
+    }
+  }
+});
+
+test("NA: turning changes neither labels, radii, orbits, ext nor the print extent", () => {
+  const P = loadEngine(["core", "layout", "voicing", "pdfdeck", "pdfcards"]);
+  P.core.PROFILE_ENABLED = true;
+  for (const [id, str] of naMutantSeeds) {
+    const a = P.layout.solve(naSeed(str)).value;
+    const b = P.layout.solve(naSeed(str, "between")).value;
+    assert.equal(b.geom.ext, a.geom.ext, id);
+    for (const fid of Object.keys(a.geom.place)) {
+      assert.deepEqual(plain(b.geom.place[fid]).slice(1), plain(a.geom.place[fid]).slice(1), id);
+      assert.equal(b.fields[fid][5], a.fields[fid][5], id);
+    }
+    assert.equal(P.pdfcards.profileExtent(b.geom), P.pdfcards.profileExtent(a.geom), id);
+    assert.equal(P.pdfcards.profileRadius(b.geom), 61.8, id);
+  }
+});
+
+test("NA: zone labels and label numbers stay Main and Mutant numbering on a turned card", () => {
+  const [, str] = naMutantSeeds[0];
+  const seed = naSeed(str, "between");
+  const turned = PHPE.layout.solve(seed).value;
+  const bare = PHPE.layout.solve(naSeed(str)).value;
+  for (const fid of plNonDing(seed.fields)) assert.equal(turned.fields[fid][5], bare.fields[fid][5]);
+});
+
+test("NA: a permuted profile.map with between has its unturned angles plus 20", () => {
+  const str = PL_NO_UNPLACED.pygmy;
+  const map = plPropose(str);
+  const rotated = map.slice(0, 9).slice(3).concat(map.slice(0, 9).slice(0, 3)).concat(map.slice(9));
+  const seed = naSeed(str, "between", rotated);
+  const flat = naSeed(str, undefined, rotated);
+  const turned = PHPE.layout.solve(seed).value.geom.place;
+  const plainPlace = PHPE.layout.solve(flat).value.geom.place;
+  for (const fid of Object.keys(plainPlace)) {
+    assert.equal(turned[fid][0], naNorm(plainPlace[fid][0] + 20), fid);
+  }
+});
+
+test("NA: with no mutant note and k = 4..9 rim notes the place angles are the Standard between seat angles and geom.turn is absent", () => {
+  const rimNames = ["(D3)", "A3", "Bb3", "C4", "D4", "E4", "F4", "G4", "A4", "C5"];
+  for (let k = 4; k <= 9; k += 1) {
+    const str = rimNames.slice(0, k + 1).join(" ");
+    const seed = naSeed(str, "between");
+    const r = PHPE.layout.solve(seed);
+    assert.equal(r.ok, true, "k=" + k);
+    assert.equal("turn" in r.value.geom, false, "k=" + k);
+    const std = PHPE.layout.solve({ fields: seed.fields, options: {} }, { anchor: "between" }).value;
+    const one = PHPE.layout.solve({ fields: seed.fields, options: {} }, {}).value;
+    const rims = plNonDing(seed.fields).filter((fid) => seed.fields[fid][3] === "rim")
+      .sort((a, b) => seed.fields[a][2] - seed.fields[b][2]);
+    rims.forEach((fid, i) => {
+      assert.equal(r.value.geom.place[fid][0], std.fields[fid][4], `k=${k} rim ${i}`);
+    });
+    if (k % 2 === 1) assert.notDeepEqual(rims.map((f) => std.fields[f][4]), rims.map((f) => one.fields[f][4]), `k=${k} anchors differ`);
+    const without = PHPE.layout.solve(naSeed(str)).value;
+    assert.deepEqual(plain(without.geom.place[rims[0]]).slice(1), plain(r.value.geom.place[rims[0]]).slice(1));
+  }
+});
+
+test("NA: snapTarget on a turned profile finds the slot nearest the turned angle", () => {
+  const turned = PHPE.layout.profileAngles(20);
+  const at = (angle, orbit) => [orbit * Math.cos(angle * DEG), orbit * Math.sin(angle * DEG)];
+  const pick = (pt, turn) => plain(HPE.layout.snapTarget(turn === undefined ? seScene().geom : Object.assign({}, seScene().geom, { turn }), pt,
+    { panKind: "profile", occupancy: NEO_OCC, allowInnerAngle: false }));
+  turned.forEach((angle, slot) => {
+    assert.equal(pick(at(angle, PAIRED.main.orbit), 20).seat, slot, "turned slot " + slot);
+    assert.equal(pick(at(angle + 4, 0.536), 20).seat, slot, "turned lens " + slot);
+  });
+  assert.equal(pick(at(PAIRED.angles[0], PAIRED.main.orbit)).seat, 0, "no turn keeps the fixture angle");
+  assert.equal(pick(at(PAIRED.angles[0] - 5, PAIRED.main.orbit)).seat, 0);
+  assert.equal(pick(at(PAIRED.angles[0] - 5, PAIRED.main.orbit), 20).seat, 1, "a turned pan reads that point as another slot");
+});
+
+/* ---- BN (TRI-59): bottom numbers follow the drawn position ------------------ */
+
+const BN_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const bnSeed = (n) => {
+  const bottoms = Array.from({ length: n }, (_, k) => `[${BN_NAMES[k % 12]}${Math.floor(k / 12)}]`).join(" ");
+  const parsed = HPE.core.parseSeed(`${bottoms} (D4) E4 F4 G4 A4 B4 C5 D5`, {});
+  assert.ok(parsed.ok, `n=${n} ${parsed.ok ? "" : parsed.code}`);
+  return parsed.value;
+};
+const bnBottom = (r) => {
+  assert.ok(r.ok, r.ok ? "" : r.code);
+  const f = r.value.fields;
+  return Object.keys(f).filter((id) => f[id][3] === "bottom").sort((a, b) => a - b).map((id) => ({ angle: f[id][4], label: f[id][5] }));
+};
+
+test("BN-L1: untouched rings of 1 to 116 notes read U1, U2, ... by index, and mirrored rings carry the mirror-off number at each drawn angle, both anchors", () => {
+  const near = (a, b) => { const d = Math.abs(soNorm(a - b)); return Math.min(d, 360 - d); };
+  for (let n = 1; n <= 116; n += 1) {
+    const seed = bnSeed(n);
+    for (const anchor of ["one", "between"]) {
+      const off = bnBottom(HPE.layout.solve(seed, { anchor, mirrorBottom: false }));
+      assert.deepEqual(off.map((x) => x.label), off.map((x, k) => `U${k + 1}`), `n=${n} ${anchor} index order`);
+      const on = bnBottom(HPE.layout.solve(seed, { anchor, mirrorBottom: true }));
+      for (const note of on) {
+        const twin = off.find((o) => near(o.angle, note.angle) <= 0.1 + 1e-9);
+        assert.ok(twin, `n=${n} ${anchor} an angle ${note.angle}`);
+        assert.equal(note.label, twin.label, `n=${n} ${anchor} mirrored at ${note.angle}`);
+      }
+    }
+  }
+});
+
+test("BN-L3: a bottom note drawn at 270 reads U1 and one drawn at 90 reads the last number", () => {
+  const notes = soBottom(soSolve({ angles: { bottom: [270, null, null, null, null, 90] } }));
+  assert.equal(notes[0].label, "U1");
+  assert.equal(notes[5].label, "U6");
+});
+
+test("BN-L4: two notes the same distance from bottom centre: the right one (290) reads the lower number", () => {
+  const notes = soBottom(soSolve({ angles: { bottom: [290, 250, null, null, null, null] } }));
+  assert.equal(notes[0].angle, 290);
+  assert.equal(notes[0].label, "U1");
+  assert.equal(notes[1].angle, 250);
+  assert.equal(notes[1].label, "U2");
+});
+
+test("BN-L5: a lone bottom note reads U1 at every accepted angle", () => {
+  let accepted = 0;
+  for (let a = 0; a < 360; a += 5) {
+    const r = HPE.layout.solve(mn3Seed(1), { angles: { bottom: [a] } });
+    if (!r.ok) continue;
+    accepted += 1;
+    assert.equal(soBottom(r)[0].label, "U1", `at ${a}`);
+  }
+  assert.ok(accepted > 20);
+});
+
+test("BN-L8: saved records and v6 links with bottom angles keep their angles and read by distance order", () => {
+  for (const c of mn3Fixture.cases) {
+    const parsed = MN3E.core.parseSeed(c.record.s, {});
+    const fromRecord = soBottom(MN3E.layout.solve(parsed.value, c.record.o));
+    const decoded = MN3E.share.decode(c.link);
+    assert.ok(decoded.ok, c.id);
+    const fromLink = soBottom(MN3E.layout.solve(decoded.value, {}));
+    assert.deepEqual(fromLink.map((n) => n.angle), fromRecord.map((n) => n.angle), c.id);
+    assert.deepEqual(fromLink.map((n) => n.angle), c.mainExpected.split(" ").map((x) => Number(x.split("@")[1].split("=")[0])), `angles as before ${c.id}`);
+    assert.deepEqual(fromLink.map((n) => n.label), bnRank(fromLink.map((n) => n.angle)), c.id);
+  }
+});
+
+test("BN-L9: a Neotone pan solves as on the RC: the bottom holds mutant notes named M1..M6, never U numbers", () => {
+  const str = PL_NO_UNPLACED.pygmy;
+  const res = PHPE.layout.solve(plSeed(str, plPropose(str)));
+  assert.ok(res.ok);
+  const f = res.value.fields;
+  const bottom = Object.keys(f).filter((id) => f[id][3] === "bottom").map((id) => `${f[id][0]}${f[id][1]}=${f[id][5]}`);
+  assert.deepEqual(bottom, ["C3=M1", "Db3=M2", "Eb3=M3", "Bb3=M4", "Db4=M5", "Ab5=M6"]);
+});
+
+test("BN-L10: the cyclops ring keeps its cyclic match: F4@10 = 6, G4@60 = 8, Ab4@105 = 7, C5@165 = 5", () => {
+  const seed = HPE.core.parseSeed("(F3) G3 Ab3 C4 Eb4 | F4 G4 Ab4 C5", {}).value;
+  const r = HPE.layout.solve(seed, { angles: { inner: [10, 60, 105, 165] } });
+  assert.ok(r.ok, r.ok ? "" : r.code);
+  const f = r.value.fields;
+  const inner = Object.keys(f).filter((id) => f[id][3] === "inner").map((id) => `${f[id][0]}${f[id][1]}@${f[id][4]}=${f[id][5]}`);
+  assert.deepEqual(inner.sort(), ["Ab4@105=7", "C5@165=5", "F4@10=6", "G4@60=8"].sort());
 });

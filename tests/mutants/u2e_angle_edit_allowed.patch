@@ -1,0 +1,15 @@
+# kills: U2e-6: seat and angle edits on Neotone keep the engine's PROFILE_CONFLICT copy; Reset is disabled; no pin is made
+# suite: node --test --test-name-pattern ^U2e.6:. tests/editor_shell.test.js
+# fault: An angle edit on Neotone is not refused.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13130,8 +13130,7 @@
+ const editorNoRoom = (m, ring, i, angle) => editorAreaRefusal("NO_ROOM", t("editor.say.no_room", { name: editorNames(m, ring)[i], angle: stepOf(angle) }));
+ const editorProfileConflict = () => ({ ok: false, code: "PROFILE_CONFLICT", reason: HPE.core.REASONS.PROFILE_CONFLICT.reason });
+ function editorSetAngle(m, ring, i, angle, pin) {
+-  if (m.options.profile) return editorProfileConflict();
+   if (!EDITOR_PINNABLE.includes(ring) || !editorInRing(m, ring, i)) return editorRefusal(ring + i);
+   if (angle !== null && !Number.isFinite(angle)) return editorRefusal(angle);
+   if (editorIsEmpty(m)) return { ok: true, value: m };
+   const here = editorSolve(m);

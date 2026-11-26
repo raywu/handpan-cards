@@ -1,0 +1,15 @@
+# kills: U2c-16 (ENGINE-SPEC, D10): a bottom copy of a top note is legal, so replace, ding replace and a cross-zone swap all succeed on it; a same-shell repeat is still refused by the engine
+# suite: node --test --test-name-pattern ^U2c-16. tests/editor_shell.test.js
+# fault: editorRebuild refuses any name that appears in two shells, so a legal bottom copy of a top note blocks every replace and swap.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15267,6 +15267,8 @@ function editorEntries(m) {
+   return out;
+ }
+ function editorRebuild(m, entries) {
++  const all = [entries.ding, ...EDITOR_RINGS.flatMap((ring) => entries[ring].map((e) => e.name))];
++  if (new Set(all).size !== all.length) return editorRefusal(all.find((n, k) => all.indexOf(n) !== k));
+   const parts = Object.fromEntries(EDITOR_RINGS.map((ring) => [ring, entries[ring].map((e) => e.name)]));
+   const loaded = editorLoad(editorText(m, parts, entries.ding), { ...m.options, seats: null, angles: null });
+   if (!loaded.ok) return loaded;

@@ -1,0 +1,15 @@
+# kills: SE snapTarget: the bottom band takes a snapped angle, names a note under the floor, and ends past the ring
+# suite: node --test --test-name-pattern ^SE.snapTarget..the.bottom.band.takes.a.snapped.angle..names.a.note.under.the.floor..and.ends.past.the.ring$ tests/layout.test.js
+# A bottom or inner angle snap never reports the note it would crowd.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -1059,7 +1059,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     var floor = (Math.floor(touch / ANGLE_STEP + 1e-9) + 1) * ANGLE_STEP;
+     if (ring.length >= 2) floor = Math.min(floor, defaultBottomGap(ring.map(function (n) { return n.angle; })));
+     var crowd = angleGap(angle, ring[seat] ? ring[seat].angle : 0);
+-    return targetOf(zone, seat, ring.length && crowd < floor - CLASH_EPS ? ring[seat].id : null, angle);
++    return targetOf(zone, seat, null, angle);
+   }
+ 
+   function snapProfile(pt, occupancy, turn) {

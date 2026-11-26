@@ -1,0 +1,15 @@
+# kills: NF en 320x568: at rest and with the crowded error the name field sits fully below the tab strip and takes its own taps
+# suite: node --test --test-name-pattern ^NF.en.320x568..at.rest tests/editor_e2e.test.js
+# fault: The Scale tab pins the region to its very end, so on a short phone the name field scrolls under the sticky tab strip.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14121,7 +14121,7 @@
+ }
+ function editorRegionPin() {
+   const rg = editorEl("editor-region");
+-  if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = editorRegionRest(rg);
++  if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = rg.scrollHeight;
+ }
+ // The hint block overlays the controls area (region, or tabs plus panels where the region is display:contents) and never moves the layout.
+ function editorPlaceAreas() {

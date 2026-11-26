@@ -1,0 +1,15 @@
+# kills: TRI59d A2: a Neotone model takes the anchor like Standard, one is the absent default, and the pan type carries it
+# suite: node --test --test-name-pattern ^TRI59d.A2..a.Neotone.model tests/editor_shell.test.js
+# why: Anchor one is written onto a profile model instead of deleted, so it saves non-canonically.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15378,7 +15378,7 @@ function editorSetAnchor(m, to) {
+   if (to !== "one" && to !== "between") return editorRefusal(to);
+   if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
+   const next = editorClone(m);
+-  if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
++  next.options.anchor = to;
+   return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();
+ }
+ /* ---- the tray and tap placement (U2c) ---- */

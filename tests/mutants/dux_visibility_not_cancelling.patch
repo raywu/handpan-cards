@@ -1,0 +1,14 @@
+# kills: drag ux E6b: a page hidden during a live drag cancels it
+# suite: node --test --test-name-pattern ^drag.ux.E6b tests/editor_e2e.test.js
+# fault: A hidden page no longer cancels a live drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16599,7 +16599,6 @@
+   root.classList.add("dragging");
+   window.addEventListener("resize", editorDragCancel);
+   window.addEventListener("orientationchange", editorDragCancel);
+-  document.addEventListener("visibilitychange", editorDragHidden);
+   if (d.src.ref) {
+     const lifted = document.querySelector(`#editor-pan .ehit[data-ring="${d.src.ref.ring}"][data-i="${d.src.ref.i}"]`);
+     if (lifted) lifted.classList.add("lift");

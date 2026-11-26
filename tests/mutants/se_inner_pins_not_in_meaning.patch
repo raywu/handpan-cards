@@ -1,0 +1,15 @@
+# kills: SE-G4: savedMeaning appends angles.inner only when present, so unpinned meanings keep their bytes
+# suite: node --test --test-name-pattern ^SE-G4..savedMeaning.appends.angles.inner.only.when.present..so.unpinned.meanings.keep.their.bytes$ tests/editor_model.test.js
+# fault: Leave the cyclops pins out of the saved meaning.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11632,7 +11632,7 @@ function savedMeaning(deckValue) {
+     angles.value ? angles.value.bottom : null];
+   const inner = angles.value && angles.value.inner;
+   if (o.profile) meaning.push(o.profile.map);
+-  else if (inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
++  else if (false && inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
+   return JSON.stringify(meaning);
+ }
+ function readSavedRecord(record) {

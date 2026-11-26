@@ -1,0 +1,15 @@
+# kills: the tabs and both panels leave play with the rest of the controls while a note is dragged, and stop taking taps while it settles
+# suite: node --test --test-name-pattern ^the.tabs.and.both.panels tests/editor_e2e.test.js
+# fault: The tabs and panels take taps while the dropped note is still settling.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1334,7 +1334,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor.dragging .editor-panbox{transform:scale(var(--ed-mag,1)); z-index:1}
+ #editor.dragging #editor-areas, #editor.dragging #editor-tabs, #editor.dragging #editor-panels, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:translateY(100%); opacity:0; visibility:hidden; transition:transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms, visibility 0s 180ms}
+ #editor.dragging #editor-areas, #editor.dragging #editor-tabs, #editor.dragging #editor-panels, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray,
+-#editor.settling #editor-areas, #editor.settling #editor-tabs, #editor.settling #editor-panels, #editor.settling #editor-layout, #editor.settling .editor-toolbar, #editor.settling #editor-tray{pointer-events:none}
++#editor.settling #editor-areas, #editor.settling #editor-layout, #editor.settling .editor-toolbar, #editor.settling #editor-tray{pointer-events:none}
+ @keyframes ed-new{from{stroke-opacity:1; stroke-width:3} to{stroke-opacity:0; stroke-width:16}}
+ @keyframes ed-new-fade{from{stroke-opacity:1} to{stroke-opacity:0}}
+ @keyframes ed-new-pulse{from{stroke-width:10} to{stroke-width:3}}

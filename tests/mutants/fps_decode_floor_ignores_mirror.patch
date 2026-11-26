@@ -4,8 +4,8 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -538,8 +538,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-       var angles = HPE.layout.readAngles({ bottom: carry.angles }, counts);
+@@ -595,8 +595,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var angles = HPE.layout.readAngles(pinned, counts);
        if (!angles.ok || !angles.value) return badNote(text);
        var o = result.value.options;
 -      var mirrors = HPE.layout.resolveMirrors(o, {});

@@ -1,0 +1,14 @@
+# kills: CAS6 a second refusal keeps the draft with the failure message and retries only once
+# suite: node --test --test-name-pattern ^CAS6.a.second.refusal.keeps.the.draft tests/editor_e2e.test.js
+# fault: A second refusal closes the editor and loses the draft.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15235,6 +15235,7 @@ async function editorSave() {
+       if (generation !== sheetGeneration || !pageOpen) return;
+     }
+     if (!result.ok) {
++      if (retried) closeScaleSheet();
+       if (result.kind !== "cancelled") s.error = savedErrorText(result);
+       return;
+     }

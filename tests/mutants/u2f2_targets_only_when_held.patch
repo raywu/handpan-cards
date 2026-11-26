@@ -1,0 +1,15 @@
+# kills: empty cyclops arc accepts a first note at the 5 degree angle, says it stays, and draws a pin ring
+# suite: node --test --test-name-pattern ^empty.cyclops.arc.accepts tests/editor_e2e.test.js
+# fault: The empty cyclops and bottom zones are drawn only while a note is held.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14186,7 +14186,7 @@ function editorWithOverlay(markup, m, solved) {
+     out += `<circle class="etarget eempty" data-ring="ding" cx="0" cy="${dy}" r="${dr}"/>`;
+     out += `<circle class="ekey" cx="0" cy="${dy}" r="${dr}" role="button" ${tab("ding:0")} aria-label="${escapeHtml(t("editor.note.aria_ding_empty"))}"/>`;
+   }
+-  if (s && standard) {
++  if (s && s.held && standard) {
+     const zones = empty ? EDITOR_RINGS : ["inner", "bottom"];
+     for (const ring of zones) {
+       const picked = s.zone === ring;

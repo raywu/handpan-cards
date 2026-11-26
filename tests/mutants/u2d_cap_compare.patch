@@ -1,0 +1,15 @@
+# kills: U2d-2 (D16): the caps are 12 rim, 6 cyclops, 12 bottom; the add that would pass one is refused with the exact copy, one under is accepted
+# suite: node --test --test-name-pattern ^U2d-2. tests/editor_shell.test.js
+# fault: The cap compare is off by one, so a full area takes one more note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15336,7 +15336,7 @@
+ const editorAreaRefusal = (code, reason) => ({ ok: false, code, reason });
+ function editorPlace(m, ring, name, angle) {
+   const capped = !m.options.profile && EDITOR_CAPS[ring] !== undefined;
+-  if (capped && editorNames(m, ring).length >= EDITOR_CAPS[ring]) {
++  if (capped && editorNames(m, ring).length > EDITOR_CAPS[ring]) {
+     return editorAreaRefusal("AREA_FULL", t("editor.full." + ring, { max: EDITOR_CAPS[ring] }));
+   }
+   const placed = editorPlaceAt(m, ring, name, angle);

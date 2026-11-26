@@ -1,0 +1,15 @@
+# kills: empty stage: the stage never reaches the export, and a staged model cannot be saved
+# suite: node --test --test-name-pattern empty.stage:.the.stage.never.reaches tests/editor_shell.test.js
+# fault: editorCanSave accepts a model that only has a stage, so Save is enabled on an empty pan.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13458,7 +13458,7 @@ const editorRedo = (h) => (editorCanRedo(h)
+  * check's reference) and the text line's mode. */
+ const editorEmptyModel = () => ({ fields: {}, options: {}, pins: [] });
+ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
+-const editorCanSave = (m) => !editorIsEmpty(m);
++const editorCanSave = (m) => !editorIsEmpty(m) || !!m.stage;
+ const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
+ const editorBare = (m) => {
+   const { view, stage, ...rest } = m;

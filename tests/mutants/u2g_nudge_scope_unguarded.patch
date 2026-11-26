@@ -1,0 +1,15 @@
+# kills: the nudge is scoped to focus in the pan with a nudgeable pick: elsewhere an arrow moves nothing
+# suite: node --test --test-name-pattern ^the.nudge.is.scoped tests/editor_e2e.test.js
+# fault: The nudge ignores where focus is.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16652,7 +16652,7 @@
+   if (editorDrag && e.pointerId === editorDrag.id) editorDragEnd(e.type === "pointerup" ? e : null);
+ }
+ function editorNudgeable(s, fk) {
+-  return !!s.sel && !s.history.present.options.profile && EDITOR_PINNABLE.includes(s.sel.ring) && fk === s.sel.ring + ":" + s.sel.i;
++  return !!s.sel && !s.history.present.options.profile && EDITOR_PINNABLE.includes(s.sel.ring);
+ }
+ function editorNudge(dir) {
+   const s = editorSession;

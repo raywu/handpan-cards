@@ -1,0 +1,15 @@
+# kills: AP1-1 canStartGesture guard table
+# suite: node --test --test-name-pattern ^AP1-1.canStartGesture.guard.table$ tests/app.test.js
+# canStartGesture accepts any mouse button, so a right or middle press starts a swipe.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15614,7 +15614,7 @@
+   try { card.setPointerCapture(e.pointerId); } catch (err) { if (err.name !== "NotFoundError") throw err; }
+ }
+ function canStartGesture(e, state) {
+-  return !state.drag && e.isPrimary && e.button === 0 && !state.panelOpen && !state.pageOpen && state.orderLength > 0;
++  return !state.drag && e.isPrimary && !state.panelOpen && !state.pageOpen && state.orderLength > 0;
+ }
+ card.addEventListener("pointerdown", e => {
+   if (!canStartGesture(e, { drag, panelOpen, pageOpen, orderLength: order.length })) return;

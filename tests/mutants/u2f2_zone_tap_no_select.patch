@@ -1,0 +1,15 @@
+# kills: with nothing held, a tap on the empty cyclops arc or bottom band selects the zone and Reset spacing scopes to it
+# suite: node --test --test-name-pattern ^with.nothing.held tests/editor_e2e.test.js
+# fault: Tapping an empty zone no longer selects it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15876,7 +15876,7 @@ function editorSelectTap(hit, m) {
+     editorMoveSelected(hit, m);
+     return;
+   } else {
+-    s.zone = hit.kind === "spot" && !sel && EDITOR_PINNABLE.includes(hit.ring) && s.zone !== hit.ring ? hit.ring : null;
++    s.zone = false && hit.kind === "spot" && !sel && EDITOR_PINNABLE.includes(hit.ring) && s.zone !== hit.ring ? hit.ring : null;
+     if (s.zone) s.say = s.plainSay = t("editor.say.zone_" + s.zone);
+     s.sel = null;
+   }

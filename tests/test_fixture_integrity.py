@@ -690,5 +690,51 @@ class TestPlanIsCommitted(unittest.TestCase):
         self.assertIn(raw, plan, "the plan's Frozen v2 fixture section must hold the exact JSON")
 
 
+EXPECTED_SHARE_LINK_SHA256 = {
+    "v7.json": "6142c9fa9f0fd0a6044c4c0d05f80281c4698e7fbd9ae833f0390f13408b5f1f",
+    "v8.json": "15272c6731ead7ad45253a6ac42096331663a475fee351c1fb4ba25b67212312",
+}
+
+
+class TestFrozenShareLinkFixtures(unittest.TestCase):
+    """Frozen wire v7 and v8 links, encoded at caaec83b before any anchor edit (TRI-59 lane E)."""
+
+    def test_sha256_is_pinned(self):
+        for name, want in EXPECTED_SHARE_LINK_SHA256.items():
+            with self.subTest(name=name):
+                with open(os.path.join(FIXTURES, "share_links_v1", name), "rb") as fh:
+                    self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), want,
+                                     "a frozen link fixture is append-only; add a file, never edit one")
+
+
+EXPECTED_ANCHOR_LINKS_V9_SHA256 = "f775440f54722ca098f0b31f55717df4b7bbdfe47796b15548e930fac31b2ae8"
+
+
+class TestAnchorLinkFixtureV9(unittest.TestCase):
+    """Hand-written profile-plus-between wire v9 links (TRI-59 lane E)."""
+
+    def test_sha256_is_pinned(self):
+        with open(os.path.join(FIXTURES, "paired_anchor_links_v9.json"), "rb") as fh:
+            self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), EXPECTED_ANCHOR_LINKS_V9_SHA256,
+                             "the v9 link fixture is append-only; add a file, never edit one")
+
+
+RELEASE_SAFETY_FIXTURE_SHA256 = {
+    "shipped_client_a4ecfc2e.html.txt": "f0c41f3943f7194c15be178daf456c91ef8bad762bd3c7d894c7f4eea63ba91f",
+    "shipped_client_4b432f04.html.txt": "d35ea0f6e466277f4da327c984dd901e2d28ac5bdd747b5f0934a99b73bb0ae9",
+    "editor_pan_v1.json": "1485eaf63208c570a84991a79d14d5512b6c77608daf1f5507b826585ea5cd2a",
+    "engine_parity_golden_v1.json": "9f83e3752b922534286ce714cce1991b711dcdaf47b9290a0eea67e9bec5ae7b",
+}
+
+
+class TestReleaseSafetyFixturePins(unittest.TestCase):
+    def test_each_fixture_matches_its_pinned_sha256(self):
+        for name, want in RELEASE_SAFETY_FIXTURE_SHA256.items():
+            with self.subTest(fixture=name):
+                with open(os.path.join(FIXTURES, name), "rb") as fh:
+                    self.assertEqual(hashlib.sha256(fh.read()).hexdigest(), want,
+                                     name + " is frozen release-safety evidence; add a new file, never edit one")
+
+
 if __name__ == "__main__":
     unittest.main()

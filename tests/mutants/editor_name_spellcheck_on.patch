@@ -1,0 +1,15 @@
+# kills: read-only until tapped; Enter on the focused line also starts editing
+# suite: node --test --test-name-pattern ^read-only.until.tapped tests/editor_e2e.test.js
+# fault: The scale name field loses spellcheck=false, so the browser red-underlines note names typed into it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13694,7 +13694,7 @@ function editorOpen(edit) {
+       editorNode("div", { id: "editor-panel-scale", role: "tabpanel", "aria-labelledby": "editor-tab-scale" },
+         editorNode("div", { class: "editor-hintrow" },
+           editorNode("input", { id: "editor-name", type: "text", maxlength: EDITOR_NAME_MAX, autocomplete: "off", autocapitalize: "characters", autocorrect: "off",
+-            spellcheck: "false", "aria-label": t("editor.name.aria") }),
++            "aria-label": t("editor.name.aria") }),
+           editorNode("button", { id: "editor-hint-toggle", type: "button", class: "mode", "aria-expanded": "false", "aria-controls": "editor-areas",
+             "aria-label": t("editor.hint.toggle.aria"), title: t("editor.hint.toggle") },
+             editorNode("span", { class: "ico", "aria-hidden": "true", text: "i" }))),

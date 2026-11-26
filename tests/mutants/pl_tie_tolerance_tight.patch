@@ -1,0 +1,15 @@
+# kills: BN-L1: untouched rings of 1 to 116 notes read U1, U2, ... by index, and mirrored rings carry the mirror-off number at each drawn angle, both anchors
+# suite: node --test --test-name-pattern ^BN.L1..untouched.rings.of.1.to.116.notes.read.U1..U2......by.index..and.mirrored.rings.carry.the.mirror.off.number.at.each.drawn.angle..both.anchors$ tests/layout.test.js
+# The tie tolerance is exact, so rounding noise in solved angles breaks right-first ties.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -812,7 +812,7 @@
+     order.sort(function (x, y) {
+       var kx = key(x);
+       var ky = key(y);
+-      if (Math.abs(kx.d - ky.d) > 0.11) return kx.d - ky.d;
++      if (Math.abs(kx.d - ky.d) > 1e-9) return kx.d - ky.d;
+       if (kx.right !== ky.right) return kx.right ? -1 : 1;
+       return x - y;
+     });

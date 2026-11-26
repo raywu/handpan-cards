@@ -1,0 +1,15 @@
+# kills: OQA neotone drag off removes: on a Neotone pan a pan note released off the pan is removed with Undo
+# suite: node --test --test-name-pattern ^OQA.neotone.drag.off.removes tests/editor_e2e.test.js
+# fault: A Neotone note released off the pan snaps back instead of being removed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16350,7 +16350,7 @@
+   const solved = pt && editorSolve(editorSession.history.present);
+   if (!solved || !solved.ok) return { kind: "outside" };
+   if (solved.value.geom.place) {
+-    return Math.hypot(pt[0], pt[1]) > svg.viewBox.baseVal.width / 200 + EDITOR_OFF_MARGIN ? { kind: "outside" } : editorHitAt(solved.value, pt, true, editorSession.history.present);
++    return Math.hypot(pt[0], pt[1]) > svg.viewBox.baseVal.width / 200 + EDITOR_OFF_MARGIN ? { kind: "off" } : editorHitAt(solved.value, pt, true, editorSession.history.present);
+   }
+   const hit = editorHitAt(solved.value, pt, true, editorSession.history.present);
+   return hit.kind === "off" ? { kind: "outside" } : hit;
