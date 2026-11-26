@@ -29,9 +29,16 @@ a:hover{text-decoration-thickness:2.5px}
 a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
 a.brand img{display:block;height:64px;width:auto;max-width:100%}
 a:focus-visible{outline:2px solid #242424;outline-offset:2px;border-radius:2px}
-ul.rel{list-style:none;margin:0;padding:0}
-ul.rel li{border-bottom:1px solid #cfc8ba}
+ul.rel{list-style:none;margin:0;padding:0;max-width:640px}
+ul.rel li{display:flex;align-items:center;gap:12px;border-bottom:1px solid #cfc8ba}
 ul.rel a{display:flex;align-items:center;min-height:44px}
+ul.rel a:first-child{flex:1;min-width:0}
+ul.rel .practice-link{box-sizing:border-box;justify-content:center;min-width:44px;max-width:120px;padding:8px 15px;
+  border:1px solid #8a847b;border-radius:12px;color:var(--fg);background:#fff;text-decoration:none;
+  font-size:14px;font-weight:700;letter-spacing:.06em;white-space:nowrap}
+ul.rel .practice-link:hover{border-color:var(--fg)}
+ul.rel .practice-link:active{background:var(--bg)}
+ul.rel .practice-link:focus-visible{border-radius:12px}
 section.group h2{margin:0 0 4px}
 </style>
 </head>
@@ -44,48 +51,50 @@ section.group h2{margin:0 0 4px}
 <section class="group">
 <h2>Minor</h2><p class="muted">Dark and moody. The most common handpan sound.</p>
 <ul class="rel">
-<li><a href="/scales/d-kurd-10/">D Kurd 10 handpan chords</a></li>
-<li><a href="/scales/d-kurd-9/">D Kurd 9 handpan chords</a></li>
-<li><a href="/scales/d-integral-9/">D Integral 9 handpan chords</a></li>
-<li><a href="/scales/c-sharp-mystic-8/">C# Mystic 8 handpan chords</a></li>
-<li><a href="/scales/e-equinox-9/">E Equinox 9 handpan chords</a></li>
+<li><a href="/scales/d-kurd-10/">D Kurd 10 handpan chords</a><a class="practice-link" href="/#deck=d-kurd-10" aria-label="Practice D Kurd 10">Practice</a></li>
+<li><a href="/scales/d-kurd-9/">D Kurd 9 handpan chords</a><a class="practice-link" href="/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_G4_A4/D+Kurd+9/300038" aria-label="Practice D Kurd 9">Practice</a></li>
+<li><a href="/scales/d-integral-9/">D Integral 9 handpan chords</a><a class="practice-link" href="/#s=6/(D3)_A3_Bb3_C4_D4_E4_F4_A4_C5/D+INTEGRAL+9/palette-5/81e9f3" aria-label="Practice D Integral 9">Practice</a></li>
+<li><a href="/scales/c-sharp-mystic-8/">C# Mystic 8 handpan chords</a><a class="practice-link" href="/#s=6/(Cs3)_Gs3_A3_Cs4_Ds4_E4_Gs4_B4/C%23+MYSTIC+8/palette-4/5da919" aria-label="Practice C# Mystic 8">Practice</a></li>
+<li><a href="/scales/e-equinox-9/">E Equinox 9 handpan chords</a><a class="practice-link" href="/#s=6/(E3)_G3_B3_C4_D4_E4_Fs4_G4_B4/E+EQUINOX+9/palette-10/851c45" aria-label="Practice E Equinox 9">Practice</a></li>
 </ul>
 </section>
 <section class="group">
 <h2>Celtic minor</h2><p class="muted">Minor without the dark 6th. Soft and open.</p>
 <ul class="rel">
-<li><a href="/scales/d-amara-9/">D Amara 9 handpan chords</a></li>
-<li><a href="/scales/d-amara-10/">D Amara 10 handpan chords</a></li>
-<li><a href="/scales/e-amara-20/">E Amara 20 handpan chords</a></li>
+<li><a href="/scales/d-amara-9/">D Amara 9 handpan chords</a><a class="practice-link" href="/#deck=d-amara-9" aria-label="Practice D Amara 9">Practice</a></li>
+<li><a href="/scales/d-amara-10/">D Amara 10 handpan chords</a><a class="practice-link" href="/#deck=d-amara-10" aria-label="Practice D Amara 10">Practice</a></li>
+<li><a href="/scales/e-amara-20/">E Amara 20 handpan chords</a><a class="practice-link" href="/#s=6/uC3_uD3_(E3)_uFs3_uG3_uA3_B3_uC4_D4_E4_Fs4_G4_A4_B4_uC5_D5_E5_Fs5_G5_A5/E+AMARA+20/palette-3/9d65e6" aria-label="Practice E Amara 20">Practice</a></li>
 </ul>
 </section>
 <section class="group">
 <h2>Pentatonic minor</h2><p class="muted">Few notes, hard to play a wrong one.</p>
 <ul class="rel">
-<li><a href="/scales/f-low-pygmy-9/">F Low Pygmy 9 handpan chords</a></li>
-<li><a href="/scales/f-low-pygmy-18/">F3 Low Pygmy 18 handpan chords</a></li>
-<li><a href="/scales/f-magic-voyage-8/">F Magic Voyage 8 handpan chords</a></li>
+<li><a href="/scales/f-low-pygmy-9/">F Low Pygmy 9 handpan chords</a><a class="practice-link" href="/#s=6/(F2)_F3_G3_Ab3_C4_Eb4_F4_G4_Ab4/F+LOW+PYGMY+9/palette-2/965e78" aria-label="Practice F Low Pygmy 9">Practice</a></li>
+<li><a href="/scales/f-low-pygmy-18/">F3 Low Pygmy 18 handpan chords</a><a class="practice-link" href="/#deck=f-low-pygmy-18" aria-label="Practice F3 Low Pygmy 18">Practice</a></li>
+<li><a href="/scales/f-magic-voyage-8/">F Magic Voyage 8 handpan chords</a><a class="practice-link" href="/#s=6/(F3)_Ab3_C4_Eb4_F4_G4_Ab4_C5/F+MAGIC+VOYAGE+8/palette-9/1151fc" aria-label="Practice F Magic Voyage 8">Practice</a></li>
 </ul>
 </section>
 <section class="group">
 <h2>Major and bright</h2><p class="muted">Happy, uplifting.</p>
 <ul class="rel">
-<li><a href="/scales/d-sabye-9/">D Sabye 9 handpan chords</a></li>
-<li><a href="/scales/d-aegean-18/">D Aegean 18 handpan chords</a></li>
+<li><a href="/scales/d-sabye-9/">D Sabye 9 handpan chords</a><a class="practice-link" href="/#s=6/(D3)_G3_A3_B3_Cs4_D4_E4_Fs4_A4/D+SABYE+9/palette-7/b26cc0" aria-label="Practice D Sabye 9">Practice</a></li>
+<li><a href="/scales/d-aegean-18/">D Aegean 18 handpan chords</a><a class="practice-link" href="/#s=6/uA2_(D3)_uE3_Fs3_uGs3_A3_uB3_Cs4_D4_uE4_Fs4_Gs4_A4_uB4_Cs5_D5_uE5_-_Fs5/D+AEGEAN+18/palette-8/1eeb15" aria-label="Practice D Aegean 18">Practice</a></li>
 </ul>
 </section>
 <section class="group">
 <h2>Middle Eastern and Japanese</h2><p class="muted">Exotic colour from a flat 2nd or raised 7th.</p>
 <ul class="rel">
-<li><a href="/scales/c-sharp-hijaz-9/">C# Hijaz / Orion 9 handpan chords</a></li>
-<li><a href="/scales/e-romanian-hijaz-9/">E Romanian Hijaz 9 handpan chords</a></li>
-<li><a href="/scales/f-sharp-akebono-9/">F# Akebono 9 handpan chords</a></li>
+<li><a href="/scales/c-sharp-hijaz-9/">C# Hijaz / Orion 9 handpan chords</a><a class="practice-link" href="/#deck=c-sharp-hijaz-9" aria-label="Practice C# Hijaz / Orion 9">Practice</a></li>
+<li><a href="/scales/e-romanian-hijaz-9/">E Romanian Hijaz 9 handpan chords</a><a class="practice-link" href="/#s=6/(E3)_A3_B3_C4_Ds4_E4_Fs4_G4_B4/E+ROMANIAN+HIJAZ+9/101212" aria-label="Practice E Romanian Hijaz 9">Practice</a></li>
+<li><a href="/scales/f-sharp-akebono-9/">F# Akebono 9 handpan chords</a><a class="practice-link" href="/#s=6/(Fs3)_B3_Cs4_D4_Fs4_G4_B4_Cs5_D5/F%23+AKEBONO+9/palette-6/542d71" aria-label="Practice F# Akebono 9">Practice</a></li>
 </ul>
 </section>
 <section class="group">
 <h2>Neotone</h2><p class="muted">Chord cards for any Neotone layout.</p>
-<p><a href="/scales/neotone/">Neotone handpan chords</a></p>
-<p><a href="/scales/f-sharp-serenity-neotone/">F# Serenity handpan scale (Neotone Mutant)</a></p>
+<ul class="rel">
+<li><a href="/scales/neotone/">Neotone handpan chords</a></li>
+<li><a href="/scales/f-sharp-serenity-neotone/">F# Serenity handpan scale (Neotone Mutant)</a><a class="practice-link" href="/#s=7/uB2_uD3_uE3_(Fs3)_uGs3_A3_B3_Cs4_E4_Fs4_A4_B4_Cs5_E5_uFs5_uA5_uB5_uCs6_uE6/F%23+Serenity/pair-r57.r59.r61.r64.r66.r69.r71.r73.r76.b50.b56.b52.b47.b81.b78.b85.b83.b88/a1ceea" aria-label="Practice F# Serenity">Practice</a></li>
+</ul>
 </section>
 <p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>
 </main>
