@@ -1,3 +1,4 @@
+from html import escape
 import contextlib
 import glob
 import io
@@ -1022,10 +1023,37 @@ class HubAndSiblingsTest(unittest.TestCase):
         self.assertEqual(re.findall(r"<h1>(.*?)</h1>", html), ["Handpan scale chord charts"])
         self.assertEqual(re.findall(r"<h2>(.*?)</h2>", html), GROUPS + ["Neotone"])
         want = [(r["slug"], r["name"]) for r in gen.load_rows()]
-        got = re.findall(r'<li><a href="/scales/([a-z0-9-]+)/">(.*?) handpan chords</a></li>', html)
+        got = re.findall(r'<li><a href="/scales/([a-z0-9-]+)/">(.*?) handpan chords</a>',
+                         html.split("<h2>Neotone</h2>", 1)[0])
         self.assertEqual(got, want)
         self.assertEqual(Page(html).canonical(), SITE + "scales/")
         self.assertIsNone(re.search(r"deck", Page(html).visible(), re.I))
+
+    def test_hub_practice_links_match_their_scale_pages(self):
+        hub = gen.hub_page()
+        links = re.findall(r'<a class="practice-link" href="([^"]+)" aria-label="([^"]+)">Practice</a>', hub)
+        rows = gen.load_rows()
+        self.assertEqual(links, [(escape(row["cta"], quote=True), escape("Practice " + row["name"], quote=True))
+                                 for row in rows] + [(escape(gen.serenity_practice()[0]["cta"], quote=True),
+                                                      "Practice F# Serenity")])
+        for row in rows:
+            with self.subTest(slug=row["slug"]):
+                detail = html_of(row["slug"])
+                self.assertIn('href="' + escape(row["cta"], quote=True) + '"', detail)
+        neotone = hub.split("<h2>Neotone</h2>", 1)[1].split("</section>", 1)[0]
+        self.assertIn('<ul class="rel">', neotone)
+        self.assertIn('<li><a href="/scales/neotone/">Neotone handpan chords</a></li>', neotone)
+        self.assertEqual(neotone.count('class="practice-link"'), 1)
+        self.assertIn('href="' + links[-1][0] + '"', read("scales/f-sharp-serenity-neotone/index.html"))
+
+    def test_blank_practice_link_keeps_chart_and_missing_destination_fails(self):
+        row = dict(gen.load_rows()[0], cta="")
+        hub = gen.hub_page([row])
+        self.assertIn(gen.link_item(row), hub)
+        self.assertNotIn('class="practice-link"', hub.split('<h2>Neotone</h2>', 1)[0])
+        del row["cta"]
+        with self.assertRaises(KeyError):
+            gen.hub_page([row])
 
     def test_each_page_links_three_other_siblings_and_the_hub(self):
         for slug, row in table().items():
@@ -1474,8 +1502,8 @@ class NeotonePageTest(unittest.TestCase):
         last = sections[-1]
         self.assertEqual(re.findall(r"<h2>(.*?)</h2>", last), ["Neotone"])
         self.assertRegex(last, r'<p class="muted">[^<]+</p>')
-        self.assertIn('<p><a href="/scales/neotone/">Neotone handpan chords</a></p>', last)
-        self.assertEqual(len(re.findall(r'<li><a href="/scales/', html)), 16)
+        self.assertIn('<li><a href="/scales/neotone/">Neotone handpan chords</a></li>', last)
+        self.assertEqual(len(re.findall(r'<li><a href="/scales/', html)), 18)
         self.assertEqual(re.findall(r'<a href="/scales/neotone[^"]*"', last), ['<a href="/scales/neotone/"'])
 
     def test_the_example_is_f2_astronaut_16_with_the_default_chords_and_no_annaziska(self):
