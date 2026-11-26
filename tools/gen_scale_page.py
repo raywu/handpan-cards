@@ -209,6 +209,16 @@ def link_item(row):
     return '<li><a href="/scales/%s/">%s handpan chords</a></li>' % (row["slug"], esc(row["name"]))
 
 
+def hub_item(slug, name, destination, chart_label=None):
+    label = chart_label if chart_label is not None else name + " handpan chords"
+    chart = '<a href="/scales/%s/">%s</a>' % (slug, esc(label))
+    if not destination:
+        return "<li>" + chart + "</li>"
+    practice = '<a class="practice-link" href="%s" aria-label="%s">Practice</a>' % (
+        html.escape(destination), html.escape("Practice " + name))
+    return "<li>" + chart + practice + "</li>"
+
+
 LOCKUP = '<a href="/" aria-label="Handpan Theory home" class="brand"><img src="/brand/horizontal-mono-light.svg" srcset="/brand/horizontal-mono-light@2x.png 2x, /brand/horizontal-mono-light@3x.png 3x" alt="" width="223" height="64"></a>'
 SCALE_LOCKUP = LOCKUP
 
@@ -246,12 +256,16 @@ def hub_page(rows=None):
     out.append('<p style="margin-top:8px">%s</p>\n</header>\n' % HUB_INTRO)
     for name, blurb in GROUPS:
         out.append('<section class="group">\n<h2>%s</h2><p class="muted">%s</p>\n<ul class="rel">\n' % (esc(name), esc(blurb)))
-        out.append("\n".join(link_item(r) for r in rows if r["group"] == name))
+        out.append("\n".join(hub_item(r["slug"], r["name"], r["cta"])
+                             for r in rows if r["group"] == name))
         out.append("\n</ul>\n</section>\n")
+    serenity, _ = serenity_practice()
     out.append('<section class="group">\n<h2>Neotone</h2><p class="muted">Chord cards for any Neotone layout.</p>\n'
-               '<p><a href="/scales/%s/">Neotone handpan chords</a></p>\n'
-               '<p><a href="/scales/%s/">F# Serenity handpan scale (Neotone Mutant)</a></p>\n</section>\n'
-               % (NEOTONE_SLUG, SERENITY_SLUG))
+               '<ul class="rel">\n')
+    out.append(hub_item(NEOTONE_SLUG, "Neotone", "") + "\n")
+    out.append(hub_item(SERENITY_SLUG, SERENITY_NAME, serenity["cta"],
+                        chart_label="F# Serenity handpan scale (Neotone Mutant)"))
+    out.append("\n</ul>\n</section>\n")
     out.append('<p class="muted">Handpan Theory is free in your browser. Your scales stay on your device.</p>\n'
                "</main>\n</body>\n</html>\n")
     return "".join(out)
@@ -351,9 +365,16 @@ a:hover{text-decoration-thickness:2.5px}
 a.brand{display:block;width:fit-content;max-width:100%;text-decoration:none}
 a.brand img{display:block;height:64px;width:auto;max-width:100%}
 a:focus-visible{outline:2px solid #242424;outline-offset:2px;border-radius:2px}
-ul.rel{list-style:none;margin:0;padding:0}
-ul.rel li{border-bottom:1px solid #cfc8ba}
+ul.rel{list-style:none;margin:0;padding:0;max-width:640px}
+ul.rel li{display:flex;align-items:center;gap:12px;border-bottom:1px solid #cfc8ba}
 ul.rel a{display:flex;align-items:center;min-height:44px}
+ul.rel a:first-child{flex:1;min-width:0}
+ul.rel .practice-link{box-sizing:border-box;justify-content:center;min-width:44px;max-width:120px;padding:8px 15px;
+  border:1px solid #8a847b;border-radius:12px;color:var(--fg);background:#fff;text-decoration:none;
+  font-size:14px;font-weight:700;letter-spacing:.06em;white-space:nowrap}
+ul.rel .practice-link:hover{border-color:var(--fg)}
+ul.rel .practice-link:active{background:var(--bg)}
+ul.rel .practice-link:focus-visible{border-radius:12px}
 section.group h2{margin:0 0 4px}
 """
 
@@ -737,10 +758,15 @@ def serenity_row(row=None):
             "updated": row.get("serenity_updated", UPDATED), "single": True, "defaults": [d]}
 
 
-def serenity_page(row=None):
+def serenity_practice(row=None):
     row = serenity_row(row)
     data = engine([row])["rows"][SERENITY_SLUG]
     row["cta"] = "/#s=%s" % data["share"]
+    return row, data
+
+
+def serenity_page(row=None):
+    row, data = serenity_practice(row)
     return render(row, data, {SERENITY_SLUG: row}, load_copy(row))
 
 
