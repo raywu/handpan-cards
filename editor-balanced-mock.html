@@ -15416,7 +15416,7 @@ function editorAppendCancelHold(box) {
 function editorStatusNotes(box, s, m, empty) {
   if (editorGuidedTapSource(m) || s.held) {
     const previews = editorGuidedTapPreviews(m);
-    const growing = previews.filter(preview => preview.projection.expanded);
+    const growing = previews.filter(preview => editorGuidedShowsProjection(preview.projection));
     const key = growing.length === 2 ? "editor.guided.tap_both" : growing.length ? "editor.guided.tap_growth" : s.held ? "editor.held" : "editor.say.picked";
     box.appendChild(document.createTextNode(t(key, { name: s.held ? editorHeldName() : editorNameAt(m, s.sel) })));
     if (growing.length === 1) {
@@ -15424,7 +15424,7 @@ function editorStatusNotes(box, s, m, empty) {
       const place = editorNode("button", { id: "editor-guided-place", type: "button", class: "mode", text: t("editor.guided.place") });
       place.onclick = () => {
         if (editorSession !== s || s.history.present !== m || !editorGuidedTapSource(m)) return;
-        const current = editorGuidedTapPreviews(m).filter(preview => preview.projection.expanded);
+        const current = editorGuidedTapPreviews(m).filter(preview => editorGuidedShowsProjection(preview.projection));
         if (current.length !== 1 || current[0].ring !== growing[0].ring ||
             current[0].projection.landing !== growing[0].projection.landing) return;
         editorGuidedCommitTap({ kind: "spot", ring: current[0].ring, guidedAngle: current[0].projection.landing }, m, true);
@@ -15949,7 +15949,7 @@ function editorWithOverlay(markup, m, solved) {
       out += editorNeoMarks(m, fields, geom, "landing");
     } else out += editorNeoMarks(m, fields, geom);
   }
-  if (standard && !editorDrag?.live) out += editorGuidedTapPreviews(m).map(preview => preview.projection.expanded ? editorGuidedMarks(preview, false, tab) : editorGuidedOpenSeats(preview, tab)).join("");
+  if (standard && !editorDrag?.live) out += editorGuidedTapPreviews(m).map(preview => editorGuidedShowsProjection(preview.projection) ? editorGuidedMarks(preview, false, tab) : editorGuidedOpenSeats(preview, tab)).join("");
   if (unchosen) {
     const ding = editorTargetDing(geom, m);
     const dy = (ding.y * 100).toFixed(2), dr = (ding.r * 100).toFixed(2);
@@ -16231,19 +16231,21 @@ function editorGuidedPlan(m, src, target) {
   };
 }
 
+const editorGuidedShowsProjection = projection => !!(projection?.expanded || projection?.reflow);
+
 function editorGuidedMarks(guided, showName, tab = null) {
   const { ring, id, solved } = guided;
   const fields = ringIds(solved.fields, ring).map(key => solved.fields[key]);
   return fields.map(field => {
     const [letter, octave, , , angle] = field;
     const note = letter + octave;
-    if (note !== id && !guided.projection.expanded && !guided.projection.reflow) return "";
+    if (note !== id && !editorGuidedShowsProjection(guided.projection)) return "";
     const a = angle * Math.PI / 180;
     const x = solved.geom[ring] * 100 * Math.cos(a);
     const y = -solved.geom[ring] * 100 * Math.sin(a);
     const r = editorDrawnReach(solved.geom, ring) * 100;
     const focus = tab ? editorGuidedFocusAttrs(tab, ring, angle) : "";
-    return `<g class="guided-seat ${note === id ? "guided-landing" : "guided-reflow"}" data-guided-zone="${ring}" data-angle="${angle}"${guided.projection.expanded ? ' data-growth="true"' : ""}${focus}>
+    return `<g class="guided-seat ${note === id ? "guided-landing" : "guided-reflow"}" data-guided-zone="${ring}" data-angle="${angle}"${editorGuidedShowsProjection(guided.projection) ? ' data-growth="true"' : ""}${focus}>
       <circle cx="${x}" cy="${y}" r="${r}"/>${note === id ? "" :
         `<text x="${x}" y="${y}">${escapeHtml(note)}</text>`}</g>`;
   }).join("");
@@ -16347,7 +16349,7 @@ function editorGuidedSwap(m, ring, i, j) {
 
 function editorGuidedOpenSeats(preview, tab) {
   const { ring, solved, projection } = preview;
-  if (projection.expanded) return "";
+  if (editorGuidedShowsProjection(projection)) return "";
   const angles = projection.rings[ring];
   const radius = editorDrawnReach(solved.geom, ring) * 100;
   return HPE.layout.guidedGrid(ring, projection.gridSize, projection.basis).filter(angle =>
@@ -16434,7 +16436,7 @@ function editorGuidedFocusAttrs(tab, ring, angle) {
 }
 function editorGuidedFocusKeys(m) {
   return editorGuidedTapPreviews(m).flatMap(({ ring, projection, solved }) => {
-    const candidates = projection.expanded ? ringIds(solved.fields, ring).map(id => solved.fields[id][4])
+    const candidates = editorGuidedShowsProjection(projection) ? ringIds(solved.fields, ring).map(id => solved.fields[id][4])
       : HPE.layout.guidedGrid(ring, projection.gridSize, projection.basis).filter(angle =>
         !projection.rings[ring].some(note =>
           note.angle !== projection.landing && editorGuidedGap(note.angle, angle) < 1e-6));
@@ -16447,7 +16449,7 @@ function editorGuidedKey(s, m, fk) {
   const angle = Number(position);
   const current = editorGuidedTapPreviews(m).find(item => item.ring === ring);
   if (!current) return true;
-  if (current.projection.expanded && editorGuidedGap(current.projection.landing, angle) > 1e-6) {
+  if (editorGuidedShowsProjection(current.projection) && editorGuidedGap(current.projection.landing, angle) > 1e-6) {
     (s.guidedIntent ||= {})[ring] = angle;
     editorRender();
   } else {
@@ -16674,7 +16676,7 @@ function editorPanTap(pt, pointer = false) {
   if (source && (!guided || guided.previewOnly) && hit.kind === "spot" && !m.options.profile && editorGuidedZones.includes(hit.ring)) {
     const guidedAngle = guided?.guidedAngle ?? turnTo(Math.atan2(pt[1], pt[0]) * 180 / Math.PI);
     const next = editorGuidedPlan(m, source, { ...hit, guidedAngle });
-    if (next?.guided?.projection.expanded) {
+    if (editorGuidedShowsProjection(next?.guided?.projection)) {
       (s.guidedIntent ||= {})[hit.ring] = guidedAngle;
       editorRender();
       return;
