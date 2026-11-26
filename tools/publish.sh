@@ -22,7 +22,7 @@ fi
 if [ "${CF_PAGES_BRANCH:-}" = "claude/rc-upgrade" ] && [ -f editor-pan-experiment.html ]; then
   cp editor-pan-experiment.html "$out/editor-pan-experiment.html"
 fi
-# The Standard editor preview and Balanced mock share the same staged pin behavior.
+# The Standard editor preview and Balanced mock share staged pin and seat-trade behavior.
 # Keep the Balanced mock on the RC preview branch. Its HTML is outside the normal Pages watch paths.
 if [ "${CF_PAGES_BRANCH:-}" = "claude/rc-upgrade" ] && [ -f editor-balanced-mock.html ]; then
   cp editor-balanced-mock.html "$out/editor-balanced-mock.html"

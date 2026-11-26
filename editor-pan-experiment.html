@@ -13641,7 +13641,7 @@ function editorStageCommit(m, stage, landedKey) {
   let built;
   if (std) {
     const angles = editorStageAngles(stage);
-    const loaded = editorLoad(editorText(m, stage, stage.ding), { ...m.options, seats: null, angles });
+    const loaded = editorLoad(editorText(m, stage, stage.ding), { ...m.options, seats: editorStageSeats(stage), angles });
     built = loaded.ok ? editorSettle(loaded.value, {}) : loaded;
     if (built.ok && angles && built.notice && built.notice.unpinned) {
       const lost = built.notice.unpinned[0];
@@ -14004,10 +14004,56 @@ function editorSetAngle(m, ring, i, angle, pin) {
   if (solved.ok) return { ok: true, value: next };
   return angle !== null && solved.code === "BAD_NOTE" ? editorNoRoom(m, ring, i, angle) : solved;
 }
+function editorStageSeats(stage) {
+  const seats = {};
+  for (const ring of stage.tradedRings || []) {
+    if (stage.angles?.[ring]) continue;
+    const notes = stage[ring];
+    const order = identityOrder(notes.length).sort((a, b) => editorNameEntry(notes[a], ring)[2] - editorNameEntry(notes[b], ring)[2]);
+    if (order.some((seat, i) => seat !== i)) seats[ring] = order;
+  }
+  return Object.keys(seats).length ? seats : null;
+}
+function editorSwapStagedSeats(m, ring, i, j) {
+  const before = editorAnglesOf(editorSolve(m), ring);
+  const pinned = editorStageOf(m).angles?.[ring];
+  const candidates = k => {
+    const angle = before[k];
+    if (!pinned || pinned[k] !== null) return [angle];
+    const nearest = stepOf(angle);
+    const other = stepOf(nearest + (angle < nearest ? -ANGLE_STEP : ANGLE_STEP));
+    return angle === nearest ? [nearest] : [nearest, other];
+  };
+  let refusal;
+  for (const left of candidates(i)) for (const right of candidates(j)) {
+    const expected = before.slice();
+    expected[i] = left;
+    expected[j] = right;
+    const next = editorStageEdit(m, stage => {
+      const traded = editorStageSwap(stage, { ring, i }, { ring, i: j });
+      if (traded) return traded;
+      if (pinned) {
+        editorStagePin(stage, ring, i, left);
+        editorStagePin(stage, ring, j, right);
+      }
+      stage.tradedRings = [...new Set([...(stage.tradedRings || []), ring])];
+    });
+    if (!next.ok) {
+      if (next.code !== "NO_ROOM") return next;
+      refusal ||= next;
+      continue;
+    }
+    if (!editorIsEmpty(next.value)) return next;
+    const after = editorAnglesOf(editorSolve(next.value), ring);
+    if (expected.every((angle, k) => angle === after[k]) && editorStagePinsFit(next.value)) return next;
+  }
+  return refusal || editorNoRoom(m, ring, i, before[j]);
+}
 function editorSwapSeats(m, ring, i, j) {
   if (m.options.profile) return editorProfileConflict();
   if (!EDITOR_RINGS.includes(ring) || !editorInRing(m, ring, i, j)) return editorRefusal(ring + i);
-  if (i === j || editorIsEmpty(m)) return { ok: true, value: m };
+  if (i === j) return { ok: true, value: m };
+  if (editorIsEmpty(m)) return editorSwapStagedSeats(m, ring, i, j);
   if (EDITOR_PINNABLE.includes(ring) && m.options.angles && m.options.angles[ring]) return editorExchangeAngles(m, ring, i, j);
   const next = editorClone(m);
   const seats = (next.options.seats && next.options.seats[ring]) || identityOrder(ringIds(m.fields, ring).length);
@@ -14450,6 +14496,12 @@ function editorCommitText(m, text) {
   const seed = HPE.core.parseSeed(trimmed, carried);
   const typed = seed.ok ? HPE.core.typedSeats(seed.value) : null;
   if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) return editorTypedOrder(m, typed);
+  if (editorIsEmpty(m) && !m.options.profile && editorStageOf(m).tradedRings?.length) {
+    const next = loaded.value;
+    return editorFormStageResult(m, {
+      ding: [editorDingOf(next)], top: editorNames(next, "rim"), inner: editorNames(next, "inner"), bottom: editorNames(next, "bottom")
+    }, typed);
+  }
   const diffed = editorTypedBottom(m, loaded.value, typed);
   if (diffed) return diffed;
   const next = loaded.value;
@@ -14741,7 +14793,7 @@ function editorFormStageNames(composed, values) {
   }
   return notes;
 }
-function editorFormStageResult(m, names) {
+function editorFormStageResult(m, names, typedSeats = null) {
   const profile = m.options.profile;
   const caps = profile ? { rim: NEO_MAIN, inner: 0, bottom: NEO_MAIN } : EDITOR_CAPS;
   for (const field of ["top", "inner", "bottom"]) {
@@ -14763,9 +14815,17 @@ function editorFormStageResult(m, names) {
     stage.ding = names.ding[0] || "";
     if (standard) {
       const previous = editorIsEmpty(m) ? editorStageOf(m) : editorStandardDraft(m);
-      stage.rim = names.top;
-      stage.inner = names.inner;
-      stage.bottom = names.bottom;
+      for (const [ring, field] of [["rim", "top"], ["inner", "inner"], ["bottom", "bottom"]]) {
+        const incoming = names[field];
+        if (typedSeats?.[ring]) {
+          stage[ring] = incoming.slice().sort((a, b) =>
+            typedSeats[ring][incoming.indexOf(a)] - typedSeats[ring][incoming.indexOf(b)]);
+          stage.tradedRings = [...new Set([...(stage.tradedRings || []), ring])];
+        } else if (previous.tradedRings?.includes(ring)) {
+          stage[ring] = [...previous[ring].filter(name => incoming.includes(name)),
+            ...incoming.filter(name => !previous[ring].includes(name))];
+        } else stage[ring] = incoming;
+      }
       stage.angles = Object.fromEntries(EDITOR_PINNABLE.map(ring => [ring,
         stage[ring].map(name => previous.angles?.[ring]?.[previous[ring].indexOf(name)] ?? null)]));
       editorStageTidyAngles(stage);
