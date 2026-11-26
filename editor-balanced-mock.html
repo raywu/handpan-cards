@@ -17119,8 +17119,7 @@ function editorZoneLayer(d) {
   out += `<path class="ezone" data-ring="ding" d="${editorZoneDisc(ding.r, ding.cy)}"/>`;
   svg.insertAdjacentHTML("beforeend", out);
 }
-function drawerProspective(m, src, target) {
-  const plan = editorDropPlan(m, src, target);
+function drawerProspective(m, plan) {
   if (plan.refuse) return { ok: false, reason: plan.refuse };
   if (plan.step) return editorCheckPitchEdit(m, plan.step(plan.guided ? m : editorClone(m)));
   if (plan.trade) {
@@ -17163,8 +17162,10 @@ function editorMarkDrop(target) {
   if (editorDrag && editorDrag.live) {
     const d = editorDrag;
     const src = d.src.from === "tray" ? { from: "tray", name: editorDragName(d.src) } : { from: "pan", ref: d.src.ref };
-    const candidate = drawerProspective(editorSession.history.present, src, target);
-    const guided = editorGuidedPlan(editorSession.history.present, src, target)?.guided;
+    const model = editorSession.history.present;
+    const plan = editorDropPlan(model, src, target);
+    const candidate = drawerProspective(model, plan);
+    const guided = plan.guided;
     const current = editorSolve(editorSession.history.present);
     if (current.ok) svg.insertAdjacentHTML("beforeend",
       editorGuidedNeutralMarks(editorSession.history.present, current.value, d.src.ref, guided));
