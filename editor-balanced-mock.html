@@ -1355,6 +1355,11 @@ html.account-open, html.export-open{overflow:hidden}
 
 #editor .guided-offer{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 #editor .guided-offer button.mode{position:static;transform:none}
+
+#editor-pan svg:has(.guided-landing[data-growth][data-guided-zone="rim"]) [data-editor-drawn-zone="rim"],
+#editor-pan svg:has(.guided-landing[data-growth][data-guided-zone="inner"]) [data-editor-drawn-zone="inner"]{opacity:.38}
+#editor #editor-status[data-guided-actions=single]{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-right:10px}
+#editor #editor-status[data-guided-actions=single] button.mode{position:static;transform:none}
 #editor-pan .guided-seat{pointer-events:none}
 #editor-pan .guided-seat circle{stroke-width:1.35}
 #editor-pan .guided-landing circle{fill:#f0e3cd;stroke:#995c23}
@@ -6751,7 +6756,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
     var existing = carry[zone];
     if (existing.length >= limits[1]) return { reason: "capacity" };
-    var slots = guidedGrid(zone, Math.max(limits[0], existing.length + 1, request.gridSize || 0));
+    var currentSize = request.gridSize || limits[0];
+    var growing = existing.length >= currentSize;
+    var size = growing ? Math.max(limits[0], existing.length + 1) : currentSize;
+    var basis = growing ? undefined : request.gridBasis ||
+      (zone === "rim" && size === 7 && request.initialRimBasis === "one" ? "one" : undefined);
+    var slots = guidedGrid(zone, size, basis);
     var aim = Number.isFinite(request.angle) ? request.angle : 90;
     var ranked = slots.slice().sort(function (a, b) {
       return angularDistance(a, aim) - angularDistance(b, aim);
@@ -6759,7 +6769,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var occupied = function (angle) {
       return existing.some(function (note) { return angularDistance(note.angle, angle) < 1e-7; });
     };
-    var growing = existing.length >= limits[0] && existing.length + 1 > (request.gridSize || limits[0]);
     var landing = growing ? ranked[0] : ranked.find(function (angle) { return !occupied(angle); });
     if (landing === undefined) return { reason: "clearance" };
     var newNote = { id: request.id, angle: norm(landing), pinned: false };
@@ -6787,8 +6796,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       });
       if (pinConflict) return { reason: "pins" };
       var direct = candidate(mapped);
-      if (accepts && !accepts(direct, slots.length)) return { reason: "clearance" };
-      return { rings: direct, landing: newNote.angle, gridSize: slots.length, expanded: false, reflow: shifted };
+      if (accepts && !accepts(direct, slots.length, basis)) return { reason: "clearance" };
+      return { rings: direct, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: false, reflow: shifted };
     }
     var order = existing.slice().sort(function (a, b) { return norm(a.angle) - norm(b.angle); });
     var seats = slots.filter(function (angle) { return angle !== landing; }).map(norm).sort(function (a, b) {
@@ -6812,12 +6821,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }, 0);
       if (cost >= bestCost) continue;
       var next = candidate(moved);
-      if (accepts && !accepts(next, slots.length)) continue;
+      if (accepts && !accepts(next, slots.length, basis)) continue;
       best = next;
       bestCost = cost;
     }
     if (!best) return { reason: pinCompatible ? "clearance" : "pins" };
-    return { rings: best, landing: newNote.angle, gridSize: slots.length, expanded: true, reflow: bestCost > 1e-7 };
+    return { rings: best, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: true, reflow: bestCost > 1e-7 };
   }
 
   /* ---- the solver -------------------------------------------------------- */
@@ -12855,6 +12864,7 @@ function pan(d, ch, opts) {
     const rr  = R * (isB ? g.r_bnote : g.r_note) * (scale ? scale[zone] : 1);
     const [x, y] = P(orb, ang);
     if (!placed) {
+      if (scale) s += `<g data-editor-drawn-zone="${zone}">`;
       s += panField(sets, C, x, y, rr, id, isB);
       const lit = blue.has(id) || green.has(id);
       s += panLabel(x, y, name, oct, labelSize(rr, zone),
@@ -12868,6 +12878,7 @@ function pan(d, ch, opts) {
       const [nx, ny] = alternate ? [R * alternate[0], -R * alternate[1]] : P(nr, ang);
       s += `<text x="${nx}" y="${ny + fs*0.34}" text-anchor="middle" fill="${col}"
       font-family="Nunito Sans, sans-serif" font-weight="${isB?600:400}" font-size="${fs}">${lab}</text>`;
+      if (scale && !placed) s += "</g>";
     }
     // The ding is skipped above and so never reaches here: it has no seat.
     if (interactive) {
@@ -15399,14 +15410,31 @@ function editorEmptyPrompt(m) {
 }
 function editorAppendCancelHold(box) {
   const cancel = editorNode("button", { id: "editor-cancel", type: "button", class: "mode", text: t("editor.cancel") });
-  cancel.onclick = editorCancelHold;
+  cancel.onclick = () => {
+    if (editorSession.held) editorCancelHold();
+    else { editorSession.sel = null; editorSession.guidedIntent = {}; editorSession.say = ""; editorRender(); }
+  };
   box.appendChild(cancel);
 }
 function editorStatusNotes(box, s, m, empty) {
-  if (s.held) {
+  if (editorGuidedTapSource(m) || s.held) {
     const previews = editorGuidedTapPreviews(m);
-    const key = previews.some(preview => preview.projection.expanded) ? "editor.guided.tap_growth" : previews.length ? "editor.guided.tap" : "editor.held";
-    box.appendChild(document.createTextNode(t(key, { name: editorHeldName() })));
+    const growing = previews.filter(preview => preview.projection.expanded);
+    const key = growing.length === 2 ? "editor.guided.tap_both" : growing.length ? "editor.guided.tap_growth" : s.held ? "editor.held" : "editor.say.picked";
+    box.appendChild(document.createTextNode(t(key, { name: s.held ? editorHeldName() : editorNameAt(m, s.sel) })));
+    if (growing.length === 1) {
+      box.dataset.guidedActions = "single";
+      const place = editorNode("button", { id: "editor-guided-place", type: "button", class: "mode", text: t("editor.guided.place") });
+      place.onclick = () => {
+        if (editorSession !== s || s.history.present !== m || !editorGuidedTapSource(m)) return;
+        const current = editorGuidedTapPreviews(m).filter(preview => preview.projection.expanded);
+        if (current.length !== 1 || current[0].ring !== growing[0].ring ||
+            current[0].projection.landing !== growing[0].projection.landing) return;
+        editorGuidedCommitTap({ kind: "spot", ring: current[0].ring, guidedAngle: current[0].projection.landing }, m, true);
+        editorEl("drawerexp-handle")?.focus();
+      };
+      box.append(place);
+    }
     editorAppendCancelHold(box);
   } else if (s.say || s.notice) {
     box.appendChild(document.createTextNode((s.say || t("editor.pins_reset")) + (empty ? " " + editorEmptyPrompt(m) : "")));
@@ -15430,6 +15458,7 @@ function editorRenderBody() {
   const error = (s.saveAcknowledged && s.saveError) || s.lineError || s.error || s.saveError || "";
   if (!error) s.lastError = "";
   status.textContent = "";
+  delete status.dataset.guidedActions;
   status.removeAttribute("data-kind");
   status.removeAttribute("data-idle");
   if (error) {
@@ -15858,7 +15887,7 @@ const EDITOR_NUDGE = 5;
 const editorNudgeTarget = (current, dir) => current + dir * EDITOR_NUDGE;
 const editorSeatDigits = (m, id) => parseInt(String(m.fields[id][5]).replace(/\D/g, ""), 10);
 function editorFocusKeys(m) {
-  const keys = editorSession?.held ? editorGuidedFocusKeys(m) : [];
+  const keys = editorGuidedTapSource(m) ? editorGuidedFocusKeys(m) : [];
   const empty = editorIsEmpty(m);
   if (editorDingOf(m) !== undefined) keys.push("ding:0");
   for (const ring of EDITOR_RINGS) {
@@ -15923,7 +15952,7 @@ function editorWithOverlay(markup, m, solved) {
       out += editorNeoMarks(m, fields, geom, "landing");
     } else out += editorNeoMarks(m, fields, geom);
   }
-  if (standard && !editorDrag?.live) out += editorGuidedTapPreviews(m).map(preview => editorGuidedOpenSeats(preview, tab) + editorGuidedMarks(preview, false, tab)).join("");
+  if (standard && !editorDrag?.live) out += editorGuidedTapPreviews(m).map(preview => preview.projection.expanded ? editorGuidedMarks(preview, false, tab) : editorGuidedOpenSeats(preview, tab)).join("");
   if (unchosen) {
     const ding = editorTargetDing(geom, m);
     const dy = (ding.y * 100).toFixed(2), dr = (ding.r * 100).toFixed(2);
@@ -16047,6 +16076,22 @@ for (const [lang, copy] of Object.entries({
   I18N[lang]["editor.guided.pins"] = copy[1];
 }
 
+for (const [lang, copy] of Object.entries({
+  en: "Tap either highlighted outline to place.",
+  de: "Tippe auf einen der beiden markierten Plätze.",
+  es: "Toca uno de los dos contornos resaltados para colocar la nota.",
+  fr: "Touchez l’un des deux contours en surbrillance pour placer la note.",
+  it: "Tocca uno dei due contorni evidenziati per posizionare la nota.",
+  ja: "強調されたどちらかの枠をタップして音を配置します。",
+  "zh-Hans": "轻触任一高亮轮廓以放置音符。",
+  "zh-Hant": "輕觸任一高亮輪廓以放置音符。"
+})) I18N[lang]["editor.guided.tap_both"] = copy;
+
+for (const [lang, label] of Object.entries({
+  en: "Place", de: "Platzieren", es: "Colocar", fr: "Placer", it: "Posiziona",
+  ja: "配置", "zh-Hans": "放置", "zh-Hant": "放置"
+})) I18N[lang]["editor.guided.place"] = label;
+
 // Guided previews are projections of the same model transaction used by Save.
 const editorGuidedZones = ["rim", "inner"];
 const editorGuidedGap = (a, b) => Math.abs(turnTo(a - b + 180) - 180);
@@ -16070,7 +16115,7 @@ function editorGuidedRow(notes, zone, size, basis, mirror) {
   return basis ? { size, seats, basis } : { size, seats };
 }
 
-function editorGuidedCandidate(m, request, projected, gridSize) {
+function editorGuidedCandidate(m, request, projected, gridSize, gridBasis) {
   const { ring, ref, name, namesById } = request;
   const mirror = HPE.layout.resolveMirrors(m.options).top;
   const staging = editorIsEmpty(m);
@@ -16091,7 +16136,7 @@ function editorGuidedCandidate(m, request, projected, gridSize) {
     const keepFromStock = zone !== ring && !previous && !stage.angles?.[zone];
     if (zone === ring || previous || keepFromStock) {
       const size = zone === ring ? gridSize : previous?.size ?? editorNames(m, zone).length;
-      const basis = zone === ring ? undefined : previous?.basis ?? (keepFromStock
+      const basis = zone === ring ? gridBasis : previous?.basis ?? (keepFromStock
         ? (zone === "inner" ? "inner" : m.options.anchor ?? "one") : undefined);
       const row = notes.length ? editorGuidedRow(notes, zone, size, basis, mirror) : null;
       if (notes.length && !row) return null;
@@ -16160,14 +16205,15 @@ function editorGuidedPlan(m, src, target) {
     })];
   }));
   const current = (stage?.guided || m.options.guided)?.[ring];
-  const gridSize = current && !current.basis ? current.size : ring === "rim" ? 7 : 3;
+  const gridSize = current?.size || (ring === "rim" ? 7 : 3);
+  const initialRimBasis = ring === "rim" && !current ? "one" : undefined;
   const request = { ring, ref, name, namesById };
   let accepted;
   let rejected;
   const projection = HPE.layout.projectGuided(rings, {
-    zone: ring, id, gridSize, angle: target.guidedAngle ?? target.angle
-  }, (projected, size) => {
-    const result = editorGuidedCandidate(m, request, projected, size);
+    zone: ring, id, gridSize, gridBasis: current?.basis, initialRimBasis, angle: target.guidedAngle ?? target.angle
+  }, (projected, size, basis) => {
+    const result = editorGuidedCandidate(m, request, projected, size, basis);
     if (!result?.ok) { rejected = result; return false; }
     const placed = editorSolve(result.value);
     if (!placed.ok) { rejected = placed; return false; }
@@ -16201,15 +16247,31 @@ function editorGuidedMarks(guided, showName, tab = null) {
     const r = editorDrawnReach(solved.geom, ring) * 100;
     const focus = tab ? editorGuidedFocusAttrs(tab, ring, angle) : "";
     return `<g class="guided-seat ${note === id ? "guided-landing" : "guided-reflow"}" data-guided-zone="${ring}" data-angle="${angle}"${guided.projection.expanded ? ' data-growth="true"' : ""}${focus}>
-      <circle cx="${x}" cy="${y}" r="${r}"/>${note === id && !showName ? "" :
+      <circle cx="${x}" cy="${y}" r="${r}"/>${note === id ? "" :
         `<text x="${x}" y="${y}">${escapeHtml(note)}</text>`}</g>`;
   }).join("");
 }
 
+function editorGuidedTapSource(m) {
+  const s = editorSession;
+  if (!s || m.options.profile) return null;
+  if (s.held) return { from: "tray", name: editorHeldName() };
+  if (s.sel && editorGuidedZones.includes(s.sel.ring)) return { from: "pan", ref: s.sel };
+  return null;
+}
+function editorGuidedCommitTap(hit, m, pointer, point) {
+  const session = editorSession;
+  if (session.held) return editorPlaceHeld(hit, m, pointer, point);
+  const source = session.sel;
+  const name = editorNameAt(m, source);
+  editorMoveSelected({ ...hit, angle: hit.guidedAngle }, m);
+  if (pointer && session.history.present !== m) window.drawerExperiment?.tapPlaced(name);
+}
+
 function editorGuidedTapPreviews(m) {
   const session = editorSession;
-  if (!session?.held || m.options.profile) return [];
-  const src = { from: "tray", name: editorHeldName() };
+  const src = editorGuidedTapSource(m);
+  if (!src) return [];
   return editorGuidedZones.flatMap(ring => {
     const guided = editorGuidedPlan(m, src, {
       kind: "spot", ring, guidedAngle: session.guidedIntent?.[ring]
@@ -16283,7 +16345,8 @@ function editorGuidedOpenSeats(preview, tab) {
   if (projection.expanded) return "";
   const angles = projection.rings[ring];
   const radius = editorDrawnReach(solved.geom, ring) * 100;
-  return HPE.layout.guidedGrid(ring, projection.gridSize).filter(angle =>
+  return HPE.layout.guidedGrid(ring, projection.gridSize, projection.basis).filter(angle =>
+    editorGuidedGap(projection.landing, angle) < 1e-6 ||
     !angles.some(note => editorGuidedGap(note.angle, angle) < 1e-6)
   ).map(angle => {
     const radians = angle * Math.PI / 180;
@@ -16348,9 +16411,9 @@ function editorGuidedOffer(s, previous, next) {
 
 function editorGuidedOfferButtons(box, s, m) {
   if (s.guidedOffer !== m || s.held) return;
-  const row = editorNode("span", { class: "guided-offer" }, t("editor.guided.offer"));
-  const space = editorNode("button", { id: "editor-guided-offer-apply", class: "mode", type: "button" }, t("editor.guided.space"));
-  const keep = editorNode("button", { id: "editor-guided-offer-keep", class: "mode", type: "button" }, t("editor.guided.keep"));
+  const row = editorNode("span", { class: "guided-offer", text: t("editor.guided.offer") });
+  const space = editorNode("button", { id: "editor-guided-offer-apply", class: "mode", type: "button", text: t("editor.guided.space") });
+  const keep = editorNode("button", { id: "editor-guided-offer-keep", class: "mode", type: "button", text: t("editor.guided.keep") });
   space.onclick = () => editorGuidedDistribute("rim");
   keep.onclick = () => { s.guidedOffer = null; editorRender(); };
   row.append(space, keep);
@@ -16367,14 +16430,14 @@ function editorGuidedFocusAttrs(tab, ring, angle) {
 function editorGuidedFocusKeys(m) {
   return editorGuidedTapPreviews(m).flatMap(({ ring, projection, solved }) => {
     const candidates = projection.expanded ? ringIds(solved.fields, ring).map(id => solved.fields[id][4])
-      : HPE.layout.guidedGrid(ring, projection.gridSize).filter(angle =>
+      : HPE.layout.guidedGrid(ring, projection.gridSize, projection.basis).filter(angle =>
         !projection.rings[ring].some(note =>
           note.angle !== projection.landing && editorGuidedGap(note.angle, angle) < 1e-6));
     return candidates.map(angle => editorGuidedKeyId(ring, angle));
   });
 }
 function editorGuidedKey(s, m, fk) {
-  if (!s.held || !fk.startsWith("guided:")) return false;
+  if (!editorGuidedTapSource(m) || !fk.startsWith("guided:")) return false;
   const [, ring, position] = fk.split(":");
   const angle = Number(position);
   const current = editorGuidedTapPreviews(m).find(item => item.ring === ring);
@@ -16383,7 +16446,7 @@ function editorGuidedKey(s, m, fk) {
     (s.guidedIntent ||= {})[ring] = angle;
     editorRender();
   } else {
-    editorPlaceHeld({ kind: "spot", ring, guidedAngle: angle }, m, true);
+    editorGuidedCommitTap({ kind: "spot", ring, guidedAngle: angle }, m, true);
   }
   return true;
 }
@@ -16557,6 +16620,7 @@ function editorSelectTap(hit, m) {
     s.zone = null;
     const ref = hit.kind === "ding" ? { ring: "ding", i: 0 } : { ring: hit.ring, i: hit.i };
     if (!sel) {
+      s.guidedIntent = {};
       s.sel = ref;
       s.say = s.plainSay = t("editor.say.picked", { name: editorNameAt(m, ref) });
     } else if (sel.ring === ref.ring && sel.i === ref.i) s.sel = null;
@@ -16596,21 +16660,23 @@ function editorPanTap(pt, pointer = false) {
   const m = s.history.present;
   const solved = editorSolve(m);
   if (!solved.ok) return;
-  const candidate = s.held && editorGuidedHit(pt, true);
+  const source = editorGuidedTapSource(m);
+  const candidate = source && editorGuidedHit(pt, true);
   const current = editorHitAt(solved.value, pt, !!s.held, m);
   const guided = candidate && (current.kind === "spot" ||
     (candidate.growth && !candidate.previewOnly && current.kind === "note" && current.ring === candidate.ring)) ? candidate : null;
   const hit = guided || current;
-  if (s.held && (!guided || guided.previewOnly) && hit.kind === "spot" && !m.options.profile && editorGuidedZones.includes(hit.ring)) {
+  if (source && (!guided || guided.previewOnly) && hit.kind === "spot" && !m.options.profile && editorGuidedZones.includes(hit.ring)) {
     const guidedAngle = guided?.guidedAngle ?? turnTo(Math.atan2(pt[1], pt[0]) * 180 / Math.PI);
-    const next = editorGuidedPlan(m, { from: "tray", name: editorHeldName() }, { ...hit, guidedAngle });
+    const next = editorGuidedPlan(m, source, { ...hit, guidedAngle });
     if (next?.guided?.projection.expanded) {
       (s.guidedIntent ||= {})[hit.ring] = guidedAngle;
       editorRender();
       return;
     }
   }
-  if (s.held) editorPlaceHeld(hit, m, pointer, pt);
+  if (guided && source) editorGuidedCommitTap(hit, m, pointer, pt);
+  else if (s.held) editorPlaceHeld(hit, m, pointer, pt);
   else editorSelectTap(hit, m);
 }
 function editorPanPoint(e) {

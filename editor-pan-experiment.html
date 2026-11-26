@@ -6741,7 +6741,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     });
     var existing = carry[zone];
     if (existing.length >= limits[1]) return { reason: "capacity" };
-    var slots = guidedGrid(zone, Math.max(limits[0], existing.length + 1, request.gridSize || 0));
+    var currentSize = request.gridSize || limits[0];
+    var growing = existing.length >= currentSize;
+    var size = growing ? Math.max(limits[0], existing.length + 1) : currentSize;
+    var basis = growing ? undefined : request.gridBasis ||
+      (zone === "rim" && size === 7 && request.initialRimBasis === "one" ? "one" : undefined);
+    var slots = guidedGrid(zone, size, basis);
     var aim = Number.isFinite(request.angle) ? request.angle : 90;
     var ranked = slots.slice().sort(function (a, b) {
       return angularDistance(a, aim) - angularDistance(b, aim);
@@ -6749,7 +6754,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var occupied = function (angle) {
       return existing.some(function (note) { return angularDistance(note.angle, angle) < 1e-7; });
     };
-    var growing = existing.length >= limits[0] && existing.length + 1 > (request.gridSize || limits[0]);
     var landing = growing ? ranked[0] : ranked.find(function (angle) { return !occupied(angle); });
     if (landing === undefined) return { reason: "clearance" };
     var newNote = { id: request.id, angle: norm(landing), pinned: false };
@@ -6777,8 +6781,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       });
       if (pinConflict) return { reason: "pins" };
       var direct = candidate(mapped);
-      if (accepts && !accepts(direct, slots.length)) return { reason: "clearance" };
-      return { rings: direct, landing: newNote.angle, gridSize: slots.length, expanded: false, reflow: shifted };
+      if (accepts && !accepts(direct, slots.length, basis)) return { reason: "clearance" };
+      return { rings: direct, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: false, reflow: shifted };
     }
     var order = existing.slice().sort(function (a, b) { return norm(a.angle) - norm(b.angle); });
     var seats = slots.filter(function (angle) { return angle !== landing; }).map(norm).sort(function (a, b) {
@@ -6802,12 +6806,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       }, 0);
       if (cost >= bestCost) continue;
       var next = candidate(moved);
-      if (accepts && !accepts(next, slots.length)) continue;
+      if (accepts && !accepts(next, slots.length, basis)) continue;
       best = next;
       bestCost = cost;
     }
     if (!best) return { reason: pinCompatible ? "clearance" : "pins" };
-    return { rings: best, landing: newNote.angle, gridSize: slots.length, expanded: true, reflow: bestCost > 1e-7 };
+    return { rings: best, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: true, reflow: bestCost > 1e-7 };
   }
 
   /* ---- the solver -------------------------------------------------------- */
