@@ -15930,6 +15930,7 @@ function editorRover(m) {
 function editorWithOverlay(markup, m, solved) {
   const { fields, geom } = solved;
   const labels = editorNoteLabels(m);
+  const draftIssues = editorDraftPitchIssues(m);
   const s = editorSession;
   const selected = s && s.sel ? (s.sel.ring === "ding" ? Object.keys(fields).find((id) => fields[id][3] === "ding") : ringIds(fields, s.sel.ring)[s.sel.i]) : null;
   let out = '<g class="ehit-layer">';
@@ -15947,11 +15948,13 @@ function editorWithOverlay(markup, m, solved) {
     const r = geom.place && !neo && (zone === "inner" || zone === "bottom") ? EDITOR_HIT_AREA * 100 : drawn * 100;
     const i = ring === "ding" ? 0 : ringIds(fields, ring).indexOf(id);
     const fresh = !!(s && s.flash && s.flash.some((f) => f.ring === ring && f.i === i));
-    out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"/>`;
+    const issue = draftIssues.find(item => item.ring === ring && item.i === i);
+    const description = issue ? ` aria-description="${escapeHtml(t("editor.guided.save_pitch", issue)).replace(/"/g, "&quot;")}"` : "";
+    out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"${description}/>`;
     if (EDITOR_PINNABLE.includes(zone) && m.pins.some((p) => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;
     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
   }
-  for (const issue of editorDraftPitchIssues(m)) {
+  for (const issue of draftIssues) {
     const id = ringIds(fields, issue.ring)[issue.i];
     if (id === undefined) continue;
     const angle = fields[id][4] * Math.PI / 180;
