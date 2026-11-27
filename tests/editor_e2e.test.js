@@ -3161,6 +3161,13 @@ function run() {
               return !undo.disabled && undo.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
             })()`, { label: "the pinned Undo to accept the first post-drop press" });
             const point = await centreOf("#editor-undo");
+            await b.eval(`window.postDropEvents = [];
+              for (const type of ["touchstart", "touchend", "pointerdown", "pointerup", "click"]) {
+                window.addEventListener(type, event => {
+                  window.postDropEvents.push([event.type, event.target.id, event.pointerId]);
+                }, { capture: true, once: true });
+              }
+              return true;`);
             if (kind === "touch") {
               // Use a new contact after the preceding drag, with the press and
               // release on distinct frames so CDP cannot coalesce the input.
@@ -3170,7 +3177,12 @@ function run() {
               await b.eval("return new Promise(resolve => requestAnimationFrame(() => resolve(true)));");
               await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
             } else await tapPoint(point);
-            await b.waitFor(`editorSession.history.past.length === ${depth}`, { label: "one native Undo press to run" });
+            try {
+              await b.waitFor(`editorSession.history.past.length === ${depth}`, { label: "one native Undo press to run" });
+            } catch (error) {
+              const events = await b.eval("return window.postDropEvents;");
+              assert.fail(`${error.message}. Events: ${JSON.stringify(events)}`);
+            }
             assert.deepStrictEqual(await core(), before, "the first native press restored the dropped note");
           });
         }
@@ -4011,7 +4023,13 @@ function run() {
       await fresh(tw, th);
       await openAdd();
       await typeLine(SCALE);
-      await b.click("#editor-tab-layout");
+      if (th === 440) {
+        await b.click("#editor-more");
+        await b.click("#editor-form-toggle");
+        assert.equal(await b.eval(`const drawer = editorEl("drawerexp-body");
+          drawer.scrollTop = 0;
+          return drawer.scrollHeight > drawer.clientHeight;`), true, "the scale form extends beyond the drawer");
+      } else await b.click("#editor-tab-layout");
       assert.deepStrictEqual(await b.eval(`const root = document.getElementById("editor");
         const off = root.appendChild(document.createElement("button")); off.id = "zz-off"; off.disabled = true;
         const none = root.appendChild(document.createElement("button")); none.id = "zz-none"; none.style.display = "none";
@@ -4022,10 +4040,9 @@ function run() {
       const outside = [];
       for (let k = 0; k < stops; k += 1) {
         await press("Tab", "Tab", 9);
-        const out = await b.eval(`const a = document.activeElement, q = a.getBoundingClientRect(), inRegion = !!a.closest("#editor-region") && !a.closest("#editor-tabs");
-          const p = document.getElementById(inRegion ? "editor-region" : "editor").getBoundingClientRect();
-          const top = inRegion ? document.getElementById("editor-tabs").getBoundingClientRect().bottom : p.top;
-          return q.top < top - 1 || q.bottom > p.bottom + 1 ? (a.id || a.className) : null;`);
+        const out = await b.eval(`const active = document.activeElement, q = active.getBoundingClientRect();
+          const p = (active.closest("#drawerexp-body") || editorEl("editor")).getBoundingClientRect();
+          return q.top < p.top - 1 || q.bottom > p.bottom + 1 ? (active.id || active.className) : null;`);
         if (out) outside.push(out);
       }
       assert.deepStrictEqual(outside, []);
@@ -7396,6 +7413,7 @@ function run() {
           await b.waitFor(`editorEl("drawerexp-body").scrollHeight > editorEl("drawerexp-body").clientHeight`,
             { label: "an overflowed drawer on a shorter phone" });
         }
+        assert.ok((await trayGeometry()).top <= 1, "the overflowed drawer opens at its first row");
         const r = await trayGeometry({ atEnd: true, render: true });
         assert.ok(r.max > 0 && Math.abs(r.before - r.max) <= 1 && Math.abs(r.top - r.before) <= 1,
           "render preserves the user's drawer scroll at the end: " + JSON.stringify(r));
