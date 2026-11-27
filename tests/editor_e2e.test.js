@@ -6498,7 +6498,7 @@ function run() {
 
   describe("editor name field at 320x568 (NF, owner 2026-11-17)", () => {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
-    const LANDSCAPE_NF = [[667, 375, { st: 0, edTop: 0, nt: 171, sb: 159, tt: 221 }], [844, 390, { st: 0, edTop: 0, nt: 171, sb: 159, tt: 221 }]];
+    const LANDSCAPE_NF = [[667, 375], [844, 390]];
     const LANGS = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
     const crowd = () => b.eval(`editorSession.error = t("editor.crowded", { pt: "2.71", floor: "3.6" }); editorRender(); return true;`);
     const geo = () => b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
@@ -6519,6 +6519,29 @@ function run() {
       await typeLine(SCALE);
       await pause(250);
     };
+    const trayGeometry = ({ atEnd = false, render = false } = {}) => b.eval(`
+      const drawer = editorEl("drawerexp-body");
+      if (${atEnd}) drawer.scrollTop = drawer.scrollHeight;
+      const before = drawer.scrollTop;
+      const bounds = element => {
+        const { top, right, bottom, left } = element.getBoundingClientRect();
+        return { top, right, bottom, left };
+      };
+      const hitOwn = element => {
+        const { top, right, bottom, left } = bounds(element);
+        return element.contains(document.elementFromPoint((left + right) / 2, (top + bottom) / 2));
+      };
+      const saveBefore = bounds(editorEl("editor-save"));
+      if (${render}) editorRender();
+      const notes = document.querySelectorAll("#editor-notes button");
+      const first = notes[0], octave = editorEl("editor-flats"), save = editorEl("editor-save");
+      return {
+        drawer: bounds(drawer), strip: bounds(editorEl("editor-tabs")), first: bounds(first), octave: bounds(octave),
+        firstHit: hitOwn(first), octaveHit: hitOwn(octave), saveHit: hitOwn(save),
+        saveBefore, saveAfter: bounds(save), before, top: drawer.scrollTop,
+        max: drawer.scrollHeight - drawer.clientHeight, editorTop: editorEl("editor").scrollTop
+      };
+    `);
     const clear = (g, label) => {
       assert.ok(g.n.t >= g.strip.b - 0.5, `${label}: the name's top is not under the tab strip: ` + JSON.stringify(g));
       assert.ok(g.n.b <= g.reg.b + 0.5, `${label}: the name's bottom is inside the region: ` + JSON.stringify(g));
@@ -6541,20 +6564,30 @@ function run() {
       }
       test("NF en 320x568: scrolled to its end, a render leaves the region there and the octave row takes its taps", async () => {
         await openAt(320, 568, "en");
-        const r = await b.eval(`const rg = document.getElementById("editor-region"); rg.scrollTop = rg.scrollHeight; const end = rg.scrollTop;
-          editorRender();
-          const o = [...document.querySelectorAll("#editor-panel-scale .editor-octaves .mode")].pop(), q = o.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
-          return { end, st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, ok: !!hit && o.contains(hit), hit: hit && (hit.id || hit.className) };`);
-        assert.ok(r.max > 0 && r.end === r.st, "a render keeps the user's scroll: " + JSON.stringify(r));
-        assert.ok(r.ok, "the last octave button takes its own tap: " + JSON.stringify(r));
+        const initial = await trayGeometry();
+        // On hosts where the natural drawer fits at 568px, shorten the
+        // viewport to exercise real drawer scrolling instead of a zero offset.
+        if (initial.max <= 0) {
+          await b.setViewport(320, 430, true);
+          await b.waitFor(`editorEl("drawerexp-body").scrollHeight > editorEl("drawerexp-body").clientHeight`,
+            { label: "an overflowed drawer on a shorter phone" });
+        }
+        const r = await trayGeometry({ atEnd: true, render: true });
+        assert.ok(r.max > 0 && Math.abs(r.before - r.max) <= 1 && Math.abs(r.top - r.before) <= 1,
+          "render preserves the user's drawer scroll at the end: " + JSON.stringify(r));
+        assert.equal(r.editorTop, 0, "the editor itself does not scroll");
+        assert.equal(r.octaveHit, true, "the last octave button takes its own tap");
+        assert.equal(r.saveHit, true, "Save remains hittable");
+        assert.deepStrictEqual(r.saveAfter, r.saveBefore, "Save stays pinned through render");
       });
       for (const [w, h] of [[360, 640], [375, 667], [390, 844]]) {
         test(`NF guard ${w}x${h}: in every language the region still rests at its end with the name clear of the strip`, async () => {
           for (const lang of LANGS) {
             await openAt(w, h, lang);
-            const g = await geo();
-            assert.ok(Math.abs(g.st - g.max) <= 1, `${lang} ${w}x${h}: rests at its end: ` + JSON.stringify(g));
-            clear(g, `${lang} ${w}x${h}`);
+            const tray = await trayGeometry();
+            assert.ok(Math.abs(tray.top - tray.max) <= 1,
+              `${lang} ${w}x${h}: drawer rests at its end: ` + JSON.stringify(tray));
+            clear(await geo(), `${lang} ${w}x${h}`);
           }
         });
       }
@@ -6574,22 +6607,40 @@ function run() {
         test(`NF tray ${w}x${h}: at rest the first note row is in view and the region scrolls to the tray's end`, async () => {
           for (const lang of LANGS) {
             await openAt(w, h, lang);
-            const r = await b.eval(`const R = (e) => e.getBoundingClientRect(), rg = document.getElementById("editor-region"), strip = R(document.getElementById("editor-tabs")), reg = R(rg), first = R(document.querySelector("#editor-notes button"));
-              const overflows = rg.scrollHeight > rg.clientHeight;
-              rg.scrollTop = rg.scrollHeight;
-              const oct = [...document.querySelectorAll(".editor-octaves button")].pop(), last = R(oct), reg2 = R(rg);
-              return { firstTop: first.top, firstBottom: first.bottom, stripBottom: strip.bottom, regBottom: reg.bottom, overflows, lastBottom: last.bottom, reg2Bottom: reg2.bottom };`);
-            assert.ok(r.firstTop >= r.stripBottom - 0.5 && r.firstBottom <= r.regBottom + 0.5, `${lang} ${w}x${h}: the first note row is in view at rest: ` + JSON.stringify(r));
-            assert.ok(r.overflows, `${lang} ${w}x${h}: the region scrolls: ` + JSON.stringify(r));
-            assert.ok(r.lastBottom <= r.reg2Bottom + 0.5, `${lang} ${w}x${h}: scrolled to its end the octave row is in view: ` + JSON.stringify(r));
+            const rest = await trayGeometry();
+            assert.ok(rest.first.top >= rest.strip.bottom - 0.5 && rest.first.bottom <= rest.drawer.bottom + 0.5,
+              `${lang} ${w}x${h}: first note is fully in the drawer at rest: ` + JSON.stringify(rest));
+            assert.equal(rest.firstHit, true, `${lang} ${w}x${h}: first note takes its own tap at rest`);
+            const end = await trayGeometry({ atEnd: true });
+            assert.ok(Math.abs(end.top - end.max) <= 1 && end.octave.bottom <= end.drawer.bottom + 0.5,
+              `${lang} ${w}x${h}: the end brings the octave row into view: ` + JSON.stringify(end));
+            assert.equal(end.octaveHit, true, `${lang} ${w}x${h}: the octave row takes taps at the end`);
+            assert.equal(end.saveHit, true, `${lang} ${w}x${h}: Save is still tappable`);
+            assert.deepStrictEqual(end.saveAfter, rest.saveBefore, `${lang} ${w}x${h}: scrolling only moves the drawer body`);
           }
         });
       }
-      for (const [w, h, want] of LANDSCAPE_NF) {
+      for (const [w, h] of LANDSCAPE_NF) {
         test(`NF guard ${w}x${h}: the landscape column is unchanged`, async () => {
           await openAt(w, h, "en");
-          const g = await geo();
-          assert.deepStrictEqual({ st: g.st, edTop: g.edTop, nt: Math.round(g.n.t), sb: Math.round(g.strip.b), tt: Math.round(g.tray.t) }, want, JSON.stringify(g));
+          const before = await geo();
+          const tray = await trayGeometry();
+          clear(before, `${w}x${h} landscape`);
+          assert.ok(before.tray.t >= before.n.b - 0.5, "the note tray is below the name field");
+          assert.equal(tray.top, 0, "the landscape drawer opens at the start");
+          assert.equal(tray.editorTop, 0, "the landscape editor itself does not scroll");
+          assert.equal(tray.firstHit, true, "the first note takes taps");
+          assert.equal(tray.saveHit, true, "the pinned Save takes taps");
+          await crowd();
+          const after = await geo();
+          const feedback = await trayGeometry();
+          assert.equal(after.kind, "error");
+          assert.deepStrictEqual([after.n, after.strip, after.tray], [before.n, before.strip, before.tray],
+            "floating feedback does not move the landscape drawer controls");
+          assert.deepStrictEqual(feedback.saveAfter, tray.saveBefore, "floating feedback does not move Save");
+          assert.equal(feedback.firstHit, true, "the first note takes taps while feedback is shown");
+          assert.equal(feedback.saveHit, true, "Save takes taps while feedback is shown");
+          clear(after, `${w}x${h} landscape crowded`);
         });
       }
     });
