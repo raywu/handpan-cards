@@ -9013,15 +9013,20 @@ describe("OF: the sheet's seats follow the typed order", () => {
     assert.strictEqual(d2Seats(app), null);
     const rec = await save(app);
     assert.strictEqual("seats" in rec.options, false);
-    assert.deepStrictEqual(ofPlain(rec.options.guided), { rim: { size: 8, seats: [4, 3, 5, 2, 6, 1, 7, 0] } });
+    assert.deepStrictEqual(ofPlain(rec.options), {
+      palette: 0, mirror: false, mirrorBottom: false, anchor: "one", parent: null,
+      guided: { rim: { size: 8, seats: [4, 3, 5, 2, 6, 1, 7, 0] } }
+    });
     const stored = ofPlain(app.get("savedState.entries[0].record"));
     assert.strictEqual(stored.v, 9);
     assert.strictEqual(stored.s, ASC);
     assert.deepStrictEqual(stored.o.guided, ofPlain(rec.options.guided));
     const base = boot().generate(ASC, {});
     assert.deepStrictEqual(ofPlain(rec.chords), ofPlain(base.value.chords));
-    const pitches = fields => Object.values(fields).map(f => f[2]).sort((a, b) => a - b);
-    assert.deepStrictEqual(pitches(rec.fields), pitches(base.value.fields));
+    const withoutAngles = fields => Object.fromEntries(
+      Object.entries(ofPlain(fields)).map(([id, field]) => [id, field.filter((_, index) => index !== 4)])
+    );
+    assert.deepStrictEqual(withoutAngles(rec.fields), withoutAngles(base.value.fields));
   });
 
   test("OF: explicitly ordered typed notes keep their legacy placement and format", async () => {
