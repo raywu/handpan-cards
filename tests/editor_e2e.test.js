@@ -2194,12 +2194,13 @@ function run() {
         return true;`);
       const swipeResult = () => b.eval(`return { travel: Math.max(...window.__swipe.ys) - Math.min(...window.__swipe.ys), ghost: window.__swipe.ghost, live: !!(editorDrag && editorDrag.live), top: document.scrollingElement.scrollTop + document.getElementById("editor").scrollTop };`);
 
-      async function dragPlacedNote(ring, destination, kind, inspect) {
-        const open = await b.eval(`return drawerExperiment.expanded;`);
-        if (open) await b.click("#drawerexp-handle");
-        await b.waitFor(`drawerExperiment.state === "SHUT"`, { label: "the drawer to uncover the source note" });
-        const start = await noteAt(ring, 0);
-        const sourceHit = await b.eval(`return !!document.elementFromPoint(${start.x}, ${start.y})?.closest("#editor-pan");`);
+      async function dragPlacedNote(ring, destination, kind, inspect, opts = {}) {
+        const candidates = opts.angles || [150, 125, 100, 75, 50, 25, 15];
+        if (opts.tray) await chipAt(opts.tray);
+        else if (await b.eval(`return drawerExperiment.expanded;`)) await b.click("#drawerexp-handle");
+        await b.waitFor(`drawerExperiment.state === "${opts.tray ? "OPEN" : "SHUT"}"`, { label: "the drawer to uncover the source note" });
+        const start = opts.tray ? await chipAt(opts.tray) : await noteAt(ring, opts.index ?? 0);
+        const sourceHit = await b.eval(`return !!document.elementFromPoint(${start.x}, ${start.y})?.closest(${JSON.stringify(opts.tray ? ".tray-note" : "#editor-pan")});`);
         assert.equal(sourceHit, true, `${ring} note is visible before the drag`);
         async function pointer(phase, pt) {
           if (kind === "touch") {
@@ -2217,8 +2218,10 @@ function run() {
         try {
           await pointer("move", { x: start.x + (start.x < 40 ? 28 : -28), y: start.y });
           await b.waitFor(`!!editorDrag?.live`, { label: `the ${kind} ${ring} drag to lift` });
+          const validTarget = hit => destination === "outside" || destination === "ding"
+            ? hit.kind === destination : hit.kind === "spot" && hit.ring === destination;
           let point, hit;
-          for (let attempt = 0; attempt < 7; attempt++) {
+          for (const angle of candidates) {
             point = await b.eval(`
               const target = ${JSON.stringify(destination)};
               const svg = document.querySelector("#editor-pan svg");
@@ -2236,20 +2239,27 @@ function run() {
                 const r = svg.querySelector('.ehit[data-ring="ding"]').getBoundingClientRect();
                 return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
               }
-              const angle = [150, 125, 100, 75, 50, 25, 15][${attempt}] * Math.PI / 180;
-              const orbit = editorSolve(editorSession.history.present).value.geom.bottom || 1.15;
+              const angle = ${angle} * Math.PI / 180;
+              const geom = editorSolve(editorSession.history.present).value.geom;
+              const orbit = geom[target] || (target === "bottom" ? 1.15 : 0.38);
               const pt = new DOMPoint(orbit * Math.cos(angle) * 100, -orbit * Math.sin(angle) * 100)
                 .matrixTransform(svg.getScreenCTM());
               return { x: pt.x, y: pt.y };
             `);
             await pointer("move", point);
             hit = await b.eval(`return editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);`);
-            if (destination === "bottom" ? hit.kind === "spot" && hit.ring === "bottom" : hit.kind === destination) break;
+            if (validTarget(hit)) break;
           }
-          assert.ok(destination === "bottom" ? hit.kind === "spot" && hit.ring === "bottom" : hit.kind === destination,
+          assert.ok(validTarget(hit),
             `drag target ${destination}: ${JSON.stringify(hit)}`);
           if (inspect) await inspect();
-          await pointer("up", kind === "touch" ? null : point);
+          if (opts.cancel) {
+            if (kind === "touch") await pointer("cancel", null);
+            else {
+              await b.key("Escape", "Escape", 27);
+              await pointer("up", point);
+            }
+          } else await pointer("up", kind === "touch" ? null : point);
           released = true;
           await b.waitFor(`!editorDrag && !editorEl("editor").matches(".dragging, .settling")`, { label: "the placed-note drag to settle" });
         } finally {
@@ -2257,41 +2267,64 @@ function run() {
         }
       }
 
+      const visibleLanding = (ring) => b.eval(`
+        const key = ${JSON.stringify(ring)};
+        const guided = document.querySelector('#editor-pan .guided-landing[data-guided-zone="' + key + '"]');
+        const circle = guided?.querySelector("circle") || document.querySelector("#editor-pan .editor-landing");
+        return circle ? { angle: guided ? Number(guided.dataset.angle) : null,
+          x: Number(circle.getAttribute("cx")), y: Number(circle.getAttribute("cy")), r: Number(circle.getAttribute("r")) } : null;`);
+      const noteAngle = (ring, name) => b.eval(`
+        const ring = ${JSON.stringify(ring)}, model = editorSession.history.present;
+        return editorAnglesOf(editorSolve(model), ring)[editorNames(model, ring).indexOf(${JSON.stringify(name)})];`);
+
       for (const kind of ["mouse", "touch"]) {
         describe(kind, () => {
-          test("D3: a tray note dragged to a rim spot, a cyclops spot and a bottom spot is placed there", async () => {
+          test("D3: a tray note dragged to the rim, Cyclops and underside follows each live landing", async () => {
             await setup(SCALE);
-            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { mid: async () => {
-              assert.strictEqual(await ghostText(), "B4", "the ghost carries the note name");
-              assert.strictEqual(await status(), "Dragging B4: drop on a spot or a note, or off the pan to remove it.");
-            } });
-            assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"]);
-            assert.strictEqual(await ghostText(), null);
+            const drop = async (chip, pitch, ring, angles) => {
+              const before = await core();
+              const steps = await pastLen();
+              let landing;
+              await dragPlacedNote(ring, ring, kind, async () => {
+                assert.strictEqual(await ghostText(), pitch);
+                assert.match(await status(), new RegExp(`^Dragging ${pitch}:`));
+                landing = await visibleLanding(ring);
+                assert.ok(landing, `the ${ring} landing is drawn before release`);
+              }, { tray: chip, angles });
+              assert.ok((await names(ring)).includes(pitch), await status());
+              const actualAngle = await noteAngle(ring, pitch);
+              assert.ok(Number.isFinite(actualAngle), "the placed note has an angle");
+              assert.strictEqual(actualAngle, landing.angle ?? angles[0], `placed ${pitch} retains the previewed angle`);
+              assert.strictEqual(await ghostText(), null);
+              assert.strictEqual(await pastLen(), steps + 1, "one Undo step per drop");
+              await clickUndo();
+              assert.deepStrictEqual(await core(), before);
+            };
+            await drop("B", "B4", "rim", [22.5, 45, 67.5, 115, 135]);
             await b.click("#editor-oct-up");
-            assert.strictEqual(await b.eval(`return document.getElementById("editor-oct").textContent;`), "5");
-            await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
-            assert.strictEqual((await names("inner")).length, 3, await status());
-            assert.ok((await model()).options.angles.inner.includes(90));
+            await drop("E", "E5", "inner", [90, 120, 60, 150, 30]);
             await b.click("#editor-oct-down");
             await b.click("#editor-oct-down");
-            await gesture(await chipAt("F"), await spotAt(1.15, 150), kind);
-            assert.deepStrictEqual(await names("bottom"), ["F3"]);
-            assert.ok(await pastLen() >= 3, "each drop is an Undo step");
+            await drop("F", "F3", "bottom", [150]);
           });
 
-          test("U2f move at 375x667: a placed cyclops note dragged along its arc moves to the drop angle, pinned, in one Undo step", async () => {
-            await fresh(375, 667, true, true);
-            await openAdd();
-            await typeLine(SCALE);
-            await b.click("#editor-oct-up");
-            await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
-            const before = await pastLen();
-            const was = (await names("inner")).slice();
-            await gesture(await noteAt("inner", 2), await spotAt("inner", 120), kind);
-            assert.deepStrictEqual(await names("inner"), was, "the cyclops note keeps its name");
-            assert.deepStrictEqual((await model()).options.angles.inner, [null, null, 120], await status());
-            assert.strictEqual(await pastLen(), before + 1, "one Undo step");
-            assert.strictEqual(await status(), "E5 moved.Undo");
+          test("U2f move at 375x667: a Cyclops note snaps to the visible Guided landing and Undo restores its seat", async () => {
+            await setup("(D3) " + RIM8 + " | E5");
+            const modelBefore = await core();
+            const past = await pastLen();
+            const original = await noteAngle("inner", "E5");
+            let landing;
+            await dragPlacedNote("inner", "inner", kind, async () => {
+              landing = await visibleLanding("inner");
+              assert.ok(landing && landing.angle !== null && landing.angle !== original,
+                `a different Guided seat is shown: ${JSON.stringify(landing)}`);
+            }, { angles: [120, 130, 145, 60, 45] });
+            assert.deepStrictEqual(await names("inner"), ["E5"]);
+            assert.strictEqual(await noteAngle("inner", "E5"), landing.angle);
+            assert.strictEqual(await pastLen(), past + 1, "one Undo step");
+            assert.match(await status(), /^E5 moved\./);
+            await clickUndo();
+            assert.deepStrictEqual(await core(), modelBefore);
           });
 
           test("U2f move at 375x667: a placed bottom note dragged around the bottom ring moves to the drop angle, pinned, in one Undo step", async () => {
@@ -2388,19 +2421,18 @@ function run() {
             assert.deepStrictEqual(await names("bottom"), ["E3"], await status());
           });
 
-          test("U2f review: the landing ring for a tray note over an empty cyclops arc or bottom ring sits on that orbit with a note-sized radius, not on the pan centre", async () => {
+          test("U2f review: live Cyclops and underside landing outlines sit on their orbits", async () => {
             await setup("(D3) " + RIM8);
-            const landing = () => b.eval(`const c = document.querySelector("#editor-pan .editor-landing"); return c ? { x: +c.getAttribute("cx"), y: +c.getAttribute("cy"), r: +c.getAttribute("r") } : null;`);
-            const end = () => kind === "touch" ? b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }) : b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 0, y: 0, button: "left", buttons: 0, clickCount: 1 });
-            for (const [orbit, deg] of [[0.38, 90], [1.15, 150]]) {
-              await gesture(await chipAt("B"), await spotAt(orbit, deg), kind, { release: false });
-              await new Promise((done) => setTimeout(done, 60));
-              const at = await landing();
-              await end();
-              await new Promise((done) => setTimeout(done, 320));
-              assert.ok(at, "a landing ring shows over the empty arc");
-              assert.ok(Math.abs(Math.hypot(at.x, at.y) - orbit * 100) < 1.5, "ring centre on the " + orbit + " orbit, got " + JSON.stringify(at));
-              assert.ok(at.r > 8 && at.r < 30, "note-sized radius, got " + at.r);
+            const before = await core();
+            for (const [ring, chip, angles, orbit] of [["inner", "B", [90, 120, 60], 0.38], ["bottom", "B", [150], 1.15]]) {
+              await dragPlacedNote(ring, ring, kind, async () => {
+                const mark = await visibleLanding(ring);
+                assert.ok(mark, `a landing outline is visible on the empty ${ring} zone`);
+                assert.ok(Math.abs(Math.hypot(mark.x, mark.y) - orbit * 100) < 1.5,
+                  `outline centre lies on the ${orbit} orbit: ${JSON.stringify(mark)}`);
+                assert.ok(mark.r > 8 && mark.r < 30, `note-sized radius: ${mark.r}`);
+              }, { tray: chip, angles, cancel: true });
+              assert.deepStrictEqual(await core(), before, "cancelling the preview changes nothing");
             }
           });
 
