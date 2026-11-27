@@ -3149,41 +3149,58 @@ function run() {
           assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
         });
 
+        async function checkFirstUndoAfterDrop(kind) {
+        await setup(SCALE);
+        const before = await core(), depth = await pastLen();
+        await dragPlacedNote("rim", "outside", kind, null, { index: 3 });
+        assert.ok(!(await names("rim")).includes("D4"), "the native drop removed its source");
+        assert.equal(await pastLen(), depth + 1);
+        await b.waitFor(`(() => {
+          const undo = editorEl("editor-undo"), r = undo.getBoundingClientRect();
+          return !undo.disabled && undo.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        })()`, { label: "the pinned Undo to accept the first post-drop press" });
+        const point = await centreOf("#editor-undo");
+        await b.eval(`window.postDropEvents = [];
+          for (const type of ["touchstart", "touchend", "pointerdown", "pointerup", "click"]) {
+            window.addEventListener(type, event => {
+              window.postDropEvents.push([event.type, event.target.id, event.pointerId]);
+            }, { capture: true, once: true });
+          }
+          return true;`);
+        if (kind === "touch") {
+          // Use a new contact after the preceding drag, with the press and
+          // release on distinct frames so CDP cannot coalesce the input.
+          await b.send("Input.dispatchTouchEvent", {
+            type: "touchStart", touchPoints: [{ ...point, id: 2 }]
+          });
+          await b.eval("return new Promise(resolve => requestAnimationFrame(() => resolve(true)));");
+          await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        } else await tapPoint(point);
+        try {
+          await b.waitFor(`editorSession.history.past.length === ${depth}`, { label: "one native Undo press to run" });
+        } catch (error) {
+          const events = await b.eval("return window.postDropEvents;");
+          assert.fail(`${error.message}. Events: ${JSON.stringify(events)}`);
+        }
+        assert.deepStrictEqual(await core(), before, "the first native press restored the dropped note");
+        }
+
         for (const kind of ["mouse", "touch"]) {
           test("OQB click elsewhere after drop fires (" + kind + "): a press on another control right after a drop is not eaten", async () => {
-            await setup(SCALE);
-            const before = await core(), depth = await pastLen();
-            await dragPlacedNote("rim", "outside", kind, null, { index: 3 });
-            assert.ok(!(await names("rim")).includes("D4"), "the native drop removed its source");
-            assert.equal(await pastLen(), depth + 1);
-            await b.waitFor(`(() => {
-              const undo = editorEl("editor-undo"), r = undo.getBoundingClientRect();
-              return !undo.disabled && undo.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
-            })()`, { label: "the pinned Undo to accept the first post-drop press" });
-            const point = await centreOf("#editor-undo");
-            await b.eval(`window.postDropEvents = [];
-              for (const type of ["touchstart", "touchend", "pointerdown", "pointerup", "click"]) {
-                window.addEventListener(type, event => {
-                  window.postDropEvents.push([event.type, event.target.id, event.pointerId]);
-                }, { capture: true, once: true });
-              }
-              return true;`);
-            if (kind === "touch") {
-              // Use a new contact after the preceding drag, with the press and
-              // release on distinct frames so CDP cannot coalesce the input.
-              await b.send("Input.dispatchTouchEvent", {
-                type: "touchStart", touchPoints: [{ ...point, id: 2 }]
-              });
-              await b.eval("return new Promise(resolve => requestAnimationFrame(() => resolve(true)));");
-              await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-            } else await tapPoint(point);
+            if (kind === "mouse") return checkFirstUndoAfterDrop(kind);
+            // Chrome on Linux can suppress a touch click after the same CDP
+            // target has handled the mouse drag. Keep native input modes in
+            // separate browser sessions for this first-activation check.
+            const previous = b;
+            const touchBrowser = await launch({ foregroundSettle: true });
+            assert.ok(touchBrowser, "Chrome opened for the separate touch gesture");
             try {
-              await b.waitFor(`editorSession.history.past.length === ${depth}`, { label: "one native Undo press to run" });
-            } catch (error) {
-              const events = await b.eval("return window.postDropEvents;");
-              assert.fail(`${error.message}. Events: ${JSON.stringify(events)}`);
+              b = touchBrowser;
+              await checkFirstUndoAfterDrop(kind);
+            } finally {
+              b = previous;
+              await touchBrowser.close();
             }
-            assert.deepStrictEqual(await core(), before, "the first native press restored the dropped note");
           });
         }
       });
