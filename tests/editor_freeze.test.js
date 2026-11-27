@@ -1,6 +1,6 @@
 // Editor RC pan, drag and drop oracle. The Guided placement and drawer redesign is
 // approved in docs/plans/2026-11-26-editor-release-consolidation.md. The
-// expected values are frozen in tests/fixtures/editor_pan_v3.json (CONTRACT rule 2 carve-out) and are
+// expected values are frozen in tests/fixtures/editor_pan_v4.json (CONTRACT rule 2 carve-out) and are
 // regenerated only by an owner-approved render change, never to make a lane pass:
 //   node tools/regen_editor_pan_fixture.js /tmp/editor-pan-candidate.json
 // Models are built from option literals only (mirror flags, profile.map, angles), never through
@@ -15,7 +15,7 @@ const { boot } = require("./helpers/sandbox.js");
 const { launch, findBrowser, APP_READY_EXPR, assertNoUncaught } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
-const FIXTURE = path.join(REPO, "tests", "fixtures", "editor_pan_v3.json");
+const FIXTURE = path.join(REPO, "tests", "fixtures", "editor_pan_v4.json");
 const REGEN = process.env.EDITOR_FREEZE_REGEN === "1";
 const ON_CI = !!process.env.CI;
 

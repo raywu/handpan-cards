@@ -10,6 +10,6 @@ diff --git a/index.html b/index.html
    status.removeAttribute("data-kind");
 -  status.removeAttribute("data-idle");
 +  status.setAttribute("data-idle", "");
-   status.textContent = t("editor.dragging", { name: editorDragName(d.src) });
+   status.textContent = editorDragMessage(d.src);
    editorGuidedDragStart(d);
  }
