@@ -118,8 +118,8 @@ function run() {
       const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     `);
-    async function fixture(text, options = {}, oct = 3) {
-      await fresh(390, 700);
+    async function fixture(text, options = {}, oct = 3, height = 700) {
+      await fresh(390, height);
       await b.click("#strip-add");
       await b.waitFor("!!window.drawerExperiment && !!document.getElementById('editor-line')",
         { label: "the hosted editor to open" });
@@ -149,7 +149,7 @@ function run() {
       await b.waitFor("!!editorDrag?.live && !drawerExperiment.expanded",
         { label: "the touch drag to lift and clear the drawer" });
     }
-    async function aim(ring, angle) {
+    async function aim(ring, angle, landing = angle) {
       let target;
       for (let attempt = 0; attempt < 10; attempt += 1) {
         const point = await b.eval(`
@@ -170,7 +170,7 @@ function run() {
           return Math.hypot(clientX - ${point.x}, clientY - ${point.y}) <= 1.5
             ? editorDropTarget({ clientX, clientY }, drag.src) : null;
         `);
-        if (target?.kind === "spot" && target.ring === ring && target.angle === angle) return;
+        if (target?.kind === "spot" && target.ring === ring && (target.guidedAngle ?? target.angle) === landing) return;
       }
       assert.fail("touch did not reach " + ring + " " + angle + " " + JSON.stringify(target));
     }
@@ -179,7 +179,15 @@ function run() {
       return Object.fromEntries(["rim", "inner", "bottom"].map(ring => [ring, editorAnglesOf(solved, ring)]));
     `);
     async function saveAndReopen(version) {
+      await b.settle();
       const count = await savedCount();
+      const save = await b.eval(`
+        const button = editorEl("editor-save");
+        const r = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return { disabled: button.disabled, hittable: hit === button || button.contains(hit) };
+      `);
+      assert.deepEqual(save, { disabled: false, hittable: true }, "Save is ready after the drag");
       await b.click("#editor-save");
       await b.waitFor("document.getElementById('scale-sheet').hidden", { label: "Save closes the editor" });
       assert.equal(await savedCount(), count + 1);
@@ -236,7 +244,7 @@ function run() {
       await b.click("#drawerexp-handle");
       const before = await angleSnapshot();
       await lift('#editor-pan .ehit[data-ring="inner"]');
-      await aim("inner", 150);
+      await aim("inner", 150, 166);
       const landing = await b.eval(`return +document.querySelector(
         '.guided-landing[data-guided-zone="inner"]').dataset.angle;`);
       assert.equal(landing, 166);
@@ -309,6 +317,40 @@ function run() {
       assert.deepEqual(await model(), before);
       assert.equal(await b.eval('return editorEl("editor-status").textContent.trim();'),
         "B3 wasn’t placed. An exact pitch can appear only once on the handpan.");
+    });
+
+    test("EDITOR-RC-DUPLICATE-REDUCED: duplicate tray and underside drags use the circular refusal", async () => {
+      for (const source of ["tray", "bottom"]) {
+        const seed = "(D3) A3 B3 C4 D4 E4 F4 G4";
+        await fixture(source === "bottom" ? "[B3] " + seed : seed, {}, 3, 664);
+        await b.send("Emulation.setEmulatedMedia", {
+          features: [{ name: "prefers-reduced-motion", value: "reduce" }]
+        });
+        try {
+          if (source === "bottom") await b.click("#drawerexp-handle");
+          const before = await model();
+          await lift(source === "tray" ? '.tray-note[data-name="B"]' : '#editor-pan .ehit[data-ring="bottom"]');
+          await aim("inner", 90);
+          await touch("touchEnd");
+          await b.waitFor("!!document.querySelector('.placement-rejected-marker')",
+            { label: "the reduced-motion rejection marker" });
+          const result = await b.eval(`
+            const marker = document.querySelector(".placement-rejected-marker");
+            const note = marker.querySelector(".placement-rejected-note");
+            const rect = note.getBoundingClientRect();
+            return { width: rect.width, height: rect.height, radius: getComputedStyle(note).borderRadius,
+              animation: getComputedStyle(marker).animationName,
+              error: editorEl("editor-status").textContent.trim() };
+          `);
+          assert.deepEqual(result, {
+            width: 44, height: 44, radius: "50%", animation: "none",
+            error: "B3 wasn’t placed. An exact pitch can appear only once on the handpan."
+          });
+          assert.deepEqual(await model(), before);
+        } finally {
+          await b.send("Emulation.setEmulatedMedia", { features: [] });
+        }
+      }
     });
   });
 
