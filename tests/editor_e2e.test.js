@@ -170,7 +170,9 @@ function run() {
           return Math.hypot(clientX - ${point.x}, clientY - ${point.y}) <= 1.5
             ? editorDropTarget({ clientX, clientY }, drag.src) : null;
         `);
-        if (target?.kind === "spot" && target.ring === ring && (target.guidedAngle ?? target.angle) === landing) return;
+        const actual = target?.guidedAngle ?? target?.angle;
+        // CDP touch coordinate rounding can perturb an unpinned angle.
+        if (target?.kind === "spot" && target.ring === ring && Math.abs(actual - landing) < 0.01) return;
       }
       assert.fail("touch did not reach " + ring + " " + angle + " " + JSON.stringify(target));
     }
@@ -178,17 +180,19 @@ function run() {
       const solved = editorSolve(editorSession.history.present);
       return Object.fromEntries(["rim", "inner", "bottom"].map(ring => [ring, editorAnglesOf(solved, ring)]));
     `);
-    async function saveAndReopen(version) {
-      await b.settle();
-      const count = await savedCount();
-      const save = await b.eval(`
-        const button = editorEl("editor-save");
+    async function clickReady(selector) {
+      await b.waitFor(`(() => {
+        const button = document.querySelector(${JSON.stringify(selector)});
+        if (!button || button.disabled) return false;
         const r = button.getBoundingClientRect();
         const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-        return { disabled: button.disabled, hittable: hit === button || button.contains(hit) };
-      `);
-      assert.deepEqual(save, { disabled: false, hittable: true }, "Save is ready after the drag");
-      await b.click("#editor-save");
+        return hit === button || button.contains(hit);
+      })()`, { label: selector + " to be enabled and hittable" });
+      await b.click(selector);
+    }
+    async function saveAndReopen(version) {
+      const count = await savedCount();
+      await clickReady("#editor-save");
       await b.waitFor("document.getElementById('scale-sheet').hidden", { label: "Save closes the editor" });
       assert.equal(await savedCount(), count + 1);
       const entry = await b.eval("return savedState.entries.at(-1);");
@@ -212,7 +216,11 @@ function run() {
         const mark = `#editor-pan .guided-landing[data-guided-zone="${ring}"]`;
         await b.waitFor(`!!document.querySelector(${JSON.stringify(mark)})`, { label: "the growth outline to appear" });
         const angle = await b.eval(`return +document.querySelector(${JSON.stringify(mark)}).dataset.angle;`);
-        await b.settle();
+        await b.waitFor(`(() => {
+          const circle = document.querySelector(${JSON.stringify(mark + " circle")});
+          const r = circle?.getBoundingClientRect();
+          return !!r && !!document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest("#editor-pan");
+        })()`, { label: "the growth target to be exposed" });
         await touch("touchStart", await center(mark + " circle"));
         await touch("touchEnd");
         await b.waitFor("editorSession.history.past.length === 1", { label: "one placement transaction" });
@@ -250,8 +258,10 @@ function run() {
       assert.equal(landing, 166);
       await touch("touchEnd");
       await b.waitFor(`editorSession.history.past.length === ${undoDepth + 1}`, { label: "the Guided drag to commit" });
-      assert.deepEqual((await angleSnapshot()).inner, [landing]);
-      await clickUndo();
+      assert.deepEqual(await angleSnapshot(), { ...before, inner: [landing] });
+      await clickReady("#editor-undo");
+      await b.waitFor(`editorSession.history.past.length === ${undoDepth}`,
+        { label: "Undo restores the previous layout transaction" });
       assert.deepEqual(await angleSnapshot(), before);
     });
 
