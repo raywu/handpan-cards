@@ -692,9 +692,9 @@ def editor_cases(tap):
     return cases
 
 
-def editor_case_problems(cases):
+def editor_case_problems(cases, required=EDITOR_REQUIRED):
     return [
-        case_id for case_id in sorted(EDITOR_REQUIRED)
+        case_id for case_id in sorted(required)
         if [case["status"] for case in cases if case["id"] == case_id] != ["pass"]
     ]
 

@@ -13,6 +13,14 @@ from tests import suite_health
 
 PREVIEW_URL = "https://claude-rc-upgrade.handpan-cards-dev.pages.dev/editor-balanced-mock"
 
+RC_REQUIRED = suite_health.EDITOR_REQUIRED | {
+    "EDITOR-RC-STANDARD-GROW",
+    "EDITOR-RC-CYCLOPS-SNAP",
+    "EDITOR-RC-GUIDED-SAVE",
+    "EDITOR-RC-NEOTONE-SAVE",
+    "EDITOR-RC-DUPLICATE",
+}
+
 
 def served_digest():
     response = subprocess.run(
@@ -47,7 +55,7 @@ def run(expected, artifacts, wait):
         cases = suite_health.editor_cases(output)
         report.update(editor_cases=cases, total=total, failed=failed, skipped=skipped,
                       cancelled=cancelled, returncode=code)
-        report["editor_required_without_pass"] = suite_health.editor_case_problems(cases)
+        report["editor_required_without_pass"] = suite_health.editor_case_problems(cases, RC_REQUIRED)
         if served_digest() != expected_digest:
             raise ValueError("The editor preview revision changed while its tests ran.")
         return bool(not total or failed or skipped or cancelled or code

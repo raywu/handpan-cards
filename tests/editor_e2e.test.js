@@ -101,6 +101,217 @@ function run() {
   const pinInner = () => b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 125)).history;
     editorRender(); return editorSession.history.present.pins.length;`);
 
+  // These journeys exercise the published Guided drawer until its normal
+  // Add/Edit implementation lands. Model injection is fixture setup only.
+  if (process.env.HPC_EDITOR_HOSTED_URL) describe("Hosted editor RC", () => {
+    let touching = false;
+    async function touch(type, point) {
+      await b.send("Input.dispatchTouchEvent", {
+        type, touchPoints: point ? [{ ...point, id: 1, radiusX: 4, radiusY: 4, force: 1 }] : []
+      });
+      touching = type === "touchStart" || type === "touchMove";
+    }
+    afterEach(async () => {
+      if (touching) await touch("touchCancel");
+    });
+    const center = selector => b.eval(`
+      const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    `);
+    async function fixture(text, options = {}, oct = 3) {
+      await fresh(390, 700);
+      await b.click("#strip-add");
+      await b.waitFor("!!window.drawerExperiment && !!document.getElementById('editor-line')",
+        { label: "the hosted editor to open" });
+      await b.eval(`
+        const loaded = ${JSON.stringify(text)} ? editorLoad(${JSON.stringify(text)}, ${JSON.stringify(options)})
+          : { ok: true, value: editorSession.history.present };
+        if (!loaded.ok) throw Error(loaded.reason);
+        const m = loaded.value;
+        m.view = { oct: ${oct}, flats: false };
+        editorSession.history = editorHistoryNew(m);
+        editorSession.base = m;
+        editorRender();
+        return true;
+      `);
+    }
+    async function lift(selector) {
+      await b.waitFor(`(() => {
+        const node = document.querySelector(${JSON.stringify(selector)});
+        if (!node) return false;
+        const r = node.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return node.matches(".ehit") ? !!hit?.closest("#editor-pan") : node === hit || node.contains(hit);
+      })()`, { label: "the drag source to be exposed" });
+      const point = await center(selector);
+      await touch("touchStart", point);
+      await touch("touchMove", { x: point.x, y: point.y - 20 });
+      await b.waitFor("!!editorDrag?.live && !drawerExperiment.expanded",
+        { label: "the touch drag to lift and clear the drawer" });
+    }
+    async function aim(ring, angle) {
+      let target;
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        const point = await b.eval(`
+          const svg = document.querySelector("#editor-pan svg");
+          const geom = editorSolve(editorSession.history.present).value.geom;
+          const radius = editorOrbit(geom, "${ring}") * 100 + ${attempt % 2 ? 1.5 : 0};
+          const radians = ${angle} * Math.PI / 180;
+          const p = new DOMPoint(radius * Math.cos(radians), -radius * Math.sin(radians))
+            .matrixTransform(svg.getScreenCTM());
+          return { x: p.x, y: p.y };
+        `);
+        await touch("touchMove", point);
+        await new Promise(resolve => setTimeout(resolve, 60));
+        target = await b.eval(`
+          const drag = editorDrag;
+          const clientX = parseFloat(drag.ghost.style.left);
+          const clientY = parseFloat(drag.ghost.style.top);
+          return Math.hypot(clientX - ${point.x}, clientY - ${point.y}) <= 1.5
+            ? editorDropTarget({ clientX, clientY }, drag.src) : null;
+        `);
+        if (target?.kind === "spot" && target.ring === ring && target.angle === angle) return;
+      }
+      assert.fail("touch did not reach " + ring + " " + angle + " " + JSON.stringify(target));
+    }
+    const angleSnapshot = () => b.eval(`
+      const solved = editorSolve(editorSession.history.present);
+      return Object.fromEntries(["rim", "inner", "bottom"].map(ring => [ring, editorAnglesOf(solved, ring)]));
+    `);
+    async function saveAndReopen(version) {
+      const count = await savedCount();
+      await b.click("#editor-save");
+      await b.waitFor("document.getElementById('scale-sheet').hidden", { label: "Save closes the editor" });
+      assert.equal(await savedCount(), count + 1);
+      const entry = await b.eval("return savedState.entries.at(-1);");
+      assert.equal(entry.record.v, version);
+      const url = new URL(base);
+      url.searchParams.set("editorBrowserReopen", "1");
+      await b.send("Page.navigate", { url: url.href });
+      await b.waitFor(`location.search.includes("editorBrowserReopen=1") && ${APP_READY_EXPR} &&
+        booted === true && savedState.entries.some(row => row.instanceId === ${JSON.stringify(entry.instanceId)})`,
+        { timeout: 15000, label: "the committed record restores on the same hosted page" });
+      await b.click(`#decks .chip[data-selection-id="${entry.instanceId}"]`);
+      await b.waitFor("!!document.getElementById('editor-line')", { label: "the saved editor to reopen" });
+      return entry.record;
+    }
+
+    test("EDITOR-RC-STANDARD-GROW: Guided tap grows each Standard ring and preserves the pitches", async () => {
+      const seed = "(D3) A3 B3 C4 D4 E4 F4 G4 | D#4 G#4 A#4";
+      for (const [ring, count] of [["rim", 8], ["inner", 4]]) {
+        await fixture(seed, {}, 4);
+        await b.click('.tray-note[data-name="C#"]');
+        const mark = `#editor-pan .guided-landing[data-guided-zone="${ring}"]`;
+        await b.waitFor(`!!document.querySelector(${JSON.stringify(mark)})`, { label: "the growth outline to appear" });
+        const angle = await b.eval(`return +document.querySelector(${JSON.stringify(mark)}).dataset.angle;`);
+        await b.settle();
+        await touch("touchStart", await center(mark + " circle"));
+        await touch("touchEnd");
+        await b.waitFor("editorSession.history.past.length === 1", { label: "one placement transaction" });
+        const placed = await b.eval(`
+          const m = editorSession.history.present;
+          const notes = editorNames(m, "${ring}");
+          return { notes, angle: editorAnglesOf(editorSolve(m), "${ring}")[notes.indexOf("C#4")],
+            drawer: drawerExperiment.expanded };
+        `);
+        assert.equal(placed.notes.length, count);
+        assert.equal(placed.angle, angle);
+        assert.equal(placed.drawer, false);
+        await clickUndo();
+        assert.equal(await text(), seed);
+      }
+    });
+
+    test("EDITOR-RC-CYCLOPS-SNAP: a moved Cyclops note lands at the visible Guided seat", async () => {
+      await fixture("");
+      await b.eval(`
+        editorDo(m => editorReplaceDing(m, "C#3"));
+        editorDo(m => editorPlace(m, "rim", "D3"));
+        editorDo(m => editorPlace(m, "inner", "A3"));
+        editorRender();
+        return true;
+      `);
+      assert.equal(await text(), "(C#3) D3 | A3");
+      const undoDepth = await b.eval("return editorSession.history.past.length;");
+      await b.click("#drawerexp-handle");
+      const before = await angleSnapshot();
+      await lift('#editor-pan .ehit[data-ring="inner"]');
+      await aim("inner", 150);
+      const landing = await b.eval(`return +document.querySelector(
+        '.guided-landing[data-guided-zone="inner"]').dataset.angle;`);
+      assert.equal(landing, 166);
+      await touch("touchEnd");
+      await b.waitFor(`editorSession.history.past.length === ${undoDepth + 1}`, { label: "the Guided drag to commit" });
+      assert.deepEqual((await angleSnapshot()).inner, [landing]);
+      await clickUndo();
+      assert.deepEqual(await angleSnapshot(), before);
+    });
+
+    test("EDITOR-RC-GUIDED-SAVE: a custom underside move keeps Guided seats after reload", async () => {
+      await fixture("[F3] (D3) A3 C4 E4", {
+        angles: { bottom: [270] },
+        guided: { rim: { size: 7, seats: [1, 3, 0] } }
+      });
+      await b.click("#drawerexp-handle");
+      const before = await angleSnapshot();
+      await lift('#editor-pan .ehit[data-ring="bottom"]');
+      await aim("bottom", 200);
+      await touch("touchEnd");
+      await b.waitFor("editorSession.history.past.length === 1", { label: "the underside move to commit" });
+      const moved = { ...before, bottom: [200] };
+      assert.deepEqual(await angleSnapshot(), moved);
+      const shared = await b.eval(`
+        const m = editorSession.history.present;
+        const exported = editorExport(m);
+        if (!exported.code) throw Error(exported.reason);
+        const imported = editorLoadShare(exported.code);
+        if (!imported.ok) throw Error(imported.reason);
+        const solved = editorSolve(imported.value);
+        return { wire: exported.code[0], rim: editorAnglesOf(solved, "rim"),
+          inner: editorAnglesOf(solved, "inner"), bottom: editorAnglesOf(solved, "bottom") };
+      `);
+      assert.deepEqual(shared, { wire: "B", ...moved });
+      const record = await saveAndReopen(9);
+      assert.deepEqual(record.o.angles.bottom, [200]);
+      assert.deepEqual(await angleSnapshot(), moved);
+    });
+
+    test("EDITOR-RC-NEOTONE-SAVE: a Neotone move occupies the chosen slot after reload", async () => {
+      const map = ["r57", "r58", "r60", null, "r62", "r64", "r65", "r67", null,
+        null, null, null, null, null, null, null, null, null];
+      await fixture("(D3) A3 Bb3 C4 D4 E4 F4 G4", { profile: { id: "paired", rev: 3, map } });
+      await b.click("#drawerexp-handle");
+      await lift('#editor-pan .ehit[data-ring="rim"][data-i="0"]');
+      await touch("touchMove", await center('#editor-pan .eslot[data-slot="3"]'));
+      await b.waitFor('!!document.querySelector("#editor-pan .editor-landing")',
+        { label: "the Neotone landing outline" });
+      await touch("touchEnd");
+      await b.waitFor("editorSession.history.past.length === 1", { label: "the Neotone slot move to commit" });
+      const snapshot = () => b.eval(`
+        const m = editorSession.history.present;
+        return { map: m.options.profile.map, place: editorSolve(m).value.geom.place };
+      `);
+      const moved = await snapshot();
+      assert.equal(moved.map[3], "r57");
+      assert.equal(moved.map[0], null);
+      assert.deepEqual((await saveAndReopen(8)).o.profile.map, moved.map);
+      assert.deepEqual(await snapshot(), moved);
+    });
+
+    test("EDITOR-RC-DUPLICATE: a duplicate drag explains the pitch conflict", async () => {
+      await fixture("(D3) A3 B3 C4 D4 E4 F4 G4");
+      const before = await model();
+      await lift('.tray-note[data-name="B"]');
+      await aim("inner", 90);
+      await touch("touchEnd");
+      await b.waitFor("!!document.querySelector('.placement-rejected-marker')",
+        { label: "the rejected note marker" });
+      assert.deepEqual(await model(), before);
+      assert.equal(await b.eval('return editorEl("editor-status").textContent.trim();'),
+        "B3 wasn’t placed. An exact pitch can appear only once on the handpan.");
+    });
+  });
+
   describe("D13 layout", () => {
     const IDS = ["editor-back", "editor-line", "editor-pan", "editor-hint-toggle", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
       "editor-save", "editor-tray"];
