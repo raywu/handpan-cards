@@ -15650,7 +15650,7 @@ function installEditorDrawer() {
   function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;manualDrawer(!expanded);}
   handle.addEventListener('pointerdown',down);handle.addEventListener('pointermove',move);for(const n of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(n,up);handle.addEventListener('click',click);handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tapRest=null;api.clearReveal();suppressClick=false;e.preventDefault();e.stopPropagation();dragRest=null;manualDrawer(!expanded);}});
   function focusIn(e){if(e.target===scaleLine){lineFocusWidth=innerWidth;return;}if(body.contains(e.target))setExpanded(true,{immediate:true});else if(e.target.closest?.('#editor-pan')){const r=e.target.getBoundingClientRect(),cover=drawer.getBoundingClientRect();if(r.right>cover.left&&r.left<cover.right&&r.bottom>cover.top&&r.top<Math.min(innerHeight,cover.bottom))setExpanded(false,{immediate:true});}}
-  function key(e){clearRejection();const s=editorSession;if(e.key==='Escape'&&!e.target.closest?.('#editor-form')&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}
+  function key(e){clearRejection();const s=editorSession;if(e.key==='Escape'&&drawer.contains(e.target)&&!e.target.closest?.('#editor-form')&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}
 
   function resize(){api.clearPlacement();const changedWidth=innerWidth!==lastWidth;const rotation=changedWidth||(lineFocusWidth===null&&(innerWidth>innerHeight)!==lastOrientation);lastWidth=innerWidth;if(rotation)lastOrientation=innerWidth>innerHeight;gesture=null;if(rotation){dragRest=null;setExpanded(true,{immediate:true});}layout();}
   function lineBlur(){lineFocusWidth=null;requestAnimationFrame(layout);}
@@ -17846,8 +17846,20 @@ async function editorSave(fromDialog = false) {
   if (!s || s.saving || savePending || s.saveAcknowledged) return;
   editorCommitName();
   if (s.editing) editorCommitLine();
-  if (s.editing) return;
-  if (typeof editorCommitForm === "function" && !editorCommitForm()) return;
+  if (s.editing) {
+    if (fromDialog) {
+      editorShowDialog(false);
+      editorEl("editor-line").focus();
+    }
+    return;
+  }
+  if (!editorCommitForm(!fromDialog)) {
+    if (fromDialog) {
+      editorShowDialog(false);
+      editorFormFocus(s.formIssue.key);
+    }
+    return;
+  }
   const m = s.history.present;
   if (!editorCanSave(m)) {
     if (fromDialog) { s.error = editorEmptyPrompt(m); editorRender(); }

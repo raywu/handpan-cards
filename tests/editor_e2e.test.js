@@ -411,6 +411,11 @@ function run() {
         await b.key("Enter", "Enter", 13);
       };
       await enter("invalid");
+      await clickReady("#editor-back");
+      await clickReady("#editor-dlg-save");
+      await b.waitFor('editorEl("editor-dialog").hidden', { label: "invalid form Save to return to the editor" });
+      assert.equal(await b.eval('return document.activeElement.id;'), "editor-form-ding");
+      assert.equal(await b.eval('return editorEl("editor-form-ding").value;'), "invalid");
       assert.equal(await b.eval('return editorEl("editor-form-ding").getAttribute("aria-invalid");'), "true");
       assert.equal(await savedCount(), 0);
       await enter("E3");
