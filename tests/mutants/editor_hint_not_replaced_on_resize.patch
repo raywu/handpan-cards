@@ -1,5 +1,5 @@
-# kills: P0 hint resize: an open Hint block is re-placed over the controls area when the viewport rotates
-# suite: node --test --test-name-pattern ^P0.hint.resize tests/editor_e2e.test.js
+# kills: P0 Placement help resize: the open overlay follows the drawer when the viewport rotates
+# suite: node --test --test-name-pattern ^P0.Placement.help.resize: tests/editor_e2e.test.js
 # fault: The resize handler no longer re-places the open Hint block.
 diff --git a/index.html b/index.html
 --- a/index.html

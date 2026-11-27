@@ -1,5 +1,5 @@
-# kills: PF 375x667: the Hint block is an overlay on the whole controls area, nothing moves when it toggles, and a second tap or Escape closes it
-# suite: node --test --test-name-pattern ^PF.375x667..the.Hint.block.is.an.overlay tests/editor_e2e.test.js
+# kills: EHC hint card 390x844: the open card covers the tabs and carries the close button at its top right
+# suite: node --test --test-name-pattern ^EHC.hint.card.390x844: tests/editor_e2e.test.js
 # fault: The hint block is back in the flow, so opening it pushes the tabs down.
 diff --git a/index.html b/index.html
 --- a/index.html
