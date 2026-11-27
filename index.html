@@ -1360,7 +1360,7 @@ html.account-open, html.export-open{overflow:hidden}
 #editor-pan svg:has(.guided-landing[data-insert][data-growth][data-guided-zone="rim"]) :is([data-editor-drawn-zone="rim"],.ehit[data-ring="rim"],.editor-draft-pitch[data-ring="rim"]),
 #editor-pan svg:has(.guided-landing[data-insert][data-growth][data-guided-zone="inner"]) :is([data-editor-drawn-zone="inner"],.ehit[data-ring="inner"],.editor-draft-pitch[data-ring="inner"]){visibility:hidden}
 #editor-pan .guided-landing[data-insert] circle{stroke-dasharray:3 2.5}
-#editor-pan .guided-reflow[data-replace] circle{fill:#fff;stroke:#242424;stroke-dasharray:none}
+#editor-pan .guided-reflow[data-replace] > circle:first-child{fill:#fff;stroke:#242424;stroke-dasharray:none}
 #editor-pan .editor-landing[data-replace]{fill:none;stroke:#443361;stroke-dasharray:none}
 #editor-pan .guided-reflow[data-replace] text{fill:#242424}
 @media print{
@@ -16678,6 +16678,7 @@ function editorGuidedMarks(guided, m, tab = null) {
   const fields = ringIds(solved.fields, ring).map(key => solved.fields[key]);
   const grows = editorGuidedShowsProjection(guided.projection);
   const previous = insert && grows ? editorNames(m, ring).map(name => editorNameEntry(name, ring)[2]) : [];
+  const issues = previous.length ? editorDraftPitchIssues(m) : [];
   return fields.map(field => {
     const [letter, octave, pitch, , angle] = field;
     const note = letter + octave;
@@ -16692,8 +16693,10 @@ function editorGuidedMarks(guided, m, tab = null) {
       : editorGuidedFocusAttrs(tab, ring, angle, intent);
     const attrs = landing && insert ? " data-insert" : replace ? ` data-replace="${index}"` : "";
     const label = !landing || insert ? `<text x="${x}" y="${y}">${escapeHtml(note)}</text>` : "";
+    const warning = replace && issues.some(issue => issue.ring === ring && issue.i === index)
+      ? `<circle class="editor-draft-pitch" aria-hidden="true" cx="${x}" cy="${y}" r="${r + 2}"/>` : "";
     return `<g class="guided-seat ${landing ? "guided-landing" : "guided-reflow"}" data-guided-zone="${ring}" data-angle="${angle}"${attrs}${grows ? ' data-growth="true"' : ""}${focus}>
-      <circle cx="${x}" cy="${y}" r="${r}"/>${label}</g>`;
+      <circle cx="${x}" cy="${y}" r="${r}"/>${warning}${label}</g>`;
   }).join("");
 }
 
@@ -17223,6 +17226,18 @@ function editorMoveSelected(hit, m) {
   } else s.sel = null;
   editorRender();
 }
+function editorGuidedReveal(m, source, target, angle) {
+  if (!source || target.kind !== "spot" || !editorGuidedZones.includes(target.ring)) return false;
+  const s = editorSession, ring = target.ring;
+  const guidedAngle = angle ?? s.guidedIntent?.[ring];
+  const plan = editorGuidedPlan(m, source, { ...target, guidedAngle });
+  if (!editorGuidedShowsProjection(plan?.guided?.projection)) return false;
+  (s.guidedIntent ||= {})[ring] = guidedAngle;
+  s.guidedRing = ring;
+  editorRender();
+  return true;
+}
+
 function editorPanTap(pt, pointer = false) {
   const s = editorSession;
   if (!s || s.dialog || s.editing || s.naming) return;
@@ -17242,16 +17257,8 @@ function editorPanTap(pt, pointer = false) {
   const guided = candidate && (current.kind === "spot" ||
     (candidate.growth && !candidate.previewOnly && current.kind === "note" && current.ring === candidate.ring)) ? candidate : null;
   const hit = guided || current;
-  if (source && (!guided || guided.previewOnly) && hit.kind === "spot" && !m.options.profile && editorGuidedZones.includes(hit.ring)) {
-    const guidedAngle = guided?.guidedAngle ?? turnTo(Math.atan2(pt[1], pt[0]) * 180 / Math.PI);
-    const next = editorGuidedPlan(m, source, { ...hit, guidedAngle });
-    if (editorGuidedShowsProjection(next?.guided?.projection)) {
-      (s.guidedIntent ||= {})[hit.ring] = guidedAngle;
-      s.guidedRing = hit.ring;
-      editorRender();
-      return;
-    }
-  }
+  if ((!guided || guided.previewOnly) && editorGuidedReveal(m, source, hit,
+    guided?.guidedAngle ?? turnTo(Math.atan2(pt[1], pt[0]) * 180 / Math.PI))) return;
   if (guided && source) editorGuidedCommitTap(hit, m, pointer, pt);
   else if (s.held) editorPlaceHeld(hit, m, pointer, pt);
   else editorSelectTap(hit, m);
@@ -17823,6 +17830,11 @@ function editorPanKey(e) {
     e.preventDefault();
     if (editorGuidedKey(s, m, fk)) return;
     const hit = editorKeyHit(fk);
+    if (s.held && editorGuidedReveal(m, editorGuidedTapSource(m), hit)) {
+      editorEl("editor-pan").querySelector(`.guided-landing[data-guided-zone="${hit.ring}"][data-fk]`)
+        ?.focus({ preventScroll: true });
+      return;
+    }
     if (s.held) editorPlaceHeld(hit, m); else editorSelectTap(hit, m);
     return;
   }

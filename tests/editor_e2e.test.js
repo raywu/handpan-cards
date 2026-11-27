@@ -387,6 +387,17 @@ function run() {
       await touch("touchEnd");
       assert.equal(await text(), seed, "a coalesced last motion cannot commit a layout that was never previewed");
 
+      await fixture(seed, {}, 4);
+      await b.click(tray);
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the keyboard placement preview to be exposed" });
+      await b.eval(`document.querySelector('#editor-pan [data-fk="zone:inner"]').focus(); return true;`);
+      await b.key("Enter", "Enter", 13);
+      assert.equal(await text(), seed, "the Cyclops area action only reveals its preview");
+      assert.equal(await b.eval(`return document.activeElement.matches('.guided-landing[data-insert][data-guided-zone="inner"]');`), true);
+      await b.key("Enter", "Enter", 13);
+      await b.waitFor("editorSession.history.past.length === 1", { label: "the keyboard insertion to commit" });
+      assert.equal(Object.keys(await fieldAngles("inner")).length, 4);
+
       for (const [ring, arrangement, old, index] of [
         ["rim", seed, "C4", 2],
         ["inner", "(D3) A3 | D#4 G#4 A#4", "G#4", 1]
