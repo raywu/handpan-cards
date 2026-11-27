@@ -1,6 +1,6 @@
-# kills: 844x390 scale: Save, Discard and Keep editing are hittable and the scrim covers the tabs
-# suite: node --test --test-name-pattern ^844x390.scale..Save..Discard.and.Keep.editing.are.hittable.and.the.scrim.covers.the.tabs$ tests/editor_e2e.test.js
-# fault: Let tab-area pointers pass through the scrim while leaving its dialog card interactive.
+# kills: LS 844x340: an open dialog locks the drawer's scroll
+# suite: node --test --test-name-pattern ^LS.844x340..an.open.dialog.locks.the.drawer.s.scroll$ tests/editor_e2e.test.js
+# fault: Let pointers on the drawer pass through the scrim while leaving its dialog card interactive.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
