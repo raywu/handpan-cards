@@ -7353,15 +7353,15 @@ function run() {
       const dingAt = async () => clientOf(0, -(await b.eval(`return editorSolve(editorSession.history.present).value.geom.ding_dy;`)));
       const tap = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
       const solved = () => b.eval(`const s = editorSolve(editorSession.history.present); return Object.fromEntries(Object.values(s.value.fields).filter((f) => f[3] === "bottom").map((f) => [f[0] + f[1], [f[4], f[5]]]));`);
+      const showTray = async () => {
+        if (!await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "OPEN"', { label: "the open tray" });
+      };
+      const arm = async name => {
+        await b.click('.tray-note[data-name="' + name + '"]');
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the exposed pan" });
+      };
       const buildTop = async () => {
-        const showTray = async () => {
-          if (!await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
-          await b.waitFor('drawerExperiment.state === "OPEN"', { label: "the open tray" });
-        };
-        const arm = async name => {
-          await b.click('.tray-note[data-name="' + name + '"]');
-          await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the exposed pan" });
-        };
         await showTray();
         await arm("D");
         await tap(await dingAt());
@@ -7374,11 +7374,13 @@ function run() {
       test("tapped angles: A at 100 then a lower C at 200 keep their angles when the scale completes", async () => {
         await fresh();
         await openAdd(3);
-        await b.click('.tray-note[data-name="A"]');
+        await arm("A");
         await tap(await spotAt("bottom", 100));
+        await showTray();
         await b.click("#editor-oct-down");
-        await b.click('.tray-note[data-name="C"]');
+        await arm("C");
         await tap(await spotAt("bottom", 200));
+        await showTray();
         await b.click("#editor-oct-up");
         const preview = await solved();
         await buildTop();
