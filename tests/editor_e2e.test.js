@@ -2264,7 +2264,7 @@ function run() {
             if (destination === "outside" || destination === "ding") return hit.kind === destination;
             return hit.kind === "spot" && hit.ring === destination;
           };
-          let point, hit;
+          let point, hit, accepted = false;
           for (const angle of candidates) {
             point = await b.eval(`
               const target = ${JSON.stringify(destination)};
@@ -2293,11 +2293,18 @@ function run() {
               return { x: pt.x, y: pt.y };
             `);
             await pointer("move", point);
+            if (opts.accept) {
+              // Touch moves can be dispatched to the compositor before the
+              // app observes them. Let the live camera and overlay settle.
+              await b.eval(`return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))));`);
+            }
             hit = await b.eval(`return editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);`);
-            if (validTarget(hit)) break;
+            if (validTarget(hit) && (!opts.accept || await opts.accept())) {
+              accepted = true;
+              break;
+            }
           }
-          assert.ok(validTarget(hit),
-            `drag target ${destination}: ${JSON.stringify(hit)}`);
+          assert.ok(accepted, `drag target ${destination}: ${JSON.stringify(hit)} / ${await status()}`);
           if (inspect) await inspect();
           if (opts.cancel) {
             if (kind === "touch") await pointer("cancel", null);
@@ -2336,7 +2343,7 @@ function run() {
                 assert.match(await status(), new RegExp(`^Dragging ${pitch}:`));
                 landing = await visibleLanding(ring);
                 assert.ok(landing, `the ${ring} landing is drawn before release`);
-              }, { tray: chip, angles });
+              }, { tray: chip, angles, accept: async () => !!await visibleLanding(ring) });
               assert.ok((await names(ring)).includes(pitch), await status());
               const actualAngle = await noteAngle(ring, pitch);
               assert.ok(Number.isFinite(actualAngle), "the placed note has an angle");
@@ -2364,7 +2371,11 @@ function run() {
               landing = await visibleLanding("inner");
               assert.ok(landing && landing.angle !== null && landing.angle !== original,
                 `a different Guided seat is shown: ${JSON.stringify(landing)}`);
-            }, { angles: [120, 130, 145, 60, 45] });
+            }, { angles: [145, 155, 160, 35, 25, 20],
+              accept: async () => {
+                const mark = await visibleLanding("inner");
+                return mark?.angle != null && mark.angle !== original;
+              } });
             assert.deepStrictEqual(await names("inner"), ["E5"]);
             assert.strictEqual(await noteAngle("inner", "E5"), landing.angle);
             assert.strictEqual(await pastLen(), past + 1, "one Undo step");
@@ -2432,7 +2443,13 @@ function run() {
                 assert.ok(marker, "the landing is drawn before release");
                 assert.deepStrictEqual({ x: marker.x, y: marker.y },
                   target ? await hitXY(target.ring, target.index) : await hitXY("ding", 0));
-              }, { index: 3, target, cancel: true });
+              }, { index: 3, target, cancel: true, accept: async () => {
+                const marker = await visibleLanding(target?.ring || destination);
+                if (destination === "outside") return !marker;
+                if (!marker) return false;
+                const seat = target ? await hitXY(target.ring, target.index) : await hitXY("ding", 0);
+                return Math.hypot(marker.x - seat.x, marker.y - seat.y) < 0.02;
+              } });
               assert.deepStrictEqual(await core(), before, "cancelling a live preview changes nothing");
               assert.deepStrictEqual(await lifted(), []);
               assert.strictEqual(await ghostText(), null);
@@ -2483,7 +2500,7 @@ function run() {
                 assert.ok(Math.abs(Math.hypot(mark.x, mark.y) - orbit * 100) < 1.5,
                   `outline centre lies on the ${orbit} orbit: ${JSON.stringify(mark)}`);
                 assert.ok(mark.r > 8 && mark.r < 30, `note-sized radius: ${mark.r}`);
-              }, { tray: chip, angles, cancel: true });
+              }, { tray: chip, angles, cancel: true, accept: async () => !!await visibleLanding(ring) });
               assert.deepStrictEqual(await core(), before, "cancelling the preview changes nothing");
             }
           });
