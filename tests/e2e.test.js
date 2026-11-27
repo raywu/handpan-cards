@@ -14371,6 +14371,7 @@ function run() {
 
     test("RG: a newer row written by another tab updates the notice from its channel message, without a reload", async () => {
       await rgLoad(rgRecords([]));
+      const newer = 1 + await b.eval("return newestRecordVersion();");
       assert.strictEqual(await rgStatus(), "", "no notice while every row is readable");
       const { targetId } = await b.send("Target.createTarget", { url: "about:blank" }, false);
       try {
@@ -14400,9 +14401,9 @@ function run() {
           const c = new BroadcastChannel("handpan-cards:saved-scales:v1");
           c.postMessage({ schema: 1, collectionId: "00000000-0000-4000-8000-0000000000aa", revision: ${revision} });
           c.close(); return true;`);
-        await post(rgRecords([9]), 2);
+        await post(rgRecords([newer]), 2);
         await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("1 saved scale was made in a newer version")`, { timeout: 5000, label: "the one-row notice" });
-        await post(rgRecords([9, 8]), 3);
+        await post(rgRecords([newer, newer + 1]), 3);
         await b.waitFor(`document.getElementById("saved-status").textContent.startsWith("2 saved scales were made in a newer version")`, { timeout: 5000, label: "the two-row notice" });
       } finally { await b.send("Target.closeTarget", { targetId }, false); }
     });
@@ -14410,7 +14411,9 @@ function run() {
     test("RG: the notice and the backup line fit at 320x568 in every locale", async () => {
       try {
         await b.setViewport(320, 568, true);
-        await rgLoad(rgRecords([8, 9, 10]));
+        await freshLoad();
+        const newer = 1 + await b.eval("return newestRecordVersion();");
+        await rgLoad(rgRecords([newer, newer + 1, newer + 2]));
         const langs = await b.eval(`return LANGS.slice();`);
         assert.strictEqual(langs.length, 8);
         for (const lang of langs) {

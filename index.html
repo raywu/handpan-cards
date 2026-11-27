@@ -1340,19 +1340,6 @@ html.account-open, html.export-open{overflow:hidden}
   #scale-swipe-cue,#scale-swipe-cue.back,#scale-swipe-cue.commit{transition:none}
   #scale-swipe-cue.commit{opacity:1 !important}
 }
-@media print{
-  *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
-  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
-  /* The safe-area padding is an on-screen notch reservation and has no meaning
-     on paper; left in, it shifts every page by the device's insets. */
-  body{margin:0; padding:0; background:#fff; display:block}
-  .scene{transform:none!important}
-  #app{display:block; height:auto}
-  #about, #account, #export{display:none}
-  #share-copy, #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner, #strip-add{display:none}
-  #strip-add + *{margin-left:auto}
-}
-
 #editor .guided-offer{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 #editor .guided-offer button.mode{position:static;transform:none}
 
@@ -1369,6 +1356,18 @@ html.account-open, html.export-open{overflow:hidden}
 #editor-pan .guided-reflow circle{fill:#f3efff;stroke:#6c55a4;stroke-dasharray:3 2.5}
 #editor-pan .guided-seat:focus-visible circle{stroke:#241b35;stroke-width:3}
 #editor-pan .guided-seat text{fill:#443361;font-size:7px;text-anchor:middle;dominant-baseline:central}
+@media print{
+  *{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  html,body{height:100%; min-height:0; overflow:visible; background:#fff}
+  /* The safe-area padding is an on-screen notch reservation and has no meaning
+     on paper; left in, it shifts every page by the device's insets. */
+  body{margin:0; padding:0; background:#fff; display:block}
+  .scene{transform:none!important}
+  #app{display:block; height:auto}
+  #about, #account, #export{display:none}
+  #share-copy, #share-url, #saved-status, #saved-temporary-use, #scale-swipe-cue, .move-banner, #strip-add{display:none}
+  #strip-add + *{margin-left:auto}
+}
 </style>
 </head>
 <body>
