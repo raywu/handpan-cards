@@ -4,12 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -18496,6 +18496,8 @@ function cycleTabStops(all, e) {
-   const i = stops.indexOf(document.activeElement);
+@@ -18497,4 +18497,6 @@ function cycleTabStops(all, e) {
    const next = e.shiftKey ? (i <= 0 ? stops.length - 1 : i - 1) : (i === stops.length - 1 ? 0 : i + 1);
    e.preventDefault();
 +  const drawer = stops[next].closest("#drawerexp-body");
 +  if (drawer && stops[next].getBoundingClientRect().bottom > drawer.getBoundingClientRect().bottom) return;
    stops[next].focus();
  }
- 
