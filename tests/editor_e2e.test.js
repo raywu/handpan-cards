@@ -587,7 +587,12 @@ function run() {
       assert.deepStrictEqual([t1.rings, t1.slots, t1.mut, t1.wait], [["ding"], 18, 9, 0]);
       await b.click("#editor-type-standard");
       const t2 = await targets();
-      assert.deepStrictEqual([t2.rings, t2.slots], [["bottom", "ding", "inner", "rim"], 0]);
+      assert.deepStrictEqual([t2.rings, t2.slots], [["ding"], 0]);
+      const guides = await b.eval(`
+        return [...new Set([...document.querySelectorAll("#editor-pan .guided-informational")]
+          .map(node => node.dataset.guidedZone))].sort();
+      `);
+      assert.deepStrictEqual(guides, ["inner", "rim"]);
     });
 
     test("switching pan type and back keeps the staged notes: ding C and two rim notes by tap at 390x844 return at the same rings after Neotone and Standard", async () => {
@@ -1660,6 +1665,8 @@ function run() {
     test("D23 with a bottom copy of a rim note: a held tray note still replaces a rim note and the ding", async () => {
       await setupLegacy("[C4] " + SCALE);
       await hold("B");
+      await b.waitFor('editorSession.held && drawerExperiment.state === "SHUT"',
+        { label: "the held note and cleared pan" });
       await tapNote("rim", 0);
       assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "rim")[0];`), "Bb3", "A3 gave way to B4 in pitch order");
       assert.ok(!(await status()).includes("is not a note"));
@@ -1917,6 +1924,8 @@ function run() {
         await setupLegacy("[C4] " + SCALE);
         await b.click("#editor-oct-down");
         await hold("G");
+        await b.waitFor('editorSession.held && drawerExperiment.state === "SHUT"',
+          { label: "the held note and cleared pan" });
         await tapNote("ding", 0);
         assert.match(await status(), /G3 is the ding/);
         assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "G3");
