@@ -6036,8 +6036,6 @@ function run() {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
     const NEO = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
     const POINTS = [[.25, .25], [.75, .25], [.5, .5], [.25, .75], [.75, .75]];
-    const liftInert = `const inerts = [...document.querySelectorAll("[inert]")]; inerts.forEach((el) => el.removeAttribute("inert"));`;
-    const dropInert = `inerts.forEach((el) => el.setAttribute("inert", ""));`;
     const LONG_NAME = "Kurd R\u00e9 mineur - \u591c\u660e\u3051\u306e\u97f3\u968e \u00fc\u00f1\u00e7 \u00e9\u00e0\u00e8 \u00e7\u00f4\u00eb\u00ef\u00e2 40";
     const openSaved = async (name) => {
       await openAdd();
@@ -6052,9 +6050,14 @@ function run() {
       await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
       await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
     };
-    const samplePoints = (sel) => b.eval(`${liftInert}
-      try {
-        return [...document.querySelectorAll(${JSON.stringify(sel)})].map((el) => {
+    const openHelp = async () => {
+      await b.click("#editor-more");
+      await b.click("#editor-placement-help");
+      await b.waitFor(`!document.getElementById("editor-areas").hidden &&
+        document.activeElement.id === "editor-hint-close"`, { label: "placement help and its focused Close button" });
+    };
+    const samplePoints = (sel) => b.eval(`
+        return [...document.querySelectorAll(${JSON.stringify(sel)})].filter(el => el.getClientRects().length).map((el) => {
           const r = el.getBoundingClientRect();
           const miss = ${JSON.stringify(POINTS)}.filter(([fx, fy]) => {
             const hit = document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy);
@@ -6063,26 +6066,25 @@ function run() {
           const h = document.elementFromPoint(r.left + r.width * .75, r.top + r.height * .25);
           return { id: el.id || el.textContent.slice(0, 20), miss, over: h && (h.id || h.className) };
         });
-      } finally { ${dropInert} }`);
+      `);
 
     for (const [w, h] of [[390, 844], [360, 640], [320, 568], [1280, 800]]) {
-      test(`EHM menu over toggle ${w}x${h}: with the menu open every item is hit at five points`, async () => {
+      test(`EHM menu over drawer handle ${w}x${h}: with the menu open every item is hit at five points`, async () => {
         await fresh(w, h);
         await openSaved(LONG_NAME);
         await b.click("#editor-delete");
         await pause(250);
         assert.strictEqual(await b.eval(`return document.getElementById("editor-menu").hidden;`), false, "the menu is open");
         const rows = await samplePoints("#editor-menu, #editor-menu .menuitem");
-        const over = await b.eval(`${liftInert}
-          try {
-            const m = document.getElementById("editor-menu").getBoundingClientRect(), t = document.getElementById("editor-hint-toggle").getBoundingClientRect();
+        const over = await b.eval(`
+            const m = document.getElementById("editor-menu").getBoundingClientRect(), t = document.getElementById("drawerexp-handle").getBoundingClientRect();
             const l = Math.max(m.left, t.left), r = Math.min(m.right, t.right), tp = Math.max(m.top, t.top), bt = Math.min(m.bottom, t.bottom);
             if (r <= l || bt <= tp) return { overlap: false };
             const hit = document.elementFromPoint((l + r) / 2, (tp + bt) / 2);
             return { overlap: true, inMenu: !!hit && document.getElementById("editor-menu").contains(hit), hit: hit && (hit.id || hit.className) };
-          } finally { ${dropInert} }`);
-        assert.ok(!over.overlap || over.inMenu, "the toggle paints over the open menu: " + JSON.stringify(over));
-        assert.ok(rows.length >= 2, "the menu has items");
+          `);
+        assert.ok(!over.overlap || over.inMenu, "the drawer handle paints over the open menu: " + JSON.stringify(over));
+        assert.ok(rows.some(row => row.id === "editor-placement-help"), "Placement help is a visible menu item");
         const bad = rows.filter((r) => r.miss > 0);
         assert.deepStrictEqual(bad, [], "menu items covered: " + JSON.stringify(bad));
       });
@@ -6091,23 +6093,26 @@ function run() {
     const walkTabs = async (w, h, line = SCALE) => {
       await fresh(w, h);
       await openAdd(); await typeLine(line);
-      await b.click("#editor-hint-toggle");
-      await pause(250);
+      await openHelp();
       assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
-      const probe = `${liftInert}
-        try {
+      const probe = `
           const el = document.activeElement, r = el.getBoundingClientRect(), areas = document.getElementById("editor-areas");
           const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
           return { id: el.id || String(el.className.baseVal ?? el.className) || el.tagName, ok: !!hit && (el.contains(hit) || (!!el.closest("#editor-pan") && !areas.contains(hit))), hit: hit && (hit.id || String(hit.className.baseVal ?? hit.className)) };
-        } finally { ${dropInert} }`;
+      `;
       for (const shift of [false, true]) {
         for (let i = 1; i <= 8; i++) {
           const before = await b.eval(`const a = document.activeElement; return a.id || String(a.className.baseVal ?? a.className) || a.tagName;`);
-          const beforeEl = await b.eval(`window.__ehkPrev = document.activeElement; return true;`);
-          await b.eval(`document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: ${shift}, bubbles: true, cancelable: true })); return true;`);
+          await b.eval(`window.__ehkPrev = document.activeElement; return true;`);
+          for (const type of ["keyDown", "keyUp"]) {
+            await b.send("Input.dispatchKeyEvent", {
+              type, key: "Tab", code: "Tab", windowsVirtualKeyCode: 9,
+              nativeVirtualKeyCode: 9, modifiers: shift ? 8 : 0
+            });
+          }
           await pause(40);
           const moved = await b.eval(`return document.activeElement !== window.__ehkPrev;`);
-          assert.ok(beforeEl && moved, `${shift ? "Shift+" : ""}Tab ${i} from ${before} left focus where it was`);
+          assert.ok(moved, `${shift ? "Shift+" : ""}Tab ${i} from ${before} left focus where it was`);
           const r = await b.eval(probe);
           assert.ok(r.ok, `${shift ? "Shift+" : ""}Tab ${i} from ${before} lands under another element: ${JSON.stringify(r)}`);
         }
@@ -6128,10 +6133,10 @@ function run() {
       await fresh(390, 844);
       await openAdd();
       await typeLine(NEO);
-      await b.click("#editor-hint-toggle");
-      await pause(250);
+      await openHelp();
       assert.strictEqual(await b.eval(`return editorSession.hint;`), true, "the hint is open");
-      await b.eval(`const m = document.getElementById("editor-more"); m.focus(); m.click(); return true;`);
+      await b.eval(`document.getElementById("editor-more").focus(); return true;`);
+      await b.key("Enter", "Enter", 13);
       await pause(100);
       assert.strictEqual(await b.eval(`return editorSession.menu;`), true, "the menu is open");
       assert.deepStrictEqual(await b.eval(`return [editorSession.hint, document.getElementById("editor-areas").hidden, document.getElementById("editor-hint-close").hidden];`), [false, true, true], "the hint closed");
@@ -6158,20 +6163,21 @@ function run() {
       }
     });
 
-    test("EHK4 1280x800 the open hint card covers the tab strip", async () => {
+    test("EHK4 1280x800 Placement help reopens the collapsed drawer and covers the tab strip", async () => {
       await fresh(1280, 800);
       await openAdd();
       await typeLine(NEO);
-      await b.click("#editor-hint-toggle");
-      await pause(250);
-      const r = await b.eval(`${liftInert}
-        try {
+      await b.click("#drawerexp-handle");
+      assert.strictEqual(await b.eval(`return document.getElementById("drawerexp-handle").getAttribute("aria-expanded");`), "false");
+      await openHelp();
+      assert.strictEqual(await b.eval(`return document.getElementById("drawerexp-handle").getAttribute("aria-expanded");`), "true");
+      const r = await b.eval(`
           const areas = document.getElementById("editor-areas");
           return [...document.querySelectorAll("#editor-tabs .edtab")].map((el) => {
             const q = el.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
             return { id: el.id, covered: !!hit && areas.contains(hit) };
           });
-        } finally { ${dropInert} }`);
+        `);
       assert.ok(r.length > 0, "the tab strip exists");
       assert.deepStrictEqual(r.filter((x) => !x.covered), [], "tabs not under the card: " + JSON.stringify(r));
     });
@@ -6182,8 +6188,7 @@ function run() {
       await typeLine(NEO);
       const stops = () => b.eval(`return editorTabStops().map((e) => e.id);`);
       const closed = await stops();
-      await b.click("#editor-hint-toggle");
-      await pause(250);
+      await openHelp();
       await b.click("#editor-hint-close");
       await pause(250);
       assert.deepStrictEqual(await stops(), closed);
@@ -6195,11 +6200,9 @@ function run() {
         await fresh(w, h);
         await openAdd();
         await typeLine(NEO);
-        await b.click("#editor-hint-toggle");
-        await pause(250);
+        await openHelp();
         assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), false, "the hint is open");
-        const r = await b.eval(`${liftInert}
-          try {
+        const r = await b.eval(`
             const areas = document.getElementById("editor-areas"), card = areas.getBoundingClientRect();
             const tabs = [...document.querySelectorAll("#editor-tabs .edtab")].map((el) => {
               const q = el.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
@@ -6212,7 +6215,7 @@ function run() {
               closeTop: c.top - card.top, cardTop: card.top, stripTop: strip.top,
               countsTop: document.getElementById("editor-counts").getBoundingClientRect().top - card.top,
               stops: editorTabStops().map((e) => e.id) };
-          } finally { ${dropInert} }`);
+          `);
         assert.ok(r.tabs.length >= 2 && r.tabs.every((t) => t.covered), "tab buttons covered by the card: " + JSON.stringify(r.tabs));
         assert.ok(r.closeHit, "the close button is hit at its centre: " + JSON.stringify(r));
         assert.ok(r.inside, "the close button sits inside the card: " + JSON.stringify(r));
