@@ -3259,26 +3259,38 @@ function run() {
         });
       }
 
-      test("OQA one visible undo: exactly one visible Undo in idle, holding, said-with-undo, notice and error states", async () => {
+      test("OQA one visible undo: the pinned control stays visible through every feedback state", async () => {
         await setup(SCALE);
-        assert.strictEqual(await visibleUndo(), 1, "idle");
+        const rail = () => b.eval(`
+          const undo = editorEl("editor-undo"), r = undo.getBoundingClientRect();
+          return { x:r.x, y:r.y, width:r.width, height:r.height };
+        `);
+        const before = await rail();
+        const stillPinned = async state => {
+          assert.strictEqual(await visibleUndo(), 1, state);
+          assert.deepStrictEqual(await rail(), before, state);
+          assert.equal(await b.eval(`return !!editorEl("editor-notice-undo");`), false, state);
+        };
+        await stillPinned("idle");
         await hold("B");
-        assert.strictEqual(await visibleUndo(), 1, "holding");
+        await stillPinned("holding");
         await place("rim");
-        assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo");`), true);
-        assert.strictEqual(await visibleUndo(), 1, "said with the chip");
+        await stillPinned("placement");
         await b.eval(`editorSession.say = ""; editorSession.notice = true; editorRender(); return true;`);
-        assert.strictEqual(await visibleUndo(), 1, "notice");
+        await stillPinned("notice");
         await b.eval(`editorSession.notice = false; editorSession.error = "Nope."; editorRender(); return true;`);
-        assert.strictEqual(await visibleUndo(), 1, "error");
+        await stillPinned("error");
       });
 
-      test("OQA one visible undo: focus moves to the chip when the focused toolbar Undo is hidden by it (R-OQA-5)", async () => {
+      test("OQA one visible undo: feedback keeps focus on the pinned Undo (R-OQA-5)", async () => {
         await setup(SCALE);
+        const before = await model();
         await hold("B");
-        await b.eval(`document.getElementById("editor-undo").focus(); return true;`);
-        await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
-        assert.strictEqual(await b.eval(`return document.activeElement && document.activeElement.id;`), "editor-notice-undo");
+        await b.eval(`editorEl("editor-undo").focus(); return true;`);
+        await place("rim");
+        assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-undo");
+        await b.click("#editor-undo");
+        assert.deepEqual(await model(), before);
       });
 
       test("OQA reset wraps within two lines: Reset spacing is at most two line boxes at 375, 820 and 1440", async () => {
