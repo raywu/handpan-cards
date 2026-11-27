@@ -1719,18 +1719,21 @@ function run() {
 
     test("D23: a tray note on the ding replaces it; a placed bottom note on the ding swaps seats with it", async () => {
       await setup(SCALE);
-      await hold("G");
       await b.click("#editor-oct-down");
+      await hold("G");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the held note to reveal the pan" });
       await tapNote("ding", 0);
-      assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+      assert.match(await status(), /^D3 removed\. G3 is the ding\./);
       assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "G3");
       await setup("[A2] " + SCALE);
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to clear the underside" });
       await tapNote("bottom", 0);
       await tapNote("ding", 0);
-      assert.strictEqual(await status(), "A2 is the ding. D3 took its seat.Undo");
+      assert.match(await status(), /^A2 is the ding\. D3 took its seat\./);
       assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "A2");
       assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["D3"]);
-      await b.click("#editor-notice-undo");
+      await b.click("#editor-undo");
       assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "D3");
     });
 
@@ -2181,7 +2184,7 @@ function run() {
             assert.deepStrictEqual(await names("bottom"), ["F2"]);
             assert.deepStrictEqual((await model()).options.angles.bottom, [200], await status());
             assert.strictEqual(await pastLen(), before + 1, "one Undo step");
-            assert.strictEqual(await status(), "F2 moved.Undo");
+            assert.match(await status(), /^F2 moved\./);
           });
 
           test("U2e3: a tray note over the ding lights the ding zone only, a small move lights the cyclops, and a drop on the ding replaces it with an Undo", async () => {
@@ -2205,7 +2208,8 @@ function run() {
             else await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...ding, button: "left", buttons: 0, clickCount: 1 });
             await new Promise((done) => setTimeout(done, 80));
             assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "G3");
-            assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+            assert.match(await status(), /^D3 removed\. G3 is the ding\./);
+            await b.waitFor('!editorEl("editor").matches(".dragging, .settling")', { label: "the pinned Undo to become interactive" });
             await clickUndo();
             assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "D3");
           });
