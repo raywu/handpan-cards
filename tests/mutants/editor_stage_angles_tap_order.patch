@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13021,7 +13021,7 @@ const editorStageAngles = (st, tapOrder) => {
-   if (tapOrder) return { bottom: st.angles.slice() };
-   const midi = (n) => editorNameEntry(n, "bottom")[2];
-   const order = st.bottom.map((n, k) => k).sort((x, y) => midi(st.bottom[x]) - midi(st.bottom[y]));
--  return { bottom: order.map((k) => st.angles[k]) };
-+  return { bottom: st.angles.slice() };
- };
- const editorStageRepeat = (a, b) => ({ ok: false, code: "NOTE_REPEATED", reason: HPE.core.REASONS.NOTE_REPEATED.reason.split("<A>").join(a).split("<B>").join(b) });
- // Placing a note in a ring the stage already holds, or on the rim and cyclops together, is
+@@ -13965,7 +13965,7 @@
+     if (!list) continue;
+     const order = st[ring].map((_, i) => i);
+     if (!insertionOrder) order.sort((a, b) => editorNameEntry(st[ring][a], ring)[2] - editorNameEntry(st[ring][b], ring)[2]);
+-    result[ring] = order.map(i => list[i] ?? null);
++    result[ring] = ring === "bottom" ? list.slice() : order.map(i => list[i] ?? null);
+   }
+   return result;
+ }

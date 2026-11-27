@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13217,7 +13217,7 @@ function editorGhostSolve(m, strict) {
-     const rs = real.ok && !editorIsEmpty(real.value) ? editorSolve(real.value) : null;
-     if (rs && rs.ok) {
-       const rf = rs.value.fields, seated = { 0: rf[0] };
--      const seat = (zone, names) => { const ids = ringIds(rf, zone); names.forEach((n, k) => { const src = ids.find((id) => rf[id][0] + rf[id][1] === n); if (src !== undefined) seated[ids[k]] = rf[src]; }); };
-+      const seat = (zone, names) => { const ids = ringIds(rf, zone); names.forEach((n, k) => { const src = ids.find((id) => rf[id][0] + rf[id][1] === n); if (src !== undefined) seated[src] = rf[src]; }); };
-       seat("rim", rim); seat("inner", inner); seat("bottom", bottom);
-       return { ok: true, value: { ...rs.value, fields: seated, staged: true, hasDing } };
-     }
+@@ -14117,7 +14117,7 @@
+           const src = ids.find(id => rf[id][0] + rf[id][1] === name);
+           if (src === undefined) return;
+           const id = ids[k];
+-          seated[id] = rf[src];
++          seated[src] = rf[src];
+           if (rs.value.geom.innerLabels?.[src]) innerLabels[id] = rs.value.geom.innerLabels[src];
+         });
+       };

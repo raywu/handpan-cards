@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13219,7 +13219,7 @@ function editorGhostSolve(m, strict) {
-       const rf = rs.value.fields, seated = { 0: rf[0] };
-       const seat = (zone, names) => { const ids = ringIds(rf, zone); names.forEach((n, k) => { const src = ids.find((id) => rf[id][0] + rf[id][1] === n); if (src !== undefined) seated[ids[k]] = rf[src]; }); };
-       seat("rim", rim); seat("inner", inner); seat("bottom", bottom);
--      return { ok: true, value: { ...rs.value, fields: seated, staged: true, hasDing } };
+@@ -14125,7 +14125,7 @@
+       const geom = { ...rs.value.geom };
+       if (Object.keys(innerLabels).length) geom.innerLabels = innerLabels;
+       else delete geom.innerLabels;
+-      return { ok: true, value: { ...rs.value, geom, fields: seated, staged: true, hasDing } };
 +      return { ok: true, value: { ...rs.value, geom: undefined, fields: seated, staged: true, hasDing } };
      }
      const plain = editorLoad(text, options);

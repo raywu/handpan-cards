@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12913,7 +12913,7 @@
+@@ -14315,7 +14315,7 @@
    const next = editorWithAngle(base, ring, i, angle === null ? null : stepOf(angle));
    const solved = editorSolve(next);
    if (solved.ok) return { ok: true, value: next };
--  return angle !== null && solved.code === "BAD_NOTE" ? editorNoRoom(m, ring, i, angle) : solved;
-+  return angle !== null && solved.code === "BAD_NOTE" ? solved : solved;
+-  return angle !== null && solved.code === "BAD_NOTE" && !solved.variant ? editorNoRoom(m, ring, i, angle) : solved;
++  return solved;
  }
- function editorSwapSeats(m, ring, i, j) {
-   if (m.options.profile) return editorProfileConflict();
+ function editorStageSeats(stage) {
+   const seats = {};

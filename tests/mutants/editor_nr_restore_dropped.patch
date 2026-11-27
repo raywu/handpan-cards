@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13013,7 +13013,7 @@ function editorStageMapped(old, kind) {
- function editorStagePanType(m, kind) {
-   const { other, ...old } = editorStageOf(m);
-   const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
--  const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
-+  const unchanged = false && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
-   const mapped = unchanged ? null : editorStageMapped(old, kind);
-   const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
-   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
+@@ -14885,7 +14885,7 @@
+   const modeLayouts = { ...m.modeLayouts, [from]: {
+     notation, layout, pins: m.pins, stage: m.stage
+   } };
+-  if (previous?.notation === notation && (!!previous.stage === editorIsEmpty(m))) {
++  if (false && previous?.notation === notation && (!!previous.stage === editorIsEmpty(m))) {
+     const options = { ...m.options };
+     for (const key of EDITOR_MODE_LAYOUT_KEYS) delete options[key];
+     Object.assign(options, previous.layout);

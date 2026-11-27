@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13012,7 +13012,7 @@ function editorStageSettle(m, stage, landedKey) {
+@@ -13902,7 +13902,7 @@
    const done = editorStageCommit(m, stage, landedKey);
-   if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !editorStageAngles(stage)) return done;
+   if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !stage.ding || !editorStageAngles(stage)) return done;
    const trial = editorStageCommit(m, editorStageTrial(stage));
--  return trial.code === "NO_ROOM" ? trial : done;
+-  return trial.code === "NO_ROOM" || trial.variant === "innerLabelRoom" ? trial : done;
 +  return done;
  }
  // A remove can free the room a pin relied on. While the stage could not be completed, the first pin

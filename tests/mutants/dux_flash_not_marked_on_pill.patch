@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16310,7 +16310,7 @@
-   const s = editorSession;
-   const plan = editorDropPlan(m, { from: "tray", name: editorHeldName() }, hit);
-   if (!plan.step) return;
--  if (editorDo(plan.step, plan.say, true)) s.held = null;
-+  if (editorDo(plan.step, plan.say, false)) s.held = null;
-   editorRender();
- }
- function editorTrade(m, a, b) {
+@@ -17006,7 +17006,7 @@
+   if (!plan.step && !plan.refuse) return;
+   const point = pointer && editorRejectedPoint(m, hit, pt);
+   const priorHistory = s.history;
+-  const placed = plan.step ? editorDo(plan.step, plan.say, true) : false;
++  const placed = plan.step ? editorDo(plan.step, plan.say, false) : false;
+   if (plan.refuse) s.error = plan.refuse;
+   if (placed) s.held = null;
+   const rejected = !placed && point && s.error && s.history === priorHistory;
