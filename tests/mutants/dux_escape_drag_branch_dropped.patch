@@ -1,4 +1,4 @@
-# kills: drag ux E2: the panel returns after a drop, a pointercancel, Escape and a drop off the pan, and Undo is then usable
+# kills: drag ux E2: a drop keeps the drawer closed, cancellation restores it, and Undo is usable
 # suite: node --test --test-name-pattern ^drag.ux.E2 tests/editor_e2e.test.js
 # fault: editorEscape no longer ends a live drag, so Escape leaves the ghost and the hidden panel in place.
 diff --git a/index.html b/index.html

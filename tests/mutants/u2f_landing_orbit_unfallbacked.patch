@@ -1,4 +1,4 @@
-# kills: U2f review: the landing ring for a tray note over an empty cyclops arc or bottom ring sits on that orbit with a note-sized radius, not on the pan centre
+# kills: U2f review: live Cyclops and underside landing outlines sit on their orbits
 # suite: node --test --test-name-pattern ^U2f.review tests/editor_e2e.test.js
 # fault: An empty cyclops or bottom ring has no orbit fallback, so the landing ring draws at the pan centre.
 diff --git a/index.html b/index.html

@@ -1,4 +1,4 @@
-# kills: tap select then a cross-zone spot moves the note; the last rim note is refused with the minimum copy
+# kills: tap select then a cross-zone spot moves even the last rim note as one Undo step
 # suite: node --test --test-name-pattern ^tap.select.then.a.cross.zone tests/editor_e2e.test.js
 # fault: Tap-select then a spot moves only within the same ring.
 diff --git a/index.html b/index.html

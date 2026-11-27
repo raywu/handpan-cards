@@ -1,4 +1,4 @@
-# kills: T0 geometry and style: fitted frame margins remain four SVG units
+# kills: T0 geometry and style: 375x667 .ehit sizes and offsets in viewBox units, viewBox, computed pan styles
 # suite: node --test --test-name-pattern ^T0.geometry.and.style:.375x667 tests/editor_freeze.test.js
 # fault: The resting editor frame gives the outermost labels less space.
 diff --git a/index.html b/index.html

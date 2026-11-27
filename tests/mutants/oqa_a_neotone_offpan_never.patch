@@ -1,4 +1,4 @@
-# kills: OQA neotone drag off removes: on a Neotone pan a pan note released off the pan is removed with Undo
+# kills: OQA neotone drag off removes the selected main note and pinned Undo restores its exact field
 # suite: node --test --test-name-pattern ^OQA.neotone.drag.off.removes tests/editor_e2e.test.js
 # fault: A Neotone note released off the pan snaps back instead of being removed.
 diff --git a/index.html b/index.html

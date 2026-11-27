@@ -1,4 +1,4 @@
-# kills: v4: while dragging a placed note, the source carries lift and the landing ring sits on the note or ding under it; over empty pan or itself nothing
+# kills: v4: while dragging a placed note, the source carries lift and the landing outline follows a note or Ding
 # suite: node --test --test-name-pattern ^v4: tests/editor_e2e.test.js
 # fault: The dragged placed note is not marked lifted.
 diff --git a/index.html b/index.html

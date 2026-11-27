@@ -1,6 +1,6 @@
-# kills: drag ux E2: the panel returns after a drop, a pointercancel, Escape and a drop off the pan, and Undo is then usable
+# kills: drag ux E2: a drop keeps the drawer closed, cancellation restores it, and Undo is usable
 # suite: node --test --test-name-pattern ^drag.ux.E2 tests/editor_e2e.test.js
-# fault: A committed drop leaves the panel hidden.
+# fault: A completed drop never clears the transient drag presentation.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

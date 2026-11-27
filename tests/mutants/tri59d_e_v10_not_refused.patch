@@ -1,6 +1,6 @@
-# kills: SE: version 10 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8
-# suite: node --test --test-name-pattern ^SE..version.10.and.above.is.NEEDS.NEWER.APP..and.an.app.pinned.below.v6.refuses.v8$ tests/share.test.js
-# why: A version above 9 is read instead of refused as needing a newer app.
+# kills: SE: version 12 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8
+# suite: node --test --test-name-pattern ^SE..version.12.and.above.is.NEEDS.NEWER.APP..and.an.app.pinned.below.v6.refuses.v8$ tests/share.test.js
+# fault: An unsupported version 12 or above bypasses the newer-app check.
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js

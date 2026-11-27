@@ -1,4 +1,4 @@
-# kills: U2f-8 (row 24): a tray note placed on an exact cyclops or bottom angle says where and that it stays; on the rim it says added
+# kills: U2f-8 (row 24): a tray note announces Guided reflow or an exact underside placement as appropriate
 # suite: node --test --test-name-pattern ^U2f-8 tests/editor_shell.test.js
 # fault: A cyclops or bottom placement says only that the note was added.
 diff --git a/index.html b/index.html

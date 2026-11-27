@@ -1,4 +1,4 @@
-# kills: OQA snap back says went back: a rim note dropped on an empty rim spot changes nothing and the status says it went back
+# kills: OQA snap back says went back: returning a rim note to its own seat leaves layout and history unchanged
 # suite: node --test --test-name-pattern ^OQA.snap.back.says tests/editor_e2e.test.js
 # fault: A placed note dropped off its seat snaps back without the went-back copy.
 diff --git a/index.html b/index.html

@@ -1,4 +1,4 @@
-# kills: OQA cyclops drop near midpoint: inside the cyclops/rim midpoint lands on the cyclops (ring on the inner orbit), outside on the rim
+# kills: OQA cyclops drop near midpoint: both sides resolve to the visible Guided lane and commit its seat
 # suite: node --test --test-name-pattern ^OQA.cyclops.drop.near.midpoint tests/editor_e2e.test.js
 # fault: Every hit uses the wide 0.43 area instead of the drawn bubble.
 diff --git a/index.html b/index.html

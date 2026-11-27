@@ -1,4 +1,4 @@
-# kills: OQA drag off removes with undo toast; OQA release to remove ghost: past the margin the ghost says so, release removes in one step, the chip restores
+# kills: OQA drag off removes with undo toast; OQA release to remove ghost: past the margin the ghost says so, release removes in one step, Undo restores
 # suite: node --test --test-name-pattern ^OQA.drag.off.removes.with tests/editor_e2e.test.js
 # fault: A drag past the pan edge never counts as off the pan.
 diff --git a/index.html b/index.html

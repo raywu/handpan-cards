@@ -1,5 +1,6 @@
-# kills: OQB lift clears rings (mouse/touch)
+# kills: OQB lift clears rings (
 # suite: node --test --test-name-pattern ^OQB.lift.clears.rings tests/editor_e2e.test.js
+# Mouse and touch: once a drag lifts, no selection ring, picked zone ring or held chip is left on the pan or tray.
 # fault: A lifted drag leaves the selected outline and pressed accessibility state behind.
 diff --git a/index.html b/index.html
 --- a/index.html
