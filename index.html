@@ -14931,7 +14931,7 @@ function editorConvertMode(m, kind) {
   if (kind === "neotone" && notes.inner.length)
     return editorAreaRefusal("FIELDS_FULL", t("editor.switch_cyclops"));
   if (kind === "neotone" && (notes.rim.length > NEO_MAIN || notes.bottom.length > NEO_MAIN))
-    return editorAreaRefusal("FIELDS_FULL", HPE.core.REASONS.PROFILE_FULL.reason);
+    return editorAreaRefusal("FIELDS_FULL", t("reason.PROFILE_FULL"));
   const hints = editorLinkedHints(m);
   if (m.options.profile) {
     m.options.profile.map.forEach((key, slot) => {
