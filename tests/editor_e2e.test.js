@@ -1932,6 +1932,7 @@ function run() {
         assert.strictEqual(await statusMessage(), "F5 wasn’t placed. " + refusal);
         assert.deepStrictEqual(await placementSnapshot(), before);
 
+        await b.waitFor('!editorEl("editor").matches(".dragging, .settling")', { label: "the refused drag to settle" });
         await hold("F");
         await exposedPan();
         const open = '#editor-pan .guided-open[data-guided-zone="inner"] circle';
@@ -1970,7 +1971,7 @@ function run() {
         assert.ok(after.parts.bottom.includes("D2"));
         assert.deepStrictEqual(after.parts.inner, beforeBottom.parts.inner);
         assert.strictEqual(after.depth, beforeBottom.depth + 1);
-        assert.match(await statusMessage(), /^D2 added to the bottom\./);
+        assert.match(await status(), /^D2 placed on the bottom at \d+ degrees\./);
       });
 
       test("parity 9 save: an over-cap scale saves with the same record and share link; only a further add into that area is refused", async () => {
@@ -5481,7 +5482,7 @@ function run() {
         await b.click("#editor-title");
         await b.waitFor('document.activeElement.id !== "editor-name"', { label: "Name to lose focus" });
         const unfocused = await rects(w, kh);
-        assert.ok(unfocused.svg.h >= 119 && unfocused.bar.bottom <= kh && unfocused.page, JSON.stringify(unfocused));
+        assert.ok(unfocused.svg.h >= 80 && unfocused.bar.bottom <= kh && unfocused.page, JSON.stringify(unfocused));
         assert.ok(Math.abs(unfocused.svg.h - focused.svg.h) < 1, `Name focus: pan ${unfocused.svg.h} -> ${focused.svg.h}`);
         await b.click("#editor-line");
         assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-line");

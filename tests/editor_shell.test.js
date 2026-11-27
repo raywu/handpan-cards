@@ -2033,7 +2033,14 @@ test("RCF-11: an add the pinned angle has no room for is refused, never silently
   const a = app();
   asSession(a, "new");
   a.run(`globalThis.__m = editorEmptyModel(); __m = editorPlace(__m, "bottom", "A2", 270).value; globalThis.__x = editorPlace(__m, "bottom", "B2", 270); true`);
-  assert.strictEqual(a.get("__x.ok"), false);
+  assert.strictEqual(a.get("__x.code"), "NO_ROOM");
+  assert.match(a.get("__x.reason"), /^B2 has no room at 270 degrees/);
+  a.run(`__m = editorPlace(__m, "bottom", "B2", 100).value; true`);
+  const before = JSON.stringify(plain(a.get("__m")));
+  const moved = plain(a.get('editorSetAngle(__m, "bottom", 0, 100, true)'));
+  assert.strictEqual(moved.code, "NO_ROOM");
+  assert.match(moved.reason, /^A2 has no room at 100 degrees/);
+  assert.strictEqual(JSON.stringify(plain(a.get("__m"))), before);
 });
 
 const STAGE_SCENARIO = [["bottom", "A2"], ["bottom", "B2", 100], ["bottom", "C3"]];

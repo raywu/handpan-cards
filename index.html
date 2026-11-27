@@ -13904,8 +13904,15 @@ function editorStageSettle(m, stage, landedKey) {
   if (!stage.ding) {
     for (const ring of EDITOR_PINNABLE) {
       const pins = stage.angles[ring];
-      const duplicate = pins?.findIndex((angle, i) => angle !== null && pins.indexOf(angle) !== i) ?? -1;
-      if (duplicate >= 0) return editorNoRoom(done.value, ring, duplicate, pins[duplicate]);
+      const duplicate = pins?.findIndex((angle, i) => Number.isFinite(angle) && pins.indexOf(angle) !== i) ?? -1;
+      if (duplicate >= 0) {
+        const angle = pins[duplicate];
+        const before = editorStageOf(m);
+        const oldIndex = before[ring]?.indexOf(stage[ring][duplicate]);
+        const changed = oldIndex >= 0 && before.angles?.[ring]?.[oldIndex] === angle
+          ? pins.indexOf(angle) : duplicate;
+        return editorNoRoom(done.value, ring, changed, angle);
+      }
     }
     return done;
   }
@@ -15604,8 +15611,12 @@ function installEditorDrawer() {
     const overlapsBanner = bannerBounds && bannerBounds.left < stageBounds.right &&
       bannerBounds.right > stageBounds.left;
     const availableHeight = overlapsBanner ? bannerBounds.top - stageBounds.top - 6 : Infinity;
+    const handleBounds = chrome.getBoundingClientRect();
+    const overlapsHandle = handleBounds.left < stageBounds.right && handleBounds.right > stageBounds.left;
+    const clearHandleHeight = overlapsHandle
+      ? toolbar.getBoundingClientRect().top - chrome.offsetHeight - stageBounds.top - 4 : Infinity;
     const h = Math.min(restingShell * frame.h / 200, canvasWidth * frame.h / frame.w,
-      Math.max(80, vh - rr.top - top - 56), availableHeight);
+      Math.max(80, vh - rr.top - top - 56), availableHeight, clearHandleHeight);
     if(lineFocusWidth!==innerWidth||!stage.style.height){
       stage.style.height=`${Math.max(80,h)}px`;
       if(lineFocusWidth!==null)lineFocusWidth=innerWidth;
