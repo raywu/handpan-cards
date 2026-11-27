@@ -1,8 +1,8 @@
 // Editor RC pan, drag and drop oracle. The Guided placement and drawer redesign is
 // approved in docs/plans/2026-11-26-editor-release-consolidation.md. The
-// expected values are frozen in tests/fixtures/editor_pan_v1.json (CONTRACT rule 2 carve-out) and are
+// expected values are frozen in tests/fixtures/editor_pan_v2.json (CONTRACT rule 2 carve-out) and are
 // regenerated only by an owner-approved render change, never to make a lane pass:
-//   node tools/regen_editor_pan_fixture.js
+//   node tools/regen_editor_pan_fixture.js /tmp/editor-pan-candidate.json
 // Models are built from option literals only (mirror flags, profile.map, angles), never through
 // editorSetMirror or any other function a later lane removes. No oracle here skips on CI.
 const { test, after } = require("node:test");
@@ -15,7 +15,7 @@ const { boot } = require("./helpers/sandbox.js");
 const { launch, findBrowser, APP_READY_EXPR, assertNoUncaught } = require("./helpers/cdp.js");
 
 const REPO = path.resolve(__dirname, "..");
-const FIXTURE = path.join(REPO, "tests", "fixtures", "editor_pan_v1.json");
+const FIXTURE = path.join(REPO, "tests", "fixtures", "editor_pan_v2.json");
 const REGEN = process.env.EDITOR_FREEZE_REGEN === "1";
 const ON_CI = !!process.env.CI;
 
@@ -359,11 +359,13 @@ after(() => {
   const out = {
     _what: "Recorded editor pan, drag and drop oracle after the approved Guided placement and drawer port.",
     _why: "CONTRACT rule 2 carve-out: these are recorded outputs of the editor as it stood on the base SHA below, not derived from the implementation under test. Regenerate only with an owner-approved render change, never to make a lane pass.",
-    _regen: "node tools/regen_editor_pan_fixture.js",
-    _base: "101269cc",
+    _regen: "node tools/regen_editor_pan_fixture.js /tmp/editor-pan-candidate.json",
+    _base: process.env.EDITOR_FREEZE_SOURCE,
     _geometry_note: "Geometry rows hold .ehit width, height and top-left in SVG coordinates. The frame is compared against the live SVG bounds when fitted, and its viewBox is pinned during drag and settle. Note positions use a 0.25-unit tolerance. Fitted margins allow 0.75 units for re-measuring after the viewport changes. Style rows are sha256/16 of the computed-style records (.editor-panbox transform excluded while dragging and settling). styles.sample/* holds the readable kurd rest record.",
     specs: SPECS,
     ...produced,
   };
-  fs.writeFileSync(FIXTURE, JSON.stringify(out, null, 1) + "\n");
+  const output = process.env.EDITOR_FREEZE_OUTPUT;
+  if (!output || !out._base) throw new Error("Run tools/regen_editor_pan_fixture.js with a new candidate path");
+  fs.writeFileSync(output, JSON.stringify(out, null, 1) + "\n", { flag: "wx" });
 });
