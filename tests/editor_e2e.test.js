@@ -188,7 +188,7 @@ function run() {
         `);
         const actual = target?.guidedAngle ?? target?.angle;
         // CDP touch coordinate rounding can perturb an unpinned angle.
-        if (target?.kind === "spot" && target.ring === ring && Math.abs(actual - landing) < 0.01) return;
+        if (target?.kind === "spot" && target.ring === ring && Math.abs(((actual - landing + 540) % 360) - 180) < 0.01) return;
       }
       assert.fail("touch did not reach " + ring + " " + angle + " " + JSON.stringify(target));
     }
@@ -250,6 +250,45 @@ function run() {
         assert.equal(placed.angle, angle);
         assert.equal(placed.drawer, false);
         await clickUndo();
+        assert.equal(await text(), seed);
+      }
+    });
+
+    test("Guided low rim placement stays editable after tap and drag", async () => {
+      const seed = "(Eb3) Bb3 C4 | A3";
+      const tray = '.tray-note[data-name="C#"]';
+      const circle = '#editor-pan .guided-landing[data-guided-zone="rim"] circle';
+      for (const drag of [false, true]) {
+        await fixture(seed);
+        const before = await angleSnapshot();
+        if (drag) {
+          await lift(tray);
+          await aim("rim", 0);
+          await touch("touchEnd");
+        } else {
+          await b.click(tray);
+          await b.waitFor(`!!document.querySelector(${JSON.stringify(circle)}) &&
+            drawerExperiment.state === "SHUT"`, { label: "the rim placement preview to be exposed" });
+          await touch("touchStart", await center(circle));
+          await touch("touchEnd");
+        }
+        await b.waitFor("!!document.querySelector('#editor-save-blocker')", { label: "the pitch Save blocker" });
+        const blocker = await b.eval(`
+          return { text: document.querySelector('#editor-save-blocker').textContent,
+            disabled: document.querySelector('#editor-save').disabled,
+            outline: !!document.querySelector('#editor-pan .editor-draft-pitch'),
+            lowRim: editorDraftPitchIssues(editorSession.history.present).map(issue => issue.ring) };
+        `);
+        assert.match(blocker.text, /C#3.*Eb3/);
+        assert.equal(blocker.disabled, true);
+        assert.deepEqual(blocker.lowRim, ["rim"]);
+        assert.equal(blocker.outline, true);
+        assert.deepEqual((await angleSnapshot()).inner, before.inner);
+        await b.waitFor('!editorDrag && !document.getElementById("editor").classList.contains("settling")',
+          { label: "the placement to settle before Undo" });
+        await clickReady("#editor-undo");
+        await b.waitFor("editorSession.history.past.length === 0", { label: "Undo restores the previous draft" });
+        assert.deepEqual(await angleSnapshot(), before);
         assert.equal(await text(), seed);
       }
     });

@@ -16572,6 +16572,12 @@ function editorGuidedCandidate(m, request, projected, gridSize, gridBasis) {
   });
   if (!loaded.ok) {
     if (loaded.code === "NO_FIFTH") return editorStageSettle({ ...m, fields: {}, pins: [] }, stage, name);
+    if (loaded.code === "NOTE_OUT_OF_ORDER" && loaded.variant === "ding" && !Object.keys(seats).length) {
+      // The draft solver has no legacy seat permutations for untouched rings.
+      const draft = editorWithStage({ ...m, fields: {}, pins: [] }, stage);
+      const checked = editorGhostSolve(draft, true);
+      return checked.ok ? { ok: true, value: draft } : checked;
+    }
     return loaded;
   }
   editorTidy(loaded.value.options, "guided");
