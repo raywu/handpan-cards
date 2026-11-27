@@ -2737,7 +2737,8 @@ function run() {
       for (const kind of ["mouse", "touch"]) {
         describe(kind, () => {
           test("D3: a tray note dragged to the rim, Cyclops and underside follows each live landing", async () => {
-            await setup(SCALE);
+            // Keep the legacy-to-Guided reflow under the pointer in this gesture.
+            await setupLegacy(SCALE);
             const drop = async (chip, pitch, ring, angles) => {
               const before = await core();
               const steps = await pastLen();
