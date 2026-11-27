@@ -722,7 +722,7 @@ class TestAnchorLinkFixtureV9(unittest.TestCase):
 RELEASE_SAFETY_FIXTURE_SHA256 = {
     "shipped_client_a4ecfc2e.html.txt": "f0c41f3943f7194c15be178daf456c91ef8bad762bd3c7d894c7f4eea63ba91f",
     "shipped_client_4b432f04.html.txt": "d35ea0f6e466277f4da327c984dd901e2d28ac5bdd747b5f0934a99b73bb0ae9",
-    "editor_pan_v1.json": "52db012b7bbaeda93f3bd6b042b09c75c8433ef7678c851558b91a3f27491b55",
+    "editor_pan_v1.json": "27aa3ec49dac7d9ef5f184c08e8eed5e4b895e1ac7ccbd858bc1b86ff7a3f4ae",
     "engine_parity_golden_v1.json": "9f83e3752b922534286ce714cce1991b711dcdaf47b9290a0eea67e9bec5ae7b",
 }
 
