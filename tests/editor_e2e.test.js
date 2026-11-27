@@ -540,12 +540,24 @@ function run() {
       assert.match(await statusText(), /^D\d removed\. C\d is the ding\./);
     });
 
-    test("Back with only staged notes closes with no prompt; Back after a committed scale with an edit still asks", async () => {
+    test("Back protects staged notes and committed edits without writing on Discard", async () => {
       await fresh();
       await openAdd();
       await gesture(await chipAt("A"), await spotAt("rim", 45), "mouse");
+      assert.match(await text(), /A[34]/, "the staged rim note is visible in the scale line");
+      const stagedLine = await text();
+      const stagedModel = await model();
+      await b.click("#editor-line");
+      await b.key("Enter", "Enter", 13);
+      assert.strictEqual(await text(), stagedLine);
+      assert.deepStrictEqual(await model(), stagedModel);
       await b.click("#editor-back");
-      assert.strictEqual(await dialogOpen(), false);
+      assert.strictEqual(await dialogOpen(), true);
+      await b.click("#editor-dlg-keep");
+      assert.strictEqual(await text(), stagedLine);
+      await b.click("#editor-back");
+      await b.click("#editor-dlg-discard");
+      assert.strictEqual(await savedCount(), 0);
       assert.strictEqual(await sheetHidden(), true);
       await openAdd();
       await typeLine(SCALE);

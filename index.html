@@ -14551,8 +14551,21 @@ const editorBare = (m) => {
   if (!o.name) delete o.name;
   return { ...rest, options: o };
 };
-const editorIsDirty = (base, m) => JSON.stringify(editorBare(base)) !== JSON.stringify(editorBare(m));
-const editorLineText = (m) => (editorIsEmpty(m) ? "" : HPE.core.formatTyped(m.fields, m.options.seats));
+const editorIsDirty = (base, m) => JSON.stringify(editorBare(base)) !== JSON.stringify(editorBare(m)) ||
+  (editorIsEmpty(base) && editorIsEmpty(m) && !!(editorLineText(base) || editorLineText(m)) && JSON.stringify(editorStageOf(base)) !== JSON.stringify(editorStageOf(m)));
+function editorDraftLineText(m) {
+  const fields = {};
+  const ding = editorDingOf(m);
+  if (ding) fields[0] = editorNameEntry(ding, "ding");
+  let id = 1;
+  for (const ring of EDITOR_RINGS) {
+    for (const note of editorNames(m, ring)) fields[id++] = editorNameEntry(note, ring);
+  }
+  return HPE.core.formatSeed(fields);
+}
+const editorLineText = (m) => editorIsEmpty(m)
+  ? editorDraftLineText(m)
+  : HPE.core.formatTyped(m.fields, m.options.seats);
 function editorAutoName(m) {
   if (editorIsEmpty(m)) return "";
   let auto = "";
@@ -14650,6 +14663,9 @@ function editorCommitText(m, text) {
     delete options.seats;
     delete options.angles;
     return { ok: true, value: { fields: {}, options, pins: [] }, ...reset };
+  }
+  if (editorIsEmpty(m) && editorLineText(m) && !editorDingOf(m) && !trimmed.split(/[\s|]+/).some(token => token.startsWith("(") || token.length > 1 && token.endsWith("/"))) {
+    return { ok: false, code: "NO_DING", reason: HPE.core.REASONS.NO_DING.reason };
   }
   const loaded = editorLoad(trimmed, carried);
   if (!loaded.ok) return loaded;

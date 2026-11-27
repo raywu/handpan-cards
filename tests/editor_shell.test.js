@@ -1386,11 +1386,19 @@ describe("empty-state staging", () => {
     assert.strictEqual(a.get(`editorCanSave(editorPanType(__m, "neotone").value)`), false);
   });
 
-  test("empty stage: staging and the pan type of an empty model do not make it dirty", () => {
+  test("empty stage: placed notes are dirty and a pan type change on an empty model stays clean", () => {
     const a = app();
     stagedStd(a);
-    assert.strictEqual(a.get(`editorIsDirty(__m, editorPlace(__m, "rim", "A3").value)`), false);
+    assert.strictEqual(a.get(`editorIsDirty(__m, editorPlace(__m, "rim", "A3").value)`), true);
     assert.strictEqual(a.get(`editorIsDirty(__m, editorPanType(__m, "neotone").value)`), false);
+    const partial = a.get(`(() => {
+      let m = editorPlace(__m, "bottom", "G#3").value;
+      m = editorPlace(m, "rim", "C4").value;
+      m = editorPlace(m, "rim", "G3").value;
+      return editorLineText(editorReplaceDing(m, "D3").value);
+    })()`);
+    assert.strictEqual(partial, "(D3) G3 [G#3] C4");
+
     assert.strictEqual(a.get(`editorIsDirty(__m, editorPlace(editorReplaceDing(__m, "D3").value, "rim", "A3").value)`), true);
   });
 
