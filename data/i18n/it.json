@@ -380,7 +380,7 @@
   "editor.guided.tap_growth": "Tocca il contorno evidenziato per posizionare {name}. Tocca un’altra posizione di anteprima per cambiarla.",
   "editor.guided.use_tray": "Usa la barra delle note per vedere più posizioni e mantenere la disposizione.",
   "editor.guided.pins": "Sposta una nota fissata prima di modificare la spaziatura.",
-  "editor.guided.tap_both": "Tocca uno dei due contorni evidenziati per posizionare la nota.",
+  "editor.guided.tap_both": "Tocca uno dei due contorni evidenziati per posizionare {name}.",
   "editor.guided.place": "Posiziona",
   "editor.guided.switch_input": "Passa al modulo della scala",
   "editor.guided.switch_visual": "Passa all’editor visivo della scala",

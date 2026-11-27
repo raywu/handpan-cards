@@ -3631,7 +3631,7 @@ function run() {
       await enter();
       assert.deepStrictEqual(await sel(), { ring: "rim", i: 0 });
       assert.strictEqual(await b.eval(`return document.querySelector('#editor-pan [data-fk="rim:0"]').getAttribute("aria-pressed");`), "true");
-      assert.match(await status(), /A3 picked/);
+      assert.match(await status(), /place A3\./);
       await arrow("Down");
       assert.strictEqual(await activeKey(), "rim:1");
       await arrow("Right");
@@ -4462,7 +4462,10 @@ function run() {
 
     test("tabs: a held note survives a tab switch and still places from the Scale tab", async () => {
       await setup(SCALE);
-      await hold("B");
+      await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
+      await b.send("Input.dispatchKeyEvent", { type:"keyDown", key:"Enter", code:"Enter", windowsVirtualKeyCode:13, text:"\r" });
+      await b.send("Input.dispatchKeyEvent", { type:"keyUp", key:"Enter", code:"Enter", windowsVirtualKeyCode:13 });
+      assert.ok(await b.eval("return drawerExperiment.expanded && editorHeldName() === 'B4';"));
       await b.click("#editor-tab-layout");
       assert.strictEqual(await b.eval(`return editorSession.held !== null;`), true);
       await b.click("#editor-tab-scale");
@@ -4487,17 +4490,27 @@ function run() {
       assert.ok(neo.every((x) => /^(Main|Mutant|Ding) \d\/(9|1)/.test(x[1]) && !/Full/.test(x[1].replace(/^Ding.*/, "")) ), JSON.stringify(neo));
     });
 
-    test("counts: both hint lines render under the counts on both tabs", async () => {
+    test("counts: Placement help opens above the visible controls on either tab", async () => {
       await setup(SCALE);
-      const hint = () => b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent + ":" + (e.offsetParent !== null));`);
-      const want = ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.:true", "Drop or tap a bottom note on the ding to swap it with the root.:true"];
-      assert.ok((await hint()).every((x) => x.endsWith(":false")), "collapsed until the Hint button is pressed");
-      await b.click("#editor-hint-toggle");
-      assert.deepStrictEqual(await hint(), want);
-      await b.eval(`return editorSetTab("layout");`);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-panel-layout").hidden;`), false, "the Layout tab is showing");
-      assert.deepStrictEqual(await hint(), want);
-      assert.strictEqual(await b.eval(`return !document.getElementById("editor-panels").contains(document.getElementById("editor-hint"));`), true, "the hint sits outside both panels");
+      const help = () => b.eval(`
+        const panel = editorEl("editor-areas"), hint = editorEl("editor-hint"), counts = editorEl("editor-counts");
+        const bounds = panel.getBoundingClientRect();
+        const hit = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + 8);
+        return { hidden: panel.hidden, hint: hint.textContent.trim(), count: counts.querySelectorAll(".zc").length,
+          above: panel.contains(hit), sibling: !editorEl("editor-panels").contains(panel) };
+      `);
+      for (const tab of ["scale", "layout"]) {
+        await b.click("#editor-tab-" + tab);
+        assert.ok((await help()).hidden);
+        await b.click("#editor-more");
+        await b.click("#editor-placement-help");
+        assert.deepEqual(await help(), {
+          hidden: false, hint: "Drag a note onto the handpan.", count: 4, above: true, sibling: true
+        });
+        await b.click("#editor-hint-close");
+        assert.equal(await tabNow(), tab);
+        assert.equal(await b.eval("return document.activeElement.id;"), "editor-more");
+      }
     });
 
     test("menu: the ... button opens a menu with Redo, Remove note and Reset spacing; focus moves in, arrows move, Escape closes and returns focus", async () => {

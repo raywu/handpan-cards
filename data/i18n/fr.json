@@ -380,7 +380,7 @@
   "editor.guided.tap_growth": "Touchez le contour en surbrillance pour placer {name}. Touchez une autre position d’aperçu pour la choisir.",
   "editor.guided.use_tray": "Utilisez la palette de notes pour voir plus de positions et conserver cette disposition.",
   "editor.guided.pins": "Déplacez une note épinglée avant de modifier l’espacement.",
-  "editor.guided.tap_both": "Touchez l’un des deux contours en surbrillance pour placer la note.",
+  "editor.guided.tap_both": "Touchez l’un des deux contours en surbrillance pour placer {name}.",
   "editor.guided.place": "Placer",
   "editor.guided.switch_input": "Passer au formulaire de gamme",
   "editor.guided.switch_visual": "Passer à l’éditeur visuel de gamme",

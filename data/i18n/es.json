@@ -380,7 +380,7 @@
   "editor.guided.tap_growth": "Toca el contorno resaltado para colocar {name}. Toca otra posición de vista previa para cambiarla.",
   "editor.guided.use_tray": "Usa la bandeja de notas para ver más posiciones sin perder el diseño.",
   "editor.guided.pins": "Mueve una nota fijada antes de cambiar el espaciado.",
-  "editor.guided.tap_both": "Toca uno de los dos contornos resaltados para colocar la nota.",
+  "editor.guided.tap_both": "Toca uno de los dos contornos resaltados para colocar {name}.",
   "editor.guided.place": "Colocar",
   "editor.guided.switch_input": "Cambiar al formulario de escala",
   "editor.guided.switch_visual": "Cambiar al editor visual de escalas",

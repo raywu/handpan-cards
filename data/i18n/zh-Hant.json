@@ -372,7 +372,7 @@
   "editor.guided.tap_growth": "輕觸高亮輪廓以放置 {name}。輕觸另一個預覽位置可變更放置位置。",
   "editor.guided.use_tray": "從音符盤預覽更多位置以保留目前的配置。",
   "editor.guided.pins": "更改間距前請移動一個已固定的音符。",
-  "editor.guided.tap_both": "輕觸任一高亮輪廓以放置音符。",
+  "editor.guided.tap_both": "輕觸任一高亮輪廓以放置 {name}。",
   "editor.guided.place": "放置",
   "editor.guided.switch_input": "切換到音階輸入表單",
   "editor.guided.switch_visual": "切換到視覺化音階編輯器",

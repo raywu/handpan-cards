@@ -372,7 +372,7 @@
   "editor.guided.tap_growth": "強調された枠をタップして{name}を配置します。別のプレビュー位置をタップすると配置先を変更できます。",
   "editor.guided.use_tray": "配置を保つには、音のトレイから追加位置をプレビューしてください。",
   "editor.guided.pins": "間隔を変える前に固定された音を移動してください。",
-  "editor.guided.tap_both": "強調されたどちらかの枠をタップして音を配置します。",
+  "editor.guided.tap_both": "強調されたどちらかの枠をタップして{name}を配置します。",
   "editor.guided.place": "配置",
   "editor.guided.switch_input": "スケール入力フォームに切り替え",
   "editor.guided.switch_visual": "ビジュアルスケールエディターに切り替え",

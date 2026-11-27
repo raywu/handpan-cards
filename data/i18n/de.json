@@ -380,7 +380,7 @@
   "editor.guided.tap_growth": "Tippe auf den markierten Platz, um {name} zu setzen. Tippe auf eine andere Vorschauposition, um den Platz zu ändern.",
   "editor.guided.use_tray": "Zeige in der Notenleiste weitere Plätze an, ohne das Layout zu verlieren.",
   "editor.guided.pins": "Verschiebe einen fixierten Ton, bevor du die Abstände änderst.",
-  "editor.guided.tap_both": "Tippe auf einen der beiden markierten Plätze.",
+  "editor.guided.tap_both": "Tippe auf einen der beiden markierten Plätze, um {name} zu platzieren.",
   "editor.guided.place": "Platzieren",
   "editor.guided.switch_input": "Zum Tonleiterformular wechseln",
   "editor.guided.switch_visual": "Zum visuellen Tonleiter-Editor wechseln",

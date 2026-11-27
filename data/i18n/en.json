@@ -380,7 +380,7 @@
   "editor.guided.tap_growth": "Tap the highlighted outline to place {name}. Tap another preview seat to change the placement.",
   "editor.guided.use_tray": "Use the note tray to preview more seats without losing this layout.",
   "editor.guided.pins": "Move a pinned note before changing the spacing.",
-  "editor.guided.tap_both": "Tap either highlighted outline to place.",
+  "editor.guided.tap_both": "Tap either highlighted outline to place {name}.",
   "editor.guided.place": "Place",
   "editor.guided.switch_input": "Switch to scale input form",
   "editor.guided.switch_visual": "Switch to visual scale editor",
