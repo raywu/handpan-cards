@@ -4067,12 +4067,18 @@ function run() {
       const rim = () => b.eval(`const s = editorSolve(editorSession.history.present).value.fields; return ringIds(s, "rim").map((id) => s[id][4]);`);
       const rim0 = await rim();
       await b.click("#editor-anchor-between");
-      assert.notDeepStrictEqual(await rim(), rim0);
+      const split = await rim();
+      assert.notDeepStrictEqual(split, rim0);
+      assert.deepStrictEqual(split.slice(0, 2), [292.5, 247.5], "the first two rim notes split the bottom anchor");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-anchor-between").getAttribute("aria-pressed");`), "true");
       assert.match(await code(), /between/);
       const past = await pastLen();
       await b.click("#editor-anchor-between");
       assert.strictEqual(await pastLen(), past, "the same anchor adds no step");
+      await b.click("#editor-anchor-one");
+      assert.strictEqual((await rim())[0], 270, "the first rim note sits at bottom centre");
+      await clickUndo();
+      assert.deepStrictEqual(await rim(), split, "Undo restores the split seats");
     });
 
     test("the anchor controls are at least 44px", async () => {
@@ -4268,7 +4274,7 @@ function run() {
     });
 
     test("Left and Right nudge a picked bottom or cyclops note 5 degrees, announced, one Undo step each, focus kept", async () => {
-      await setup();
+      await setupLegacy(FULL);
       for (const ring of ["bottom", "inner"]) {
         await focusKey(ring + ":0");
         await enter();

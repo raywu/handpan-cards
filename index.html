@@ -14456,6 +14456,23 @@ function editorSetAnchor(m, to) {
   if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
   const next = editorClone(m);
   if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
+  const row = next.options.guided?.rim;
+  if (row) {
+    const current = editorSolve(m);
+    if (!current.ok) return editorToggleRefused();
+    const mirror = HPE.layout.resolveMirrors(next.options).top;
+    const positions = editorGuidedPositions("rim", row.size, to, mirror);
+    const before = editorAnglesOf(current, "rim");
+    // The anchor controls refer to the first one or two labeled rim notes.
+    const required = to === "between" ? Math.min(2, before.length) : 1;
+    const seatsByDistance = editorGuidedSeatChoices("rim", before, positions)
+      .map(({ seats }) => seats).filter(seats => seats.slice(0, required).every((seat, i) => seat === i));
+    for (const seats of seatsByDistance) {
+      next.options.guided.rim = editorGuidedSeatRow(row.size, seats, to);
+      if (editorSolve(next).ok) return { ok: true, value: next };
+    }
+    return editorToggleRefused();
+  }
   return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();
 }
 /* ---- the tray and tap placement (U2c) ---- */
@@ -14841,9 +14858,8 @@ function editorTypedGuided(next, solved, zones = editorGuidedZones, previous = n
     const before = editorNames(next, ring).map((name, index) => old.get(pitch(name)) ?? angles[index]);
     const size = Math.max(ring === "rim" ? 7 : 3, before.length);
     const basis = ring === "rim" && size === 7 ? next.options.anchor ?? "one" : undefined;
-    const positions = HPE.layout.guidedGrid(ring, size, basis).map(angle => turnTo(mirror ? 180 - angle : angle));
-    return editorGuidedSeatChoices(ring, before, positions).map(({ seats }) =>
-      basis ? { size, seats, basis } : { size, seats });
+    const positions = editorGuidedPositions(ring, size, basis, mirror);
+    return editorGuidedSeatChoices(ring, before, positions).map(({ seats }) => editorGuidedSeatRow(size, seats, basis));
   });
   for (const rim of rows[0]) {
     for (const inner of rows[1]) {
@@ -16557,11 +16573,18 @@ function editorGuidedStageOptions(stage, insertionOrder) {
   return Object.keys(guided).length ? guided : null;
 }
 
-function editorGuidedRow(notes, zone, size, basis, mirror) {
-  const grid = HPE.layout.guidedGrid(zone, size, basis);
-  const seats = notes.map(note => grid.findIndex(angle => editorGuidedGap(mirror ? 180 - angle : angle, note.angle) < 1e-6));
-  if (seats.some(seat => seat < 0)) return null;
+function editorGuidedPositions(zone, size, basis, mirror) {
+  return HPE.layout.guidedGrid(zone, size, basis).map(angle => turnTo(mirror ? 180 - angle : angle));
+}
+
+function editorGuidedSeatRow(size, seats, basis) {
   return basis ? { size, seats, basis } : { size, seats };
+}
+
+function editorGuidedRow(notes, zone, size, basis, mirror) {
+  const grid = editorGuidedPositions(zone, size, basis, mirror);
+  const seats = notes.map(note => grid.findIndex(angle => editorGuidedGap(angle, note.angle) < 1e-6));
+  return seats.some(seat => seat < 0) ? null : editorGuidedSeatRow(size, seats, basis);
 }
 
 function editorGuidedCandidate(m, request, projected, gridSize, gridBasis) {
@@ -16922,7 +16945,7 @@ function editorGuidedCompact(result, ring) {
   // existing top-centred spacing convention.
   const basis = ring === "rim" && size === 7 ? row.basis || m.options.anchor || "one" : row.basis;
   const mirror = HPE.layout.resolveMirrors(m.options).top;
-  const positions = HPE.layout.guidedGrid(ring, size, basis).map(angle => turnTo(mirror ? 180 - angle : angle));
+  const positions = editorGuidedPositions(ring, size, basis, mirror);
   const solve = candidate => staged ? editorGhostSolve(candidate, true) : editorSolve(candidate);
   const current = solve(m);
   if (!current.ok) return result;
@@ -16931,7 +16954,7 @@ function editorGuidedCompact(result, ring) {
   for (const { seats } of candidates) {
     const next = editorClone(m);
     const target = staged ? editorStageOf(next) : next.options;
-    target.guided[ring] = basis ? { size, seats, basis } : { size, seats };
+    target.guided[ring] = editorGuidedSeatRow(size, seats, basis);
     if (solve(next).ok) return { ...result, value: next };
   }
   return result;
@@ -17913,10 +17936,15 @@ function editorPanKey(e) {
     e.preventDefault();
     if (editorGuidedKey(s, m, fk)) return;
     const hit = editorKeyHit(fk);
-    if (s.held && editorGuidedReveal(m, editorGuidedTapSource(m), hit)) {
-      editorEl("editor-pan").querySelector(`.guided-landing[data-guided-zone="${hit.ring}"][data-fk]`)
-        ?.focus({ preventScroll: true });
-      return;
+    if (s.held && hit.kind === "spot" && editorGuidedZones.includes(hit.ring)) {
+      editorGuidedReveal(m, editorGuidedTapSource(m), hit);
+      const pan = editorEl("editor-pan");
+      const seat = pan.querySelector(`.guided-landing[data-guided-zone="${hit.ring}"][data-fk]`) ||
+        pan.querySelector(`.guided-open[data-guided-zone="${hit.ring}"][data-fk]`);
+      if (seat) {
+        seat.focus({ preventScroll: true });
+        return;
+      }
     }
     if (s.held) editorPlaceHeld(hit, m); else editorSelectTap(hit, m);
     return;

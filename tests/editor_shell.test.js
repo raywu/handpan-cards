@@ -42,6 +42,35 @@ test("fresh Standard text seeds legal Guided rows without changing explicit orde
   assert.ok(result.unchangedStock);
 });
 
+test("typed Guided rim anchor moves the labeled first notes while preserving the other rings", () => {
+  const a = app();
+  const results = plain(a.get(`[false, true].map(mirror => {
+    const empty = editorEmptyModel();
+    const typed = editorCommitText({ ...empty, options: { mirror } },
+      "[E3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | D5").value;
+    const history = editorHistoryNew(typed);
+    const split = editorApply(history, m => editorSetAnchor(m, "between")).history;
+    const centered = editorSetAnchor(split.present, "one").value;
+    function firstNotes(model) {
+      const fields = editorSolve(model).value.fields;
+      return ringIds(fields, "rim").slice(0, 2).map(id => [Number(fields[id][5]), fields[id][4]])
+        .sort((left, right) => left[0] - right[0]);
+    }
+    return { split: firstNotes(split.present), center: firstNotes(centered),
+      same: editorSetAnchor(split.present, "between").value === split.present,
+      other: ["inner", "bottom"].every(ring => JSON.stringify(editorAnglesOf(editorSolve(split.present), ring))
+        === JSON.stringify(editorAnglesOf(editorSolve(typed), ring))),
+      undo: editorUndo(split).present === typed };
+  })`));
+  assert.deepStrictEqual(results.map(result => result.split), [
+    [[1, 292.5], [2, 247.5]], [[1, 292.5], [2, 247.5]]
+  ]);
+  for (const result of results) {
+    assert.deepStrictEqual(result.center[0], [1, 270]);
+    assert.ok(result.same && result.other && result.undo);
+  }
+});
+
 test("typed Guided growth expands the affected ring and keeps valid over-cap notation", () => {
   const a = app();
   const result = plain(a.get(`(() => {
