@@ -2260,6 +2260,7 @@ function run() {
           await pointer("move", { x: start.x + (start.x < 40 ? 28 : -28), y: start.y });
           await b.waitFor(`!!editorDrag?.live`, { label: `the ${kind} ${ring} drag to lift` });
           const validTarget = hit => {
+            if (Number.isInteger(opts.slot)) return hit.kind === "spot" && hit.slot === opts.slot;
             if (opts.target) return hit.kind === "note" && hit.ring === opts.target.ring && hit.i === opts.target.index;
             if (destination === "outside" || destination === "ding") return hit.kind === destination;
             return hit.kind === "spot" && hit.ring === destination;
@@ -2285,8 +2286,14 @@ function run() {
                 const r = svg.querySelector(selector).getBoundingClientRect();
                 return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
               }
-              const angle = ${angle} * Math.PI / 180;
               const geom = editorSolve(editorSession.history.present).value.geom;
+              const slot = ${JSON.stringify(opts.slot ?? null)};
+              if (Number.isInteger(slot)) {
+                const p = neoSlotPoint(slot, null, geom.turn);
+                const pt = new DOMPoint(p.x, p.y).matrixTransform(svg.getScreenCTM());
+                return { x: pt.x, y: pt.y };
+              }
+              const angle = ${angle} * Math.PI / 180;
               const orbit = geom[target] || (target === "bottom" ? 1.15 : 0.38);
               const pt = new DOMPoint(orbit * Math.cos(angle) * 100, -orbit * Math.sin(angle) * 100)
                 .matrixTransform(svg.getScreenCTM());
@@ -3087,15 +3094,23 @@ function run() {
           });
         }
       });
-      test("OQA neotone drag off removes: on a Neotone pan a pan note released off the pan is removed with Undo", async () => {
+      test("OQA neotone drag off removes the selected main note and pinned Undo restores its exact field", async () => {
         await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
         await b.click("#editor-type-neotone");
         const before = await core();
-        let cls = null;
-        await gesture(await noteAt("rim", 2), await offPan(), "mouse", { at: 1, mid: async () => { cls = await ghostClass(); } });
-        assert.match(cls, /remove/);
-        assert.strictEqual((await names("rim")).length, 6, await status());
-        await b.click("#editor-notice-undo");
+        const map = before.options.profile.map.slice();
+        const slot = map.indexOf("r60");
+        assert.ok(slot >= 0);
+        const steps = await pastLen();
+        await dragPlacedNote("rim", "outside", "mouse", async () => {
+          assert.match(await ghostClass(), /remove/);
+          assert.match(await ghostText(), /^C4/);
+        }, { index: 2 });
+        map[slot] = null;
+        assert.deepStrictEqual((await core()).options.profile.map, map);
+        assert.ok(!(await names("rim")).includes("C4"), await status());
+        assert.strictEqual(await pastLen(), steps + 1);
+        await clickUndo();
         assert.deepStrictEqual(await core(), before);
       });
 
@@ -3122,19 +3137,29 @@ function run() {
               editorRender(); return true;`);
           };
 
+          const liveSlot = slot => b.eval(`return editorNeoRef(editorSession.history.present, ${slot});`);
+          const targetReady = () => b.eval(`return !!document.querySelector("#editor-pan .editor-landing");`);
+          const dragTrayToSlot = (note, slot) => dragPlacedNote(slot < 9 ? "rim" : "bottom", "slot", kind,
+            null, { tray: note, slot, accept: targetReady });
+          const dragNoteToSlot = async (from, slot) => {
+            const ref = await liveSlot(from);
+            assert.ok(ref, `source slot ${from + 1} is occupied`);
+            await dragPlacedNote(ref.ring, "slot", kind, null, { index: ref.i, slot, accept: targetReady });
+          };
+
           test("a tray note dragged to an empty main field fills it, shows the landing ring, and is one Undo step", async () => {
             await neo();
             const past = await pastLen();
             const before = await keys();
             const empty = before.findIndex((k, i) => i < 9 && k == null);
             assert.ok(empty >= 0);
-            await hold("B");
-            await gesture(await chipAt("B"), await slotAt(empty), kind);
+            await dragTrayToSlot("B", empty);
             const after = await keys();
-            assert.strictEqual(after.filter((k) => k).length, before.filter((k) => k).length + 1, await status());
+            const expected = before.slice();
+            expected[empty] = "r71";
+            assert.deepStrictEqual(after, expected, await status());
             assert.strictEqual(await pastLen(), past + 1);
-            assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .editor-landing").length;`), 1);
-            await b.click("#editor-notice-undo");
+            await clickUndo();
             assert.deepStrictEqual(await keys(), before);
           });
 
@@ -3151,20 +3176,26 @@ function run() {
           test("a tray note dragged to the mutant of a filled field fills that mutant, and the mutant drags to another free mutant field", async () => {
             await neo();
             const before = await keys();
-            const filled = before.findIndex((k, i) => i < 9 && k);
-            await hold("B");
-            await gesture(await chipAt("B"), await slotAt(9 + filled), kind);
+            const filled = before.findIndex((k, i) => i < 9 && k && !before[9 + i]);
+            const initial = await pastLen();
+            await dragTrayToSlot("B", 9 + filled);
             const mid = await keys();
-            assert.ok(mid[9 + filled], await status());
-            const other = mid.findIndex((k, i) => i < 9 && k && i !== filled);
-            const past = await pastLen();
-            await gesture(await slotAt(9 + filled), await slotAt(9 + other), kind);
+            const added = before.slice();
+            added[9 + filled] = "b71";
+            assert.deepStrictEqual(mid, added, await status());
+            assert.strictEqual(await pastLen(), initial + 1);
+            const other = mid.findIndex((k, i) => i < 9 && k && !mid[9 + i]);
+            await dragNoteToSlot(9 + filled, 9 + other);
             const after = await keys();
-            assert.strictEqual(after[9 + other], mid[9 + filled], await status());
-            assert.strictEqual(after[9 + filled], null);
-            assert.strictEqual(await pastLen(), past + 1);
-            await b.click("#editor-notice-undo");
+            const moved = mid.slice();
+            moved[9 + other] = moved[9 + filled];
+            moved[9 + filled] = null;
+            assert.deepStrictEqual(after, moved, await status());
+            assert.strictEqual(await pastLen(), initial + 2);
+            await clickUndo();
             assert.deepStrictEqual(await keys(), mid);
+            await clickUndo();
+            assert.deepStrictEqual(await keys(), before);
           });
 
           const tapAt = async (pt) => {
@@ -3182,20 +3213,31 @@ function run() {
             const empty = before.findIndex((k, i) => i < 9 && k == null);
             assert.ok(two !== undefined && empty >= 0);
             const past = await pastLen();
-            await tapAt(await slotAt(one));
-            await tapAt(await slotAt(two));
+            if (await b.eval(`return drawerExperiment.expanded;`)) await b.click("#drawerexp-handle");
+            await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to uncover both main fields" });
+            const tapPlaced = async (slot) => {
+              const ref = await liveSlot(slot);
+              assert.ok(ref);
+              const point = await noteAt(ref.ring, ref.i);
+              assert.ok(await b.eval(`return !!document.elementFromPoint(${point.x}, ${point.y})?.closest("#editor-pan");`));
+              await tapAt(point);
+            };
+            await tapPlaced(one);
+            await tapPlaced(two);
             const swapped = await keys();
             assert.strictEqual(swapped[one], before[two], await status());
             assert.strictEqual(swapped[two], before[one]);
             assert.strictEqual(await pastLen(), past + 1);
-            await tapAt(await slotAt(one));
+            await tapPlaced(one);
             await tapAt(await slotAt(empty));
             const moved = await keys();
             assert.strictEqual(moved[empty], swapped[one], await status());
             assert.strictEqual(moved[one], null);
             assert.strictEqual(await pastLen(), past + 2);
-            await b.click("#editor-notice-undo");
+            await clickUndo();
             assert.deepStrictEqual(await keys(), swapped);
+            await clickUndo();
+            assert.deepStrictEqual(await keys(), before);
           });
 
           test("a pan note dragged onto a free main field moves there in one Undo step", async () => {
@@ -3204,11 +3246,14 @@ function run() {
             const from = before.findIndex((k, i) => i < 9 && k);
             const to = before.findIndex((k, i) => i < 9 && k == null);
             const past = await pastLen();
-            await gesture(await slotAt(from), await slotAt(to), kind);
+            await dragNoteToSlot(from, to);
             const after = await keys();
-            assert.strictEqual(after[to], before[from], await status());
+            const expected = before.slice();
+            expected[to] = before[from];
+            expected[from] = null;
+            assert.deepStrictEqual(after, expected, await status());
             assert.strictEqual(await pastLen(), past + 1);
-            await b.click("#editor-notice-undo");
+            await clickUndo();
             assert.deepStrictEqual(await keys(), before);
           });
         });
