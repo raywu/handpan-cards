@@ -1737,13 +1737,30 @@ function run() {
       assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "D3");
     });
 
-    test("D9 / SE-12: an add that resets a custom rim seat order says so, with Undo", async () => {
+    async function tapGuidedRim(touch = false) {
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the cleared pan" });
+      const landing = await b.eval(`
+        const node = document.querySelector('#editor-pan .guided-landing[data-guided-zone="rim"] circle');
+        const r = node?.getBoundingClientRect();
+        if (!r) return null;
+        const x = r.x + r.width / 2, y = r.y + r.height / 2;
+        return document.elementFromPoint(x, y)?.closest("#editor-pan") ? {x,y} : null;
+      `);
+      assert.ok(landing, "the rim growth outline is exposed");
+      await tapPoint(landing, touch);
+    }
+
+    test("D9 / SE-12: Guided rim growth re-spaces typed custom seats and Undo restores them", async () => {
       await setup("(D3) Bb3 A3 C4 D4 E4 F4 G4 A4 | C5 D5");
-      assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, "the typed order is honoured");
+      const before = await model();
+      assert.deepStrictEqual(before.options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, "the typed order is honoured");
       await hold("B");
-      await tapSpot(...polar(0.722, 22.5));
-      assert.strictEqual(await status(), "Custom seat order resetUndo");
-      assert.strictEqual((await model()).options.seats, undefined);
+      await tapGuidedRim();
+      assert.match(await status(), /^B4 placed\. rim notes re-spaced\./i);
+      assert.equal((await model()).options.seats?.rim, undefined);
+      assert.ok((await rimNames()).includes("B4"));
+      await b.click("#editor-undo");
+      assert.deepStrictEqual(await model(), before);
     });
 
     test("SE-11: a bottom trade the engine refuses shows the existing copy and changes nothing", async () => {
@@ -1754,6 +1771,8 @@ function run() {
         editorSession.history = editorHistoryNew(loaded.value); editorRender();
         return [editorNames(loaded.value, "bottom")[0], editorNames(loaded.value, "bottom")[2]];`);
       const before = await model();
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the underside to clear" });
       await tapNote("bottom", 0);
       await tapNote("bottom", 2);
       assert.strictEqual(await status(), await b.eval(`return t("sheet.cannot_trade", { a: ${JSON.stringify(names[0])}, b: ${JSON.stringify(names[1])}, step: ANGLE_STEP });`));
@@ -1805,12 +1824,17 @@ function run() {
 
     test("the same tap-tap place and swap work by touch (CDP touch events)", async () => {
       await setup(SCALE);
-      await hold("B");
-      await tapSpot(...polar(0.722, 22.5), true);
+      const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect();
+        return {x:r.x+r.width/2,y:r.y+r.height/2};`);
+      await tapPoint(chip, true);
+      await tapGuidedRim(true);
       assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"]);
+      const angles = () => b.eval(`const m = editorSession.history.present;
+        return editorAnglesOf(editorSolve(m), "rim");`);
+      const before = await angles();
       await tapNote("rim", 0, true);
       await tapNote("rim", 1, true);
-      assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7, 8] });
+      assert.deepStrictEqual(await angles(), [before[1], before[0], ...before.slice(2)]);
     });
 
     describe("U2d zone counts, caps, crowded refusal, Reset spacing", () => {
