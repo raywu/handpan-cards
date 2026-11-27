@@ -4972,6 +4972,11 @@ function run() {
     });
 
     describe("swipe between Scale and Layout", () => {
+    const hitAtCenter = selector => b.eval(`
+      const node = document.querySelector(${JSON.stringify(selector)});
+      const r = node.getBoundingClientRect();
+      return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+    `);
       test("a left swipe on the Scale panel opens Layout and a right swipe returns", async () => {
         await setup(SCALE);
         await swipeBy(".editor-accidentals", -120);
@@ -5037,19 +5042,30 @@ function run() {
         assert.strictEqual(await tabNow(), "scale", "pan");
         await swipeBy(".tray-note", -120);
         assert.strictEqual(await tabNow(), "scale", "tray note");
-        await b.eval(`const i = document.createElement("input"); i.id = "probe-input"; i.style.cssText = "display:block;width:100%;height:44px"; document.getElementById("editor-panel-scale").appendChild(i); i.scrollIntoView({ block: "center" }); return true;`);
-        await swipeBy("#probe-input", -120);
+        await setup(SCALE);
+        assert.equal(await hitAtCenter("#editor-name"), true, "the scale name input is exposed");
+        await swipeBy("#editor-name", -120);
         assert.strictEqual(await tabNow(), "scale", "text field");
       });
 
       test("a swipe does not switch tabs while a note is held or selected", async () => {
-        await setup(SCALE);
+        // Split landscape leaves the controls available while the player
+        // holds a note. In portrait the inert drawer cannot start a swipe.
+        await fresh(844, 390);
+        await openAdd();
+        await typeLine(SCALE);
         await hold("B");
+        assert.equal(await b.eval("return !!editorSession.held;"), true);
+        assert.equal(await hitAtCenter(".editor-accidentals"), true, "the swipe surface is exposed while holding");
         await swipeBy(".editor-accidentals", -120);
         assert.strictEqual(await tabNow(), "scale", "held");
         await b.eval(`editorSession.held = null; editorSession.sel = { ring: "rim", i: 0 }; editorRender(); return true;`);
+        assert.equal(await hitAtCenter(".editor-accidentals"), true, "the swipe surface is exposed while selected");
         await swipeBy(".editor-accidentals", -120);
         assert.strictEqual(await tabNow(), "scale", "selected");
+        await b.eval(`editorSession.sel = null; editorRender(); return true;`);
+        await swipeBy(".editor-accidentals", -120);
+        assert.strictEqual(await tabNow(), "layout", "the same swipe switches tabs with neither hold nor selection");
       });
 
       test("a swipe does not switch tabs while the line is being edited or a dialog is open", async () => {
