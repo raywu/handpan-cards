@@ -904,22 +904,43 @@ function run() {
       assert.strictEqual(await stillEmpty(), false, await statusText());
     });
 
-    test("390x844: committing the scale moves the pan by at most 1px (A4 measurement)", async () => {
+    test("390x844: committing the scale moves the rendered rim by at most 1px (A4 measurement)", async () => {
       await fresh(390, 844);
       await openAdd();
-      const probe = () => b.eval(`const svg = document.querySelector("#editor-pan svg"); const r = svg.getBoundingClientRect(); const m = svg.getScreenCTM();
-        const g = editorSolve(editorSession.history.present).value.geom; const ding = new DOMPoint(0, g.ding_dy * 100).matrixTransform(m);
-        return { left: r.left, top: r.top, w: r.width, h: r.height, dx: ding.x, dy: ding.y };`);
+      const probe = () => b.eval(`
+        const rim = document.querySelector('#editor-pan svg > circle[r="100"][stroke="#000"]').getBoundingClientRect();
+        const handle = document.getElementById("drawerexp-handle"), r = handle.getBoundingClientRect();
+        return { rim: { left: rim.left, top: rim.top, right: rim.right, bottom: rim.bottom },
+          clear: rim.left >= 0 && rim.right <= innerWidth && rim.top >= 0 && rim.bottom <= r.top + 1,
+          handleHit: handle.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) };
+      `);
+      const snapshot = () => b.eval(`
+        const history = editorSession.history, m = history.present;
+        return { ding: editorDingOf(m), depth: history.past.length,
+          pitches: Object.fromEntries(["rim", "inner", "bottom"].map(ring => [ring, editorNames(m, ring)])) };
+      `);
+      const closed = () => b.waitFor('drawerExperiment.state === "SHUT" && !editorDrag',
+        { label: "the drag to finish with the drawer clear" });
+      const oct = await octave();
       await gesture(await chipAt("E"), await spotAt("inner", 90), "mouse");
       await gesture(await chipAt("G"), await spotAt("bottom", 200), "mouse");
       await gesture(await chipAt("A"), await spotAt("rim", 45), "mouse");
+      await closed();
+      assert.strictEqual(await stillEmpty(), true, await statusText());
+      const draft = await snapshot();
+      assert.deepEqual(draft.pitches, { rim: ["A" + oct], inner: ["E" + oct], bottom: ["G" + oct] });
       const before = await probe();
       await gesture(await chipAt("D"), await dingAt(), "mouse");
+      await closed();
       assert.strictEqual(await stillEmpty(), false, await statusText());
+      assert.deepEqual(await snapshot(), { ...draft, ding: "D" + oct, depth: draft.depth + 1 });
       const after = await probe();
-      const shift = Math.max(...Object.keys(before).map((k) => Math.abs(after[k] - before[k])));
-      console.log("A4 commit shift at 390x844 (px):", shift.toFixed(2), JSON.stringify({ before, after }));
-      assert.ok(shift <= 1, "the pan moved " + shift + "px on commit: " + JSON.stringify({ before, after }));
+      assert.ok(before.clear && before.handleHit && after.clear && after.handleHit, JSON.stringify({ before, after }));
+      const shift = Math.max(...Object.keys(before.rim).map(key => Math.abs(after.rim[key] - before.rim[key])));
+      await clickUndo();
+      assert.strictEqual(await stillEmpty(), true);
+      assert.deepEqual(await snapshot(), draft);
+      assert.ok(shift <= 1, "the rendered rim moved " + shift + "px on commit: " + JSON.stringify({ before, after }));
     });
 
     test("a ding placed on the empty pan says it is the ding, never ' removed.'; replacing it later keeps the replace wording", async () => {
@@ -5471,36 +5492,52 @@ function run() {
     });
 
     for (const [w, h] of [[375, 667], [360, 640]]) {
-      test(`SC ${w}x${h}: the first row of the Scale tab is fully visible under the strip and inside the region, and the tray stays in the region`, async () => {
+      test(`SC ${w}x${h}: Name stays below the tab strip and the tray is reachable inside the drawer`, async () => {
         await open(w, h);
-        const r = await b.eval(`const q = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; };
-          return { name: q("#editor-name"), tabs: q("#editor-tabs"), region: q("#editor-region"), tray: q("#editor-tray") };`);
-        assert.ok(r.name.top >= r.tabs.bottom - 1 && r.name.top >= r.region.top - 0.5, `${w}x${h} the Name row is not clipped: ` + JSON.stringify(r));
-        assert.ok(r.name.bottom <= r.tray.top + 0.5, `${w}x${h} the Name row sits above the tray: ` + JSON.stringify(r));
-        assert.ok(r.tray.bottom <= r.region.bottom + 1, `${w}x${h} the tray is fully in the region: ` + JSON.stringify(r));
+        const r = await b.eval(`
+          const q = selector => document.querySelector(selector).getBoundingClientRect();
+          const name = q("#editor-name"), tabs = q("#editor-tabs"), drawer = q("#drawerexp-body");
+          const tray = q("#editor-tray");
+          return { ordered: name.top >= tabs.bottom - 1 && name.bottom <= tray.top + 1,
+            clear: name.top >= drawer.top - 1 && name.bottom <= drawer.bottom + 1,
+            trayStartsInside: tray.top >= drawer.top - 1 && tray.top < drawer.bottom };
+        `);
+        assert.deepEqual(r, { ordered: true, clear: true, trayStartsInside: true });
+        await b.click("#editor-name");
+        assert.equal(await b.eval("return document.activeElement.id;"), "editor-name");
+        await b.click(".tray-note");
+        assert.ok(await b.eval("return !!editorSession.held;"), "the drawer tray receives the tap");
       });
     }
 
     for (const [w, h] of [[390, 844], [375, 667], [360, 640]]) {
-      test(`PF ${w}x${h}: selecting Layout shows its panel from the top of the region, and Scale returns to its rest when shown`, async () => {
+      test(`PF ${w}x${h}: changing drawer tabs exposes each panel’s first control and leaves the rail pinned`, async () => {
         await open(w, h);
-        const read = () => b.eval(`const rg = document.getElementById("editor-region"), p = document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
-          return { st: rg.scrollTop, max: rg.scrollHeight - rg.clientHeight, rest: editorRegionRest(rg), panelTop: p.top, tabsBottom: t.bottom, id: document.querySelector('#editor-panels [role=tabpanel]:not([hidden])').id };`);
-        await b.eval(`document.getElementById("editor-panels").style.minHeight = "1400px"; editorRegionPin(); return true;`);
-        const a = await read();
-        assert.ok(a.max > 100 && Math.abs(a.st - a.rest) <= 2 && a.panelTop >= a.tabsBottom - 1, "the region overflows and Scale rests with its panel top clear of the strip: " + JSON.stringify(a));
+        const read = () => b.eval(`
+          const panel = document.querySelector('#editor-panels [role=tabpanel]:not([hidden])');
+          const control = panel.querySelector("input:not([hidden]), button:not([hidden])");
+          const controlBounds = control?.getBoundingClientRect();
+          const strip = document.getElementById("editor-tabs").getBoundingClientRect();
+          const rail = document.querySelector(".editor-toolbar").getBoundingClientRect();
+          const within = controlBounds && controlBounds.top >= strip.bottom - 1 && controlBounds.bottom <= rail.top + 1;
+          const point = controlBounds && document.elementFromPoint(controlBounds.x + controlBounds.width / 2, controlBounds.y + controlBounds.height / 2);
+          return { panel: panel.id, control: control?.id, visible: !!within && control.contains(point),
+            rail: [rail.x, rail.y, rail.width, rail.height], hostTop: document.getElementById("editor").scrollTop };
+        `);
+        const scale = await read();
+        assert.equal(scale.panel, "editor-panel-scale");
+        assert.equal(scale.control, "editor-name");
+        assert.equal(scale.visible, true, JSON.stringify(scale));
         await b.click("#editor-tab-layout");
-        await pause(150);
-        const l = await read();
-        assert.strictEqual(l.id, "editor-panel-layout");
-        assert.strictEqual(l.st, 0, `${w}x${h} Layout opens at scrollTop 0: ` + JSON.stringify(l));
-        assert.ok(l.panelTop >= l.tabsBottom - 1, "the Layout panel top is visible below the strip: " + JSON.stringify(l));
+        const layout = await read();
+        assert.equal(layout.panel, "editor-panel-layout");
+        assert.equal(layout.control, "editor-anchor-one");
+        assert.equal(layout.visible, true, JSON.stringify(layout));
+        assert.deepEqual(layout.rail, scale.rail);
+        assert.equal(layout.hostTop, 0);
         await b.click("#editor-tab-scale");
-        await pause(150);
-        const sc = await read();
-        assert.ok(Math.abs(sc.st - sc.rest) <= 2, "Scale chosen from the tab strip returns to its rest: " + JSON.stringify(sc));
+        assert.deepEqual(await read(), scale);
       });
-
     }
 
     // The Name field: a real tap focuses it at a tall viewport, then the soft keyboard shrinks the viewport (Android resize), as on the phone.
