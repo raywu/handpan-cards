@@ -14874,7 +14874,13 @@ function editorClose() {
   editorSession = null;
 }
 // Save shares one off switch with the pending-commit state.
-const editorSubmitOff = (s, m) => !editorCanSave(m) || !!s.saving || !!savePending;
+const editorSubmitOff = (s, m) => {
+  const pendingLine = s.editing && editorEl("editor-line").value.trim();
+  return !!s.saving || !!savePending || !!s.saveAcknowledged || !(editorCanSave(m) || pendingLine);
+};
+function editorRefreshSubmit(s) {
+  editorEl("editor-save").disabled = editorSubmitOff(s, s.history.present);
+}
 function editorRender() {
   const rg = editorEl("editor-region"), pin = !rg || editorRegionAtEnd();
   editorRenderBody();
@@ -14887,12 +14893,15 @@ function editorEmptyPrompt(m) {
   if (!st.ding) return notes ? t("editor.say.stage_need_ding") : t("editor.empty");
   return t("editor.say.stage_need_fifth", { ding: st.ding });
 }
+function editorAppendCancelHold(box) {
+  const cancel = editorNode("button", { id: "editor-cancel", type: "button", class: "mode", text: t("editor.cancel") });
+  cancel.onclick = editorCancelHold;
+  box.appendChild(cancel);
+}
 function editorStatusNotes(box, s, m, empty) {
   if (s.held) {
     box.appendChild(document.createTextNode(t("editor.held", { name: editorHeldName() })));
-    const cancel = editorNode("button", { id: "editor-cancel", type: "button", class: "mode", text: t("editor.cancel") });
-    cancel.onclick = editorCancelHold;
-    box.appendChild(cancel);
+    editorAppendCancelHold(box);
   } else if (s.say || s.notice) {
     box.appendChild(document.createTextNode((s.say || t("editor.pins_reset")) + (empty ? " " + editorEmptyPrompt(m) : "")));
     if (!s.say || s.say !== s.plainSay) {
@@ -14913,17 +14922,19 @@ function editorRenderBody() {
   if (!s.naming) nameBox.value = m.options.name || "";
   const auto = editorAutoName(m);
   nameBox.placeholder = auto ? t("editor.name.auto", { name: auto }) : "";
-  if (s.error) line.setAttribute("aria-invalid", "true"); else line.removeAttribute("aria-invalid");
+  if (s.lineError) line.setAttribute("aria-invalid", "true"); else line.removeAttribute("aria-invalid");
   const status = editorEl("editor-status");
-  if (!s.error) s.lastError = "";
+  const error = (s.saveAcknowledged && s.saveError) || s.lineError || s.error || s.saveError || "";
+  if (!error) s.lastError = "";
   status.textContent = "";
   status.removeAttribute("data-kind");
   status.removeAttribute("data-idle");
-  if (s.error) {
+  if (error) {
     status.setAttribute("data-kind", "error");
-    status.textContent = s.error;
-    if (s.error !== s.lastError) {
-      s.lastError = s.error;
+    status.textContent = error;
+    if (s.held) editorAppendCancelHold(status);
+    if (error !== s.lastError) {
+      s.lastError = error;
       status.classList.remove("arrive");
       void status.offsetWidth;
       status.classList.add("arrive");
@@ -15008,7 +15019,7 @@ function editorFirstDingSay(say) {
   return t("editor.say.ding_first", { name: say.slice(head.length, say.length - tail.length) });
 }
 // One accepted action: a step in the history, the notice it carries, the error cleared.
-function editorDo(step, say, mark) {
+function editorDo(step, say, mark, source) {
   const s = editorSession;
   const keepView = (m) => {
     const res = step(m);
@@ -15017,6 +15028,7 @@ function editorDo(step, say, mark) {
   const res = editorApply(s.history, keepView);
   if (!res.ok) {
     s.error = ["TRADE", "AREA_FULL", "TOO_CROWDED", "NO_ROOM", "FIELD_EMPTY", "OWN_ROW", "FIELDS_FULL"].includes(res.code) ? res.reason : reasonText(res);
+    if (source === "line") s.lineError = s.error;
     editorRender();
     return false;
   }
@@ -15621,11 +15633,14 @@ function editorStartEdit() {
   editorCommitName();
   if (!s || s.editing || s.dialog) return;
   s.editing = true;
+  s.lineStart = editorEl("editor-line").value;
+  s.lineStartError = s.error;
   editorEl("editor-line").readOnly = false;
 }
 function editorStopEdit() {
   const s = editorSession;
   s.editing = false;
+  s.lineError = "";
   s.error = "";
   editorEl("editor-line").readOnly = true;
 }
@@ -15633,7 +15648,9 @@ function editorCommitLine() {
   const s = editorSession;
   if (!s || !s.editing) return;
   const text = editorEl("editor-line").value;
-  if (!editorDo((m) => editorCommitText(m, text))) return;
+  s.lineError = "";
+  if (text !== s.lineStart && !editorDo((m) => editorCommitText(m, text), undefined, false, "line")) return;
+  if (text === s.lineStart) s.error = s.lineStartError;
   s.editing = false;
   editorEl("editor-line").readOnly = true;
   editorRender();
@@ -15675,6 +15692,12 @@ function editorShowDialog(on) {
   s.dialog = on;
   if (on) editorCloseMenu(false);
   const dlg = editorEl("editor-dialog");
+  const save = editorEl("editor-dlg-save");
+  save.hidden = !!s.saveAcknowledged;
+  save.disabled = editorSubmitOff(s, s.history.present);
+  const model = s.history.present;
+  const guidance = save.disabled && !editorCanSave(model) ? editorEmptyPrompt(model) : "";
+  editorEl("editor-dlg-body").textContent = s.saveAcknowledged ? s.saveError : guidance || t("editor.dlg.body");
   if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");
   for (const node of editorEl("editor").children) if (node !== dlg) { node.inert = on; if (on) node.setAttribute("aria-hidden", "true"); else node.removeAttribute("aria-hidden"); }
   (on ? editorEl("editor-dlg-keep") : editorEl("editor-back")).focus();
@@ -16036,7 +16059,8 @@ function editorWire() {
     if (e.key === "Escape" && s.editing) { e.preventDefault(); e.stopPropagation(); editorCancelEdit(); return; }
     if (e.key === "Enter") { e.preventDefault(); if (s.editing) editorCommitLine(); else editorStartEdit(); }
   };
-  line.onblur = () => { if (editorSession && editorSession.editing && !editorSession.error) editorCommitLine(); };
+  line.oninput = () => editorRefreshSubmit(editorSession);
+  line.onblur = () => { if (editorSession?.editing) editorCommitLine(); };
   const nameBox = editorEl("editor-name");
   nameBox.onfocus = () => {
     const s = editorSession;
@@ -16100,8 +16124,7 @@ function editorWire() {
   editorEl("editor-dlg-save").onclick = () => {
     const s = editorSession;
     editorShowDialog(false);
-    if (s && !editorCanSave(s.history.present)) { s.error = t("editor.empty"); editorRender(); return; }
-    editorSave();
+    editorSave(true);
   };
 }
 // A swipe starting on the tab strip, counts row, hint or either panel switches Scale / Layout. It reuses the sheet's verdict and cue but keeps its own gesture state.
@@ -16170,23 +16193,29 @@ function editorDraftMoved(s, saved) {
   return editorEl("editor-line").value.trim() !== editorLineText(saved);
 }
 const editorHasChanges = (s) => editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present);
-async function editorSave() {
+async function editorSave(fromDialog = false) {
   const s = editorSession;
-  if (!s || s.saving || savePending) return;
+  if (!s || s.saving || savePending || s.saveAcknowledged) return;
   editorCommitName();
   if (s.editing) editorCommitLine();
+  if (s.editing) return;
   const m = s.history.present;
-  if (!editorCanSave(m) || s.error) return;
+  if (!editorCanSave(m)) {
+    if (fromDialog) { s.error = editorEmptyPrompt(m); editorRender(); }
+    return;
+  }
   if (!editorIsDirty(s.base, m) && editingBase) { closeScaleSheet(); return; }
   const generation = sheetGeneration, base = editingBase, addSource = base ? null : sheetAddSource;
   const controller = new AbortController(), operation = { controller, generation };
   savePending = operation;
   s.saving = true;
+  if (s.error === s.saveError) s.error = "";
+  s.saveError = "";
   editorRender();
   try {
     const seedName = !!m.options.profile && !m.options.name && !s.nameTouched && (!base || base.selection.kind === "builtin");
     const built = buildGenerated(HPE.core.formatSeed(m.fields), editorCommitOptions(seedName ? editorSetName(m, editorAutoName(m)).value : m));
-    if (!built.ok) { s.error = reasonText(built); return; }
+    if (!built.ok) { s.error = s.saveError = reasonText(built); return; }
     const candidate = { record: scaleRecord(seedOf(built.value)), deck: built.value };
     const ownsSlot = !!base && base.selection.kind === "saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;
     const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options) || !!m.options.guided, ownsSlot);
@@ -16200,10 +16229,10 @@ async function editorSave() {
       if (generation !== sheetGeneration || !pageOpen) return;
     }
     if (!result.ok) {
-      if (result.kind !== "cancelled") s.error = savedErrorText(result);
+      if (result.kind !== "cancelled") s.error = s.saveError = savedErrorText(result);
       return;
     }
-    if (result.published === false) { s.error = savedPublicationText(result); return; }
+    if (result.published === false) { s.saveAcknowledged = true; s.base = m; s.error = s.saveError = savedPublicationText(result); return; }
     const d = savedEntries.get(result.instanceId).deck;
     const warned = (d.warnings || []).map((w) => reasonText(w));
     if (editorSession === s && editorDraftMoved(s, m)) {

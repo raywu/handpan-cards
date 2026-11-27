@@ -875,6 +875,26 @@ function run() {
       assert.strictEqual(await savedCount(), before);
     });
 
+    test("Save commits pending notation without writing an earlier draft", async () => {
+      await fresh(380, 667);
+      const before = await savedCount();
+      await openAdd();
+      await typeLine(SCALE);
+      await typeLine("invalid notation", { commit: false });
+      await b.click("#editor-save");
+      assert.strictEqual(await sheetHidden(), false);
+      assert.strictEqual(await text(), "invalid notation");
+      assert.strictEqual(await savedCount(), before);
+
+      await typeLine("(E3) B3 C4 D4 E4 F4 G4 B4", { commit: false });
+      await b.click("#editor-save");
+      await b.waitFor(`document.getElementById("scale-sheet").hidden`, { label: "valid pending notation saves" });
+      assert.strictEqual(await savedCount(), before + 1);
+      await b.click('#decks .chip[data-selection-kind="saved"][aria-current="true"]');
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the saved scale opens in Edit" });
+      assert.match(await text(), /\(E3\)/);
+    });
+
     test("Discard closes and saves nothing", async () => {
       await fresh();
       const before = await savedCount();
@@ -5309,12 +5329,10 @@ function run() {
       await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => ({ ok: true, value: { ...m, fields: {}, pins: [] } })).history; editorRender(); return true;`);
       await b.click("#editor-back");
       assert.strictEqual(await dialogOpen(), true);
-      await b.click("#editor-dlg-save");
+      assert.strictEqual(await b.eval('return document.getElementById("editor-dlg-save").disabled;'), true);
+      assert.match(await b.eval('return document.getElementById("editor-dlg-body").textContent;'), /^Place the ding/);
       assert.strictEqual(await sheetHidden(), false, "the editor stays open");
-      assert.strictEqual(await dialogOpen(), false);
       assert.strictEqual(await savedCount(), before, "nothing saved");
-      assert.match(await b.eval(`return editorSession.error;`), /^Place the ding/, "the session carries the reason as an error");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").getAttribute("data-kind");`), "error");
     });
   });
 
