@@ -1,5 +1,5 @@
 # kills: Guided removal contracts expanded rim and Cyclops grids in saved and unfinished layouts
-# suite: node --test --test-name-pattern ^Guided.removal.contracts.expanded tests/editor_model.test.js
+# suite: node --test --test-name-pattern ^Guided.removal.contracts.expanded.rim tests/editor_model.test.js
 # fault: Leaving the original grid size after removal strands empty seats in an expanded row.
 diff --git a/index.html b/index.html
 --- a/index.html

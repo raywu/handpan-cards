@@ -4270,7 +4270,8 @@ function run() {
         await b.waitFor("editorSession.menu", { label: "the More menu to open" });
         await b.eval('editorEl("editor-form-toggle").focus(); return true;');
         await press("Enter", "Enter", 13);
-        await b.waitFor('editorSession.formMode && !editorEl("editor-form").hidden', { label: "the scale form to open" });
+        await b.waitFor('editorSession.formMode && !editorEl("editor-form").hidden && drawerExperiment.state === "OPEN"',
+          { label: "the scale form and drawer to settle open" });
         assert.equal(await b.eval(`const drawer = editorEl("drawerexp-body");
           drawer.scrollTop = 0;
           return drawer.scrollHeight > drawer.clientHeight;`), true, "the scale form extends beyond the drawer");
@@ -4287,6 +4288,13 @@ function run() {
         await b.eval('editorEl("editor-tab-scale").focus(); return true;');
         for (const id of ["editor-name", "editor-form-ding", "editor-form-top", "editor-form-inner", "editor-form-bottom"]) {
           await press("Tab", "Tab", 9);
+          await b.waitFor(`(() => {
+            const active = document.activeElement;
+            if (active.id !== ${JSON.stringify(id)}) return false;
+            const control = active.getBoundingClientRect();
+            const drawer = editorEl("drawerexp-body").getBoundingClientRect();
+            return control.top >= drawer.top - 1 && control.bottom <= drawer.bottom + 1;
+          })()`, { label: id + " to receive Tab focus within the scrollport" });
           assert.deepStrictEqual(await focusInView(), { id, outside: false });
         }
         return;
