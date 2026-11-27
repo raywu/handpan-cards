@@ -3160,7 +3160,16 @@ function run() {
               const undo = editorEl("editor-undo"), r = undo.getBoundingClientRect();
               return !undo.disabled && undo.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
             })()`, { label: "the pinned Undo to accept the first post-drop press" });
-            await tapPoint(await centreOf("#editor-undo"), kind === "touch");
+            const point = await centreOf("#editor-undo");
+            if (kind === "touch") {
+              // Use a new contact after the preceding drag, with the press and
+              // release on distinct frames so CDP cannot coalesce the input.
+              await b.send("Input.dispatchTouchEvent", {
+                type: "touchStart", touchPoints: [{ ...point, id: 2 }]
+              });
+              await b.eval("return new Promise(resolve => requestAnimationFrame(() => resolve(true)));");
+              await b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+            } else await tapPoint(point);
             await b.waitFor(`editorSession.history.past.length === ${depth}`, { label: "one native Undo press to run" });
             assert.deepStrictEqual(await core(), before, "the first native press restored the dropped note");
           });
