@@ -793,13 +793,13 @@ describe("U2f drag classifier and drop plan", () => {
     withModel(a, SCALE);
     plan(a, { from: "tray", name: "G5" }, { kind: "spot", ring: "inner", angle: -40 });
     after(a);
-    assert.strictEqual(a.get("__p.say"), "G5 placed. cyclops notes re-spaced.");
+    assert.strictEqual(a.get("__p.say"), "G5 placed. Spacing redistributed for cyclops notes.");
     assert.strictEqual(solvedOf(a, "__r.value").G5.angle, 14);
     plan(a, { from: "tray", name: "G2" }, { kind: "spot", ring: "bottom", angle: 270 });
     assert.strictEqual(a.get("__p.say"), "G2 placed on the bottom at 270 degrees. It stays there.");
     plan(a, { from: "tray", name: "B4" }, { kind: "spot", ring: "rim" });
     after(a);
-    assert.strictEqual(a.get("__p.say"), "B4 placed. rim notes re-spaced.");
+    assert.strictEqual(a.get("__p.say"), "B4 placed. Spacing redistributed for rim notes.");
     assert.strictEqual(solvedOf(a, "__r.value").B4.angle, 90);
     plan(a, { from: "tray", name: "G2" }, { kind: "spot", ring: "bottom" });
     assert.strictEqual(a.get("__p.say"), "G2 added to the bottom.");
