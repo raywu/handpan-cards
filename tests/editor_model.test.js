@@ -1143,3 +1143,68 @@ test("Guided records reopen exact sparse seats and preserve ordinary bottom pins
   data.editor.slice(1, 4).forEach((angle, index) => assert.ok(Math.abs(data.mirror[index + 1] - (540 - angle) % 360) < 1e-9));
   assert.equal(data.protected, false);
 });
+
+const DRAFT_DROP_CASES = [
+  {
+    title: "DRAFT-DROP-RIM: the last rim note can move to the underside in one Undo step",
+    ref: { ring: "rim", i: 0 },
+    target: { kind: "spot", ring: "bottom", angle: 270 },
+    after: {
+      ding: "D3", notes: { rim: [], inner: ["E4"], bottom: ["F3", "A3"] },
+      angles: { rim: [], inner: [90], bottom: [200, 270] }, saveable: false
+    }
+  },
+  {
+    title: "DRAFT-DROP-DING: removing the Ding preserves the other draft notes and Undo",
+    ref: { ring: "ding", i: 0 },
+    target: { kind: "outside" },
+    after: {
+      ding: "", notes: { rim: ["A3"], inner: ["E4"], bottom: ["F3"] },
+      angles: { rim: [90], inner: [90], bottom: [200] }, saveable: false
+    }
+  }
+];
+
+for (const { title, ref, target, after } of DRAFT_DROP_CASES) {
+  test(title, () => {
+    const app = appBoot();
+    const outcome = plain(app.get(`(() => {
+      const loaded = editorLoad("[F3] (D3) A3 | E4", {
+        angles: { bottom: [200] },
+        guided: { rim: { size: 7, seats: [0] } }
+      });
+      if (!loaded.ok) throw Error(loaded.reason);
+      const start = loaded.value;
+      const snapshot = m => {
+        const solved = editorSolve(m);
+        if (!solved.ok) throw Error(solved.reason);
+        const rings = ["rim", "inner", "bottom"];
+        return {
+          ding: editorDingOf(m),
+          notes: Object.fromEntries(rings.map(ring => [ring, editorNames(m, ring)])),
+          angles: Object.fromEntries(rings.map(ring => [ring, editorAnglesOf(solved, ring)])),
+          saveable: editorCanSave(m)
+        };
+      };
+      const before = snapshot(start);
+      const original = JSON.stringify(start);
+      const history = editorHistoryNew(start);
+      const plan = editorDropPlan(start, { from: "pan", ref: ${JSON.stringify(ref)} }, ${JSON.stringify(target)});
+      if (!plan.step) throw Error(plan.refuse || "Expected the drop to plan one edit");
+      const applied = editorApply(history, plan.step);
+      if (!applied.ok) throw Error(applied.reason);
+      const restored = editorUndo(applied.history);
+      return {
+        before, after: snapshot(applied.history.present), depth: applied.history.past.length,
+        originalUnchanged: JSON.stringify(start) === original,
+        undoRestoresModel: restored.present === start, redoRestoresDraft: editorRedo(restored).present === applied.history.present
+      };
+    })()`));
+    assert.equal(outcome.before.saveable, true);
+    assert.deepEqual(outcome.after, after);
+    assert.equal(outcome.depth, 1);
+    assert.equal(outcome.originalUnchanged, true);
+    assert.equal(outcome.undoRestoresModel, true);
+    assert.equal(outcome.redoRestoresDraft, true);
+  });
+}
