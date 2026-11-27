@@ -577,14 +577,14 @@ function run() {
       });
     }
 
-    test("Neotone is one tap away while empty: the ding and 18 slots, the 9 mutant slots waiting for a main field; Standard switches back", async () => {
+    test("Neotone is one tap away while empty: the ding and 18 slots, all 9 mutant slots available; Standard switches back", async () => {
       await fresh();
       await openAdd();
       await b.click("#editor-type-neotone");
       const on = await b.eval(`const q = (id) => document.getElementById(id); return [q("editor-type-neotone").getAttribute("aria-pressed"), q("editor-type-standard").getAttribute("aria-pressed"), q("editor-save").disabled];`);
       assert.deepStrictEqual(on, ["true", "false", true]);
       const t1 = await targets();
-      assert.deepStrictEqual([t1.rings, t1.slots, t1.mut, t1.wait], [["ding"], 18, 9, 9]);
+      assert.deepStrictEqual([t1.rings, t1.slots, t1.mut, t1.wait], [["ding"], 18, 9, 0]);
       await b.click("#editor-type-standard");
       const t2 = await targets();
       assert.deepStrictEqual([t2.rings, t2.slots], [["bottom", "ding", "inner", "rim"], 0]);
@@ -602,19 +602,20 @@ function run() {
       await tapPoint(await spotAt("rim", 135), true);
       const hits = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit")].map((c) => [c.dataset.ring, c.dataset.i, c.getAttribute("cx"), c.getAttribute("cy")].join(":"));`);
       const before = await hits();
+      const standard = await stageOf();
       assert.deepStrictEqual((await stageOf()).rim, ["D" + o, "E" + o], await statusText());
       assert.strictEqual(before.length, 3);
       await b.click("#editor-type-neotone");
       assert.deepStrictEqual((await stageOf()).main, ["D" + o, "E" + o]);
       assert.strictEqual((await stageOf()).ding, "C" + o);
       await b.click("#editor-type-standard");
-      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: [] }, await statusText());
+      assert.deepStrictEqual(await stageOf(), standard, await statusText());
       assert.deepStrictEqual(await hits(), before);
       assert.strictEqual(await stillEmpty(), true);
       assert.strictEqual(await saveDisabled(), true);
     });
 
-    test("Neotone on an empty Standard pan maps the staged notes (owner 2026-11-15): at 390x844 a ding, two rim notes and a bottom note become two main fields and a mutant, and the info overlay explains the pairing", async () => {
+    test("Neotone on an empty Standard pan maps the staged notes (owner 2026-11-15): at 390x844 a ding, two rim notes and a bottom note become two main fields and a mutant, and the original Standard seats return", async () => {
       await fresh(390, 844);
       await openAdd();
       const o = await octave();
@@ -626,18 +627,16 @@ function run() {
       await tapPoint(await spotAt("rim", 135), true);
       await b.click('.tray-note[data-name="A"]');
       await tapPoint(await spotAt("bottom", 90), true);
-      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o], angles: [90] }, await statusText());
+      const standard = await stageOf();
+      assert.deepStrictEqual([standard.ding, standard.rim, standard.inner, standard.bottom],
+        ["C" + o, ["D" + o, "E" + o], [], ["A" + o]], await statusText());
       await b.click("#editor-type-neotone");
       assert.deepStrictEqual(await stageOf(), { kind: "neotone", ding: "C" + o, main: ["D" + o, "E" + o], mutant: ["A" + o] }, await statusText());
       const shape = await b.eval(`const map = editorSession.history.present.options.profile.map; return [map.slice(0, 9).filter(Boolean).length, map.slice(9).filter(Boolean).length, [...document.querySelectorAll("#editor-pan svg text")].map((e) => e.textContent).join(" ")];`);
       assert.deepStrictEqual(shape.slice(0, 2), [2, 1]);
       for (const n of ["D", "E", "A"]) assert.ok(shape[2].includes(n), shape[2]);
-      await b.click("#editor-hint-toggle");
-      const help = await b.eval(`return [...document.querySelectorAll("#editor-hint .neo-help")].map((e) => e.textContent);`);
-      assert.deepStrictEqual(help, ["Mutant notes pair with tonefields: note N goes in tonefield N."]);
-      await b.click("#editor-hint-close");
       await b.click("#editor-type-standard");
-      assert.deepStrictEqual(await stageOf(), { kind: "standard", ding: "C" + o, rim: ["D" + o, "E" + o], inner: [], bottom: ["A" + o], angles: [90] });
+      assert.deepStrictEqual(await stageOf(), standard);
       assert.strictEqual(await stillEmpty(), true);
     });
 
@@ -760,7 +759,7 @@ function run() {
           [["A" + o], ["E" + o], ["G" + o], "D" + o]);
       });
 
-      test(`${kind} tap and drag on the empty Neotone pan: the ding, then a main note dropped on field 5 lands in field 1, then a mutant on slot 10`, async () => {
+      test(`${kind} tap and drag on the empty Neotone pan: the ding, then a main note stays on field 5 and an unpaired mutant lands on slot 10`, async () => {
         await fresh();
         await openAdd();
         await b.click("#editor-type-neotone");
@@ -771,7 +770,7 @@ function run() {
         await gesture(await chipAt("A"), await slotAt(4), kind);
         assert.strictEqual(await stillEmpty(), false, await statusText());
         assert.deepStrictEqual(await b.eval(`return editorSession.history.present.options.profile.map.slice(0, 9).map((k) => k !== null);`),
-          [true, false, false, false, false, false, false, false, false]);
+          [false, false, false, false, true, false, false, false, false]);
         await b.click('.tray-note[data-name="E"]');
         const slot9 = await slotAt(9);
         await b.eval(`window.__ev = []; const ab = { pointerdown: "pd", pointerup: "pu", pointercancel: "pc", touchstart: "ts", touchend: "te", mousedown: "md", click: "ck" };
@@ -809,7 +808,8 @@ function run() {
       const shape = () => b.eval(`const m = editorSession.history.present;
         return { text: document.getElementById("editor-line").value, map: m.options.profile.map.map((k) => k !== null), ding: editorDingOf(m), neotone: document.getElementById("editor-type-neotone").getAttribute("aria-pressed") };`);
       const built = await shape();
-      assert.deepStrictEqual([built.map.slice(0, 9).filter(Boolean).length, built.map.slice(9).filter(Boolean).length, built.ding, built.neotone], [1, 1, "D" + o, "true"], JSON.stringify(built));
+      assert.deepStrictEqual([built.map.flatMap((occupied, slot) => occupied ? [slot] : []), built.ding, built.neotone],
+        [[4, 9], "D" + o, "true"], JSON.stringify(built));
       assert.strictEqual(await saveDisabled(), false);
       await b.click("#editor-save");
       await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
@@ -821,15 +821,15 @@ function run() {
       assert.deepStrictEqual(await shape(), built, "the saved scale reopens as the same Neotone arrangement");
     });
 
-    test("Neotone: a main note before the ding stages, a mutant slot with no main field takes nothing, the ding drop commits", async () => {
+    test("Neotone: a main note before the ding stages, an unpaired mutant also stages, and the ding drop commits", async () => {
       await fresh();
       await openAdd();
       await b.click("#editor-type-neotone");
       const o = await octave();
       await gesture(await chipAt("E"), await slotAt(9), "mouse");
-      assert.deepStrictEqual((await stageOf()).mutant, [], await statusText());
+      assert.deepStrictEqual((await stageOf()).mutant, ["E" + o], await statusText());
       await gesture(await chipAt("A"), await slotAt(2), "mouse");
-      assert.deepStrictEqual((await stageOf()).main, ["A" + o]);
+      assert.deepStrictEqual((await stageOf()).main, [null, null, "A" + o]);
       assert.match(await statusText(), /ding/i);
       await gesture(await chipAt("D"), await dingAt(), "mouse");
       assert.strictEqual(await stillEmpty(), false, await statusText());
@@ -1097,7 +1097,7 @@ function run() {
   });
 
   test("Neotone conversion E4: saved Standard flags do not block a real pan tap, Undo or Save", async () => {
-    const input = "(D3) D#3 A3 C4 D4 D#4 G#4 [E3] [E4] [F4] [F#4]";
+    const input = "(D3) D#3 A3 C4 D4 D#4 G#4 [E3] [B3] [F4] [F#4]";
     for (const flags of [{ mirror: true }, { mirrorBottom: false }, { mirrorBottom: true }]) {
       const label = JSON.stringify(flags);
       await fresh(380, 667);
@@ -1130,7 +1130,7 @@ function run() {
       assert.strictEqual(await b.eval(`return editorSession.error;`), "", label + ": a valid pan tap must not produce PROFILE_CONFLICT");
       const added = await model();
       assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "rim");`), ["D#3", "A3", "C4", "D4", "D#4", "E4", "G#4"], label);
-      assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["E3", "E4", "F4", "F#4"], label);
+      assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["E3", "B3", "F4", "F#4"], label);
       assert.deepStrictEqual(added.options.profile.map.slice(0, 6), neo.options.profile.map.slice(0, 6), "existing main fields keep their notes");
       assert.strictEqual(added.options.profile.map[6], "r64");
       assert.deepStrictEqual(added.options.profile.map.slice(9), neo.options.profile.map.slice(9), "mutant pairing survives placement");
@@ -1156,7 +1156,7 @@ function run() {
       await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the reopened Neotone editor" });
       assert.deepStrictEqual(await b.eval(`const m = editorSession.history.present; return { map: m.options.profile.map,
         rim: editorNames(m, "rim"), bottom: editorNames(m, "bottom"), anchor: m.options.anchor, palette: m.options.palette };`),
-      { map: added.options.profile.map, rim: ["D#3", "A3", "C4", "D4", "D#4", "E4", "G#4"], bottom: ["E3", "E4", "F4", "F#4"], anchor: "between", palette: 3 }, label);
+      { map: added.options.profile.map, rim: ["D#3", "A3", "C4", "D4", "D#4", "E4", "G#4"], bottom: ["E3", "B3", "F4", "F#4"], anchor: "between", palette: 3 }, label);
     }
   });
 
@@ -2587,12 +2587,25 @@ function run() {
       for (const kind of ["mouse", "touch"]) {
         describe(`U2e Neotone ${kind}`, () => {
           const slotAt = async (slot) => {
-            const q = await b.eval(`const p = neoSlotPoint(${slot}, null);
+            const q = await b.eval(`const geom = editorSolve(editorSession.history.present).value.geom;
+              const p = neoSlotPoint(${slot}, null, geom.turn);
               const svg = document.querySelector("#editor-pan svg"); const c = new DOMPoint(p.x, p.y).matrixTransform(svg.getScreenCTM()); return { x: c.x, y: c.y };`);
             return q;
           };
           const keys = () => b.eval(`return editorSession.history.present.options.profile.map.slice();`);
-          const neo = async () => { await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4"); await b.click("#editor-type-neotone"); };
+          const neo = async ({ legacy = false } = {}) => {
+            const notation = "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4";
+            await setup(notation);
+            if (!legacy) {
+              await b.click("#editor-type-neotone");
+              return;
+            }
+            await b.eval(`const current = editorSession.history.present;
+              const loaded = editorLoad(${JSON.stringify(notation)}, { profile: editorProfileFor(current.fields) });
+              if (!loaded.ok || loaded.value.options.profile.rev !== 2) throw new Error(loaded.reason || "Expected the legacy profile");
+              editorSession.history = editorHistoryNew(loaded.value);
+              editorRender(); return true;`);
+          };
 
           test("a tray note dragged to an empty main field fills it, shows the landing ring, and is one Undo step", async () => {
             await neo();
@@ -2610,14 +2623,13 @@ function run() {
             assert.deepStrictEqual(await keys(), before);
           });
 
-          test("a mutant dragged into an empty field is refused with the field-empty copy and nothing changes", async () => {
-            await neo();
+          test("a legacy Neotone mutant dragged into an empty field is refused with the field-empty copy and nothing changes", async () => {
+            await neo({ legacy: true });
             const before = await keys();
             const emptyMain = before.findIndex((k, i) => i < 9 && k == null);
             assert.ok(emptyMain >= 0);
-            await hold("D");
-            await b.eval(`editorPlaceHeld({ kind: "spot", ring: "mutant", slot: ${9 + emptyMain} }, editorSession.history.present); return true;`);
-            assert.strictEqual(await status(), `Field ${emptyMain + 1} is empty. Fill the field before its mutant.`);
+            await gesture(await chipAt("B"), await slotAt(9 + emptyMain), kind);
+            assert.match(await status(), new RegExp(`Field ${emptyMain + 1} is empty`));
             assert.deepStrictEqual(await keys(), before);
           });
 
