@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16635,7 +16635,7 @@
+@@ -16635,7 +16635,7 @@ function editorGuidedPlan(m, src, target) {
      return { refuse: t("editor.guided.no_room") };
    }
    return {

@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13869,7 +13869,6 @@
- function editorWithStage(m, stage) {
-   const options = { ...m.options };
-   if (stage.kind === "neotone") options.profile = { ...(m.options.profile || { id: "paired", rev: 3 }), map: editorStageMap(stage) };
--  else delete options.profile;
-   return { ...m, options, stage };
- }
- // A stage edit: the edit may refuse (a result with ok false) or change the cloned stage.
+@@ -14920,7 +14920,7 @@ function editorPanType(m, kind) {
+       if (!settled.ok) return settled;
+     } else delete next.stage;
+     const solved = editorSolve(next);
+-    if (solved.ok) return { ok: true, value: next };
++    if (solved.ok) return { ok: true, value: kind === "standard" ? { ...next, options: { ...next.options, profile: m.options.profile } } : next };
+   }
+   const converted = editorConvertMode(m, kind);
+   return converted.ok ? { ...converted, value: { ...converted.value, modeLayouts } } : converted;

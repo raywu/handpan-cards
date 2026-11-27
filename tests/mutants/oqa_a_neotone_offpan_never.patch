@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17577,7 +17577,7 @@
+@@ -17576,7 +17576,7 @@ function editorDropTarget(e, src, drag = editorDrag) {
    const solved = pt && editorSolve(editorSession.history.present);
    if (!solved || !solved.ok) return { kind: "outside" };
    if (solved.value.geom.place) {
