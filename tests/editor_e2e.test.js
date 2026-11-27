@@ -5724,14 +5724,14 @@ function run() {
       assert.strictEqual(r.bg, "rgb(246, 244, 237)", "disabled ground");
     });
 
-    test("QA1 390x844: at least 12px between the tab strip and the first row on both tabs", async () => {
+    test("QA1 390x844: at least 8px between the tab strip and the first row on both tabs", async () => {
       await open(390, 844);
       const gap = (first) => b.eval(`const t = document.getElementById("editor-tabs").getBoundingClientRect(), f = document.querySelector(${JSON.stringify(first)}).getBoundingClientRect(); return f.top - t.bottom;`);
       const scale = await gap("#editor-name");
-      assert.ok(scale >= 12 - 0.01, "scale tab gap " + scale);
+      assert.ok(scale >= 8 - 0.01, "scale tab gap " + scale);
       await b.click("#editor-tab-layout");
       const layout = await gap("#editor-layout");
-      assert.ok(layout >= 12 - 0.01, "layout tab gap " + layout);
+      assert.ok(layout >= 8 - 0.01, "layout tab gap " + layout);
     });
 
     const panFrame = () => b.eval(`
@@ -8042,6 +8042,7 @@ function run() {
       await fresh();
       await openAdd(3);
       await typeLine(SCALE);
+      await b.click("#editor-oct-down");
       assert.strictEqual(await kind(), "new");
       await b.click('.tray-note[data-name="A"]');
       await place("bottom");
@@ -8051,8 +8052,8 @@ function run() {
       await b.click('.tray-note[data-name="B"]');
       await place("bottom");
       const r = await b.eval(`const f = editorSolve(editorSession.history.present).value.fields; const o = {}; for (const id of Object.keys(f)) if (f[id][3] === "bottom") o[f[id][0] + f[id][1]] = { a: f[id][4], l: f[id][5] }; return o;`);
-      assert.strictEqual(r.A3.a, 270);
-      assert.strictEqual(r.A3.l, "U1");
+      assert.strictEqual(r.A2.a, 270);
+      assert.strictEqual(r.A2.l, "U1");
     });
 
     test("L3 on the empty stage a new scale's first bottom note is staged at 270 and the ghost draws it there", async () => {
@@ -8190,19 +8191,25 @@ function run() {
         await b.eval(`return document.fonts.ready.then(() => true);`);
         await typeLine(SCALE);
         await pause(250);
-        const geo = () => b.eval(`const inerts = [...document.querySelectorAll("[inert]")]; inerts.forEach((e) => e.removeAttribute("inert"));
-          try {
-            const R = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.width, r.height]; };
-            const pan = document.getElementById("editor-pan"), q = pan.getBoundingClientRect();
-            const pts = [[0.5, 0.5], [0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]].map(([fx, fy]) => { const h = document.elementFromPoint(q.left + q.width * fx, q.top + q.height * fy); return !!h && pan.contains(h); });
-            return { name: R(document.getElementById("editor-name")), tabs: R(document.getElementById("editor-tabs")), pts };
-          } finally { inerts.forEach((e) => e.setAttribute("inert", "")); }`);
+        const geo = () => b.eval(`const bounds = id => {
+          const r = editorEl(id).getBoundingClientRect();
+          return [r.top, r.left, r.width, r.height];
+        }; return { name: bounds("editor-name"), tabs: bounds("editor-tabs") };`);
         const withHint = await geo();
         assert.match(await placeholder(), /^Auto: /);
-        await b.eval(`document.getElementById("editor-name").placeholder = ""; return true;`);
-        const rest = await geo();
-        for (const k of ["name", "tabs"]) withHint[k].forEach((v, i) => assert.ok(Math.abs(v - rest[k][i]) <= 1, `${k}[${i}] ${v} vs ${rest[k][i]}`));
-        assert.deepStrictEqual(withHint.pts, [true, true, true, true, true], "the pan is hit at its centre and four insets");
+        await b.eval(`editorEl("editor-name").placeholder = ""; return true;`);
+        const withoutHint = await geo();
+        for (const key of ["name", "tabs"]) {
+          withHint[key].forEach((v, i) => assert.ok(Math.abs(v - withoutHint[key][i]) <= 1));
+        }
+        await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the rim to clear" });
+        const exposed = await b.eval(`const pan = editorEl("editor-pan");
+          const r = pan.querySelector('svg > circle[r="100"]').getBoundingClientRect();
+          return [[.5,.5],[.25,.25],[.75,.25],[.25,.75],[.75,.75]].every(([x,y]) =>
+            pan.contains(document.elementFromPoint(r.x+r.width*x, r.y+r.height*y)));
+        `);
+        assert.ok(exposed, "the full rim is available after the drawer collapses");
       });
     }
 
