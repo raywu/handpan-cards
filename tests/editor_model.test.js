@@ -47,12 +47,12 @@ test("SE-G1: a v6 record is read exactly when angles.inner is pinned and the rec
   assert.strictEqual(read(app, { v: 9, s: SCALE, o: PIN }).ok, false, "record 9 is protected");
 });
 
-test("SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 8", () => {
+test("SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 10", () => {
   for (const flag of [true, false]) {
     const app = appBoot();
     app.run(`HPE.core.PROFILE_ENABLED = ${flag}`);
     assert.strictEqual(app.get("checkShareVersion(6).ok"), true, "PROFILE_ENABLED=" + flag);
-    assert.strictEqual(plain(app.get("checkShareVersion(8)")).code, "NEEDS_NEWER_APP");
+    assert.strictEqual(plain(app.get("checkShareVersion(10)")).code, "NEEDS_NEWER_APP");
     assert.strictEqual(read(app, { v: 6, s: SCALE, o: PIN }).ok, true, "PROFILE_ENABLED=" + flag);
   }
 });
@@ -293,15 +293,15 @@ test("U2a-P7: a v7 profile link and a v8 pinned-cyclops link (with at-, ai- and 
   assert.strictEqual(plain(app.get(`editorExport(editorLoadShare(${js(v7)}).value).record`)).v, 5);
 });
 
-test("U2a-P4b: a v10 link is refused through the existing needs-newer path", () => {
+test("U2a-P4b: a v12 link is refused through the existing needs-newer path", () => {
   const app = appBoot();
   const v8 = PIN8(app);
-  const forged = "A" + v8.slice(1);
+  const forged = "C" + v8.slice(1);
   const via = plain(app.get(`(() => { const a = HPE.share.decode(${js(forged)}); const b = editorLoadShare(${js(forged)}); return { a: a.code, b: b.code, ok: b.ok }; })()`));
   assert.strictEqual(via.a, "NEEDS_NEWER_APP");
   assert.strictEqual(via.b, "NEEDS_NEWER_APP");
   assert.strictEqual(via.ok, false);
-  assert.strictEqual(plain(app.get(`editorLoadRecord({ v: 9, s: "(D3) A3 C4", o: {} })`)).code, "NEEDS_NEWER_APP");
+  assert.strictEqual(plain(app.get(`editorLoadRecord({ v: 10, s: "(D3) A3 C4", o: {} })`)).code, "NEEDS_NEWER_APP");
 });
 
 const NOTES = (names) => names.join(" ");
@@ -1052,4 +1052,94 @@ test("BN-M11: freezing an untouched ring keeps every U label for 1 to 12 notes, 
       }
     }
   }
+});
+
+// Owner recording investigation: a requested legal seat must be checked before temporary auto seating.
+test("DC-M1: adding the second Cyclops at 130 preserves the legal first pin at 40", () => {
+  const app = appBoot();
+  const r = run(app, `
+    const base = editorLoad("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5").value;
+    const first = editorPlace(base, "inner", "D5", 40).value;
+    const before = JSON.stringify(first);
+    const second = editorPlace(first, "inner", "E5", 130);
+    return { ok: second.ok, reason: second.reason, unchanged: before === JSON.stringify(first),
+      angles: second.ok && second.value.options.angles.inner,
+      pins: second.ok && second.value.pins,
+      solved: second.ok && editorSolve(second.value).ok,
+      roundtrip: second.ok && editorLoadShare(editorExport(second.value).code).value.options.angles.inner };
+  `);
+  assert.strictEqual(r.ok, true, r.reason);
+  assert.deepStrictEqual(r.angles, [40, 130]);
+  assert.deepStrictEqual(r.pins, [{ ring: "inner", i: 0 }, { ring: "inner", i: 1 }]);
+  assert.strictEqual(r.solved, true);
+  assert.strictEqual(r.unchanged, true);
+  assert.deepStrictEqual(r.roundtrip, [40, 130]);
+});
+
+test("DC-M2: real Cyclops collision is refused, while room for an alternate label permits the exact angle", () => {
+  const app = appBoot();
+  const r = run(app, `
+    const base = editorLoad("[D3] [D#3] [E3] [F3] [G3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5",
+      { angles: { bottom: [0, 90, 180, 270, 60] } }).value;
+    const first = editorPlace(base, "inner", "D#3", 135).value;
+    const before = JSON.stringify(first);
+    const refused = editorPlace(first, "inner", "E3", 115);
+    const alternate = editorPlace(first, "inner", "E3", 20);
+    const altGeom = alternate.ok && editorSolve(alternate.value).value.geom;
+    const altField = alternate.ok && ringIds(alternate.value.fields, "inner")[1];
+    const valid = editorPlace(first, "inner", "E3", 35);
+    return { refused, unchanged: before === JSON.stringify(first), ok: valid.ok,
+      alternate: alternate.ok && alternate.value.options.angles.inner,
+      alternateNumber: !!altGeom.innerLabels?.[altField],
+      alternateBottom: alternate.ok && alternate.value.options.angles.bottom,
+      bottom: valid.ok && valid.value.options.angles.bottom,
+      inner: valid.ok && valid.value.options.angles.inner,
+      pins: valid.ok && valid.value.pins };
+  `);
+  assert.strictEqual(r.refused.ok, false);
+  assert.strictEqual(r.refused.code, "NO_ROOM");
+  assert.strictEqual(r.unchanged, true);
+  assert.strictEqual(r.ok, true);
+  assert.deepStrictEqual(r.bottom, [0, 90, 180, 270, 60]);
+  assert.deepStrictEqual(r.inner, [135, 35]);
+  assert.deepStrictEqual(r.alternate, [135, 20]);
+  assert.equal(r.alternateNumber, true);
+  assert.deepStrictEqual(r.alternateBottom, r.bottom);
+  for (let i = 0; i < 5; i += 1) assert.ok(r.pins.some((p) => p.ring === "bottom" && p.i === i));
+});
+
+test("Guided records reopen exact sparse seats and preserve ordinary bottom pins", () => {
+  const app = appBoot();
+  const data = plain(app.get(`(() => {
+    const seed = editorLoad("[F3] (D3) A3 C4 E4", {
+      guided: { rim: { size: 7, seats: [1, 3, 0] } },
+      angles: { bottom: [270] }
+    });
+    const deck = buildGenerated("[F3] (D3) A3 C4 E4", seed.value.options);
+    if (!deck.ok) return { publish: deck };
+    const encoded = editorExport(seed.value);
+    const local = readSavedRecord(encoded.record);
+    const shared = editorLoadShare(encoded.code);
+    const angles = fields => Object.values(fields).map(note => note[4]);
+    return {
+      version: encoded.record.v, local: local.ok, shared: shared.ok,
+      editor: angles(encoded.solve.value.fields), card: angles(deck.value.fields),
+      reopened: local.ok && angles(local.value.fields),
+      sharedAngles: shared.ok && angles(editorSolve(shared.value).value.fields),
+      mirror: angles(HPE.layout.solve({ fields: seed.value.fields, options: {
+        ...seed.value.options, mirror: true, mirrorBottom: false
+      }}).value.fields),
+      protected: readSavedRecord({ ...encoded.record, v: 8 }).ok
+    };
+  })()`));
+  assert.equal(data.version, 9, JSON.stringify(data));
+  assert.equal(data.local, true);
+  assert.equal(data.shared, true);
+  assert.deepEqual(data.editor, data.card);
+  assert.deepEqual(data.editor, data.reopened);
+  assert.deepEqual(data.editor, data.sharedAngles);
+  assert.equal(data.editor.at(-1), 270);
+  assert.equal(data.mirror.at(-1), 270);
+  data.editor.slice(1, 4).forEach((angle, index) => assert.ok(Math.abs(data.mirror[index + 1] - (540 - angle) % 360) < 1e-9));
+  assert.equal(data.protected, false);
 });

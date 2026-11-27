@@ -13664,7 +13664,7 @@ function neoSlotPoint(slot, placed, turn) {
 const DRAG_ON_TOUCH = true;
 const EDITOR_RINGS = ["rim", "inner", "bottom"];
 const EDITOR_PINNABLE = ["inner", "bottom"];
-const EDITOR_CARRIED = ["seats", "angles", "replaces"];
+const EDITOR_CARRIED = ["seats", "angles", "guided", "replaces"];
 const editorClone = (v) => JSON.parse(JSON.stringify(v));
 const editorRefusal = (what) => ({ ok: false, code: "BAD_NOTE", reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(what).slice(0, 12)) });
 const editorPinsOf = (angles) => EDITOR_PINNABLE.flatMap((ring) => ((angles && angles[ring]) || [])
@@ -13804,6 +13804,12 @@ function editorResize(m, ring, parts, change) {
   next.pins = m.pins.filter((p) => !(p.ring === ring && p.i === at && !change.add)).map((p) => (p.ring === ring && p.i >= at && change.add ? { ring, i: p.i + 1 } : p.ring === ring && p.i > at ? { ring, i: p.i - 1 } : p));
   editorTidy(o, "seats");
   editorTidy(o, "angles");
+  // A legal requested seat takes priority over an intermediate automatic seat.
+  // If the final candidate clashes, retain the existing newest-pin fallback.
+  if (Number.isFinite(change.angle) && EDITOR_PINNABLE.includes(ring)) {
+    const requested = editorWithAngle(next, ring, at, stepOf(change.angle));
+    if (editorSolve(requested).ok) return { ok: true, value: requested, ...(had ? { notice: { seatsReset: ring } } : {}) };
+  }
   return editorSettle(next, had ? { seatsReset: ring } : {});
 }
 /* ---- the empty-state stage (TRI-59, lane G1) ----
@@ -14105,7 +14111,7 @@ function editorAdd(m, ring, name, angle) {
   }
   const parts = editorPartsOf(m);
   parts[ring].push(String(name));
-  return editorResize(m, ring, parts, { add: true });
+  return editorResize(m, ring, parts, { add: true, ...(ring === "inner" && Number.isFinite(angle) ? { angle } : {}) });
 }
 function editorRemove(m, ring, i) {
   if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
@@ -14394,7 +14400,7 @@ function editorPlaceAt(m, ring, name, angle) {
   }
   const first = angle === undefined && editorFirstBottom(m, ring);
   const given = first ? EDITOR_FIRST_BOTTOM : angle;
-  const added = editorAdd(m, ring, name, ring === "bottom" ? given : undefined);
+  const added = editorAdd(m, ring, name, given);
   if (!added.ok || given === undefined || !EDITOR_PINNABLE.includes(ring) || m.options.profile || editorIsEmpty(added.value) || (ring === "bottom" && editorIsEmpty(m))) return added;
   const at = editorNames(added.value, ring).indexOf(String(name));
   const pinned = editorSetAngle(added.value, ring, at, given, true);
@@ -16183,7 +16189,7 @@ async function editorSave() {
     if (!built.ok) { s.error = reasonText(built); return; }
     const candidate = { record: scaleRecord(seedOf(built.value)), deck: built.value };
     const ownsSlot = !!base && base.selection.kind === "saved" && !!savedEntries.get(base.selection.id)?.record?.o?.replaces;
-    const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
+    const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options) || !!m.options.guided, ownsSlot);
     let retried = false;
     let result = await commitSaved({ ...command, collectionId: !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
     if (generation !== sheetGeneration || !pageOpen) return;
