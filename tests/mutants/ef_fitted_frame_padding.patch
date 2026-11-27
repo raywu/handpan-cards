@@ -1,0 +1,15 @@
+# kills: T0 geometry and style: fitted frame margins remain four SVG units
+# suite: node --test --test-name-pattern ^T0.geometry.and.style:.375x667 tests/editor_freeze.test.js
+# fault: The resting editor frame gives the outermost labels less space.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15609,7 +15609,7 @@ function installEditorDrawer() {
+     drawer.style.setProperty('--drawerexp-body-max',Math.max(88,vh-rr.top-top-chrome.offsetHeight-toolbar.offsetHeight-8)+'px');sync();
+     if(root.classList.contains('dragging')||root.classList.contains('settling'))return;
+     const svg=document.querySelector('#editor-pan svg');if(!svg)return;
+-    const bb=svg.getBBox(),pad=4;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};
++    const bb=svg.getBBox(),pad=3;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};
+     svg.setAttribute('viewBox',`${frame.x} ${frame.y} ${frame.w} ${frame.h}`);
+     const restingShell = Math.min(innerHeight / 2, 480);
+     const canvasWidth = Math.min(root.clientWidth - 8, stage.clientWidth);
