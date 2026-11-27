@@ -2416,14 +2416,22 @@ function run() {
         try {
           await pointer("mouseMoved", { x: from.x, y: from.y - 24 }, 1);
           await b.waitFor(`!!editorDrag?.live`, { label: "mouse drag to lift" });
-          let to, hit;
-          for (const angle of angles) {
-            to = await spotAt(ring, angle);
+          let to, hit, matches;
+          for (let attempt = 0; attempt < 10 && !matches; attempt++) {
+            const angle = angles[attempt % angles.length];
+            const radius = await b.eval(`return editorOrbit(
+              editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`);
+            to = await spotAt(radius, angle);
             await pointer("mouseMoved", to, 1);
+            await b.waitFor(`(() => {
+              const style = editorDrag?.ghost.style;
+              return !!style && Math.hypot(parseFloat(style.left) - ${to.x}, parseFloat(style.top) - ${to.y}) < 1;
+            })()`, { label: "the mouse move to reach the live drag" });
             hit = await b.eval(`return editorDropTarget({ clientX: ${to.x}, clientY: ${to.y} }, editorDrag.src);`);
-            if (hit.kind === "spot" && hit.ring === ring) break;
+            matches = hit?.kind === "spot" && hit.ring === ring &&
+              (ring !== "bottom" || Math.abs(hit.angle - angle) <= 1);
           }
-          assert.ok(hit?.kind === "spot" && hit.ring === ring, JSON.stringify(hit));
+          assert.ok(matches, JSON.stringify(hit));
           await pointer("mouseReleased", to, 0);
           await b.waitFor(`!editorDrag && !editorEl("editor").matches(".dragging, .settling")`, { label: "mouse drop to settle" });
         } finally {
@@ -2464,9 +2472,14 @@ function run() {
         await tapPoint(await chipAt("B"), true);
         await b.waitFor(`!!editorSession.held && editorHeldName() === "B4"`, { label: "touch tap to hold B4" });
         await showPanForCompatibility();
-        await tapSpot(...polar(0.722, 22.5), true);
-        if (await b.eval(`return !!document.getElementById("editor-guided-place");`))
-          await tapPoint(await centreOf("#editor-guided-place"), true);
+        const landing = '#editor-pan .guided-landing[data-guided-zone="rim"] circle';
+        await b.waitFor(`(() => {
+          const r = document.querySelector(${JSON.stringify(landing)})?.getBoundingClientRect();
+          return !!r && !!document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest("#editor-pan");
+        })()`, { label: "the Guided rim landing to be exposed" });
+        await tapPoint(await centreOf(landing), true);
+        await b.waitFor('editorNames(editorSession.history.present, "rim").includes("B4")',
+          { label: "the touch tap to place B4" });
         assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"], "tap-tap by touch works");
 
         const sawSeats = () => b.eval(`const m = editorSession.history.present; return editorAnglesOf(editorSolve(m), "rim").slice(0, 2);`);
@@ -2501,17 +2514,22 @@ function run() {
 
       test("U2d nit N1: holding a note on a Neotone pan draws no cyclops or bottom target rings", async () => {
         await setup("(D3) A3 Bb3 C4 D4 E4 F4 G4");
-        const rings = () => b.eval(`return [...document.querySelectorAll('#editor-pan .etarget[data-ring="inner"], #editor-pan .etarget[data-ring="bottom"]')].map(el => el.dataset.ring).sort();`);
+        const guides = () => b.eval(`
+          const inner = document.querySelectorAll('#editor-pan .guided-open[data-guided-zone="inner"], #editor-pan .etarget[data-ring="inner"]').length;
+          const bottom = document.querySelectorAll('#editor-pan .balanced-outline.bottom, #editor-pan .etarget[data-ring="bottom"]').length;
+          return { inner, bottom };
+        `);
         await b.click("#editor-type-neotone");
         await hold("B");
         assert.strictEqual(await b.eval(`return editorHeldName();`), "B4");
         await showPanForCompatibility();
-        assert.deepStrictEqual(await rings(), []);
+        assert.deepStrictEqual(await guides(), { inner: 0, bottom: 0 });
         await b.click("#editor-type-standard");
-        await hold("C");
-        assert.strictEqual(await b.eval(`return editorHeldName();`), "C4");
+        await hold("B");
+        assert.strictEqual(await b.eval(`return editorHeldName();`), "B4");
         await showPanForCompatibility();
-        assert.deepStrictEqual(await rings(), ["bottom", "inner"], "a Standard pan with empty zones shows both guides");
+        const standard = await guides();
+        assert.ok(standard.inner > 0 && standard.bottom > 0, JSON.stringify(standard));
       });
 
       test("Undo and Redo walk back through drops, a pan-type switch and Reset spacing", async () => {
