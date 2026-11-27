@@ -4366,8 +4366,18 @@ function run() {
       await b.click("#editor-more");
       assert.strictEqual(await visible("editor-menu"), true);
       assert.strictEqual((await more()).exp, "true");
-      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-menu [role=menuitem]")].map((e) => e.id);`), ["editor-redo", "editor-remove", "editor-reset"]);
+      const items = await b.eval(`return [...document.querySelectorAll("#editor-menu [role=menuitem]:not([hidden])")].map(e => e.id);`);
+      for (const id of ["editor-redo", "editor-remove", "editor-reset", "editor-form-toggle", "editor-placement-help"]) {
+        assert.ok(items.includes(id), id + " is in the menu");
+      }
+      assert.ok(!items.includes("editor-fixed-slots"), "Neotone-only action remains hidden in Standard");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-menu").contains(document.activeElement);`), true, "focus moved in");
+      const initial = await b.eval("return document.activeElement.id;");
+      await b.key("ArrowDown", "ArrowDown", 40);
+      const advanced = await b.eval("return document.activeElement.id;");
+      assert.ok(advanced !== initial && items.includes(advanced), "ArrowDown moves through visible items");
+      await b.key("ArrowUp", "ArrowUp", 38);
+      assert.equal(await b.eval("return document.activeElement.id;"), initial);
       await b.key("Escape", "Escape", 27);
       assert.strictEqual(await visible("editor-menu"), false);
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-more");
@@ -6333,13 +6343,15 @@ function run() {
       await fresh(390, 844);
       await openAdd();
       await typeLine(SCALE);
-      await b.click("#editor-hint-toggle");
+      await b.click("#editor-more");
+      await b.click("#editor-placement-help");
       await b.waitFor(`editorSession.hint === true`, { label: "the hint to open" });
+      assert.equal(await b.eval("return document.activeElement.id;"), "editor-hint-close");
       const seen = [];
       for (let i = 0; i < 8; i++) {
         await b.key("Tab", "Tab", 9);
         seen.push(await b.eval(`const a = document.activeElement, c = getComputedStyle(a);
-          return { id: a.id || a.outerHTML.slice(0, 120), hidden: c.visibility === "hidden" || c.display === "none" || a.getClientRects().length === 0 };`));
+          return { id: a.id || a.outerHTML.slice(0, 120), hidden: !!a.closest("[hidden], [inert]") || c.visibility === "hidden" || c.display === "none" || a.getClientRects().length === 0 };`));
       }
       assert.ok(seen.every((x) => !x.hidden), JSON.stringify(seen));
       assert.ok(seen.every((x, i) => i === 0 || x.id !== seen[i - 1].id), JSON.stringify(seen));
