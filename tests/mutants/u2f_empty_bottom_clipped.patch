@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15759,7 +15759,7 @@
-     }
-   }
-   out += "</g>";
--  const shown = standard && !ringIds(fields, "bottom").length
-+  const shown = false && standard && !ringIds(fields, "bottom").length
-     ? markup.replace(/viewBox="-([\d.]+) -[\d.]+ [\d.]+ [\d.]+"( data-ext="[\d.]+")?/, (all, v) => {
-       const wide = Math.max(Number(v), 100 * (editorOrbit(geom, "bottom") + editorNoteReach(geom, "bottom")) + 14);
-       return `viewBox="${-wide} ${-wide} ${2 * wide} ${2 * wide}"` + (all.includes("data-ext") ? ` data-ext="${wide}"` : "");
+@@ -15610,6 +15610,8 @@ function installEditorDrawer() {
+     if(root.classList.contains('dragging')||root.classList.contains('settling'))return;
+     const svg=document.querySelector('#editor-pan svg');if(!svg)return;
+     const bb=svg.getBBox(),pad=4;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};
++    const model=editorSession.history.present;
++    if(!model.options.profile&&!editorNames(model,"bottom").length)frame={...frame,y:-105,h:210};
+     svg.setAttribute('viewBox',`${frame.x} ${frame.y} ${frame.w} ${frame.h}`);
+     const restingShell = Math.min(innerHeight / 2, 480);
+     const canvasWidth = Math.min(root.clientWidth - 8, stage.clientWidth);
