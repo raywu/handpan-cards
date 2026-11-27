@@ -1847,40 +1847,130 @@ function run() {
         assert.strictEqual(await pill("inner"), "Cyclops 2/6");
       });
 
-      test("D16: a full area reads Full in the counts and a tap or drop into it is refused with the exact copy", async () => {
+      const statusMessage = () => b.eval(`
+        return [...document.getElementById("editor-status").childNodes]
+          .filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join("").trim();
+      `);
+      const placementSnapshot = () => b.eval(`
+        const history = editorSession.history;
+        const m = history.present, solved = editorSolve(m).value;
+        return { parts: editorPartsOf(m), ding: editorDingOf(m), options: m.options,
+          fields: solved.fields, depth: history.past.length };
+      `);
+      async function capSpot(ring, valid = false) {
+        return b.eval(`
+          const m = editorSession.history.present, solved = editorSolve(m).value;
+          const svg = document.querySelector("#editor-pan svg");
+          const orbit = editorOrbit(solved.geom, ${JSON.stringify(ring)});
+          const inner = ${JSON.stringify(ring)} === "inner";
+          for (const delta of [0, -0.08, 0.08]) {
+            for (let angle = 0; angle < 360; angle += 5) {
+              if (inner && (angle < 15 || angle > 165)) continue;
+              const radians = angle * Math.PI / 180, radius = orbit + delta;
+              const local = [radius * Math.cos(radians), radius * Math.sin(radians)];
+              const hit = editorHitAt(solved, local, true, m);
+              if (hit.kind !== "spot" || hit.ring !== ${JSON.stringify(ring)}) continue;
+              if (${valid}) {
+                const plan = editorDropPlan(m, { from: "tray", name: editorHeldName() }, hit);
+                if (!drawerProspective(m, plan).ok) continue;
+              }
+              const p = new DOMPoint(100 * local[0], -100 * local[1]).matrixTransform(svg.getScreenCTM());
+              if (document.elementFromPoint(p.x, p.y)?.closest("#editor-pan")) return {x:p.x,y:p.y};
+            }
+          }
+          throw Error("No exposed spot in " + ${JSON.stringify(ring)});
+        `);
+      }
+      async function exposedPan() {
+        if (await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the pan to clear" });
+      }
+
+      test("D16: a full rim reads Full in Placement help and refuses native tap and drag", async () => {
         await setup("(D3) " + RIM12 + " | C6");
+        await b.click("#editor-more");
+        await b.click("#editor-placement-help");
+        assert.ok(await b.eval(`return !document.getElementById("editor-areas").hidden &&
+          document.querySelector('#editor-counts [data-zone="rim"]').classList.contains("full");`));
         assert.strictEqual(await pill("rim"), "Rim 12/12 Full");
-        assert.strictEqual(await b.eval(`return document.querySelector('#editor-counts [data-zone="rim"]').classList.contains("full");`), true);
-        const core = () => b.eval(`const m = editorSession.history.present; return { parts: editorPartsOf(m), ding: editorDingOf(m), options: m.options };`);
-        const before = await core();
-        await hold("F");
+        await b.click("#editor-hint-close");
+
+        const before = await placementSnapshot();
+        const refusal = "The rim is full at 12 notes. Remove one first.";
         await b.click("#editor-oct-up");
-        await place("rim");
-        assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.");
-        assert.deepStrictEqual(await core(), before);
-        assert.strictEqual(await b.eval(`return editorSession.held !== null;`), true, "the note is still held");
-        await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
-        assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.", "a drop into the rim is refused too");
-        assert.deepStrictEqual(await core(), before);
-        await place("inner");
-        assert.strictEqual((await model()).fields && Object.values((await model()).fields).filter((f) => f[3] === "inner").length, 2, "another area still takes it");
+        await hold("F");
+        await exposedPan();
+        await tapPoint(await capSpot("rim"), true);
+        assert.strictEqual(await statusMessage(), "F5 wasn’t placed. " + refusal);
+        assert.strictEqual(await b.eval("return editorHeldName();"), "F5");
+        assert.deepStrictEqual(await placementSnapshot(), before);
+        await b.click("#editor-cancel");
+
+        const chip = '.tray-note[data-name="F"]';
+        await exposeDrawerControl(chip, selector => b.click(selector));
+        const from = await b.eval(`const r = document.querySelector(${JSON.stringify(chip)}).getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };`);
+        const mouse = (type, point, buttons) => b.send("Input.dispatchMouseEvent",
+          { type, ...point, button: "left", buttons, clickCount: 1 });
+        await mouse("mousePressed", from, 1);
+        try {
+          await mouse("mouseMoved", {x: from.x, y: from.y - 24}, 1);
+          await b.waitFor("!!editorDrag?.live", { label: "the drag to lift" });
+          let point;
+          for (let attempt = 0; attempt < 8; attempt++) {
+            point = await capSpot("rim");
+            await mouse("mouseMoved", point, 1);
+            if (await b.eval(`const hit = editorDropTarget({clientX: ${point.x}, clientY: ${point.y}}, editorDrag.src);
+              return hit.kind === "spot" && hit.ring === "rim";`)) break;
+            point = null;
+          }
+          assert.ok(point, "the drag reached an open area of the full rim");
+          await mouse("mouseReleased", point, 0);
+        } finally {
+          if (await b.eval("return !!editorDrag;")) await b.key("Escape", "Escape", 27);
+        }
+        assert.strictEqual(await statusMessage(), "F5 wasn’t placed. " + refusal);
+        assert.deepStrictEqual(await placementSnapshot(), before);
+
+        await hold("F");
+        await exposedPan();
+        const open = '#editor-pan .guided-open[data-guided-zone="inner"] circle';
+        const seat = await b.eval(`const mark = [...document.querySelectorAll(${JSON.stringify(open)})].find(node => {
+          const r = node.getBoundingClientRect();
+          return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest("#editor-pan");
+        });
+        const r = mark.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2};`);
+        await tapPoint(seat, true);
+        const after = await placementSnapshot();
+        assert.strictEqual(after.depth, before.depth + 1);
+        assert.deepStrictEqual(after.parts.inner, ["F5", "C6"], "a different area still takes the note");
       });
 
-      test("D16 e2e: the 6th cyclops note is refused as crowded with a bottom note present; the 12th bottom note is accepted with 4 cyclops", async () => {
+      test("D16 e2e: crowded Cyclops placement leaves the layout intact; the 12th bottom note is accepted with 4 Cyclops", async () => {
         await setup(BOT_LINE(1) + " (D3) " + RIM8 + " | C5 D5 E5 F5 G5");
+        const before = await placementSnapshot();
+        await b.click("#editor-oct-up");
+        await b.click("#editor-oct-up");
         await hold("A");
-        await b.click("#editor-oct-up");
-        await b.click("#editor-oct-up");
-        await place("inner");
-        assert.strictEqual(await status(), "Too crowded: labels would print at 2.71 pt, under 3.6 pt. Remove a note first.");
-        assert.strictEqual(Object.values((await model()).fields).filter((f) => f[3] === "inner").length, 5);
+        await exposedPan();
+        await tapPoint(await capSpot("inner"), true);
+        assert.match(await statusMessage(), /A6 wasn’t placed\./);
+        assert.ok(await b.eval("return !!editorSession.error;"));
+        assert.deepStrictEqual(await placementSnapshot(), before);
+
         await setup(BOT_LINE(11) + " (D3) " + RIM8 + " | C5 D5 E5 F5");
+        const beforeBottom = await placementSnapshot();
+        await b.click("#editor-oct-down");
+        await b.click("#editor-oct-down");
         await hold("D");
-        await b.click("#editor-oct-down");
-        await b.click("#editor-oct-down");
-        await place("bottom");
-        assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 12, await status());
-        assert.strictEqual(await status(), "D2 added to the bottom.Undo");
+        await exposedPan();
+        await tapPoint(await capSpot("bottom", true), true);
+        const after = await placementSnapshot();
+        assert.strictEqual(after.parts.bottom.length, 12, await status());
+        assert.ok(after.parts.bottom.includes("D2"));
+        assert.deepStrictEqual(after.parts.inner, beforeBottom.parts.inner);
+        assert.strictEqual(after.depth, beforeBottom.depth + 1);
+        assert.match(await statusMessage(), /^D2 added to the bottom\./);
       });
 
       test("parity 9 save: an over-cap scale saves with the same record and share link; only a further add into that area is refused", async () => {
@@ -2011,12 +2101,17 @@ function run() {
         assert.strictEqual((await reset()).disabled, false);
         await b.click("#drawerexp-handle");
         await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the pan to clear for note selection" });
-        await tapNote("rim", 0);
+        const select = async (ring) => {
+          await b.eval(`document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="0"]').focus(); return true;`);
+          await b.key("Enter", "Enter", 13);
+          assert.deepStrictEqual(await b.eval("return editorSession.sel;"), { ring, i: 0 });
+        };
+        await select("rim");
         assert.deepStrictEqual(await reset(), { aria: "Reset spacing", disabled: true, visible: "Reset spacing" });
-        await tapNote("rim", 0);
-        await tapNote("ding", 0);
+        await b.key("Enter", "Enter", 13);
+        await select("ding");
         assert.strictEqual((await reset()).disabled, true);
-        await tapNote("ding", 0);
+        await b.key("Enter", "Enter", 13);
         await b.click("#editor-type-neotone");
         assert.strictEqual((await reset()).disabled, true);
         assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-counts .zc")].map((e) => e.dataset.zone);`), ["main", "mutant", "ding"]);
