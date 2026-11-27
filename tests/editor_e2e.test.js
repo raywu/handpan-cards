@@ -727,7 +727,7 @@ function run() {
       assert.equal(await savedCount(), 0);
     });
 
-    test("direct Standard scale entry uses Guided seats and neutral guides do not overlap notes", async () => {
+    test("EDITOR-RC-TYPED-GUIDED: direct Standard scale entry uses Guided seats and neutral guides do not overlap notes", async () => {
       const seed = "(D3) A3 C4 | D4";
       await fixture("", {}, 4, 667, 380);
       await clickReady("#editor-line");
