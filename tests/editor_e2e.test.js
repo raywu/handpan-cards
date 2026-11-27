@@ -425,40 +425,56 @@ function run() {
   });
 
   describe("D13 layout", () => {
-    const IDS = ["editor-back", "editor-line", "editor-pan", "editor-hint-toggle", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
-      "editor-save", "editor-tray"];
+    const frame = () => b.eval(`
+      const root = document.getElementById("editor");
+      const ids = ["editor-back", "editor-line", "drawerexp-handle", "editor-undo", "editor-more",
+        "editor-save", "editor-tab-scale", "editor-tab-layout"];
+      const box = id => document.getElementById(id).getBoundingClientRect();
+      const buttons = ids.filter(id => id !== "editor-line");
+      return {
+        outerScroll: [document.documentElement.scrollWidth, document.documentElement.scrollHeight],
+        rootScroll: [root.scrollWidth, root.clientWidth, root.scrollTop],
+        inside: ids.filter(id => {
+          const r = box(id);
+          return r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth;
+        }),
+        undersized: buttons.filter(id => { const r = box(id); return r.width < 44 || r.height < 44; }),
+        covered: buttons.filter(id => {
+          const r = box(id), target = document.getElementById(id);
+          return !target.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        }),
+        expanded: drawerExperiment.expanded,
+      };
+    `);
 
-    test("375x667: header, line, pan, area slot, toolbar and tray slot are all reachable with no scroll", async () => {
+    test("375x667: header, line, drawer tabs and pinned actions fit without page scroll", async () => {
       await fresh(375, 667);
       await openBuiltin();
-      const r = await b.eval(`const de = document.documentElement;
-        const boxes = Object.fromEntries(${JSON.stringify(IDS)}.map((id) => { const e = document.getElementById(id);
-          const q = e.getBoundingClientRect(); return [id, { top: q.top, bottom: q.bottom, left: q.left, right: q.right, w: q.width, h: q.height }]; }));
-        return { sh: de.scrollHeight, sw: de.scrollWidth, boxes, ed: (() => { const e = document.getElementById("editor"); return { sh: e.scrollHeight, ch: e.clientHeight, sw: e.scrollWidth, cw: e.clientWidth }; })() };`);
-      assert.strictEqual(r.sh, 667, "no vertical page scroll");
-      assert.strictEqual(r.sw, 375, "no horizontal page scroll");
-      assert.ok(r.ed.sh <= r.ed.ch && r.ed.sw <= r.ed.cw, "the panel itself does not scroll: " + JSON.stringify(r.ed));
-      for (const [id, q] of Object.entries(r.boxes)) {
-        assert.ok(q.top >= 0 && q.bottom <= 667 && q.left >= 0 && q.right <= 375, id + " is inside the viewport: " + JSON.stringify(q));
-      }
-      for (const id of ["editor-back", "editor-undo", "editor-more", "editor-save", "editor-tab-scale", "editor-tab-layout"]) {
-        assert.ok(r.boxes[id].h >= 44 && r.boxes[id].w >= 44, id + " is a 44px target: " + JSON.stringify(r.boxes[id]));
-      }
-      const order = ["editor-back", "editor-line", "editor-pan", "editor-tabs", "editor-hint-toggle", "editor-undo"].map((id) => r.boxes[id].top);
-      assert.deepStrictEqual([...order].sort((x, y) => x - y), order, "header, line, pan, status row, tabs, toolbar read top to bottom (the panels scroll under the pinned strip)");
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-areas").hidden;`), true, "the counts and hint start collapsed");
+      const result = await frame();
+      assert.deepEqual(result.outerScroll, [375, 667]);
+      assert.equal(result.rootScroll[0], result.rootScroll[1]);
+      assert.equal(result.rootScroll[2], 0);
+      assert.deepEqual(result.inside, []);
+      assert.deepEqual(result.undersized, []);
+      assert.deepEqual(result.covered, []);
+      assert.equal(result.expanded, true);
     });
 
-    test("1280x800 renders clean: nothing overflows and every part is in view", async () => {
+    test("1280x800 renders a bounded pan with reachable drawer and pinned actions", async () => {
       await fresh(1280, 800);
       await openBuiltin();
-      const r = await b.eval(`const de = document.documentElement;
-        const bad = ${JSON.stringify(IDS)}.filter((id) => { const q = document.getElementById(id).getBoundingClientRect();
-          return q.width === 0 || q.height === 0 || q.bottom > innerHeight || q.right > innerWidth || q.left < 0 || q.top < 0; });
-        return { sh: de.scrollHeight, sw: de.scrollWidth, bad };`);
-      assert.deepStrictEqual(r.bad, []);
-      assert.strictEqual(r.sw, 1280);
-      assert.strictEqual(r.sh, 800);
+      const result = await frame();
+      assert.deepEqual(result.outerScroll, [1280, 800]);
+      assert.deepEqual(result.inside, []);
+      assert.deepEqual(result.covered, []);
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the desktop drawer to close" });
+      const r = await b.eval(`
+        const shell = document.querySelector('#editor-pan svg > circle[r="100"]').getBoundingClientRect();
+        const handle = document.getElementById("drawerexp-handle").getBoundingClientRect();
+        return { width: shell.width, height: shell.height, clear: shell.top >= 0 && shell.bottom <= handle.top };
+      `);
+      assert.ok(r.width > 0 && r.width <= 480 && Math.abs(r.width - r.height) < 1 && r.clear, JSON.stringify(r));
     });
 
     test("Undo, Redo, Remove and Reset spacing start disabled with nothing edited, selected or pinned", async () => {
@@ -490,10 +506,14 @@ function run() {
       const r = await b.eval(`const m = editorSession.history.present; const s = editorSolve(m); const p = HPE.select.PALETTES[m.options.palette || 0];
         const expected = pan({ geom: s.value.geom, fields: s.value.fields, colors: { root: p.root, tone: p.tone } }, null, { scale: EDITOR_SCALE, push: editorPush(m, s.value.fields) });
         const drawn = document.createElement("div"); drawn.innerHTML = document.getElementById("editor-pan").innerHTML;
-        drawn.querySelector(".ehit-layer").remove();
-        return { same: (() => { const d = document.createElement("div"); d.innerHTML = expected; return d.innerHTML === drawn.innerHTML; })(), bottom: Object.values(m.fields).filter((f) => f[3] === "bottom").length };`);
+        const d = document.createElement("div");
+        d.innerHTML = expected;
+        const painted = node => Array.from(node.querySelector("svg").children)
+          .filter(e => !e.matches(".ehit-layer, .eunder, .guided-informational"))
+          .map(e => e.outerHTML);
+        return { painted: painted(drawn), expected: painted(d), bottom: Object.values(m.fields).filter((f) => f[3] === "bottom").length };`);
       assert.ok(r.bottom >= 2, "the fixture has bottom notes");
-      assert.strictEqual(r.same, true);
+      assert.deepEqual(r.painted, r.expected);
     });
 
     test("U2b nit 4: every bottom note sits on the outer ring, farther out than every rim and cyclops note", async () => {
@@ -5269,130 +5289,161 @@ function run() {
     });
   });
 
-  describe("Editor phone landscape: one scrolling column (LS, owner 2026-11-15)", () => {
-    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
-    const open = async (w, h) => { await fresh(w, h); await openAdd(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
-    const atRest = (sel) => b.eval(`const e = document.querySelector(${JSON.stringify(sel)}), r = e.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      return { inside: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth, hit: !!hit && (hit === e || e.contains(hit)), top: r.top, bottom: r.bottom, ih: innerHeight };`);
-    const sweep = () => b.eval(`const bad = [], seen = [];
-      const els = [...document.querySelectorAll("#editor button, #editor input")].filter((e) => !e.closest("[hidden]") && !e.closest("#editor-menu") && e.id !== "editor-hint-close" && e.getClientRects().length);
-      for (const e of els) {
-        e.scrollIntoView({ block: "nearest" });
-        const r = e.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        seen.push(e.id || e.className);
-        if (!(hit === e || e.contains(hit)) || r.top < 0 || r.bottom > innerHeight) bad.push((e.id || e.className) + "@" + Math.round(r.top) + "-" + Math.round(r.bottom));
+  describe("Editor phone landscape: pan and controls in separate columns", () => {
+    async function open(w, h) {
+      await fresh(w, h);
+      await openAdd();
+      await b.waitFor('document.querySelector("#editor-pan svg")', { label: "the pan SVG" });
+    }
+    const sweep = () => b.eval(`
+      const body = document.getElementById("drawerexp-body");
+      const els = [...body.querySelectorAll("button, input")].filter(e =>
+        !e.closest("[hidden], [inert]") && e.getClientRects().length);
+      const covered = [];
+      for (const node of els) {
+        node.scrollIntoView({ block: "nearest" });
+        const r = node.getBoundingClientRect();
+        if (!node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)))
+          covered.push(node.id || node.className);
       }
-      const p = document.querySelector("#editor-pan svg").getBoundingClientRect();
-      return { bad, n: seen.length, pan: p.top >= 0 && p.bottom <= innerHeight && p.height > 100, panRect: [p.top, p.bottom], ih: innerHeight, st: document.getElementById("editor").scrollTop };`);
+      const scrollTop = body.scrollTop;
+      body.scrollTop = 0;
+      return { covered, count: els.length, scrollTop, rootTop: editorEl("editor").scrollTop };
+    `);
+    const pinnedSave = async () => {
+      const state = await b.eval(`
+        const node = document.getElementById("editor-save"), rect = node.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        return { top: rect.top, bottom: rect.bottom, height: innerHeight, hit: hit?.id || hit?.tagName,
+          reachable: node.contains(hit), rail: [getComputedStyle(node.parentElement).zIndex,
+            getComputedStyle(node.parentElement).pointerEvents, getComputedStyle(node.parentElement).visibility],
+          classes: editorEl("editor").className, disabled: node.disabled,
+          chain: document.elementsFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2).slice(0, 5).map(e => e.id || e.className) };
+      `);
+      assert.ok(state.top >= 0 && state.bottom <= state.height && state.reachable, JSON.stringify(state));
+    };
+    async function dragLandscapeNote(zone) {
+      const name = zone === "ding" ? "G" : "B";
+      if (zone === "ding") await b.click("#editor-oct-down");
+      const source = await b.eval(`
+        const chip = document.querySelector(${JSON.stringify('.tray-note[data-name="' + name + '"]')});
+        chip.scrollIntoView({ block: "nearest" });
+        const r = chip.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+        return { x, y, hittable: chip.contains(document.elementFromPoint(x, y)) };
+      `);
+      assert.equal(source.hittable, true, "the tray note is visible before the drag");
+      const touch = (type, pt) => b.send("Input.dispatchTouchEvent", {
+        type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : []
+      });
+      await touch("touchStart", source);
+      let released = false;
+      try {
+        await touch("touchMove", { x: source.x - 35, y: source.y - 10 });
+        await b.waitFor('!!editorDrag?.live', { label: "native drag to lift" });
+        let hit;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const point = await b.eval(`
+            const svg = document.querySelector("#editor-pan svg");
+            const center = svg.querySelector('.ehit[data-ring="ding"]');
+            if (${JSON.stringify(zone)} === "ding") {
+              const r = center.getBoundingClientRect();
+              return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+            }
+            const g = editorSolve(editorSession.history.present).value.geom;
+            const angle = (22.5 + 15 * ${attempt}) * Math.PI / 180;
+            const q = new DOMPoint(g.rim * Math.cos(angle) * 100, -g.rim * Math.sin(angle) * 100)
+              .matrixTransform(svg.getScreenCTM());
+            return { x: q.x, y: q.y };
+          `);
+          await touch("touchMove", point);
+          hit = await b.eval(`return editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);`);
+          if (zone === "ding" ? hit.kind === "ding" : hit.kind === "spot" && hit.ring === "rim") break;
+        }
+        assert.ok(zone === "ding" ? hit?.kind === "ding" : hit?.kind === "spot" && hit.ring === "rim", JSON.stringify(hit));
+        await touch("touchEnd");
+        released = true;
+        await b.waitFor('!editorDrag && !editorEl("editor").matches(".dragging, .settling")', { label: "the drop to settle" });
+      } finally {
+        if (!released) await touch("touchCancel");
+      }
+    }
 
     for (const [w, h] of [[844, 390], [844, 340], [667, 375]]) {
-      test(`LS ${w}x${h}: at rest on Scale the name field, both tabs and the first tray chip are fully in view and hit at their centres, and the column is one scroll box at its top`, async () => {
+      test(`LS ${w}x${h}: at rest the drawer and pan occupy separate landscape columns`, async () => {
         await open(w, h);
-        const st = await b.eval(`const e = document.getElementById("editor"), rg = document.getElementById("editor-region");
-          return { oy: getComputedStyle(e).overflowY, top: e.scrollTop, rgOy: getComputedStyle(rg).overflowY, grid: getComputedStyle(e).display, tab: editorSession.tab };`);
-        assert.deepStrictEqual([st.oy, st.top, st.rgOy, st.grid, st.tab], ["auto", 0, "visible", "grid", "scale"], "the column scrolls as one, from its top: " + JSON.stringify(st));
-        for (const sel of ["#editor-name", "#editor-tab-scale", "#editor-tab-layout", ".tray-note"]) {
-          const r = await atRest(sel);
-          assert.ok(r.inside && r.hit, `${w}x${h} ${sel} in view and on top: ` + JSON.stringify(r));
-        }
+        const frame = await b.eval(`
+          const pan = document.querySelector(".panexp-stage").getBoundingClientRect();
+          const drawer = document.getElementById("drawerexp").getBoundingClientRect();
+          return { split: pan.right <= drawer.left + 1, open: drawerExperiment.expanded, tab: editorSession.tab };
+        `);
+        assert.deepEqual(frame, { split: true, open: true, tab: "scale" });
+        await pinnedSave();
       });
 
-      test(`LS ${w}x${h}: every control on Scale and on Layout is reachable by scrolling the one column, and the pan stays in view`, async () => {
+      test(`LS ${w}x${h}: every Scale and Layout control is reachable inside the drawer`, async () => {
         await open(w, h);
-        const s = await sweep();
-        assert.deepStrictEqual(s.bad, [], `${w}x${h} Scale: ` + JSON.stringify(s));
-        assert.ok(s.pan, "the pan stays in view while the column scrolls: " + JSON.stringify(s.panRect));
+        const scale = await sweep();
+        assert.deepEqual(scale.covered, []);
+        assert.ok(scale.count >= 17 && scale.scrollTop > 0 && scale.rootTop === 0, JSON.stringify(scale));
         await b.click("#editor-tab-layout");
-        await pause(150);
-        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-swatches .dot").length;`), 10, "ten palette dots");
-        const l = await sweep();
-        assert.deepStrictEqual(l.bad, [], `${w}x${h} Layout: ` + JSON.stringify(l));
-        assert.ok(l.n >= 14 && l.pan, "every Layout control and dot was visited, the pan in view: " + JSON.stringify(l));
-        const back = await atRest("#editor-tab-scale");
-        assert.ok(back.inside && back.hit, "the tabs are reachable from the bottom of the column: " + JSON.stringify(back));
+        const layout = await sweep();
+        assert.deepEqual(layout.covered, []);
+        assert.ok(layout.count >= 14 && layout.rootTop === 0, JSON.stringify(layout));
+        await b.click("#editor-tab-scale");
+        assert.equal(await b.eval("return editorSession.tab;"), "scale");
       });
 
       test(`LS ${w}x${h}: a Neotone switch from the Layout tab keeps the Layout tab`, async () => {
         await open(w, h);
         await b.click("#editor-tab-layout");
-        await pause(100);
         for (const kind of ["neotone", "standard"]) {
           await b.click("#editor-type-" + kind);
-          await pause(150);
-          const r = await b.eval(`return { tab: editorSession.tab, layout: !document.getElementById("editor-panel-layout").hidden, scale: document.getElementById("editor-panel-scale").hidden };`);
-          assert.deepStrictEqual(r, { tab: "layout", layout: true, scale: true }, kind + " keeps Layout: " + JSON.stringify(r));
+          const r = await b.eval(`return { tab: editorSession.tab, layout: !editorEl("editor-panel-layout").hidden, scale: editorEl("editor-panel-scale").hidden };`);
+          assert.deepEqual(r, { tab: "layout", layout: true, scale: true }, kind + " keeps Layout");
         }
       });
     }
 
-    test("LS 844x390: the toolbar is reachable at the end of the column and a chip dragged onto the pan still places a note", async () => {
+    test("LS 844x390: Save stays pinned as a chip is dragged into the rim", async () => {
       await open(844, 390);
       await typeLine(SCALE);
-      const bar = await b.eval(`const t = document.querySelector("#editor .editor-toolbar"); t.scrollIntoView({ block: "nearest" });
-        const r = t.getBoundingClientRect(), s = document.getElementById("editor-save").getBoundingClientRect(), hit = document.elementFromPoint(s.left + s.width / 2, s.top + s.height / 2);
-        return { bottom: r.bottom, ih: innerHeight, hit: !!hit && hit.id === "editor-save", p: getComputedStyle(t).position };`);
-      assert.ok(bar.hit && bar.bottom <= bar.ih && bar.p !== "sticky", "the toolbar follows the tray in flow and Save is hit when scrolled to: " + JSON.stringify(bar));
-      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
-      const rimCount = () => b.eval(`return editorNames(editorSession.history.present, "rim").length;`);
-      const before = await rimCount();
-      await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
-      const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-      const to = await b.eval(`const g = editorSolve(editorSession.history.present).value.geom, o = editorOrbit(g, "rim"), svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
-        const x = o * Math.cos(22.5 * Math.PI / 180) * 100, y = -o * Math.sin(22.5 * Math.PI / 180) * 100;
-        return { x: r.left + (x - vb.x) / vb.width * r.width, y: r.top + (y - vb.y) / vb.height * r.height };`);
-      const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
-      await touch("touchStart", from);
-      for (const k of [0.15, 0.3, 0.6, 1]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
-      await touch("touchEnd");
-      await pause(600);
-      assert.strictEqual(await rimCount(), before + 1, "the dropped chip became a rim note");
+      await pinnedSave();
+      await dragLandscapeNote("rim");
+      assert.match(await text(), /B4/);
+      assert.equal(await b.eval("return drawerExperiment.expanded;"), false);
+      await pinnedSave();
     });
 
-    for (const [w, h, drop] of [[838, 390, "seat"], [838, 390, "ding"], [667, 375, "seat"], [667, 375, "ding"]]) {
-      test(`AF save on screen ${w}x${h} ${drop}: after a touch drop Save is fully in view and hit at its centre`, async () => {
+    for (const [w, h, zone] of [[838, 390, "rim"], [838, 390, "ding"], [667, 375, "rim"], [667, 375, "ding"]]) {
+      test(`AF save on screen ${w}x${h} ${zone}: after a touch drop Save is fully in view and hit at its centre`, async () => {
         await open(w, h);
         await typeLine(SCALE);
-        await b.eval(`document.querySelector('.tray-note[data-name="B"]').scrollIntoView({ block: "nearest" }); return true;`);
-        const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-        const to = await b.eval(`const svg = document.querySelector("#editor-pan svg"), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
-          if (${JSON.stringify(drop)} === "ding") { const c = [...document.querySelectorAll("#editor-pan circle")].find((e) => /ding/.test(e.getAttribute("aria-label") || "")).getBoundingClientRect(); return { x: c.left + c.width / 2, y: c.top + c.height / 2 }; }
-          const g = editorSolve(editorSession.history.present).value.geom, o = editorOrbit(g, "rim");
-          const x = o * Math.cos(22.5 * Math.PI / 180) * 100, y = -o * Math.sin(22.5 * Math.PI / 180) * 100;
-          return { x: r.left + (x - vb.x) / vb.width * r.width, y: r.top + (y - vb.y) / vb.height * r.height };`);
-        const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
-        await touch("touchStart", from);
-        for (const k of [0.15, 0.3, 0.6, 1]) await touch("touchMove", { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k });
-        await touch("touchEnd");
-        await b.waitFor(`!document.getElementById("editor").classList.contains("dragging") && !document.getElementById("editor").classList.contains("settling")`, { label: "the drop to settle" });
-        for (const ms of [0, 500, 1500]) {
-          await pause(ms);
-          const r = await b.eval(`const e = document.getElementById("editor-save"), q = e.getBoundingClientRect(), hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
-            return { top: q.top, bottom: q.bottom, ih: innerHeight, hit: !!hit && e.contains(hit), msg: document.getElementById("editor-status").textContent };`);
-          assert.ok(r.top >= 0 && r.bottom <= r.ih && r.hit, "Save is on screen after the drop: " + JSON.stringify(r));
-        }
+        await dragLandscapeNote(zone);
+        assert.match(await text(), zone === "ding" ? /\(G3\)/ : /B4/);
+        await pinnedSave();
       });
     }
   });
 
   describe("editor landscape dialog lock", () => {
-    test("LS 844x390: an open dialog locks the column's scroll", async () => {
-      await fresh(844, 390);
+    test("LS 844x340: an open dialog locks the drawer's scroll", async () => {
+      await fresh(844, 340);
       await openAdd();
-      await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
       await typeLine(SCALE);
+      const pt = await b.eval(`const r = editorEl("drawerexp-body").getBoundingClientRect();
+        return { x: r.right - 32, y: r.top + r.height / 2 };`);
       const wheel = async () => {
-        const pt = await b.eval(`const r = document.getElementById("editor").getBoundingClientRect(); return { x: r.right - 40, y: r.top + r.height / 2 };`);
         await b.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: pt.x, y: pt.y, deltaX: 0, deltaY: 300 });
-        await new Promise((done) => setTimeout(done, 300));
-        return b.eval(`return document.getElementById("editor").scrollTop;`);
+        await new Promise(done => setTimeout(done, 300));
+        return b.eval(`return editorEl("drawerexp-body").scrollTop;`);
       };
-      assert.ok(await wheel() > 0, "the column scrolls under the wheel before any dialog");
-      await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
+      assert.ok(await wheel() > 0, "the drawer scrolls under the wheel before any dialog");
+      await b.eval(`editorEl("drawerexp-body").scrollTop = 0; return true;`);
       await b.click("#editor-back");
-      await b.waitFor(`!!(document.getElementById("editor-dialog") && !document.getElementById("editor-dialog").hasAttribute("hidden"))`, { label: "the Save changes dialog" });
-      const st = await b.eval(`const cs = getComputedStyle(document.getElementById("editor")); return { oy: cs.overflowY, ox: cs.overflowX, top: document.getElementById("editor").scrollTop };`);
-      assert.deepStrictEqual([st.oy, st.top], ["hidden", 0], "the column is overflow hidden while the dialog is open: " + JSON.stringify(st));
-      assert.strictEqual(await wheel(), 0, "a wheel over the column does not move it while the dialog is open");
+      await b.waitFor(`!editorEl("editor-dialog").hidden`, { label: "the Save changes dialog" });
+      assert.ok(await b.eval(`return editorEl("editor-dialog").contains(document.elementFromPoint(${pt.x}, ${pt.y}));`),
+        "the dialog owns the pointer over the drawer");
+      assert.strictEqual(await wheel(), 0, "a wheel over the drawer does not move it while the dialog is open");
     });
   });
 
