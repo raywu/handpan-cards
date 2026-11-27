@@ -1,15 +1,14 @@
-# kills: NF en 320x568: at rest and with the crowded error the name field sits fully below the tab strip and takes its own taps
-# suite: node --test --test-name-pattern ^NF.en.320x568..at.rest tests/editor_e2e.test.js
-# fault: The Scale tab pins the region to its very end, so on a short phone the name field scrolls under the sticky tab strip.
+# kills: NF en 320x568: scrolled to its end, a render leaves the region there and the octave row takes its taps
+# suite: node --test --test-name-pattern ^NF.en.320x568..scrolled.to.its.end tests/editor_e2e.test.js
+# fault: The overflowed control drawer jumps to its last row when it lays out.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14121,7 +14121,7 @@
- }
- function editorRegionPin() {
-   const rg = editorEl("editor-region");
--  if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = editorRegionRest(rg);
-+  if (rg && editorSession && editorSession.tab === "scale") rg.scrollTop = rg.scrollHeight;
- }
- // The hint block overlays the controls area (region, or tabs plus panels where the region is display:contents) and never moves the layout.
- function editorPlaceAreas() {
+@@ -15607,6 +15607,7 @@ function installEditorDrawer() {
+     const vh=visualViewport?.height||innerHeight, rr=root.getBoundingClientRect();
+     const top=root.querySelector('.editor-line').getBoundingClientRect().bottom-rr.top+6;
+     drawer.style.setProperty('--drawerexp-body-max',Math.max(88,vh-rr.top-top-chrome.offsetHeight-toolbar.offsetHeight-8)+'px');sync();
++    body.scrollTop=body.scrollHeight;
+     if(root.classList.contains('dragging')||root.classList.contains('settling'))return;
+     const svg=document.querySelector('#editor-pan svg');if(!svg)return;
+     const bb=svg.getBBox(),pad=4;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};
