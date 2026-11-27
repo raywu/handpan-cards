@@ -16251,11 +16251,16 @@ function editorGuidedPlan(m, src, target) {
   const request = { ring, ref, name, namesById };
   let accepted;
   let rejected;
+  let repeatedPitch = false;
   const projection = HPE.layout.projectGuided(rings, {
     zone: ring, id, gridSize, gridBasis: current?.basis, initialRimBasis, angle: target.guidedAngle ?? target.angle
   }, (projected, size, basis) => {
     const result = editorGuidedCandidate(m, request, projected, size, basis);
-    if (!result?.ok) { rejected = result; return false; }
+    if (!result?.ok) {
+      if (result?.code === "NOTE_REPEATED" || result?.code === "PITCH_REPEATED") repeatedPitch = true;
+      rejected = result;
+      return false;
+    }
     const placed = editorSolve(result.value);
     if (!placed.ok) { rejected = placed; return false; }
     accepted = { ...result, solved: placed.value };
@@ -16265,6 +16270,7 @@ function editorGuidedPlan(m, src, target) {
     if (projection.reason === "capacity") return { refuse: t("editor.full." + ring, { max: EDITOR_CAPS[ring] }) };
     if (rejected?.variant === "innerLabelRoom") return { refuse: reasonText(rejected) };
     if (projection.reason === "pins") return { refuse: t("editor.guided.pins") };
+    if (repeatedPitch) return { refuse: t("editor.pitch_repeat") };
     return { refuse: t("editor.guided.no_room") };
   }
   return {
