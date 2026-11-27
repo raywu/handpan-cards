@@ -1,16 +1,15 @@
-# kills: EHM menu over toggle 390x844: with the menu open every item is hit at five points
-# suite: node --test --test-name-pattern ^EHM.menu.over.toggle tests/editor_e2e.test.js
-# the open menu paints below the hint toggle
-# fault: The menu z-index drops back under the hint toggle.
+# kills: EHM menu over drawer handle 390x844: with the menu open every item is hit at five points
+# suite: node --test --test-name-pattern ^EHM.menu.over.drawer.handle.390x844 tests/editor_e2e.test.js
+# fault: The action rail and its open menu fall underneath the drawer.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1042,7 +1042,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- #editor .editor-toolbar .mode.primary{flex:1.4 1 0; background:#6756B5; color:#fff; border-color:#6756B5}
- #editor .editor-toolbar{position:relative}
- #editor .editor-toolbar #editor-more{flex:0 0 auto; min-width:44px}
--#editor-menu{outline:none; position:absolute; right:0; bottom:calc(100% + var(--sp-1)); z-index:5; min-width:200px; max-width:min(320px,100%); display:flex; flex-direction:column;
-+#editor-menu{outline:none; position:absolute; right:0; bottom:calc(100% + var(--sp-1)); z-index:3; min-width:200px; max-width:min(320px,100%); display:flex; flex-direction:column;
-   background:#F6F4ED; border:1px solid #242424; border-radius:8px; padding:var(--sp-1); box-shadow:0 8px 20px rgba(36,36,36,.28)}
- #editor-menu[hidden]{display:none}
- #editor .editor-toolbar #editor-menu .menuitem{flex:0 0 auto; min-height:44px; justify-content:flex-start; text-align:left; border:none; background:none; padding-inline:var(--sp-2)}
+@@ -15396,7 +15396,7 @@ function installEditorDrawer() {
+   #editor #editor-region{display:flex!important;flex-direction:column;flex:0 0 auto;overflow:visible!important;margin:0!important;padding:0;min-height:0}
+   #editor #editor-tabs{position:static;flex:0 0 auto;margin-bottom:8px}
+   #editor #editor-panels{flex:0 0 auto}
+-  #editor .editor-toolbar{position:absolute!important;inset:auto 0 0!important;z-index:10;display:flex;gap:8px;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));min-height:60px;background:#F6F4ED;border-top:1px solid #c7c1b6;box-sizing:border-box}
++  #editor .editor-toolbar{position:absolute!important;inset:auto 0 0!important;z-index:1;display:flex;gap:8px;margin:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));min-height:60px;background:#F6F4ED;border-top:1px solid #c7c1b6;box-sizing:border-box}
+   #editor-pan svg{overflow:visible!important}
+   #editor.dragging .editor-toolbar,#editor.settling .editor-toolbar{opacity:1;visibility:visible;transition:none}
+   #editor .editor-toolbar #editor-save{flex:2 1 0}
