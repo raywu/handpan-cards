@@ -1,5 +1,5 @@
-// Lane T0 of the editor RC (TRI-59): freeze the editor's pan, drag and drop oracle BEFORE the
-// panel is rebuilt (docs/plans/2026-11-08-editor-panel-simplify.md, lane T0). Tests only: the
+// Editor RC pan, drag and drop oracle. The Guided placement and drawer redesign is
+// approved in docs/plans/2026-11-26-editor-release-consolidation.md. The
 // expected values are frozen in tests/fixtures/editor_pan_v1.json (CONTRACT rule 2 carve-out) and are
 // regenerated only by an owner-approved render change, never to make a lane pass:
 //   node tools/regen_editor_pan_fixture.js
@@ -42,6 +42,13 @@ const SPECS = [
   { name: "over-cap-load", text: "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5", options: {} },
   { name: "neotone-empty", empty: true, options: { profile: { id: "paired", rev: 2, map: EMPTY_MAP } } },
   { name: "neotone-full", text: NEO_TEXT, options: { profile: NEO_PROFILE } },
+  { name: "neotone-fixed-sparse", text: "[E3] (D3) A3 C4", options: {
+    profile: { id: "paired", rev: 3, map: EMPTY_MAP.map((_, index) =>
+      ({ 2: "r57", 5: "r60", 13: "b52" })[index] ?? null) }
+  } },
+  { name: "standard-guided-sparse", text: "(D3) A3 C4 E4", options: {
+    guided: { rim: { size: 7, seats: [1, 3, 0] } }
+  } },
 ];
 const SANDBOX_STATES = ["rest", "selected", "held", "zone"];
 const BROWSER_STATES = ["rest", "selected", "held", "dragging", "settling"];
@@ -114,7 +121,7 @@ const PLAN_JS = `(function (m) {
       if (r.refuse !== undefined) out.refuse = r.refuse;
       if (r.snap) out.snap = true;
       if (r.step) {
-        const x = r.step(editorClone(m));
+        const x = r.step(r.guided ? m : editorClone(m));
         out.step = x.ok
           ? { ok: true, text: HPE.core.formatTyped(x.value.fields, x.value.options.seats), options: x.value.options, pins: x.value.pins, notice: x.notice || null }
           : { ok: false, code: x.code, reason: x.reason };
@@ -301,7 +308,7 @@ function runBrowser() {
     });
   }
 
-  test("T0 hidden panel: while dragging, the areas, layout, toolbar and tray are out of play; at rest they are visible", async (t) => {
+  test("T0 drag controls: the rail stays visible while drag and settle disable control input", async (t) => {
     await boots(t);
     await openEditor(375, 667);
     const spec = specs[0];
@@ -309,10 +316,9 @@ function runBrowser() {
     await show(spec, "rest");
     for (const [visibility] of await b.eval(probe)) assert.strictEqual(visibility, "visible");
     await show(spec, "dragging");
-    for (const [visibility, events] of await b.eval(probe)) {
-      assert.strictEqual(visibility, "hidden");
-      assert.strictEqual(events, "none");
-    }
+    const dragging = await b.eval(probe);
+    assert.strictEqual(dragging[2][0], "visible", "the pinned action rail stays visible");
+    for (const [, events] of dragging) assert.strictEqual(events, "none");
     await show(spec, "settling");
     for (const [, events] of await b.eval(probe)) assert.strictEqual(events, "none");
     assertNoUncaught();
@@ -324,10 +330,10 @@ function runBrowser() {
 after(() => {
   if (!REGEN) return;
   const out = {
-    _what: "Frozen pre-change values of the editor pan, drag and drop oracle (lane T0 of the editor RC, docs/plans/2026-11-08-editor-panel-simplify.md).",
+    _what: "Recorded editor pan, drag and drop oracle after the approved Guided placement and drawer port.",
     _why: "CONTRACT rule 2 carve-out: these are recorded outputs of the editor as it stood on the base SHA below, not derived from the implementation under test. Regenerate only with an owner-approved render change, never to make a lane pass.",
     _regen: "node tools/regen_editor_pan_fixture.js",
-    _base: "daffb5bed9d03b8846b8a8f6963d97b8e0847a3c",
+    _base: "349ee5f6",
     _geometry_note: "geometry rows hold .ehit width, height, dx, dy in viewBox units (px divided by the svg getScreenCTM().a) and the viewBox; absolute rects are never stored. Compared with a 0.25 tolerance. Style rows are sha256/16 of the computed-style records (.editor-panbox transform excluded while dragging and settling). styles.sample/* holds the readable kurd rest record.",
     specs: SPECS,
     ...produced,
