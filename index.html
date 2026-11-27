@@ -15618,10 +15618,11 @@ function installEditorDrawer() {
     const obstacles=[toolbar,chrome,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])];
     const overlapsPan=el=>{const b=el.getBoundingClientRect();return b.left<r.right&&b.right>r.left;};
     const limit=lowestClearance=Math.min(lowestClearance,...obstacles.filter(overlapsPan).map(el=>el.getBoundingClientRect().top-4));
-    const z=Math.min(api.zoom,Math.max(.1,(limit-band)/(bottom-top)));
-    let ax=.5,ay=0;if(pointer){ax=Math.max(0,Math.min(1,(pointer.x-r.left)/r.width));ay=Math.max(0,Math.min(1,(pointer.y-r.top)/r.height));}
     const left=(matrix.e+matrix.a*frame.x-r.left-previous.x)/previous.z;
     const right=(matrix.e+matrix.a*(frame.x+frame.w)-r.left-previous.x)/previous.z;
+    const fitHeight=(limit-band)/(bottom-top), fitWidth=(innerWidth-8)/(right-left);
+    const z=Math.max(.1,Math.min(api.zoom,fitHeight,fitWidth));
+    let ax=.5,ay=0;if(pointer){ax=Math.max(0,Math.min(1,(pointer.x-r.left)/r.width));ay=Math.max(0,Math.min(1,(pointer.y-r.top)/r.height));}
     const minX=4-r.left-left*z,maxX=innerWidth-4-r.left-right*z;
     const anchorX=-r.width*(z-1)*ax;
     const x=minX<=maxX?Math.max(minX,Math.min(maxX,anchorX)):anchorX;

@@ -5176,11 +5176,35 @@ function run() {
       assert.ok(/const body = editorEl\("editor-region"\)/.test(m), "the swipe's scroll reference is the region");
     });
 
-    test("P0 drag keeps E3: the drag magnification at 390x844 (a pan as wide as the column) stays inside the viewport width", async () => {
-      await open(390, 844);
-      const rest = (await rects(390, 844)).svg.w;
-      const mag = await b.eval(`return editorDragMeasure();`);
-      assert.ok(mag >= 1 && mag * rest * 250 / 278 <= 390 - 16 + 1, `mag ${mag} stays inside the viewport width`);
+    test("P0 drag keeps E3: the whole rim stays visible at 390x844 during native zoom", async () => {
+      magPinned = false;
+      try {
+        await open(390, 844);
+      } finally {
+        magPinned = true;
+      }
+      const point = await b.eval(`const r = document.querySelector('.tray-note[data-name="A"]').getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };`);
+      const touch = (type, p) => b.send("Input.dispatchTouchEvent", {
+        type, touchPoints: p ? [{ ...p, id: 1 }] : []
+      });
+      await touch("touchStart", point);
+      try {
+        await touch("touchMove", { x: point.x, y: point.y - 40 });
+        await b.waitFor('!!editorDrag?.live', { label: "the native drag" });
+        for (const x of [40, 350]) {
+          await touch("touchMove", { x, y: 420 });
+          const bounds = await b.eval(`const r = document.querySelector('#editor-pan svg > circle[r="100"]').getBoundingClientRect();
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom,
+              limit: editorEl("drawerexp-handle").getBoundingClientRect().top, width: innerWidth,
+              zoom: new DOMMatrix(getComputedStyle(document.querySelector(".editor-panbox")).transform).a };`);
+          assert.ok(bounds.zoom > 0 && bounds.zoom <= 1.2, JSON.stringify(bounds));
+          assert.ok(bounds.left >= 0 && bounds.right <= bounds.width && bounds.top >= 0 &&
+            bounds.bottom <= bounds.limit + 1, JSON.stringify(bounds));
+        }
+      } finally {
+        await touch("touchCancel");
+      }
     });
   });
 

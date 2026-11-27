@@ -1,15 +1,15 @@
-# kills: P0 drag keeps E3: the drag magnification at 390x844 (a pan as wide as the column) stays inside the viewport width
-# suite: node --test --test-name-pattern ^P0.drag.keeps.E3 tests/editor_e2e.test.js
-# fault: The drag magnification ignores the viewport width term, so a pan as wide as the column grows past the screen edge.
+# kills: P0 drag keeps E3: the whole rim stays visible at 390x844 during native zoom
+# suite: node --test --test-name-pattern ^P0.drag.keeps.E3: tests/editor_e2e.test.js
+# fault: Remove horizontal clearance from the drag zoom so the rim can clip at the side.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14262,7 +14262,7 @@
- const EDITOR_MAG_MAX = 1.35, EDITOR_MAG_PAD = 14, EDITOR_MAG_EDGE = 8;
- function editorMagnify(panRect, freedPx, viewport) {
-   if (!(panRect.height > 0) || !(panRect.width > 0)) return 1;
--  return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
-+  return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height));
- }
- function editorStatusBelow() {
-   const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();
+@@ -15621,7 +15621,7 @@
+     const left=(matrix.e+matrix.a*frame.x-r.left-previous.x)/previous.z;
+     const right=(matrix.e+matrix.a*(frame.x+frame.w)-r.left-previous.x)/previous.z;
+     const fitHeight=(limit-band)/(bottom-top), fitWidth=(innerWidth-8)/(right-left);
+-    const z=Math.max(.1,Math.min(api.zoom,fitHeight,fitWidth));
++    const z=Math.max(.1,Math.min(api.zoom,fitHeight));
+     let ax=.5,ay=0;if(pointer){ax=Math.max(0,Math.min(1,(pointer.x-r.left)/r.width));ay=Math.max(0,Math.min(1,(pointer.y-r.top)/r.height));}
+     const minX=4-r.left-left*z,maxX=innerWidth-4-r.left-right*z;
+     const anchorX=-r.width*(z-1)*ax;
