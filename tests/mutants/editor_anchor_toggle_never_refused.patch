@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13368,7 +13368,7 @@ function editorSetAnchor(m, to) {
-   if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
-   const next = editorClone(m);
-   if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
+@@ -14473,7 +14473,7 @@ function editorSetAnchor(m, to) {
+     }
+     return editorToggleRefused();
+   }
 -  return editorSolve(next).ok ? { ok: true, value: next } : editorToggleRefused();
 +  return { ok: true, value: next };
  }
