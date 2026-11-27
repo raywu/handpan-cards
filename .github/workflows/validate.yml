@@ -139,6 +139,9 @@ jobs:
       # coverage).
       - name: App units and browser e2e
         run: python3 tests/suite_health.py --emit-js artifacts/js-results.json
+      - name: Report editor browser cases
+        if: always()
+        run: python3 tools/report_editor_browser.py artifacts/js-results.json >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

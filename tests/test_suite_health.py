@@ -881,6 +881,37 @@ class VerifyArtifactsTest(unittest.TestCase):
         self.assertEqual(suite_health.verify(py_path, js_path), [])
 
 
+class EditorCaseReportTest(unittest.TestCase):
+    def test_named_editor_tap_distinguishes_pass_skip_todo_and_cancellation(self):
+        tap = """    ok 1 - EDITOR-EXIT-INVALID: Discard exits
+    ok 2 - EDITOR-ONE: One # SKIP no browser
+    not ok 3 - EDITOR-TWO: Two # TODO pending
+    not ok 4 - EDITOR-THREE: Three
+      ---
+      error: 'A diagnostic with an ellipsis...'
+      failureType: 'cancelledByParent'
+      ...
+"""
+        cases = suite_health.editor_cases(tap)
+        self.assertEqual([case["status"] for case in cases],
+                         ["pass", "skip", "todo", "cancelled"])
+        self.assertEqual(suite_health.editor_case_problems(cases), [])
+
+    def test_verifier_rejects_missing_required_case_and_skipped_browser(self):
+        path = suite_health.EDITOR_E2E
+        healthy = {"total": 12, "failed": 0, "skipped": 0, "browser_skips": 0,
+                   "returncode": 0, "cancelled": 0}
+        passed = {**healthy, "editor_cases": [{"id": "EDITOR-EXIT-INVALID", "status": "pass"}]}
+        with mock.patch.object(suite_health, "JS_FILES", [path]), \
+             mock.patch.object(suite_health, "FLOORS", {path: 1}):
+            for entry in (healthy, {"skipped_no_browser": True}, passed):
+                with self.subTest(entry=entry):
+                    data = {"have_browser": True, "found": [path], "files": {path: entry}}
+                    problems = suite_health.verify_js(data)
+                    self.assertEqual(any("EDITOR-EXIT-INVALID" in problem for problem in problems),
+                                     entry is not passed, problems)
+
+
 class TimedRunTest(unittest.TestCase):
     def test_timed_run_prints_the_wall_clock_and_returns_the_result(self):
         old = suite_health.run_node_file

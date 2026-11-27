@@ -44,7 +44,7 @@ FLOORS = {
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
     "tests/test_sync_schema_lint.py": 14,
-    "tests/test_suite_health.py": 31,
+    "tests/test_suite_health.py": 33,
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
@@ -663,6 +663,38 @@ def emit_python(outfile):
                  or data["unexpected_successes"]) else 0
 
 
+EDITOR_E2E = "tests/editor_e2e.test.js"
+EDITOR_REQUIRED = {"EDITOR-EXIT-INVALID"}
+_EDITOR_TAP = re.compile(r"^\s*(ok|not ok) \d+ - (EDITOR-[A-Z0-9-]+): (.+)$", re.M)
+
+
+def editor_cases(tap):
+    """Extract tagged leaf results from the existing editor TAP stream."""
+    cases = []
+    for match in _EDITOR_TAP.finditer(tap):
+        outcome, case_id, title = match.groups()
+        directive = _TAP_DIRECTIVE.search(title)
+        status = "pass" if outcome == "ok" else "fail"
+        if directive:
+            status = directive.group().strip().split()[1].lower()
+            title = title[:directive.start()]
+        else:
+            diagnostic = re.match(r"\n[ \t]+---\n(.*?)^[ \t]+\.\.\.$",
+                                  tap[match.end():], re.M | re.S)
+            if diagnostic and re.search(r"^\s+failureType: ['\"]cancel",
+                                        diagnostic[1], re.M):
+                status = "cancelled"
+        cases.append({"id": case_id, "name": title, "status": status})
+    return cases
+
+
+def editor_case_problems(cases):
+    return [
+        case_id for case_id in sorted(EDITOR_REQUIRED)
+        if [case["status"] for case in cases if case["id"] == case_id] != ["pass"]
+    ]
+
+
 def collect_js():
     """Run every tests/*.test.js file once, per file; return raw data."""
     have_browser, probe_problem = probe_browser()
@@ -674,6 +706,7 @@ def collect_js():
     for path in found:
         if path in E2E_FILES and not have_browser:
             files[path] = {"skipped_no_browser": True}
+            any_red |= path == EDITOR_E2E
             continue
         total, failed, skipped, cancelled, returncode, out = timed_run(path)
         if total is None:
@@ -682,6 +715,10 @@ def collect_js():
             continue
         entry = {"total": total, "failed": failed, "skipped": skipped,
                  "browser_skips": 0, "cancelled": cancelled, "returncode": returncode}
+        if path == EDITOR_E2E:
+            entry["editor_cases"] = editor_cases(out)
+            entry["editor_required_without_pass"] = editor_case_problems(entry["editor_cases"])
+            any_red |= bool(entry["editor_required_without_pass"])
         if skipped:
             entry["browser_skips"] = len(
                 re.findall(r"^ok .*(?:browser|chrom).*# SKIP", out, re.M | re.I))
@@ -801,6 +838,10 @@ def verify_js(data):
             if floor:
                 problems.append(f"{path}: no result in artifact, floor is {floor}")
             continue
+        if path == EDITOR_E2E:
+            absent = editor_case_problems(entry.get("editor_cases", []))
+            if absent:
+                problems.append(f"{path}: required editor cases without a pass: {', '.join(absent)}")
         if entry.get("skipped_no_browser"):
             continue
         if entry.get("total") is None:
