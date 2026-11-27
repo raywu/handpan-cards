@@ -280,23 +280,28 @@ function run() {
     test("EDITOR-RC-CYCLOPS-TOUCH: a near-edge touch keeps the pictured insertion and a wider miss explains it", async () => {
       const seed = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [G#5] [A5] | D#3 E3 B3";
       const mark = '#editor-pan .guided-landing[data-insert][data-guided-zone="inner"]';
-      for (const [intent, offset] of [["insert", 6], ["miss", 14], ["center", -1]]) {
+      const replacement = '#editor-pan .guided-reflow[data-replace][data-guided-zone="inner"]';
+      for (const [intent, offset] of [["insert", 6], ["miss", 14], ["center", -1], ["replace", -1], ["ding", -1]]) {
         await fixture(seed, {}, 6, 667, 380);
+        const original = await model();
+        const rings = () => b.eval(`const m = editorSession.history.present;
+          return { rim: editorNames(m, "rim"), bottom: editorNames(m, "bottom"), inner: editorNames(m, "inner"),
+            ding: editorDingOf(m), innerAngles: editorAnglesOf(editorSolve(m), "inner") };`);
+        const priorRings = await rings();
         await lift('.tray-note[data-name="A"]');
-        for (let attempt = 0; attempt < 8 && !await b.eval(`!!document.querySelector(${JSON.stringify(mark)})`); attempt++) {
+        // Replay the approach and release in the rendered coordinate frame.
+        // The hit resolver under test does not search for points for this gesture.
+        for (const degrees of [35, 105]) {
+          if (await b.eval(`!!document.querySelector(${JSON.stringify(mark)})`)) break;
           const approach = await b.eval(`
-            const m = editorSession.history.present, g = editorSolve(m).value.geom;
-            const svg = document.querySelector("#editor-pan svg");
-            for (let i = 0; i < 72; i++) {
-              const a = i * Math.PI / 36;
-              const point = new DOMPoint(g.inner * 100 * Math.cos(a), -g.inner * 100 * Math.sin(a))
-                .matrixTransform(svg.getScreenCTM());
-              const hit = editorDropTarget({ clientX: point.x, clientY: point.y }, editorDrag.src);
-              if (hit.kind === "spot" && hit.ring === "inner") return { x: point.x, y: point.y };
-            }
-            throw Error("no Cyclops approach");
+            const occupied = document.querySelector('#editor-pan .ehit[data-ring="inner"][data-i="0"]');
+            const radius = Math.hypot(Number(occupied.getAttribute("cx")), Number(occupied.getAttribute("cy")));
+            const angle = ${degrees} * Math.PI / 180;
+            const point = new DOMPoint(radius * Math.cos(angle), -radius * Math.sin(angle))
+              .matrixTransform(occupied.getScreenCTM());
+            return { x: point.x, y: point.y };
           `);
-          await touch("touchMove", { x: approach.x + attempt * 0.15, y: approach.y });
+          await touch("touchMove", approach);
           await b.waitFor(`Math.abs(parseFloat(editorDrag.ghost.style.left) - ${approach.x}) < 2`,
             { label: "the pointer to approach Cyclops" });
         }
@@ -304,51 +309,48 @@ function run() {
         const landing = await b.eval(`
           const node = document.querySelector(${JSON.stringify(mark)});
           const r = node.querySelector("circle").getBoundingClientRect();
-          const x = r.x + r.width / 2, y = r.y + r.height / 2;
-          if (${offset} < 0) return { x, y, angle: Number(node.dataset.angle) };
-          for (let i = 0; i < 32; i++) {
-            const a = i * Math.PI / 16;
-            const p = { x: x + (r.width / 2 + ${offset}) * Math.cos(a), y: y + (r.height / 2 + ${offset}) * Math.sin(a) };
-            const mouse = editorDropTarget({ clientX: p.x, clientY: p.y, pointerType: "mouse" }, editorDrag.src);
-            if (mouse.kind === "preview-gap" && mouse.ring === "inner") return { ...p, angle: Number(node.dataset.angle) };
-          }
-          throw Error("no near-edge point outside the painted target");
+          const delta = ${offset} < 0 ? 0 : r.width / 2 + ${offset};
+          return { x: r.x + r.width / 2 + delta, y: r.y + r.height / 2, angle: Number(node.dataset.angle) };
         `);
         assert.equal(landing.angle, 120, "the fourth Cyclops opening prefers the upper-left seat");
-        await touch("touchMove", { x: landing.x, y: landing.y });
+        const replaced = intent === "replace"
+          ? await b.eval(`return document.querySelector(${JSON.stringify(replacement)}).textContent.trim();`)
+          : null;
+        const release = replaced ? await center(replacement + " circle")
+          : intent === "ding" ? await center('#editor-pan .ehit[data-ring="ding"]') : landing;
+        await touch("touchMove", { x: release.x, y: release.y });
         await b.waitFor(`(() => {
           const dot = document.querySelector(".editor-drag-contact:not([hidden])");
-          return dot && Math.hypot(parseFloat(dot.style.left) - ${landing.x}, parseFloat(dot.style.top) - ${landing.y}) < 2;
+          return dot && Math.hypot(parseFloat(dot.style.left) - ${release.x}, parseFloat(dot.style.top) - ${release.y}) < 2;
         })()`, { label: "the actual touch coordinate marker" });
-        if (intent !== "miss") {
-          assert.equal(await b.eval('return editorEl("editor-status").textContent;'), "Insert A6 in Cyclops");
-        }
-        const competition = await b.eval(`
-          const hit = node => {
-            const r = node.getBoundingClientRect();
-            return editorDropTarget({ clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: "touch" }, editorDrag.src);
-          };
-          const replacement = hit(document.querySelector('.guided-reflow[data-replace][data-guided-zone="inner"] circle'));
-          const ding = hit(document.querySelector('.ehit[data-ring="ding"]'));
-          return [replacement.kind, replacement.ring, ding.kind];
-        `);
-        assert.deepEqual(competition, ["note", "inner", "ding"]);
+        const preview = await b.eval('return editorEl("editor-status").textContent;');
+        if (replaced) assert.equal(preview, `Replace ${replaced} with A6`);
+        else if (intent === "insert" || intent === "center") assert.equal(preview, "Insert A6 in Cyclops");
         await touch("touchEnd");
         await b.waitFor("!editorDrag && !document.querySelector('.editor-drag-contact')", { label: "the touch marker to clear" });
+        const result = await rings();
+        const history = await b.eval("return editorSession.history.past.length;");
+        assert.deepEqual(result.rim, priorRings.rim);
+        assert.deepEqual(result.bottom, priorRings.bottom);
+        assert.equal(history, intent === "miss" ? 0 : 1);
         if (intent === "miss") {
           assert.equal(await b.eval('return editorEl("editor-status").textContent;'), "Drop on the highlighted Cyclops seat to insert the note.");
-          assert.equal(await b.eval("return editorSession.history.past.length;"), 0);
-          assert.equal(await text(), seed);
+          assert.deepEqual(await model(), original);
+        } else if (intent === "ding") {
+          assert.equal(result.ding, "A6");
+          assert.deepEqual(result.inner, priorRings.inner);
+          assert.match(await b.eval('return editorEl("editor-status").textContent;'), /^D3 removed\. A6 is the ding\./);
         } else {
-          const placed = await b.eval(`
-            const m = editorSession.history.present;
-            const notes = editorNames(m, "inner");
-            return { count: notes.length, angle: editorAnglesOf(editorSolve(m), "inner")[notes.indexOf("A6")],
-              history: editorSession.history.past.length };
-          `);
-          assert.deepEqual(placed, { count: 4, angle: landing.angle, history: 1 });
+          const expected = priorRings.inner.concat("A6").filter(note => note !== replaced);
+          assert.deepEqual(result.inner.slice().sort(), expected.sort());
+          assert.equal(result.ding, "D3");
+          const seat = replaced ? priorRings.innerAngles[priorRings.inner.indexOf(replaced)] : landing.angle;
+          assert.equal(result.innerAngles[result.inner.indexOf("A6")], seat);
+        }
+        if (intent !== "miss") {
           await clickReady("#editor-undo");
-          await b.waitFor("editorSession.history.past.length === 0", { label: "Undo to restore the original Cyclops" });
+          await b.waitFor("editorSession.history.past.length === 0", { label: "Undo to restore the original scale" });
+          assert.deepEqual(await model(), original);
           assert.equal(await text(), seed);
         }
       }

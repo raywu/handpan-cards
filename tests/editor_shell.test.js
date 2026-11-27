@@ -2589,3 +2589,45 @@ test("RCF-16: removing the 270 note promotes no other note to 270", () => {
   const r = plain(a.get(RCF16_SCAN({ dings: ["D3", "F3"], pool: ["A2", "B2", "C3", "E3", "G3"], depth: 4, angles: [null, 100, 200, 135], minimal: true })));
   assert.deepStrictEqual(r.promoted, []);
 });
+
+test("Guided circle hit boundaries include the edge and extend only the insertion circle", () => {
+  const a = app();
+  a.els["editor-pan"] = {};
+  const hits = plain(a.get(`(() => {
+    const attributes = { cx: 30, cy: -32, r: 10 };
+    const marks = [];
+    const pan = document.getElementById("editor-pan");
+    pan.querySelectorAll = () => marks;
+    const circle = { getAttribute: name => attributes[name] };
+    const mark = (attribute, dataset) => ({
+      classList: { contains: () => false },
+      dataset,
+      hasAttribute: name => name === attribute,
+      querySelector: () => circle
+    });
+    const insertion = mark("data-insert", { guidedZone: "inner", angle: "120", growth: "true" });
+    const replacement = mark("data-replace", { guidedZone: "inner", replace: "2" });
+    const rows = [
+      [insertion, [0.395, 0.32], 0],
+      [insertion, [0.4, 0.32], 0],
+      [insertion, [0.405, 0.32], 0],
+      [insertion, [0.3, 0.495], 8],
+      [insertion, [0.3, 0.5], 8],
+      [insertion, [0.3, 0.505], 8],
+      [replacement, [0.395, 0.32], 8],
+      [replacement, [0.405, 0.32], 8]
+    ];
+    return rows.map(([target, point, margin]) => {
+      marks[0] = target;
+      const hit = editorGuidedHit(point, false, true, margin);
+      if (!hit) return null;
+      return hit.kind === "spot" ? [hit.kind, hit.guidedAngle, hit.locked] : [hit.kind, hit.i];
+    });
+  })()`));
+  const insertion = ["spot", 120, true];
+  assert.deepStrictEqual(hits, [
+    insertion, insertion, null,
+    insertion, insertion, null,
+    ["note", 2], null
+  ]);
+});
