@@ -2053,17 +2053,20 @@ function run() {
           await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, ${JSON.stringify(ring)}, ${i}, ${g}, true)).history; editorRender(); return true;`);
         }
         assert.strictEqual((await model()).pins.length, 3);
-        await hold("E");
         await b.click("#editor-oct-down");
+        await hold("E");
         await place("bottom");
         assert.strictEqual((await model()).pins.length, 5, "the add freezes the ring: every bottom note pinned");
         assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom").length;`), 4);
         assert.match(await linkOf(), /at-/);
         const unpinnedIdx = await b.eval(`return editorNames(editorSession.history.present, "bottom").indexOf("E3");`);
+        await exposedPan();
         await tapNote("bottom", unpinnedIdx);
+        assert.deepEqual(await b.eval("return editorSession.sel;"), { ring: "bottom", i: unpinnedIdx });
         assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
         const before = await model();
         const steps = await pastLen();
+        await b.click("#editor-more");
         await b.click("#editor-reset");
         assert.strictEqual(await pastLen(), steps + 1, "one Undo step");
         const after = await model();
@@ -2079,6 +2082,7 @@ function run() {
         assert.strictEqual(await b.eval(`return document.getElementById("editor-reset").querySelector(".rs-short").textContent;`), "Reset spacing");
         assert.strictEqual((await reset()).visible, "Reset spacing (2)");
         const steps2 = await pastLen();
+        await b.click("#editor-more");
         await b.click("#editor-reset");
         assert.strictEqual(await pastLen(), steps2 + 1, "both clear in one step");
         const cleared = await model();
