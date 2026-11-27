@@ -97,6 +97,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // v7. Written only when a profile seed has anchor "between".
   var PROFILE_ANCHOR_VERSION = 9;
   var PROFILE_ANCHOR_RECORD_VERSION = 7;
+  // Wire A (version 10) identifies exact Neotone slots independently of occupancy.
+  var FIXED_PROFILE_VERSION = 10;
+  var FIXED_PROFILE_RECORD_VERSION = 8;
+  var GUIDED_VERSION = 11;
+  var GUIDED_RECORD_VERSION = 9;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -345,10 +350,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
     var scale = scaleSegment(seed.fields);
     var profiled = opts.profile !== undefined && opts.profile !== null;
+    var guided = HPE.layout.readGuided(opts.guided, zoneCounts(seed));
+    if (!guided.ok || (profiled && guided.value)) return badNote(opts.guided);
+    if (guided.value && !HPE.layout.solve(seed).ok) return badNote(opts.guided);
     var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
     var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
     var between = profiled && opts.anchor === "between";
     if (between) wire = String(PROFILE_ANCHOR_VERSION);
+    if (profiled && opts.profile.rev === 3) wire = ALPHABET.charAt(FIXED_PROFILE_VERSION);
+    if (guided.value) wire = ALPHABET.charAt(GUIDED_VERSION);
     var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
@@ -375,6 +385,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (seats !== "") option("seats-" + seats);
     if (angles !== "") option("at-" + angles);
     if (innerAt !== "") option("ai-" + innerAt);
+    if (guided.value) {
+      ["rim", "inner"].forEach(function (zone) {
+        var row = opts.guided[zone];
+        if (row) option("grid-" + zone + "-" + (row.basis ? row.basis + "-" : "") + row.size + "." + row.seats.join("."));
+      });
+    }
     segs.push(checkHex(meaning.join(SEP)));
     var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
@@ -461,7 +477,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   var INNER_RE = /^ai-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
-  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6, ai: 7 };
+  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6, ai: 7, gridRim: 8, gridInner: 9 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -493,7 +509,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var options = { palette: 0, parent: null, mirror: false, name: name };
     var anchored = text.charAt(0) === "9";
-    var profiled = text.charAt(0) === "7" || anchored;
+    var fixed = text.charAt(0) === ALPHABET.charAt(FIXED_PROFILE_VERSION);
+    var guided = text.charAt(0) === ALPHABET.charAt(GUIDED_VERSION);
+    var profiled = text.charAt(0) === "7" || anchored || fixed;
     var pairs = 0;
     var betweens = 0;
     var rank = -1;
@@ -520,10 +538,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var pairMap = m[1].split(".").map(function (t) { return t === "-" ? null : t; });
         options.profile = {
           id: "paired",
-          rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
+          rev: fixed ? 3 : pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
           map: pairMap
         };
-      } else if (anchored && o === "between") {
+      } else if ((anchored || fixed) && o === "between") {
         at = OPTION_ORDER.between;
         betweens += 1;
         options.anchor = "between";
@@ -547,24 +565,30 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var delta = readDeltaLine(o.slice(6), 3);
         if (!delta) return badNote(text);
         carry.delta = delta;
-      } else if ((text.charAt(0) === "6" || text.charAt(0) === "8") && (m = ANGLES_RE.exec(o))) {
+      } else if ((guided || text.charAt(0) === "6" || text.charAt(0) === "8") && (m = ANGLES_RE.exec(o))) {
         at = OPTION_ORDER.at;
         var entries = m[1].split(",");
         var list = entries.map(function (e) { return e === "" ? null : Number(e); });
         if (list.every(function (a) { return a === null; })) return badNote(text);
         carry.angles = list;
-      } else if (text.charAt(0) === "8" && (m = INNER_RE.exec(o))) {
+      } else if ((guided || text.charAt(0) === "8") && (m = INNER_RE.exec(o))) {
         at = OPTION_ORDER.ai;
         var innerEntries = m[1].split(",");
         var innerList = innerEntries.map(function (e) { return e === "" ? null : Number(e); });
         if (innerList.every(function (a) { return a === null; })) return badNote(text);
         carry.inner = innerList;
+      } else if (guided && (m = /^grid-(rim|inner)-(?:(one|between|inner)-)?(\d{1,2})((?:\.\d{1,2})+)$/.exec(o))) {
+        at = m[1] === "rim" ? OPTION_ORDER.gridRim : OPTION_ORDER.gridInner;
+        if (!carry.guided) carry.guided = {};
+        carry.guided[m[1]] = { size: Number(m[3]), seats: m[4].slice(1).split(".").map(Number) };
+        if (m[2]) carry.guided[m[1]].basis = m[2];
       } else {
         return badNote(text);
       }
       if (at <= rank) return badNote(text);
       rank = at;
     }
+    if (guided && !carry.guided) return badNote(text);
     if (profiled && pairs !== 1) return badNote(text);
     if (anchored && betweens !== 1) return badNote(text);
     if (text.charAt(0) === "8" && !carry.inner) return badNote(text);
@@ -612,9 +636,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var mirrors = HPE.layout.resolveMirrors(o, {});
       var asked = { mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: o.anchor, angles: angles.value };
       if (o.seats) asked.seats = o.seats;
-      var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
-      if (!placed.ok) return badNote(text);
+      if (!carry.guided && !HPE.layout.solve({ fields: result.value.fields, options: {} }, asked).ok)
+        return badNote(text);
       result.value.options.angles = pinned;
+    }
+    if (carry.guided) {
+      result.value.options.guided = carry.guided;
+      if (!HPE.layout.solve(result.value).ok) return badNote(text);
     }
     return result;
   }
@@ -644,6 +672,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
     if (INDEX[text.charAt(0)] === INNER_VERSION && NEWEST >= ANGLES_VERSION) newest = INNER_VERSION;
     if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === PROFILE_ANCHOR_VERSION) newest = PROFILE_ANCHOR_VERSION;
+    if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === FIXED_PROFILE_VERSION) newest = FIXED_PROFILE_VERSION;
+    if (INDEX[text.charAt(0)] === GUIDED_VERSION) newest = GUIDED_VERSION;
     var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
@@ -694,8 +724,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function recordVersion(seed) {
     var opts = (seed && seed.options) || {};
     if (opts.profile !== undefined && opts.profile !== null) {
+      if (opts.profile.rev === 3) return FIXED_PROFILE_RECORD_VERSION;
       return opts.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION;
     }
+    if (opts.guided && Object.keys(opts.guided).length) return GUIDED_RECORD_VERSION;
     return anglesField(opts.angles, "inner") !== "" ? INNER_RECORD_VERSION : RECORD_VERSION;
   }
 
@@ -706,7 +738,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     VERSION: VERSION,
     PROFILE_VERSION: PROFILE_VERSION,
     PROFILE_ANCHOR_VERSION: PROFILE_ANCHOR_VERSION,
+    FIXED_PROFILE_VERSION: FIXED_PROFILE_VERSION,
+    FIXED_PROFILE_RECORD_VERSION: FIXED_PROFILE_RECORD_VERSION,
     PROFILE_ANCHOR_RECORD_VERSION: PROFILE_ANCHOR_RECORD_VERSION,
+    GUIDED_VERSION: GUIDED_VERSION,
+    GUIDED_RECORD_VERSION: GUIDED_RECORD_VERSION,
     INNER_VERSION: INNER_VERSION,
     INNER_RECORD_VERSION: INNER_RECORD_VERSION,
     RECORD_VERSION: RECORD_VERSION,

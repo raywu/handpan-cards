@@ -2796,23 +2796,29 @@ test("SE: an inner angle outside the top fan (past 180 degrees) is BAD_NOTE and 
   }
 });
 
-test("SE: a pinned inner angle near the fan ends is BAD_NOTE: its number would sit inside the ding (clearance below INNER_CLEARANCE), never clamped", () => {
-  for (const pair of [[180, 0], [0, 180], [5, 90], [175, 90], [180, null], [null, 0]]) {
+function renderedInnerClearance(geom, field, id) {
+  const alternate = geom.innerLabels?.[id];
+  if (!alternate) return HPE.layout.innerClearance(geom, [field[4]]);
+  const [x, y] = alternate;
+  return Math.hypot(x, y + geom.ding_dy) - geom.r_ding - 0.7 * geom.f_num * String(field[5]).length;
+}
+
+test("SE: fan-end label fallbacks retain the exact pinned angles and keep both numerals clear", () => {
+  for (const pair of [[180, 0], [0, 180]]) {
     const res = seSolve({ angles: { inner: pair } });
-    assert.equal(res.ok, false, String(pair));
-    assert.equal(res.code, "BAD_NOTE", String(pair));
+    assert.equal(res.ok, true, String(pair));
+    assert.deepEqual(innerAnglesOf(res.value.fields), pair);
+    const { geom, fields } = res.value;
+    assert.equal(Object.keys(geom.innerLabels).length, 2);
+    for (const id of innerIds(fields)) assert.ok(renderedInnerClearance(geom, fields[id], id) >= 0.01);
   }
-  for (const pin of [180, 0, 175]) {
-    const res = HPE.layout.solve(panFields(9, 1, 0), { angles: { inner: [pin] } });
-    assert.equal(res.code, "BAD_NOTE", `9/1/0 at ${pin}`);
-  }
-  assert.equal(HPE.layout.solve(panFields(9, 1, 0), { angles: { inner: [90] } }).ok, true, "the solved angle itself still passes");
 });
 
-test("SE: every accepted pinned inner angle keeps innerClearance at or above 0.01 (sweep over counts and 5-degree pins)", () => {
+test("SE: every accepted pinned inner angle keeps the rendered label clear of the Ding by 0.01", () => {
   let accepted = 0;
   let refused = 0;
-  for (const [rim, inner, bottom] of [[9, 1, 0], [9, 2, 6], [8, 1, 0], [7, 3, 4], [10, 2, 0], [6, 1, 0], [5, 4, 2]]) {
+  let relocated = 0;
+  for (const [rim, inner, bottom] of [[1, 1, 0], [2, 2, 0], [9, 1, 0], [9, 2, 6], [8, 1, 0], [7, 3, 4], [10, 2, 0], [6, 1, 0], [5, 4, 2], [8, 6, 4]]) {
     const home = HPE.layout.solve(panFields(rim, inner, bottom)).value;
     assert.ok(HPE.layout.innerClearance(home.geom, innerAnglesOf(home.fields)) >= 0.01, `${rim}/${inner}/${bottom} home`);
     for (let slot = 0; slot < inner; slot += 1) {
@@ -2826,13 +2832,29 @@ test("SE: every accepted pinned inner angle keeps innerClearance at or above 0.0
           continue;
         }
         accepted += 1;
-        const got = innerAnglesOf(res.value.fields);
-        const clearance = HPE.layout.innerClearance(res.value.geom, got);
-        assert.ok(clearance >= 0.01, `${rim}/${inner}/${bottom} slot ${slot} at ${angle}: clearance ${clearance}`);
+        const { geom, fields } = res.value;
+        assert.equal(innerAnglesOf(fields)[slot], angle);
+        for (const id of innerIds(fields)) {
+          const alternate = geom.innerLabels?.[id];
+          if (alternate) {
+            relocated += 1;
+            const toNote = ([, , , zone, at]) => {
+              if (zone === "ding") return Math.hypot(alternate[0], alternate[1] + geom.ding_dy);
+              const radians = at * Math.PI / 180;
+              return Math.hypot(alternate[0] - geom[zone] * Math.cos(radians),
+                alternate[1] - geom[zone] * Math.sin(radians));
+            };
+            const ownDistance = toNote(fields[id]);
+            assert.ok(Object.values(fields).every(field => ownDistance <= toNote(field) + 1e-9),
+              "a relocated number remains closest to its own note");
+          }
+          assert.ok(renderedInnerClearance(geom, fields[id], id) >= 0.01 - 1e-6,
+            `${rim}/${inner}/${bottom} slot ${slot} at ${angle}, field ${id}`);
+        }
       }
     }
   }
-  assert.ok(accepted > 50 && refused > 20, `accepted ${accepted}, refused ${refused}`);
+  assert.ok(accepted > 50 && refused > 20 && relocated > 0, `accepted ${accepted}, refused ${refused}`);
 });
 
 test("SE: innerClash names a rim note or a bottom note whose circle the pinned inner note would touch", () => {
@@ -3246,4 +3268,101 @@ test("BN-L10: the cyclops ring keeps its cyclic match: F4@10 = 6, G4@60 = 8, Ab4
   const f = r.value.fields;
   const inner = Object.keys(f).filter((id) => f[id][3] === "inner").map((id) => `${f[id][0]}${f[id][1]}@${f[id][4]}=${f[id][5]}`);
   assert.deepEqual(inner.sort(), ["Ab4@105=7", "C5@165=5", "F4@10=6", "G4@60=8"].sort());
+});
+
+test("Cyclops 15-degree pin keeps its tonefield when the seat number needs another position", () => {
+  const parsed = HPE.core.parseSeed("(A3) E4 | A#3");
+  assert.equal(parsed.ok, true);
+  const baseline = HPE.layout.solve(parsed.value).value;
+  const changed = HPE.layout.solve(parsed.value, { angles: { inner: [15] } });
+  assert.equal(changed.ok, true, changed.reason);
+  assert.deepEqual(innerAnglesOf(changed.value.fields), [15]);
+  assert.equal(changed.value.geom.ding_dy, baseline.geom.ding_dy);
+  assert.equal(changed.value.geom.inner, baseline.geom.inner);
+  assert.equal(innerAnglesOf(baseline.fields)[0], 90);
+  assert.equal(baseline.geom.innerLabels, undefined);
+  const [id] = innerIds(changed.value.fields);
+  const [x, y] = changed.value.geom.innerLabels[id];
+  const labelReach = 0.7 * changed.value.geom.f_num;
+  assert.ok(Math.hypot(x, y + baseline.geom.ding_dy) - baseline.geom.r_ding - labelReach >= 0.01);
+});
+
+test("Cyclops alternate numbers stay associated on both sides of a mirrored sparse fan", () => {
+  const seed = HPE.core.parseSeed("(A3) E4 | A#3").value;
+  for (const mirror of [false, true]) {
+    const angle = mirror ? 165 : 15;
+    const solved = HPE.layout.solve(seed, { mirror, angles: { inner: [angle] } });
+    assert.equal(solved.ok, true, solved.reason);
+    const { geom, fields } = solved.value;
+    const [id] = innerIds(fields);
+    assert.equal(fields[id][4], angle);
+    const [x] = geom.innerLabels[id];
+    assert.equal(Math.sign(x), mirror ? -1 : 1);
+    assert.ok(renderedInnerClearance(geom, fields[id], id) >= 0.01);
+  }
+});
+
+test("Guided grows both rings without replacing any note and checks combined geometry", () => {
+  for (const [zone, capacity] of [["rim", 12], ["inner", 6]]) {
+    let rings = { rim: [], inner: [] };
+    let gridSize;
+    for (let id = 1; id <= capacity; id += 1) {
+      const prior = JSON.stringify(rings);
+      const plan = HPE.layout.projectGuided(rings, { zone, id, gridSize }, (candidate) => {
+        assert.equal(candidate[zone].length, id);
+        return new Set(candidate[zone].map((note) => note.angle)).size === id;
+      });
+      assert.ok(plan.rings, plan.reason);
+      assert.equal(JSON.stringify(rings), prior);
+      assert.deepEqual(Array.from(plan.rings[zone], (note) => note.id).sort((a, b) => a - b),
+        Array.from({ length: id }, (_, index) => index + 1));
+      assert.ok(plan.rings[zone].every((note) => note.angle >= 0 && note.angle < 360));
+      rings = plan.rings;
+      gridSize = plan.gridSize;
+    }
+    assert.equal(HPE.layout.projectGuided(rings, { zone, id: 99, gridSize }).reason, "capacity");
+  }
+});
+
+test("Guided moves across rings atomically and leaves surviving source coordinates intact", () => {
+  const rings = { rim: [{ id: 1, angle: 90 }, { id: 2, angle: 270 }], inner: [] };
+  const request = { zone: "inner", id: 1 };
+  assert.equal(HPE.layout.projectGuided(rings, request, () => false).reason, "clearance");
+  const plan = HPE.layout.projectGuided(rings, request);
+  assert.deepEqual(Array.from(plan.rings.rim), [{ id: 2, angle: 270 }]);
+  assert.equal(plan.rings.inner[0].id, 1);
+  assert.equal(plan.landing, 90);
+  assert.equal(rings.rim.length, 2);
+});
+
+test("Guided mock starts new rim grids at bottom center and expands at top center", () => {
+  const initial = HPE.layout.projectGuided({ rim: [], inner: [] }, {
+    zone: "rim", id: 1, angle: 270, initialRimBasis: "one"
+  });
+  assert.equal(initial.landing, 270);
+  assert.equal(initial.basis, "one");
+  const rim = HPE.layout.guidedGrid("rim", 7, initial.basis).map((angle, id) => ({ id, angle }));
+  const expanded = HPE.layout.projectGuided({ rim, inner: [] }, {
+    zone: "rim", id: 8, angle: 90, gridSize: 7, initialRimBasis: "one"
+  });
+  assert.equal(expanded.landing, 90);
+  assert.equal(expanded.gridSize, 8);
+  assert.equal(expanded.basis, undefined);
+  const counts = { rim: 1, inner: 0, bottom: 0 };
+  assert.equal(HPE.layout.readGuided({ rim: { size: 7, seats: [0] } }, counts).value.rim[0], 90);
+  assert.equal(HPE.layout.readGuided({ rim: { size: 7, seats: [0], basis: initial.basis } }, counts).value.rim[0], 270);
+});
+
+test("Guided fills sparse saved grids without reflowing surviving notes", () => {
+  for (const [zone, size, basis] of [["rim", 10, "between"], ["rim", 7, "one"], ["inner", 4, "inner"]]) {
+    const grid = HPE.layout.guidedGrid(zone, size, basis);
+    const kept = [{ id: 1, angle: grid[0] }, { id: 2, angle: grid[2] }];
+    const candidate = HPE.layout.projectGuided({ rim: [], inner: [], [zone]: kept }, {
+      zone, id: 3, angle: grid[1], gridSize: size, gridBasis: basis
+    });
+    assert.equal(candidate.reflow, false);
+    assert.equal(candidate.gridSize, size);
+    assert.equal(candidate.basis, basis);
+    assert.deepEqual(Array.from(candidate.rings[zone].slice(0, 2)), kept);
+  }
 });

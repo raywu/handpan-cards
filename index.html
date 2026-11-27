@@ -3570,8 +3570,10 @@ HPE.pdfcards = (function () {
           col = INK; fnt = "Label";
         }
         c.setFillColor(col); c.setFont(fnt, nfs);
-        c.drawCentredString(cx + nr * Math.cos(a),
-                            cy + nr * Math.sin(a) - nfs * 0.36, lab);
+        var alternate = zone === "inner" && g.innerLabels && g.innerLabels[i];
+        var nx = alternate ? R * alternate[0] : nr * Math.cos(a);
+        var ny = alternate ? R * alternate[1] : nr * Math.sin(a);
+        c.drawCentredString(cx + nx, cy + ny - nfs * 0.36, lab);
       }
     });
   }
@@ -4823,7 +4825,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (keys.length !== 3 || keys[0] !== "id" || keys[1] !== "map" || keys[2] !== "rev") {
       return scaleErr("PROFILE_MAP_INVALID");
     }
-    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2)) return scaleErr("PROFILE_UNKNOWN");
+    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2 && raw.rev !== 3)) return scaleErr("PROFILE_UNKNOWN");
 
     var byKey = {};
     var counts = { rim: 0, inner: 0, bottom: 0 };
@@ -4855,7 +4857,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         return scaleErr("PROFILE_MAP_INVALID");
       }
     }
-    if (pastSeats(map, fields)) {
+    if (raw.rev === 2 && pastSeats(map, fields)) {
       var moved = proposeProfileMap(fields);
       var proposed = { id: "paired", rev: 2, map: moved.map };
       if (moved.unplaced.length > 0) proposed.unplaced = moved.unplaced;
@@ -4865,7 +4867,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (key in byKey) {
       if (has(byKey, key) && !has(shape.value.seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
     }
-    return ok({ id: "paired", rev: 2, map: map });
+    return ok({ id: "paired", rev: raw.rev, map: map });
   }
 
   function parseSeed(input, options) {
@@ -4952,7 +4954,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var fields = fieldsOf(seedOrFields);
     var ids = orderedIds(fields);
     var ding = fields["0"];
-    var line = [{ midi: ding[2], rank: 1, text: "(" + ding[0] + ding[1] + ")", inner: false }];
+    var line = ding ? [{ midi: ding[2], rank: 1, text: "(" + ding[0] + ding[1] + ")", inner: false }] : [];
     ids.bottom.forEach(function (id) {
       line.push({ midi: fields[id][2], rank: 0, text: "[" + fields[id][0] + fields[id][1] + "]", inner: false });
     });
@@ -6678,6 +6680,140 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
+  function angularDistance(first, second) {
+    return Math.abs(norm(first - second + 180) - 180);
+  }
+
+  function guidedGrid(zone, count, basis) {
+    if (basis) {
+      var home = zone === "inner" ? innerAngles(count) : rimAngles(count, basis);
+      return mirrored(home, false);
+    }
+    if (zone === "inner") return innerAngles(count);
+    return Array.from({ length: count }, function (_, index) {
+      return 90 + index * 360 / count;
+    });
+  }
+
+  // Store the grid size and seat IDs so sparse grids keep exact positions.
+  function readGuided(value, counts, reflect) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (typeof value !== "object" || isArray(value)) return badNote(value);
+    var keys = Object.keys(value);
+    if (!keys.length) return { ok: true, value: null };
+    var decoded = {};
+    for (var i = 0; i < keys.length; i += 1) {
+      var zone = keys[i];
+      if (zone !== "rim" && zone !== "inner") return badNote(value);
+      var row = value[zone];
+      var basis = row && row.basis;
+      if (basis !== undefined && (zone === "rim" ? basis !== "one" && basis !== "between" : basis !== "inner"))
+        return badNote(value);
+      var min = basis ? 1 : zone === "rim" ? 7 : 3;
+      var max = zone === "rim" ? 12 : 6;
+      if (!row || !Number.isInteger(row.size) || row.size < min || row.size > max ||
+          !isArray(row.seats) || !row.seats.length || row.seats.length !== counts[zone]) return badNote(value);
+      var grid = guidedGrid(zone, row.size, basis);
+      var seen = {};
+      var angles = [];
+      for (var j = 0; j < row.seats.length; j += 1) {
+        var seat = row.seats[j];
+        if (!Number.isInteger(seat) || seat < 0 || seat >= grid.length || seen[seat]) return badNote(value);
+        seen[seat] = true;
+        var angle = reflect ? norm(180 - grid[seat]) : grid[seat];
+        if (angle >= 360) angle -= 360;
+        angles.push(basis ? round(angle, 1) : angle);
+      }
+      decoded[zone] = angles;
+    }
+    return { ok: true, value: decoded };
+  }
+
+  // Preview and commit can consume the same proposal. The acceptance callback
+  // checks the combined layout, including circles and numbers on the other ring.
+  function projectGuided(rings, request, accepts) {
+    var zone = request.zone;
+    if (zone !== "rim" && zone !== "inner") return { reason: "zone" };
+    var limits = zone === "rim" ? [7, 12] : [3, 6];
+    var carry = { rim: rings.rim, inner: rings.inner };
+    ["rim", "inner"].forEach(function (ring) {
+      carry[ring] = rings[ring].filter(function (note) { return note.id !== request.id; });
+    });
+    var existing = carry[zone];
+    if (existing.length >= limits[1]) return { reason: "capacity" };
+    var currentSize = request.gridSize || limits[0];
+    var growing = existing.length >= currentSize;
+    var size = growing ? Math.max(limits[0], existing.length + 1) : currentSize;
+    var basis = growing ? undefined : request.gridBasis ||
+      (zone === "rim" && size === 7 && request.initialRimBasis === "one" ? "one" : undefined);
+    var slots = guidedGrid(zone, size, basis);
+    var aim = Number.isFinite(request.angle) ? request.angle : 90;
+    var ranked = slots.slice().sort(function (a, b) {
+      return angularDistance(a, aim) - angularDistance(b, aim);
+    });
+    var occupied = function (angle) {
+      return existing.some(function (note) { return angularDistance(note.angle, angle) < 1e-7; });
+    };
+    var landing = growing ? ranked[0] : ranked.find(function (angle) { return !occupied(angle); });
+    if (landing === undefined) return { reason: "clearance" };
+    var newNote = { id: request.id, angle: norm(landing), pinned: false };
+    function candidate(notes) {
+      var result = Object.assign({}, carry);
+      result[zone] = notes.concat(newNote);
+      return result;
+    }
+    if (!growing) {
+      // Legacy automatic layouts can start off-grid. Keep notes already on
+      // the new grid, then assign each remaining note its nearest free seat.
+      var available = slots.filter(function (angle) {
+        return angle !== landing && !occupied(angle);
+      });
+      var shifted = false;
+      var pinConflict = false;
+      var mapped = existing.map(function (note) {
+        if (slots.some(function (angle) { return angularDistance(note.angle, angle) < 1e-7; })) return note;
+        if (note.pinned) { pinConflict = true; return note; }
+        available.sort(function (a, b) {
+          return angularDistance(a, note.angle) - angularDistance(b, note.angle);
+        });
+        shifted = true;
+        return Object.assign({}, note, { angle: norm(available.shift()) });
+      });
+      if (pinConflict) return { reason: "pins" };
+      var direct = candidate(mapped);
+      if (accepts && !accepts(direct, slots.length, basis)) return { reason: "clearance" };
+      return { rings: direct, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: false, reflow: shifted };
+    }
+    var order = existing.slice().sort(function (a, b) { return norm(a.angle) - norm(b.angle); });
+    var seats = slots.filter(function (angle) { return angle !== landing; }).map(norm).sort(function (a, b) {
+      return a - b;
+    });
+    var best;
+    var bestCost = Infinity;
+    // Cyclops is an arc. Only the rim may rotate its existing note sequence.
+    var rotations = zone === "rim" ? order.length : 1;
+    var pinCompatible = false;
+    for (var offset = 0; offset < rotations; offset += 1) {
+      var moved = order.map(function (note, index) {
+        return Object.assign({}, note, { angle: seats[(index + offset) % seats.length] });
+      });
+      if (moved.some(function (note, index) {
+        return note.pinned && angularDistance(note.angle, order[index].angle) > 1e-7;
+      })) continue;
+      pinCompatible = true;
+      var cost = moved.reduce(function (sum, note, index) {
+        return sum + angularDistance(note.angle, order[index].angle);
+      }, 0);
+      if (cost >= bestCost) continue;
+      var next = candidate(moved);
+      if (accepts && !accepts(next, slots.length, basis)) continue;
+      best = next;
+      bestCost = cost;
+    }
+    if (!best) return { reason: pinCompatible ? "clearance" : "pins" };
+    return { rings: best, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: true, reflow: bestCost > 1e-7 };
+  }
+
   /* ---- the solver -------------------------------------------------------- */
 
   function byNumber(a, b) { return Number(a) - Number(b); }
@@ -7158,14 +7294,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * from the ding (the ding offset is not re-solved for a pin), is refused
    * (the id is the note itself), another inner note under
    * the floor, a rim or bottom circle it would meet, or the ding, is named. */
-  function innerClash(geom, fields, list, i) {
+  function innerClash(geom, fields, list, i, deferLabel) {
     var ids = collect(fields).inner;
     var angleOf = function (k) {
       return list[k] === null || list[k] === undefined ? fields[ids[k]][4] : list[k];
     };
     var at = angleOf(i);
     if (!innerInSpan(at)) return ids[i];
-    if (at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
+    if (!deferLabel && at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
     var floor = innerFloor(geom, ids.map(function (id) { return fields[id][4]; }));
     var k;
     for (k = 0; k < ids.length; k += 1) {
@@ -7204,7 +7340,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * computed from the default placement, so it is byte-identical with and
    * without the option. A bottom seats list beside angles is refused, and so
    * is any entry the floor (bottomClash) rejects. */
-  function readCorrections(source, zones, mirrors, anchor, seatsValue, anglesValue, counts) {
+  function readCorrections(source, zones, mirrors, anchor, seatsValue, anglesValue, counts, grid) {
     var seats = readSeats(seatsValue, counts);
     if (!seats.ok) return seats;
     var angles = readAngles(anglesValue, counts);
@@ -7219,6 +7355,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
     var home = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
     var plainHome = placeZones(counts, false, false, anchor);
+    if (grid) {
+      if (grid.rim) home.rims = grid.rim;
+      if (grid.inner) home.inners = grid.inner;
+    }
     var geom = geometry(counts, home);
     var effective = function (given, solved) {
       return solved.map(function (angle, i) { return given[i] === null ? angle : given[i]; });
@@ -7236,7 +7376,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (inners) {
       var withBottom = merge(source, zones, { rims: home.rims, inners: home.inners, bottoms: bottoms || home.bottoms }, null);
       for (i = 0; i < inners.length; i += 1) {
-        if (innerClash(geom, withBottom, inners, i) !== null) return badNote(asked.inner);
+        if (innerClash(geom, withBottom, inners, i, true) !== null) return badNote(asked.inner);
       }
     }
     var out = {};
@@ -7404,9 +7544,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         byKey[occurrenceKey(fields[id])] = id;
       }
     }
-    var mutants = hasMutants(profile);
+    var fixed = profile.rev === 3 || hasMutants(profile);
     var seatAngles = [];
-    if (!mutants) {
+    if (!fixed) {
       Object.keys(plain).filter(function (fid) { return plain[fid][3] === "rim"; })
         .sort(function (a, b) { return plain[a][2] - plain[b][2]; })
         .forEach(function (fid) { seatAngles.push(plain[fid][4]); });
@@ -7419,9 +7559,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var fid = byKey[profile.map[k]];
       var slot = k % PROFILE.tonefields;
       if (k < PROFILE.tonefields) {
-        if (!mutants && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
+        if (!fixed && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
         labels[fid] = String(k + 1);
-        place[fid] = mutants
+        place[fid] = fixed
           ? [angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
           : [seatAngles[k], geom.rim, geom.r_note, "main"];
       } else {
@@ -7430,7 +7570,63 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                       lensCentre(), PROFILE.mutant.r];
       }
     }
-    return { place: place, labels: labels, mutants: mutants };
+    return { place: place, labels: labels, fixed: fixed };
+  }
+
+  // Keep the pitch fields fixed. Only pins whose default number would crowd the Ding
+  // need a derived number position, in the same up-positive frame as point().
+  function alternateInnerNumbers(geom, fields, home) {
+    var marks = [];
+    var notes = [];
+    var ids = collect(fields).inner;
+    Object.keys(fields).forEach(function (id) {
+      var f = fields[id], zone = f[3], at = f[4];
+      if (zone === "ding") {
+        notes.push({ center: [0, -geom.ding_dy], radius: geom.r_ding });
+        return;
+      }
+      var out = zone === "bottom" || zone === "rim" && geom.rim_num_out;
+      var radius = zone === "bottom" ? geom.r_bnote : geom.r_note;
+      var gap = zone === "bottom" ? geom.n_out : geom.n_in;
+      var shift = out ? radius + gap : -(radius + gap);
+      var needsAlternate = zone === "inner" && at !== home[ids.indexOf(id)] &&
+        innerClearance(geom, [at]) < INNER_CLEARANCE;
+      var center = point(geom[zone], at);
+      notes.push({ center: center, radius: radius });
+      marks.push({ id: id, center: center, home: point(geom[zone] + shift, at), angle: at,
+        radius: radius, reach: LABEL_REACH * geom.f_num * String(f[5]).length, alternate: needsAlternate });
+    });
+    var used = marks.filter(function (mark) { return !mark.alternate; }).map(function (mark) {
+      return { center: mark.home, radius: mark.reach };
+    });
+    var output = {};
+    for (var i = 0; i < marks.length; i += 1) {
+      var mark = marks[i];
+      if (!mark.alternate) continue;
+      var avoid = notes.concat(used);
+      var candidates = [-120, 120, -90, 90, -60, 60, 0].map(function (offset) {
+        var step = point(mark.radius + mark.reach + 2 * INNER_CLEARANCE, mark.angle + offset);
+        return [round(mark.center[0] + step[0], 4), round(mark.center[1] + step[1], 4)];
+      }).sort(function (a, b) {
+        return distance(a, mark.home) - distance(b, mark.home) || b[1] - a[1];
+      });
+      var fit = candidates.find(function (candidate) {
+        var ownDistance = distance(candidate, mark.center);
+        return distance(candidate, [0, 0]) + mark.reach <= 1 - INNER_CLEARANCE &&
+          notes.every(function (note) {
+            return note.center === mark.center || ownDistance <= distance(candidate, note.center);
+          }) && avoid.every(function (obstacle) {
+            return distance(candidate, obstacle.center) >= mark.reach + obstacle.radius + INNER_CLEARANCE;
+          });
+      });
+      if (!fit) {
+        return { ok: false, code: "BAD_NOTE", variant: "innerLabelRoom",
+          reason: "No room for the Cyclops number at this angle. Try a nearby spot." };
+      }
+      output[mark.id] = fit;
+      used.push({ center: fit, radius: mark.reach });
+    }
+    return { ok: true, value: output };
   }
 
   function solve(seedOrFields, options) {
@@ -7439,15 +7635,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var seedOptions = (seedOrFields && seedOrFields.options) || {};
     if (seedOptions.profile !== undefined && seedOptions.profile !== null) {
+      if (seedOptions.guided != null) return badNote(seedOptions.guided);
       var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
       if (!profile.ok) return profile;
       var between = seedOptions.anchor === "between";
       var plain = solve({ fields: source, options: {} }, between ? { anchor: "between" } : {});
-      var turn = between && hasMutants(profile.value) ? PROFILE_TURN : 0;
+      var turn = between && (profile.value.rev === 3 || hasMutants(profile.value)) ? PROFILE_TURN : 0;
       var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields, turn);
       if (placed.ok === false) return placed;
       if (turn) plain.value.geom.turn = turn;
-      if (placed.mutants) {
+      if (placed.fixed) {
         plain.value.geom.r_ding = PROFILE.ding.r;
         plain.value.geom.ding_dy = PROFILE.ding.dy;
         plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
@@ -7462,18 +7659,46 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var anchor = resolveAnchor(options, seedOptions);
 
     var counts = countsOf(zones);
+    var guided = readGuided(seedOptions.guided, counts, mirrors.top);
+    if (!guided.ok) return guided;
+    var grid = guided.value;
     var wanted = readCorrections(source, zones, mirrors, anchor,
       (options && "seats" in options) ? options.seats : seedOptions.seats,
       (options && "angles" in options) ? options.angles : seedOptions.angles,
-      counts);
+      counts, grid);
     if (!wanted.ok) return wanted;
+    var correction = wanted.value || {};
+    if (grid && ((grid.rim && correction.rim) ||
+        (grid.inner && (correction.inner || correction.innerAngles)))) return badNote(seedOptions.guided);
 
     var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
+    if (grid) {
+      if (grid.rim) placed.rims = grid.rim;
+      if (grid.inner) placed.inners = grid.inner;
+    }
     var geom = geometry(counts, placed);
+    var innerHome = placed.inners;
     if (wanted.value) placed = reseat(placed, wanted.value);
-
-    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value,
-      partnersOf(counts, mirrors.top, mirrors.bottom, anchor)) } };
+    var fields = merge(source, zones, placed, wanted.value, partnersOf(counts, mirrors.top, mirrors.bottom, anchor));
+    if (grid) {
+      if (labelFloor(geom) < LABEL_FLOOR_PT) return badNote(seedOptions.guided);
+      if (counts.inner) {
+        var innerEffective = correction.innerAngles || placed.inners;
+        for (var j = 0; j < innerEffective.length; j += 1) {
+          if (innerClash(geom, fields, innerEffective, j, true) !== null) return badNote(seedOptions.guided);
+        }
+      }
+      var bottomEffective = correction.angles || placed.bottoms;
+      for (var i = 0; i < bottomEffective.length; i += 1) {
+        if (bottomClash(geom, fields, bottomEffective, i) !== null) return badNote(seedOptions.guided);
+      }
+    }
+    if (wanted.value && wanted.value.innerAngles) {
+      var labels = alternateInnerNumbers(geom, fields, innerHome);
+      if (!labels.ok) return labels;
+      if (Object.keys(labels.value).length) geom.innerLabels = labels.value;
+    }
+    return { ok: true, value: { geom: geom, fields: fields } };
   }
 
   /* MN3 (owner 2026-10-31): MIRROR BOTTOM reflects every bottom note across
@@ -7609,6 +7834,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     innerClash: innerClash,
     innerClearance: innerClearance,
     rimAngles: rimAngles,
+    projectGuided: projectGuided,
+    guidedGrid: guidedGrid,
+    readGuided: readGuided,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,
@@ -8705,6 +8933,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   // v7. Written only when a profile seed has anchor "between".
   var PROFILE_ANCHOR_VERSION = 9;
   var PROFILE_ANCHOR_RECORD_VERSION = 7;
+  // Wire A (version 10) identifies exact Neotone slots independently of occupancy.
+  var FIXED_PROFILE_VERSION = 10;
+  var FIXED_PROFILE_RECORD_VERSION = 8;
+  var GUIDED_VERSION = 11;
+  var GUIDED_RECORD_VERSION = 9;
   var NEWEST = VERSION;   // an alias decode can still see past its own shadow
   var OLDEST = 1;         // no version 0 ever shipped
 
@@ -8953,10 +9186,15 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var typed = opts.name !== undefined && opts.name !== null && String(opts.name) !== "";
     var scale = scaleSegment(seed.fields);
     var profiled = opts.profile !== undefined && opts.profile !== null;
+    var guided = HPE.layout.readGuided(opts.guided, zoneCounts(seed));
+    if (!guided.ok || (profiled && guided.value)) return badNote(opts.guided);
+    if (guided.value && !HPE.layout.solve(seed).ok) return badNote(opts.guided);
     var innerAt = profiled ? "" : anglesField(opts.angles, "inner");
     var wire = String(profiled ? PROFILE_VERSION : innerAt !== "" ? INNER_VERSION : VERSION);
     var between = profiled && opts.anchor === "between";
     if (between) wire = String(PROFILE_ANCHOR_VERSION);
+    if (profiled && opts.profile.rev === 3) wire = ALPHABET.charAt(FIXED_PROFILE_VERSION);
+    if (guided.value) wire = ALPHABET.charAt(GUIDED_VERSION);
     var segs = [wire, scale, typed ? percentEncode(String(opts.name)) : "*" + percentEncode(label)];
     var meaning = [wire, scale, typed ? String(opts.name) : FIELD_SEP];
     function option(text) {
@@ -8983,6 +9221,12 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (seats !== "") option("seats-" + seats);
     if (angles !== "") option("at-" + angles);
     if (innerAt !== "") option("ai-" + innerAt);
+    if (guided.value) {
+      ["rim", "inner"].forEach(function (zone) {
+        var row = opts.guided[zone];
+        if (row) option("grid-" + zone + "-" + (row.basis ? row.basis + "-" : "") + row.size + "." + row.seats.join("."));
+      });
+    }
     segs.push(checkHex(meaning.join(SEP)));
     var out = segs.join("/");
     if (out.length > CAPS.payload) return badNote(out);
@@ -9069,7 +9313,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   }
 
   var INNER_RE = /^ai-((?:0|[1-9][0-9]{0,2})?(?:,(?:0|[1-9][0-9]{0,2})?)*)$/;
-  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6, ai: 7 };
+  var OPTION_ORDER = { palette: 0, parent: 1, pair: 2, mirror: 3, between: 4, seats: 5, at: 6, ai: 7, gridRim: 8, gridInner: 9 };
 
   // Every structural refusal is badNote of the whole link; what
   // core.parseSeed says about the scale comes back unchanged.
@@ -9101,7 +9345,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var options = { palette: 0, parent: null, mirror: false, name: name };
     var anchored = text.charAt(0) === "9";
-    var profiled = text.charAt(0) === "7" || anchored;
+    var fixed = text.charAt(0) === ALPHABET.charAt(FIXED_PROFILE_VERSION);
+    var guided = text.charAt(0) === ALPHABET.charAt(GUIDED_VERSION);
+    var profiled = text.charAt(0) === "7" || anchored || fixed;
     var pairs = 0;
     var betweens = 0;
     var rank = -1;
@@ -9128,10 +9374,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var pairMap = m[1].split(".").map(function (t) { return t === "-" ? null : t; });
         options.profile = {
           id: "paired",
-          rev: pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
+          rev: fixed ? 3 : pairMap.every(function (t, n) { return t === null || t.charAt(0) === (n < 9 ? "r" : "b"); }) ? 2 : 1,
           map: pairMap
         };
-      } else if (anchored && o === "between") {
+      } else if ((anchored || fixed) && o === "between") {
         at = OPTION_ORDER.between;
         betweens += 1;
         options.anchor = "between";
@@ -9155,24 +9401,30 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         var delta = readDeltaLine(o.slice(6), 3);
         if (!delta) return badNote(text);
         carry.delta = delta;
-      } else if ((text.charAt(0) === "6" || text.charAt(0) === "8") && (m = ANGLES_RE.exec(o))) {
+      } else if ((guided || text.charAt(0) === "6" || text.charAt(0) === "8") && (m = ANGLES_RE.exec(o))) {
         at = OPTION_ORDER.at;
         var entries = m[1].split(",");
         var list = entries.map(function (e) { return e === "" ? null : Number(e); });
         if (list.every(function (a) { return a === null; })) return badNote(text);
         carry.angles = list;
-      } else if (text.charAt(0) === "8" && (m = INNER_RE.exec(o))) {
+      } else if ((guided || text.charAt(0) === "8") && (m = INNER_RE.exec(o))) {
         at = OPTION_ORDER.ai;
         var innerEntries = m[1].split(",");
         var innerList = innerEntries.map(function (e) { return e === "" ? null : Number(e); });
         if (innerList.every(function (a) { return a === null; })) return badNote(text);
         carry.inner = innerList;
+      } else if (guided && (m = /^grid-(rim|inner)-(?:(one|between|inner)-)?(\d{1,2})((?:\.\d{1,2})+)$/.exec(o))) {
+        at = m[1] === "rim" ? OPTION_ORDER.gridRim : OPTION_ORDER.gridInner;
+        if (!carry.guided) carry.guided = {};
+        carry.guided[m[1]] = { size: Number(m[3]), seats: m[4].slice(1).split(".").map(Number) };
+        if (m[2]) carry.guided[m[1]].basis = m[2];
       } else {
         return badNote(text);
       }
       if (at <= rank) return badNote(text);
       rank = at;
     }
+    if (guided && !carry.guided) return badNote(text);
     if (profiled && pairs !== 1) return badNote(text);
     if (anchored && betweens !== 1) return badNote(text);
     if (text.charAt(0) === "8" && !carry.inner) return badNote(text);
@@ -9220,9 +9472,13 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var mirrors = HPE.layout.resolveMirrors(o, {});
       var asked = { mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: o.anchor, angles: angles.value };
       if (o.seats) asked.seats = o.seats;
-      var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
-      if (!placed.ok) return badNote(text);
+      if (!carry.guided && !HPE.layout.solve({ fields: result.value.fields, options: {} }, asked).ok)
+        return badNote(text);
       result.value.options.angles = pinned;
+    }
+    if (carry.guided) {
+      result.value.options.guided = carry.guided;
+      if (!HPE.layout.solve(result.value).ok) return badNote(text);
     }
     return result;
   }
@@ -9252,6 +9508,8 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
     if (INDEX[text.charAt(0)] === INNER_VERSION && NEWEST >= ANGLES_VERSION) newest = INNER_VERSION;
     if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === PROFILE_ANCHOR_VERSION) newest = PROFILE_ANCHOR_VERSION;
+    if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === FIXED_PROFILE_VERSION) newest = FIXED_PROFILE_VERSION;
+    if (INDEX[text.charAt(0)] === GUIDED_VERSION) newest = GUIDED_VERSION;
     var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 
     // 1. The cap is the FIRST gate: an over-cap link is refused on length,
@@ -9302,8 +9560,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
   function recordVersion(seed) {
     var opts = (seed && seed.options) || {};
     if (opts.profile !== undefined && opts.profile !== null) {
+      if (opts.profile.rev === 3) return FIXED_PROFILE_RECORD_VERSION;
       return opts.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION;
     }
+    if (opts.guided && Object.keys(opts.guided).length) return GUIDED_RECORD_VERSION;
     return anglesField(opts.angles, "inner") !== "" ? INNER_RECORD_VERSION : RECORD_VERSION;
   }
 
@@ -9314,7 +9574,11 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     VERSION: VERSION,
     PROFILE_VERSION: PROFILE_VERSION,
     PROFILE_ANCHOR_VERSION: PROFILE_ANCHOR_VERSION,
+    FIXED_PROFILE_VERSION: FIXED_PROFILE_VERSION,
+    FIXED_PROFILE_RECORD_VERSION: FIXED_PROFILE_RECORD_VERSION,
     PROFILE_ANCHOR_RECORD_VERSION: PROFILE_ANCHOR_RECORD_VERSION,
+    GUIDED_VERSION: GUIDED_VERSION,
+    GUIDED_RECORD_VERSION: GUIDED_RECORD_VERSION,
     INNER_VERSION: INNER_VERSION,
     INNER_RECORD_VERSION: INNER_RECORD_VERSION,
     RECORD_VERSION: RECORD_VERSION,
@@ -11297,12 +11561,13 @@ function buildGenerated(text, options, guard) {
   const pinnedRing = ring => options && options.angles && Array.isArray(options.angles[ring]) &&
     options.angles[ring].some(a => a !== null && a !== undefined);
   const bottomAngles = pinnedRing("bottom") || pinnedRing("inner") ? options.angles : null;
-  if (wanted !== null || bottomAngles !== null) {
+  const guided = options?.guided && Object.keys(options.guided).length ? options.guided : null;
+  if (wanted !== null || bottomAngles !== null || guided !== null) {
     const o = built.value.options;
     const asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor };
     if (wanted !== null) asked.seats = wanted;
     if (bottomAngles !== null) asked.angles = bottomAngles;
-    const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} }, asked);
+    const moved = HPE.layout.solve({ fields: seed.value.fields, options: guided === null ? {} : { guided } }, asked);
     if (!moved.ok) return moved;
     for (const id of Object.keys(moved.value.fields)) {
       if (built.value.fields[id]) {
@@ -11310,6 +11575,10 @@ function buildGenerated(text, options, guard) {
         built.value.fields[id][5] = moved.value.fields[id][5];
       }
     }
+    if (guided !== null) {
+      built.value.geom = moved.value.geom;
+      built.value.options.guided = JSON.parse(JSON.stringify(guided));
+    } else if (moved.value.geom.innerLabels) built.value.geom.innerLabels = moved.value.geom.innerLabels;
     if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
     if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
   }
@@ -11328,10 +11597,12 @@ const SHARE_VERSION = HPE.share.RECORD_VERSION;
 const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
 const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
 const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
-const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
+const FIXED_PROFILE_RECORD_VERSION = HPE.share.FIXED_PROFILE_RECORD_VERSION;
+const GUIDED_RECORD_VERSION = HPE.share.GUIDED_RECORD_VERSION;
+const newestRecordVersion = () => GUIDED_RECORD_VERSION;
 const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
   o.angles.inner.some(a => a !== null && a !== undefined);
-const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
+const recordVersionFor = o => HPE.share.recordVersion({ options: o });
 const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].reason });
 // A thin guard over an ALREADY-DECODED numeric version - HPE.share.decode does
 // its own version check on the wire format (share.js step 2), so this is the
@@ -11652,8 +11923,12 @@ function savedMeaning(deckValue) {
     normalizedSeats,
     angles.value ? angles.value.bottom : null];
   const inner = angles.value && angles.value.inner;
-  if (o.profile) meaning.push(o.profile.map);
+  if (o.profile) {
+    if (o.profile.rev === 3) meaning.push("fixed-profile");
+    meaning.push(o.profile.map);
+  }
   else if (inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
+  if (o.guided) meaning.push(["guided", o.guided.rim || null, o.guided.inner || null]);
   return JSON.stringify(meaning);
 }
 function readSavedRecord(record) {
@@ -11661,10 +11936,13 @@ function readSavedRecord(record) {
   try {
     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
     const pinned = !profiled && innerPinned(record.o);
-    const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+    const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION || record.v === FIXED_PROFILE_RECORD_VERSION;
     if (record.v === INNER_RECORD_VERSION && savedOwn(record.o, "replaces")) return savedFailure("protected", "opaque-record");
-    if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
-        (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
+    const guided = savedOwn(record.o || {}, "guided");
+    if (guided !== (record.v === GUIDED_RECORD_VERSION) || (guided && (profiled || !savedObject(record.o.guided) ||
+        !Object.keys(record.o.guided).length || savedOwn(record.o, "replaces")))) return savedFailure("protected", "opaque-record");
+    if (!guided && (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o) : profileRecord || pinned) ||
+        (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED)))) return savedFailure("protected", "opaque-record");
     let canonical = record.s;
     if (record.v < SHARE_VERSION) {
       const old = scaleReader(record.v)(record.s);
@@ -11964,7 +12242,7 @@ function savedCandidate(command) {
   if (candidate.record.v !== recordVersionFor(candidate.deck.options, profiled) ||
       (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)))
     return savedFailure("invalid", "staged-candidate");
-  if (candidate.record.v === INNER_RECORD_VERSION && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
+  if ([INNER_RECORD_VERSION, GUIDED_RECORD_VERSION].includes(candidate.record.v) && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
   const record = savedClone(candidate.record);
   const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
   if (command.type === "import" || command.type === "save-as-separate") {
@@ -11988,7 +12266,7 @@ function savedCandidateFor(command) {
   return ["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type) ? savedCandidate(command) :
     command.type === "sync-apply" ? savedSyncCandidate(command) : null;
 }
-const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles", "profile"];
+const SAVED_PORTABLE_OPTIONS = ["name", "palette", "parent", "mirror", "mirrorBottom", "anchor", "seats", "angles", "guided", "profile"];
 function savedEditedRecord(target, candidate) {
   const out = { ...savedClone(target), v: candidate.record.v, s: candidate.record.s };
   const options = savedObject(target.o) ? { ...savedClone(target.o) } : {};
@@ -12017,7 +12295,7 @@ function applySavedCommand(staged, command, candidate) {
   const attachCandidate = (row, deckValue = candidate.deck) => views.set(row.instanceId,
     { ...row, deck: deckValue, meaning: candidate.meaning, identity: candidate.identity });
   const held = command.type === "edit" && candidate && candidate.ok ? existing() : null;
-  if (held && candidate.record.v === INNER_RECORD_VERSION && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
+  if (held && [INNER_RECORD_VERSION, GUIDED_RECORD_VERSION].includes(candidate.record.v) && held.record.o && savedOwn(held.record.o, "replaces")) return savedFailure("invalid", "pinned-owns-slot");
   if (["import", "save-as-separate", "edit", "replace-builtin"].includes(command.type)) {
     if (!candidate || !candidate.ok) return candidate || savedFailure("invalid", "candidate");
     const inventoryIdentity = staged.identities.get(candidate.deck.id);

@@ -127,3 +127,28 @@ describe("v6 and v7 records through login sync", () => {
     }
   });
 });
+
+test("a sparse fixed-slot record crosses simulated devices and its backup link preserves the map", async () => {
+  const a=await fixture([]);
+  const record=plain(a.get(`(() => {
+    const text="(D3) A3 Bb3 C4 D4 E4 F4 G4";
+    const seed=HPE.core.parseSeed(text).value;
+    const map=HPE.layout.proposeProfile(seed.fields).value.map;
+    [map[0],map[3]]=[map[3],map[0]]; map[8]=map[6];map[6]=null;
+    return scaleRecord(HPE.core.parseSeed(text,{profile:{id:"paired",rev:3,map}}).value);
+  })()`));
+  assert.strictEqual(record.v,8);
+  const id=uuid();
+  await addLocal(a,id,record);
+  assert.strictEqual(server(a,id),bytes(record));
+  const b=await fixture(plain(a.get("__rows")));
+  assert.strictEqual(bytes(local(b,id).record),bytes(record));
+  const restored=plain(b.get(`(() => {
+    const row=backupRows()[0];
+    const code=new URL(row.link).hash.slice(3);
+    const decoded=HPE.share.decode(code);
+    const result=buildGenerated(HPE.core.formatSeed(decoded.value.fields),decoded.value.options);
+    return {wire:code[0],v:scaleRecord(seedOf(result.value)).v,map:result.value.options.profile.map};
+  })()`));
+  assert.deepStrictEqual(restored,{wire:"A",v:8,map:record.o.profile.map});
+});

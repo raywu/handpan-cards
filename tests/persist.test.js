@@ -111,9 +111,9 @@ test("TRI59d record 7 is read exactly when the record is a profile carrying betw
   assert.strictEqual(read({ v: 7, s: PYGMY, o: { palette: 1 } }).ok, false, "record 7 without a profile is opaque");
   assert.strictEqual(read({ v: 5, s: PYGMY, o: plainProfile }).ok, true, "record 5 still reads");
   assert.strictEqual(read({ v: 5, s: PYGMY, o: { ...plainProfile, anchor: "one" } }).ok, true, "anchor one is the default and canonicalises away");
-  assert.strictEqual(read({ v: 8, s: PYGMY, o: between }).ok, false, "record 8 needs a newer app");
+  assert.strictEqual(read({ v: 8, s: PYGMY, o: between }).ok, false, "record 8 rejects a legacy profile payload");
   assert.strictEqual(plain(app.get("checkShareVersion(7)")).ok, true);
-  assert.strictEqual(plain(app.get("checkShareVersion(8)")).code, "NEEDS_NEWER_APP");
+  assert.strictEqual(plain(app.get("checkShareVersion(10)")).code, "NEEDS_NEWER_APP");
 });
 
 test("TRI59d savedCandidate stages a between profile as record 7 and refuses the wrong pairings", async () => {
@@ -157,4 +157,25 @@ test("TRI59d move carries a record 7 row", async () => {
   assert.strictEqual(res.ok, true);
   await settle();
   assert.deepStrictEqual(envelopeOf(b).entries[0].record, stored);
+});
+
+test("fixed-slot saved records reopen in slot 4 while legacy records keep their layout", async () => {
+  const app = await boot();
+  const result = JSON.parse(app.get(`JSON.stringify((() => {
+    const text = "(D3) A3 Bb3 C4 D4 E4 F4 G4";
+    const base = HPE.core.parseSeed(text).value;
+    const legacyMap = HPE.layout.proposeProfile(base.fields).value.map;
+    const map = legacyMap.slice();
+    [map[0], map[3]] = [map[3], map[0]];
+    map[8] = map[6]; map[6] = null;
+    const seed = HPE.core.parseSeed(text,{profile:{id:"paired",rev:3,map}}).value;
+    const stored = scaleRecord(seed);
+    const fixed = readSavedRecord(stored);
+    const legacy = readSavedRecord({v:5,s:text,o:{profile:{id:"paired",rev:2,map:legacyMap}}});
+    const slot = (deck) => Object.values(deck.fields).find(field => field[2] === 57)[5];
+    return {v:stored.v,fixed:fixed.ok,slot:fixed.ok && slot(fixed.value),
+      mapPreserved:fixed.ok && JSON.stringify(fixed.value.options.profile.map)===JSON.stringify(map),
+      legacy:legacy.ok,legacySlot:legacy.ok && slot(legacy.value)};
+  })())`));
+  assert.deepStrictEqual(result, {v:8,fixed:true,slot:"4",mapPreserved:true,legacy:true,legacySlot:"1"});
 });

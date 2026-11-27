@@ -635,8 +635,9 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
                 nr = orb - rr - R * g["n_in"]
                 col, fnt = INK, "Label"
             c.setFillColor(col); c.setFont(fnt, nfs)
-            c.drawCentredString(cx + nr * math.cos(a),
-                                cy + nr * math.sin(a) - nfs * 0.36, lab)
+            alternate = g.get("innerLabels", {}).get(str(i)) if zone == "inner" else None
+            nx, ny = (R * alternate[0], R * alternate[1]) if alternate else (nr * math.cos(a), nr * math.sin(a))
+            c.drawCentredString(cx + nx, cy + ny - nfs * 0.36, lab)
 
 
 # ---- page assembly --------------------------------------------------------

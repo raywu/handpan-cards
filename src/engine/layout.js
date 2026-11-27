@@ -183,6 +183,140 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     return out;
   }
 
+  function angularDistance(first, second) {
+    return Math.abs(norm(first - second + 180) - 180);
+  }
+
+  function guidedGrid(zone, count, basis) {
+    if (basis) {
+      var home = zone === "inner" ? innerAngles(count) : rimAngles(count, basis);
+      return mirrored(home, false);
+    }
+    if (zone === "inner") return innerAngles(count);
+    return Array.from({ length: count }, function (_, index) {
+      return 90 + index * 360 / count;
+    });
+  }
+
+  // Store the grid size and seat IDs so sparse grids keep exact positions.
+  function readGuided(value, counts, reflect) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (typeof value !== "object" || isArray(value)) return badNote(value);
+    var keys = Object.keys(value);
+    if (!keys.length) return { ok: true, value: null };
+    var decoded = {};
+    for (var i = 0; i < keys.length; i += 1) {
+      var zone = keys[i];
+      if (zone !== "rim" && zone !== "inner") return badNote(value);
+      var row = value[zone];
+      var basis = row && row.basis;
+      if (basis !== undefined && (zone === "rim" ? basis !== "one" && basis !== "between" : basis !== "inner"))
+        return badNote(value);
+      var min = basis ? 1 : zone === "rim" ? 7 : 3;
+      var max = zone === "rim" ? 12 : 6;
+      if (!row || !Number.isInteger(row.size) || row.size < min || row.size > max ||
+          !isArray(row.seats) || !row.seats.length || row.seats.length !== counts[zone]) return badNote(value);
+      var grid = guidedGrid(zone, row.size, basis);
+      var seen = {};
+      var angles = [];
+      for (var j = 0; j < row.seats.length; j += 1) {
+        var seat = row.seats[j];
+        if (!Number.isInteger(seat) || seat < 0 || seat >= grid.length || seen[seat]) return badNote(value);
+        seen[seat] = true;
+        var angle = reflect ? norm(180 - grid[seat]) : grid[seat];
+        if (angle >= 360) angle -= 360;
+        angles.push(basis ? round(angle, 1) : angle);
+      }
+      decoded[zone] = angles;
+    }
+    return { ok: true, value: decoded };
+  }
+
+  // Preview and commit can consume the same proposal. The acceptance callback
+  // checks the combined layout, including circles and numbers on the other ring.
+  function projectGuided(rings, request, accepts) {
+    var zone = request.zone;
+    if (zone !== "rim" && zone !== "inner") return { reason: "zone" };
+    var limits = zone === "rim" ? [7, 12] : [3, 6];
+    var carry = { rim: rings.rim, inner: rings.inner };
+    ["rim", "inner"].forEach(function (ring) {
+      carry[ring] = rings[ring].filter(function (note) { return note.id !== request.id; });
+    });
+    var existing = carry[zone];
+    if (existing.length >= limits[1]) return { reason: "capacity" };
+    var currentSize = request.gridSize || limits[0];
+    var growing = existing.length >= currentSize;
+    var size = growing ? Math.max(limits[0], existing.length + 1) : currentSize;
+    var basis = growing ? undefined : request.gridBasis ||
+      (zone === "rim" && size === 7 && request.initialRimBasis === "one" ? "one" : undefined);
+    var slots = guidedGrid(zone, size, basis);
+    var aim = Number.isFinite(request.angle) ? request.angle : 90;
+    var ranked = slots.slice().sort(function (a, b) {
+      return angularDistance(a, aim) - angularDistance(b, aim);
+    });
+    var occupied = function (angle) {
+      return existing.some(function (note) { return angularDistance(note.angle, angle) < 1e-7; });
+    };
+    var landing = growing ? ranked[0] : ranked.find(function (angle) { return !occupied(angle); });
+    if (landing === undefined) return { reason: "clearance" };
+    var newNote = { id: request.id, angle: norm(landing), pinned: false };
+    function candidate(notes) {
+      var result = Object.assign({}, carry);
+      result[zone] = notes.concat(newNote);
+      return result;
+    }
+    if (!growing) {
+      // Legacy automatic layouts can start off-grid. Keep notes already on
+      // the new grid, then assign each remaining note its nearest free seat.
+      var available = slots.filter(function (angle) {
+        return angle !== landing && !occupied(angle);
+      });
+      var shifted = false;
+      var pinConflict = false;
+      var mapped = existing.map(function (note) {
+        if (slots.some(function (angle) { return angularDistance(note.angle, angle) < 1e-7; })) return note;
+        if (note.pinned) { pinConflict = true; return note; }
+        available.sort(function (a, b) {
+          return angularDistance(a, note.angle) - angularDistance(b, note.angle);
+        });
+        shifted = true;
+        return Object.assign({}, note, { angle: norm(available.shift()) });
+      });
+      if (pinConflict) return { reason: "pins" };
+      var direct = candidate(mapped);
+      if (accepts && !accepts(direct, slots.length, basis)) return { reason: "clearance" };
+      return { rings: direct, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: false, reflow: shifted };
+    }
+    var order = existing.slice().sort(function (a, b) { return norm(a.angle) - norm(b.angle); });
+    var seats = slots.filter(function (angle) { return angle !== landing; }).map(norm).sort(function (a, b) {
+      return a - b;
+    });
+    var best;
+    var bestCost = Infinity;
+    // Cyclops is an arc. Only the rim may rotate its existing note sequence.
+    var rotations = zone === "rim" ? order.length : 1;
+    var pinCompatible = false;
+    for (var offset = 0; offset < rotations; offset += 1) {
+      var moved = order.map(function (note, index) {
+        return Object.assign({}, note, { angle: seats[(index + offset) % seats.length] });
+      });
+      if (moved.some(function (note, index) {
+        return note.pinned && angularDistance(note.angle, order[index].angle) > 1e-7;
+      })) continue;
+      pinCompatible = true;
+      var cost = moved.reduce(function (sum, note, index) {
+        return sum + angularDistance(note.angle, order[index].angle);
+      }, 0);
+      if (cost >= bestCost) continue;
+      var next = candidate(moved);
+      if (accepts && !accepts(next, slots.length, basis)) continue;
+      best = next;
+      bestCost = cost;
+    }
+    if (!best) return { reason: pinCompatible ? "clearance" : "pins" };
+    return { rings: best, landing: newNote.angle, gridSize: slots.length, basis: basis, expanded: true, reflow: bestCost > 1e-7 };
+  }
+
   /* ---- the solver -------------------------------------------------------- */
 
   function byNumber(a, b) { return Number(a) - Number(b); }
@@ -663,14 +797,14 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * from the ding (the ding offset is not re-solved for a pin), is refused
    * (the id is the note itself), another inner note under
    * the floor, a rim or bottom circle it would meet, or the ding, is named. */
-  function innerClash(geom, fields, list, i) {
+  function innerClash(geom, fields, list, i, deferLabel) {
     var ids = collect(fields).inner;
     var angleOf = function (k) {
       return list[k] === null || list[k] === undefined ? fields[ids[k]][4] : list[k];
     };
     var at = angleOf(i);
     if (!innerInSpan(at)) return ids[i];
-    if (at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
+    if (!deferLabel && at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
     var floor = innerFloor(geom, ids.map(function (id) { return fields[id][4]; }));
     var k;
     for (k = 0; k < ids.length; k += 1) {
@@ -709,7 +843,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
    * computed from the default placement, so it is byte-identical with and
    * without the option. A bottom seats list beside angles is refused, and so
    * is any entry the floor (bottomClash) rejects. */
-  function readCorrections(source, zones, mirrors, anchor, seatsValue, anglesValue, counts) {
+  function readCorrections(source, zones, mirrors, anchor, seatsValue, anglesValue, counts, grid) {
     var seats = readSeats(seatsValue, counts);
     if (!seats.ok) return seats;
     var angles = readAngles(anglesValue, counts);
@@ -724,6 +858,10 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     }
     var home = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
     var plainHome = placeZones(counts, false, false, anchor);
+    if (grid) {
+      if (grid.rim) home.rims = grid.rim;
+      if (grid.inner) home.inners = grid.inner;
+    }
     var geom = geometry(counts, home);
     var effective = function (given, solved) {
       return solved.map(function (angle, i) { return given[i] === null ? angle : given[i]; });
@@ -741,7 +879,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (inners) {
       var withBottom = merge(source, zones, { rims: home.rims, inners: home.inners, bottoms: bottoms || home.bottoms }, null);
       for (i = 0; i < inners.length; i += 1) {
-        if (innerClash(geom, withBottom, inners, i) !== null) return badNote(asked.inner);
+        if (innerClash(geom, withBottom, inners, i, true) !== null) return badNote(asked.inner);
       }
     }
     var out = {};
@@ -909,9 +1047,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         byKey[occurrenceKey(fields[id])] = id;
       }
     }
-    var mutants = hasMutants(profile);
+    var fixed = profile.rev === 3 || hasMutants(profile);
     var seatAngles = [];
-    if (!mutants) {
+    if (!fixed) {
       Object.keys(plain).filter(function (fid) { return plain[fid][3] === "rim"; })
         .sort(function (a, b) { return plain[a][2] - plain[b][2]; })
         .forEach(function (fid) { seatAngles.push(plain[fid][4]); });
@@ -924,9 +1062,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
       var fid = byKey[profile.map[k]];
       var slot = k % PROFILE.tonefields;
       if (k < PROFILE.tonefields) {
-        if (!mutants && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
+        if (!fixed && k >= seatAngles.length) return HPE.core.err("PROFILE_MAP_INVALID");
         labels[fid] = String(k + 1);
-        place[fid] = mutants
+        place[fid] = fixed
           ? [angles[slot], PROFILE.main.orbit, PROFILE.main.r, "main"]
           : [seatAngles[k], geom.rim, geom.r_note, "main"];
       } else {
@@ -935,7 +1073,63 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
                       lensCentre(), PROFILE.mutant.r];
       }
     }
-    return { place: place, labels: labels, mutants: mutants };
+    return { place: place, labels: labels, fixed: fixed };
+  }
+
+  // Keep the pitch fields fixed. Only pins whose default number would crowd the Ding
+  // need a derived number position, in the same up-positive frame as point().
+  function alternateInnerNumbers(geom, fields, home) {
+    var marks = [];
+    var notes = [];
+    var ids = collect(fields).inner;
+    Object.keys(fields).forEach(function (id) {
+      var f = fields[id], zone = f[3], at = f[4];
+      if (zone === "ding") {
+        notes.push({ center: [0, -geom.ding_dy], radius: geom.r_ding });
+        return;
+      }
+      var out = zone === "bottom" || zone === "rim" && geom.rim_num_out;
+      var radius = zone === "bottom" ? geom.r_bnote : geom.r_note;
+      var gap = zone === "bottom" ? geom.n_out : geom.n_in;
+      var shift = out ? radius + gap : -(radius + gap);
+      var needsAlternate = zone === "inner" && at !== home[ids.indexOf(id)] &&
+        innerClearance(geom, [at]) < INNER_CLEARANCE;
+      var center = point(geom[zone], at);
+      notes.push({ center: center, radius: radius });
+      marks.push({ id: id, center: center, home: point(geom[zone] + shift, at), angle: at,
+        radius: radius, reach: LABEL_REACH * geom.f_num * String(f[5]).length, alternate: needsAlternate });
+    });
+    var used = marks.filter(function (mark) { return !mark.alternate; }).map(function (mark) {
+      return { center: mark.home, radius: mark.reach };
+    });
+    var output = {};
+    for (var i = 0; i < marks.length; i += 1) {
+      var mark = marks[i];
+      if (!mark.alternate) continue;
+      var avoid = notes.concat(used);
+      var candidates = [-120, 120, -90, 90, -60, 60, 0].map(function (offset) {
+        var step = point(mark.radius + mark.reach + 2 * INNER_CLEARANCE, mark.angle + offset);
+        return [round(mark.center[0] + step[0], 4), round(mark.center[1] + step[1], 4)];
+      }).sort(function (a, b) {
+        return distance(a, mark.home) - distance(b, mark.home) || b[1] - a[1];
+      });
+      var fit = candidates.find(function (candidate) {
+        var ownDistance = distance(candidate, mark.center);
+        return distance(candidate, [0, 0]) + mark.reach <= 1 - INNER_CLEARANCE &&
+          notes.every(function (note) {
+            return note.center === mark.center || ownDistance <= distance(candidate, note.center);
+          }) && avoid.every(function (obstacle) {
+            return distance(candidate, obstacle.center) >= mark.reach + obstacle.radius + INNER_CLEARANCE;
+          });
+      });
+      if (!fit) {
+        return { ok: false, code: "BAD_NOTE", variant: "innerLabelRoom",
+          reason: "No room for the Cyclops number at this angle. Try a nearby spot." };
+      }
+      output[mark.id] = fit;
+      used.push({ center: fit, radius: mark.reach });
+    }
+    return { ok: true, value: output };
   }
 
   function solve(seedOrFields, options) {
@@ -944,15 +1138,16 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
 
     var seedOptions = (seedOrFields && seedOrFields.options) || {};
     if (seedOptions.profile !== undefined && seedOptions.profile !== null) {
+      if (seedOptions.guided != null) return badNote(seedOptions.guided);
       var profile = HPE.core.readProfile(seedOptions.profile, {}, source);
       if (!profile.ok) return profile;
       var between = seedOptions.anchor === "between";
       var plain = solve({ fields: source, options: {} }, between ? { anchor: "between" } : {});
-      var turn = between && hasMutants(profile.value) ? PROFILE_TURN : 0;
+      var turn = between && (profile.value.rev === 3 || hasMutants(profile.value)) ? PROFILE_TURN : 0;
       var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields, turn);
       if (placed.ok === false) return placed;
       if (turn) plain.value.geom.turn = turn;
-      if (placed.mutants) {
+      if (placed.fixed) {
         plain.value.geom.r_ding = PROFILE.ding.r;
         plain.value.geom.ding_dy = PROFILE.ding.dy;
         plain.value.geom.f_ding = round(F_DING_RATIO * PROFILE.ding.r, 4);
@@ -967,18 +1162,46 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var anchor = resolveAnchor(options, seedOptions);
 
     var counts = countsOf(zones);
+    var guided = readGuided(seedOptions.guided, counts, mirrors.top);
+    if (!guided.ok) return guided;
+    var grid = guided.value;
     var wanted = readCorrections(source, zones, mirrors, anchor,
       (options && "seats" in options) ? options.seats : seedOptions.seats,
       (options && "angles" in options) ? options.angles : seedOptions.angles,
-      counts);
+      counts, grid);
     if (!wanted.ok) return wanted;
+    var correction = wanted.value || {};
+    if (grid && ((grid.rim && correction.rim) ||
+        (grid.inner && (correction.inner || correction.innerAngles)))) return badNote(seedOptions.guided);
 
     var placed = placeZones(counts, mirrors.top, mirrors.bottom, anchor);
+    if (grid) {
+      if (grid.rim) placed.rims = grid.rim;
+      if (grid.inner) placed.inners = grid.inner;
+    }
     var geom = geometry(counts, placed);
+    var innerHome = placed.inners;
     if (wanted.value) placed = reseat(placed, wanted.value);
-
-    return { ok: true, value: { geom: geom, fields: merge(source, zones, placed, wanted.value,
-      partnersOf(counts, mirrors.top, mirrors.bottom, anchor)) } };
+    var fields = merge(source, zones, placed, wanted.value, partnersOf(counts, mirrors.top, mirrors.bottom, anchor));
+    if (grid) {
+      if (labelFloor(geom) < LABEL_FLOOR_PT) return badNote(seedOptions.guided);
+      if (counts.inner) {
+        var innerEffective = correction.innerAngles || placed.inners;
+        for (var j = 0; j < innerEffective.length; j += 1) {
+          if (innerClash(geom, fields, innerEffective, j, true) !== null) return badNote(seedOptions.guided);
+        }
+      }
+      var bottomEffective = correction.angles || placed.bottoms;
+      for (var i = 0; i < bottomEffective.length; i += 1) {
+        if (bottomClash(geom, fields, bottomEffective, i) !== null) return badNote(seedOptions.guided);
+      }
+    }
+    if (wanted.value && wanted.value.innerAngles) {
+      var labels = alternateInnerNumbers(geom, fields, innerHome);
+      if (!labels.ok) return labels;
+      if (Object.keys(labels.value).length) geom.innerLabels = labels.value;
+    }
+    return { ok: true, value: { geom: geom, fields: fields } };
   }
 
   /* MN3 (owner 2026-10-31): MIRROR BOTTOM reflects every bottom note across
@@ -1114,6 +1337,9 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     innerClash: innerClash,
     innerClearance: innerClearance,
     rimAngles: rimAngles,
+    projectGuided: projectGuided,
+    guidedGrid: guidedGrid,
+    readGuided: readGuided,
     resolveMirrors: resolveMirrors,
     bottomAngles: bottomAngles,
     innerAngles: innerAngles,

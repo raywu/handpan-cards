@@ -721,8 +721,10 @@ HPE.pdfcards = (function () {
           col = INK; fnt = "Label";
         }
         c.setFillColor(col); c.setFont(fnt, nfs);
-        c.drawCentredString(cx + nr * Math.cos(a),
-                            cy + nr * Math.sin(a) - nfs * 0.36, lab);
+        var alternate = zone === "inner" && g.innerLabels && g.innerLabels[i];
+        var nx = alternate ? R * alternate[0] : nr * Math.cos(a);
+        var ny = alternate ? R * alternate[1] : nr * Math.sin(a);
+        c.drawCentredString(cx + nx, cy + ny - nfs * 0.36, lab);
       }
     });
   }

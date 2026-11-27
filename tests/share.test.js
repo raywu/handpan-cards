@@ -500,13 +500,13 @@ test("a payload over CAPS is rejected", () => {
 test("an over-cap payload is rejected WITHOUT parsing anything", () => {
   // The cap is the first gate, so an over-cap string that also carries a newer
   // version byte is refused on length and never reaches the version check.
-  const over = VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + 1) +
+  const over = VERSION_CHARS.charAt(share.GUIDED_VERSION + 1) +
     new Array(share.CAPS.payload + 8).join("A");
   const r = share.decode(over);
   assert.equal(r.ok, false);
   assert.notEqual(r.code, "NEEDS_NEWER_APP",
     "the payload cap must be checked before the version byte");
-  const under = VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + 1) + new Array(40).join("A");
+  const under = VERSION_CHARS.charAt(share.GUIDED_VERSION + 1) + new Array(40).join("A");
   assert.equal(share.decode(under).code, "NEEDS_NEWER_APP",
     "an under-cap newer link must still say NEEDS_NEWER_APP");
 });
@@ -1226,10 +1226,10 @@ test("a v2 link is NEEDS_NEWER_APP to an app pinned at v1", () => {
 test("a version byte above this app's is still NEEDS_NEWER_APP", () => {
   const str = encoded(parsed(BASE));
   for (const bump of [1, 2, 8]) {
-    const newer = VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + bump) + str.slice(1);
+    const newer = VERSION_CHARS.charAt(share.GUIDED_VERSION + bump) + str.slice(1);
     const r = share.decode(newer);
     assert.equal(r.ok, false);
-    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.PROFILE_ANCHOR_VERSION + bump}`);
+    assert.equal(r.code, "NEEDS_NEWER_APP", `version ${share.GUIDED_VERSION + bump}`);
     assert.equal(r.reason, specReason("NEEDS_NEWER_APP"));
   }
 });
@@ -1775,7 +1775,7 @@ test("SV: the auto label is ignored on receipt and lies outside the checksum", (
   }
 });
 
-test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 10 or above is NEEDS_NEWER_APP", () => {
+test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 12 or above is NEEDS_NEWER_APP", () => {
   const rest = V5_BUILTINS[0][4].slice(2);
   for (const lead of ["5", "6"]) {
     for (const second of ["A", "x", "-", "5", "0", "%", "\\"]) {
@@ -1784,7 +1784,7 @@ test("SV: a 5 or 6 not followed by / is BAD_NOTE, and 10 or above is NEEDS_NEWER
     }
     reject(lead + rest);
   }
-  for (const version of ["A", "z", "_"]) {
+  for (const version of ["C", "z", "_"]) {
     const r = share.decode(version + "/" + rest);
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", version);
@@ -2050,7 +2050,7 @@ test("PD: packed v1 to v4 links with a palette above 5 keep the exact numeric BA
 test("PD: gate precedence is unchanged: cap, then version, then integrity, then payload", () => {
   const good = forgeN("6", PD_SEG, "*x", ["palette-8"]);
   assert.equal(share.decode(good).ok, true);
-  assert.equal(share.decode(VERSION_CHARS.charAt(share.PROFILE_ANCHOR_VERSION + 1) + good.slice(1)).code, "NEEDS_NEWER_APP");
+  assert.equal(share.decode(VERSION_CHARS.charAt(share.GUIDED_VERSION + 1) + good.slice(1)).code, "NEEDS_NEWER_APP");
   reject(good.slice(0, -1) + (good.endsWith("0") ? "1" : "0"));
   reject(forgeN("6", PD_SEG, "*" + "x".repeat(4100), ["palette-8"]));
 });
@@ -2200,14 +2200,14 @@ test("PV: every single-character flip of a v7 link is refused (the auto label is
   }
 });
 
-test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v10 always is", () => {
+test("PV: with the flag off a v7 link is NEEDS_NEWER_APP, and v12 always is", () => {
   const link = PSH.share.encode(pSeed(PSEEDS.kurd)).value;
   const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
   off.core.PROFILE_ENABLED = false;
   const r = off.share.decode(link);
   assert.equal(r.ok, false);
   assert.equal(r.code, "NEEDS_NEWER_APP");
-  assert.equal(PSH.share.decode(VERSION_CHARS.charAt(PSH.share.PROFILE_ANCHOR_VERSION + 1) + link.slice(1)).code, "NEEDS_NEWER_APP");
+  assert.equal(PSH.share.decode(VERSION_CHARS.charAt(PSH.share.GUIDED_VERSION + 1) + link.slice(1)).code, "NEEDS_NEWER_APP");
 });
 
 test("PV: v7 shapes the grammar forbids are BAD_NOTE, and the good crafted link decodes", () => {
@@ -2540,15 +2540,15 @@ test("SE: at- is read on v8, and still refused on v7", () => {
   reject(forgeN("7", PYGMY_SEG, "*x", ["between", at]));
 });
 
-test("SE: an ai- list with a wrong length, a bad entry, a leading zero, an out-of-fan angle or one whose number sits in the ding is BAD_NOTE", () => {
+test("SE: an ai- list with a wrong length, a bad entry, a leading zero, an out-of-fan angle or a physical collision is BAD_NOTE", () => {
   const bads = ["110", "110,,", ",,", "111,", "360,", "0110,", "05,", "x,", "-5,", "110.5,", "185,", "270,", "355,",
-    "0,0", "95,50", "95,", " 110,", "0,90", "180,90", "5,100", "175,", "180,", "180,0"];
+    "0,0", "95,50", "95,", " 110,", "0,90", "180,90", "5,100"];
   for (const list of bads) {
     const r = share.decode(pygmyInner(list));
     assert.equal(r.ok, false, list);
     assert.equal(r.code, "BAD_NOTE", list);
   }
-  for (const list of ["110,", ",60", "105,50", "45,125", "140,"]) {
+  for (const list of ["110,", ",60", "105,50", "45,125", "140,", "175,", "180,", "180,0"]) {
     assert.equal(share.decode(pygmyInner(list)).ok, true, list);
   }
 });
@@ -2579,9 +2579,9 @@ test("SE: pair- on a v8 link is PROFILE_CONFLICT, and v8 reads whatever PROFILE_
   assert.equal(off.decode(v7).code, "NEEDS_NEWER_APP", "v7 stays gated by the flag");
 });
 
-test("SE: version 10 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8", () => {
+test("SE: version 12 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8", () => {
   const link = pygmyInner("110,");
-  for (const lead of ["A", "B", "z"]) {
+  for (const lead of ["C", "z"]) {
     const r = share.decode(lead + link.slice(1));
     assert.equal(r.ok, false);
     assert.equal(r.code, "NEEDS_NEWER_APP", lead);
@@ -2670,15 +2670,87 @@ test("PA: a crafted v9 link decodes, and every shape the grammar forbids is BAD_
   }
 });
 
-test("PA: v9 is NEEDS_NEWER_APP with the flag off and on the base engine, and v10 always is", () => {
+test("PA: v9 and fixed-slot shares require a reader that supports their version", () => {
   const good = craft("9", KURD_SEG, "*Label", [KURD_PAIR, "between"]);
   const off = loadEngine(["core", "voicing", "layout", "naming", "select", "share"]);
   off.core.PROFILE_ENABLED = false;
   assert.equal(off.share.decode(good).code, "NEEDS_NEWER_APP");
   assert.equal(engineAtVersion(8).decode(good).code, "NEEDS_NEWER_APP");
-  for (const lead of ["A", "B", "z"]) {
+  for (const lead of ["C", "z"]) {
     assert.equal(PSH.share.decode(lead + good.slice(1)).code, "NEEDS_NEWER_APP", lead);
   }
-  const v10 = VERSION_CHARS.charAt(PSH.share.PROFILE_ANCHOR_VERSION + 1);
-  assert.equal(PSH.share.decode(v10 + good.slice(1)).code, "NEEDS_NEWER_APP");
+  const v10 = VERSION_CHARS.charAt(PSH.share.FIXED_PROFILE_VERSION);
+  assert.equal(PSH.share.decode(v10 + good.slice(1)).code, "BAD_NOTE");
+});
+
+test("fixed Neotone slot 4 survives parse, wire round trip and layout", () => {
+  for (const anchor of [undefined, "between"]) {
+    const map = Array(18).fill(null);
+    map[3] = "r57";
+    const profile = { id: "paired", rev: 3, map };
+    const options = anchor ? { profile, anchor } : { profile };
+    const seed = PSH.core.parseSeed("(D3) A3", options);
+    assert.equal(seed.ok, true, seed.reason);
+    assert.deepEqual(pj(seed.value.options.profile.map), map);
+    assert.equal(PSH.share.recordVersion(seed.value), 8);
+    const link = PSH.share.encode(seed.value);
+    assert.equal(link.ok, true, link.reason);
+    assert.match(link.value, /^A\//);
+    const read = PSH.share.decode(link.value);
+    assert.equal(read.ok, true, read.reason);
+    assert.deepEqual(pj(read.value.options.profile), profile);
+    assert.equal(read.value.options.anchor, anchor);
+    assert.equal(engineAtVersion(9).decode(link.value).code, "NEEDS_NEWER_APP");
+    const solved = PSH.layout.solve(read.value);
+    assert.equal(solved.ok, true, solved.reason);
+    const [id] = Object.keys(solved.value.geom.place);
+    const place = solved.value.geom.place[id];
+    assert.equal(solved.value.fields[id][5], "4");
+    assert.equal(place[1], PSH.layout.PROFILE.main.orbit);
+    assert.equal(place[0], PSH.layout.profileAngles(solved.value.geom.turn)[3]);
+  }
+});
+test("legacy sparse main maps still normalize and fixed maps reject omitted or duplicate notes", () => {
+  const map = Array(18).fill(null);
+  map[3] = "r57";
+  const legacy = PSH.core.parseSeed("(D3) A3", { profile: { id:"paired", rev:2, map } });
+  assert.equal(legacy.ok,true,legacy.reason);
+  assert.equal(legacy.value.options.profile.map[0],"r57");
+  assert.equal(legacy.value.options.profile.map[3],null);
+  assert.equal(PSH.core.parseSeed("(D3) A3 C4",{profile:{id:"paired",rev:3,map}}).code,"PROFILE_NOTE_MISSING");
+  const doubled=map.slice();doubled[4]="r57";
+  assert.equal(PSH.core.parseSeed("(D3) A3",{profile:{id:"paired",rev:3,map:doubled}}).code,"PROFILE_NOTE_TWICE");
+});
+
+test("removing the last fixed-profile mutant does not move the main note", () => {
+  const map = Array(18).fill(null);
+  map[3] = "r57";
+  map[15] = "b48";
+  const anchor = "between";
+  const position = (text, slots) => {
+    const seed = PSH.core.parseSeed(text,{profile:{id:"paired",rev:3,map:slots},anchor});
+    assert.equal(seed.ok,true,seed.reason);
+    const solved = PSH.layout.solve(seed.value);
+    assert.equal(solved.ok,true,solved.reason);
+    const id = Object.keys(solved.value.fields).find(k=>solved.value.fields[k][2]===57);
+    return pj(solved.value.geom.place[id]);
+  };
+  const without = map.slice();without[15]=null;
+  assert.deepEqual(position("[C3] (D3) A3",map),position("(D3) A3",without));
+});
+
+test("Guided shares preserve sparse rim and Cyclops seat positions", () => {
+  const seed = core.parseSeed("(D3) A3 C4 D4 | E4 F4").value;
+  seed.options.guided = { rim: { size: 7, seats: [1, 5, 0] }, inner: { size: 3, seats: [0, 2] } };
+  const before = HPE.layout.solve(seed);
+  assert.equal(before.ok, true, before.reason);
+  const link = encoded(seed);
+  assert.equal(link[0], VERSION_CHARS[share.GUIDED_VERSION]);
+  const decoded = share.decode(link);
+  assert.equal(decoded.ok, true, decoded.reason);
+  assert.deepEqual(host(decoded.value.options.guided), host(seed.options.guided));
+  assert.deepEqual(host(HPE.layout.solve(decoded.value)), host(before));
+  assert.equal(share.recordVersion(seed), share.GUIDED_RECORD_VERSION);
+  seed.options.guided.rim.seats[0] = 5;
+  assert.equal(share.encode(seed).ok, false);
 });

@@ -1727,7 +1727,7 @@ test("PR: each profile refusal code fires on a minimal case with its sentence", 
   const swap = (i, v) => good.map((k, n) => n === i ? v : k);
   const cases = [
     ["PROFILE_UNKNOWN", { profile: { id: "other", rev: 2, map: good } }],
-    ["PROFILE_UNKNOWN", { profile: { id: "paired", rev: 3, map: good } }],
+    ["PROFILE_UNKNOWN", { profile: { id: "paired", rev: 4, map: good } }],
     ["PROFILE_UNKNOWN", { profile: { id: "paired", rev: 0, map: good } }],
     ["PROFILE_MAP_INVALID", prof(good.slice(0, 17))],
     ["PROFILE_MAP_INVALID", prof(good.concat([null]))],

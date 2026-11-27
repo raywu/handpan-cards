@@ -930,7 +930,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     if (keys.length !== 3 || keys[0] !== "id" || keys[1] !== "map" || keys[2] !== "rev") {
       return scaleErr("PROFILE_MAP_INVALID");
     }
-    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2)) return scaleErr("PROFILE_UNKNOWN");
+    if (raw.id !== "paired" || (raw.rev !== 1 && raw.rev !== 2 && raw.rev !== 3)) return scaleErr("PROFILE_UNKNOWN");
 
     var byKey = {};
     var counts = { rim: 0, inner: 0, bottom: 0 };
@@ -962,7 +962,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
         return scaleErr("PROFILE_MAP_INVALID");
       }
     }
-    if (pastSeats(map, fields)) {
+    if (raw.rev === 2 && pastSeats(map, fields)) {
       var moved = proposeProfileMap(fields);
       var proposed = { id: "paired", rev: 2, map: moved.map };
       if (moved.unplaced.length > 0) proposed.unplaced = moved.unplaced;
@@ -972,7 +972,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     for (key in byKey) {
       if (has(byKey, key) && !has(shape.value.seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
     }
-    return ok({ id: "paired", rev: 2, map: map });
+    return ok({ id: "paired", rev: raw.rev, map: map });
   }
 
   function parseSeed(input, options) {
@@ -1059,7 +1059,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
     var fields = fieldsOf(seedOrFields);
     var ids = orderedIds(fields);
     var ding = fields["0"];
-    var line = [{ midi: ding[2], rank: 1, text: "(" + ding[0] + ding[1] + ")", inner: false }];
+    var line = ding ? [{ midi: ding[2], rank: 1, text: "(" + ding[0] + ding[1] + ")", inner: false }] : [];
     ids.bottom.forEach(function (id) {
       line.push({ midi: fields[id][2], rank: 0, text: "[" + fields[id][0] + fields[id][1] + "]", inner: false });
     });

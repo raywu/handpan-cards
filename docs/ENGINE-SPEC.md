@@ -1249,6 +1249,18 @@ side; mutant tonefield N belongs to main tonefield N. Top (rim) notes fill the
 main tonefields; bottom notes become mutant notes and fill the mutant
 tonefields. Inner notes (after `|`) never get a tonefield.
 
+### Fixed Neotone slots (profile rev 3)
+
+An authored fixed layout stores its exact 18-slot map. Main tonefields use the
+physical Neotone centers even when every mutant slot is empty. Null slots do not
+cause any reordering. Parse and layout still enforce mapped note completeness,
+uniqueness, row, capacity and normal scale validation. Record v8 and readable
+share v10 (version byte `A`) identify this behavior explicitly and support the
+same optional `between` orientation. Legacy profile revisions and their saved
+records and links retain their original reader and geometry. Older readers
+treat the new share as requiring a newer app. A release must retain new-format
+read support after new-format writing has shipped, including during rollback.
+
 ### 18.1 The frozen profile (fixture rev 4)
 
 `tests/fixtures/paired_profile_v4.json` is the one profile (`id` `paired`, `rev`
@@ -1551,3 +1563,35 @@ compare-and-set server. A scale's remote id is `sidecar.alias[id] || id`; the si
 - DECIDED(plan login-sync-v2 s8, lane A1 fix 3) WITNESSED WRITES: a base claim is stamped with a revision the plan verified. An update with an op (`mode: committed`) takes the post-state of a compare-and-set op from `committed`; an update with no op (`mode: observed`: equal-body match, first-sync match, last-visible deferral) carries `localRevision` as the plan read it and `settlePull` never consults `committed` for it, so a concurrent edit leaves the entry pushable and the deferred removal refuses it. Every op has a `sources` entry with the REMOTE id and rev, including the moved copy of an unreadable remote. Pinned by the race-matrix tests in `tests/sync.test.js` (every `site` tag in `planPull` must be exercised) and `settle R3a`, `R3b`, `R3c`, `N1`, `N2`.
 - CONTRACT(plan login-sync-v2 s8, lane A1 fix 2) SETTLE CONTRACT: the caller ALWAYS passes `result.sync.skipped` as the fourth argument of `settlePull(sidecar, plan, committed, skipped)`; `committed` lists every entry, skipped or not, so it cannot tell a skip from a commit. `planPull` and `planDeferred` return `sources`, `{ <op id>: { rid, rev } }`, for that. For a skipped `overwrite`, `insert` or non-`missing` `remove`, `settlePull` applies none of that row's `baseUpdates`, drops no base, keeps the alias, deletes the alias of a skipped insert, and holds the cursor at `rev - 1`, so the next pull sees the row again and replans it against the local copy as it is then (an edited entry pushes as a normal edit or becomes a conflict copy; it is never overwritten). A skipped `remove` with reason `last-visible` is deferred instead: the base moves to the remote rev with the planned local revision, the alias is kept, the id joins `deferredDeletes` and the cursor advances (plan R1-7), so the remote delete is neither reversed nor lost. A `remove` skipped as `missing` settles as a normal remove (`tests/sync.test.js` settle tests).
 - DECIDED(login-sync lane E regroup) I-row: the pull cursor passes a remote row only when the plan has reconciled it (its body is kept on the device or in a row the next push sends, and `base[id].rev` is set to the row's rev, or the id is dropped for a mirrored tombstone). A `localOnly` entry's remote row therefore holds the cursor at the rev before it until the entry is released or gone; later rows are re-delivered as no-ops (`tests/sync.test.js`, held-row, released-after-same-id and deleted-before-release tests, and the bounded two-device model). Meaning matching also accepts an identical body (same body or same meaning), so an unreadable revived scale is adopted, not duplicated, after a sign-out and sign-in (`tests/sync.test.js`, unreadable-revived test).
+
+### Guided Standard seat grids (wire 11 and saved record 9)
+
+Standard WYSIWYG placements can carry `options.guided`. Only the rim and
+Cyclops (`inner`) can have a grid. A row has `size` and `seats`, where each
+seat index is unique and maps to a note in that ring's canonical pitch order.
+Empty seats are implicit. Guided rim sizes are 7 through 12 and Cyclops sizes
+are 3 through 6. A Stock-origin `basis` (`one`, `between`, or `inner`)
+can reference an earlier automatic grid when notes leave a ring, so the
+surviving fields keep the positions at which the player saw them. A prior
+grid's capacity can therefore exceed that ring's current note count.
+
+The rim grid is evenly spaced around the full circle, starting at 90°.
+The Cyclops grid uses the engine's symmetric upper fan. When top mirroring is
+active, the stored seat indices stay the same and their angles reflect when
+drawn. A ring with a Guided row cannot also supply its own seat permutation or
+custom-angle list. A separate Cyclops or underside custom-angle list remains
+valid if it fits the solved layout. Neotone has its own fixed layout and
+rejects Guided options.
+
+Wire version 11 (lead `B`) uses the existing readable grammar, adding
+`grid-rim-` and `grid-inner-` segments after the angle segments. A row carries
+an optional basis, its size, then its dot-separated seat indices. The
+checksum covers those segments. Decode validates the combined geometry
+before returning the seed. The version byte lets older readers report
+`NEEDS_NEWER_APP` before parsing any options. Standard inventories without
+Guided rows and all existing Neotone variants keep their original versions.
+
+Saved record 9 requires a valid Guided grid and is opaque to older readers.
+As with custom Cyclops pin records, Guided records save separately from
+built-in slots. Preview projections are editor state and do not travel in a
+record, link or backup.
