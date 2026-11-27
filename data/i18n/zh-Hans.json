@@ -202,6 +202,7 @@
   "editor.octave": "八度 {n}",
   "editor.octave_label": "八度",
   "editor.dragging": "正在拖动 {name}：放到空位或音上，或拖出盘面即可删除。",
+  "editor.dragging_tray": "正在拖动 {name}：放到空位或音上，或拖出盘面即可取消。",
   "editor.release_remove": "松开即删除",
   "editor.zone_full": "已满",
   "editor.octave_down": "降低八度",

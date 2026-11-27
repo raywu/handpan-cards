@@ -3141,7 +3141,11 @@ function run() {
             const before = await core();
             const steps = await pastLen();
             let cls = null, text = null, inside = null;
-            await gesture(await noteAt("rim", 3), await offPan(), kind, { at: 1, mid: async () => { cls = await ghostClass(); text = await ghostText(); } });
+            await gesture(await noteAt("rim", 3), await offPan(), kind, { at: 1, mid: async () => {
+              cls = await ghostClass();
+              text = await ghostText();
+              assert.match(await status(), /off the pan to remove it\./);
+            } });
             assert.match(cls, /remove/, "the ghost has the remove class past the margin");
             assert.match(text, /Release to remove/);
             assert.ok(!(await rimNames()).includes("D4"));
@@ -3157,7 +3161,10 @@ function run() {
             await setup(SCALE);
             const before = await core();
             const steps = await pastLen();
-            await gesture(await chipAt("G"), await offPan(), kind, { at: 1, mid: async () => assert.doesNotMatch(await ghostClass(), /remove/) });
+            await gesture(await chipAt("G"), await offPan(), kind, { at: 1, mid: async () => {
+              assert.doesNotMatch(await ghostClass(), /remove/);
+              assert.match(await status(), /off the pan to cancel\./);
+            } });
             assert.deepStrictEqual(await core(), before);
             assert.strictEqual(await pastLen(), steps);
             assert.strictEqual(await status(), "");

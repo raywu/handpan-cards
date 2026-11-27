@@ -206,6 +206,7 @@
   "editor.octave": "Oktave {n}",
   "editor.octave_label": "Oktave",
   "editor.dragging": "{name} ziehen: auf eine Stelle oder einen Ton legen, oder neben den Pan, um zu entfernen.",
+  "editor.dragging_tray": "{name} ziehen: auf eine Stelle oder einen Ton legen, oder neben den Pan, um abzubrechen.",
   "editor.release_remove": "Zum Entfernen loslassen",
   "editor.zone_full": "Voll",
   "editor.octave_down": "Oktave tiefer",

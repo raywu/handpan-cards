@@ -202,6 +202,7 @@
   "editor.octave": "オクターブ{n}",
   "editor.octave_label": "オクターブ",
   "editor.dragging": "{name}をドラッグ中。場所かノートの上で離すか、パンの外で離して削除します。",
+  "editor.dragging_tray": "{name}をドラッグ中。場所かノートの上で離すか、パンの外で離してキャンセルします。",
   "editor.release_remove": "離すと削除",
   "editor.zone_full": "満杯",
   "editor.octave_down": "オクターブを下げる",

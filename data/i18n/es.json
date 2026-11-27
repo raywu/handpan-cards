@@ -206,6 +206,7 @@
   "editor.octave": "Octava {n}",
   "editor.octave_label": "Octava",
   "editor.dragging": "Arrastrando {name}: suelta sobre un punto o una nota, o fuera del pan para quitarla.",
+  "editor.dragging_tray": "Arrastrando {name}: suelta sobre un punto o una nota, o fuera del pan para cancelar.",
   "editor.release_remove": "Suelta para quitar",
   "editor.zone_full": "Lleno",
   "editor.octave_down": "Bajar una octava",

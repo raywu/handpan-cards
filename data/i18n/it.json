@@ -206,6 +206,7 @@
   "editor.octave": "Ottava {n}",
   "editor.octave_label": "Ottava",
   "editor.dragging": "Trascini {name}: rilascia su un punto o una nota, o fuori dal pan per rimuoverla.",
+  "editor.dragging_tray": "Trascini {name}: rilascia su un punto o una nota, o fuori dal pan per annullare.",
   "editor.release_remove": "Rilascia per rimuovere",
   "editor.zone_full": "Pieno",
   "editor.octave_down": "Ottava più bassa",

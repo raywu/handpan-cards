@@ -206,6 +206,7 @@
   "editor.octave": "Octave {n}",
   "editor.octave_label": "Octave",
   "editor.dragging": "Dragging {name}: drop on a spot or a note, or off the pan to remove it.",
+  "editor.dragging_tray": "Dragging {name}: drop on a spot or a note, or off the pan to cancel.",
   "editor.release_remove": "Release to remove",
   "editor.zone_full": "Full",
   "editor.octave_down": "Octave down",

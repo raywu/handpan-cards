@@ -206,6 +206,7 @@
   "editor.octave": "Octave {n}",
   "editor.octave_label": "Octave",
   "editor.dragging": "Déplacement de {name} : déposez sur un emplacement ou une note, ou hors du pan pour la retirer.",
+  "editor.dragging_tray": "Déplacement de {name} : déposez sur un emplacement ou une note, ou hors du pan pour annuler.",
   "editor.release_remove": "Relâchez pour retirer",
   "editor.zone_full": "Plein",
   "editor.octave_down": "Octave plus bas",
