@@ -11517,7 +11517,7 @@ describe("NEO: Neotone sheet, saves and links", () => {
 
 
 
-  test("NEO10: a Neotone SAVE on a seeded scale writes a v5 rev 2 record as a separate entry with no replaces", async () => {
+  test("NEO10: a Neotone SAVE on a seeded scale writes a v8 rev 3 record as a separate entry with no replaces", async () => {
     const app = await durableBoot();
     openBuiltin(app, "amara");
     app.els["scale-neotone"].checked = true;
@@ -11527,9 +11527,9 @@ describe("NEO: Neotone sheet, saves and links", () => {
     const env = savedEnvelope(app);
     assert.strictEqual(env.entries.length, 1);
     const r = env.entries[0].record;
-    assert.strictEqual(r.v, 5);
+    assert.strictEqual(r.v, 8);
     assert.strictEqual(r.o.profile.id, "paired");
-    assert.strictEqual(r.o.profile.rev, 2);
+    assert.strictEqual(r.o.profile.rev, 3);
     assert.strictEqual(r.o.profile.map.length, 18);
     for (const name of ["mirror", "mirrorBottom", "anchor", "seats", "angles", "replaces"]) assert.strictEqual(name in r.o, false, name);
     assert.deepStrictEqual(env.slots, {});
@@ -11538,20 +11538,20 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.ok(decks(app).some((d) => d.id === "amara"), "the built-in is still listed");
   });
 
-  test("NEO11: a typed Neotone scale saves a v5 rev 2 record and its link is v7", async () => {
+  test("NEO11: a typed Neotone scale saves a v8 rev 3 record and its link is v10", async () => {
     const app = await durableBoot();
     openNeo(app);
     await generateClick(app);
     await writeBarrier(app);
     const r = entries(app)[0].record;
-    assert.strictEqual(r.v, 5);
-    assert.strictEqual(r.o.profile.rev, 2);
+    assert.strictEqual(r.v, 8);
+    assert.strictEqual(r.o.profile.rev, 3);
     const link = plain(app.get(`shareLink(savedEntries.get(selection.id).deck)`));
     assert.strictEqual(link.ok, true);
-    assert.match(link.value, /#s=7\//);
+    assert.match(link.value, /#s=A\//);
   });
 
-  test("NEO12: editing a Neotone scale opens in Neotone, a rearrangement keeps v5, and Standard rewrites in place as v4 with the same handle", async () => {
+  test("NEO12: editing a Neotone scale opens in Neotone, a rearrangement keeps v8, and Standard rewrites in place as v4 with the same handle", async () => {
     const app = await durableBoot();
     openNeo(app, BOTTOM_AMARA);
     await generateClick(app);
@@ -11566,7 +11566,9 @@ describe("NEO: Neotone sheet, saves and links", () => {
     await writeBarrier(app);
     let rows = entries(app);
     assert.strictEqual(rows.length, 1);
-    assert.strictEqual(rows[0].record.v, 5);
+    assert.strictEqual(rows[0].record.v, 8);
+    assert.strictEqual(rows[0].instanceId, handle);
+    assert.strictEqual(rows[0].record.o.profile.rev, 3);
     assert.deepStrictEqual(rows[0].record.o.profile.map, moved);
     openEdit(app, { ...app.currentDeck(), instanceId: handle });
     app.els["scale-neotone"].checked = false;
@@ -11602,7 +11604,8 @@ describe("NEO: Neotone sheet, saves and links", () => {
     assert.deepStrictEqual(owner.record, record);
     assert.deepStrictEqual(after.slots, { amara: OWNER });
     const added = after.entries.find((e) => e !== owner);
-    assert.strictEqual(added.record.v, 5);
+    assert.strictEqual(added.record.v, 8);
+    assert.strictEqual(added.record.o.profile.rev, 3);
     assert.strictEqual("replaces" in added.record.o, false);
   });
 
@@ -11767,7 +11770,7 @@ describe("NEO: Neotone sheet, saves and links", () => {
     };
     check(NOMUT, "no mutants filled");
     check(MUTANT_PYGMY, "some mutants filled");
-    assert.match(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), /#editor-pan \.eslot\[data-mut\]\{[^}]*stroke:#E27005/);
+    assert.match(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), /#editor-pan \.balanced-outline:is\(\.inner,\.bottom\),#editor-pan \.eslot\.eslot\[data-mut\]\{[^}]*stroke:#ad792f/);
   });
 
   test("TRI59d A1: the drop ring on a turned pan lands on the turned slot", async () => {
