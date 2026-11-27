@@ -392,7 +392,7 @@ def timed_run(path):
     return result
 
 
-def run_node_file(path):
+def run_node_file(path, *, name_pattern=None):
     """-> (total, failed, skipped, cancelled, returncode, output) for one node
     test file.
 
@@ -406,8 +406,12 @@ def run_node_file(path):
     still exits non-zero. A caller that only checked `failed` would call that
     green.
     """
+    command = ["node", "--test", "--test-reporter=tap"]
+    if name_pattern is not None:
+        command.extend(["--test-name-pattern", name_pattern])
+    command.append(path)
     try:
-        proc = subprocess.Popen(["node", "--test", "--test-reporter=tap", path],
+        proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 text=True, cwd=paths.ROOT, start_new_session=True)
     except FileNotFoundError:
@@ -661,6 +665,38 @@ def emit_python(outfile):
         print(data["output_excerpt"])
     return 1 if (data["failures"] or data["errors"]
                  or data["unexpected_successes"]) else 0
+
+
+EDITOR_E2E = "tests/editor_e2e.test.js"
+EDITOR_REQUIRED = {"EDITOR-EXIT-CLEAN", "EDITOR-EXIT-INVALID", "EDITOR-EXIT-KEEP", "EDITOR-EXIT-SAVE"}
+_EDITOR_TAP = re.compile(r"^\s*(ok|not ok) \d+ - (EDITOR-[A-Z0-9-]+): (.+)$", re.M)
+
+
+def editor_cases(tap):
+    """Extract tagged leaf results from the existing editor TAP stream."""
+    cases = []
+    for match in _EDITOR_TAP.finditer(tap):
+        outcome, case_id, title = match.groups()
+        directive = _TAP_DIRECTIVE.search(title)
+        status = "pass" if outcome == "ok" else "fail"
+        if directive:
+            status = directive.group().strip().split()[1].lower()
+            title = title[:directive.start()]
+        else:
+            diagnostic = re.match(r"\n[ \t]+---\n(.*?)^[ \t]+\.\.\.$",
+                                  tap[match.end():], re.M | re.S)
+            if diagnostic and re.search(r"^\s+failureType: ['\"]cancel",
+                                        diagnostic[1], re.M):
+                status = "cancelled"
+        cases.append({"id": case_id, "name": title, "status": status})
+    return cases
+
+
+def editor_case_problems(cases, required=EDITOR_REQUIRED):
+    return [
+        case_id for case_id in sorted(required)
+        if [case["status"] for case in cases if case["id"] == case_id] != ["pass"]
+    ]
 
 
 def collect_js():

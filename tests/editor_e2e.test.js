@@ -29,19 +29,23 @@ function run() {
   const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
 
   before(async () => {
-    server = http.createServer((req, res) => {
-      const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "") || "index.html";
-      const file = path.resolve(REPO, rel);
-      if (!file.startsWith(REPO + path.sep)) { res.writeHead(403).end(); return; }
-      fs.readFile(file, (err, buf) => {
-        if (err) { res.writeHead(404).end(); return; }
-        const html = rel === "index.html";
-        res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+    if (process.env.HPC_EDITOR_HOSTED_URL) {
+      base = process.env.HPC_EDITOR_HOSTED_URL;
+    } else {
+      server = http.createServer((req, res) => {
+        const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "") || "index.html";
+        const file = path.resolve(REPO, rel);
+        if (!file.startsWith(REPO + path.sep)) { res.writeHead(403).end(); return; }
+        fs.readFile(file, (err, buf) => {
+          if (err) { res.writeHead(404).end(); return; }
+          const html = rel === "index.html";
+          res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
+          res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+        });
       });
-    });
-    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    base = `http://127.0.0.1:${server.address().port}/index.html`;
+      await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+      base = `http://127.0.0.1:${server.address().port}/index.html`;
+    }
     b = await launch({ foregroundSettle: true });
     assert.ok(b, "browser found but launch() returned null");
     const rawClick = b.click.bind(b);
@@ -96,6 +100,269 @@ function run() {
   };
   const pinInner = () => b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 125)).history;
     editorRender(); return editorSession.history.present.pins.length;`);
+
+  // These journeys exercise the published Guided drawer until its normal
+  // Add/Edit implementation lands. Model injection is fixture setup only.
+  if (process.env.HPC_EDITOR_HOSTED_URL) describe("Hosted editor RC", () => {
+    let touching = false;
+    async function touch(type, point) {
+      await b.send("Input.dispatchTouchEvent", {
+        type, touchPoints: point ? [{ ...point, id: 1, radiusX: 4, radiusY: 4, force: 1 }] : []
+      });
+      touching = type === "touchStart" || type === "touchMove";
+    }
+    afterEach(async () => {
+      if (touching) await touch("touchCancel");
+    });
+    const center = selector => b.eval(`
+      const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    `);
+    async function fixture(text, options = {}, oct = 3, height = 700) {
+      await fresh(390, height);
+      await b.click("#strip-add");
+      await b.waitFor("!!window.drawerExperiment && !!document.getElementById('editor-line')",
+        { label: "the hosted editor to open" });
+      await b.eval(`
+        const loaded = ${JSON.stringify(text)} ? editorLoad(${JSON.stringify(text)}, ${JSON.stringify(options)})
+          : { ok: true, value: editorSession.history.present };
+        if (!loaded.ok) throw Error(loaded.reason);
+        const m = loaded.value;
+        m.view = { oct: ${oct}, flats: false };
+        editorSession.history = editorHistoryNew(m);
+        editorSession.base = m;
+        editorRender();
+        return true;
+      `);
+    }
+    async function lift(selector) {
+      await b.waitFor(`(() => {
+        const node = document.querySelector(${JSON.stringify(selector)});
+        if (!node) return false;
+        const r = node.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return node.matches(".ehit") ? !!hit?.closest("#editor-pan") : node === hit || node.contains(hit);
+      })()`, { label: "the drag source to be exposed" });
+      const point = await center(selector);
+      await touch("touchStart", point);
+      await touch("touchMove", { x: point.x, y: point.y - 20 });
+      await b.waitFor("!!editorDrag?.live && !drawerExperiment.expanded",
+        { label: "the touch drag to lift and clear the drawer" });
+    }
+    async function aim(ring, angle, landing = angle) {
+      let target;
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        const point = await b.eval(`
+          const svg = document.querySelector("#editor-pan svg");
+          const geom = editorSolve(editorSession.history.present).value.geom;
+          const radius = editorOrbit(geom, "${ring}") * 100 + ${attempt % 2 ? 1.5 : 0};
+          const radians = ${angle} * Math.PI / 180;
+          const p = new DOMPoint(radius * Math.cos(radians), -radius * Math.sin(radians))
+            .matrixTransform(svg.getScreenCTM());
+          return { x: p.x, y: p.y };
+        `);
+        await touch("touchMove", point);
+        await new Promise(resolve => setTimeout(resolve, 60));
+        target = await b.eval(`
+          const drag = editorDrag;
+          const clientX = parseFloat(drag.ghost.style.left);
+          const clientY = parseFloat(drag.ghost.style.top);
+          return Math.hypot(clientX - ${point.x}, clientY - ${point.y}) <= 1.5
+            ? editorDropTarget({ clientX, clientY }, drag.src) : null;
+        `);
+        const actual = target?.guidedAngle ?? target?.angle;
+        // CDP touch coordinate rounding can perturb an unpinned angle.
+        if (target?.kind === "spot" && target.ring === ring && Math.abs(actual - landing) < 0.01) return;
+      }
+      assert.fail("touch did not reach " + ring + " " + angle + " " + JSON.stringify(target));
+    }
+    const angleSnapshot = () => b.eval(`
+      const solved = editorSolve(editorSession.history.present);
+      return Object.fromEntries(["rim", "inner", "bottom"].map(ring => [ring, editorAnglesOf(solved, ring)]));
+    `);
+    async function clickReady(selector) {
+      await b.waitFor(`(() => {
+        const button = document.querySelector(${JSON.stringify(selector)});
+        if (!button || button.disabled) return false;
+        const r = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return hit === button || button.contains(hit);
+      })()`, { label: selector + " to be enabled and hittable" });
+      await b.click(selector);
+    }
+    async function saveAndReopen(version) {
+      const count = await savedCount();
+      await clickReady("#editor-save");
+      await b.waitFor("document.getElementById('scale-sheet').hidden", { label: "Save closes the editor" });
+      assert.equal(await savedCount(), count + 1);
+      const entry = await b.eval("return savedState.entries.at(-1);");
+      assert.equal(entry.record.v, version);
+      const url = new URL(base);
+      url.searchParams.set("editorBrowserReopen", "1");
+      await b.send("Page.navigate", { url: url.href });
+      await b.waitFor(`location.search.includes("editorBrowserReopen=1") && ${APP_READY_EXPR} &&
+        booted === true && savedState.entries.some(row => row.instanceId === ${JSON.stringify(entry.instanceId)})`,
+        { timeout: 15000, label: "the committed record restores on the same hosted page" });
+      await b.click(`#decks .chip[data-selection-id="${entry.instanceId}"]`);
+      await b.waitFor("!!document.getElementById('editor-line')", { label: "the saved editor to reopen" });
+      return entry.record;
+    }
+
+    test("EDITOR-RC-STANDARD-GROW: Guided tap grows each Standard ring and preserves the pitches", async () => {
+      const seed = "(D3) A3 B3 C4 D4 E4 F4 G4 | D#4 G#4 A#4";
+      for (const [ring, count] of [["rim", 8], ["inner", 4]]) {
+        await fixture(seed, {}, 4);
+        await b.click('.tray-note[data-name="C#"]');
+        const mark = `#editor-pan .guided-landing[data-guided-zone="${ring}"]`;
+        await b.waitFor(`!!document.querySelector(${JSON.stringify(mark)})`, { label: "the growth outline to appear" });
+        const angle = await b.eval(`return +document.querySelector(${JSON.stringify(mark)}).dataset.angle;`);
+        await b.waitFor(`(() => {
+          const circle = document.querySelector(${JSON.stringify(mark + " circle")});
+          const r = circle?.getBoundingClientRect();
+          return !!r && !!document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest("#editor-pan");
+        })()`, { label: "the growth target to be exposed" });
+        await touch("touchStart", await center(mark + " circle"));
+        await touch("touchEnd");
+        await b.waitFor("editorSession.history.past.length === 1", { label: "one placement transaction" });
+        const placed = await b.eval(`
+          const m = editorSession.history.present;
+          const notes = editorNames(m, "${ring}");
+          return { notes, angle: editorAnglesOf(editorSolve(m), "${ring}")[notes.indexOf("C#4")],
+            drawer: drawerExperiment.expanded };
+        `);
+        assert.equal(placed.notes.length, count);
+        assert.equal(placed.angle, angle);
+        assert.equal(placed.drawer, false);
+        await clickUndo();
+        assert.equal(await text(), seed);
+      }
+    });
+
+    test("EDITOR-RC-CYCLOPS-SNAP: a moved Cyclops note lands at the visible Guided seat", async () => {
+      await fixture("");
+      await b.eval(`
+        editorDo(m => editorReplaceDing(m, "C#3"));
+        editorDo(m => editorPlace(m, "rim", "D3"));
+        editorDo(m => editorPlace(m, "inner", "A3"));
+        editorRender();
+        return true;
+      `);
+      assert.equal(await text(), "(C#3) D3 | A3");
+      const undoDepth = await b.eval("return editorSession.history.past.length;");
+      await b.click("#drawerexp-handle");
+      const before = await angleSnapshot();
+      await lift('#editor-pan .ehit[data-ring="inner"]');
+      await aim("inner", 150, 166);
+      const landing = await b.eval(`return +document.querySelector(
+        '.guided-landing[data-guided-zone="inner"]').dataset.angle;`);
+      assert.equal(landing, 166);
+      await touch("touchEnd");
+      await b.waitFor(`editorSession.history.past.length === ${undoDepth + 1}`, { label: "the Guided drag to commit" });
+      assert.deepEqual(await angleSnapshot(), { ...before, inner: [landing] });
+      await clickReady("#editor-undo");
+      await b.waitFor(`editorSession.history.past.length === ${undoDepth}`,
+        { label: "Undo restores the previous layout transaction" });
+      assert.deepEqual(await angleSnapshot(), before);
+    });
+
+    test("EDITOR-RC-GUIDED-SAVE: a custom underside move keeps Guided seats after reload", async () => {
+      await fixture("[F3] (D3) A3 C4 E4", {
+        angles: { bottom: [270] },
+        guided: { rim: { size: 7, seats: [1, 3, 0] } }
+      });
+      await b.click("#drawerexp-handle");
+      const before = await angleSnapshot();
+      await lift('#editor-pan .ehit[data-ring="bottom"]');
+      await aim("bottom", 200);
+      await touch("touchEnd");
+      await b.waitFor("editorSession.history.past.length === 1", { label: "the underside move to commit" });
+      const moved = { ...before, bottom: [200] };
+      assert.deepEqual(await angleSnapshot(), moved);
+      const shared = await b.eval(`
+        const m = editorSession.history.present;
+        const exported = editorExport(m);
+        if (!exported.code) throw Error(exported.reason);
+        const imported = editorLoadShare(exported.code);
+        if (!imported.ok) throw Error(imported.reason);
+        const solved = editorSolve(imported.value);
+        return { wire: exported.code[0], rim: editorAnglesOf(solved, "rim"),
+          inner: editorAnglesOf(solved, "inner"), bottom: editorAnglesOf(solved, "bottom") };
+      `);
+      assert.deepEqual(shared, { wire: "B", ...moved });
+      const record = await saveAndReopen(9);
+      assert.deepEqual(record.o.angles.bottom, [200]);
+      assert.deepEqual(await angleSnapshot(), moved);
+    });
+
+    test("EDITOR-RC-NEOTONE-SAVE: a Neotone move occupies the chosen slot after reload", async () => {
+      const map = ["r57", "r58", "r60", null, "r62", "r64", "r65", "r67", null,
+        null, null, null, null, null, null, null, null, null];
+      await fixture("(D3) A3 Bb3 C4 D4 E4 F4 G4", { profile: { id: "paired", rev: 3, map } });
+      await b.click("#drawerexp-handle");
+      await lift('#editor-pan .ehit[data-ring="rim"][data-i="0"]');
+      await touch("touchMove", await center('#editor-pan .eslot[data-slot="3"]'));
+      await b.waitFor('!!document.querySelector("#editor-pan .editor-landing")',
+        { label: "the Neotone landing outline" });
+      await touch("touchEnd");
+      await b.waitFor("editorSession.history.past.length === 1", { label: "the Neotone slot move to commit" });
+      const snapshot = () => b.eval(`
+        const m = editorSession.history.present;
+        return { map: m.options.profile.map, place: editorSolve(m).value.geom.place };
+      `);
+      const moved = await snapshot();
+      assert.equal(moved.map[3], "r57");
+      assert.equal(moved.map[0], null);
+      assert.deepEqual((await saveAndReopen(8)).o.profile.map, moved.map);
+      assert.deepEqual(await snapshot(), moved);
+    });
+
+    test("EDITOR-RC-DUPLICATE: a duplicate drag explains the pitch conflict", async () => {
+      await fixture("(D3) A3 B3 C4 D4 E4 F4 G4");
+      const before = await model();
+      await lift('.tray-note[data-name="B"]');
+      await aim("inner", 90);
+      await touch("touchEnd");
+      await b.waitFor("!!document.querySelector('.placement-rejected-marker')",
+        { label: "the rejected note marker" });
+      assert.deepEqual(await model(), before);
+      assert.equal(await b.eval('return editorEl("editor-status").textContent.trim();'),
+        "B3 wasn’t placed. An exact pitch can appear only once on the handpan.");
+    });
+
+    test("EDITOR-RC-DUPLICATE-REDUCED: duplicate tray and underside drags use the circular refusal", async () => {
+      for (const source of ["tray", "bottom"]) {
+        const seed = "(D3) A3 B3 C4 D4 E4 F4 G4";
+        await fixture(source === "bottom" ? "[B3] " + seed : seed, {}, 3, 664);
+        await b.send("Emulation.setEmulatedMedia", {
+          features: [{ name: "prefers-reduced-motion", value: "reduce" }]
+        });
+        try {
+          if (source === "bottom") await b.click("#drawerexp-handle");
+          const before = await model();
+          await lift(source === "tray" ? '.tray-note[data-name="B"]' : '#editor-pan .ehit[data-ring="bottom"]');
+          await aim("inner", 90);
+          await touch("touchEnd");
+          await b.waitFor("!!document.querySelector('.placement-rejected-marker')",
+            { label: "the reduced-motion rejection marker" });
+          const result = await b.eval(`
+            const marker = document.querySelector(".placement-rejected-marker");
+            const note = marker.querySelector(".placement-rejected-note");
+            const rect = note.getBoundingClientRect();
+            return { width: rect.width, height: rect.height, radius: getComputedStyle(note).borderRadius,
+              animation: getComputedStyle(marker).animationName,
+              error: editorEl("editor-status").textContent.trim() };
+          `);
+          assert.deepEqual(result, {
+            width: 44, height: 44, radius: "50%", animation: "none",
+            error: "B3 wasn’t placed. An exact pitch can appear only once on the handpan."
+          });
+          assert.deepEqual(await model(), before);
+        } finally {
+          await b.send("Emulation.setEmulatedMedia", { features: [] });
+        }
+      }
+    });
+  });
 
   describe("D13 layout", () => {
     const IDS = ["editor-back", "editor-line", "editor-pan", "editor-hint-toggle", "editor-tabs", "editor-tab-scale", "editor-tab-layout", "editor-panels", "editor-undo", "editor-more",
@@ -819,7 +1086,7 @@ function run() {
   });
 
   describe("D10 the Back prompt", () => {
-    test("a clean panel closes with no prompt", async () => {
+    test((process.env.HPC_EDITOR_HOSTED_URL ? "EDITOR-EXIT-CLEAN: " : "") + "a clean panel closes with no prompt", async () => {
       await fresh();
       await openBuiltin();
       await b.click("#editor-back");
@@ -827,7 +1094,7 @@ function run() {
       assert.strictEqual(await dialogOpen(), false);
     });
 
-    test("Keep editing returns to the panel with the edit intact", async () => {
+    test((process.env.HPC_EDITOR_HOSTED_URL ? "EDITOR-EXIT-KEEP: " : "") + "Keep editing returns to the panel with the edit intact", async () => {
       await fresh();
       await openAdd();
       await typeLine(SCALE);
@@ -849,6 +1116,28 @@ function run() {
       assert.strictEqual(await sheetHidden(), false);
     });
 
+    if (process.env.HPC_EDITOR_HOSTED_URL) test("EDITOR-EXIT-INVALID: Back lets an invalid draft exit without saving", async () => {
+      await fresh(380, 667);
+      const before = await savedCount();
+      await b.click("#strip-add");
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "Add opens the editor" });
+      await typeLine(SCALE);
+      await typeLine("invalid notation", { commit: false });
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true);
+      assert.strictEqual(await b.eval(`
+        const discard = document.getElementById("editor-dlg-discard");
+        const rect = discard.getBoundingClientRect();
+        return document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) === discard;
+      `), true, "Discard is hittable");
+      await b.click("#editor-dlg-keep");
+      assert.strictEqual(await text(), "invalid notation");
+      await b.click("#editor-back");
+      await b.click("#editor-dlg-discard");
+      assert.strictEqual(await sheetHidden(), true);
+      assert.strictEqual(await savedCount(), before);
+    });
+
     test("Discard closes and saves nothing", async () => {
       await fresh();
       const before = await savedCount();
@@ -860,7 +1149,7 @@ function run() {
       assert.strictEqual(await savedCount(), before);
     });
 
-    test("Save saves the scale and closes", async () => {
+    test((process.env.HPC_EDITOR_HOSTED_URL ? "EDITOR-EXIT-SAVE: " : "") + "Save saves the scale and closes", async () => {
       await fresh();
       const before = await savedCount();
       await openAdd();
