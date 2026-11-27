@@ -5257,21 +5257,38 @@ function run() {
       assert.ok(mag <= 1.02, "magnification " + mag);
     });
 
-    test("P0 region: the controls scroll inside #editor-region, the tab strip stays pinned, the region rests with the name clear of the strip, and the page does not scroll", async () => {
-      await open(375, 548);
-      const r = await rects(375, 548);
-      assert.ok(r.region && r.region.oy === "auto" && r.region.sh > r.region.h, "375x548 region overflows: " + JSON.stringify(r.region));
-      const rest = await b.eval(`const rg = document.getElementById("editor-region"), n = document.getElementById("editor-name").getBoundingClientRect(), t = document.getElementById("editor-tabs").getBoundingClientRect();
-        return { rest: editorRegionRest(rg), clear: n.top >= t.bottom - 0.5 };`);
-      assert.ok(Math.abs(r.region.st - rest.rest) <= 1 && r.region.st < r.region.sh - r.region.h && rest.clear, "rests short of its end with the name clear of the strip: " + JSON.stringify([r.region, rest]));
-      assert.ok(r.tray.top >= r.region.top && r.tray.top < r.bar.top, "the tray starts in view at rest");
-      assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor-tabs")).position;`), "sticky");
-      assert.ok(Math.abs(r.tabs.top - r.region.top) <= 1, "the strip is pinned at the region top");
-      assert.ok(r.page && r.panel, "neither the page nor #editor scrolls");
-      await b.click("#editor-tab-layout");
-      await pause(100);
-      const l = await rects(375, 548);
-      assert.strictEqual(l.region.st, 0, "a tab switch opens the chosen panel from the top of the region");
+    test("P0 drawer scroll and rotation keep pinned actions reachable without scrolling the page", async () => {
+      await open(375, 360);
+      const drawer = () => b.eval(`
+        const body = document.getElementById("drawerexp-body"), rect = body.getBoundingClientRect();
+        const rail = document.querySelector("#editor .editor-toolbar").getBoundingClientRect();
+        const name = document.getElementById("editor-name"), n = name.getBoundingClientRect();
+        const tabs = document.getElementById("editor-tabs").getBoundingClientRect();
+        const centerHit = id => {
+          const el = document.getElementById(id), r = el.getBoundingClientRect();
+          return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        };
+        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2,
+          scroll: body.scrollTop, max: body.scrollHeight - body.clientHeight, top: rail.top, bottom: rail.bottom,
+          page: document.documentElement.scrollTop === 0 && document.getElementById("editor").scrollTop === 0,
+          nameClear: n.top >= tabs.bottom - 1, nameHit: centerHit("editor-name"),
+          controls: ["editor-undo", "editor-save", "editor-more"].map(centerHit) };
+      `);
+      const before = await drawer();
+      assert.ok(before.max > 0 && before.scroll === 0 && before.nameClear && before.nameHit, JSON.stringify(before));
+      assert.deepStrictEqual(before.controls, [true, true, true]);
+      await b.send("Input.dispatchMouseEvent", {
+        type: "mouseWheel", x: before.x, y: before.y, deltaX: 0, deltaY: 160
+      });
+      await b.waitFor('document.getElementById("drawerexp-body").scrollTop > 0', { label: "the drawer body to scroll" });
+      const after = await drawer();
+      assert.ok(after.page && Math.abs(after.top - before.top) < 1 && Math.abs(after.bottom - before.bottom) < 1, JSON.stringify(after));
+      assert.deepStrictEqual(after.controls, [true, true, true]);
+      await b.setViewport(844, 390, true);
+      await b.waitFor('drawerExperiment.state === "OPEN"', { label: "the rotated drawer to open" });
+      const rotated = await drawer();
+      assert.ok(rotated.page && rotated.top >= 0 && rotated.bottom <= 390, JSON.stringify(rotated));
+      assert.deepStrictEqual(rotated.controls, [true, true, true]);
     });
 
     const openPlacementHelp = async () => {
@@ -5435,22 +5452,37 @@ function run() {
     });
 
     for (const [w, h, kh] of [[375, 667, 360], [360, 640, 330]]) {
-      test(`P0 name focus ${w}x${kh}: focused by a real tap, Name is fully in view with the toolbar; unfocused the pan is at least 120 and the toolbar stays in view`, async () => {
+      test(`P0 name focus ${w}x${kh}: both text inputs stay reachable without shrinking the pan on focus`, async () => {
         await open(w, h);
-        await b.eval(`document.getElementById("editor-region").scrollTop = 0; return true;`);
         await b.click("#editor-name");
         assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-name");
         await b.setViewport(w, kh, true);
-        await pause(500);
-        const f = await rects(w, kh);
-        assert.ok(f.name.top >= 0 && f.name.bottom <= kh && f.name.h >= 44, `${w}x${kh} Name in view: ` + JSON.stringify(f.name));
-        assert.ok(f.bar.top >= f.name.bottom - 1 && f.bar.bottom <= kh, "toolbar in view below Name");
-        assert.ok(await b.eval(`const t = document.getElementById("editor-tabs").getBoundingClientRect(), n = document.getElementById("editor-name").getBoundingClientRect(); return n.top >= t.bottom - 1;`), "Name is not covered by the pinned tab strip");
-        await b.eval(`document.activeElement.blur(); return true;`);
-        await pause(300);
-        const u = await rects(w, kh);
-        assert.ok(u.svg.h >= 119 && u.bar.top >= 0 && u.bar.bottom <= kh && u.page, `${w}x${kh} unfocused pan ${u.svg.h}`);
-        assert.ok(u.svg.h > f.svg.h, "focus released pan room to Name");
+        await b.waitFor(`innerHeight === ${kh} && document.activeElement.id === "editor-name"`, { label: "Name stays focused in the shorter viewport" });
+        const focused = await rects(w, kh);
+        assert.ok(focused.name.top >= 0 && focused.name.bottom <= kh && focused.name.h >= 44, JSON.stringify(focused.name));
+        assert.ok(focused.bar.top >= focused.name.bottom - 1 && focused.bar.bottom <= kh, "pinned toolbar stays visible below Name");
+        assert.ok(await b.eval(`const t = document.getElementById("editor-tabs").getBoundingClientRect(), n = document.getElementById("editor-name").getBoundingClientRect(); return n.top >= t.bottom - 1;`), "Name is not covered by the tabs");
+        await b.click("#editor-title");
+        await b.waitFor('document.activeElement.id !== "editor-name"', { label: "Name to lose focus" });
+        const unfocused = await rects(w, kh);
+        assert.ok(unfocused.svg.h >= 119 && unfocused.bar.bottom <= kh && unfocused.page, JSON.stringify(unfocused));
+        assert.ok(Math.abs(unfocused.svg.h - focused.svg.h) < 1, `Name focus: pan ${unfocused.svg.h} -> ${focused.svg.h}`);
+        await b.click("#editor-line");
+        assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-line");
+        const line = await rects(w, kh);
+        assert.ok(line.bar.top >= 0 && line.bar.bottom <= kh && line.page, JSON.stringify(line.bar));
+        assert.ok(Math.abs(unfocused.svg.h - line.svg.h) < 1, `Scale focus: pan ${unfocused.svg.h} -> ${line.svg.h}`);
+        await b.key("Escape", "Escape", 27);
+        if (await b.eval(`return drawerExperiment.expanded;`)) await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to expose the rim" });
+        const rim = await b.eval(`
+          const shell = document.querySelector('#editor-pan svg > circle[r="100"]').getBoundingClientRect();
+          const handle = document.getElementById("drawerexp-handle").getBoundingClientRect();
+          return { left: shell.left, right: shell.right, top: shell.top,
+            bottom: shell.bottom, width: shell.width, height: shell.height, drawerTop: handle.top };
+        `);
+        assert.ok(rim.left >= 0 && rim.right <= w && rim.top >= 0 && rim.bottom <= rim.drawerTop + 1 &&
+          Math.abs(rim.width - rim.height) < 1, JSON.stringify(rim));
       });
     }
 
