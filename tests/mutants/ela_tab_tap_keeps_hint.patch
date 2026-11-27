@@ -1,5 +1,5 @@
-# kills: counts: both hint lines render under the counts on both tabs
-# suite: node --test --test-name-pattern counts.*both.hint.lines tests/editor_e2e.test.js
+# kills: counts: Placement help opens above the visible controls on either tab
+# suite: node --test --test-name-pattern ^counts:.Placement.help.opens tests/editor_e2e.test.js
 # fault: Switching tabs closes the open hint card, so the hint no longer follows the tab switch.
 diff --git a/index.html b/index.html
 --- a/index.html

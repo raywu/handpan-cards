@@ -1,15 +1,15 @@
-# kills: D9 / SE-12: an add that resets a custom rim seat order says so, with Undo
-# suite: node --test --test-name-pattern ^D9...SE-12..an.add.that.resets.a.custom.rim.seat.order.says.so..with.Undo$ tests/editor_e2e.test.js
-# fault: The notice that the custom seat order was reset is never shown.
+# kills: D9 / SE-12: Guided rim growth re-spaces typed custom seats and Undo restores them
+# suite: node --test --test-name-pattern ^D9.*Guided.rim.growth tests/editor_e2e.test.js
+# fault: The banner omits the re-spacing confirmation after a Guided placement.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13966,7 +13966,7 @@ function editorDo(step, say, mark) {
-   s.notice = !!(res.notice && res.notice.pinsReset);
-   if (res.notice && res.notice.stageRefused) s.error = res.notice.stageRefused;
-   const firstDing = say && !editorDingOf(prev) ? editorFirstDingSay(say) : say;
--  s.say = res.notice && res.notice.seatsReset ? t("editor.seats_reset") : firstDing || "";
-+  s.say = false ? t("editor.seats_reset") : firstDing || "";
-   return true;
- }
- const EDITOR_TRAY = { sharps: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"], flats: ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"] };
+@@ -16636,7 +16636,7 @@
+   }
+   return {
+     step: model => model === m ? accepted : editorRefusal(name),
+-    say: projection.reflow ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
++    say: false ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
+       : ref ? t("editor.say.moved", { name }) : editorPlaceSay(name, { ring }),
+     guided: { ring, id: name, projection, solved: accepted.solved }
+   };

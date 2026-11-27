@@ -1,6 +1,6 @@
-# kills: U2f move at 375x667: a placed cyclops note dragged along its arc moves to the drop angle, pinned, in one Undo step
-# suite: node --test --test-name-pattern ^U2f.move.*cyclops tests/editor_e2e.test.js
-# fault: A cyclops note dropped on its own arc no longer moves.
+# kills: U2f move at 375x667: a Cyclops note snaps to the visible Guided landing and Undo restores its seat
+# suite: node --test --test-name-pattern ^U2f.move.*Cyclops tests/editor_e2e.test.js
+# fault: A Cyclops note dropped on its own arc no longer moves.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

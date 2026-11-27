@@ -1,6 +1,6 @@
-# kills: MT first Tab from the control before the covered Undo moves focus on at once and never stalls
-# suite: node --test --test-name-pattern ^MT.first.Tab tests/editor_e2e.test.js
-# fault: The very first Tab of the page keeps visibility-hidden stops, so a first Tab from the control before the covered toolbar Undo targets a stop that cannot take focus and stalls; later Tabs filter them.
+# kills: MT visibility-hidden controls do not stall the first or later Tab
+# suite: node --test --test-name-pattern ^MT.visibility-hidden.controls tests/editor_e2e.test.js
+# fault: The first Tab keeps CSS-hidden controls in its stop list.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

@@ -1710,6 +1710,30 @@ function run() {
       assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-undo", "first Tab from " + prev);
     });
 
+    test("MT visibility-hidden controls do not stall the first or later Tab", async () => {
+      await setupLegacy(SCALE);
+      await exposePanRim();
+      await chooseFirstRim();
+      await tapExposedRim(1);
+      const next = await b.eval(`
+        const undo = editorEl("editor-undo"), stops = editorTabStops();
+        const index = stops.indexOf(undo);
+        if (index < 1 || index === stops.length - 1) return null;
+        undo.style.visibility = "hidden";
+        stops[index - 1].focus();
+        return editorTabStops().includes(undo) ? stops[index + 1].id : null;
+      `);
+      assert.ok(next, "a visibility-hidden Undo still has a client rect and sits between stops");
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt) {
+          await b.eval(`const stops = editorTabStops(), undo = editorEl("editor-undo");
+            stops[stops.indexOf(undo) - 1].focus(); return true;`);
+        }
+        await b.key("Tab", "Tab", 9);
+        assert.equal(await b.eval("return document.activeElement.id;"), next);
+      }
+    });
+
     test("Remove deletes the selected note and Undo restores it; tapping the selection again deselects it", async () => {
       await setupLegacy(SCALE);
       await exposePanRim();
@@ -4821,8 +4845,11 @@ function run() {
         assert.deepEqual(await help(), {
           hidden: false, hint: "Drag a note onto the handpan.", count: 4, above: true, sibling: true
         });
+        const otherTab = tab === "scale" ? "layout" : "scale";
+        await b.click("#editor-tab-" + otherTab);
+        assert.equal(await tabNow(), otherTab);
+        assert.equal((await help()).hidden, false, "switching tabs keeps Placement help open");
         await b.click("#editor-hint-close");
-        assert.equal(await tabNow(), tab);
         assert.equal(await b.eval("return document.activeElement.id;"), "editor-more");
       }
     });

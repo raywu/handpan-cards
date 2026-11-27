@@ -1,6 +1,6 @@
-# kills: empty cyclops arc accepts a first note at the 5 degree angle, says it stays, and draws a pin ring
-# suite: node --test --test-name-pattern ^empty.cyclops.arc.accepts tests/editor_e2e.test.js
-# fault: The empty cyclops and bottom zones are drawn only while a note is held.
+# kills: Standard Add keeps resting outlines visible beneath placed notes
+# suite: node --test --test-name-pattern ^Standard.Add.keeps.resting.outlines tests/editor_e2e.test.js
+# fault: Guides only appear during placement, leaving the resting pan without underside outlines.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html

@@ -1,5 +1,5 @@
-# kills: with nothing held, a tap on the empty cyclops arc or bottom band selects the zone and Reset spacing scopes to it
-# suite: node --test --test-name-pattern ^with.nothing.held tests/editor_e2e.test.js
+# kills: zone taps scope Reset to that ring and preserve pins on the other ring
+# suite: node --test --test-name-pattern ^zone.taps.scope.Reset tests/editor_e2e.test.js
 # fault: Tapping an empty zone no longer selects it.
 diff --git a/index.html b/index.html
 --- a/index.html

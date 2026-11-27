@@ -1,7 +1,6 @@
-# kills: with the Undo chip showing, Tab never lands on or stalls at the covered toolbar Undo
-# suite: node --test --test-name-pattern ^with.the.Undo.chip.showing tests/editor_e2e.test.js
-# A mutant: cycleTabStops keeps visibility-hidden stops (the hint-open FA-07 test no longer reaches it, the hint drops those controls first).
-#
+# kills: MT visibility-hidden controls do not stall the first or later Tab
+# suite: node --test --test-name-pattern ^MT.visibility-hidden.controls tests/editor_e2e.test.js
+# fault: The Tab trap keeps CSS-hidden controls in its stop list.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
