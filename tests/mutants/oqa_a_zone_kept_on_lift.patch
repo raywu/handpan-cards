@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16158,7 +16158,6 @@ function editorDragLift(d) {
+@@ -17409,7 +17409,6 @@
    d.live = true;
    s.held = null;
    s.sel = null;
 -  s.zone = null;
    document.querySelectorAll("#editor-pan .esel").forEach((ring) => ring.remove());
-   document.querySelectorAll("#editor-pan .etarget.picked").forEach((ring) => ring.classList.remove("picked"));
-   document.querySelectorAll("#editor-tray .tray-note.on").forEach((chip) => { chip.classList.remove("on"); chip.setAttribute("aria-pressed", "false"); });
+   const pan = editorEl("editor-pan");
+   pan.querySelectorAll(".picked").forEach(mark => mark.classList.remove("picked"));
