@@ -1,15 +1,15 @@
-# kills: P0 375x667: the drawn pan holds its sized height (200 to 212px, so a zero flex basis fails), the page never scrolls and the toolbar is in view
-# suite: node --test --test-name-pattern ^P0.375x667..the.drawn.pan tests/editor_e2e.test.js
-# fault: The pan box shrinks to a flex basis of zero and loses its sized height.
+# kills: P0 375x667: the full rim has its designed size with no page scroll and pinned actions
+# suite: node --test --test-name-pattern ^P0.375x667..the.full.rim tests/editor_e2e.test.js
+# fault: Collapse the flex stage instead of giving the pan its measured height.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -929,7 +929,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- @keyframes editor-arrive{from{transform:translateY(4px); opacity:.6} to{transform:none; opacity:1}}
- @media (prefers-reduced-motion:reduce){#editor-status.arrive{animation:none}}
- #editor-status .mode{min-height:32px; padding:4px 10px}
--#editor .editor-panbox{flex:0 0 auto; min-height:0;
-+#editor .editor-panbox{flex:1 1 0; min-height:0;
-   height:max(120px, min(max(200px, min(50vh, 100cqw, 520px)), calc(100vh - var(--ed-k))));
-   height:max(120px, min(max(200px, min(50dvh, 100cqw, 520px)), calc(100dvh - var(--ed-k)))); display:flex; align-items:center; justify-content:center; position:relative;
-   transform-origin:50% 0; transition:transform 220ms cubic-bezier(.2,.8,.2,1)}
+@@ -15356,7 +15356,7 @@
+   #scale-sheet.onepanel #editor{position:relative;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:6px;padding-bottom:0!important}
+   #editor #editor-line{font-size:16px}
+   #editor #editor-line::placeholder,#editor #editor-name::placeholder{color:#77716a;opacity:1}
+-  #editor .panexp-stage{position:relative;flex:0 0 auto;margin-inline:-10px;width:calc(100% + 20px);overflow:visible}
++  #editor .panexp-stage{position:relative;flex:0 1 0;max-height:0;margin-inline:-10px;width:calc(100% + 20px);overflow:visible}
+   #editor .panexp-stage>.editor-panbox{height:100%!important;width:100%;min-height:0;transition:none;transform-origin:0 0}
+   #editor .drawerexp{position:absolute;z-index:8;bottom:var(--rail-height,60px);left:0;right:0;background:#F6F4ED;border-top:1px solid #8A847B;box-shadow:0 -5px 16px #24242414;transform:translateY(var(--drawerexp-offset,0px));transition:transform 180ms cubic-bezier(.2,.8,.2,1);isolation:isolate}
+   #editor .drawerexp-row{display:flex;gap:8px;align-items:center;min-height:44px;padding-inline:12px;box-sizing:border-box}
