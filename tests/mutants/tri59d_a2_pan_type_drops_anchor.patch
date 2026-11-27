@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14717,7 +14717,7 @@
-     next.pins = previous.pins;
-   } else {
-     if (kind === "neotone") {
--      if (next.options.anchor === "one") delete next.options.anchor;
-+      delete next.options.anchor;
-       const profile = editorProfileFor(next.fields);
-       if (!profile) return editorRefusal(t("editor.neotone"));
-       next.options.profile = profile;
+@@ -14962,7 +14962,7 @@
+   delete options.seats;
+   delete options.angles;
+   delete options.guided;
+-  if (kind === "neotone") { delete options.mirror; delete options.mirrorBottom; }
++  if (kind === "neotone") { delete options.mirror; delete options.mirrorBottom; delete options.anchor; }
+   const draft=editorWithStage({...m,fields:{},options,pins:[],layoutHints:hints},stage);
+   const result=editorStageSettle(draft,stage);
+   if (!result.ok) return editorAreaRefusal("SWITCH_LAYOUT",result.reason);
