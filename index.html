@@ -13836,11 +13836,11 @@ function editorStageOf(m) {
 function editorStageNames(m, ring) {
   const st = editorStageOf(m);
   if (st.kind === "standard") return st[ring];
-  return ring === "rim" ? st.main : ring === "bottom" ? st.mutant.filter(Boolean) : [];
+  return ring === "rim" ? st.main.filter(Boolean) : ring === "bottom" ? st.mutant.filter(Boolean) : [];
 }
 function editorStageMap(st) {
   const map = new Array(NEO_SLOTS).fill(null);
-  st.main.forEach((n, k) => { map[k] = editorNeoKeyOfName("rim", n).key; });
+  st.main.forEach((n, k) => { if (n) map[k] = editorNeoKeyOfName("rim", n).key; });
   st.mutant.forEach((n, k) => { if (n) map[NEO_MAIN + k] = editorNeoKeyOfName("bottom", n).key; });
   return map;
 }
@@ -13896,7 +13896,7 @@ function editorStageClearPins(m, st) {
 function editorStageCommit(m, stage, landedKey) {
   const std = stage.kind === "standard";
   const staged = editorWithStage(m, stage);
-  if (!stage.ding || !(std ? stage.rim.length : stage.main.length)) return { ok: true, value: staged };
+  if (!stage.ding || !(std ? stage.rim.length : stage.main.some(Boolean))) return { ok: true, value: staged };
   let built;
   if (std) {
     const angles = editorStageAngles(stage);
@@ -13907,7 +13907,7 @@ function editorStageCommit(m, stage, landedKey) {
       if (lost) return editorNoRoom(built.value, "bottom", lost.i, angles.bottom[lost.i]);
     }
   } else {
-    built = editorNeoBuild(staged, { rim: stage.main, inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
+    built = editorNeoBuild(staged, { rim: stage.main.filter(Boolean), inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
   }
   if (!built.ok) return built.code === "NO_FIFTH" ? { ok: true, value: staged } : built;
   return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
@@ -13951,9 +13951,10 @@ function editorStagePush(st, ring, name, angle) {
 }
 // A ring's i-th note, in the list it lives in (a Neotone bottom note is the i-th non-null mutant).
 function editorStageAt(st, ring, i) {
-  if (st.kind === "standard" || ring === "rim") return { list: st.kind === "standard" ? st[ring] : st.main, at: i };
-  const holes = st.mutant.map((n, k) => (n ? k : -1)).filter((k) => k >= 0);
-  return { list: st.mutant, at: holes[i] };
+  if (st.kind === "standard") return { list: st[ring], at: i };
+  const list = ring === "rim" ? st.main : st.mutant;
+  const at = Array.from(list.keys()).filter(k => list[k])[i];
+  return { list, at };
 }
 function editorStageSet(st, ref, name) {
   const bad = editorStageNameOk(name);
@@ -13975,8 +13976,11 @@ function editorStageSwap(st, a, b) {
   put(b, na);
   return null;
 }
-function editorStageNeoRemove(st, ring, i) {
-  if (ring === "rim") {
+function editorStageNeoRemove(st, ring, i, fixed) {
+  if (fixed) {
+    const { list, at } = editorStageAt(st, ring, i);
+    list[at] = null;
+  } else if (ring === "rim") {
     st.main.splice(i, 1);
     st.mutant.splice(i, 1);
   } else {
@@ -13985,27 +13989,33 @@ function editorStageNeoRemove(st, ring, i) {
   return null;
 }
 function editorStageNeoRef(st, slot) {
-  if (slot < NEO_MAIN) return st.main[slot] === undefined ? null : { ring: "rim", i: slot };
+  if (slot < NEO_MAIN) return st.main[slot] ? { ring: "rim", i: st.main.slice(0, slot).filter(Boolean).length } : null;
   return st.mutant[slot - NEO_MAIN] ? { ring: "bottom", i: st.mutant.slice(0, slot - NEO_MAIN).filter(Boolean).length } : null;
 }
-const editorStageNeoSlotOf = (st, ref) => (ref.ring === "rim" ? ref.i : editorStageAt(st, "bottom", ref.i).at + NEO_MAIN);
-function editorStageNeoPut(st, slot, name) {
+const editorStageNeoSlotOf = (st, ref) => (ref.ring === "rim" ? editorStageAt(st, "rim", ref.i).at : editorStageAt(st, "bottom", ref.i).at + NEO_MAIN);
+function editorStageNeoPut(st, slot, name, fixed) {
   const ring = slot < NEO_MAIN ? "rim" : "bottom";
   const here = editorStageNeoRef(st, slot);
   const clash = editorStageClash(st, ring, name, here ? editorStageAt(st, ring, here.i).list[editorStageAt(st, ring, here.i).at] : undefined);
   if (clash) return clash;
   if (slot < NEO_MAIN) {
-    if (here) st.main[slot] = String(name);
+    if (fixed || here) st.main[slot] = String(name);
     else st.main.push(String(name));
   } else {
-    st.mutant = Array.from({ length: st.main.length }, (_, k) => st.mutant[k] || null);
+    if (!fixed) st.mutant = Array.from({ length: st.main.length }, (_, k) => st.mutant[k] || null);
     st.mutant[slot - NEO_MAIN] = String(name);
   }
   return null;
 }
 // Moving a note along its row: the main row swaps notes (a move to a gap changes nothing, the
 // row being dense), the mutant row swaps its fields.
-function editorStageNeoMove(st, from, to) {
+function editorStageNeoMove(st, from, to, fixed) {
+  if (fixed) {
+    const row = from < NEO_MAIN ? st.main : st.mutant;
+    const a = from % NEO_MAIN, b = to % NEO_MAIN;
+    [row[a], row[b]] = [row[b] || null, row[a]];
+    return null;
+  }
   if (from < NEO_MAIN) {
     if (st.main[to] === undefined) return null;
     [st.main[from], st.main[to]] = [st.main[to], st.main[from]];
@@ -14052,14 +14062,14 @@ function editorNameEntry(name, zone, label) {
 function editorGhostSolve(m, strict) {
   const st = editorStageOf(m);
   const std = st.kind === "standard";
-  const rim = std ? st.rim : st.main;
+  const rim = std ? st.rim : st.main.filter(Boolean);
   const inner = std ? st.inner : [];
   const bottom = std ? st.bottom : st.mutant;
   const hasDing = !!st.ding;
   const ding = st.ding || "D3";
   const ours = (k) => Math.min(k, 12);
   const shape = (entry, name) => { const [l, o, midi] = editorNameEntry(name, entry[3], entry[5]); return [l, o, midi, entry[3], entry[4], entry[5]]; };
-  if (!std && !rim.length) {
+  if (!std && !rim.length && !bottom.some(Boolean)) {
     const bare = HPE.layout.solve({ fields: {}, options: m.options });
     if (!bare.ok) return bare;
     return { ok: true, value: { ...bare.value, fields: { 0: editorNameEntry(ding, "ding", "Ding") }, staged: true, hasDing } };
@@ -14071,7 +14081,8 @@ function editorGhostSolve(m, strict) {
   let options = { ...m.options, seats: null, angles: null };
   if (!std) {
     const map = new Array(NEO_SLOTS).fill(null);
-    fillRim.forEach((n, k) => { map[k] = editorNeoKeyOfName("rim", n).key; });
+    const slots = Array.from(st.main.keys()).filter(k => st.main[k]);
+    fillRim.forEach((n, k) => { map[slots[k] ?? 0] = editorNeoKeyOfName("rim", n).key; });
     fillBottom.forEach((n, k) => { if (n) map[NEO_MAIN + k] = editorNeoKeyOfName("bottom", n).key; });
     options = { ...options, profile: { ...options.profile, map } };
   }
@@ -14154,11 +14165,11 @@ function editorNeoKeyOfName(ring, name) {
 function editorNeoPut(m, slot, name) {
   const map = m.options.profile.map;
   if (!Number.isInteger(slot) || slot < 0 || slot >= NEO_SLOTS) return editorRefusal(slot);
-  if (slot >= NEO_MAIN && map[slot - NEO_MAIN] === null) return editorNeoEmptyField(slot - NEO_MAIN + 1);
+  if (m.options.profile.rev !== 3 && slot >= NEO_MAIN && map[slot - NEO_MAIN] === null) return editorNeoEmptyField(slot - NEO_MAIN + 1);
   const ring = editorNeoRingOf(slot);
   const keyed = editorNeoKeyOfName(ring, name);
   if (!keyed.ok) return keyed;
-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoPut(st, slot, name), keyed.key);
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoPut(st, slot, name, m.options.profile.rev === 3), keyed.key);
   const parts = editorPartsOf(m);
   const old = editorNeoRef(m, slot);
   if (old) parts[ring].splice(old.i, 1);
@@ -14179,15 +14190,15 @@ function editorNeoMove(m, from, to) {
   if (!Number.isInteger(from) || !Number.isInteger(to) || map[from] === null || map[from] === undefined || to < 0 || to >= NEO_SLOTS) return editorRefusal("move");
   if (editorNeoRingOf(from) !== editorNeoRingOf(to)) return editorNeoOwnRow();
   if (from === to) return { ok: true, value: m };
-  if (to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoMove(st, from, to));
+  if (m.options.profile.rev !== 3 && to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoMove(st, from, to, m.options.profile.rev === 3));
   const next = map.slice();
   [next[from], next[to]] = [next[to], next[from]];
   return editorNeoBuild(m, editorPartsOf(m), next, map[from]);
 }
 function editorRemoveNeotone(m, ring, i) {
   if (!EDITOR_RINGS.includes(ring) || !Number.isInteger(i) || i < 0 || i >= editorNames(m, ring).length) return editorRefusal(ring + i);
-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoRemove(st, ring, i));
+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoRemove(st, ring, i, m.options.profile.rev === 3));
   const key = profileKeyOf(m.fields[ringIds(m.fields, ring)[i]]);
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
@@ -14720,8 +14731,8 @@ function editorPanType(m, kind) {
       if (next.options.anchor === "one") delete next.options.anchor;
       const profile = editorProfileFor(next.fields);
       if (!profile) return editorRefusal(t("editor.neotone"));
-      next.options.profile = profile;
       next.options.mirror = false;
+      next.options.profile = profile;
     }
   }
   const solved = editorSolve(next);

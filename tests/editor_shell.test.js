@@ -40,6 +40,33 @@ test("fixed Neotone keeps surviving slots through typed and visual edits", () =>
   assert.strictEqual(results.same, true);
 });
 
+test("fixed Neotone drafts preserve sparse slots and unpaired mutants", () => {
+  const a = app();
+  const result = plain(a.get(`(() => {
+    const profile = { id: "paired", rev: 3, map: Array(18).fill(null) };
+    const empty = editorEmptyModel();
+    let m = editorWithStage({ ...empty, options: { ...empty.options, profile } }, editorBlankStage("neotone"));
+    m = editorNeoPut(m, 6, "A3").value;
+    m = editorNeoPut(m, 13, "E3").value;
+    const first = m.options.profile.map;
+    m = editorNeoMove(m, 6, 3).value;
+    const moved = m.options.profile.map;
+    const solved = editorSolve(m).ok;
+    m = editorRemove(m, "rim", 0).value;
+    return { first, moved, remaining: m.options.profile.map, solved };
+  })()`));
+  const expected = Array(18).fill(null);
+  expected[6] = "r57";
+  expected[13] = "b52";
+  assert.deepStrictEqual(result.first, expected);
+  expected[6] = null;
+  expected[3] = "r57";
+  assert.deepStrictEqual(result.moved, expected);
+  assert.strictEqual(result.solved, true);
+  expected[3] = null;
+  assert.deepStrictEqual(result.remaining, expected);
+});
+
 test("mode round trips preserve Guided seats and legacy Neotone share layouts", () => {
   const a = app();
   const codes = plain(a.get(`(() => {
