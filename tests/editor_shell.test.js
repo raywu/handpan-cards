@@ -1893,10 +1893,10 @@ test("RCF-2: a new scale's first bottom note on the empty stage is staged at 270
   const a = app();
   asSession(a, "new");
   placeAll(a, [["bottom", "A2"]]);
-  assert.deepStrictEqual(plain(a.get("__m.stage")), { kind: "standard", rim: [], inner: [], bottom: ["A2"], angles: [270] });
+  assert.deepStrictEqual(plain(a.get("__m.stage")), { kind: "standard", rim: [], inner: [], bottom: ["A2"], angles: { bottom: [270] } });
   assert.strictEqual(solvedOf(a).A2.angle, 270, "the ghost draws it at 270");
   placeAll(a, [["bottom", "A2"], ["bottom", "B2"]]);
-  assert.deepStrictEqual(plain(a.get("__m.stage.angles")), [270, null], "only the first pushed bottom note carries the default");
+  assert.deepStrictEqual(plain(a.get("__m.stage.angles")), { bottom: [270, null] }, "only the first pushed bottom note carries the default");
 });
 
 test("RCF-3: committing a staged new scale pins the 270 note, keeps it U1 and registers the pin", () => {
@@ -1959,7 +1959,7 @@ test("RCF-7: a tapped or dragged bottom angle is kept on the empty stage and win
     const a = app();
     asSession(a, kind);
     placeAll(a, [["bottom", "A2", 100], ["bottom", "B2"]]);
-    assert.deepStrictEqual(plain(a.get("__m.stage.angles")), [100, null], String(kind));
+    assert.deepStrictEqual(plain(a.get("__m.stage.angles")), { bottom: [100, null] }, String(kind));
     placeAll(a, [["bottom", "A2", 100], ["bottom", "B2", 200], ["rim", "A3"], ["rim", "Bb3"], ["rim", "C4"], ["rim", "D4"]]);
     a.run(`__m = editorReplaceDing(__m, "D3").value; true`);
     assert.deepStrictEqual(plain(a.get("__m.options.angles")), { bottom: [100, 200] }, String(kind));
@@ -1996,11 +1996,11 @@ test("RCF-8: staged bottom angles stay aligned through set, swap and remove", ()
   asSession(a, "new");
   placeAll(a, [["bottom", "A2", 100], ["bottom", "B2", 200], ["bottom", "C3", 300]]);
   a.run(`__m = editorReplace(__m, "bottom", 1, "G2").value; true`);
-  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["A2", "G2", "C3"], [100, 200, 300]], "set keeps the slot's angle");
+  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["A2", "G2", "C3"], { bottom: [100, 200, 300] }], "set keeps the slot's angle");
   a.run(`__m = editorSwapNames(__m, { ring: "bottom", i: 0 }, { ring: "bottom", i: 2 }).value; true`);
-  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["C3", "G2", "A2"], [100, 200, 300]], "swap trades names, each slot keeps its angle");
+  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["C3", "G2", "A2"], { bottom: [100, 200, 300] }], "swap trades names, each slot keeps its angle");
   a.run(`__m = editorRemove(__m, "bottom", 0).value; true`);
-  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["G2", "A2"], [200, 300]]);
+  assert.deepStrictEqual(plain(a.get("[__m.stage.bottom, __m.stage.angles]")), [["G2", "A2"], { bottom: [200, 300] }]);
   a.run(`__m = editorRemove(editorRemove(__m, "bottom", 0).value, "bottom", 0).value; true`);
   assert.strictEqual(a.get("__m.stage.angles"), undefined, "the key is omitted when no angle is left");
 });
