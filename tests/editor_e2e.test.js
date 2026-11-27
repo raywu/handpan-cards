@@ -7263,7 +7263,7 @@ function run() {
       await openAdd(3);
       await b.click('.tray-note[data-name="A"]');
       await place("bottom");
-      assert.deepStrictEqual(await b.eval(`return editorSession.history.present.stage.angles;`), [270]);
+      assert.deepStrictEqual(await b.eval(`return editorSession.history.present.stage.angles.bottom;`), [270]);
       assert.strictEqual(await b.eval(`const f = editorSolve(editorSession.history.present).value.fields; return Object.values(f).find((x) => x[3] === "bottom")[4];`), 270);
     });
 
@@ -7303,12 +7303,21 @@ function run() {
       const tap = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
       const solved = () => b.eval(`const s = editorSolve(editorSession.history.present); return Object.fromEntries(Object.values(s.value.fields).filter((f) => f[3] === "bottom").map((f) => [f[0] + f[1], [f[4], f[5]]]));`);
       const buildTop = async () => {
-        await b.click('.tray-note[data-name="D"]');
+        const showTray = async () => {
+          if (!await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+          await b.waitFor('drawerExperiment.state === "OPEN"', { label: "the open tray" });
+        };
+        const arm = async name => {
+          await b.click('.tray-note[data-name="' + name + '"]');
+          await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the exposed pan" });
+        };
+        await showTray();
+        await arm("D");
         await tap(await dingAt());
-        for (const [n, deg] of [["A", 20], ["B", 60], ["C", 100], ["D", 140]]) {
-          await b.click('.tray-note[data-name="' + n + '"]');
-          await tap(await spotAt("rim", deg));
-        }
+        await showTray();
+        await b.click("#editor-oct-up");
+        await arm("A");
+        await tap(await spotAt("rim", 20));
       };
 
       test("tapped angles: A at 100 then a lower C at 200 keep their angles when the scale completes", async () => {
