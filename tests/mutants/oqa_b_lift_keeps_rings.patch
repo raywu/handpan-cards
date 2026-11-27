@@ -1,14 +1,15 @@
-# kills: OQB lift clears rings (
+# kills: OQB lift clears rings (mouse/touch)
 # suite: node --test --test-name-pattern ^OQB.lift.clears.rings tests/editor_e2e.test.js
-# fault: The lift of a drag leaves the stale selection ring, picked zone ring and held chip in place.
+# fault: A lifted drag leaves the selected outline and pressed accessibility state behind.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16159,7 +16159,6 @@ function editorDragLift(d) {
-   s.held = null;
-   s.sel = null;
+@@ -17412,8 +17412,6 @@
    s.zone = null;
--  document.querySelectorAll("#editor-pan .esel").forEach((ring) => ring.remove());
-   document.querySelectorAll("#editor-pan .etarget.picked").forEach((ring) => ring.classList.remove("picked"));
+   document.querySelectorAll("#editor-pan .esel").forEach((ring) => ring.remove());
+   const pan = editorEl("editor-pan");
+-  pan.querySelectorAll(".picked").forEach(mark => mark.classList.remove("picked"));
+-  pan.querySelectorAll('[aria-pressed="true"]').forEach(mark => mark.setAttribute("aria-pressed", "false"));
    document.querySelectorAll("#editor-tray .tray-note.on").forEach((chip) => { chip.classList.remove("on"); chip.setAttribute("aria-pressed", "false"); });
    d.ghost = editorNode("div", { class: "editor-ghost", text: editorDragName(d.src) });
+   document.body.appendChild(d.ghost);
