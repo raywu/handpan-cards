@@ -17578,9 +17578,9 @@ function editorDragMove(e) {
   const solved = pt && editorSolve(editorSession.history.present);
   const zone = solved && solved.ok ? editorHoverZone(solved.value, pt, editorSession.history.present) : null;
   for (const z of document.querySelectorAll("#editor-pan .ezone")) z.classList.toggle("on", z.dataset.ring === zone);
-  editorMarkDrop(target);
+  editorMarkDrop(target, e);
   for (let fit = 0; fit < 4 && window.drawerExperiment?.refreshDrag(e); fit++) {
-    editorMarkDrop(editorDropTarget(e, d.src));
+    editorMarkDrop(editorDropTarget(e, d.src), e);
   }
   if (e.cancelable) e.preventDefault();
 }
@@ -17659,7 +17659,7 @@ function editorLandingAnchor(svg, geom, target) {
   }
   return at;
 }
-function editorMarkDrop(target) {
+function editorMarkDrop(target, pointer) {
   const svg = document.querySelector("#editor-pan svg");
   if (!svg) return;
   for (const c of svg.querySelectorAll(".editor-landing,.guided-seat")) c.remove();
@@ -17669,9 +17669,10 @@ function editorMarkDrop(target) {
     const src = d.src.from === "tray" ? { from: "tray", name: editorDragName(d.src) } : { from: "pan", ref: d.src.ref };
     const model = editorSession.history.present;
     const cached = target.kind === "spot" ? d.guidedPlans?.[target.ring] : null;
-    const plan = target.locked ? d.preview : cached || editorDropPlan(model, src, target);
-    const candidate = drawerProspective(model, plan);
-    const guided = plan.guided;
+    let plan = target.locked ? d.preview : cached || editorDropPlan(model, src, target);
+    let candidate = drawerProspective(model, plan);
+    let guided = plan.guided;
+    const previous = d.preview;
     if (candidate.ok && guided?.insert && guided.ring !== d.preview?.guided.ring) {
       d.preview = editorGuidedShowsProjection(guided.projection) ? plan : null;
       if (d.preview) (d.guidedPlans ||= {})[guided.ring] = d.preview;
@@ -17680,6 +17681,17 @@ function editorMarkDrop(target) {
     const current = editorSolve(model);
     if (current.ok) svg.insertAdjacentHTML("beforeend", editorGuidedNeutralMarks(model, current.value, d.src.ref, shown));
     if (shown) svg.insertAdjacentHTML("beforeend", editorGuidedMarks(shown, model));
+    // A ring can reflow directly under a stationary pointer. Report the
+    // newly drawn target immediately, using the same hit as pointerup.
+    if (pointer && d.preview && d.preview !== previous) {
+      const visible = editorDropTarget(pointer, d.src);
+      if (visible.locked || visible.previewAt) {
+        target = visible;
+        plan = target.locked ? d.preview : editorDropPlan(model, src, target);
+        candidate = drawerProspective(model, plan);
+        guided = plan.guided;
+      }
+    }
     d.ghost.classList.toggle("refuse", !candidate.ok);
     const status = editorEl("editor-status");
     replace = src.from === "tray" && !model.options.profile && target.kind === "note" && editorGuidedZones.includes(target.ring);

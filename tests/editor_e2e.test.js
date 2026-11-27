@@ -2518,6 +2518,15 @@ function run() {
             if (destination === "outside" || destination === "ding") return hit.kind === destination;
             return hit.kind === "spot" && hit.ring === destination;
           };
+          const trayGuided = opts.tray && ["rim", "inner"].includes(destination) && !Number.isInteger(opts.slot);
+          const landingPoint = () => b.eval(`
+            const circle = document.querySelector('#editor-pan .guided-landing[data-insert][data-guided-zone="' + ${JSON.stringify(destination)} + '"] circle');
+            if (!circle) return null;
+            const bounds = circle.getBoundingClientRect();
+            const x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2;
+            return document.elementFromPoint(x, y)?.closest("#editor-pan") ? { x, y } : null;
+          `);
+          const settle = () => b.eval(`return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))));`);
           let point, hit, accepted = false;
           for (const angle of candidates) {
             point = await b.eval(`
@@ -2554,11 +2563,26 @@ function run() {
                 .matrixTransform(svg.getScreenCTM());
               return { x: pt.x, y: pt.y };
             `);
+            if (trayGuided && opts.midpointDelta === undefined) point = await landingPoint() || point;
+            if (opts.midpointDelta !== undefined && !await b.eval(`
+              const m = editorSession.history.present;
+              const pt = editorPanPoint({ clientX: ${point.x}, clientY: ${point.y} });
+              const raw = editorHitAt(editorSolve(m).value, pt, true, m);
+              return raw.kind === "spot" && raw.ring === ${JSON.stringify(destination)};
+            `)) continue;
             await pointer("move", point);
-            if (opts.accept) {
-              // Touch moves can be dispatched to the compositor before the
-              // app observes them. Let the live camera and overlay settle.
-              await b.eval(`return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))));`);
+            // Touch moves can be dispatched to the compositor before the
+            // app observes them. Let the live camera and overlay settle.
+            if (opts.accept || trayGuided) await settle();
+            if (opts.midpointDelta !== undefined &&
+                await b.eval(`return document.querySelector("#editor-pan .ezone.on")?.dataset.ring;`) !== destination) continue;
+            if (trayGuided) {
+              const pictured = await landingPoint();
+              if (pictured && Math.hypot(pictured.x - point.x, pictured.y - point.y) > 1) {
+                point = pictured;
+                await pointer("move", point);
+                await settle();
+              }
             }
             hit = await b.eval(`return editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);`);
             if (validTarget(hit) && (!opts.accept || await opts.accept())) {
@@ -2602,7 +2626,9 @@ function run() {
               let landing;
               await dragPlacedNote(ring, ring, kind, async () => {
                 assert.strictEqual(await ghostText(), pitch);
-                assert.match(await status(), new RegExp(`^Dragging ${pitch}:`));
+                const expected = { rim: `Insert ${pitch} on the rim`, inner: `Insert ${pitch} in Cyclops` }[ring];
+                if (expected) assert.strictEqual(await status(), expected);
+                else assert.match(await status(), new RegExp(`^Dragging ${pitch}:`));
                 landing = await visibleLanding(ring);
                 assert.ok(landing, `the ${ring} landing is drawn before release`);
               }, { tray: chip, angles, accept: async () => !!await visibleLanding(ring) });
@@ -3037,7 +3063,7 @@ function run() {
           assert.strictEqual(await pastLen(), before + 1, "one history step: " + await status());
           states.push(await core());
         };
-        await step(async () => gesture(await chipAt("B"), await spotAt(0.722, 22.5), "mouse"));
+        await step(() => dragPlacedNote("tray", "rim", "mouse", null, { tray: "B" }));
         await step(async () => gesture(await noteAt("rim", 3), await spotAt(1.15, 150), "mouse"));
         await step(() => b.click("#editor-type-neotone"));
         await step(() => b.click("#editor-type-standard"));
@@ -3201,7 +3227,8 @@ function run() {
           test("OQA tap equals drag model (N7): a tap-tap move and a drag from the same start give deep-equal models", async () => {
             await setup(SCALE);
             await b.click("#editor-oct-up");
-            await gesture(await chipAt("E"), await spotAt("inner", 90), kind);
+            await dragPlacedNote("tray", "inner", kind, null, { tray: "E", angles: [90, 120, 60, 150, 30] });
+            assert.ok((await names("inner")).includes("E5"), "the shared starting model contains the pictured insertion");
             const start = await model();
             await gesture(await noteAt("inner", 2), await spotAt("inner", 120), kind);
             const dragged = await model();
@@ -4087,6 +4114,8 @@ function run() {
       await enter();
       await focusKey("zone:inner");
       await enter();
+      assert.match(await activeKey(), /^guided:inner:/, "the area key focuses the pictured Cyclops seat");
+      await enter();
       assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
       assert.strictEqual(await b.eval(`return editorSession.held;`), null);
       await b.click("#editor-oct-down");
@@ -4206,6 +4235,8 @@ function run() {
       await b.eval(`document.querySelector('.tray-note[data-name="B"]').focus(); return true;`);
       await enter();
       await focusKey("zone:inner");
+      await enter();
+      assert.match(await activeKey(), /^guided:inner:/, "the area key focuses the pictured Cyclops seat");
       await enter();
       assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner").length;`), 3);
       await press("z", "KeyZ", 90, 2);
