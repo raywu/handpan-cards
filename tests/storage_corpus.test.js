@@ -380,6 +380,14 @@ const saveAcoustic = async (app, text, name) => {
   await app.getAsync("runGenerate()");
   await settle();
 };
+// The current text editor creates Guided layouts. Use the existing acoustic
+// writer when a fixture specifically needs a pre-Guided record.
+const saveLegacyAcoustic = async (app, text, name) => {
+  const saved = await app.getAsync(`generateDeck(${JSON.stringify(text)}, { name: ${JSON.stringify(name)} })`);
+  assert.strictEqual(saved.ok, true, saved.reason);
+  await settle();
+  assert.strictEqual(envelopeOf(app).entries.find(e => e.record.o?.name === name).record.v, 4);
+};
 const saveFixedPaired = async (app, text, name) => {
   app.els["deck-add"].click();
   app.type(text);
@@ -500,8 +508,8 @@ test("PAU-I: the old client's Edit, Delete of another scale and RESET SEEDED lea
   const { createOrigin } = require("./helpers/sandbox.js");
   const origin = createOrigin({ storage: {} });
   const fresh = await sharedBoot(origin, NEW_HTML);
-  await saveAcoustic(fresh, PA_AMARA, "ACOU A");
-  await saveAcoustic(fresh, "(E3) B3 D4 E4 F#4 G#4", "ACOU B");
+  await saveLegacyAcoustic(fresh, PA_AMARA, "ACOU A");
+  await saveLegacyAcoustic(fresh, "(E3) B3 D4 E4 F#4 G#4", "ACOU B");
   await saveLegacyPaired(fresh, PA_HIJAZ, "PAIRED ONE");
   const pairedRow = envelopeOf(fresh).entries.find((e) => e.record.v === 5);
   assert.ok(pairedRow, "the new client wrote a v5 row");
@@ -659,7 +667,7 @@ test("PAU-I: a record 6 (pinned inner angles) and a record 7 (profile plus betwe
     const label = `${client} v${v}`;
     const origin = createOrigin({ storage: {} });
     const fresh = await sharedBoot(origin, NEW_HTML);
-    await saveAcoustic(fresh, PA_AMARA, "ACOUSTIC ONE");
+    await saveLegacyAcoustic(fresh, PA_AMARA, "ACOUSTIC ONE");
     if (v === 6) await savePinned(fresh, "PINNED SIX");
     else await saveLegacyPaired(fresh, PYGMY_RC, "BETWEEN SEVEN", true);
     const name = v === 6 ? "PINNED SIX" : "BETWEEN SEVEN";
@@ -701,7 +709,7 @@ test("RC-G-RC: rows the RC saved at v4 through v9 stay byte-identical through ma
   const { createOrigin } = require("./helpers/sandbox.js");
   const origin = createOrigin({ storage: {} });
   const rc = await sharedBoot(origin, NEW_HTML);
-  await saveAcoustic(rc, PA_AMARA, "ACOUSTIC FOUR");
+  await saveLegacyAcoustic(rc, PA_AMARA, "ACOUSTIC FOUR");
   await saveLegacyPaired(rc, PA_HIJAZ, "PAIRED FIVE");
   await savePinned(rc, "PINNED SIX");
   await saveLegacyPaired(rc, PYGMY_RC, "BETWEEN SEVEN", true);
@@ -763,7 +771,7 @@ const rgOrigin = async (versions, readable = ["ACOUSTIC ONE"], href, extra = {})
   for (const [i, name] of readable.entries()) await saveAcoustic(fresh, lines[i], name);
   const plan = [];
   for (const [i, v] of versions.entries()) {
-    if (v === 4) await saveAcoustic(fresh, lines[(readable.length + i) % 4], "ACOUSTIC V4 " + i);
+    if (v === 4) await saveLegacyAcoustic(fresh, lines[(readable.length + i) % 4], "ACOUSTIC V4 " + i);
     else if (v === 8) await saveFixedPaired(fresh, lines[i % 4], "NEWER " + i);
     else if (v === 9) await saveGuided(fresh, "NEWER " + i);
     else {
@@ -805,6 +813,9 @@ test("RG: rows above the newest record version seeded into storage stay byte-ide
   assert.ok(!chips(again).some((c) => c.includes("NEWER")), "newer rows are not offered as scales");
 
   await saveAcoustic(again, PA_HIJAZ.replace("B4", "C#5"), "ACOUSTIC THREE");
+  const typed = envelopeOf(again).entries.find((e) => e.record.o?.name === "ACOUSTIC THREE").record;
+  assert.strictEqual(typed.v, 9);
+  assert.ok(typed.o.guided.rim, "ordinary typed Save writes a Guided layout");
   assert.deepStrictEqual(rgNewer(envelopeOf(again)), seeded, "SAVE left the newer rows alone");
   await bytesKept("SAVE kept the newer bytes");
 
