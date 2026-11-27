@@ -236,6 +236,8 @@ function run() {
         await b.click('.tray-note[data-name="C#"]');
         const mark = `#editor-pan .guided-landing[data-guided-zone="${ring}"]`;
         await b.waitFor(`!!document.querySelector(${JSON.stringify(mark)})`, { label: "the growth outline to appear" });
+        assert.equal(await b.eval('return editorEl("editor-status").querySelectorAll("button").length;'), 0,
+          "the Guided placement message leaves the drawn target to handle placement");
         const angle = await b.eval(`return +document.querySelector(${JSON.stringify(mark)}).dataset.angle;`);
         await b.waitFor(`(() => {
           const circle = document.querySelector(${JSON.stringify(mark + " circle")});
@@ -1716,18 +1718,17 @@ function run() {
       assert.strictEqual(r.tall, true, "44px targets");
     });
 
-    test("holding a note exposes Cancel; reopening the drawer, Cancel and Escape each clear the preview (SE-7)", async () => {
+    test("holding a note exposes its Guided preview; reopening the drawer and Escape each clear it (SE-7)", async () => {
       await setup(SCALE);
       const before = await model();
-      for (const dismiss of ["drawer", "cancel", "escape"]) {
+      for (const dismiss of ["drawer", "escape"]) {
         if (!await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
         await b.waitFor('drawerExperiment.state === "OPEN"', { label: "the tray to reopen" });
         await hold("B");
         await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the held note to reveal the pan" });
         assert.equal(await b.eval("return editorHeldName();"), "B4");
-        assert.equal(await b.eval('return editorEl("editor-cancel")?.textContent.trim();'), "Cancel");
+        assert.equal(await b.eval('return editorEl("editor-status").querySelectorAll("button").length;'), 0);
         if (dismiss === "drawer") await b.click("#drawerexp-handle");
-        else if (dismiss === "cancel") await b.click("#editor-cancel");
         else await b.key("Escape", "Escape", 27);
         assert.equal(await b.eval("return editorSession.held;"), null);
         assert.deepEqual(await model(), before);
@@ -2029,7 +2030,7 @@ function run() {
       assert.deepStrictEqual(before.options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, "the typed order is honoured");
       await hold("B");
       await tapOutlinedSeat("rim");
-      assert.match(await status(), /^B4 placed\. rim notes re-spaced\./i);
+      assert.match(await status(), /^B4 placed\. Spacing redistributed for rim notes\./);
       assert.equal((await model()).options.seats?.rim, undefined);
       assert.ok((await rimNames()).includes("B4"));
       await b.click("#editor-undo");
@@ -6836,7 +6837,7 @@ function run() {
       await open(844, 390);
       await seedMessageScale();
       await b.eval(`document.querySelector('.tray-note[data-name="F"]').click(); return true;`);
-      await b.click("#editor-cancel");
+      await b.key("Escape", "Escape", 27);
       await b.waitFor('document.getElementById("editor-status").textContent === ""', { label: "the message to clear" });
       await b.click("#editor-tab-layout");
       assert.equal(await b.eval("return editorSession.tab;"), "layout");
@@ -6851,7 +6852,7 @@ function run() {
         await b.eval(`document.querySelector('.tray-note[data-name="F"]').click(); return true;`);
         const held = await look();
         assert.ok(held.text && !held.idle && held.clip === "none", JSON.stringify(held));
-        await b.click("#editor-cancel");
+        await b.key("Escape", "Escape", 27);
         const source = await b.eval(`
           const chip = document.querySelector(".tray-note");
           chip.scrollIntoView({ block: "nearest" });
@@ -6905,7 +6906,7 @@ function run() {
                 await b.click("#editor-tab-" + id);
                 assert.strictEqual(await b.eval(`return editorSession.tab;`), id, `${name} ${lang} ${w}x${h}: a click at the ${id} tab centre switched to it`);
               }
-              const btn = { held: "#editor-cancel", undo: "#editor-undo" }[name];
+              const btn = name === "undo" ? "#editor-undo" : null;
               if (btn) {
                 const hit = await b.eval(`const e = document.querySelector(${JSON.stringify(btn)}), r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x));`);
                 assert.ok(hit, `${name} ${lang} ${w}x${h}: ${btn} takes its own tap`);
@@ -6936,7 +6937,7 @@ function run() {
         await exposeDrawerControl(selector, target => b.click(target));
         await b.eval(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({ block: "nearest" }); return true;`);
         await b.click(selector);
-        await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+        await b.waitFor("!!editorSession.held && !!editorEl('editor-status').textContent.trim()", { label: "the held prompt" });
       }
       const SO_STATES = {
         empty: async () => true,
