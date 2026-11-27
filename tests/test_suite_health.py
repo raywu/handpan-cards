@@ -895,7 +895,8 @@ class EditorCaseReportTest(unittest.TestCase):
         cases = suite_health.editor_cases(tap)
         self.assertEqual([case["status"] for case in cases],
                          ["pass", "skip", "todo", "cancelled"])
-        self.assertEqual(suite_health.editor_case_problems(cases), [])
+        with mock.patch.object(suite_health, "EDITOR_REQUIRED", {"EDITOR-EXIT-INVALID"}):
+            self.assertEqual(suite_health.editor_case_problems(cases), [])
 
     def test_verifier_rejects_missing_required_case_and_skipped_browser(self):
         path = suite_health.EDITOR_E2E

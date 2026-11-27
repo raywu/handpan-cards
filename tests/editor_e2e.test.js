@@ -823,7 +823,7 @@ function run() {
   });
 
   describe("D10 the Back prompt", () => {
-    test("a clean panel closes with no prompt", async () => {
+    test("EDITOR-EXIT-CLEAN: a clean panel closes with no prompt", async () => {
       await fresh();
       await openBuiltin();
       await b.click("#editor-back");
@@ -831,7 +831,7 @@ function run() {
       assert.strictEqual(await dialogOpen(), false);
     });
 
-    test("Keep editing returns to the panel with the edit intact", async () => {
+    test("EDITOR-EXIT-KEEP: Keep editing returns to the panel with the edit intact", async () => {
       await fresh();
       await openAdd();
       await typeLine(SCALE);
@@ -886,7 +886,7 @@ function run() {
       assert.strictEqual(await savedCount(), before);
     });
 
-    test("Save saves the scale and closes", async () => {
+    test("EDITOR-EXIT-SAVE: Save saves the scale and closes", async () => {
       await fresh();
       const before = await savedCount();
       await openAdd();

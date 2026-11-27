@@ -668,7 +668,7 @@ def emit_python(outfile):
 
 
 EDITOR_E2E = "tests/editor_e2e.test.js"
-EDITOR_REQUIRED = {"EDITOR-EXIT-INVALID"}
+EDITOR_REQUIRED = {"EDITOR-EXIT-CLEAN", "EDITOR-EXIT-INVALID", "EDITOR-EXIT-KEEP", "EDITOR-EXIT-SAVE"}
 _EDITOR_TAP = re.compile(r"^\s*(ok|not ok) \d+ - (EDITOR-[A-Z0-9-]+): (.+)$", re.M)
 
 
