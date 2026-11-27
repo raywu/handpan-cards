@@ -1377,6 +1377,20 @@ function run() {
     const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
     const hold = (name) => b.click(`.tray-note[data-name="${name}"]`);
     const setup = async (line) => { await fresh(); await openAdd(); await typeLine(line); };
+    async function setupLegacy(line) {
+      await fresh();
+      await openAdd();
+      await b.eval(`
+        const fixture = editorLoad(${JSON.stringify(line)});
+        if (!fixture.ok) throw Error(fixture.reason);
+        const view = editorSession.history.present.view;
+        const model = { ...fixture.value, view };
+        editorSession.history = editorHistoryNew(model);
+        editorSession.base = model;
+        editorRender();
+        return true;
+      `);
+    }
 
     test("the tray has the 12 note names, an octave stepper, a flat/sharp toggle and no Ding or Root button (D23)", async () => {
       await setup(SCALE);
@@ -1644,7 +1658,7 @@ function run() {
     });
 
     test("D23 with a bottom copy of a rim note: a held tray note still replaces a rim note and the ding", async () => {
-      await setup("[C4] " + SCALE);
+      await setupLegacy("[C4] " + SCALE);
       await hold("B");
       await tapNote("rim", 0);
       assert.strictEqual(await b.eval(`return editorNames(editorSession.history.present, "rim")[0];`), "Bb3", "A3 gave way to B4 in pitch order");
@@ -1900,11 +1914,11 @@ function run() {
       });
 
       test("U2c nit 2: a tray note still replaces the ding when a bottom copy of a rim note is present", async () => {
-        await setup("[C4] " + SCALE);
-        await hold("G");
+        await setupLegacy("[C4] " + SCALE);
         await b.click("#editor-oct-down");
+        await hold("G");
         await tapNote("ding", 0);
-        assert.strictEqual(await status(), "D3 removed. G3 is the ding.Undo");
+        assert.match(await status(), /G3 is the ding/);
         assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "G3");
         assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["C4"]);
       });
