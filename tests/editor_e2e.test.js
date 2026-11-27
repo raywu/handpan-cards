@@ -4038,14 +4038,21 @@ function run() {
       const stops = await b.eval(`return editorTabStops().length;`);
       await b.eval(`document.getElementById("editor-back").focus(); return true;`);
       const outside = [];
+      const visited = new Set();
       for (let k = 0; k < stops; k += 1) {
         await press("Tab", "Tab", 9);
-        const out = await b.eval(`const active = document.activeElement, q = active.getBoundingClientRect();
+        const focus = await b.eval(`const active = document.activeElement, q = active.getBoundingClientRect();
           const p = (active.closest("#drawerexp-body") || editorEl("editor")).getBoundingClientRect();
-          return q.top < p.top - 1 || q.bottom > p.bottom + 1 ? (active.id || active.className) : null;`);
-        if (out) outside.push(out);
+          return { id: active.id || active.className, outside: q.top < p.top - 1 || q.bottom > p.bottom + 1 };`);
+        visited.add(focus.id);
+        if (focus.outside) outside.push(focus.id);
       }
       assert.deepStrictEqual(outside, []);
+      if (th === 440) {
+        for (const field of ["ding", "top", "inner", "bottom"]) {
+          assert.ok(visited.has("editor-form-" + field), `Tab reaches the ${field} input`);
+        }
+      }
     });
   });
 
@@ -7374,15 +7381,18 @@ function run() {
         return element.contains(document.elementFromPoint((left + right) / 2, (top + bottom) / 2));
       };
       const saveBefore = bounds(editorEl("editor-save"));
-      if (${render}) editorRender();
-      const notes = document.querySelectorAll("#editor-notes button");
-      const first = notes[0], octave = editorEl("editor-flats"), save = editorEl("editor-save");
-      return {
-        drawer: bounds(drawer), strip: bounds(editorEl("editor-tabs")), first: bounds(first), octave: bounds(octave),
-        firstHit: hitOwn(first), octaveHit: hitOwn(octave), saveHit: hitOwn(save),
-        saveBefore, saveAfter: bounds(save), before, top: drawer.scrollTop,
-        max: drawer.scrollHeight - drawer.clientHeight, editorTop: editorEl("editor").scrollTop
+      const measure = () => {
+        const first = document.querySelector("#editor-notes button"), octave = editorEl("editor-flats"), save = editorEl("editor-save");
+        return {
+          drawer: bounds(drawer), strip: bounds(editorEl("editor-tabs")), first: bounds(first), octave: bounds(octave),
+          firstHit: hitOwn(first), octaveHit: hitOwn(octave), saveHit: hitOwn(save),
+          saveBefore, saveAfter: bounds(save), before, top: drawer.scrollTop,
+          max: drawer.scrollHeight - drawer.clientHeight, editorTop: editorEl("editor").scrollTop
+        };
       };
+      if (!${render}) return measure();
+      editorRender();
+      return new Promise(resolve => requestAnimationFrame(() => resolve(measure())));
     `);
     const clear = (g, label) => {
       assert.ok(g.n.t >= g.strip.b - 0.5, `${label}: the name's top is not under the tab strip: ` + JSON.stringify(g));
