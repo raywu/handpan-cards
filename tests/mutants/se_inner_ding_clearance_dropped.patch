@@ -1,15 +1,15 @@
-# kills: SE: a pinned inner angle near the fan ends is BAD_NOTE: its number would sit inside the ding (clearance below INNER_CLEARANCE), never clamped
-# suite: node --test --test-name-pattern ^SE..a.pinned.inner.angle.near.the.fan.ends.is.BAD.NOTE tests/layout.test.js
-# A pinned inner angle at the fan ends is accepted although its number sits inside the ding.
+# kills: SE: every accepted pinned inner angle keeps the rendered label clear of the Ding by 0.01
+# suite: node --test --test-name-pattern ^SE..every.accepted.pinned.inner.angle.keeps tests/layout.test.js
+# A fan-end pin keeps its default number inside the Ding instead of relocating the number.
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -670,7 +670,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     };
-     var at = angleOf(i);
-     if (!innerInSpan(at)) return ids[i];
--    if (at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
-+    if (false && at !== fields[ids[i]][4] && innerClearance(geom, [at]) < INNER_CLEARANCE) return ids[i];
-     var floor = innerFloor(geom, ids.map(function (id) { return fields[id][4]; }));
-     var k;
-     for (k = 0; k < ids.length; k += 1) {
+@@ -1092,7 +1092,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var radius = zone === "bottom" ? geom.r_bnote : geom.r_note;
+       var gap = zone === "bottom" ? geom.n_out : geom.n_in;
+       var shift = out ? radius + gap : -(radius + gap);
+-      var needsAlternate = zone === "inner" && at !== home[ids.indexOf(id)] &&
++      var needsAlternate = false && zone === "inner" && at !== home[ids.indexOf(id)] &&
+         innerClearance(geom, [at]) < INNER_CLEARANCE;
+       var center = point(geom[zone], at);
+       notes.push({ center: center, radius: radius });
