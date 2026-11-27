@@ -3415,6 +3415,8 @@ function run() {
         assert.strictEqual(await pinRings(), 0);
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
         assert.strictEqual(await pinRings(), 1);
+        await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the rim to clear" });
         await tapNote("rim", 2);
         assert.deepStrictEqual(await selectedOf(), { ring: "rim", i: 2 });
       });
@@ -7331,6 +7333,7 @@ function run() {
           await b.setViewport(w, short, true);
           await b.waitFor('innerHeight === ' + short + ' && drawerExperiment.state === "OPEN"',
             { label: "the shorter viewport to leave the drawer open" });
+          await b.eval(`return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));`);
         }
         assert.ok(await canScroll(), `${w}x${short}: the drawer can scroll`);
         await b.eval(`const body = document.getElementById("drawerexp-body"); body.scrollTop = body.scrollHeight; return true;`);

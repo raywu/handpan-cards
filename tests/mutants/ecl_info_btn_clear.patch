@@ -1,15 +1,15 @@
-# kills: ECL9 RR3 320x568: the info button's top edge is not under the tab strip, even with the region scrolled to its end
+# kills: ECL9 RR3 320x568: Placement help stays reachable at the drawer scroll end without info bleed
 # suite: node --test --test-name-pattern ^ECL9.RR3.320x568 tests/editor_e2e.test.js
-# fault: The info button paints under the sticky tab strip, so its top edge is not tappable on short screens.
+# fault: The superseded info button shows through the active drawer.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -913,7 +913,7 @@
- #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
- @media (max-width:420px){#editor-status{min-height:48px}}
- #editor .editor-hintrow{display:flex; align-items:center; gap:var(--sp-2)}
--#editor-hint-toggle{position:relative; z-index:4; flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
-+#editor-hint-toggle{flex:0 0 44px; box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
-   display:flex; align-items:center; justify-content:center; background:none; border:0; box-shadow:none; color:#5E5850}
- #scale-sheet #editor-hint-toggle, #scale-sheet #editor-hint-toggle:hover, #scale-sheet #editor-hint-toggle:active{background:none}
- #editor-hint-toggle[hidden], #editor-hint-close[hidden]{display:none}
+@@ -15417,7 +15417,7 @@
+   #editor .placement-rejected-timed{animation:placement-rejected-out 150ms linear 1350ms both}
+   @keyframes placement-rejected-out{from{opacity:1}to{opacity:0}}
+   @media(prefers-reduced-motion:reduce){#editor .placement-rejected-timed{animation:none}}
+-  #editor #editor-hint-toggle{display:none!important}
++  #editor #editor-hint-toggle{display:flex!important}
+   #editor #editor-areas,#editor #editor-hint-close{z-index:11}
+   #editor #editor-menu [hidden]{display:none!important}
+   #editor #editor-status:empty{display:none}
