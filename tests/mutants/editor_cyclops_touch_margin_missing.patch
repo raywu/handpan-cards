@@ -1,0 +1,15 @@
+# kills: EDITOR-RC-CYCLOPS-TOUCH: a near-edge touch keeps the pictured insertion and a wider miss explains it
+# suite: node --test --test-name-pattern ^EDITOR-RC-CYCLOPS-TOUCH tests/editor_e2e.test.js
+# fault: Treat a touch near the pictured Cyclops opening as a mouse-precision miss.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17739,7 +17739,7 @@
+       // Keep the margin in screen pixels as the drawer and drag zoom move.
+       const ctm = svg.getScreenCTM();
+       const scale = ctm && Math.hypot(ctm.a, ctm.b);
+-      const nearby = scale && editorGuidedHit(pt, false, true, 8 / scale);
++      const nearby = scale && editorGuidedHit(pt, false, true, 0);
+       if (nearby) return nearby;
+     }
+     if (active && hit.ring === active) return { kind: "preview-gap", ring: active };
