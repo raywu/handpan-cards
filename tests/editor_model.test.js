@@ -1287,3 +1287,43 @@ test("Guided removal contracts expanded sparse grids to the default floor", () =
     { size: 3, unique: 2, notes: ["D#4", "G#4"] }
   ]);
 });
+
+test("Guided Cyclops growth places tray additions at the visible top from either side", () => {
+  const app = appBoot();
+  const outcomes = plain(app.get(`(() => {
+    const seed = "(D3) A3 C4 E4 | D#3 E3 B3";
+    const measures = [];
+    for (const mirror of [false, true]) {
+      let model = editorLoad(seed, { mirror }).value;
+      for (const pitch of ["A6", "B6", "C7"]) {
+        const before = editorSolve(model);
+        const beforeNames = editorNames(model, "inner");
+        const ordered = (solved, names) => names.map((name, i) => [name, editorAnglesOf(solved, "inner")[i]])
+          .sort((a, b) => a[1] - b[1]).map(row => row[0]);
+        const plans = [0, 180].map(angle => editorDropPlan(model, { from: "tray", name: pitch },
+          { kind: "spot", ring: "inner", guidedAngle: angle }));
+        if (plans.some(plan => !plan.guided)) throw Error("the Cyclops opening did not resolve");
+        const next = plans[0].step(model).value;
+        const after = editorSolve(next);
+        const names = editorNames(next, "inner");
+        measures.push({
+          size: next.options.guided.inner.size,
+          landings: plans.map(plan => plan.guided.projection.landing),
+          committed: editorAnglesOf(after, "inner")[names.indexOf(pitch)],
+          sameOrder: JSON.stringify(ordered(before, beforeNames)) ===
+            JSON.stringify(ordered(after, names).filter(name => name !== pitch)),
+          unchanged: ["rim", "bottom"].every(ring => JSON.stringify(editorAnglesOf(before, ring)) ===
+            JSON.stringify(editorAnglesOf(after, ring))),
+        });
+        model = next;
+      }
+    }
+    return measures;
+  })()`));
+  const sizes = [4, 5, 6];
+  const angles = [120, 90, 108];
+  assert.deepEqual(outcomes, Array.from({ length: 6 }, (_, i) => {
+    const angle = angles[i % 3];
+    return { size: sizes[i % 3], landings: [angle, angle], committed: angle, sameOrder: true, unchanged: true };
+  }));
+});

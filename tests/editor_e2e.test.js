@@ -314,6 +314,7 @@ function run() {
           }
           throw Error("no near-edge point outside the painted target");
         `);
+        assert.equal(landing.angle, 120, "the fourth Cyclops opening prefers the upper-left seat");
         await touch("touchMove", { x: landing.x, y: landing.y });
         await b.waitFor(`(() => {
           const dot = document.querySelector(".editor-drag-contact:not([hidden])");
@@ -429,7 +430,9 @@ function run() {
         return ["off", "outside"].includes(editorDropTarget({ clientX: 30, clientY: 28 }, drag.src).kind);
       })()`, { label: "the drag leaves the pan" });
       assert.deepEqual(await signature(), stable, "moving away does not unlock the projection");
-      await aim("inner", 60);
+      const innerGap = await gapIn("inner");
+      assert.ok(innerGap, "an exposed Cyclops approach can switch from the rim");
+      await touch("touchMove", innerGap);
       await b.waitFor(`!!document.querySelector('#editor-pan .guided-landing[data-guided-zone="inner"][data-insert]')`,
         { label: "switching to the Cyclops preview" });
       assert.equal((await signature("inner")).length, 4);

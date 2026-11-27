@@ -16622,12 +16622,16 @@ function editorGuidedPlan(m, src, target) {
   const current = (stage?.guided || m.options.guided)?.[ring];
   const gridSize = current?.size || (ring === "rim" ? 7 : 3);
   const initialRimBasis = ring === "rim" && !current ? "one" : undefined;
+  // A tray note opens an expanded Cyclops arc at its visible top. The
+  // zigzag grid orders the upper-left seat first when the two sides tie.
+  const growingCyclops = ring === "inner" && src.from === "tray" && rings.inner.length >= gridSize;
+  const requestedAngle = target.guidedAngle ?? target.angle;
   const request = { ring, ref, name, namesById };
   let accepted;
   let rejected;
   let repeatedPitch = false;
-  const projection = HPE.layout.projectGuided(rings, {
-    zone: ring, id, gridSize, gridBasis: current?.basis, initialRimBasis, angle: target.guidedAngle ?? target.angle
+  const project = angle => HPE.layout.projectGuided(rings, {
+    zone: ring, id, gridSize, gridBasis: current?.basis, initialRimBasis, angle
   }, (projected, size, basis) => {
     const result = editorGuidedCandidate(m, request, projected, size, basis);
     if (!result?.ok) {
@@ -16640,6 +16644,11 @@ function editorGuidedPlan(m, src, target) {
     accepted = { ...result, solved: placed.value };
     return true;
   });
+  let projection = project(growingCyclops ? 90 : requestedAngle);
+  if (growingCyclops && projection.reason === "clearance" &&
+      Number.isFinite(requestedAngle) && requestedAngle !== 90) {
+    projection = project(requestedAngle);
+  }
   if (!projection.rings || !accepted) {
     if (projection.reason === "capacity") return { refuse: t("editor.full." + ring, { max: EDITOR_CAPS[ring] }) };
     if (rejected?.variant === "innerLabelRoom") return { refuse: reasonText(rejected) };
