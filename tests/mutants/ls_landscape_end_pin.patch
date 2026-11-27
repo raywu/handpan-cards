@@ -1,14 +1,15 @@
-# kills: LS 844x390: at rest on Scale the name field, both tabs and the first tray chip are fully in view and hit at their centres, and the column is one scroll box at its top
-# suite: node --test --test-name-pattern ^LS.844x390..at.rest tests/editor_e2e.test.js
-# fault: In phone landscape the column snaps to its end (the toolbar is a mandatory end snap point), so it opens scrolled down and the name field and tabs are out of view at rest.
+# kills: LS 844x390: at rest the drawer and pan occupy separate landscape columns
+# suite: node --test --test-name-pattern ^LS.844x390..at.rest.the.drawer.and.pan.occupy.separate.landscape.columns$ tests/editor_e2e.test.js
+# fault: Give the pan the full landscape width so it overlaps the open drawer.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1085,6 +1085,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:repeat(6, max-content) minmax(0,1fr);
-     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar" "pan ."}
-   #scale-sheet.onepanel #editor::-webkit-scrollbar{display:none}
-+  #scale-sheet.onepanel #editor{scroll-snap-type:y mandatory} #editor .editor-toolbar{scroll-snap-align:end}
-   #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
-   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
-   #editor-counts{grid-area:counts}
+@@ -15404,7 +15404,7 @@
+   #editor-pan .eslot.unavailable{opacity:.45}
+   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
+   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
+-  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
++  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:100%;margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
+   @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
+   `;document.head.append(style);
+   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,metrics:[],disposed:false,state:'OPEN'};

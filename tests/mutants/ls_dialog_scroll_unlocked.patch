@@ -1,15 +1,15 @@
-# kills: LS 844x390: an open dialog locks the column's scroll
-# suite: node --test --test-name-pattern ^LS.844x390..an.open.dialog tests/editor_e2e.test.js
-# fault: In phone landscape an open Save changes dialog no longer locks the column, so the page behind it still scrolls under a wheel or swipe.
+# kills: 844x390 scale: Save, Discard and Keep editing are hittable and the scrim covers the tabs
+# suite: node --test --test-name-pattern ^844x390.scale..Save..Discard.and.Keep.editing.are.hittable.and.the.scrim.covers.the.tabs$ tests/editor_e2e.test.js
+# fault: Let tab-area pointers pass through the scrim while leaving its dialog card interactive.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1085,7 +1085,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:repeat(6, max-content) minmax(0,1fr);
-     grid-template-areas:"head head" "pan line" "pan status" "pan counts" "pan region" "pan bar" "pan ."}
-   #scale-sheet.onepanel #editor::-webkit-scrollbar{display:none}
--  #scale-sheet.onepanel #editor.dragging, #scale-sheet.onepanel #editor:has(#editor-dialog:not([hidden])){overflow:hidden}
-+  #scale-sheet.onepanel #editor.dragging{overflow:hidden}
-   #editor .editor-head{grid-area:head} #editor .editor-line{grid-area:line} #editor .editor-statusrow{grid-area:status}
-   #editor-counts{grid-area:counts}
-   #editor .editor-statusrow{grid-area:region; align-self:start; height:0; min-height:0; z-index:5}
+@@ -1150,7 +1150,7 @@
+     height:calc(100vh - 2 * var(--sp-4) - 44px - var(--sp-3)); height:calc(100dvh - 2 * var(--sp-4) - 44px - var(--sp-3))}
+   #editor-region{display:flex; grid-area:region; overflow:visible; min-height:auto; margin-top:0} #editor-tabs{grid-area:auto; position:sticky} #editor-panels{grid-area:auto; flex:0 0 auto}
+   #editor .editor-toolbar{grid-area:bar}
+-  #editor-dialog{position:fixed}
++  #editor-dialog{position:fixed;pointer-events:none} #editor-dialog .dlg{pointer-events:auto}
+ }
+ /* Keyboard-open short portrait (R5/R6): while Name has focus the 120px floor gives way so Name and the toolbar stay in view. */
+ @media (max-height:420px) and (max-width:559.98px){
