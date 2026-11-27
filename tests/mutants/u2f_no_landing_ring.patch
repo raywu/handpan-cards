@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17529,7 +17529,7 @@
+@@ -17695,7 +17695,7 @@ function editorMarkDrop(target) {
    if (!solved.ok) return;
    const geom = solved.value.geom;
    const at = editorLandingAnchor(svg, geom, target);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  return;
    const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
    ring.setAttribute("class", "editor-landing");
-   ring.setAttribute("cx", at[0].toFixed(2));
+   if (replace) ring.setAttribute("data-replace", "");

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17400,7 +17400,7 @@
+@@ -17555,7 +17555,7 @@ function editorDragLift(d) {
    if (d.src.chip) d.src.chip.classList.add("dragging");
    const status = editorEl("editor-status");
    status.removeAttribute("data-kind");
 -  status.removeAttribute("data-idle");
 +  status.setAttribute("data-idle", "");
    status.textContent = t("editor.dragging", { name: editorDragName(d.src) });
+   editorGuidedDragStart(d);
  }
- function editorDragMove(e) {

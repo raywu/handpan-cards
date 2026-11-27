@@ -4,12 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17099,7 +17099,7 @@
- }
+@@ -17241,5 +17241,5 @@ function editorGuidedReveal(m, source, target, angle) {
  function editorPanTap(pt, pointer = false) {
    const s = editorSession;
 -  if (!s || s.dialog || s.editing || s.naming) return;
 +  if (!s || s.dialog || s.editing) return;
    const m = s.history.present;
    const solved = editorSolve(m);
-   if (!solved.ok) return;

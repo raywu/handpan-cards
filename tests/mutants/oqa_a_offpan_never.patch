@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17552,7 +17552,7 @@
-     if (projected) return projected;
+@@ -17724,7 +17724,7 @@ function editorDropTarget(e, src, drag = editorDrag) {
+     if (active && hit.ring === active) return { kind: "preview-gap" };
    }
    if (hit.kind === "spot" && editorGuidedZones.includes(hit.ring)) hit.guidedAngle = turnTo(Math.atan2(pt[1], pt[0]) * 180 / Math.PI);
 -  return hit.kind === "off" ? { kind: "outside" } : hit;

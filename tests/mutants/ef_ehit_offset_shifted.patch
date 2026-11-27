@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16396,7 +16396,7 @@ function editorWithOverlay(markup, m, solved) {
-     const fresh = !!(s && s.flash && s.flash.some((f) => f.ring === ring && f.i === i));
-     const issue = draftIssues.find(item => item.ring === ring && item.i === i);
-     const description = issue ? ` aria-description="${escapeHtml(t("editor.guided.save_pitch", issue)).replace(/"/g, "&quot;")}"` : "";
+@@ -16412,7 +16412,7 @@ function editorWithOverlay(markup, m, solved) {
+       : s?.held && !m.options.profile && editorGuidedZones.includes(ring)
+         ? t("editor.guided.replace", { old: editorNameAt(m, { ring, i }), new: editorHeldName() }) : "";
+     const description = descriptionText ? ` aria-description="${escapeHtml(descriptionText).replace(/"/g, "&quot;")}"` : "";
 -    out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"${description}/>`;
 +    out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${(at[0] + 1).toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"${description}/>`;
      if (EDITOR_PINNABLE.includes(zone) && pins.some(p => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;

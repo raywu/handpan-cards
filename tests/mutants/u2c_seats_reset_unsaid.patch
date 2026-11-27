@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16636,7 +16636,7 @@ function editorGuidedPlan(m, src, target) {
+@@ -16660,7 +16660,7 @@ function editorGuidedPlan(m, src, target) {
    }
    return {
      step: model => model === m ? accepted : editorRefusal(name),
 -    say: projection.reflow ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
 +    say: false ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
        : ref ? t("editor.say.moved", { name }) : editorPlaceSay(name, { ring }),
-     guided: { ring, id: name, projection, solved: accepted.solved }
+     guided: { ring, id: name, projection, solved: accepted.solved, insert: src.from === "tray" }
    };
