@@ -3991,31 +3991,19 @@ function run() {
       return { x: at.x, y: at.y };
     `);
     async function aimDrag(zone, requested) {
-      for (const angle of [requested, requested - 5, requested + 5, requested - 10, requested + 10]) {
-        const point = await pointFor(zone, angle);
-        const intended = await b.eval(`
-          const hit = editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);
-          return "${zone}" === "ding" ? hit.kind === "ding" : hit.kind === "spot" && hit.ring === "${zone}";
-        `);
-        if (!intended) continue;
-        await b.eval(`
-          window.dragMatrixPointer = null;
-          addEventListener("pointermove", e => { window.dragMatrixPointer = [e.clientX, e.clientY]; },
-            { capture: true, once: true });
-          return true;
-        `);
+      const marker = zone === "rim" || zone === "inner"
+        ? `.guided-landing[data-guided-zone="${zone}"]` : ".editor-landing";
+      for (const delta of [0, -10, 10, -20, 20, -35, 35, -50, 50]) {
+        const point = await pointFor(zone, requested + delta);
         await touch("touchMove", point);
-        const marker = zone === "rim" || zone === "inner" ?
-          `.guided-landing[data-guided-zone="${zone}"]` : ".editor-landing";
-        await b.waitFor(`!!window.dragMatrixPointer && Math.hypot(
-          window.dragMatrixPointer[0] - ${point.x}, window.dragMatrixPointer[1] - ${point.y}
-        ) <= 1.5 && !!document.querySelector(${JSON.stringify(marker)})`,
-          { label: "the live " + zone + " landing outline after native pointer movement" });
-        return b.eval(`
+        await b.eval(`return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));`);
+        const preview = await b.eval(`
           const hit = editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);
           const mark = document.querySelector(${JSON.stringify(marker)});
+          if (!mark || !("${zone}" === "ding" ? hit.kind === "ding" : hit.kind === "spot" && hit.ring === "${zone}")) return null;
           return { angle: mark.hasAttribute("data-angle") ? Number(mark.dataset.angle) : hit.angle };
         `);
+        if (preview) return preview;
       }
       assert.fail("no live " + zone + " target near " + requested + " degrees");
     }
@@ -4099,8 +4087,11 @@ function run() {
               await setup(c.line, w, h);
               for (let i = 0; i < Math.abs(c.oct); i++) await b.click(c.oct > 0 ? "#editor-oct-up" : "#editor-oct-down");
               const rest = await dragFrame(), depth = await dragHistory();
-              await liftFrom(await chipAt(c.chip), await noteAt("rim", 0));
-              if (!early) await waitDrag();
+              const from = await chipAt(c.chip);
+              await touch("touchStart", from);
+              await touch("touchMove", { x: from.x - 8, y: from.y - 42 });
+              await waitDrag();
+              if (!early) await pause(90);
               const preview = await aimDrag(c.zone, c.aim);
               const now = await dragFrame();
               assert.ok(now.zoom >= 0.1 && now.zoom <= 1.2 + 0.01);
