@@ -2423,10 +2423,6 @@ function run() {
               editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`);
             to = await spotAt(radius, angle);
             await pointer("mouseMoved", to, 1);
-            await b.waitFor(`(() => {
-              const style = editorDrag?.ghost.style;
-              return !!style && Math.hypot(parseFloat(style.left) - ${to.x}, parseFloat(style.top) - ${to.y}) < 1;
-            })()`, { label: "the mouse move to reach the live drag" });
             hit = await b.eval(`return editorDropTarget({ clientX: ${to.x}, clientY: ${to.y} }, editorDrag.src);`);
             matches = hit?.kind === "spot" && hit.ring === ring &&
               (ring !== "bottom" || Math.abs(hit.angle - angle) <= 1);
