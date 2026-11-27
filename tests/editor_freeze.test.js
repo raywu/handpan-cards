@@ -256,8 +256,14 @@ function runBrowser() {
     const r2 = (n) => Math.round(n * 100) / 100;
     const vb = svg.viewBox.baseVal;
     const padX = (o.width - vb.width * a) / 2, padY = (o.height - vb.height * a) / 2;
-    return { viewBox: svg.getAttribute("viewBox"),
-      ehit: [...svg.querySelectorAll(".ehit")].map((c) => { const r = c.getBoundingClientRect(); return [r2(r.width / a), r2(r.height / a), r2((r.left - o.left - padX) / a), r2((r.top - o.top - padY) / a)]; }) };
+    return {
+      viewBox: svg.getAttribute("viewBox"),
+      ehit: [...svg.querySelectorAll(".ehit")].map(c => {
+        const r = c.getBoundingClientRect();
+        return [r2(r.width / a), r2(r.height / a),
+          r2((r.left - o.left - padX) / a + vb.x), r2((r.top - o.top - padY) / a + vb.y)];
+      })
+    };
   })()`;
 
   const STYLES = (state) => `(() => {
@@ -281,12 +287,6 @@ function runBrowser() {
 
   const near = (actual, expected, label, tol = 0.25) => {
     if (actual === null || expected === null) { assert.strictEqual(actual, expected, label); return; }
-    // The fitted frame includes SVG text bounds, which vary slightly by platform.
-    const coordinates = actual.viewBox.split(" ").map(Number);
-    const frozen = expected.viewBox.split(" ").map(Number);
-    assert.equal(coordinates.length, 4, `${label}: viewBox coordinate count`);
-    coordinates.forEach((v, i) => assert.ok(Math.abs(v - frozen[i]) <= tol,
-      `${label}: viewBox coordinate ${i} is ${v}, frozen ${frozen[i]}`));
     assert.strictEqual(actual.ehit.length, expected.ehit.length, `${label}: ehit count`);
     actual.ehit.forEach((row, i) => row.forEach((v, j) => assert.ok(Math.abs(v - expected.ehit[i][j]) <= tol,
       `${label}: ehit ${i} field ${j} (w,h,dx,dy in viewBox units) is ${v}, frozen ${expected.ehit[i][j]}`)));
@@ -301,10 +301,22 @@ function runBrowser() {
           const key = `${vp.w}x${vp.h}/${spec.name}/${state}`;
           await show(spec, state);
           const measured = await b.eval(`return ${MEASURE};`);
+          if (measured && state !== "dragging" && state !== "settling") {
+            // The bounds include browser-shaped labels, so verify the fit against
+            // the actual content while freezing note positions in SVG coordinates.
+            const fitted = await b.eval(`const svg = document.querySelector("#editor-pan svg");
+              const bb = svg.getBBox(), vb = svg.viewBox.baseVal;
+              return [bb.x - vb.x, bb.y - vb.y, vb.x + vb.width - bb.x - bb.width,
+                vb.y + vb.height - bb.y - bb.height];`);
+            fitted.forEach(margin => assert.ok(Math.abs(margin - 4) <= 0.25,
+              `${key}: fitted frame margins are ${fitted}`));
+            delete measured.viewBox;
+          }
           if (REGEN) produced.geometry[key] = measured;
           else {
             assert.ok(key in fixture.geometry, `the fixture has no geometry row for ${key}`);
             near(measured, fixture.geometry[key], key);
+            assert.strictEqual(measured?.viewBox, fixture.geometry[key]?.viewBox, `${key}: drag viewBox`);
           }
           const styles = await b.eval(`return ${STYLES(state)};`);
           expectFrozen("styles", key, sha16(JSON.stringify(styles)));
@@ -347,7 +359,7 @@ after(() => {
     _why: "CONTRACT rule 2 carve-out: these are recorded outputs of the editor as it stood on the base SHA below, not derived from the implementation under test. Regenerate only with an owner-approved render change, never to make a lane pass.",
     _regen: "node tools/regen_editor_pan_fixture.js",
     _base: "101269cc",
-    _geometry_note: "geometry rows hold .ehit width, height, dx, dy in viewBox units (px divided by the svg getScreenCTM().a) and the viewBox; absolute rects are never stored. Compared with a 0.25 tolerance. Style rows are sha256/16 of the computed-style records (.editor-panbox transform excluded while dragging and settling). styles.sample/* holds the readable kurd rest record.",
+    _geometry_note: "Geometry rows hold .ehit width, height and top-left in SVG coordinates. The frame is compared against the live SVG bounds when fitted, and its viewBox is pinned during drag and settle. Geometry and fitted margins use a 0.25 tolerance. Style rows are sha256/16 of the computed-style records (.editor-panbox transform excluded while dragging and settling). styles.sample/* holds the readable kurd rest record.",
     specs: SPECS,
     ...produced,
   };
