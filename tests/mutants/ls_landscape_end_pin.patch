@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15404,7 +15404,7 @@
+@@ -15419,7 +15419,7 @@ function installEditorDrawer() {
    #editor-pan .eslot.unavailable{opacity:.45}
    @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
    @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:100%;margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
    @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
    `;document.head.append(style);
-   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,metrics:[],disposed:false,state:'OPEN'};
+   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};
