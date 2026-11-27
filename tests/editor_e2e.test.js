@@ -281,6 +281,44 @@ function run() {
       assert.deepEqual(await angleSnapshot(), before);
     });
 
+    test("D5: a Cyclops tap saves and reloads the exact visible Guided seat", async () => {
+      await fresh(390, 700);
+      await b.click("#strip-add");
+      await typeLine("(D3) A3 B3 C4 D4 E4 F4 G4 | D#4 G#4 A#4");
+      const octave = await b.eval('return Number(document.getElementById("editor-oct").textContent);');
+      for (let current = octave; current < 4; current++) await b.click("#editor-oct-up");
+      for (let current = octave; current > 4; current--) await b.click("#editor-oct-down");
+      await b.click('.tray-note[data-name="C#"]');
+      const landing = '#editor-pan .guided-landing[data-guided-zone="inner"]';
+      await b.waitFor(`(() => {
+        const circle = document.querySelector(${JSON.stringify(landing + " circle")});
+        const r = circle?.getBoundingClientRect();
+        return !!r && !!document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest("#editor-pan");
+      })()`, { label: "the Cyclops growth landing to be exposed" });
+      const angle = await b.eval(`return +document.querySelector(${JSON.stringify(landing)}).dataset.angle;`);
+      await touch("touchStart", await center(landing + " circle"));
+      await touch("touchEnd");
+
+      const expectedNotes = ["C#4", "D#4", "G#4", "A#4"];
+      const readCyclops = () => b.eval(`
+        const model = editorSession.history.present;
+        return { notes: editorNames(model, "inner"),
+          angles: editorAnglesOf(editorSolve(model), "inner"),
+          guided: model.options.guided?.inner };
+      `);
+      await b.waitFor('editorNames(editorSession.history.present, "inner").includes("C#4")',
+        { label: "the tapped Cyclops note to be placed" });
+      const placed = await readCyclops();
+      assert.deepEqual(placed.notes, expectedNotes);
+      assert.equal(placed.angles[placed.notes.indexOf("C#4")], angle);
+      assert.equal(placed.guided.size, 4);
+      assert.equal(placed.guided.seats.length, 4);
+
+      const record = await saveAndReopen(9);
+      assert.deepEqual(record.o.guided.inner, placed.guided);
+      assert.deepEqual(await readCyclops(), placed);
+    });
+
     test("EDITOR-RC-GUIDED-SAVE: a custom underside move keeps Guided seats after reload", async () => {
       await fixture("[F3] (D3) A3 C4 E4", {
         angles: { bottom: [270] },
@@ -1813,23 +1851,6 @@ function run() {
         const got = await b.eval(`const e = savedState.entries[savedState.entries.length - 1]; return e.record;`);
         assert.strictEqual(got.s, want.record.s);
         assert.strictEqual(got.v, want.record.v);
-      });
-
-      test("D5: a cyclops note tapped at an exact angle saves as record v6 and reloads pinned", async () => {
-        await setup(SCALE);
-        await hold("E");
-        await b.click("#editor-oct-up");
-        await tapSpot(...polar(0.38, 90));
-        assert.deepStrictEqual((await model()).options.angles.inner.filter((a) => a !== null), [90]);
-        await b.click("#editor-save");
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
-        const rec = await b.eval(`const e = savedState.entries[savedState.entries.length - 1]; return { v: e.record.v, inner: e.record.o.angles.inner };`);
-        assert.strictEqual(rec.v, 6);
-        assert.deepStrictEqual(rec.inner.filter((a) => a !== null), [90]);
-        await b.eval(`const view = allDeckViews().find((v) => savedEqual(v.selection, selection)); openEditSheet(view.deck, addChip); return true;`);
-        await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor on the saved scale" });
-        assert.deepStrictEqual((await model()).options.angles.inner.filter((a) => a !== null), [90]);
-        assert.strictEqual((await model()).pins.length, 1);
       });
 
       test("parity 6 / Re-space e2e: pins stay on an add; Reset bottom spacing re-spaces and drops at-, Undo restores; Reset spacing (2) clears both in one step, v8 gone", async () => {
