@@ -5122,8 +5122,11 @@ test("S3: an anchor and a seat list are solved together, not one after the other
 
 
 test("S3: saved instances live under the new envelope and records keep version 4", async () => {
-  const app=await durableBoot();await makeCustom(app,PYGMY_STRING);const e=savedEnvelope(app);
+  const app=await durableBoot();
+  await makeCustom(app, PYGMY_STRING.replace("G3 Ab3", "Ab3 G3"));
+  const e=savedEnvelope(app);
   assert.strictEqual(e.schema,1);assert.strictEqual(e.entries.length,1);assert.strictEqual(e.entries[0].record.v,4);
+  assert.deepStrictEqual(e.entries[0].record.o.seats.rim.slice(0, 2), [1, 0]);
   assert.strictEqual(app.store["hpfc.scales.v3"],undefined);assert.strictEqual(app.store["hpfc.scales"],undefined,"new writes do not touch either legacy key");
 });
 
@@ -9004,16 +9007,30 @@ describe("OF: the sheet's seats follow the typed order", () => {
 
 
 
-  test("OF: a line typed in ascending order saves no seats key and the record equals the base's", async () => {
+  test("OF: ascending typed notes save Guided seats and preserve the base pitches and chords", async () => {
     const app = add();
     app.type(ASC);
     assert.strictEqual(d2Seats(app), null);
     const rec = await save(app);
     assert.strictEqual("seats" in rec.options, false);
-    assert.deepStrictEqual(ofPlain(rec.options), { palette: 0, mirror: false, mirrorBottom: false, anchor: "one", parent: null });
+    assert.deepStrictEqual(ofPlain(rec.options.guided), { rim: { size: 8, seats: [4, 3, 5, 2, 6, 1, 7, 0] } });
+    const stored = ofPlain(app.get("savedState.entries[0].record"));
+    assert.strictEqual(stored.v, 9);
+    assert.strictEqual(stored.s, ASC);
+    assert.deepStrictEqual(stored.o.guided, ofPlain(rec.options.guided));
     const base = boot().generate(ASC, {});
-    assert.deepStrictEqual(ofPlain(rec.fields), ofPlain(base.value.fields));
     assert.deepStrictEqual(ofPlain(rec.chords), ofPlain(base.value.chords));
+    const pitches = fields => Object.values(fields).map(f => f[2]).sort((a, b) => a - b);
+    assert.deepStrictEqual(pitches(rec.fields), pitches(base.value.fields));
+  });
+
+  test("OF: explicitly ordered typed notes keep their legacy placement and format", async () => {
+    const app = add();
+    app.type(NAMED);
+    const rec = await save(app);
+    assert.deepStrictEqual(ofPlain(rec.options.seats), { rim: RIM });
+    assert.strictEqual("guided" in rec.options, false);
+    assert.strictEqual(app.get("savedState.entries[0].record.v"), 4);
   });
 
 
@@ -11139,12 +11156,17 @@ describe("SHC asynchronous LINK ownership", () => {
   test("IDB12 U1: saved-scale temporary and durable workflows preserve own-property behavior without Object.hasOwn", async () => {
     const hostHasOwn=Object.hasOwn,source=fs.readFileSync(path.join(ROOT,"index.html"),"utf8");
     const seed="(D3) A3 C4 D4 E4 F4 G4 A4 C5";
-    const checkLink=(app,name)=>{
+    const checkLink=(app,name,guided=false)=>{
       const shared=plain(app.get("shareLink(deck())"));assert.strictEqual(shared.ok,true);
-      assert.ok(shared.value.includes("#s=6/"),"a usable portable link is generated");
+      assert.ok(shared.value.includes(guided ? "#s=B/" : "#s=6/"),"a usable portable link preserves the layout format");
       const code=shared.value.split("#s=")[1];
       const decoded=plain(app.get(`HPE.share.decode(${JSON.stringify(code)})`));
       assert.strictEqual(decoded.ok,true);assert.strictEqual(decoded.value.options.name,name);
+      if (guided) {
+        const record = plain(app.get("savedState.entries[0].record"));
+        assert.strictEqual(record.v, 9);
+        assert.deepStrictEqual(decoded.value.options.guided, record.o.guided);
+      }
     };
     // The first iteration is a normal-API positive control for these same
     // workflows. The prefix changes only the application's VM intrinsic.
@@ -11161,7 +11183,7 @@ describe("SHC asynchronous LINK ownership", () => {
       editSelected(temporary);rename(temporary,"COMPAT TEMP EDIT");
       await assert.doesNotReject(()=>submit(temporary),context+": temporary Edit completes");
       assert.strictEqual(temporary.sheetOpen(),false);assert.strictEqual(temporary.currentDeck().name,"COMPAT TEMP EDIT");
-      checkLink(temporary,"COMPAT TEMP EDIT");
+      checkLink(temporary,"COMPAT TEMP EDIT",true);
 
       const origin=createOrigin();let durable;
       assert.doesNotThrow(()=>{durable=boot({origin,html,indexedDB:true,broadcastChannel:true,locks:true,crypto:cryptoFixture(),abortController:true,isSecureContext:true});},context+": durable script startup must not throw");
@@ -12751,11 +12773,11 @@ describe("PDF tier menu (lane U)", () => {
 describe("sync-apply", () => {
   const syncId = () => require("node:crypto").randomUUID();
   const remoteRecord = async (text, replaces) => {
+    // Slot owners are stored in the legacy format; Guided records cannot claim a built-in slot.
+    if (replaces) return { v: 4, s: text, o: { replaces } };
     const donor = boot();
     await makeCustom(donor, text);
-    const record = plain(donor.get("savedState.entries[0].record"));
-    if (replaces) record.o = { ...(record.o || {}), replaces };
-    return record;
+    return plain(donor.get("savedState.entries[0].record"));
   };
   const applySync = (app, ops) => plain(app.get(
     `commitSavedSession({type:"sync-apply",collectionId:savedState.collectionId,ops:${JSON.stringify(ops)}})`));
