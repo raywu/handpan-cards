@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15209,7 +15209,7 @@
+@@ -14137,7 +14137,7 @@
  const editorNeoEmptyField = (n) => editorAreaRefusal("FIELD_EMPTY", t("editor.neo.field_empty", { n }));
  const editorNeoOwnRow = () => editorAreaRefusal("OWN_ROW", t("editor.neo.own_row"));
  function editorNeoBuild(m, parts, map, landedKey) {
--  const compact = compactMain(map.slice());
+-  const compact = m.options.profile.rev === 3 ? map.slice() : compactMain(map.slice());
 +  const compact = map.slice();
    const profile = { ...m.options.profile, map: compact };
    const loaded = editorLoad(editorText(m, parts), { ...m.options, profile, seats: null, angles: null });

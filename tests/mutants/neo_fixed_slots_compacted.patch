@@ -1,0 +1,15 @@
+# kills: fixed Neotone keeps surviving slots through typed and visual edits
+# suite: node --test --test-name-pattern ^fixed.Neotone.keeps.surviving.slots tests/editor_shell.test.js
+# fault: Editing a fixed Neotone record compacts its sparse slots.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14137,7 +14137,7 @@
+ const editorNeoEmptyField = (n) => editorAreaRefusal("FIELD_EMPTY", t("editor.neo.field_empty", { n }));
+ const editorNeoOwnRow = () => editorAreaRefusal("OWN_ROW", t("editor.neo.own_row"));
+ function editorNeoBuild(m, parts, map, landedKey) {
+-  const compact = m.options.profile.rev === 3 ? map.slice() : compactMain(map.slice());
++  const compact = compactMain(map.slice());
+   const profile = { ...m.options.profile, map: compact };
+   const loaded = editorLoad(editorText(m, parts), { ...m.options, profile, seats: null, angles: null });
+   if (!loaded.ok) return loaded;

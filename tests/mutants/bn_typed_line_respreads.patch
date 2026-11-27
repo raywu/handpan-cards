@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13702,7 +13702,7 @@
-   const seed = HPE.core.parseSeed(trimmed, carried);
-   const typed = seed.ok ? HPE.core.typedSeats(seed.value) : null;
-   if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) return editorTypedOrder(m, typed);
+@@ -14674,7 +14674,7 @@
+   if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) {
+     return m.options.profile ? { ok: true, value: m } : editorTypedOrder(m, typed);
+   }
 -  const diffed = editorTypedBottom(m, loaded.value, typed);
 +  const diffed = null;
    if (diffed) return diffed;
