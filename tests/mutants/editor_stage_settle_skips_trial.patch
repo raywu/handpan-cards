@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13902,7 +13902,7 @@
-   const done = editorStageCommit(m, stage, landedKey);
-   if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !stage.ding || !editorStageAngles(stage)) return done;
+@@ -13917,7 +13917,7 @@ function editorStageSettle(m, stage, landedKey) {
+     return done;
+   }
    const trial = editorStageCommit(m, editorStageTrial(stage));
 -  return trial.code === "NO_ROOM" || trial.variant === "innerLabelRoom" ? trial : done;
 +  return done;
