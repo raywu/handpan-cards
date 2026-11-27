@@ -1,14 +1,15 @@
-# kills: SO: en 844x390: the idle prompt leaves the tab labels showing and a message still covers them
-# suite: node --test --test-name-pattern ^SO:.en.844x390..the.idle.prompt tests/editor_e2e.test.js
-# fault: The idle mark is never cleared, so a message raised after the idle prompt is hidden in phone landscape.
+# kills: SO: en 568x320: the idle prompt gives way to visible hold and drag feedback
+# suite: node --test --test-name-pattern ^SO..en.568x320..the.idle.prompt.gives.way.to.visible.hold.and.drag.feedback tests/editor_e2e.test.js
+# fault: Apply the idle clip to an armed note message.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15872,7 +15872,6 @@
+@@ -15872,7 +15872,7 @@
    status.textContent = "";
    delete status.dataset.guidedActions;
    status.removeAttribute("data-kind");
 -  status.removeAttribute("data-idle");
++  if (s.held) status.setAttribute("data-idle", ""); else status.removeAttribute("data-idle");
    if (error) {
      status.setAttribute("data-kind", "error");
      status.textContent = error;

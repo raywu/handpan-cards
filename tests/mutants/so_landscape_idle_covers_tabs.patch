@@ -1,14 +1,14 @@
-# kills: SO: en 568x320: the idle prompt leaves the tab labels showing and a message still covers them
-# suite: node --test --test-name-pattern ^SO:.en.568x320..the.idle.prompt tests/editor_e2e.test.js
-# fault: In phone landscape the idle prompt is drawn over the tab labels again.
+# kills: SO: landscape idle status row takes no height at 844x390
+# suite: node --test --test-name-pattern ^SO:.landscape.idle.status.row.takes.no.height.at.844x390 tests/editor_e2e.test.js
+# fault: Show idle copy in landscape instead of clipping it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1087,7 +1087,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-   #editor-status{position:absolute; left:0; right:-8px; top:0; bottom:auto; border-radius:8px; pointer-events:none}
-   #editor-status, #editor-status[data-kind="error"]{max-height:none; align-items:flex-start; padding-block:1px; font-size:12px; line-height:14px}
-   #scale-sheet.onepanel #editor .editor-statusrow{position:sticky; top:0}
--  #editor-status[data-idle]{clip-path:inset(50%)}
-   #editor-status:not(:empty):not([data-kind="error"]){background:#F6F4ED}
-   #editor-status button.mode{position:absolute; right:0; top:50%; transform:translateY(-50%); padding-inline:6px; pointer-events:auto}
-   #editor-status:has(button){padding-right:96px; min-height:34px}
+@@ -15405,6 +15405,7 @@
+   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
+   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
+   @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
++  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor #editor-status[data-idle]{clip-path:none}}
+   @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
+   `;document.head.append(style);
+   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,metrics:[],disposed:false,state:'OPEN'};
