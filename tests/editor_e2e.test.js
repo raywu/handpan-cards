@@ -28,6 +28,17 @@ function run() {
   const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
   const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
 
+  async function exposeDrawerControl(selector, click) {
+    const needsOpen = await b.eval(`
+      const control = document.querySelector(${JSON.stringify(selector)});
+      return !!control?.closest(".drawerexp-body") && window.drawerExperiment?.expanded === false;
+    `);
+    if (!needsOpen) return;
+    await click("#drawerexp-handle");
+    await b.waitFor(`window.drawerExperiment?.expanded === true && !document.getElementById("drawerexp-body").inert`,
+      { label: "the drawer to restore its controls" });
+  }
+
   before(async () => {
     if (process.env.HPC_EDITOR_HOSTED_URL) {
       base = process.env.HPC_EDITOR_HOSTED_URL;
@@ -52,6 +63,7 @@ function run() {
     b.click = async (selector, ...rest) => {
       const need = /^#editor-(redo|remove|reset|delete)\b/.test(selector) ? ["editor-menu", "editor-more"]
         : /^#editor-(palette|swatches|anchor-)/.test(selector) ? ["editor-panel-layout", "editor-tab-layout"] : null;
+      await exposeDrawerControl(need ? "#" + need[1] : selector, rawClick);
       if (need && await b.eval(`const e = document.getElementById(${JSON.stringify(need[0])}); return !!e && e.hidden;`)) await rawClick("#" + need[1]);
       await b.eval(`const e = document.querySelector(${JSON.stringify(selector)}); if (e && e.closest && e.closest("#editor-region") && !e.closest("#editor-tabs")) e.scrollIntoView({ block: "nearest" }); return true;`);
       return rawClick(selector, ...rest);
@@ -502,7 +514,10 @@ function run() {
     const dingAt = async () => clientOf(0, -(await geomOf("ding_dy")));
     const slotAt = (slot) => b.eval(`const g = editorSolve(editorSession.history.present).value.geom; const p = neoSlotPoint(${slot}, null, g.turn);
       const q = new DOMPoint(p.x, p.y).matrixTransform(document.querySelector("#editor-pan svg").getScreenCTM()); return { x: q.x, y: q.y };`);
-    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const chipAt = async (name) => {
+          await exposeDrawerControl('.tray-note[data-name="' + name + '"]', selector => b.click(selector));
+          return b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        };
     const statusText = () => b.eval(`return document.getElementById("editor-status").textContent;`);
     const stageOf = () => b.eval(`return JSON.parse(JSON.stringify((({ other, ...st }) => st)(editorStageOf(editorSession.history.present))));`);
     const octave = () => b.eval(`return editorView(editorSession.history.present).oct;`);
@@ -1894,7 +1909,10 @@ function run() {
     });
 
     describe("U2f drag and drop, trash, touch flag", () => {
-      const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+      const chipAt = async (name) => {
+            await exposeDrawerControl('.tray-note[data-name="' + name + '"]', selector => b.click(selector));
+            return b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+          };
       const centreOf = (sel) => b.eval(`const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
       const orbit = (ring) => b.eval(`return editorSolve(editorSession.history.present).value.geom[${JSON.stringify(ring)}];`);
       const spotAt = async (r, deg) => clientOf(...polar(typeof r === "string" ? await orbit(r) : r, deg));
@@ -3241,7 +3259,10 @@ function run() {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
     const ding = () => b.eval(`return editorDingOf(editorSession.history.present);`);
     const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
-    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const chipAt = async (name) => {
+          await exposeDrawerControl('.tray-note[data-name="' + name + '"]', selector => b.click(selector));
+          return b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        };
     const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     const live = () => b.eval(`return !!(editorDrag && editorDrag.live);`);
     const isDragging = () => b.eval(`return document.getElementById("editor").classList.contains("dragging");`);
@@ -5103,7 +5124,10 @@ function run() {
 
   describe("editor drag guards", () => {
     const pause = (ms) => new Promise((done) => setTimeout(done, ms));
-    const chipAt = (name) => b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const chipAt = async (name) => {
+          await exposeDrawerControl('.tray-note[data-name="' + name + '"]', selector => b.click(selector));
+          return b.eval(`const r = document.querySelector('.tray-note[data-name="${name}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+        };
     const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
     const live = () => b.eval(`return !!(editorDrag && editorDrag.live);`);
