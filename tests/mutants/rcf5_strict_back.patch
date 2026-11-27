@@ -1,18 +1,19 @@
-# kills: RCF-F5: a staged push the commit accepts is accepted, and its pins are kept through the commit
-# suite: node --test --test-name-pattern RCF.F5..a.staged.push.the.commit.accepts tests/editor_shell.test.js
-# fault: editorAdd re-runs the tap-order strict ghost after the staged push is accepted and refuses a stage the commit accepts.
+# kills: RCF-F5 390x844: tap order D3, E3@135, B2, C3@200 is accepted, and the preview draws B2, C3 and E3 with hit refs naming each drawn note
+# suite: node --test --test-name-pattern ^RCF-F5.390x844..tap.order.D3..E3.135..B2..C3.200.is.accepted..and.the.preview.draws.B2..C3.and.E3.with.hit.refs.naming.each.drawn.note$ tests/editor_e2e.test.js
+# fault: Rerun the strict ghost after a valid staged bottom push and refuse a pin the real commit can fit.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13239,7 +13239,10 @@ function editorAdd(m, ring, name, angle) {
-   if (!EDITOR_RINGS.includes(ring)) return editorRefusal(ring);
-   if (m.options.profile) return editorNeoInsert(m, ring, name);
-   if (editorIsEmpty(m)) {
--    return editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
-+    const staged = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
-+    const pinned = staged.ok && ring === "bottom" && editorIsEmpty(staged.value) ? editorStageAnglesOf(staged.value).lastIndexOf(true) : -1;
-+    return pinned !== -1 && !editorGhostSolve(staged.value, true).ok
-+      ? editorNoRoom(staged.value, "bottom", pinned, editorStageOf(staged.value).angles[pinned]) : staged;
+@@ -14165,6 +14165,12 @@
+     const added = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
+     if (ring === "inner" && Number.isFinite(angle) && added.ok && editorIsEmpty(added.value) && !editorStagePinsFit(added.value))
+       return editorNoRoom(added.value, ring, editorNames(added.value, ring).length - 1, angle);
++    if (ring === "bottom" && added.ok && editorIsEmpty(added.value)) {
++      const pins = editorStageOf(added.value).angles?.bottom;
++      const pinned = pins?.findLastIndex(Number.isFinite) ?? -1;
++      if (pinned !== -1 && !editorGhostSolve(added.value, true).ok)
++        return editorNoRoom(added.value, ring, pinned, pins[pinned]);
++    }
+     return added;
    }
    const parts = editorPartsOf(m);
-   parts[ring].push(String(name));

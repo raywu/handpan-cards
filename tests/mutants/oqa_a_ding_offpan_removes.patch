@@ -1,14 +1,15 @@
-# kills: OQA ding drag off refuses: the ghost is .refuse, release leaves the model and says the ding copy
-# suite: node --test --test-name-pattern ^OQA.ding.drag.off tests/editor_e2e.test.js
-# fault: The ding dragged off the pan is not refused.
+# kills: OQA Ding off-pan drag previews removal, empties the center and restores through Undo
+# suite: node --test --test-name-pattern ^OQA.Ding.off-pan.drag.previews.removal..empties.the.center.and.restores.through.Undo$ tests/editor_e2e.test.js
+# fault: Refuse true off-pan Ding removal instead of opening an editable dingless draft.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15981,7 +15981,6 @@
+@@ -16920,7 +16920,7 @@
+     }), say: t("editor.say.moved", { name }) };
    }
-   const ref = src.ref;
    if (target.kind === "outside") {
--    if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
-     if (ref.ring === "rim" && ringIds(m.fields, "rim").length <= 1) return { refuse: t("editor.say.rim_min") };
+-    if (ref.ring === "ding") return { step: editorClearDing, say: t("editor.say.removed", { name: editorDingOf(m) }) };
++    if (ref.ring === "ding") return { refuse: t("editor.say.ding_required") };
      return { step: (x) => editorRemove(x, ref.ring, ref.i), say: t("editor.say.removed", { name: editorNameAt(m, ref) }) };
    }
+   if (target.kind === "note" || target.kind === "ding") {

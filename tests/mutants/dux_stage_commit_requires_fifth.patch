@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13004,7 +13004,7 @@ function editorStageCommit(m, stage, landedKey) {
+@@ -13936,7 +13936,7 @@
    } else {
-     built = editorNeoBuild(staged, { rim: stage.main, inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
+     built = editorNeoBuild(staged, { rim: stage.main.filter(Boolean), inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
    }
--  if (!built.ok) return built.code === "NO_FIFTH" ? { ok: true, value: staged } : built;
-+  if (!built.ok) return built;
+-  if (!built.ok) return built.code === "NO_FIFTH" || built.code === "NOTE_OUT_OF_ORDER" ? { ok: true, value: staged } : built;
++  if (!built.ok) return built.code === "NOTE_OUT_OF_ORDER" ? { ok: true, value: staged } : built;
    return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
  }
- // A Standard stage's bottom angles run parallel to its bottom notes (null for none); the key is
+ // Draft pins follow insertion order. The engine expects MIDI order within each ring.
