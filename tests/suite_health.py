@@ -70,7 +70,7 @@ FLOORS = {
     "tests/link_corpus.test.js": 14,
     "tests/editor_model.test.js": 52,
     "tests/editor_shell.test.js": 173,
-    "tests/editor_e2e.test.js": 591,
+    "tests/editor_e2e.test.js": 597,
     "tests/editor_freeze.test.js": 8,
     "tests/storage_corpus.test.js": 25,
     "tests/preview.test.js": 2,
@@ -668,7 +668,16 @@ def emit_python(outfile):
 
 
 EDITOR_E2E = "tests/editor_e2e.test.js"
-EDITOR_REQUIRED = {"EDITOR-EXIT-CLEAN", "EDITOR-EXIT-INVALID", "EDITOR-EXIT-KEEP", "EDITOR-EXIT-SAVE"}
+EDITOR_REQUIRED = {
+    "EDITOR-EXIT-CLEAN", "EDITOR-EXIT-INVALID", "EDITOR-EXIT-KEEP", "EDITOR-EXIT-SAVE",
+    "EDITOR-RC-STANDARD-GROW",
+    "EDITOR-RC-CYCLOPS-SNAP",
+    "EDITOR-RC-GUIDED-SAVE",
+    "EDITOR-RC-NEOTONE-SAVE",
+    "EDITOR-RC-DUPLICATE",
+    "EDITOR-RC-DUPLICATE-REDUCED",
+}
+
 _EDITOR_TAP = re.compile(r"^\s*(ok|not ok) \d+ - (EDITOR-[A-Z0-9-]+): (.+)$", re.M)
 
 
@@ -692,7 +701,8 @@ def editor_cases(tap):
     return cases
 
 
-def editor_case_problems(cases, required=EDITOR_REQUIRED):
+def editor_case_problems(cases, required=None):
+    required = EDITOR_REQUIRED if required is None else required
     return [
         case_id for case_id in sorted(required)
         if [case["status"] for case in cases if case["id"] == case_id] != ["pass"]

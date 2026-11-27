@@ -30,7 +30,7 @@ jobs:
           CF_PAGES_BRANCH: claude/rc-upgrade
         run: sh tools/publish.sh "$RUNNER_TEMP/editor-publisher"
       - name: Exercise the deployed revision
-        run: python3 tools/run_editor_rc.py "$RUNNER_TEMP/editor-publisher/editor-balanced-mock.html" artifacts
+        run: python3 tools/run_editor_rc.py "$RUNNER_TEMP/editor-publisher/index.html" artifacts
       - name: Report editor browser cases
         if: always()
         run: |

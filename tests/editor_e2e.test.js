@@ -101,9 +101,11 @@ function run() {
   const pinInner = () => b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 125)).history;
     editorRender(); return editorSession.history.present.pins.length;`);
 
-  // These journeys exercise the published Guided drawer until its normal
-  // Add/Edit implementation lands. Model injection is fixture setup only.
-  if (process.env.HPC_EDITOR_HOSTED_URL) describe("Hosted editor RC", () => {
+  // Use the same visible editor flows on loopback and the hosted RC.
+  // Model injection is fixture setup only.
+  describe("Editor placement and persistence", () => {
+    before(() => { magPinned = false; });
+    after(() => { magPinned = true; });
     let touching = false;
     async function touch(type, point) {
       await b.send("Input.dispatchTouchEvent", {

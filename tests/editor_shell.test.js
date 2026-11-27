@@ -203,7 +203,7 @@ test("U2b-8: pan type Standard to Neotone proposes the profile and back removes 
   assert.strictEqual(a.get("editorKindOf(__n.history.present)"), "neotone");
   const profile = plain(a.get("__n.history.present.options.profile"));
   assert.strictEqual(profile.id, "paired");
-  assert.strictEqual(profile.rev, 2);
+  assert.strictEqual(profile.rev, 3);
   assert.strictEqual(profile.map.length, 18);
   assert.strictEqual(a.get("editorSolve(__n.history.present).ok"), true, "the Neotone model solves");
   a.run(`globalThis.__s = editorApply(__n.history, (m) => editorPanType(m, "standard")); true`);
@@ -872,7 +872,12 @@ describe("OQB owner QA gap 8", () => {
 // ---- U2e-1: Neotone in the panel (D19, SE-13) ----
 describe("U2e Neotone panel paths", () => {
   const NEO = "[A2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4";
-  const neo = (a, text = NEO) => a.run(`globalThis.__m = editorPanType(editorLoad(${JSON.stringify(text)}).value, "neotone").value; true`);
+  const neo = (a, text = NEO) => a.run(`{
+    const legacyText = ${JSON.stringify(text)};
+    const legacySeed = editorLoad(legacyText).value;
+    globalThis.__m = editorLoad(legacyText, { profile: editorProfileFor(legacySeed.fields) }).value;
+    true
+  }`);
   const mapOf = (a) => plain(a.get("__m.options.profile.map"));
   const names = (a, ring) => plain(a.get(`editorNames(__m, ${JSON.stringify(ring)})`));
   const apply = (a, call) => { const res = plain(a.get(call)); if (res.ok) a.run(`globalThis.__m = ${call}.value; true`); return res; };
@@ -1035,7 +1040,8 @@ describe("U2e Neotone panel paths", () => {
   test("U2e-10: v7 Neotone share links decode in the panel and re-export identically", () => {
     const a = app();
     for (const text of [NEO, "[A2] (D3) A3 C4 D4 E4 F4", "[A2] [B2] [C3] (D3) A3 C4 D4 E4 F4 G4 A4 B4 C5"]) {
-      const out = plain(a.get(`(() => { const m = editorPanType(editorLoad(${JSON.stringify(text)}).value, "neotone").value; const e = editorExport(m); const back = editorLoadShare(e.code); const f = editorExport(back.value); return { v: e.code.charAt(0), same: f.code === e.code && JSON.stringify(f.link) === JSON.stringify(e.link) && JSON.stringify(f.record) === JSON.stringify(e.record), ok: back.ok }; })()`));
+      neo(a, text);
+      const out = plain(a.get(`(() => { const e = editorExport(__m); const back = editorLoadShare(e.code); const f = editorExport(back.value); return { v: e.code.charAt(0), same: f.code === e.code && JSON.stringify(f.link) === JSON.stringify(e.link) && JSON.stringify(f.record) === JSON.stringify(e.record), ok: back.ok }; })()`));
       assert.strictEqual(out.ok, true, text);
       assert.strictEqual(out.v, "7", text + " is a v7 link");
       assert.strictEqual(out.same, true, text + " re-exports identically");
