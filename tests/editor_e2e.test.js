@@ -1722,14 +1722,23 @@ function run() {
       assert.deepStrictEqual(await model(), before);
     });
 
-    test("D23 copy: a rim or cyclops note dropped on the ding is refused with a plain message; the hint line still carries the ding cue", async () => {
+    test("D23 copy: the initial drag hint is clear and a rim or Cyclops note can swap with the Ding", async () => {
       await setup("[A2] " + SCALE);
-      assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-hint span")].map((e) => e.textContent);`), ["Tap a note to hold it, then tap a ring on the pan, or drag it onto the pan.", "Drop or tap a bottom note on the ding to swap it with the root."]);
+      assert.equal(await b.eval(`return editorEl("editor-hint").textContent.trim();`), "Drag a note onto the handpan.");
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to clear the pan" });
       const before = await model();
-      await tapNote("rim", 0);
-      await tapNote("ding", 0);
-      assert.strictEqual(await status(), "Only a bottom note can swap with the ding.");
-      assert.deepStrictEqual(await model(), before);
+      for (const ring of ["rim", "inner"]) {
+        const picked = await b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)})[0];`);
+        await tapNote(ring, 0);
+        await tapNote("ding", 0);
+        const result = await b.eval(`const m = editorSession.history.present;
+          return { ding: editorDingOf(m), ring: editorNames(m, ${JSON.stringify(ring)}) };`);
+        assert.equal(result.ding, picked);
+        assert.ok(result.ring.includes("D3"));
+        await b.click("#editor-undo");
+        assert.deepEqual(await model(), before);
+      }
     });
 
     test("D23 with a bottom copy of a rim note: a held tray note still replaces a rim note and the ding", async () => {
@@ -4888,17 +4897,22 @@ function run() {
     const pause = (ms) => new Promise((r) => setTimeout(r, ms));
     const open = async (w, h) => { await fresh(w, h); await openBuiltin(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
 
-    // Targets: the plan's S1 formula with the option B sticky strip (tray beats the 200 floor, 120 is the hard floor),
-    // derived by rect probe on this lane's build. 0.95 x target is the floor each test enforces.
-    const STACKED = [[390, 844, 362, 380], [430, 932, 402, 422], [375, 667, 203, 212, 200], [360, 640, 176, 186], [375, 548, 120, 126], [320, 568, 120, 126], [768, 1024, 480, 504]];
-    for (const [w, h, target, upper, lower = 0.95 * target] of STACKED) {
-      test(`P0 ${w}x${h}: the drawn pan holds its sized height (${lower} to ${upper}px, so a zero flex basis fails), the page never scrolls and the toolbar is in view`, async () => {
+    const STACKED = [[390, 844, 321], [430, 932, 355], [375, 667, 309],
+      [360, 640, 296], [375, 548, 274], [320, 568, 262], [768, 1024, 480]];
+    for (const [w, h, diameter] of STACKED) {
+      test(`P0 ${w}x${h}: the full rim has its designed size with no page scroll and pinned actions`, async () => {
         await open(w, h);
-        const r = await rects(w, h);
-        const side = Math.min(r.svg.w, r.svg.h);
-        assert.ok(side >= lower && side <= upper, `${w}x${h}: drawn pan ${r.svg.w}x${r.svg.h}, wanted ${lower} to ${upper}`);
-        assert.ok(r.page, "no page scroll");
-        assert.ok(r.bar.top >= 0 && r.bar.bottom <= h, "toolbar in view " + JSON.stringify(r.bar));
+        await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to clear the whole rim" });
+        const r = await b.eval(`const shell = document.querySelector('#editor-pan svg > circle[r="100"]').getBoundingClientRect();
+          const handle = editorEl("drawerexp-handle").getBoundingClientRect();
+          const bar = editorEl("editor-save").getBoundingClientRect();
+          const de = document.documentElement;
+          return { w: shell.width, h: shell.height, full: shell.left >= 0 && shell.right <= innerWidth &&
+            shell.top >= 0 && shell.bottom <= handle.top + 1, scrolls: de.scrollWidth > innerWidth || de.scrollHeight > innerHeight,
+            save: editorEl("editor-save").contains(document.elementFromPoint(bar.x + bar.width / 2, bar.y + bar.height / 2)) };`);
+        assert.ok(Math.abs(r.w - r.h) < 1 && Math.abs(r.h - diameter) <= diameter * 0.05, JSON.stringify(r));
+        assert.ok(r.full && !r.scrolls && r.save, JSON.stringify(r));
       });
     }
 
