@@ -15364,10 +15364,10 @@ function editorOpen(edit) {
         editorMenuItem("editor-placement-help", "editor.placement_help"),
         editorMenuItem("editor-fixed-slots", "editor.fixed_slots"),
         ...(edit ? [editorNode("div", { class: "menu-sep", role: "separator" }), editorDeleteButton()] : []))),
-    editorNode("div", { id: "editor-dialog", role: "alertdialog", "aria-modal": "true", "aria-labelledby": "editor-dlg-title", hidden: true },
+    editorNode("div", { id: "editor-dialog", role: "alertdialog", "aria-modal": "true", "aria-labelledby": "editor-dlg-title", "aria-describedby": "editor-dlg-body", hidden: true },
       editorNode("div", { class: "dlg" },
         editorNode("h3", { id: "editor-dlg-title", text: t("editor.dlg.title") }),
-        editorNode("p", { text: t("editor.dlg.body") }),
+        editorNode("p", { id: "editor-dlg-body", text: t("editor.dlg.body") }),
         editorNode("div", { class: "dlg-actions" },
           button("editor-dlg-save", "editor.dlg.save"), button("editor-dlg-discard", "editor.dlg.discard"), button("editor-dlg-keep", "editor.dlg.keep")))));
   sheet.appendChild(root);
@@ -16915,7 +16915,9 @@ function editorShowDialog(on) {
   s.dialog = on;
   if (on) { editorCloseMenu(false); if (s.hint) editorSetAreas(false); }
   const dlg = editorEl("editor-dialog");
-  editorEl("editor-dlg-save").hidden = !!s.saveAcknowledged;
+  const save = editorEl("editor-dlg-save");
+  save.hidden = !!s.saveAcknowledged;
+  save.disabled = editorSubmitOff(s, s.history.present);
   editorEl("editor-dlg-body").textContent = s.saveAcknowledged ? s.saveError : t("editor.dlg.body");
   if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");
   for (const node of editorEl("editor").children) if (node !== dlg) { node.inert = on; if (on) node.setAttribute("aria-hidden", "true"); else node.removeAttribute("aria-hidden"); }
