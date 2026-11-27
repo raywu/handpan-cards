@@ -26,13 +26,20 @@ def served_digest():
 
 def run(expected, artifacts, wait):
     expected_digest = hashlib.sha256(expected.read_bytes()).hexdigest()
-    report = {"url": PREVIEW_URL, "expected_sha256": expected_digest, "editor_cases": []}
+    report = {
+        "url": PREVIEW_URL,
+        "expected_sha256": expected_digest,
+        "served_sha256_before": None,
+        "served_sha256_after": None,
+        "editor_cases": [],
+    }
     artifacts.mkdir(parents=True, exist_ok=True)
     try:
         deadline = time.monotonic() + wait
         while True:
             try:
-                if served_digest() == expected_digest:
+                report["served_sha256_before"] = served_digest()
+                if report["served_sha256_before"] == expected_digest:
                     break
                 readiness = "served HTML did not match the publisher output"
             except subprocess.CalledProcessError as exc:
@@ -49,7 +56,8 @@ def run(expected, artifacts, wait):
         report.update(editor_cases=cases, total=total, failed=failed, skipped=skipped,
                       cancelled=cancelled, returncode=code)
         report["editor_required_without_pass"] = suite_health.editor_case_problems(cases)
-        if served_digest() != expected_digest:
+        report["served_sha256_after"] = served_digest()
+        if report["served_sha256_after"] != expected_digest:
             raise ValueError("The editor preview revision changed while its tests ran.")
         return bool(not total or failed or skipped or cancelled or code
                     or report["editor_required_without_pass"])

@@ -913,6 +913,32 @@ class EditorCaseReportTest(unittest.TestCase):
                                      entry is not passed, problems)
 
 
+class EditorHostedRevisionTest(unittest.TestCase):
+    def test_reports_observed_revision_before_and_after_browser_run(self):
+        import hashlib
+        from pathlib import Path
+        from tools import run_editor_rc
+
+        expected = hashlib.sha256(b"expected revision").hexdigest()
+        changed = hashlib.sha256(b"different revision").hexdigest()
+        tap = "ok 1 - EDITOR-EXIT-INVALID: Discard exits\n"
+        for observed, fails in ((expected, False), (changed, True)):
+            with self.subTest(observed=observed), tempfile.TemporaryDirectory() as folder:
+                html = Path(folder) / "index.html"
+                html.write_bytes(b"expected revision")
+                with mock.patch.dict(os.environ), \
+                     mock.patch.object(run_editor_rc, "served_digest", side_effect=[expected, observed]), \
+                     mock.patch.object(suite_health, "run_node_file", return_value=(1, 0, 0, 0, 0, tap)), \
+                     mock.patch.object(suite_health, "EDITOR_REQUIRED", {"EDITOR-EXIT-INVALID"}), \
+                     contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(run_editor_rc.run(html, html.parent, wait=0), fails)
+                report = json.loads((html.parent / "editor-rc.json").read_text())
+                self.assertEqual(report["expected_sha256"], expected)
+                self.assertEqual(report["served_sha256_before"], expected)
+                self.assertEqual(report["served_sha256_after"], observed)
+                self.assertEqual("harness_error" in report, fails)
+
+
 class TimedRunTest(unittest.TestCase):
     def test_timed_run_prints_the_wall_clock_and_returns_the_result(self):
         old = suite_health.run_node_file
