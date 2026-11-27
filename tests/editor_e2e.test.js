@@ -4042,7 +4042,10 @@ function run() {
       await typeLine(SCALE);
       if (th === 440) {
         await b.click("#editor-more");
-        await b.click("#editor-form-toggle");
+        await b.waitFor("editorSession.menu", { label: "the More menu to open" });
+        await b.eval('editorEl("editor-form-toggle").focus(); return true;');
+        await press("Enter", "Enter", 13);
+        await b.waitFor('editorSession.formMode && !editorEl("editor-form").hidden', { label: "the scale form to open" });
         assert.equal(await b.eval(`const drawer = editorEl("drawerexp-body");
           drawer.scrollTop = 0;
           return drawer.scrollHeight > drawer.clientHeight;`), true, "the scale form extends beyond the drawer");
@@ -4052,24 +4055,26 @@ function run() {
         const none = root.appendChild(document.createElement("button")); none.id = "zz-none"; none.style.display = "none";
         const ids = editorTabStops().map((e) => e.id); off.remove(); none.remove();
         return ids.filter((id) => id.startsWith("zz-"));`), [], "a disabled or unlaid-out control is no Tab stop");
+      const focusInView = () => b.eval(`const active = document.activeElement, q = active.getBoundingClientRect();
+        const p = (active.closest("#drawerexp-body") || editorEl("editor")).getBoundingClientRect();
+        return { id: active.id || String(active.className), outside: q.top < p.top - 1 || q.bottom > p.bottom + 1 };`);
+      if (th === 440) {
+        await b.eval('editorEl("editor-tab-scale").focus(); return true;');
+        for (const id of ["editor-name", "editor-form-ding", "editor-form-top", "editor-form-inner", "editor-form-bottom"]) {
+          await press("Tab", "Tab", 9);
+          assert.deepStrictEqual(await focusInView(), { id, outside: false });
+        }
+        return;
+      }
       const stops = await b.eval(`return editorTabStops().length;`);
       await b.eval(`document.getElementById("editor-back").focus(); return true;`);
       const outside = [];
-      const visited = new Set();
       for (let k = 0; k < stops; k += 1) {
         await press("Tab", "Tab", 9);
-        const focus = await b.eval(`const active = document.activeElement, q = active.getBoundingClientRect();
-          const p = (active.closest("#drawerexp-body") || editorEl("editor")).getBoundingClientRect();
-          return { id: active.id || active.className, outside: q.top < p.top - 1 || q.bottom > p.bottom + 1 };`);
-        visited.add(focus.id);
+        const focus = await focusInView();
         if (focus.outside) outside.push(focus.id);
       }
       assert.deepStrictEqual(outside, []);
-      if (th === 440) {
-        for (const field of ["ding", "top", "inner", "bottom"]) {
-          assert.ok(visited.has("editor-form-" + field), `Tab reaches the ${field} input`);
-        }
-      }
     });
   });
 
