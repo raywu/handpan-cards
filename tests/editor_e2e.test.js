@@ -4321,8 +4321,10 @@ function run() {
     test("drag ux E5: with reduced motion the camera fits without animation, the drawer closes and the highlight is still set", async () => {
       await setup(SCALE_);
       await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+      const from = await chipAt("B"), to = await noteAt("rim", 0);
+      let touching = true;
       try {
-        await liftFrom(await chipAt("B"), await noteAt("rim", 0));
+        await liftFrom(from, to);
         await waitDrag();
         const frame = await dragFrame();
         assert.deepStrictEqual([frame.inert, frame.visible, frame.railPassive], [true, true, true]);
@@ -4333,6 +4335,7 @@ function run() {
         assert.deepStrictEqual(durations, ["0s", "0s"], "the fitted camera and drawer do not animate");
         const preview = await aimDrag("rim", 22.5);
         await touch("touchEnd");
+        touching = false;
         await waitRelease(false);
         assert.deepStrictEqual(await marked(), ["rim:B4"]);
         assert.equal(await b.eval(`return getComputedStyle(document.querySelector("#editor-pan .ehit.editor-new")).animationName;`),
@@ -4340,7 +4343,7 @@ function run() {
         assert.equal(await b.eval(`const m = editorSession.history.present, i = editorNames(m, "rim").indexOf("B4");
           return editorAnglesOf(editorSolve(m), "rim")[i];`), preview.angle);
       } finally {
-        await touch("touchCancel");
+        if (touching) await touch("touchCancel");
         await b.send("Emulation.setEmulatedMedia", { features: [] });
       }
     });

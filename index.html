@@ -17580,6 +17580,8 @@ function editorDropTarget(e, src, drag = editorDrag) {
     return Math.hypot(pt[0], pt[1]) > svg.viewBox.baseVal.width / 200 + EDITOR_OFF_MARGIN ? { kind: "outside" } : editorHitAt(solved.value, pt, true, editorSession.history.present);
   }
   const hit = editorHitAt(solved.value, pt, true, editorSession.history.present);
+  // A projected seat can overlap the note's original position.
+  if (src.from === "pan" && hit.kind === "note" && hit.ring === src.ref.ring && hit.i === src.ref.i) return hit;
   if (drag?.model === editorSession.history.present && hit.kind !== "off") {
     const projected = editorGuidedHit(pt);
     if (projected) return projected;
