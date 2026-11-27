@@ -112,6 +112,20 @@ function run() {
       l.dispatchEvent(new Event("input", { bubbles: true })); return true;`);
     if (commit) await b.key("Enter", "Enter", 13);
   };
+  async function setupLegacy(line, width, height) {
+    await fresh(width, height);
+    await openAdd();
+    await b.eval(`
+      const fixture = editorLoad(${JSON.stringify(line)});
+      if (!fixture.ok) throw Error(fixture.reason);
+      const view = editorSession.history.present.view;
+      const model = { ...fixture.value, view };
+      editorSession.history = editorHistoryNew(model);
+      editorSession.base = model;
+      editorRender();
+      return true;
+    `);
+  }
   const pinInner = () => b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 125)).history;
     editorRender(); return editorSession.history.present.pins.length;`);
 
@@ -1469,9 +1483,7 @@ function run() {
     });
 
     test("changing the notes while pins exist says Pins reset, offers Undo, and Undo brings the pins back", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
+      await setupLegacy(SCALE);
       assert.strictEqual(await pinInner(), 1);
       await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5 E5");
       const m = await model();
@@ -1485,9 +1497,7 @@ function run() {
     });
 
     test("the same notes and zones keep the pins and say nothing", async () => {
-      await fresh();
-      await openAdd();
-      await typeLine(SCALE);
+      await setupLegacy(SCALE);
       await pinInner();
       const before = await model();
       await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | D5 C5");
@@ -1817,21 +1827,6 @@ function run() {
     const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
     const hold = (name) => b.click(`.tray-note[data-name="${name}"]`);
     const setup = async (line) => { await fresh(); await openAdd(); await typeLine(line); };
-    async function setupLegacy(line) {
-      await fresh();
-      await openAdd();
-      await b.eval(`
-        const fixture = editorLoad(${JSON.stringify(line)});
-        if (!fixture.ok) throw Error(fixture.reason);
-        const view = editorSession.history.present.view;
-        const model = { ...fixture.value, view };
-        editorSession.history = editorHistoryNew(model);
-        editorSession.base = model;
-        editorRender();
-        return true;
-      `);
-    }
-
     test("the tray has the 12 note names, an octave stepper, a flat/sharp toggle and no Ding or Root button (D23)", async () => {
       await setup(SCALE);
       const r = await b.eval(`const tray = document.getElementById("editor-tray");
@@ -2424,7 +2419,7 @@ function run() {
       });
 
       test("parity 6 / Re-space e2e: pins stay on an add; Reset bottom spacing re-spaces and drops at-, Undo restores; Reset spacing (2) clears both in one step, v8 gone", async () => {
-        await setup(BOT_LINE(3) + " (D3) " + RIM8 + " | C5 D5 E5");
+        await setupLegacy(BOT_LINE(3) + " (D3) " + RIM8 + " | C5 D5 E5");
         for (const [ring, i, g] of [["bottom", 0, 60], ["bottom", 1, 120], ["inner", 2, 120]]) {
           await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, ${JSON.stringify(ring)}, ${i}, ${g}, true)).history; editorRender(); return true;`);
         }
@@ -2469,7 +2464,7 @@ function run() {
       });
 
       test("D18 cyclops: resetting cyclops spacing drops the link back from v8", async () => {
-        await setup(SCALE);
+        await setupLegacy(SCALE);
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 150, true)).history; editorRender(); return true;`);
         assert.match(await linkOf(), /#s=8/);
         await tapNote("inner", 0);
@@ -2527,16 +2522,12 @@ function run() {
       });
 
       test("D18 labels: the menu item shows the scoped label at any width, with the scope in the accessible name", async () => {
-        await fresh(1100, 800);
-        await openAdd();
-        await typeLine("[A2] [B2] " + SCALE);
+        await setupLegacy("[A2] [B2] " + SCALE, 1100, 800);
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); return true;`);
         assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "inner", 0, 150, true)).history; editorSession.sel = null; editorRender(); return true;`);
         assert.deepStrictEqual(await reset(), { aria: "Reset cyclops and bottom spacing", disabled: false, visible: "Reset spacing (2)" });
-        await fresh(375, 667);
-        await openAdd();
-        await typeLine("[A2] [B2] " + SCALE);
+        await setupLegacy("[A2] [B2] " + SCALE, 375, 667);
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorSession.sel = { ring: "bottom", i: 0 }; editorRender(); return true;`);
         assert.deepStrictEqual(await reset(), { aria: "Reset bottom spacing", disabled: false, visible: "Reset bottom spacing" });
       });
