@@ -216,9 +216,12 @@ test("U2b-8: pan type Standard to Neotone proposes the profile and back removes 
 
 test("U2b-9: switching to Standard drops the profile without touching the seats; unpinning is not involved", () => {
   const a = app();
-  withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `{ palette: 2 }`);
+  withModel(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `{ palette: 2, seats: { rim: [1, 0, 2, 3, 4, 5, 6] } }`);
+  const before = solvedOf(a);
   a.run(`globalThis.__n = editorPanType(__m, "neotone").value; globalThis.__s = editorPanType(__n, "standard").value; true`);
-  assert.strictEqual(a.get("JSON.stringify(__s) === JSON.stringify(__m)"), true);
+  assert.strictEqual(a.get("__n.options.profile.rev"), 3);
+  assert.deepStrictEqual(solvedOf(a, "__s"), before);
+  assert.deepStrictEqual(plain(a.get("editorBare(__s)")), plain(a.get("editorBare(__m)")));
 });
 
 test("U2b-10: a new scale opens as the empty model and a built-in opens with its notes, anchor and palette, no name and no replaces (D15)", () => {
@@ -392,7 +395,21 @@ test("U2c-10 (D23): a tray note replaces the ding; a placed note swaps seats wit
   assert.strictEqual(swap.A2.zone, "ding", "the dropped note is the ding");
   assert.strictEqual(swap.D3.zone, "bottom");
   assert.strictEqual(swap.D3.angle, 90, "the old root took the dropped note's seat");
-  assert.strictEqual(plain(a.get(`editorSwapNames(__m, { ring: "rim", i: 2 }, { ring: "ding", i: 0 })`)).ok, false, "a ding above a rim note is not legal, the engine refuses");
+  const before = plain(a.get("__m"));
+  const staged = plain(a.get(`(() => {
+    const changed = editorApply(editorHistoryNew(__m),
+      m => editorSwapNames(m, { ring: "rim", i: 2 }, { ring: "ding", i: 0 }));
+    const draft = changed.history.present;
+    return { ok: changed.ok, saveable: editorCanSave(draft), ding: editorDingOf(draft),
+      rim: editorNames(draft, "rim"), bottom: editorNames(draft, "bottom"),
+      depth: changed.history.past.length, undoRestores: editorUndo(changed.history).present === __m };
+  })()`));
+  assert.deepStrictEqual(staged, {
+    ok: true, saveable: false, ding: "C4",
+    rim: ["A3", "Bb3", "D3", "D4", "E4", "F4", "G4", "A4"], bottom: ["A2"],
+    depth: 1, undoRestores: true
+  }, "a high Ding swap is editable until the top pitches are repaired");
+  assert.deepStrictEqual(plain(a.get("__m")), before);
 });
 
 test("U2c-11 (D4): a cross-zone swap trades zones and keeps each seat when both stay legal", () => {
@@ -714,7 +731,7 @@ describe("U2f drag classifier and drop plan", () => {
     for (const kind of ["off", "outside"]) assert.strictEqual(a.get(`(() => { const p = editorDropPlan(__m, { from: "tray", name: "B4" }, { kind: ${JSON.stringify(kind)} }); return p.snap === true && !p.step && !p.trade; })()`), true, kind);
   });
 
-  test("U2f-3 (D4, OQA): a placed note released outside the pan is removed; the ding never is; a miss inside the pan snaps back", () => {
+  test("U2f-3 (D4, OQA): a placed note released outside the pan is removed; a missing Ding or rim stays editable; a covered drop snaps back", () => {
     const a = app();
     withModel(a, SCALE);
     plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "outside" });
@@ -722,14 +739,21 @@ describe("U2f drag classifier and drop plan", () => {
     assert.ok(!rimOf(a, "__r.value").includes("D4"));
     assert.strictEqual(a.get("__p.say"), "D4 removed.");
     plan(a, { from: "pan", ref: { ring: "ding", i: 0 } }, { kind: "outside" });
-    assert.strictEqual(a.get("__p.refuse"), "Every scale needs a ding. Drop another note on it to swap.");
-    assert.strictEqual(a.get("__p.step"), undefined);
+    after(a);
+    assert.strictEqual(a.get("__r.ok"), true);
+    assert.strictEqual(a.get("editorDingOf(__r.value)"), "");
+    assert.strictEqual(a.get("editorCanSave(__r.value)"), false);
+    assert.deepStrictEqual(rimOf(a, "__r.value"), rimOf(a, "__m"));
     withModel(a, "(D3) A3");
     plan(a, { from: "pan", ref: { ring: "rim", i: 0 } }, { kind: "outside" });
-    assert.strictEqual(a.get("__p.refuse"), "The rim needs at least 1 note.");
+    after(a);
+    assert.strictEqual(a.get("__r.ok"), true);
+    assert.strictEqual(a.get("editorDingOf(__r.value)"), "D3");
+    assert.strictEqual(a.get("editorCanSave(__r.value)"), false);
+    assert.deepStrictEqual(rimOf(a, "__r.value"), []);
     withModel(a, SCALE);
     plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "off" });
-    assert.strictEqual(a.get("__p.snap"), true);
+    assert.deepStrictEqual(plain(a.get("__p")), { snap: true });
   });
 
   test("U2f-4 (D4, D23): a placed note on another note trades; on itself snaps back; the ding trades through the same path", () => {
@@ -743,30 +767,40 @@ describe("U2f drag classifier and drop plan", () => {
     assert.deepStrictEqual(plain(a.get("__p.trade")), [{ ring: "bottom", i: 0 }, { ring: "ding", i: 0 }]);
   });
 
-  test("U2f-5: a placed cyclops note dropped on a cyclops spot moves to that angle; a rim note dropped on an empty bottom spot moves areas", () => {
+  test("U2f-5: a placed Cyclops note snaps to the projected seat; rim notes move to Guided rim or exact bottom spots", () => {
     const a = app();
     withModel(a, SCALE);
     plan(a, { from: "pan", ref: { ring: "inner", i: 0 } }, { kind: "spot", ring: "inner", angle: 110 });
     after(a);
-    assert.deepStrictEqual(plain(a.get("__r.value.options.angles.inner.filter((x) => x !== null)")), [110]);
+    assert.strictEqual(a.get("__p.guided.projection.landing"), 90);
+    assert.strictEqual(solvedOf(a, "__r.value").C5.angle, 90);
+    assert.strictEqual(a.get("__r.value.options.angles?.inner"), undefined);
+    assert.deepStrictEqual(plain(a.get("__r.value.options.guided.inner")), { size: 3, seats: [2, 1] });
     plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "spot", ring: "bottom", angle: 270 });
     after(a);
     assert.strictEqual(a.get("__r.ok"), true);
     assert.ok(!rimOf(a, "__r.value").includes("D4"));
     assert.deepStrictEqual(plain(a.get(`editorNames(__r.value, "bottom")`)), ["D4"]);
     plan(a, { from: "pan", ref: { ring: "rim", i: 3 } }, { kind: "spot", ring: "rim" });
-    assert.strictEqual(a.get("__p.snap"), true, "a rim spot has no angle to move to");
+    after(a);
+    assert.strictEqual(a.get("__p.guided.projection.landing"), 90);
+    assert.strictEqual(solvedOf(a, "__r.value").D4.angle, 90);
+    assert.deepStrictEqual(rimOf(a, "__r.value"), rimOf(a, "__m"));
   });
 
-  test("U2f-8 (row 24): a tray note placed on an exact cyclops or bottom angle says where and that it stays; on the rim it says added", () => {
+  test("U2f-8 (row 24): a tray note announces Guided reflow or an exact underside placement as appropriate", () => {
     const a = app();
     withModel(a, SCALE);
     plan(a, { from: "tray", name: "G5" }, { kind: "spot", ring: "inner", angle: -40 });
-    assert.strictEqual(a.get("__p.say"), "G5 placed on the cyclops at 320 degrees. It stays there.");
+    after(a);
+    assert.strictEqual(a.get("__p.say"), "G5 placed. cyclops notes re-spaced.");
+    assert.strictEqual(solvedOf(a, "__r.value").G5.angle, 14);
     plan(a, { from: "tray", name: "G2" }, { kind: "spot", ring: "bottom", angle: 270 });
     assert.strictEqual(a.get("__p.say"), "G2 placed on the bottom at 270 degrees. It stays there.");
     plan(a, { from: "tray", name: "B4" }, { kind: "spot", ring: "rim" });
-    assert.strictEqual(a.get("__p.say"), "B4 added to the rim.");
+    after(a);
+    assert.strictEqual(a.get("__p.say"), "B4 placed. rim notes re-spaced.");
+    assert.strictEqual(solvedOf(a, "__r.value").B4.angle, 90);
     plan(a, { from: "tray", name: "G2" }, { kind: "spot", ring: "bottom" });
     assert.strictEqual(a.get("__p.say"), "G2 added to the bottom.");
   });
@@ -820,8 +854,9 @@ describe("OQA-A zone-first, zone state and copy", () => {
   test("OQA N3 N4 N5 copy: ding stays, same zone, zone is full, each a status line and no silent deselect", () => {
     const a = app();
     openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.sel = { ring: "ding", i: 0 };`);
-    a.run(`editorSelectTap({ kind: "spot", ring: "rim" }, editorSession.history.present);`);
+    a.run(`editorSelectTap({ kind: "spot", ring: "ding" }, editorSession.history.present);`);
     assert.strictEqual(a.get(`editorSession.say`), a.get(`t("editor.say.ding_stays")`));
+    assert.strictEqual(a.get(`editorSession.history.past.length`), 0);
     assert.deepStrictEqual(plain(a.get(`editorSession.sel`)), { ring: "ding", i: 0 }, "the selection stays");
     openSession(a, "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4", `editorSession.sel = { ring: "rim", i: 1 };`);
     a.run(`editorSelectTap({ kind: "spot", ring: "rim" }, editorSession.history.present);`);
@@ -830,6 +865,8 @@ describe("OQA-A zone-first, zone state and copy", () => {
     a.run(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present);`);
     assert.strictEqual(a.get(`editorSession.error`), a.get(`t("editor.full.rim", { max: EDITOR_CAPS.rim })`), "a held note on a full rim says the rim is full");
     assert.notStrictEqual(a.get(`editorSession.held`), null, "and the note stays held");
+    assert.strictEqual(a.get(`editorSession.history.past.length`), 0, "refusal creates no Undo entry");
+    assert.strictEqual(a.get(`editorSession.history.present === __m`), true, "refusal keeps the model");
   });
 
   test("OQA neotone untouched: Neotone editorHitAt on a fixture grid equals the recorded base result", () => {
