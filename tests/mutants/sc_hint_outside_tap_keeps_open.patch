@@ -1,10 +1,10 @@
-# kills: SC 390x664: the first row of the Scale tab is fully visible under the strip, and the Hint info button takes no layout height
-# suite: node --test --test-name-pattern ^SC.390x664 tests/editor_e2e.test.js
-# fault: A tap outside the Hint overlay leaves it open.
+# kills: P0 Placement help 390x664: the overlay preserves frame and pinned rail, and dismissal restores More focus
+# suite: node --test --test-name-pattern ^P0.Placement.help.390x664: tests/editor_e2e.test.js
+# fault: Keep Placement help open after a pointer press outside it.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14987,7 +14987,7 @@ function editorWire() {
+@@ -17719,7 +17719,7 @@
    const del = editorEl("editor-delete");
    if (del) del.onclick = editorMenuPick(editorDeleteTap);
    editorEl("editor").addEventListener("pointerdown", (e) => {

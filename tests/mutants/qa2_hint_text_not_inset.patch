@@ -1,10 +1,10 @@
-# kills: QA2 hint 390x844: the info button sits below the strip; the open overlay is clear of the button and has an x at its top right that closes it
-# suite: node --test --test-name-pattern QA2.hint tests/editor_e2e.test.js
-# fault: The overlay text runs under the x button.
+# kills: P0 Placement help 390x844: the overlay preserves frame and pinned rail, and dismissal restores More focus
+# suite: node --test --test-name-pattern ^P0.Placement.help.390x844: tests/editor_e2e.test.js
+# fault: Place help text beneath Close by removing its right inset.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -941,7 +941,7 @@
+@@ -988,7 +988,7 @@
  #editor-pan{height:100%; width:100%; display:flex; align-items:center; justify-content:center}
  #editor-pan svg{max-height:100%; max-width:100%; height:100%; width:auto}
  #editor-areas{position:absolute; z-index:4; box-sizing:border-box; display:flex; flex-direction:column; gap:var(--sp-2); overflow-y:auto; overscroll-behavior:contain;

@@ -5096,13 +5096,15 @@ function run() {
           const geometry = await b.eval(`
             const close = document.getElementById("editor-hint-close");
             const button = close.getBoundingClientRect();
-            const card = document.getElementById("editor-areas").getBoundingClientRect();
+            const help = document.getElementById("editor-areas");
+            const card = help.getBoundingClientRect();
+            const contentRight = card.right - parseFloat(getComputedStyle(help).paddingRight);
             const rail = document.querySelector(".editor-toolbar").getBoundingClientRect();
             const hit = document.elementFromPoint(button.x + button.width / 2, button.y + button.height / 2);
-            return { label: close.getAttribute("aria-label"), hittable: close.contains(hit),
+            return { label: close.getAttribute("aria-label"), hittable: close.contains(hit), contentClearsClose: contentRight <= button.left,
               inside: button.top >= card.top && button.right <= card.right + 1 && button.bottom <= rail.top };
           `);
-          assert.ok(geometry.label && geometry.hittable && geometry.inside, JSON.stringify(geometry));
+          assert.ok(geometry.label && geometry.hittable && geometry.inside && geometry.contentClearsClose, JSON.stringify(geometry));
           const shown = await drawerHits();
           assert.deepEqual(shown.rail, [true, true, true]);
           assert.equal(shown.info, 0);
@@ -5112,6 +5114,10 @@ function run() {
           assert.equal(await b.eval("return document.activeElement.id;"), "editor-more");
           assert.deepEqual(await frame(), before);
         }
+        await openPlacementHelp();
+        await b.click("#editor-title");
+        assert.ok(await b.eval('return document.getElementById("editor-areas").hidden;'), "a tap outside dismisses help");
+        assert.deepEqual(await frame(), before);
       });
     }
 
