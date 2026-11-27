@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14942,7 +14942,7 @@ function editorWire() {
-     const s = editorSession;
+@@ -16123,7 +16123,7 @@
+   editorEl("editor-dlg-discard").onclick = () => closeScaleSheet();
+   editorEl("editor-dlg-save").onclick = () => {
      editorShowDialog(false);
-     if (s && !editorCanSave(s.history.present)) { s.error = t("editor.empty"); editorRender(); return; }
--    editorSave();
+-    editorSave(true);
 +    closeScaleSheet();
    };
  }

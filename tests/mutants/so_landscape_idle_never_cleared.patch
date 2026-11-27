@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13954,7 +13954,6 @@ function editorRenderBody() {
-   if (!s.error) s.lastError = "";
+@@ -14928,7 +14928,6 @@
+   if (!error) s.lastError = "";
    status.textContent = "";
    status.removeAttribute("data-kind");
 -  status.removeAttribute("data-idle");
-   if (s.error) {
+   if (error) {
      status.setAttribute("data-kind", "error");
-     status.textContent = s.error;
+     status.textContent = error;

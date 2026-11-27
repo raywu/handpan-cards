@@ -5,8 +5,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15059,7 +15059,7 @@ async function editorSave(separate = false) {
-     if (result.published === false) { s.error = savedPublicationText(result); return; }
+@@ -16235,7 +16235,7 @@ async function editorSave(fromDialog = false) {
+     if (result.published === false) { s.saveAcknowledged = true; s.base = m; s.error = s.saveError = savedPublicationText(result); return; }
      const d = savedEntries.get(result.instanceId).deck;
      const warned = (d.warnings || []).map((w) => reasonText(w));
 -    if (editorSession === s && editorDraftMoved(s, m)) {

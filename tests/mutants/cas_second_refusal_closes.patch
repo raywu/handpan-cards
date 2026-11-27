@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15235,6 +15235,7 @@ async function editorSave() {
+@@ -16229,6 +16229,7 @@ async function editorSave(fromDialog = false) {
        if (generation !== sheetGeneration || !pageOpen) return;
      }
      if (!result.ok) {
 +      if (retried) closeScaleSheet();
-       if (result.kind !== "cancelled") s.error = savedErrorText(result);
+       if (result.kind !== "cancelled") s.error = s.saveError = savedErrorText(result);
        return;
      }

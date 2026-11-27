@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17126,7 +17126,7 @@ async function editorSave() {
-   s.saving = true;
+@@ -16213,7 +16213,7 @@ async function editorSave(fromDialog = false) {
+   s.saveError = "";
    editorRender();
    try {
 -    const seedName = !!m.options.profile && !m.options.name && !s.nameTouched && (!base || base.selection.kind === "builtin");
 +    const seedName = false && !m.options.name && !s.nameTouched && (!base || base.selection.kind === "builtin");
      const built = buildGenerated(HPE.core.formatSeed(m.fields), editorCommitOptions(seedName ? editorSetName(m, editorAutoName(m)).value : m));
-     if (!built.ok) { s.error = reasonText(built); return; }
+     if (!built.ok) { s.error = s.saveError = reasonText(built); return; }
      const candidate = { record: scaleRecord(seedOf(built.value)), deck: built.value };

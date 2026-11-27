@@ -1,14 +1,15 @@
 # kills: U2b n8 Save in the prompt on an emptied saved scale says why nothing was saved
 # suite: node --test --test-name-pattern ^U2b.n8 tests/editor_e2e.test.js
-# fault: Save in the Back prompt on an empty model closes the prompt and says nothing.
+# fault: The Back prompt omits the reason Save is disabled on an empty draft.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14939,7 +14939,6 @@
-   editorEl("editor-dlg-save").onclick = () => {
-     const s = editorSession;
-     editorShowDialog(false);
--    if (s && !editorCanSave(s.history.present)) { s.error = t("editor.empty"); editorRender(); return; }
-     editorSave();
-   };
- }
+@@ -15697,7 +15697,7 @@
+   save.disabled = editorSubmitOff(s, s.history.present);
+   const model = s.history.present;
+   const guidance = save.disabled && !editorCanSave(model) ? editorEmptyPrompt(model) : "";
+-  editorEl("editor-dlg-body").textContent = s.saveAcknowledged ? s.saveError : guidance || t("editor.dlg.body");
++  editorEl("editor-dlg-body").textContent = s.saveAcknowledged ? s.saveError : t("editor.dlg.body");
+   if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");
+   for (const node of editorEl("editor").children) if (node !== dlg) { node.inert = on; if (on) node.setAttribute("aria-hidden", "true"); else node.removeAttribute("aria-hidden"); }
+   (on ? editorEl("editor-dlg-keep") : editorEl("editor-back")).focus();

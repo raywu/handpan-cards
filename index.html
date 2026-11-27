@@ -16122,7 +16122,6 @@ function editorWire() {
   editorEl("editor-dlg-keep").onclick = () => editorShowDialog(false);
   editorEl("editor-dlg-discard").onclick = () => closeScaleSheet();
   editorEl("editor-dlg-save").onclick = () => {
-    const s = editorSession;
     editorShowDialog(false);
     editorSave(true);
   };
