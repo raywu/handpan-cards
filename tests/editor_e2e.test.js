@@ -5129,7 +5129,7 @@ function run() {
     test("QA3 drawer controls 390x844: Placement help is reachable after a tray drag", async () => {
       await open(390, 844);
       await b.drag(".tray-note", [[0, 100, -150], [0, 200, -300]]);
-      await b.waitFor('!editorDrag && !document.getElementById("editor").classList.contains("dragging")',
+      await b.waitFor('!editorDrag && !document.getElementById("editor").matches(".dragging, .settling")',
         { label: "the tray drag to finish" });
       assert.equal((await drawerHits()).info, 0);
       assert.deepEqual((await drawerHits()).rail, [true, true, true]);
