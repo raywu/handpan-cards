@@ -1,0 +1,15 @@
+# kills: EDITOR-RC-STANDARD-GROW: Guided tap grows each Standard ring and preserves the pitches
+# suite: node --test --test-name-pattern ^EDITOR-RC-STANDARD-GROW tests/editor_e2e.test.js
+# fault: Restore a redundant Cancel control to the Guided placement banner.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15875,7 +15875,7 @@ function editorStatusNotes(box, s, m, empty) {
+     const canReplace = s.held && previews.length && editorGuidedZones.some(ring => editorNames(m, ring).length);
+     box.appendChild(document.createTextNode(feedback + t(canReplace ? "editor.guided.tap_intent" : key, { name })));
+     if (growing.length === 1) box.dataset.guidedActions = "single";
+-    if (!s.held || !previews.length) editorAppendCancelHold(box);
++    editorAppendCancelHold(box);
+   } else if (s.say || s.notice) {
+     box.appendChild(document.createTextNode((s.say || t("editor.pins_reset")) + (empty && !editorDraftPitchIssues(m).length ? " " + editorEmptyPrompt(m) : "")));
+ 
