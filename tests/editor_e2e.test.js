@@ -6281,24 +6281,58 @@ function run() {
   });
 
   describe("editor Neotone hint fit", () => {
-    const pause = (ms) => new Promise((done) => setTimeout(done, ms));
     const LANGS = fs.readdirSync(path.join(REPO, "data/i18n")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+    let fallbackBrowser;
+    before(async () => {
+      fallbackBrowser = b;
+      b = await launch({ foregroundSettle: true, realFonts: true });
+    });
+    after(async () => {
+      const fontBrowser = b;
+      b = fallbackBrowser;
+      if (fontBrowser && fontBrowser !== fallbackBrowser) await fontBrowser.close();
+    });
     for (const lang of LANGS) {
       test(`NM hint fit ${lang}: both Neotone hint lines fit`, async () => {
         for (const [w, h] of [[320, 568], [390, 844]]) {
+          const label = `${lang} ${w}x${h}`;
           await fresh(w, h);
           await b.eval(`setLang(${JSON.stringify(lang)}); return true;`);
+          await b.waitFor(`document.documentElement.lang === ${JSON.stringify(lang)}`, { label: lang });
           await openAdd();
           await typeLine("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
           await b.click("#editor-type-neotone");
-          await b.click("#editor-hint-toggle");
-          await pause(250);
-          const r = await b.eval(`const card = document.getElementById("editor-areas"), c = card.getBoundingClientRect(), lines = [...document.querySelectorAll("#editor-hint .neo-help")];
-            return { n: lines.length, cardScroll: [card.scrollWidth - card.clientWidth, card.scrollHeight - card.clientHeight],
-              out: lines.map((l) => { const q = l.getBoundingClientRect(); return { text: l.textContent.slice(0, 24), over: Math.max(c.left - q.left, q.right - c.right, c.top - q.top, q.bottom - c.bottom, l.scrollWidth - l.clientWidth) }; }).filter((x) => x.over > 0.5) };`);
-          assert.strictEqual(r.n, 2, `${lang} ${w}x${h} shows both Neotone lines: ` + JSON.stringify(r));
-          assert.ok(r.cardScroll[0] <= 0 && r.cardScroll[1] <= 0, `${lang} ${w}x${h} the hint card does not scroll: ` + JSON.stringify(r));
-          assert.deepStrictEqual(r.out, [], `${lang} ${w}x${h} a Neotone line leaves the card: ` + JSON.stringify(r));
+          await b.click("#editor-more");
+          await b.click("#editor-placement-help");
+          await b.waitFor(`!editorEl("editor-areas").hidden && document.activeElement.id === "editor-hint-close"`,
+            { label: "Placement help and its focused Close button" });
+          await b.eval("return document.fonts.ready.then(() => true);");
+          const r = await b.eval(`
+            const card = editorEl("editor-areas"), c = card.getBoundingClientRect();
+            const lines = [...document.querySelectorAll("#editor-hint .neo-help")];
+            const close = editorEl("editor-hint-close"), box = close.getBoundingClientRect();
+            const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+            return {
+              copy: lines.map(line => line.textContent.trim()),
+              expected: [t("editor.neo.pair_help"), t("editor.neo.name_hint")],
+              closeHittable: close === hit || close.contains(hit),
+              cardScroll: [card.scrollWidth - card.clientWidth, card.scrollHeight - card.clientHeight],
+              out: lines.map(line => {
+                const q = line.getBoundingClientRect();
+                return { text: line.textContent.slice(0, 24), over: Math.max(
+                  c.left - q.left, q.right - c.right, c.top - q.top, q.bottom - c.bottom,
+                  line.scrollWidth - line.clientWidth
+                ) };
+              }).filter(entry => entry.over > 0.5)
+            };
+          `);
+          assert.deepStrictEqual(r.copy, r.expected, label + ": localized Neotone help copy");
+          assert.ok(r.cardScroll.every(overflow => overflow <= 0), label + ": help card does not scroll " + JSON.stringify(r));
+          assert.deepStrictEqual(r.out, [], label + ": both Neotone lines fit inside the card");
+          assert.equal(r.closeHittable, true, label + ": the Close button receives a tap");
+          await b.click("#editor-hint-close");
+          await b.waitFor(`editorEl("editor-areas").hidden && document.activeElement.id === "editor-more"`,
+            { label: "closing Placement help returns focus to More" });
         }
       });
     }
