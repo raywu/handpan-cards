@@ -229,12 +229,11 @@ function runBrowser() {
     await b.eval(`openScaleSheet(addChip); return true;`);
     await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor panel" });
     // Fit includes SVG label bounds. Use the checked-in font bytes on each host.
-    await b.eval(`return Promise.all([
+    const loaded = await b.eval(`return Promise.all([
       document.fonts.load('400 16px "Nunito Sans"'),
       document.fonts.load('600 16px "Nunito Sans"')
-    ]).then(faces => faces.every(row => row.length > 0));`).then(loaded => {
-      assert.ok(loaded, "both editor label font weights loaded");
-    });
+    ]).then(faces => faces.every(row => row.length > 0));`);
+    assert.ok(loaded, "both editor label font weights loaded");
   }
 
   const show = (spec, state) => b.eval(`
