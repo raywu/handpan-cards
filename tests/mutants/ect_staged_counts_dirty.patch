@@ -1,15 +1,15 @@
-# kills: a staged-only editor closes silently
-# suite: node --test --test-name-pattern a.staged-only.editor.closes.silently tests/editor_e2e.test.js
-# fault: A staged-only pan counts as an edit, so Back asks.
+# kills: a staged-only editor asks before closing
+# suite: node --test --test-name-pattern a.staged-only.editor.asks.before.closing tests/editor_e2e.test.js
+# fault: Back closes while staged notes remain without asking to discard.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13464,7 +13464,7 @@ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
- const editorCanSave = (m) => !editorIsEmpty(m);
- const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
- const editorBare = (m) => {
--  const { view, stage, ...rest } = m;
-+  const { view, ...rest } = m;
-   const o = { ...rest.options };
-   if (editorIsEmpty(m)) delete o.profile;
-   if (o.anchor === "one") delete o.anchor;
+@@ -16230,7 +16230,7 @@
+   if (s.naming && editorSetName(saved, editorEl("editor-name").value).value !== saved) return true;
+   return editorEl("editor-line").value.trim() !== editorLineText(saved);
+ }
+-const editorHasChanges = (s) => editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present);
++const editorHasChanges = (s) => !editorIsEmpty(s.history.present) && (editorIsDirty(s.base, s.history.present) || editorDraftMoved(s, s.history.present));
+ async function editorSave(fromDialog = false) {
+   const s = editorSession;
+   if (!s || s.saving || savePending || s.saveAcknowledged) return;

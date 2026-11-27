@@ -5431,7 +5431,7 @@ function run() {
         assert.strictEqual(await dialogOpen(), false);
       });
 
-      test("a staged-only editor closes silently", async () => {
+      test("a staged-only editor asks before closing", async () => {
         await fresh();
         await openAdd();
         await b.eval(`const r = editorApply(editorSession.history, (m) => editorStageEdit(m, (st) => { editorStagePush(st, "rim", "A4"); }));
@@ -5439,8 +5439,8 @@ function run() {
         const staged = await b.eval(`return editorStageNames(editorSession.history.present, "rim");`);
         assert.deepStrictEqual(staged, ["A4"], "a note is really staged through the real stage path");
         await back();
-        await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the sheet to close" });
-        assert.strictEqual(await dialogOpen(), false);
+        await b.waitFor(`!document.getElementById("editor-dialog").hidden`, { label: "staged notes are protected" });
+        assert.strictEqual(await sheetHidden(), false);
       });
     });
 

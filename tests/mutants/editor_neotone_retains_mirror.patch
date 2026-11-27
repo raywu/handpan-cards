@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14393,7 +14393,6 @@ function editorPanType(m, kind) {
-     delete next.options.profile;
-     return { ok: true, value: next };
+@@ -14721,7 +14721,7 @@
+       const profile = editorProfileFor(next.fields);
+       if (!profile) return editorRefusal(t("editor.neotone"));
+       next.options.profile = profile;
+-      next.options.mirror = false;
++      next.options.mirror = options.mirror;
+     }
    }
--  next.options.mirror = false;
-   delete next.options.mirrorBottom;
-   const profile = editorProfileFor(next.fields);
-   if (!profile) return editorRefusal(t("editor.neotone"));
+   const solved = editorSolve(next);

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13458,7 +13458,7 @@ const editorRedo = (h) => (editorCanRedo(h)
+@@ -14540,7 +14540,7 @@ const editorRedo = (h) => (editorCanRedo(h)
   * check's reference) and the text line's mode. */
  const editorEmptyModel = () => ({ fields: {}, options: {}, pins: [] });
  const editorIsEmpty = (m) => !Object.keys(m.fields).length;
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +const editorCanSave = (m) => !editorIsEmpty(m) || !!m.stage;
  const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
  const editorBare = (m) => {
-   const { view, stage, ...rest } = m;
+   const { view, stage, modeLayouts, ...rest } = m;

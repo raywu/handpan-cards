@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13552,7 +13552,7 @@ function editorPanType(m, kind) {
-   if (!profile) return editorRefusal(t("editor.neotone"));
-   const hadPins = next.pins.length > 0;
-   next.options.profile = profile;
--  if (next.options.anchor === "one") delete next.options.anchor;
-+  delete next.options.anchor;
-   delete next.options.seats;
-   delete next.options.angles;
-   next.pins = [];
+@@ -14716,7 +14716,7 @@
+     Object.assign(next.options, previous.options);
+     next.pins = previous.pins;
+   } else {
+-    if (m.options.anchor === "between") next.options.anchor = "between";
++    delete next.options.anchor;
+     if (kind === "neotone") {
+       const profile = editorProfileFor(next.fields);
+       if (!profile) return editorRefusal(t("editor.neotone"));
