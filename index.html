@@ -17746,7 +17746,11 @@ function editorDragEnd(e) {
   const m = s.history.present;
   const src = d.src.from === "tray" ? { from: "tray", name: editorDragName(d.src) } : { from: "pan", ref: d.src.ref };
   const target = e && m === d.model ? editorDropTarget(e, d.src, d) : { kind: "off" };
-  const plan = target.locked ? d.preview : editorDropPlan(m, src, target);
+  const resolved = target.locked ? d.preview : editorDropPlan(m, src, target);
+  // The last pointer event can skip a painted frame. Only commit growth or
+  // reflow when the pointer releases over the insertion the player saw.
+  const plan = !target.locked && resolved.guided?.insert && editorGuidedShowsProjection(resolved.guided.projection)
+    ? { snap: true } : resolved;
   const movedName = src.from === "tray" ? src.name : editorNameAt(m, src.ref);
   const priorHistory=s.history;
   const dropPoint = e && editorRejectedPoint(m, target, editorPanPoint(e));

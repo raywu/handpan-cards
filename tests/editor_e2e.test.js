@@ -275,7 +275,7 @@ function run() {
       }
     });
 
-    test("Guided tray reflow keeps one stable drawing while switching between insert and replace", async () => {
+    test("EDITOR-RC-GUIDED-STABLE: Guided tray reflow keeps one stable drawing while switching between insert and replace", async () => {
       const seed = "(D3) A3 B3 C4 D4 E4 F4 G4 | D#4 G#4 A#4";
       const tray = '.tray-note[data-name="C#"]';
       const zone = '#editor-pan [data-guided-zone="rim"]';
@@ -288,6 +288,27 @@ function run() {
       const fieldAngles = ring => b.eval(`
         const fields = Object.values(editorSolve(editorSession.history.present).value.fields);
         return Object.fromEntries(fields.filter(field => field[3] === ${JSON.stringify(ring)}).map(field => [field[0] + field[1], field[4]]));
+      `);
+      const gapIn = ring => b.eval(`
+        const ring = ${JSON.stringify(ring)};
+        const svg = document.querySelector("#editor-pan svg");
+        const m = editorSession.history.present;
+        const geom = editorSolve(m).value.geom;
+        const screen = (angle, radius) => {
+          const a = angle * Math.PI / 180;
+          const p = new DOMPoint(radius * Math.cos(a), -radius * Math.sin(a)).matrixTransform(svg.getScreenCTM());
+          return { x: p.x, y: p.y };
+        };
+        for (const radius of [geom[ring] * 112, geom[ring] * 100]) {
+          for (let angle = 0; angle < 360; angle += 5) {
+            if ([-3, 0, 3].every(delta => {
+              const pt = screen(angle + delta, radius);
+              const target = editorDropTarget({ clientX: pt.x, clientY: pt.y }, editorDrag.src);
+              return target.kind === "spot" && target.ring === ring;
+            })) return screen(angle, radius);
+          }
+        }
+        return null;
       `);
       await fixture("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5", {}, 4);
       await lift(tray);
@@ -335,26 +356,7 @@ function run() {
         { label: "switching to the Cyclops preview" });
       assert.equal((await signature("inner")).length, 4);
       assert.deepEqual(await signature(), [], "the rim preview no longer paints while Cyclops is active");
-      const rimGap = await b.eval(`
-        const svg = document.querySelector("#editor-pan svg");
-        const m = editorSession.history.present;
-        const geom = editorSolve(m).value.geom;
-        const screen = (angle, radius) => {
-          const a = angle * Math.PI / 180;
-          const p = new DOMPoint(radius * Math.cos(a), -radius * Math.sin(a)).matrixTransform(svg.getScreenCTM());
-          return { x: p.x, y: p.y };
-        };
-        for (const radius of [geom.rim * 112, geom.rim * 100]) {
-          for (let angle = 0; angle < 360; angle += 5) {
-            if ([-3, 0, 3].every(delta => {
-              const pt = screen(angle + delta, radius);
-              const target = editorDropTarget({ clientX: pt.x, clientY: pt.y }, editorDrag.src);
-              return target.kind === "spot" && target.ring === "rim";
-            })) return screen(angle, radius);
-          }
-        }
-        return null;
-      `);
+      const rimGap = await gapIn("rim");
       assert.ok(rimGap, "an exposed rim approach can switch back from Cyclops");
       await touch("touchMove", rimGap);
       await b.waitFor(`!!document.querySelector(${JSON.stringify(landing)})`, { label: "returning to the locked rim preview" });
@@ -368,6 +370,23 @@ function run() {
       assert.deepEqual(await fieldAngles("rim"), expected);
       await clickReady("#editor-undo");
       assert.equal(await text(), seed);
+
+      await fixture(seed, {}, 4);
+      await lift(tray);
+      const unshown = await gapIn("inner");
+      assert.ok(unshown, "Cyclops has an exposed approach outside the pictured rim preview");
+      await b.eval(`
+        const point = { clientX: ${unshown.x}, clientY: ${unshown.y} };
+        const drag = editorDrag;
+        const target = editorDropTarget(point, drag.src);
+        const proposal = editorDropPlan(drag.model, { from: "tray", name: "C#4" }, target);
+        if (!proposal.guided?.projection.expanded) throw Error("The final pointerup would expand Cyclops without the release guard");
+        window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: drag.id, ...point }));
+        return true;
+      `);
+      await touch("touchEnd");
+      assert.equal(await text(), seed, "a coalesced last motion cannot commit a layout that was never previewed");
+
       for (const [ring, arrangement, old, index] of [
         ["rim", seed, "C4", 2],
         ["inner", "(D3) A3 | D#4 G#4 A#4", "G#4", 1]
