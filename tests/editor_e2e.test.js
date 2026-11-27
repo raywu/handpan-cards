@@ -1615,59 +1615,89 @@ function run() {
       assert.ok((await status()).length > 0 && await b.eval(`return document.getElementById("editor-status").getAttribute("data-kind");`) === "error");
     });
 
-    test("tap-tap swap of two rim notes, with the status, Undo in the status, and Undo of the whole step (D4)", async () => {
-      await setup(SCALE);
-      await tapNote("rim", 0);
+    const exposePanRim = async () => {
+      await b.click("#drawerexp-handle");
+      await b.waitFor(`drawerExperiment.state === "SHUT"`, { label: "the drawer to uncover the rim" });
+    };
+    const tapExposedRim = async (index) => {
+      const point = await noteAt("rim", index);
+      assert.strictEqual(await b.eval(`return !!document.elementFromPoint(${point.x}, ${point.y})?.closest("#editor-pan");`),
+        true, `rim note ${index + 1} is reachable`);
+      await tapPoint(point);
+    };
+    const chooseFirstRim = async () => {
+      await tapExposedRim(0);
+      assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: 0 });
+    };
+
+    test("tap-tap swap of two rim notes shows the result and pinned Undo restores the whole step (D4)", async () => {
+      await setupLegacy(SCALE);
+      await exposePanRim();
+      const before = await model();
+      await chooseFirstRim();
       assert.strictEqual(await b.eval(`return !document.getElementById("editor-remove").disabled;`), true, "a selected note enables Remove");
-      await tapNote("rim", 1);
-      assert.strictEqual(await status(), "A3 and Bb3 traded places.Undo");
+      await tapExposedRim(1);
+      assert.match(await status(), /^A3 and Bb3 traded places\./);
       assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
-      await b.click("#editor-notice-undo");
-      assert.strictEqual((await model()).options.seats, undefined);
+      assert.strictEqual(await b.eval(`return editorSession.history.past.length;`), 1);
+      await b.click("#editor-undo");
+      assert.deepStrictEqual(await model(), before);
     });
 
-    test("with the Undo chip showing, Tab never lands on or stalls at the covered toolbar Undo", async () => {
-      await setup(SCALE);
-      await tapNote("rim", 0);
-      await tapNote("rim", 1);
-      assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo") && getComputedStyle(document.getElementById("editor-undo")).visibility;`), "hidden");
+    test("after a rim swap, Tab reaches pinned Undo without stalling", async () => {
+      await setupLegacy(SCALE);
+      await exposePanRim();
+      await chooseFirstRim();
+      await tapExposedRim(1);
+      const activeUndo = await b.eval(`const undo = document.getElementById("editor-undo");
+        const r = undo.getBoundingClientRect();
+        return !undo.disabled && undo.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));`);
+      assert.strictEqual(activeUndo, true, "pinned Undo remains hittable with the swap banner showing");
       const seen = [];
       for (let i = 0; i < 40; i++) {
         await b.key("Tab", "Tab", 9);
         seen.push(await b.eval(`const a = document.activeElement; return a.id || a.outerHTML.slice(0, 80);`));
       }
-      assert.ok(seen.includes("editor-notice-undo"), "the chip is a stop: " + JSON.stringify(seen));
-      assert.ok(!seen.includes("editor-undo"), "the covered Undo is never a stop: " + JSON.stringify(seen));
-      assert.ok(seen.every((x, i) => i === 0 || x !== seen[i - 1]), "focus moves on every Tab, a hidden stop would swallow one: " + JSON.stringify(seen));
+      assert.ok(seen.includes("editor-undo"), "pinned Undo is a Tab stop: " + JSON.stringify(seen));
+      assert.ok(seen.every((x, i) => i === 0 || x !== seen[i - 1]), "focus moves on every Tab: " + JSON.stringify(seen));
     });
 
-    test("MT first Tab from the control before the covered Undo moves focus on at once and never stalls", async () => {
-      await setup(SCALE);
-      await tapNote("rim", 0);
-      await tapNote("rim", 1);
-      const prev = await b.eval(`const raw = [...document.querySelectorAll("#editor button, #editor input, #editor [tabindex]")];
-        const before = raw.slice(0, raw.indexOf(document.getElementById("editor-undo"))).filter((el) => el.tabIndex >= 0 && !el.disabled && el.getClientRects().length && !el.closest("[inert],[hidden]") && getComputedStyle(el).visibility !== "hidden").pop();
+    test("MT first Tab from the control before pinned Undo focuses it without stalling", async () => {
+      await setupLegacy(SCALE);
+      await exposePanRim();
+      await chooseFirstRim();
+      await tapExposedRim(1);
+      const prev = await b.eval(`const stops = editorTabStops();
+        const index = stops.indexOf(document.getElementById("editor-undo"));
+        const before = index > 0 ? stops[index - 1] : null;
+        if (!before) return null;
         before.focus();
-        window.__mtFrom = before;
-        return before.id || before.outerHTML.slice(0, 80);`);
-      assert.strictEqual(await b.eval(`return document.activeElement === window.__mtFrom && document.getElementById("editor-undo").classList.contains("covered");`), true, "the start focus took effect on " + prev + " and the toolbar Undo is covered");
+        return document.activeElement === before ? before.id || before.outerHTML.slice(0, 80) : null;`);
+      assert.ok(prev, "focus the stop immediately before pinned Undo");
       await b.key("Tab", "Tab", 9);
-      const r = await b.eval(`const a = document.activeElement; return { moved: a !== window.__mtFrom, covered: a.id === "editor-undo", at: a.id || a.outerHTML.slice(0, 80) };`);
-      assert.ok(r.moved, "the first Tab from " + prev + " left focus where it was: " + JSON.stringify(r));
-      assert.ok(!r.covered, "the first Tab landed on the covered toolbar Undo: " + JSON.stringify(r));
+      assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-undo", "first Tab from " + prev);
     });
 
     test("Remove deletes the selected note and Undo restores it; tapping the selection again deselects it", async () => {
-      await setup(SCALE);
-      await tapNote("rim", 3);
-      await tapNote("rim", 3);
+      await setupLegacy(SCALE);
+      await exposePanRim();
+      const before = await model();
+      await tapExposedRim(3);
+      assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: 3 });
+      await tapExposedRim(3);
+      assert.strictEqual(await b.eval(`return editorSession.sel;`), null);
+      await b.click("#editor-more");
       assert.strictEqual(await b.eval(`return document.getElementById("editor-remove").disabled;`), true);
-      await tapNote("rim", 3);
+      await b.key("Escape", "Escape", 27);
+      await tapExposedRim(3);
+      await b.click("#editor-more");
+      assert.strictEqual(await b.eval(`return document.getElementById("editor-remove").disabled;`), false);
       await b.click("#editor-remove");
       assert.ok(!(await rimNames()).includes("D4"));
-      assert.strictEqual(await status(), "D4 removed.Undo");
-      await clickUndo();
-      assert.ok((await rimNames()).includes("D4"));
+      assert.match(await status(), /^D4 removed\./);
+      assert.strictEqual(await b.eval(`return editorSession.history.past.length;`), 1);
+      await b.click("#editor-undo");
+      assert.deepStrictEqual(await model(), before);
     });
 
     test("a held note tapped on a placed note replaces it in its seat; Undo restores", async () => {
