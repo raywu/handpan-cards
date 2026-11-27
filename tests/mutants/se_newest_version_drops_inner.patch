@@ -1,15 +1,15 @@
-# kills: SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 8
-# suite: node --test --test-name-pattern ^SE-G2..newestRecordVersion.accepts.record.6.whatever.PROFILE_ENABLED.says.and.refuses.8$ tests/editor_model.test.js
-# fault: Cap the newest readable record at the profile version.
+# kills: SE-G2: newestRecordVersion accepts record 6 whatever PROFILE_ENABLED says and refuses 10
+# suite: node --test --test-name-pattern ^SE-G2..newestRecordVersion.accepts.record.6.whatever.PROFILE_ENABLED.says.and.refuses.10$ tests/editor_model.test.js
+# fault: Reject a v6 pinned Cyclops record even though that version remains supported.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11543,7 +11543,7 @@ const SHARE_VERSION = HPE.share.RECORD_VERSION;
- const PROFILE_RECORD_VERSION = HPE.share.PROFILE_RECORD_VERSION;
- const INNER_RECORD_VERSION = HPE.share.INNER_RECORD_VERSION;
- const PROFILE_ANCHOR_RECORD_VERSION = HPE.share.PROFILE_ANCHOR_RECORD_VERSION;
--const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? Math.max(PROFILE_ANCHOR_RECORD_VERSION, PROFILE_RECORD_VERSION, INNER_RECORD_VERSION) : INNER_RECORD_VERSION;
-+const newestRecordVersion = () => HPE.core.PROFILE_ENABLED ? PROFILE_RECORD_VERSION : SHARE_VERSION;
- const innerPinned = o => !!o && typeof o === "object" && !!o.angles && Array.isArray(o.angles.inner) &&
-   o.angles.inner.some(a => a !== null && a !== undefined);
- const recordVersionFor = (o, profiled) => profiled ? (o.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION) : innerPinned(o) ? INNER_RECORD_VERSION : SHARE_VERSION;
+@@ -11949,7 +11949,7 @@ function savedMeaning(deckValue) {
+   return JSON.stringify(meaning);
+ }
+ function readSavedRecord(record) {
+-  if (!savedObject(record) || typeof record.s !== "string" || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");
++  if (!savedObject(record) || typeof record.s !== "string" || record.v === INNER_RECORD_VERSION || !checkShareVersion(record.v).ok) return savedFailure("protected", "opaque-record");
+   try {
+     const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
+     const pinned = !profiled && innerPinned(record.o);

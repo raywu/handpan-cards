@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11395,7 +11395,6 @@
+@@ -12259,7 +12259,7 @@ function savedCandidate(command) {
    if (candidate.record.v !== recordVersionFor(candidate.deck.options, profiled) ||
        (profiled && (command.type === "replace-builtin" || !HPE.core.PROFILE_ENABLED)))
      return savedFailure("invalid", "staged-candidate");
--  if (candidate.record.v === INNER_RECORD_VERSION && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
+-  if ([INNER_RECORD_VERSION, GUIDED_RECORD_VERSION].includes(candidate.record.v) && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
++  if (candidate.record.v === GUIDED_RECORD_VERSION && command.type === "replace-builtin") return savedFailure("invalid", "staged-candidate");
    const record = savedClone(candidate.record);
    const deckValue = { ...candidate.deck, options: { ...candidate.deck.options } };
    if (command.type === "import" || command.type === "save-as-separate") {
