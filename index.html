@@ -14202,10 +14202,13 @@ function editorRemove(m, ring, i) {
     editorStageRemove(stage, ring, i);
     return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
   }
-  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); editorStageClearPins(m, st); });
+  if (editorIsEmpty(m)) {
+    const removed = editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); editorStageClearPins(m, st); });
+    return editorGuidedCompact(removed, ring);
+  }
   const parts = editorPartsOf(m);
   parts[ring].splice(i, 1);
-  return editorResize(m, ring, parts, { remove: i });
+  return editorGuidedCompact(editorResize(m, ring, parts, { remove: i }), ring);
 }
 // A Neotone profile names its notes by zone key plus field value and owns 9 main and
 // 9 mutant fields (D19): an edit fills or empties a field and never moves the others.
@@ -16782,6 +16785,49 @@ function editorGuidedOpenSeats(preview, tab) {
   }).join("");
 }
 
+// Preserve the cyclic sequence around the rim and the left-to-right
+// sequence on the Cyclops arc. Prefer the least aggregate movement.
+function editorSeatOrders(ring, before, positions) {
+  const indexes = angles => angles.map((_, index) => index).sort((a, b) => angles[a] - angles[b]);
+  const from = indexes(before);
+  const to = indexes(positions);
+  const count = ring === "rim" ? before.length : 1;
+  return Array.from({ length: count }, (_, shift) => {
+    const seats = [];
+    let cost = 0;
+    from.forEach((id, index) => {
+      seats[id] = to[(index + shift) % to.length];
+      cost += editorGuidedGap(before[id], positions[seats[id]]);
+    });
+    return { seats, cost };
+  }).sort((a, b) => a.cost - b.cost);
+}
+
+function editorGuidedCompact(result, ring) {
+  if (!result.ok || !editorGuidedZones.includes(ring)) return result;
+  const m = result.value;
+  const staged = editorIsEmpty(m);
+  const stage = staged ? editorStageOf(m) : m.options;
+  const row = stage.guided?.[ring];
+  const size = editorNames(m, ring).length;
+  if (!row || size >= row.size || size < (ring === "rim" ? 7 : 3) || stage.angles?.[ring]) return result;
+  // The base rim grid starts at its usual anchor. Expanded grids use their
+  // existing top-centred spacing convention.
+  const basis = ring === "rim" && size === 7 ? row.basis || m.options.anchor || "one" : row.basis;
+  const mirror = HPE.layout.resolveMirrors(m.options).top;
+  const positions = HPE.layout.guidedGrid(ring, size, basis).map(angle => turnTo(mirror ? 180 - angle : angle));
+  const solve = candidate => staged ? editorGhostSolve(candidate, true) : editorSolve(candidate);
+  const current = solve(m);
+  if (!current.ok) return result;
+  for (const { seats } of editorSeatOrders(ring, editorAnglesOf(current, ring), positions)) {
+    const next = editorClone(m);
+    const target = staged ? editorStageOf(next) : next.options;
+    target.guided[ring] = basis ? { size, seats, basis } : { size, seats };
+    if (solve(next).ok) return { ...result, value: next };
+  }
+  return result;
+}
+
 function editorGuidedDistribution(m, ring) {
   if (m.options.profile || editorIsEmpty(m) || !m.options.guided?.[ring]) return null;
   const before = editorAnglesOf(editorSolve(m), ring);
@@ -16792,25 +16838,9 @@ function editorGuidedDistribution(m, ring) {
   const normal = editorSolve(next);
   if (!normal.ok) return normal;
   const positions = editorAnglesOf(normal, ring);
-  const indexes = angles => angles.map((_, index) => index).sort((a, b) => angles[a] - angles[b]);
-  const from = indexes(before);
-  const to = indexes(positions);
-  let preferred = null;
-  let best = Infinity;
-  for (let shift = 0; shift < (ring === "rim" ? before.length : 1); shift += 1) {
-    const seats = [];
-    let cost = 0;
-    from.forEach((id, index) => {
-      seats[id] = to[(index + shift) % to.length];
-      cost += editorGuidedGap(before[id], positions[seats[id]]);
-    });
-    if (cost < best) {
-      best = cost;
-      preferred = seats;
-    }
-  }
-  if (best < 1e-6) return null;
-  next.options.seats = { ...next.options.seats, [ring]: preferred };
+  const best = editorSeatOrders(ring, before, positions)[0];
+  if (best.cost < 1e-6) return null;
+  next.options.seats = { ...next.options.seats, [ring]: best.seats };
   const sorted = editorSolve(next);
   return sorted.ok ? { ok: true, value: next } : sorted;
 }

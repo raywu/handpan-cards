@@ -1208,3 +1208,61 @@ for (const { title, ref, target, after } of DRAFT_DROP_CASES) {
     assert.equal(outcome.redoRestoresDraft, true);
   });
 }
+
+test("Guided removal contracts expanded rim and Cyclops grids in saved and unfinished layouts", () => {
+  const app = appBoot();
+  const outcomes = plain(app.get(`(() => {
+    const results = [];
+    const seed = "[B2] (D3) A3 B3 C4 D4 E4 F4 G4 | D#4 G#4 A#4";
+    for (const mirror of [false, true]) {
+      const loaded = editorLoad(seed, { mirror, mirrorBottom: false, angles: { bottom: [290] } });
+      if (!loaded.ok) throw Error(loaded.reason);
+      for (const ring of ["rim", "inner"]) {
+        const original = loaded.value;
+        const plan = editorDropPlan(original, { from: "tray", name: "C#4" }, { kind: "spot", ring, angle: 90 });
+        if (!plan.step) throw Error(plan.refuse);
+        const grown = plan.step(original).value;
+        for (const staged of [false, true]) {
+          const m = staged ? editorClearDing(grown).value : grown;
+          const snapshot = JSON.stringify(m);
+          const other = ring === "rim" ? "inner" : "rim";
+          const before = editorSolve(m);
+          const removing = editorNames(m, ring).indexOf("C#4");
+          const done = editorApply(editorHistoryNew(m), model => editorRemove(model, ring, removing));
+          if (!done.ok) throw Error(done.reason);
+          const next = done.history.present;
+          const undone = editorUndo(done.history);
+          const solved = editorSolve(next);
+          const originalRow = staged ? m.stage.guided[ring] : m.options.guided[ring];
+          const row = staged ? next.stage.guided[ring] : next.options.guided[ring];
+          const reopened = !staged && editorLoadRecord(editorExport(next).record);
+          results.push({
+            ring, staged, originalSize: originalRow.size, size: row.size,
+            uniqueSeats: new Set(row.seats).size,
+            keptNotes: JSON.stringify(editorNames(next, ring)) === JSON.stringify(editorNames(original, ring)),
+            unaffected: JSON.stringify(editorAnglesOf(solved, other)) === JSON.stringify(editorAnglesOf(before, other)),
+            bottom: editorAnglesOf(solved, "bottom"),
+            oneEdit: done.history.past.length === 1 && undone.present === m && editorRedo(undone).present === next,
+            intact: JSON.stringify(m) === snapshot,
+            reopened: staged || reopened.ok && JSON.stringify(editorAnglesOf(editorSolve(reopened.value), ring))
+              === JSON.stringify(editorAnglesOf(solved, ring))
+          });
+        }
+      }
+    }
+    return results;
+  })()`));
+  assert.equal(outcomes.length, 8);
+  for (const result of outcomes) {
+    const size = result.ring === "rim" ? 7 : 3;
+    assert.equal(result.originalSize, size + 1);
+    assert.equal(result.size, size);
+    assert.equal(result.uniqueSeats, size);
+    assert.equal(result.keptNotes, true);
+    assert.equal(result.unaffected, true);
+    assert.deepEqual(result.bottom, [290]);
+    assert.equal(result.oneEdit, true);
+    assert.equal(result.intact, true);
+    assert.equal(result.reopened, true);
+  }
+});

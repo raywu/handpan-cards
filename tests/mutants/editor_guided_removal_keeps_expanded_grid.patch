@@ -1,0 +1,15 @@
+# kills: Guided removal contracts expanded rim and Cyclops grids in saved and unfinished layouts
+# suite: node --test --test-name-pattern ^Guided.removal.contracts.expanded tests/editor_model.test.js
+# fault: Leaving the original grid size after removal strands empty seats in an expanded row.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16810,7 +16810,7 @@ function editorGuidedCompact(result, ring) {
+   const stage = staged ? editorStageOf(m) : m.options;
+   const row = stage.guided?.[ring];
+   const size = editorNames(m, ring).length;
+-  if (!row || size >= row.size || size < (ring === "rim" ? 7 : 3) || stage.angles?.[ring]) return result;
++  return result;
+   // The base rim grid starts at its usual anchor. Expanded grids use their
+   // existing top-centred spacing convention.
+   const basis = ring === "rim" && size === 7 ? row.basis || m.options.anchor || "one" : row.basis;

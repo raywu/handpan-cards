@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14178,7 +14178,7 @@
-     editorStageRemove(stage, ring, i);
+@@ -14203,7 +14203,7 @@ function editorRemove(m, ring, i) {
      return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
    }
--  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); editorStageClearPins(m, st); });
-+  if (editorIsEmpty(m)) return editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); });
+   if (editorIsEmpty(m)) {
+-    const removed = editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); editorStageClearPins(m, st); });
++    const removed = editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); });
+     return editorGuidedCompact(removed, ring);
+   }
    const parts = editorPartsOf(m);
-   parts[ring].splice(i, 1);
-   return editorResize(m, ring, parts, { remove: i });
