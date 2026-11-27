@@ -17829,7 +17829,7 @@ function editorWire() {
 // A swipe starting on the tab strip, counts row, hint or either panel switches Scale / Layout. It reuses the sheet's verdict and cue but keeps its own gesture state.
 function editorWireSwipe() {
   const body = editorEl("editor-region"), column = editorEl("editor");
-  const scrolled = () => body.scrollTop + column.scrollTop;
+  const scrolled = () => (editorEl("drawerexp-body")?.scrollTop ?? body.scrollTop) + column.scrollTop;
   const regions = ["editor-areas", "editor-tabs", "editor-panels"].map(editorEl);
   let g = null;
   const stop = () => { g = null; hideSwipeCue({ force: true }); };

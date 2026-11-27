@@ -4727,20 +4727,22 @@ function run() {
         assert.strictEqual(await tabNow(), "scale");
       });
 
-      test("a swipe that starts on the tab strip, the counts row, the hint or the Layout panel switches tabs", async () => {
+      test("a swipe starting on the tab strip, Layout panel, counts or Placement help changes tabs", async () => {
         await setup(SCALE);
         await swipeBy("#editor-tab-scale", -120);
         assert.strictEqual(await tabNow(), "layout", "tab strip");
         await swipeBy("#editor-panel-layout", 120);
         assert.strictEqual(await tabNow(), "scale", "Layout panel");
-        await b.click("#editor-hint-toggle");
+        await b.click("#editor-more");
+        await b.click("#editor-placement-help");
         await swipeBy("#editor-counts", -120);
         assert.strictEqual(await tabNow(), "layout", "counts row");
-        await b.eval(`editorSetTab("scale"); return true;`);
-        if (await visible("editor-hint")) {
-          await swipeBy("#editor-hint", -120);
-          assert.strictEqual(await tabNow(), "layout", "hint");
-        }
+        if (await visible("editor-hint-close")) await b.click("#editor-hint-close");
+        await b.click("#editor-tab-scale");
+        await b.click("#editor-more");
+        await b.click("#editor-placement-help");
+        await swipeBy("#editor-hint", -120);
+        assert.strictEqual(await tabNow(), "layout", "Placement help");
       });
 
       test("a press held past the hold time is not a swipe, even when it then moves far and fast", async () => {
@@ -5871,10 +5873,25 @@ function run() {
       assert.ok(r.inEditor && r.page, JSON.stringify(r));
     });
 
-    test("P0 editorWireSwipe: a region scroll cancels the tab swipe (the scrollTop check points at the region)", async () => {
-      const src = fs.readFileSync(path.join(REPO, "index.html"), "utf8");
-      const m = src.slice(src.indexOf("function editorWireSwipe()"), src.indexOf("function editorDraftMoved"));
-      assert.ok(/const body = editorEl\("editor-region"\)/.test(m), "the swipe's scroll reference is the region");
+    test("P0 editorWireSwipe: scrolling the drawer cancels an in-progress tab swipe", async () => {
+      await open(375, 360);
+      const from = await b.eval(`const r = editorEl("editor-tab-scale").getBoundingClientRect();
+        return { x:r.right-20, y:r.y+r.height/2 };`);
+      const touch = (type, point) => b.send("Input.dispatchTouchEvent", {
+        type, touchPoints: point ? [{ ...point, id:1 }] : []
+      });
+      const finish = async () => {
+        await touch("touchMove", { x: from.x - 105, y: from.y });
+        await touch("touchEnd");
+      };
+      await touch("touchStart", from);
+      assert.ok(await b.eval(`const drawer = editorEl("drawerexp-body"); drawer.scrollTop = 70; return drawer.scrollTop > 8;`));
+      await finish();
+      assert.equal(await b.eval("return editorSession.tab;"), "scale");
+      await b.eval(`editorEl("drawerexp-body").scrollTop = 0; return true;`);
+      await touch("touchStart", from);
+      await finish();
+      assert.equal(await b.eval("return editorSession.tab;"), "layout", "the identical swipe works without scrolling");
     });
 
     test("P0 drag keeps E3: the whole rim stays visible at 390x844 during native zoom", async () => {
