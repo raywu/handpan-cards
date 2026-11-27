@@ -583,7 +583,14 @@ function run() {
           save: q("editor-save").disabled, overlay: !!q("editor-empty"), prompt: q("editor-status").textContent.startsWith(t("editor.empty")) };`);
       assert.deepStrictEqual(r, { std: [false, "true"], neo: [false, "false"], save: true, overlay: false, prompt: true });
       const t1 = await targets();
-      assert.deepStrictEqual(t1.rings, ["bottom", "ding", "inner", "rim"]);
+      assert.deepStrictEqual(t1.rings, ["ding"]);
+      const guidance = await b.eval(`const pan = document.getElementById("editor-pan");
+        return {
+          rim: pan.querySelectorAll('.guided-informational[data-guided-zone="rim"]').length,
+          inner: pan.querySelectorAll('.guided-informational[data-guided-zone="inner"]').length,
+          bottom: pan.querySelectorAll('.balanced-outline.bottom').length
+        };`);
+      assert.deepStrictEqual(guidance, { rim: 7, inner: 3, bottom: 8 });
       assert.strictEqual(t1.small, 0, "every drawn target is at least 24px across");
       assert.strictEqual(t1.slots, 0);
     });
