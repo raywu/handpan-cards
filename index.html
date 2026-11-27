@@ -13914,6 +13914,14 @@ function editorStageSettle(m, stage, landedKey) {
         return editorNoRoom(done.value, ring, changed, angle);
       }
     }
+    const preview = editorGhostSolve(done.value);
+    if (!preview.ok) return preview;
+    for (const ring of EDITOR_PINNABLE) {
+      const drawn = editorAnglesOf(preview, ring);
+      const pins = stage.angles[ring];
+      const lost = pins?.findIndex((angle, i) => Number.isFinite(angle) && drawn[i] !== angle) ?? -1;
+      if (lost >= 0) return editorNoRoom(done.value, ring, lost, pins[lost]);
+    }
     return done;
   }
   const trial = editorStageCommit(m, editorStageTrial(stage));
@@ -14618,9 +14626,10 @@ function editorZoneAt(geom, pt) {
   if (r < (geom.rim + bottom) / 2) return "rim";
   return r <= bottom + editorNoteReach(geom, "bottom") + EDITOR_OFF_MARGIN ? "bottom" : "off";
 }
+const editorRenderPins = m => editorIsEmpty(m) ? editorPinsOf(editorStageOf(m).angles) : m.pins;
 function editorPush(m, fields) {
   const out = {};
-  for (const p of m.pins) {
+  for (const p of editorRenderPins(m)) {
     const id = ringIds(fields, p.ring)[p.i];
     if (id !== undefined) out[id] = 11;
   }
@@ -16374,6 +16383,7 @@ function editorWithOverlay(markup, m, solved) {
   const tab = (fk) => `data-fk="${fk}" tabindex="${fk === rover ? 0 : -1}"`;
   const empty = editorIsEmpty(m);
   const unchosen = empty && solved.staged && !solved.hasDing;
+  const pins = editorRenderPins(m);
   for (const id of Object.keys(fields)) {
     if (unchosen && id === "0") continue;
     const [, , , zone, angle] = fields[id];
@@ -16387,7 +16397,7 @@ function editorWithOverlay(markup, m, solved) {
     const issue = draftIssues.find(item => item.ring === ring && item.i === i);
     const description = issue ? ` aria-description="${escapeHtml(t("editor.guided.save_pitch", issue)).replace(/"/g, "&quot;")}"` : "";
     out += `<circle class="ehit${fresh ? " editor-new" : ""}" data-ring="${ring}" data-i="${i}" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${r.toFixed(2)}" role="button" aria-pressed="${id === selected}" ${tab(ring + ":" + i)} aria-label="${escapeHtml(labels[id]).replace(/"/g, "&quot;")}"${description}/>`;
-    if (EDITOR_PINNABLE.includes(zone) && m.pins.some((p) => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;
+    if (EDITOR_PINNABLE.includes(zone) && pins.some(p => p.ring === zone && p.i === i)) out += `<circle class="epin" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 8).toFixed(2)}"/>`;
     if (id === selected) out += `<circle class="esel" cx="${at[0].toFixed(2)}" cy="${at[1].toFixed(2)}" r="${(drawn * 100 + 4).toFixed(2)}"/>`;
   }
   for (const issue of draftIssues) {

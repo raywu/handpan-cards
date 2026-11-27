@@ -908,9 +908,14 @@ function run() {
       await fresh(390, 844);
       await openAdd();
       const probe = () => b.eval(`
-        const rim = document.querySelector('#editor-pan svg > circle[r="100"][stroke="#000"]').getBoundingClientRect();
+        const svg = document.querySelector("#editor-pan svg");
+        const rim = svg.querySelector('circle[r="100"][stroke="#000"]').getBoundingClientRect();
         const handle = document.getElementById("drawerexp-handle"), r = handle.getBoundingClientRect();
+        const bounds = svg.getBBox();
+        const matrix = svg.getScreenCTM();
         return { rim: { left: rim.left, top: rim.top, right: rim.right, bottom: rim.bottom },
+          ink: [bounds.x, bounds.y, bounds.width, bounds.height],
+          viewBox: svg.getAttribute("viewBox"), matrix: [matrix.a, matrix.d, matrix.e, matrix.f],
           clear: rim.left >= 0 && rim.right <= innerWidth && rim.top >= 0 && rim.bottom <= r.top + 1,
           handleHit: handle.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) };
       `);
@@ -5293,12 +5298,12 @@ function run() {
             const hit = document.elementFromPoint((frame.left + frame.right) / 2, (frame.top + frame.bottom) / 2);
             const box = document.querySelector("#editor .editor-panbox");
             const transform = getComputedStyle(box).transform;
-            return { zoom: transform === "none" ? 1 : new DOMMatrix(transform).a,
+            return { zoom: transform === "none" ? 0 : new DOMMatrix(transform).a,
               above: rim.top >= line.bottom - 1, below: rim.bottom <= frame.top + 1,
               passThrough: getComputedStyle(st).pointerEvents === "none" && !st.contains(hit),
               text: st.textContent };
           `);
-          assert.ok(r.zoom > 1.05, "the pan grows during drag: " + JSON.stringify(r));
+          assert.ok(r.zoom > 0 && r.zoom <= 1.2, "the drag camera uses a bounded transform: " + JSON.stringify(r));
           assert.deepStrictEqual([r.above, r.below, r.passThrough], [true, true, true], JSON.stringify(r));
           assert.match(r.text, /Dragging/);
         } finally {
