@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -17590,7 +17590,7 @@
+@@ -17788,7 +17788,7 @@ function editorDragEnd(e) {
    s.notice = false;
    let placed = false;
    if (plan.trade) placed = editorTrade(m, plan.trade[0], plan.trade[1]);
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  else if (plan.step) placed = editorDo(plan.step, plan.say, false);
    if (placed && s.history.present !== m && (plan.trade || plan.step) && target.kind !== "outside") window.drawerExperiment?.dragPlaced(movedName);
    else if (plan.refuse) s.error = plan.refuse;
-   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
+   else if (target.kind === "preview-gap" && target.ring === "inner" && src.from === "tray") {
