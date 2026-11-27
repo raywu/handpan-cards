@@ -836,7 +836,10 @@ function run() {
         await b.click('.tray-note[data-name="D"]');
         await tapPoint(await dingAt(), kind === "touch");
         assert.match(await statusText(), new RegExp(`^D${o} is the ding\\.`));
+        const highlightFill = slot => b.eval(`const ring = document.querySelector('.editor-landing.editor-new[data-slot="${slot}"]');
+          return ring && getComputedStyle(ring).fill;`);
         await gesture(await chipAt("A"), await slotAt(4), kind);
+        assert.equal(await highlightFill(4), "none", "the main note has no tinted wash");
         assert.strictEqual(await stillEmpty(), false, await statusText());
         assert.deepStrictEqual(await b.eval(`return editorSession.history.present.options.profile.map.slice(0, 9).map((k) => k !== null);`),
           [false, false, false, false, true, false, false, false, false]);
@@ -863,6 +866,7 @@ function run() {
           throw new Error(s);
         });
         assert.strictEqual(await b.eval(`return editorSession.history.present.options.profile.map[9] !== null;`), true, await statusText());
+        assert.equal(await highlightFill(9), "none", "the mutant note has no tinted wash");
       });
     }
 
