@@ -3269,38 +3269,53 @@ function run() {
         }
       });
 
-      test("OQA tablet portrait stacks: at 820x1180 and 1024x1366 the controls sit under the pan, the pan fills the column, nothing scrolls sideways", async () => {
-        for (const [w, h] of [[820, 1180], [1024, 1366]]) {
-          await fresh(w, h);
-          await openAdd();
-          await typeLine(SCALE);
-          const r = await b.eval(`const ed = document.getElementById("editor"); const svg = document.querySelector(".editor-panbox svg").getBoundingClientRect();
-            const cs = getComputedStyle(ed); const col = ed.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-            const below = [...ed.querySelectorAll("#editor-tabs, .editor-toolbar, #editor-tray")].map((e) => e.getBoundingClientRect().top);
-            const panBox = document.querySelector(".editor-panbox").getBoundingClientRect();
-            return { size: Math.min(svg.width, svg.height), top: Math.min(...below), panBottom: svg.bottom, want: Math.min(col, panBox.width, panBox.height), scrollOk: document.documentElement.scrollWidth <= document.documentElement.clientWidth, edw: ed.getBoundingClientRect().width };`);
-          assert.ok(r.top >= r.panBottom - 1, w + ": controls start at " + r.top + " under the pan bottom " + r.panBottom);
-          assert.ok(Math.abs(r.size - r.want) <= 4, w + ": pan " + r.size + " vs " + r.want);
-          assert.ok(r.edw <= 520.5, w + ": stacks at the phone width, got " + r.edw);
-          assert.strictEqual(r.scrollOk, true);
-        }
+      async function checkTabletDrawer(w, h) {
+        await fresh(w, h);
+        await openAdd();
+        await typeLine(SCALE);
+        const read = () => b.eval(`
+          const bounds = selector => document.querySelector(selector).getBoundingClientRect();
+          const shell = bounds('#editor-pan svg > circle[r="100"][stroke="#000"]');
+          const line = bounds("#editor-line"), handle = bounds("#drawerexp-handle"), rail = bounds(".editor-toolbar");
+          const hit = id => {
+            const el = document.getElementById(id), r = el.getBoundingClientRect();
+            return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+          };
+          return { rimWidth: shell.width, rimHeight: shell.height, visible: shell.left >= 0 &&
+              shell.right <= innerWidth && shell.top >= line.bottom - 1 && shell.bottom <= handle.top + 1,
+            railVisible: rail.top >= handle.bottom - 1 && rail.bottom <= innerHeight + 1,
+            drawerBelowHeader: handle.top >= line.bottom,
+            horizontallyScrollable: document.documentElement.scrollWidth > innerWidth ||
+              document.getElementById("editor").scrollWidth > document.getElementById("editor").clientWidth + 1,
+            actions: ["drawerexp-handle", "editor-undo", "editor-save", "editor-more"].map(hit) };
+        `);
+        await b.waitFor('drawerExperiment.state === "OPEN"', { label: "the tablet drawer to open" });
+        const expanded = await read();
+        assert.ok(expanded.drawerBelowHeader && expanded.railVisible && !expanded.horizontallyScrollable,
+          JSON.stringify({ w, h, expanded }));
+        assert.deepEqual(expanded.actions, [true, true, true, true]);
+        await b.click("#editor-tab-layout");
+        assert.equal(await b.eval("return editorSession.tab;"), "layout");
+        await b.click("#editor-tab-scale");
+        await b.click("#editor-name");
+        assert.equal(await b.eval("return document.activeElement.id;"), "editor-name");
+        await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the tablet drawer to expose the rim" });
+        const closed = await read();
+        assert.ok(closed.visible && closed.railVisible && !closed.horizontallyScrollable,
+          JSON.stringify({ w, h, closed }));
+        assert.deepEqual(closed.actions, [true, true, true, true]);
+        const expected = Math.min(h / 2, 480);
+        assert.ok(Math.abs(closed.rimWidth - closed.rimHeight) <= 1 &&
+          Math.abs(closed.rimHeight - expected) <= 2, JSON.stringify({ w, h, expected, closed }));
+      }
+
+      test("OQA tablet portrait: full rim respects the wide-screen cap and drawer actions stay reachable", async () => {
+        for (const [w, h] of [[820, 1180], [1024, 1366]]) await checkTabletDrawer(w, h);
       });
 
-      test("OQA tablet landscape centred: at 1180x820, 1366x1024 and 1440x960 the control stack is centred on the pan and the pan fills its column", async () => {
-        for (const [w, h] of [[1180, 820], [1366, 1024], [1440, 960]]) {
-          await fresh(w, h);
-          await openAdd();
-          await typeLine(SCALE);
-          const r = await b.eval(`const svg = document.querySelector(".editor-panbox svg").getBoundingClientRect();
-            const els = ["#editor-line", "#editor-status", "#editor-areas", "#editor .editor-toolbar", "#editor-tray"].map((s) => document.querySelector(s).getBoundingClientRect()).filter((r) => r.height > 0);
-            const top = Math.min(...els.map((r) => r.top)), bottom = Math.max(...els.map((r) => r.bottom));
-            const head = document.querySelector(".editor-head").getBoundingClientRect(); const panBox = document.querySelector(".editor-panbox").getBoundingClientRect();
-            return { dy: (top + bottom) / 2 - (svg.top + svg.height / 2), size: Math.min(svg.width, svg.height), want: Math.min(panBox.width, panBox.height), scrollOk: document.documentElement.scrollWidth <= document.documentElement.clientWidth, headBottom: head.bottom, panBoxH: panBox.height, h: innerHeight };`);
-          assert.ok(Math.abs(r.dy) <= 8, w + ": controls centre off by " + r.dy);
-          assert.ok(Math.abs(r.size - r.want) <= 4, w + ": pan " + r.size + " vs " + r.want);
-          assert.ok(r.panBoxH >= r.h - r.headBottom - 48 - 4, w + ": the pan column spans the viewport under the header, " + JSON.stringify(r));
-          assert.strictEqual(r.scrollOk, true);
-        }
+      test("OQA tablet landscape: full rim respects viewport height and cap with reachable drawer actions", async () => {
+        for (const [w, h] of [[1180, 820], [1366, 1024], [1440, 960]]) await checkTabletDrawer(w, h);
       });
     });
     });
@@ -7221,20 +7236,44 @@ function run() {
     }
 
     for (const [w, h] of [[320, 568], [360, 640], [390, 844]]) {
-      test(`ECL9 RR3 ${w}x${h}: the info button's top edge is not under the tab strip, even with the region scrolled to its end`, async () => {
+      test(`ECL9 RR3 ${w}x${h}: Placement help stays reachable at the drawer scroll end without info bleed`, async () => {
         await fresh(w, h);
         await openAdd();
         await typeLine(SCALE);
-        await pause(250);
-        await b.eval(`const rg = document.getElementById("editor-region"); rg.scrollTop = rg.scrollHeight; return true;`);
-        const r = await b.eval(`const inerts = [...document.querySelectorAll("[inert]")];
-          inerts.forEach((el) => el.removeAttribute("inert"));
-          try {
-            const el = document.getElementById("editor-hint-toggle"), q = el.getBoundingClientRect();
-            const hit = document.elementFromPoint(q.left + q.width / 2, q.top + 3);
-            return { ok: !!hit && el.contains(hit), hit: hit && (hit.id || hit.className) };
-          } finally { inerts.forEach((el) => el.setAttribute("inert", "")); }`);
-        assert.ok(r.ok, "info button top-centre + 3px hits itself: " + JSON.stringify(r));
+        let short = h;
+        const canScroll = () => b.eval(`
+          const body = document.getElementById("drawerexp-body");
+          return body.scrollHeight > body.clientHeight;
+        `);
+        if (!await canScroll()) {
+          short = Math.min(h, 360);
+          await b.setViewport(w, short, true);
+          await b.waitFor('innerHeight === ' + short + ' && drawerExperiment.state === "OPEN"',
+            { label: "the shorter viewport to leave the drawer open" });
+        }
+        assert.ok(await canScroll(), `${w}x${short}: the drawer can scroll`);
+        await b.eval(`const body = document.getElementById("drawerexp-body"); body.scrollTop = body.scrollHeight; return true;`);
+        await b.waitFor(`(() => {
+          const body = document.getElementById("drawerexp-body");
+          return body.scrollTop > 0 && body.scrollHeight - body.clientHeight - body.scrollTop < 2;
+        })()`, { label: "the drawer to reach its actual scroll end" });
+        const hitAtTop = selector => b.eval(`
+          const el = document.querySelector(${JSON.stringify(selector)}), r = el.getBoundingClientRect();
+          return el.contains(document.elementFromPoint(r.x + r.width / 2, r.top + 3));
+        `);
+        assert.ok(await hitAtTop("#editor-more"), "the pinned More button is reachable near its top edge");
+        await b.click("#editor-more");
+        assert.ok(await hitAtTop("#editor-placement-help"), "the placement help item is reachable near its top edge");
+        await b.click("#editor-placement-help");
+        await b.waitFor('!document.getElementById("editor-areas").hidden', { label: "Placement help to open" });
+        assert.ok(await hitAtTop("#editor-hint-close"), "help's close button is reachable");
+        assert.equal(await b.eval('return document.getElementById("editor-hint-toggle").getClientRects().length;'), 0);
+        await b.click("#editor-hint-close");
+        assert.equal(await b.eval("return document.activeElement.id;"), "editor-more");
+        await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to collapse after help closes" });
+        assert.equal(await b.eval('return document.getElementById("editor-hint-toggle").getClientRects().length;'), 0);
+        assert.ok(await hitAtTop("#editor-more"), "More remains reachable with the drawer collapsed");
       });
     }
 
