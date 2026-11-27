@@ -1,6 +1,6 @@
 # kills: drag ux E1: a live drag sets dragging and takes the panel out of play; a press that does not move does not
 # suite: node --test --test-name-pattern ^drag.ux.E1 tests/editor_e2e.test.js
-# fault: The control panel is faded but stays visible to the layout and to assistive tech while a note is held.
+# fault: The collapsed control drawer still accepts focus and pointer input during a drag.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
