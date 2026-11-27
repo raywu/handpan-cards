@@ -13900,7 +13900,15 @@ function editorStageTrial(stage) {
 }
 function editorStageSettle(m, stage, landedKey) {
   const done = editorStageCommit(m, stage, landedKey);
-  if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !stage.ding || !editorStageAngles(stage)) return done;
+  if (!done.ok || !editorIsEmpty(done.value) || stage.kind !== "standard" || !stage.angles) return done;
+  if (!stage.ding) {
+    for (const ring of EDITOR_PINNABLE) {
+      const pins = stage.angles[ring];
+      const duplicate = pins?.findIndex((angle, i) => angle !== null && pins.indexOf(angle) !== i) ?? -1;
+      if (duplicate >= 0) return editorNoRoom(done.value, ring, duplicate, pins[duplicate]);
+    }
+    return done;
+  }
   const trial = editorStageCommit(m, editorStageTrial(stage));
   return trial.code === "NO_ROOM" || trial.variant === "innerLabelRoom" ? trial : done;
 }

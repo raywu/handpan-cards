@@ -1895,9 +1895,9 @@ function run() {
         assert.strictEqual(await pill("rim"), "Rim 12/12 Full");
         await b.click("#editor-hint-close");
 
-        const before = await placementSnapshot();
         const refusal = "The rim is full at 12 notes. Remove one first.";
         await b.click("#editor-oct-up");
+        const before = await placementSnapshot();
         await hold("F");
         await exposedPan();
         await tapPoint(await capSpot("rim"), true);
@@ -1948,9 +1948,9 @@ function run() {
 
       test("D16 e2e: crowded Cyclops placement leaves the layout intact; the 12th bottom note is accepted with 4 Cyclops", async () => {
         await setup(BOT_LINE(1) + " (D3) " + RIM8 + " | C5 D5 E5 F5 G5");
+        await b.click("#editor-oct-up");
+        await b.click("#editor-oct-up");
         const before = await placementSnapshot();
-        await b.click("#editor-oct-up");
-        await b.click("#editor-oct-up");
         await hold("A");
         await exposedPan();
         await tapPoint(await capSpot("inner"), true);
@@ -1959,9 +1959,9 @@ function run() {
         assert.deepStrictEqual(await placementSnapshot(), before);
 
         await setup(BOT_LINE(11) + " (D3) " + RIM8 + " | C5 D5 E5 F5");
+        await b.click("#editor-oct-down");
+        await b.click("#editor-oct-down");
         const beforeBottom = await placementSnapshot();
-        await b.click("#editor-oct-down");
-        await b.click("#editor-oct-down");
         await hold("D");
         await exposedPan();
         await tapPoint(await capSpot("bottom", true), true);
@@ -5473,6 +5473,7 @@ function run() {
         assert.strictEqual(await b.eval(`return document.activeElement.id;`), "editor-name");
         await b.setViewport(w, kh, true);
         await b.waitFor(`innerHeight === ${kh} && document.activeElement.id === "editor-name"`, { label: "Name stays focused in the shorter viewport" });
+        await b.eval(`return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));`);
         const focused = await rects(w, kh);
         assert.ok(focused.name.top >= 0 && focused.name.bottom <= kh && focused.name.h >= 44, JSON.stringify(focused.name));
         assert.ok(focused.bar.top >= focused.name.bottom - 1 && focused.bar.bottom <= kh, "pinned toolbar stays visible below Name");
