@@ -364,6 +364,50 @@ function run() {
         }
       }
     });
+
+    test("EDITOR-RC-DRAWER: the short-screen drawer closes and reopens with Save reachable", async () => {
+      await fixture("(D3) A3 C4 E4", {}, 3, 568);
+      assert.equal(await b.eval('return editorEl("drawerexp-handle").getAttribute("aria-expanded");'), "true");
+      await clickReady("#drawerexp-handle");
+      await b.waitFor('editorEl("drawerexp-body").inert', { label: "the closed drawer to make controls inert" });
+      const saveReachable = await b.eval(`
+        const save = editorEl("editor-save"), r = save.getBoundingClientRect();
+        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === save;
+      `);
+      assert.equal(saveReachable, true);
+      await clickReady("#drawerexp-handle");
+      await b.waitFor('!editorEl("drawerexp-body").inert', { label: "the reopened drawer to restore controls" });
+      assert.equal(await b.eval('return editorEl("drawerexp-handle").getAttribute("aria-expanded");'), "true");
+      assert.equal(await savedCount(), 0);
+    });
+
+    test("EDITOR-RC-FORM: the scale input form rejects invalid text and saves corrected notes", async () => {
+      await fixture("(D3) A3 B3 C4 E4");
+      await clickReady("#editor-more");
+      await clickReady("#editor-form-toggle");
+      const ding = "#editor-form-ding";
+      const enter = async value => {
+        await clickReady(ding);
+        await b.eval(`
+          const input = document.querySelector(${JSON.stringify(ding)});
+          input.value = ${JSON.stringify(value)};
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          return true;
+        `);
+        await b.key("Enter", "Enter", 13);
+      };
+      await enter("invalid");
+      assert.equal(await b.eval('return editorEl("editor-form-ding").getAttribute("aria-invalid");'), "true");
+      assert.equal(await savedCount(), 0);
+      await enter("E3");
+      await clickReady("#editor-more");
+      await clickReady("#editor-form-toggle");
+      assert.match(await text(), /\(E3\)/);
+      assert.equal(await b.eval('return editorEl("editor-form").hidden;'), true);
+      await clickReady("#editor-save");
+      await b.waitFor('editorEl("scale-sheet").hidden', { label: "corrected form notes to save" });
+      assert.equal(await savedCount(), 1);
+    });
   });
 
   describe("D13 layout", () => {
