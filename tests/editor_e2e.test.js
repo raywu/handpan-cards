@@ -2254,8 +2254,11 @@ function run() {
         try {
           await pointer("move", { x: start.x + (start.x < 40 ? 28 : -28), y: start.y });
           await b.waitFor(`!!editorDrag?.live`, { label: `the ${kind} ${ring} drag to lift` });
-          const validTarget = hit => destination === "outside" || destination === "ding"
-            ? hit.kind === destination : hit.kind === "spot" && hit.ring === destination;
+          const validTarget = hit => {
+            if (opts.target) return hit.kind === "note" && hit.ring === opts.target.ring && hit.i === opts.target.index;
+            if (destination === "outside" || destination === "ding") return hit.kind === destination;
+            return hit.kind === "spot" && hit.ring === destination;
+          };
           let point, hit;
           for (const angle of candidates) {
             point = await b.eval(`
@@ -2271,8 +2274,10 @@ function run() {
                 if (!outside) throw new Error("No uncovered point is outside the pan");
                 return outside;
               }
-              if (target === "ding") {
-                const r = svg.querySelector('.ehit[data-ring="ding"]').getBoundingClientRect();
+              const note = ${JSON.stringify(opts.target || null)};
+              if (target === "ding" || note) {
+                const selector = note ? '.ehit[data-ring="' + note.ring + '"][data-i="' + note.index + '"]' : '.ehit[data-ring="ding"]';
+                const r = svg.querySelector(selector).getBoundingClientRect();
                 return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
               }
               const angle = ${angle} * Math.PI / 180;
@@ -2405,25 +2410,31 @@ function run() {
             assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "D3");
           });
 
-          test("v4: while dragging a placed note, the source carries lift and the landing ring sits on the note or ding under it; over empty pan or itself nothing", async () => {
+          test("v4: while dragging a placed note, the source carries lift and the landing outline follows a note or Ding", async () => {
             await setup("(D3) " + RIM8);
-            const landing = () => b.eval(`const c = document.querySelector("#editor-pan .editor-landing"); return c ? { x: +c.getAttribute("cx"), y: +c.getAttribute("cy") } : null;`);
-            const lifted = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.lift")].map((c) => c.dataset.ring + c.dataset.i);`);
+            const before = await core();
+            const lifted = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.lift")].map(c => c.dataset.ring + c.dataset.i);`);
             const hitXY = (ring, i) => b.eval(`const c = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]'); return { x: +c.getAttribute("cx"), y: +c.getAttribute("cy") };`);
-            const end = () => kind === "touch" ? b.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }) : b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 0, y: 0, button: "left", buttons: 0, clickCount: 1 });
-            await gesture(await noteAt("rim", 3), await noteAt("rim", 5), kind, { release: false });
-            assert.deepStrictEqual(await landing(), await hitXY("rim", 5));
-            assert.deepStrictEqual(await lifted(), ["rim3"]);
-            await end();
-            await new Promise((done) => setTimeout(done, 80));
-            await gesture(await noteAt("rim", 3), await noteAt("ding", 0), kind, { release: false });
-            const ding = await landing();
-            assert.ok(ding && ding.x === 0, "the ring sits on the ding");
-            await end();
-            await new Promise((done) => setTimeout(done, 80));
-            await gesture(await noteAt("rim", 3), await centreOf("#editor-title"), kind, { release: false });
-            assert.strictEqual(await landing(), null);
-            await end();
+            const trace = async (destination, target) => {
+              await dragPlacedNote("rim", destination, kind, async () => {
+                assert.deepStrictEqual(await lifted(), ["rim3"]);
+                assert.match(await ghostText(), /^D4/);
+                const marker = await visibleLanding(target?.ring || destination);
+                if (destination === "outside") {
+                  assert.strictEqual(marker, null, "outside the pan there is no placement outline");
+                  return;
+                }
+                assert.ok(marker, "the landing is drawn before release");
+                assert.deepStrictEqual({ x: marker.x, y: marker.y },
+                  target ? await hitXY(target.ring, target.index) : await hitXY("ding", 0));
+              }, { index: 3, target, cancel: true });
+              assert.deepStrictEqual(await core(), before, "cancelling a live preview changes nothing");
+              assert.deepStrictEqual(await lifted(), []);
+              assert.strictEqual(await ghostText(), null);
+            };
+            await trace("rim", { ring: "rim", index: 5 });
+            await trace("ding");
+            await trace("outside");
           });
 
           test("U2f item 4: dragging the Ding or last rim note off the pan leaves an editable draft and Undo restores it", async () => {
@@ -2472,22 +2483,39 @@ function run() {
             }
           });
 
-          test("D4: a drag swaps two placed notes (Undo restores); a placed bottom note on the ding swaps seats with it; a tray note on the ding replaces it", async () => {
+          test("D4: native drags swap rim notes, swap underside with Ding, and replace Ding with Undo", async () => {
             await setup("[A2] " + SCALE);
-            const before = await core();
-            await gesture(await noteAt("rim", 0), await noteAt("rim", 1), kind);
-            assert.deepStrictEqual((await model()).options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] });
-            assert.strictEqual(await status(), "A3 and Bb3 traded places.Undo");
-            await b.click("#editor-notice-undo");
-            assert.deepStrictEqual(await core(), before);
-            await gesture(await noteAt("bottom", 0), await noteAt("ding", 0), kind);
-            assert.strictEqual(await status(), "A2 is the ding. D3 took its seat.Undo");
-            assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "A2");
-            await b.click("#editor-notice-undo");
+            const initial = await core();
+            const a = await noteAngle("rim", "A3"), bb = await noteAngle("rim", "Bb3");
+            const steps = await pastLen();
+            await dragPlacedNote("rim", "rim", kind, null, { target: { ring: "rim", index: 1 } });
+            assert.strictEqual(await noteAngle("rim", "A3"), bb);
+            assert.strictEqual(await noteAngle("rim", "Bb3"), a);
+            assert.deepStrictEqual(await rimNames(), initial.parts.rim);
+            assert.match(await status(), /^A3 and Bb3 traded places\./);
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
+            assert.deepStrictEqual(await core(), initial);
+
+            const undersideAngle = await noteAngle("bottom", "A2");
+            await dragPlacedNote("bottom", "ding", kind);
+            assert.match(await status(), /^A2 is the ding\. D3 took its seat\./);
+            assert.strictEqual((await core()).ding, "A2");
+            assert.deepStrictEqual(await names("bottom"), ["D3"]);
+            assert.strictEqual(await noteAngle("bottom", "D3"), undersideAngle);
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
+            assert.deepStrictEqual(await core(), initial);
+
             await b.click("#editor-oct-down");
-            await gesture(await chipAt("C"), await noteAt("ding", 0), kind);
-            assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "C3", await status());
+            const beforeReplace = await core();
+            const beforeReplaceSteps = await pastLen();
+            await dragPlacedNote("ding", "ding", kind, null, { tray: "C" });
+            assert.strictEqual((await core()).ding, "C3", await status());
             assert.match(await status(), /^D3 removed\. C3 is the ding\./);
+            assert.strictEqual(await pastLen(), beforeReplaceSteps + 1);
+            await clickUndo();
+            assert.deepStrictEqual(await core(), beforeReplace);
           });
 
           test("D4 / SE-6: off-pan removes a placed note with Undo, pinned footer cancels, and a tray note off-pan cancels", async () => {
