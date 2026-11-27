@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16810,7 +16810,7 @@ function editorGuidedCompact(result, ring) {
-   const stage = staged ? editorStageOf(m) : m.options;
-   const row = stage.guided?.[ring];
-   const size = editorNames(m, ring).length;
--  if (!row || size >= row.size || size < (ring === "rim" ? 7 : 3) || stage.angles?.[ring]) return result;
+@@ -16825,7 +16825,7 @@ function editorGuidedCompact(result, ring) {
+   const count = editorNames(m, ring).length;
+   const floor = ring === "rim" ? 7 : 3;
+   const size = Math.max(floor, count);
+-  if (!row || !count || size >= row.size || stage.angles?.[ring]) return result;
 +  return result;
    // The base rim grid starts at its usual anchor. Expanded grids use their
    // existing top-centred spacing convention.

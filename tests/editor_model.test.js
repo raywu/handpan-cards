@@ -1266,3 +1266,24 @@ test("Guided removal contracts expanded rim and Cyclops grids in saved and unfin
     assert.equal(result.reopened, true);
   }
 });
+
+test("Guided removal contracts expanded sparse grids to the default floor", () => {
+  const app = appBoot();
+  const rows = plain(app.get(`(() => {
+    const seed = "(D3) A3 B3 C4 D4 E4 F4 G4 | D#4 G#4 A#4";
+    return [
+      { ring: "rim", size: 8, seats: [4, 3, 5, 2, 6, 1, 7], name: "G4" },
+      { ring: "inner", size: 4, seats: [0, 1, 3], name: "A#4" }
+    ].map(({ ring, size, seats, name }) => {
+      const start = editorLoad(seed, { guided: { [ring]: { size, seats } } }).value;
+      const next = editorRemove(start, ring, editorNames(start, ring).indexOf(name));
+      if (!next.ok) throw Error(next.reason);
+      const row = next.value.options.guided[ring];
+      return { size: row.size, unique: new Set(row.seats).size, notes: editorNames(next.value, ring) };
+    });
+  })()`));
+  assert.deepEqual(rows, [
+    { size: 7, unique: 6, notes: ["A3", "B3", "C4", "D4", "E4", "F4"] },
+    { size: 3, unique: 2, notes: ["D#4", "G#4"] }
+  ]);
+});

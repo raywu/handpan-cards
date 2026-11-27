@@ -16803,14 +16803,29 @@ function editorSeatOrders(ring, before, positions) {
   }).sort((a, b) => a.cost - b.cost);
 }
 
+// The default seat grid can still have spare seats when an old expanded
+// layout was saved with enough gaps. Try the same ordered matching on each
+// smaller pool of seats from that grid.
+function editorSeatSubsets(indices, count) {
+  if (!count) return [[]];
+  if (count === indices.length) return [indices];
+  const [first, ...rest] = indices;
+  return [
+    ...editorSeatSubsets(rest, count - 1).map(seats => [first, ...seats]),
+    ...editorSeatSubsets(rest, count)
+  ];
+}
+
 function editorGuidedCompact(result, ring) {
   if (!result.ok || !editorGuidedZones.includes(ring)) return result;
   const m = result.value;
   const staged = editorIsEmpty(m);
   const stage = staged ? editorStageOf(m) : m.options;
   const row = stage.guided?.[ring];
-  const size = editorNames(m, ring).length;
-  if (!row || size >= row.size || size < (ring === "rim" ? 7 : 3) || stage.angles?.[ring]) return result;
+  const count = editorNames(m, ring).length;
+  const floor = ring === "rim" ? 7 : 3;
+  const size = Math.max(floor, count);
+  if (!row || !count || size >= row.size || stage.angles?.[ring]) return result;
   // The base rim grid starts at its usual anchor. Expanded grids use their
   // existing top-centred spacing convention.
   const basis = ring === "rim" && size === 7 ? row.basis || m.options.anchor || "one" : row.basis;
@@ -16819,7 +16834,13 @@ function editorGuidedCompact(result, ring) {
   const solve = candidate => staged ? editorGhostSolve(candidate, true) : editorSolve(candidate);
   const current = solve(m);
   if (!current.ok) return result;
-  for (const { seats } of editorSeatOrders(ring, editorAnglesOf(current, ring), positions)) {
+  const before = editorAnglesOf(current, ring);
+  const candidates = editorSeatSubsets(positions.map((_, index) => index), count).flatMap(pool =>
+    editorSeatOrders(ring, before, pool.map(index => positions[index])).map(({ seats, cost }) => ({
+      seats: seats.map(index => pool[index]), cost
+    }))
+  ).sort((a, b) => a.cost - b.cost);
+  for (const { seats } of candidates) {
     const next = editorClone(m);
     const target = staged ? editorStageOf(next) : next.options;
     target.guided[ring] = basis ? { size, seats, basis } : { size, seats };
