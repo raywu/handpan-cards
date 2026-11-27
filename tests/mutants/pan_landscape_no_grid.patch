@@ -1,16 +1,15 @@
-# kills: P0 phone landscape 844x390: the pan does not collapse (>= 0.95 x 309), the grid is on, tabs in view, toolbar reachable, controls scroll as one column (#editor, LS 2026-11-15)
-# was: P0 phone landscape 844x390: the pan does not collapse (>= 0.95 x 309), the grid is on, toolbar in view, controls scroll in their own region
+# kills: P0 phone landscape 844x390: the rim and scrollable drawer are side by side with a pinned action rail
 # suite: node --test --test-name-pattern ^P0.phone.landscape.844x390 tests/editor_e2e.test.js
-# fault: The phone landscape rule no longer matches, so a short wide screen stacks the editor again.
+# fault: The short wide editor stacks the drawer over the rim instead of arranging them side by side.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1078,7 +1078,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
-    as one column (the tab strip sticks inside it); the toolbar follows the tray in flow (main's sheet has no fixed bar; a sticky one would cover the first tray row at 844x340). No inner region scrolls
-    and nothing pins to an end, so the name field and the first tray row show at rest. 375x360 and a 360x330 keyboard-open portrait stay
-    stacked (min-width). After the >=900 rule so it wins its template. */
--@media (orientation:landscape) and (max-height:500px) and (min-width:560px){
-+@media (orientation:landscape) and (max-height:0px) and (min-width:560px){
-   #scale-sheet.onepanel #editor{max-width:1100px; padding:var(--sp-4); gap:var(--sp-3) var(--sp-4); display:grid; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:none;
-     scroll-padding:48px 0 var(--sp-4); container-type:normal;
-     grid-template-columns:minmax(0,1fr) minmax(300px,1fr); grid-template-rows:repeat(6, max-content) minmax(0,1fr);
+@@ -15419,7 +15419,7 @@
+   #editor-pan .eslot.unavailable{opacity:.45}
+   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
+   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
+-  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
++  @media(orientation:landscape) and (max-height:0px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
+   @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
+   `;document.head.append(style);
+   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};

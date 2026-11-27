@@ -5327,42 +5327,73 @@ function run() {
       assert.ok(layout >= 12 - 0.01, "layout tab gap " + layout);
     });
 
-    test("P0 guards: 1280x800 keeps its grid pan (574) and 375x360, 360x330 and 540x400 stay stacked with a pan of at least 120", async () => {
+    const panFrame = () => b.eval(`
+      const rim = document.querySelector('#editor-pan svg > circle[r="100"]').getBoundingClientRect();
+      const grip = editorEl("drawerexp-handle").getBoundingClientRect();
+      const tabs = editorEl("editor-tabs").getBoundingClientRect();
+      const body = editorEl("drawerexp-body").getBoundingClientRect();
+      const rail = editorEl("editor-save").getBoundingClientRect();
+      return { diameter: rim.height, round: Math.abs(rim.width - rim.height) < 1,
+        whole: rim.left >= 0 && rim.right <= innerWidth && rim.top >= 0 &&
+          (rim.right <= grip.left + 1 || rim.bottom <= grip.top + 1),
+        split: rim.right <= tabs.left + 1, tabs: tabs.top >= 0 && tabs.bottom <= body.bottom + 1,
+        rail: rail.top >= 0 && rail.bottom <= innerHeight,
+        drawerScroll: getComputedStyle(editorEl("drawerexp-body")).overflowY === "auto",
+        pageScroll: document.documentElement.scrollTop || editorEl("editor").scrollTop };
+    `);
+
+    test("P0 guards: the large screen caps pan size and short stacked screens clear the drawer", async () => {
       await open(1280, 800);
-      let r = await rects(1280, 800);
-      assert.ok(r.grid && Math.min(r.svg.w, r.svg.h) >= 0.95 * 574 && Math.min(r.svg.w, r.svg.h) <= 574 + 2, "1280x800 grid pan " + r.svg.h);
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the full rim to be exposed" });
+      let r = await panFrame();
+      assert.ok(r.whole && r.round && r.rail && r.diameter >= 380 && r.diameter <= 481, JSON.stringify(r));
       for (const [w, h] of [[375, 360], [360, 330], [540, 400]]) {
         await open(w, h);
-        r = await rects(w, h);
-        assert.strictEqual(r.grid, false, `${w}x${h} stays stacked`);
-        assert.ok(r.svg.h >= 120 - 1, `${w}x${h} pan ${r.svg.h}`);
-        assert.ok(r.page && r.bar.top >= 0 && r.bar.bottom <= h, `${w}x${h} toolbar in view, no page scroll`);
+        await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the short drawer to collapse" });
+        r = await panFrame();
+        assert.ok(r.whole && r.round && r.rail && !r.pageScroll && r.diameter >= 80, JSON.stringify(r));
       }
     });
 
-    for (const [w, h, target] of [[926, 428, 347], [844, 390, 309], [667, 375, 294], [568, 320, 206]]) {
-      test(`P0 phone landscape ${w}x${h}: the pan does not collapse (>= 0.95 x ${target}), the grid is on, tabs in view, toolbar reachable, controls scroll as one column (#editor, LS 2026-11-15)`, async () => {
+    for (const [w, h] of [[926, 428], [844, 390], [667, 375], [568, 320]]) {
+      test(`P0 phone landscape ${w}x${h}: the rim and scrollable drawer are side by side with a pinned action rail`, async () => {
         await open(w, h);
-        const r = await rects(w, h);
-        assert.ok(r.grid, "two-column grid");
-        assert.ok(r.svg.h >= 0.95 * target && r.svg.h >= 200, `drawn pan ${r.svg.h}`);
-        assert.ok(r.page, "no page scroll");
-        assert.ok(r.tabs.top >= 0 && r.tabs.bottom <= h, "tabs in view at rest");
-        await b.eval(`document.querySelector("#editor .editor-toolbar").scrollIntoView({ block: "nearest" }); return true;`);
-        const bar = await b.eval(`const r = document.querySelector("#editor .editor-toolbar").getBoundingClientRect(); return { top: r.top, bottom: r.bottom };`);
-        assert.ok(bar.top >= 0 && bar.bottom <= h, "the toolbar is in view once scrolled to: " + JSON.stringify(bar));
-        assert.ok(r.region && r.region.oy === "visible" && r.region.h > 0 && r.region.st === 0, "the region no longer scrolls: " + JSON.stringify(r.region));
-        assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor")).overflowY;`), "auto", "the column scrolls as one box");
-        assert.ok(r.svg.right <= r.tabs.left + 1 || r.svg.left >= r.tabs.right - 1, "the pan and the controls do not overlap");
+        const r = await panFrame();
+        assert.ok(r.whole && r.round && r.split && r.tabs && r.rail && r.drawerScroll && !r.pageScroll, JSON.stringify(r));
+        assert.ok(r.diameter >= h * .35 && r.diameter <= h * .5 + 1, JSON.stringify(r));
+        assert.deepStrictEqual((await drawerHits()).rail, [true, true, true]);
       });
     }
 
-    test("P0 landscape phone: no magnification when a note is dragged (the pan already reaches the editor bottom)", async () => {
-      await open(844, 390);
-      const before = await rects(844, 390);
-      assert.ok(before.svg.h >= 0.95 * 309);
-      const mag = await b.eval(`return editorDragMeasure();`);
-      assert.ok(mag <= 1.02, "magnification " + mag);
+    test("P0 landscape phone: the full rim clears the pinned rail during native zoom", async () => {
+      magPinned = false;
+      try {
+        await open(844, 390);
+      } finally {
+        magPinned = true;
+      }
+      const from = await b.eval(`const r = document.querySelector('.tray-note[data-name="A"]').getBoundingClientRect();
+        return { x:r.x+r.width/2, y:r.y+r.height/2 };`);
+      const touch = (type, point) => b.send("Input.dispatchTouchEvent", {
+        type, touchPoints: point ? [{ ...point, id: 1 }] : []
+      });
+      await touch("touchStart", from);
+      try {
+        await touch("touchMove", { x: from.x - 45, y: from.y - 12 });
+        await b.waitFor('!!editorDrag?.live', { label: "the landscape drag to lift" });
+        await touch("touchMove", { x: 180, y: 200 });
+        const r = await b.eval(`const box = document.querySelector(".editor-panbox");
+          const rim = box.querySelector('svg > circle[r="100"]').getBoundingClientRect();
+          const rail = editorEl("editor-save").getBoundingClientRect();
+          return { left:rim.left, right:rim.right, top:rim.top, bottom:rim.bottom, rail:rail.top,
+            zoom:new DOMMatrix(getComputedStyle(box).transform).a };`);
+        assert.ok(r.left >= 0 && r.right <= 844 && r.top >= 0 && r.bottom <= r.rail + 1 &&
+          r.zoom > 0 && r.zoom <= 1.2, JSON.stringify(r));
+      } finally {
+        await touch("touchCancel");
+      }
     });
 
     test("P0 drawer scroll and rotation keep pinned actions reachable without scrolling the page", async () => {
