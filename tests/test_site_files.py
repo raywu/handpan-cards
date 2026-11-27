@@ -200,6 +200,20 @@ class SiteFilesTest(unittest.TestCase):
             for banned in ("tests", "docs", "tools", "src", "data", "CLAUDE.md", "AGENTS.md", "CNAME", ".git"):
                 self.assertFalse(any(b == banned or b.startswith(banned + os.sep) for b in built), banned)
 
+    def test_editor_experiment_is_published_only_on_rc_preview(self):
+        name = "editor-pan-experiment.html"
+        for branch in (None, "main", "dev", "claude/other-lane", "claude/rc-upgrade"):
+            with self.subTest(branch=branch), tempfile.TemporaryDirectory() as out:
+                publish(out, branch)
+                target = os.path.join(out, name)
+                self.assertEqual(os.path.isfile(target), branch == "claude/rc-upgrade")
+                if os.path.isfile(target):
+                    with open(target, "rb") as actual, open(os.path.join(ROOT, name), "rb") as source:
+                        self.assertEqual(actual.read(), source.read())
+                    self.assertIn('<meta name="robots" content="noindex">', read(name))
+                with open(os.path.join(out, "index.html"), "rb") as actual, open(os.path.join(ROOT, "index.html"), "rb") as source:
+                    self.assertEqual(actual.read(), source.read())
+
     def test_publish_script_refuses_an_output_dir_that_already_has_files(self):
         with tempfile.TemporaryDirectory() as out:
             open(os.path.join(out, "stale.txt"), "w").close()
