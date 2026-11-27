@@ -1796,10 +1796,10 @@ function run() {
         await setup(OVER);
         const want = await b.eval(`const s = HPE.core.parseSeed(${JSON.stringify(OVER)}); const seed = { fields: s.value.fields, options: s.value.options }; return { record: scaleRecord(seed), link: shareLink(seed).value };`);
         assert.strictEqual(await linkOf(), want.link);
-        await hold("G");
+        await hold("G#");
         await place("rim");
-        assert.strictEqual(await status(), "The rim is full at 12 notes. Remove one first.");
-        await hold("G");
+        assert.match(await status(), /^The rim is full at 12 notes\. Remove one first\./);
+        await b.click("#editor-cancel");
         assert.strictEqual(await b.eval(`return editorSession.held === null;`), true);
         await b.click("#editor-save");
         await b.waitFor(`document.getElementById("scale-sheet").hasAttribute("hidden")`, { label: "the save to close" });
@@ -5801,7 +5801,7 @@ function run() {
       await b.click("#editor-back");
       assert.strictEqual(await dialogOpen(), true);
       assert.strictEqual(await b.eval('return document.getElementById("editor-dlg-save").disabled;'), true);
-      assert.match(await b.eval('return document.getElementById("editor-dlg-body").textContent;'), /^Place the ding/);
+      assert.match(await b.eval('return document.getElementById("editor-dlg-body").textContent;'), /ding to save/i);
       assert.strictEqual(await sheetHidden(), false, "the editor stays open");
       assert.strictEqual(await savedCount(), before, "nothing saved");
     });

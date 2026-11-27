@@ -15813,10 +15813,10 @@ function editorRender() {
   editorPlaceAreas();
   if (pin && !(rg && rg.contains(document.activeElement))) editorRegionPin();
 }
-function editorEmptyPrompt(m) {
+function editorEmptyPrompt(m, forSave = false) {
   const st = editorStageOf(m);
   const notes = st.kind === "standard" ? st.rim.length + st.inner.length + st.bottom.length : st.main.length + st.mutant.filter(Boolean).length;
-  if (!st.ding) return notes ? t("editor.save_needs_ding") : t("editor.empty");
+  if (!st.ding) return t(notes || forSave ? "editor.save_needs_ding" : "editor.empty");
   const pitchIssue = editorDraftPitchIssues(m)[0];
   if (pitchIssue) return t("editor.guided.save_pitch", pitchIssue);
   if (!editorNames(m, "rim").length) return t("editor.save_needs_rim");
@@ -17256,7 +17256,7 @@ function editorShowDialog(on) {
   save.hidden = !!s.saveAcknowledged;
   save.disabled = editorSubmitOff(s, s.history.present);
   const model = s.history.present;
-  const guidance = save.disabled && !editorCanSave(model) ? editorEmptyPrompt(model) : "";
+  const guidance = save.disabled && !editorCanSave(model) ? editorEmptyPrompt(model, true) : "";
   editorEl("editor-dlg-body").textContent = s.saveAcknowledged ? s.saveError : guidance || t("editor.dlg.body");
   if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");
   for (const node of editorEl("editor").children) if (node !== dlg) { node.inert = on; if (on) node.setAttribute("aria-hidden", "true"); else node.removeAttribute("aria-hidden"); }
