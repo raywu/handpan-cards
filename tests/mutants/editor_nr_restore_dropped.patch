@@ -1,6 +1,6 @@
-# kills: NR: Neotone to Standard to Neotone with no edit restores every placement, sparse mutant slots included
-# suite: node --test --test-name-pattern NR:.Neotone.to.Standard.to.Neotone tests/editor_shell.test.js
-# The unedited switch back never restores the remembered stage; it always re-maps and loses the sparse mutant slots.
+# kills: mode round trips preserve Guided seats and legacy Neotone share layouts
+# suite: node --test --test-name-pattern ^mode.round.trips.preserve.Guided.seats tests/editor_shell.test.js
+# fault: Switching back rebuilds from linked note positions and loses the exact legacy Neotone revision and share code.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
