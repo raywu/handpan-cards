@@ -60,7 +60,7 @@ const FROZEN_SYMBOLS = ["editorDragMeasure", "editorDragDown", "editorDragLift",
 const FROZEN_CONSTS = ["EDITOR_HIT_AREA", "EDITOR_SCALE"];
 const FROZEN_TEST_PATTERNS = {
   "drag ux": /test\(\s*[`"]drag ux (E[1-7]|E6b|E6c|X4)\b/g,
-  "tap and hold": /test\(\s*[`"](tap-tap placement|holding a note shows|tap-tap swap|D3: 8px or less|the same tap-tap place and swap work by touch|tray chips hold on Enter)/g,
+  "tap and hold": /test\(\s*[`"](tap-tap placement|holding a note exposes|tap-tap swap|D3: 8px or less|the same tap-tap place and swap work by touch|tray chips hold on Enter)/g,
 };
 
 const fixture = REGEN ? null : JSON.parse(fs.readFileSync(FIXTURE, "utf8"));
