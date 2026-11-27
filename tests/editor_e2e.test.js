@@ -849,6 +849,28 @@ function run() {
       assert.strictEqual(await sheetHidden(), false);
     });
 
+    test("EDITOR-EXIT-INVALID: Back lets an invalid draft exit without saving", async () => {
+      await fresh(380, 667);
+      const before = await savedCount();
+      await b.click("#strip-add");
+      await b.waitFor(`!!document.getElementById("editor-line")`, { label: "Add opens the editor" });
+      await typeLine(SCALE);
+      await typeLine("invalid notation", { commit: false });
+      await b.click("#editor-back");
+      assert.strictEqual(await dialogOpen(), true);
+      assert.strictEqual(await b.eval(`
+        const discard = document.getElementById("editor-dlg-discard");
+        const rect = discard.getBoundingClientRect();
+        return document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) === discard;
+      `), true, "Discard is hittable");
+      await b.click("#editor-dlg-keep");
+      assert.strictEqual(await text(), "invalid notation");
+      await b.click("#editor-back");
+      await b.click("#editor-dlg-discard");
+      assert.strictEqual(await sheetHidden(), true);
+      assert.strictEqual(await savedCount(), before);
+    });
+
     test("Discard closes and saves nothing", async () => {
       await fresh();
       const before = await savedCount();
