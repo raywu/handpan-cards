@@ -14137,7 +14137,7 @@ const editorNeoSlotOf = (m, ref) => (editorIsEmpty(m) ? editorStageNeoSlotOf(edi
 const editorNeoEmptyField = (n) => editorAreaRefusal("FIELD_EMPTY", t("editor.neo.field_empty", { n }));
 const editorNeoOwnRow = () => editorAreaRefusal("OWN_ROW", t("editor.neo.own_row"));
 function editorNeoBuild(m, parts, map, landedKey) {
-  const compact = compactMain(map.slice());
+  const compact = m.options.profile.rev === 3 ? map.slice() : compactMain(map.slice());
   const profile = { ...m.options.profile, map: compact };
   const loaded = editorLoad(editorText(m, parts), { ...m.options, profile, seats: null, angles: null });
   if (!loaded.ok) return loaded;
@@ -14671,14 +14671,28 @@ function editorCommitText(m, text) {
   if (!loaded.ok) return loaded;
   const seed = HPE.core.parseSeed(trimmed, carried);
   const typed = seed.ok ? HPE.core.typedSeats(seed.value) : null;
-  if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) return editorTypedOrder(m, typed);
+  if (!editorIsEmpty(m) && HPE.core.formatSeed(loaded.value.fields) === HPE.core.formatSeed(m.fields)) {
+    return m.options.profile ? { ok: true, value: m } : editorTypedOrder(m, typed);
+  }
   const diffed = editorTypedBottom(m, loaded.value, typed);
   if (diffed) return diffed;
   const next = loaded.value;
   if (typed) next.options.seats = typed;
   if (m.options.profile) {
     const profile = editorProfileFor(next.fields);
-    if (profile) next.options.profile = profile;
+    if (profile && m.options.profile.rev === 3) {
+      const now = new Set(profile.map.filter(Boolean));
+      const map = m.options.profile.map.map(key => now.has(key) ? key : null);
+      for (const key of profile.map) {
+        if (!key || map.includes(key)) continue;
+        const start = key[0] === "r" ? 0 : NEO_MAIN;
+        const slot = map.findIndex((item, i) => item === null && i >= start && i < start + NEO_MAIN);
+        if (slot < 0) return editorAreaRefusal("FIELDS_FULL", HPE.core.REASONS.PROFILE_FULL.reason);
+        map[slot] = key;
+      }
+      next.options.profile = { ...profile, rev: 3, map };
+      delete next.options.seats;
+    } else if (profile) next.options.profile = profile;
   }
   const solved = editorSolve(next);
   return solved.ok ? { ok: true, value: next, ...reset } : solved;

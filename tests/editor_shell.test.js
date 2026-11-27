@@ -12,6 +12,34 @@ const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
 const app = () => boot();
 const withModel = (a, text, options = "undefined") => a.run(`globalThis.__m = editorLoad(${JSON.stringify(text)}, ${options}).value; true`);
 
+test("fixed Neotone keeps surviving slots through typed and visual edits", () => {
+  const a = app();
+  const results = plain(a.get(`(() => {
+    const map = Array(18).fill(null);
+    map[2] = "r57";
+    map[5] = "r60";
+    const m = editorLoad("(D3) A3 C4", { profile: { id: "paired", rev: 3, map } }).value;
+    const visual = editorNeoPut(m, 7, "E4");
+    const typed = editorCommitText(m, "(D3) A3 C4 E4");
+    return {
+      visual: visual.value.options.profile,
+      landed: visual.notice.landed,
+      typed: typed.value.options.profile,
+      same: editorCommitText(m, "(D3) C4 A3").value === m,
+    };
+  })()`));
+  const expected = Array(18).fill(null);
+  expected[2] = "r57";
+  expected[5] = "r60";
+  expected[7] = "r64";
+  assert.deepStrictEqual(results.visual, { id: "paired", rev: 3, map: expected });
+  assert.strictEqual(results.landed, 7);
+  expected[7] = null;
+  expected[0] = "r64";
+  assert.deepStrictEqual(results.typed, { id: "paired", rev: 3, map: expected });
+  assert.strictEqual(results.same, true);
+});
+
 // CARD-SPEC Pan type and Mirror: conversion is one Undo step, Neotone owns
 // placement, and Undo restores the original mirrored Standard scale exactly.
 for (const flags of [{ mirror: true }, { mirrorBottom: false }, { mirrorBottom: true }]) {
