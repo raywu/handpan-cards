@@ -2103,17 +2103,24 @@ function run() {
             await end();
           });
 
-          test("U2f item 4: the ding dragged off the pan is refused with the ding copy; the last rim note dragged off is refused with the rim minimum", async () => {
+          test("U2f item 4: dragging the Ding or last rim note off the pan leaves an editable draft and Undo restores it", async () => {
             await setup("(D3) A3");
             const before = await core();
             const steps = await pastLen();
             await gesture(await noteAt("ding", 0), await offPan(), kind);
-            assert.strictEqual(await status(), "Every scale needs a ding. Drop another note on it to swap.");
+            assert.strictEqual((await core()).ding, "");
+            assert.deepStrictEqual(await names("rim"), ["A3"]);
+            assert.strictEqual(await b.eval(`return document.getElementById("editor-save").disabled;`), true);
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
             assert.deepStrictEqual(await core(), before);
             await gesture(await noteAt("rim", 0), await offPan(), kind);
-            assert.strictEqual(await status(), "The rim needs at least 1 note.");
+            assert.strictEqual((await core()).ding, "D3");
+            assert.deepStrictEqual(await names("rim"), []);
+            assert.strictEqual(await b.eval(`return document.getElementById("editor-save").disabled;`), true);
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
             assert.deepStrictEqual(await core(), before);
-            assert.strictEqual(await pastLen(), steps);
           });
 
           test("D3: a tray note dragged onto the empty cyclops arc and bottom ring (first note) is placed", async () => {
@@ -2161,42 +2168,47 @@ function run() {
             assert.match(await status(), /^D3 removed\. C3 is the ding\./);
           });
 
-          test("D4 / SE-6: dropping a placed note off the pan, even on the title, removes it with Undo; a tray note off the pan is cancelled with no step", async () => {
+          test("D4 / SE-6: off-pan removes a placed note with Undo, pinned footer cancels, and a tray note off-pan cancels", async () => {
             await setup(SCALE);
             const before = await core();
+            const steps = await pastLen();
             await gesture(await noteAt("rim", 3), await offPan(), kind);
             assert.ok(!(await rimNames()).includes("D4"), "removed off the pan");
-            assert.strictEqual(await status(), "D4 removed.Undo");
-            await b.click("#editor-notice-undo");
-            assert.deepStrictEqual(await core(), before);
-            const steps = await pastLen();
-            await gesture(await noteAt("rim", 3), await centreOf("#editor-title"), kind);
-            assert.ok(!(await rimNames()).includes("D4"), "anywhere off the pan removes");
+            assert.match(await status(), /^D4 removed\./);
             assert.strictEqual(await pastLen(), steps + 1);
             await clickUndo();
             assert.deepStrictEqual(await core(), before);
+            await gesture(await noteAt("rim", 3), await centreOf("#editor-save"), kind);
+            assert.deepStrictEqual(await core(), before, "a drop on the pinned footer does not remove a note");
+            assert.strictEqual(await pastLen(), steps);
             await gesture(await chipAt("G"), await offPan(), kind);
             assert.deepStrictEqual(await core(), before, "a tray note off the pan is cancelled");
             assert.strictEqual(await pastLen(), steps);
           });
 
-          test("D4: the ding dragged off the pan stays; a drag of the ding onto a rim note says only a bottom note can swap", async () => {
-            await setup("[A2] " + SCALE);
+          test("D4: a rim note swaps with the Ding in one step and Undo restores both pitches", async () => {
+            await setup("(A2) E3 A3");
             const before = await core();
-            await gesture(await noteAt("ding", 0), await offPan(), kind);
-            assert.deepStrictEqual(await core(), before);
+            const steps = await pastLen();
             await gesture(await noteAt("rim", 0), await noteAt("ding", 0), kind);
-            assert.strictEqual(await status(), "Only a bottom note can swap with the ding.");
+            const swapped = await core();
+            assert.strictEqual(swapped.ding, "E3", await status());
+            assert.deepStrictEqual(swapped.parts.rim.slice().sort(), ["A2", "A3"]);
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
             assert.deepStrictEqual(await core(), before);
           });
 
-          test("D3: a rim note dragged to an empty bottom spot moves areas in one step; Undo restores", async () => {
-            await setup(SCALE);
+          test("D3: the last rim note dragged to an empty bottom spot moves areas in one step; Undo restores", async () => {
+            await setup("(D3) A3");
             const before = await core();
-            await gesture(await noteAt("rim", 3), await spotAt(1.15, 150), kind);
-            assert.deepStrictEqual(await names("bottom"), ["D4"], await status());
-            assert.ok(!(await rimNames()).includes("D4"));
-            await b.click("#editor-notice-undo");
+            const steps = await pastLen();
+            await gesture(await noteAt("rim", 0), await spotAt(1.15, 150), kind);
+            assert.deepStrictEqual(await names("bottom"), ["A3"], await status());
+            assert.deepStrictEqual(await rimNames(), []);
+            assert.strictEqual((await core()).ding, "D3");
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
             assert.deepStrictEqual(await core(), before);
           });
         });
@@ -2376,7 +2388,7 @@ function run() {
 
       for (const kind of ["mouse", "touch"]) {
         describe("OQA " + kind, () => {
-          test("OQA drag off removes with undo toast; OQA release to remove ghost: past the margin the ghost says so, release removes in one step, the chip restores", async () => {
+          test("OQA drag off removes with undo toast; OQA release to remove ghost: past the margin the ghost says so, release removes in one step, Undo restores", async () => {
             await setup(SCALE);
             const before = await core();
             const steps = await pastLen();
@@ -2386,9 +2398,8 @@ function run() {
             assert.match(text, /Release to remove/);
             assert.ok(!(await rimNames()).includes("D4"));
             assert.strictEqual(await pastLen(), steps + 1, "one history step");
-            assert.strictEqual(await status(), "D4 removed.Undo");
-            assert.strictEqual(await b.eval(`return !!document.getElementById("editor-notice-undo");`), true);
-            await b.click("#editor-notice-undo");
+            assert.match(await status(), /^D4 removed\./);
+            await clickUndo();
             assert.deepStrictEqual(await core(), before);
             await gesture(await noteAt("rim", 3), await noteAt("rim", 4), kind, { at: 1, mid: async () => { inside = await ghostClass(); } });
             assert.doesNotMatch(inside, /remove/, "over the pan the ghost is plain");
@@ -2404,25 +2415,37 @@ function run() {
             assert.strictEqual(await status(), "");
           });
 
-          test("OQA ding drag off refuses: the ghost is .refuse, release leaves the model and says the ding copy", async () => {
+          test("OQA Ding off-pan drag previews removal, empties the center and restores through Undo", async () => {
             await setup("[A2] " + SCALE);
             const before = await core();
+            const steps = await pastLen();
             let cls = null;
             await gesture(await noteAt("ding", 0), await offPan(), kind, { at: 1, mid: async () => { cls = await ghostClass(); } });
-            assert.match(cls, /refuse/);
-            assert.doesNotMatch(cls, /remove/);
+            assert.match(cls, /remove/);
+            assert.doesNotMatch(cls, /refuse/);
+            const after = await core();
+            assert.strictEqual(after.ding, "");
+            assert.deepStrictEqual(after.parts, before.parts);
+            assert.strictEqual(await pastLen(), steps + 1);
+            assert.match(await status(), /^D3 removed\./);
+            await clickUndo();
             assert.deepStrictEqual(await core(), before);
-            assert.strictEqual(await status(), "Every scale needs a ding. Drop another note on it to swap.");
           });
 
-          test("OQA last rim drag off refuses: the ghost is .refuse, release leaves the model and says the rim minimum", async () => {
+          test("OQA last rim off-pan drag previews removal, leaves the Ding and restores through Undo", async () => {
             await setup("(D3) A3");
             const before = await core();
+            const steps = await pastLen();
             let cls = null;
             await gesture(await noteAt("rim", 0), await offPan(), kind, { at: 1, mid: async () => { cls = await ghostClass(); } });
-            assert.match(cls, /refuse/);
+            assert.match(cls, /remove/);
+            assert.doesNotMatch(cls, /refuse/);
+            assert.deepStrictEqual(await rimNames(), []);
+            assert.strictEqual((await core()).ding, "D3");
+            assert.strictEqual(await pastLen(), steps + 1);
+            assert.match(await status(), /^A3 removed\./);
+            await clickUndo();
             assert.deepStrictEqual(await core(), before);
-            assert.strictEqual(await status(), "The rim needs at least 1 note.");
           });
 
           test("OQA pointercancel never removes: a cancel past the margin snaps back with no step; so does losing capture", async () => {
@@ -2858,21 +2881,25 @@ function run() {
             assert.strictEqual(await linkOf(), before, "one Undo restores it byte-equal");
           });
 
-          test("tap select then a cross-zone spot moves the note; the last rim note is refused with the minimum copy", async () => {
+          test("tap select then a cross-zone spot moves even the last rim note as one Undo step", async () => {
             await fresh(375, 667);
             await openAdd();
             await typeLine(SCALE);
             await tapNote("rim", 3, touch);
-            await tapSpot(...polar(await orbitOf("bottom"), 200), touch);
+            await tapSpot(...polar(await orbitOf("bottom"), 150), touch);
             assert.deepStrictEqual(await names("bottom"), ["D4"], await status());
             assert.ok(!(await names("rim")).includes("D4"));
             await fresh(375, 667);
             await openAdd();
             await typeLine("(D3) A3");
             const before = await linkOf();
+            const steps = await pastLen();
             await tapNote("rim", 0, touch);
-            await place("bottom");
-            assert.strictEqual(await status(), "The rim needs at least 1 note.");
+            await tapSpot(...polar(await orbitOf("bottom"), 150), touch);
+            assert.deepStrictEqual(await names("bottom"), ["A3"], await status());
+            assert.deepStrictEqual(await names("rim"), []);
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
             assert.strictEqual(await linkOf(), before);
           });
 
