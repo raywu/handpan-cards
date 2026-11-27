@@ -5,7 +5,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -10434,7 +10434,7 @@ function checkShareVersion(v) {
+@@ -11627,13 +11627,13 @@ const engineErr = code => ({ ok: false, code, reason: HPE.core.REASONS[code].rea
+ // section 2 enum is closed and BAD_NOTE is its rejection for malformed input.
+ function checkShareVersion(v) {
+   if (typeof v !== "number" || !isFinite(v)) {
      return { ok: false, code: "BAD_NOTE",
               reason: HPE.core.REASONS.BAD_NOTE.reason.split("<X>").join(String(v).slice(0, 12)) };
    }
@@ -14,3 +17,6 @@ diff --git a/index.html b/index.html
  }
  
  // D14: what travels is the SEED, never the generated deck, so an old link
+ // renders NEW cards once the engine improves.
+ const seedOf = d => ({ fields: d.fields, options: d.options });
+ const SHARE_PREFIX = "#s=";

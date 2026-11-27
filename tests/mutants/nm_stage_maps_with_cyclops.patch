@@ -4,12 +4,18 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14905,8 +14905,6 @@
+@@ -14925,14 +14925,12 @@ function editorPanType(m, kind) {
+   const converted = editorConvertMode(m, kind);
+   return converted.ok ? { ...converted, value: { ...converted.value, modeLayouts } } : converted;
+ }
  function editorConvertMode(m, kind) {
    if (editorKindOf(m) === kind) return { ok: true, value: m };
    const notes = editorPartsOf(m);
 -  if (kind === "neotone" && notes.inner.length)
 -    return editorAreaRefusal("FIELDS_FULL", t("editor.switch_cyclops"));
    if (kind === "neotone" && (notes.rim.length > NEO_MAIN || notes.bottom.length > NEO_MAIN))
-     return editorAreaRefusal("FIELDS_FULL", HPE.core.REASONS.PROFILE_FULL.reason);
+     return editorAreaRefusal("FIELDS_FULL", t("reason.PROFILE_FULL"));
    const hints = editorLinkedHints(m);
+   if (m.options.profile) {
+     m.options.profile.map.forEach((key, slot) => {
+       if (key) hints.neo[editorNeoRingOf(slot) + ":" + key.slice(1)] = slot;
