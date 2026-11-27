@@ -48,6 +48,8 @@ test("typed Guided rim anchor moves the labeled first notes while preserving the
     const empty = editorEmptyModel();
     const typed = editorCommitText({ ...empty, options: { mirror } },
       "[E3] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | D5").value;
+    const odd = editorCommitText(empty, "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4").value;
+    const oddCenter = editorSetAnchor(odd, "one").value;
     const history = editorHistoryNew(typed);
     const split = editorApply(history, m => editorSetAnchor(m, "between")).history;
     const centered = editorSetAnchor(split.present, "one").value;
@@ -57,6 +59,7 @@ test("typed Guided rim anchor moves the labeled first notes while preserving the
         .sort((left, right) => left[0] - right[0]);
     }
     return { split: firstNotes(split.present), center: firstNotes(centered),
+      odd: [editorEffectiveAnchor(odd), editorEffectiveAnchor(oddCenter), firstNotes(oddCenter)[0]],
       same: editorSetAnchor(split.present, "between").value === split.present,
       other: ["inner", "bottom"].every(ring => JSON.stringify(editorAnglesOf(editorSolve(split.present), ring))
         === JSON.stringify(editorAnglesOf(editorSolve(typed), ring))),
@@ -67,6 +70,7 @@ test("typed Guided rim anchor moves the labeled first notes while preserving the
   ]);
   for (const result of results) {
     assert.deepStrictEqual(result.center[0], [1, 270]);
+    assert.deepStrictEqual(result.odd, [null, "one", [1, 270]]);
     assert.ok(result.same && result.other && result.undo);
   }
 });

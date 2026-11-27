@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14453,7 +14453,7 @@ function editorSetName(m, text) {
- const editorToggleRefused = () => ({ ok: false, code: "TOGGLE_REFUSED", reason: t("sheet.toggle_refused") });
+@@ -14462,7 +14462,7 @@
+ }
  function editorSetAnchor(m, to) {
    if (to !== "one" && to !== "between") return editorRefusal(to);
--  if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
+-  if (editorIsEmpty(m) || editorEffectiveAnchor(m) === to) return { ok: true, value: m };
 +  if (editorIsEmpty(m)) return { ok: true, value: m };
    const next = editorClone(m);
    if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
