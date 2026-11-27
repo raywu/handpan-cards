@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16934,7 +16934,7 @@
-   if (target.ring === ref.ring) {
-     if (EDITOR_PINNABLE.includes(ref.ring) && editorIsEmpty(m) && target.angle !== undefined &&
-         editorStageOf(m).angles?.[ref.ring]?.[ref.i] === stepOf(target.angle)) return snap;
--    return EDITOR_PINNABLE.includes(ref.ring) && target.angle !== undefined
-+    return EDITOR_PINNABLE.includes(ref.ring) && ref.ring !== "inner" && target.angle !== undefined
-       ? { step: (x) => editorSetAngle(x, ref.ring, ref.i, target.angle, true), say: t("editor.say.moved", { name: editorNameAt(m, ref) }) } : snap;
+@@ -16635,7 +16635,7 @@
+     return { refuse: t("editor.guided.no_room") };
    }
-   const name = editorNameAt(m, ref);
+   return {
+-    step: model => model === m ? accepted : editorRefusal(name),
++    step: model => model === m ? (ref?.ring === "inner" && ring === "inner" ? { ok: true, value: model } : accepted) : editorRefusal(name),
+     say: projection.reflow ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
+       : ref ? t("editor.say.moved", { name }) : editorPlaceSay(name, { ring }),
+     guided: { ring, id: name, projection, solved: accepted.solved }
