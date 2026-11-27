@@ -5106,10 +5106,10 @@ function run() {
             const contentRight = card.right - parseFloat(getComputedStyle(help).paddingRight);
             const rail = document.querySelector(".editor-toolbar").getBoundingClientRect();
             const hit = document.elementFromPoint(button.x + button.width / 2, button.y + button.height / 2);
-            return { label: close.getAttribute("aria-label"), hittable: close.contains(hit), contentClearsClose: contentRight <= button.left,
+            return { label: close.getAttribute("aria-label"), overlay: getComputedStyle(help).position === "absolute", hittable: close.contains(hit), contentClearsClose: contentRight <= button.left,
               inside: button.top >= card.top && button.right <= card.right + 1 && button.bottom <= rail.top };
           `);
-          assert.ok(geometry.label && geometry.hittable && geometry.inside && geometry.contentClearsClose, JSON.stringify(geometry));
+          assert.ok(geometry.label && geometry.overlay && geometry.hittable && geometry.inside && geometry.contentClearsClose, JSON.stringify(geometry));
           const shown = await drawerHits();
           assert.deepEqual(shown.rail, [true, true, true]);
           assert.equal(shown.info, 0);
