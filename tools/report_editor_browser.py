@@ -11,7 +11,11 @@ def main(path):
         print("Harness failure. The JS results artifact is missing.")
         return
     results = json.loads(path.read_text())
-    suite = results["files"].get("tests/editor_e2e.test.js", {})
+    suite = (results["files"].get("tests/editor_e2e.test.js", {})
+             if "files" in results else results)
+    if suite.get("harness_error"):
+        print(f'Harness or deployment failure. {suite["harness_error"]}')
+        return
     if not suite or suite.get("skipped_no_browser") or suite.get("total") is None:
         print("Harness failure. The editor browser suite did not complete.")
         return

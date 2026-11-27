@@ -29,19 +29,23 @@ function run() {
   const RIM8 = "A3 Bb3 C4 D4 E4 F4 G4 A4";
 
   before(async () => {
-    server = http.createServer((req, res) => {
-      const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "") || "index.html";
-      const file = path.resolve(REPO, rel);
-      if (!file.startsWith(REPO + path.sep)) { res.writeHead(403).end(); return; }
-      fs.readFile(file, (err, buf) => {
-        if (err) { res.writeHead(404).end(); return; }
-        const html = rel === "index.html";
-        res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
-        res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+    if (process.env.HPC_EDITOR_HOSTED_URL) {
+      base = process.env.HPC_EDITOR_HOSTED_URL;
+    } else {
+      server = http.createServer((req, res) => {
+        const rel = decodeURIComponent((req.url || "/").split("?")[0]).replace(/^\/+/, "") || "index.html";
+        const file = path.resolve(REPO, rel);
+        if (!file.startsWith(REPO + path.sep)) { res.writeHead(403).end(); return; }
+        fs.readFile(file, (err, buf) => {
+          if (err) { res.writeHead(404).end(); return; }
+          const html = rel === "index.html";
+          res.writeHead(200, { "Content-Type": html ? "text/html; charset=utf-8" : "application/octet-stream", "Cache-Control": "no-store" });
+          res.end(html ? buf.toString("utf8").replace("const DRAG_ON_TOUCH = true;", () => "const DRAG_ON_TOUCH = " + dragTouch + ";").replace("</head>", () => magPinned ? "<style>#editor.dragging .editor-panbox{transform:none!important}</style></head>" : "</head>") : buf);
+        });
       });
-    });
-    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    base = `http://127.0.0.1:${server.address().port}/index.html`;
+      await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+      base = `http://127.0.0.1:${server.address().port}/index.html`;
+    }
     b = await launch({ foregroundSettle: true });
     assert.ok(b, "browser found but launch() returned null");
     const rawClick = b.click.bind(b);

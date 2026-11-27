@@ -392,7 +392,7 @@ def timed_run(path):
     return result
 
 
-def run_node_file(path):
+def run_node_file(path, *, name_pattern=None):
     """-> (total, failed, skipped, cancelled, returncode, output) for one node
     test file.
 
@@ -406,8 +406,12 @@ def run_node_file(path):
     still exits non-zero. A caller that only checked `failed` would call that
     green.
     """
+    command = ["node", "--test", "--test-reporter=tap"]
+    if name_pattern is not None:
+        command.extend(["--test-name-pattern", name_pattern])
+    command.append(path)
     try:
-        proc = subprocess.Popen(["node", "--test", "--test-reporter=tap", path],
+        proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 text=True, cwd=paths.ROOT, start_new_session=True)
     except FileNotFoundError:
