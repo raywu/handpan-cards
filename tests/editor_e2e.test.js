@@ -1473,19 +1473,23 @@ function run() {
       assert.strictEqual(r.tall, true, "44px targets");
     });
 
-    test("holding a note shows the status with a Cancel chip; the held note again, Cancel and Escape each cancel (SE-7)", async () => {
+    test("holding a note exposes Cancel; reopening the drawer, Cancel and Escape each clear the preview (SE-7)", async () => {
       await setup(SCALE);
-      await hold("G");
-      assert.strictEqual(await status(), "Holding G4: tap a spot, an area, or the ding.Cancel");
-      await hold("G");
-      assert.strictEqual(await status(), "");
-      await hold("G");
-      await b.click("#editor-cancel");
-      assert.strictEqual(await status(), "");
-      await hold("G");
-      await b.key("Escape", "Escape", 27);
-      assert.strictEqual(await status(), "");
-      assert.strictEqual(await b.eval(`return !document.getElementById("scale-sheet").hasAttribute("hidden");`), true, "Escape cancelled the hold and did not leave");
+      const before = await model();
+      for (const dismiss of ["drawer", "cancel", "escape"]) {
+        if (!await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "OPEN"', { label: "the tray to reopen" });
+        await hold("B");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the held note to reveal the pan" });
+        assert.equal(await b.eval("return editorHeldName();"), "B4");
+        assert.equal(await b.eval('return editorEl("editor-cancel")?.textContent.trim();'), "Cancel");
+        if (dismiss === "drawer") await b.click("#drawerexp-handle");
+        else if (dismiss === "cancel") await b.click("#editor-cancel");
+        else await b.key("Escape", "Escape", 27);
+        assert.equal(await b.eval("return editorSession.held;"), null);
+        assert.deepEqual(await model(), before);
+        assert.equal(await sheetHidden(), false);
+      }
     });
 
     test("the octave stepper and the flat toggle are Undo steps and never make a scale dirty (SE-14, SE-15)", async () => {
@@ -1704,11 +1708,12 @@ function run() {
       await setup(SCALE);
       const before = await b.eval(`return editorSolve(editorSession.history.present).value.fields[3][4];`);
       await hold("B");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the held note to reveal the pan" });
       await tapNote("rim", 2);
       assert.deepStrictEqual(await rimNames(), ["A3", "Bb3", "D4", "E4", "F4", "G4", "A4", "B4"]);
       assert.strictEqual(await b.eval(`const f = editorSolve(editorSession.history.present).value.fields; return Object.values(f).find((x) => x[0] === "B" && x[1] === 4)[4];`), before);
-      assert.strictEqual(await status(), "C4 replaced by B4.Undo");
-      await clickUndo();
+      assert.match(await status(), /C4 replaced by B4/);
+      await b.click("#editor-undo");
       assert.ok((await rimNames()).includes("C4"));
     });
 
