@@ -3905,94 +3905,175 @@ function run() {
     const setup = async (line, width = 390, height = 844, touchOn = true) => { await fresh(width, height, true, touchOn); await openAdd(); await typeLine(line); };
     const SCALE_ = SCALE;
 
-    for (const [w, h, minMag] of [[390, 844, 1.1], [390, 664, 1.1], [375, 667, 1]]) {
+    const dragFrame = () => b.eval(`
+      const body = editorEl("drawerexp-body"), root = editorEl("editor");
+      const bounds = node => {
+        const r = node.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width };
+      };
+      const svg = editorEl("editor-pan").querySelector("svg");
+      const pan = svg.closest(".editor-panbox");
+      const toolbar = root.querySelector(".editor-toolbar");
+      const matrix = getComputedStyle(pan).transform;
+      const save = editorEl("editor-save"), sr = save.getBoundingClientRect();
+      const saveHit = save.contains(document.elementFromPoint(sr.x + sr.width / 2, sr.y + sr.height / 2));
+      const status = editorEl("editor-status");
+      return {
+        state: drawerExperiment.state, inert: body.inert, editorTop: root.scrollTop,
+        rail: bounds(toolbar), visible: getComputedStyle(toolbar).visibility === "visible",
+        railPassive: getComputedStyle(toolbar).pointerEvents === "none", saveHit,
+        rim: bounds(svg.querySelector('circle[r="100"][stroke="#000"]')),
+        lineBottom: bounds(editorEl("editor-line")).bottom,
+        clearance: status.textContent.trim() ? status.getBoundingClientRect().top : editorEl("drawerexp-handle").getBoundingClientRect().top,
+        zoom: matrix === "none" ? 1 : new DOMMatrix(matrix).a
+      };
+    `);
+    const dragHistory = () => b.eval(`return editorSession.history.past.length;`);
+    const waitDrag = () => b.waitFor('!!editorDrag?.live && drawerExperiment.state === "SHUT"',
+      { label: "the drag to lift and close the drawer" });
+    const waitRelease = expanded => b.waitFor(`
+      !editorDrag && !editorEl("editor").matches(".dragging, .settling") &&
+        drawerExperiment.state === "${expanded ? "OPEN" : "SHUT"}"
+    `, { label: expanded ? "a cancelled drag to restore the drawer" : "a successful drop to keep the drawer closed" });
+    const pointFor = (zone, angle) => b.eval(`
+      const m = editorSession.history.present, g = editorSolve(m).value.geom;
+      const a = ${angle} * Math.PI / 180, r = editorOrbit(g, "${zone}") * 100;
+      const p = "${zone}" === "ding" ? new DOMPoint(0, g.ding_dy * 100) :
+        new DOMPoint(r * Math.cos(a), -r * Math.sin(a));
+      const at = p.matrixTransform(editorEl("editor-pan").querySelector("svg").getScreenCTM());
+      return { x: at.x, y: at.y };
+    `);
+    async function aimDrag(zone, requested) {
+      for (const angle of [requested, requested - 5, requested + 5, requested - 10, requested + 10]) {
+        const point = await pointFor(zone, angle);
+        const intended = await b.eval(`
+          const hit = editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);
+          return "${zone}" === "ding" ? hit.kind === "ding" : hit.kind === "spot" && hit.ring === "${zone}";
+        `);
+        if (!intended) continue;
+        await b.eval(`
+          window.dragMatrixPointer = null;
+          addEventListener("pointermove", e => { window.dragMatrixPointer = [e.clientX, e.clientY]; },
+            { capture: true, once: true });
+          return true;
+        `);
+        await touch("touchMove", point);
+        const marker = zone === "rim" || zone === "inner" ?
+          `.guided-landing[data-guided-zone="${zone}"]` : ".editor-landing";
+        await b.waitFor(`!!window.dragMatrixPointer && Math.hypot(
+          window.dragMatrixPointer[0] - ${point.x}, window.dragMatrixPointer[1] - ${point.y}
+        ) <= 1.5 && !!document.querySelector(${JSON.stringify(marker)})`,
+          { label: "the live " + zone + " landing outline after native pointer movement" });
+        return b.eval(`
+          const hit = editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);
+          const mark = document.querySelector(${JSON.stringify(marker)});
+          return { angle: mark.hasAttribute("data-angle") ? Number(mark.dataset.angle) : hit.angle };
+        `);
+      }
+      assert.fail("no live " + zone + " target near " + requested + " degrees");
+    }
+
+    for (const [w, h] of [[390, 844], [390, 664], [375, 667]]) {
       describe(`${w}x${h}`, () => {
         test("drag ux E1: a live drag sets dragging and takes the panel out of play; a press that does not move does not", async () => {
           await setup(SCALE_, w, h);
-          const tall = await b.eval(`return [...document.querySelectorAll("#editor button")].filter((x) => x.offsetParent).every((x) => x.getBoundingClientRect().height >= 44 || x.id === "editor-notice-undo" || x.closest("#editor-status"));`);
-          assert.strictEqual(tall, true, "every control keeps a 44px target at rest");
+          const rest = await dragFrame();
+          const tall = await b.eval(`return ["drawerexp-handle", "editor-undo", "editor-save", "editor-more"]
+            .every(id => editorEl(id).getBoundingClientRect().height >= 44);`);
+          assert.equal(tall, true, "the drawer handle and rail keep their touch target height");
           const from = await chipAt("B");
           await touch("touchStart", from);
-          await pause(60);
-          assert.strictEqual(await isDragging(), false, "a press alone does not set dragging");
+          assert.strictEqual(await isDragging(), false, "a press alone does not start a drag");
+          assert.strictEqual((await dragFrame()).inert, false, "a press leaves the drawer usable");
           await touch("touchEnd");
-          await pause(60);
+
           await setup(SCALE_, w, h);
           await liftFrom(await chipAt("B"), await noteAt("rim", 0));
-          await pause(320);
-          assert.strictEqual(await live(), true);
-          assert.strictEqual(await isDragging(), true);
-          const css = await panelCss();
-          for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "0", pe: "none", vis: "hidden" }, k);
-          await touch("touchEnd");
+          try {
+            await waitDrag();
+            const frame = await dragFrame();
+            assert.strictEqual(frame.inert, true, "drawer controls leave the tab and hit order");
+            assert.strictEqual(frame.visible, true, "the rail stays visible");
+            assert.strictEqual(frame.railPassive, true, "the rail is passive while holding a pointer");
+            assert.deepStrictEqual(frame.rail, rest.rail, "the rail remains pinned");
+            assert.strictEqual(frame.editorTop, 0);
+          } finally {
+            await touch("touchCancel");
+          }
+          await waitRelease(true);
         });
 
-        test("drag ux E2: the panel returns after a drop, a pointercancel, Escape and a drop off the pan, and Undo is then usable", async () => {
+        test("drag ux E2: a drop keeps the drawer closed, cancellation restores it, and Undo is usable", async () => {
           for (const how of ["drop", "cancel", "escape", "off"]) {
             await setup(SCALE_, w, h);
-            const before = (await names("rim")).length;
-            const to = how === "off" ? { x: 195, y: 4 } : await noteAt("rim", 2);
-            await liftFrom(await chipAt("B"), to);
-            await pause(300);
-            assert.strictEqual(await isDragging(), true, how);
+            const before = await model();
+            const depth = await dragHistory();
+            const rail = (await dragFrame()).rail;
+            await liftFrom(await chipAt("B"), await noteAt("rim", 2));
+            await waitDrag();
             if (how === "cancel") await touch("touchCancel");
             else if (how === "escape") {
               await b.key("Escape", "Escape", 27);
-              await pause(500);
-              assert.strictEqual(await isDragging(), false, "Escape alone ends the drag");
-              assert.strictEqual(await live(), false, "Escape alone ends the drag");
+              await waitRelease(true);
+              await touch("touchEnd");
+            } else {
+              if (how === "off") await touch("touchMove", { x: w / 2, y: 4 });
+              else await aimDrag("rim", 22.5);
               await touch("touchEnd");
             }
-            else {
-              await touch("touchMove", how === "off" ? to : await spotNow((await geom()).rim, 22.5));
-              await touch("touchEnd");
-            }
-            await pause(500);
-            assert.strictEqual(await isDragging(), false, how + ": dragging cleared");
-            assert.strictEqual(await live(), false, how);
-            const css = await panelCss();
-            for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "1", pe: "auto", vis: "visible" }, how + " " + k);
-            const g = await geometry();
-            assert.strictEqual(g.transform === "none" || /^matrix\(1, 0, 0, 1, 0, 0\)$/.test(g.transform), true, how + ": the pan is back at 1x");
+            await waitRelease(how !== "drop");
+            const frame = await dragFrame();
+            assert.strictEqual(frame.inert, how === "drop", how + ": drawer availability");
+            assert.strictEqual(frame.zoom, 1, how + ": camera resets");
+            assert.strictEqual(frame.saveHit, true, how + ": pinned Save is hittable");
+            assert.deepStrictEqual(frame.rail, rail, how + ": the rail never moves");
             if (how === "drop") {
-              assert.strictEqual((await names("rim")).length, before + 1);
-              assert.strictEqual(await b.eval(`return !document.getElementById("editor-undo").disabled || !!document.getElementById("editor-notice-undo");`), true);
-            } else assert.strictEqual((await names("rim")).length, before, how + ": nothing placed");
+              assert.ok((await names("rim")).includes("B4"));
+              assert.strictEqual(await dragHistory(), depth + 1);
+              await clickUndo();
+              assert.deepStrictEqual(await model(), before);
+            } else {
+              assert.strictEqual(await dragHistory(), depth);
+              assert.deepStrictEqual(await model(), before);
+            }
           }
         });
 
-        test(`drag ux E3: the pan grows into the freed space, never above its rest top, and drops land in the scaled geometry in every zone`, async () => {
+        test("drag ux E3: the fitted pan stays in view and native drops land at their previewed seats", async () => {
           const cases = [
-            { zone: "rim", line: SCALE_, chip: "B", prep: [], at: (g) => [g.rim, 22.5], check: async () => assert.deepStrictEqual((await names("rim")).slice(-2), ["A4", "B4"]) },
-            { zone: "inner", line: SCALE_, chip: "E", prep: ["#editor-oct-up"], at: (g) => [g.inner, 90], check: async () => assert.strictEqual((await names("inner")).length, 3) },
-            { zone: "bottom", line: SCALE_, chip: "F", prep: ["#editor-oct-down", "#editor-oct-down"], at: (g) => [g.bottom, 150], check: async () => assert.deepStrictEqual(await names("bottom"), ["F2"]) },
-            { zone: "ding", line: "[A2] (D3) " + RIM8 + " | C5 D5", chip: "G", prep: ["#editor-oct-down"], at: (g) => [g.ding, -90], check: async () => assert.strictEqual(await ding(), "G3") },
+            { zone: "rim", line: SCALE_, chip: "B", oct: 0, aim: 22.5, placed: "B4" },
+            { zone: "inner", line: SCALE_, chip: "E", oct: 1, aim: 90, placed: "E5" },
+            { zone: "bottom", line: SCALE_, chip: "F", oct: -2, aim: 150, placed: "F2" },
+            { zone: "ding", line: "[A2] " + SCALE_, chip: "G", oct: -1, aim: 0, placed: "G3" }
           ];
           for (const early of [false, true]) {
             for (const c of cases) {
               if (early && c.zone === "ding") continue;
               await setup(c.line, w, h);
-              for (const sel of c.prep) await b.click(sel);
-              const rest = await geometry();
-              const gm = await geom();
+              for (let i = 0; i < Math.abs(c.oct); i++) await b.click(c.oct > 0 ? "#editor-oct-up" : "#editor-oct-down");
+              const rest = await dragFrame(), depth = await dragHistory();
               await liftFrom(await chipAt(c.chip), await noteAt("rim", 0));
-              if (!early) await pause(400);
-              const now = await geometry();
-              if (!early) {
-                assert.ok(now.svg.width / rest.svg.width >= minMag - 0.001, `${c.zone}: svg grew ${now.svg.width / rest.svg.width} (min ${minMag})`);
-                assert.ok(Math.abs(now.svg.width / rest.svg.width - now.mag) < 0.02, `${c.zone}: the rect follows --ed-mag`);
-                const pad = now.svg.width * 14 / now.vb.w;
-                assert.ok(now.svg.left + pad >= -0.5 && now.svg.left + now.svg.width - pad <= w + 0.5, `${c.zone}: the drawing stays on screen`);
-              }
-              assert.ok(now.box.top >= rest.box.top - 0.5, `${c.zone}: the scaled pan box top ${now.box.top} stays at or below its rest top ${rest.box.top}`);
-              assert.ok(now.svg.top >= rest.svg.top - 0.5, `${c.zone}: the scaled svg top stays at or below its rest top`);
-              const pt = await spotNow(...c.at(gm));
-              await touch("touchMove", pt);
+              if (!early) await waitDrag();
+              const preview = await aimDrag(c.zone, c.aim);
+              const now = await dragFrame();
+              assert.ok(now.zoom >= 0.1 && now.zoom <= 1.2 + 0.01);
+              assert.ok(Math.abs(now.rim.width / rest.rim.width - now.zoom) < 0.03,
+                `${c.zone}: the visible rim follows the measured camera transform`);
+              assert.ok(now.rim.top >= now.lineBottom - 1 && now.rim.bottom <= now.clearance + 1 &&
+                now.rim.left >= -0.5 && now.rim.right <= w + 0.5, `${c.zone}: full rim in view ` + JSON.stringify(now));
               await touch("touchEnd");
-              await pause(700);
-              await c.check();
-              const back = await geometry();
-              assert.ok(Math.abs(back.svg.width - rest.svg.width) <= 1, `${c.zone}: back to rest width within 1px (${back.svg.width} vs ${rest.svg.width})`);
+              await waitRelease(false);
+              assert.strictEqual(await dragHistory(), depth + 1);
+              if (c.zone === "ding") assert.strictEqual(await ding(), c.placed);
+              else {
+                const placed = await b.eval(`
+                  const result = editorSolve(editorSession.history.present);
+                  const field = Object.values(result.value.fields).find(f => f[0] + f[1] === "${c.placed}");
+                  return field && { zone: field[3], angle: field[4] };
+                `);
+                assert.deepStrictEqual(placed, { zone: c.zone, angle: preview.angle });
+              }
+              assert.strictEqual((await dragFrame()).zoom, 1);
             }
           }
         });
