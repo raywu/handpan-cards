@@ -12,6 +12,66 @@ const SCALE = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 | C5 D5";
 const app = () => boot();
 const withModel = (a, text, options = "undefined") => a.run(`globalThis.__m = editorLoad(${JSON.stringify(text)}, ${options}).value; true`);
 
+test("fresh Standard text seeds legal Guided rows without changing explicit order or reopened layouts", () => {
+  const a = app();
+  const result = plain(a.get(`(() => {
+    const seed = "(D3) A3 C4 [E3] | D4";
+    const empty = editorEmptyModel();
+    const plain = editorLoad(seed).value;
+    const typed = editorCommitText(empty, seed).value;
+    const mirror = editorCommitText({ ...empty, options: { mirror: true } }, seed).value;
+    const draft = editorReplaceDing(empty, "D3").value;
+    const fromDraft = editorCommitText(draft, seed).value;
+    const ordered = editorCommitText(empty, "(D3) C4 A3").value;
+    const angles = m => {
+      const solved = editorSolve(m);
+      return Object.fromEntries(["rim","inner","bottom"].map(ring => [ring, editorAnglesOf(solved, ring)]));
+    };
+    return { stock: angles(plain), typed: angles(typed), mirrored: angles(mirror),
+      guided: typed.options.guided, fromDraft: fromDraft.options.guided,
+      ordered: { line: editorLineText(ordered), seats: ordered.options.seats, guided: ordered.options.guided },
+      unchangedTyped: editorCommitText(typed, editorLineText(typed)).value === typed,
+      unchangedStock: editorCommitText(plain, editorLineText(plain)).value === plain };
+  })()`));
+  assert.deepStrictEqual(result.guided, { rim: { size: 7, seats: [0, 5], basis: "one" }, inner: { size: 3, seats: [2] } });
+  assert.deepStrictEqual(result.fromDraft, result.guided);
+  assert.deepStrictEqual(result.typed, { rim: [270, 115.7], inner: [90], bottom: result.stock.bottom });
+  assert.deepStrictEqual(result.mirrored.rim, [270, 64.3]);
+  assert.deepStrictEqual(result.ordered, { line: "(D3) C4 A3", seats: { rim: [1, 0] } });
+  assert.ok(result.unchangedTyped);
+  assert.ok(result.unchangedStock);
+});
+
+test("typed Guided growth expands the affected ring and keeps valid over-cap notation", () => {
+  const a = app();
+  const result = plain(a.get(`(() => {
+    const seed = "(D3) A3 B3 C4 D4 E4 F4 G4";
+    const extended = seed + " A4 | D5";
+    const overCap = seed + " A4 B4 C5 D5 E5 F5";
+    const text = line => editorCommitText(editorEmptyModel(), line);
+    const first = text(seed + " | D5").value;
+    const history = editorHistoryNew(first);
+    const changed = editorApply(history, m => editorCommitText(m, extended));
+    const next = changed.history.present;
+    const dense = text(extended).value;
+    const over = text(overCap).value;
+    const invalid = editorApply(changed.history, m => editorCommitText(m, "(D3) not a scale"));
+    return { before: first.options.guided, expanded: next.options.guided, dense: dense.options.guided,
+      history: changed.history.past.length, after: editorLineText(next),
+      overCap: { count: editorNames(over, "rim").length, guided: !!over.options.guided, legal: editorSolve(over).ok },
+      refused: !invalid.ok && invalid.history === changed.history };
+  })()`));
+  assert.equal(result.before.rim.size, 7);
+  assert.equal(result.expanded.rim.size, 8);
+  assert.equal(result.expanded.rim.seats.length, 8);
+  assert.equal(result.dense.rim.size, 8);
+  assert.deepStrictEqual(result.expanded.inner, result.before.inner);
+  assert.equal(result.history, 1);
+  assert.equal(result.after, "(D3) A3 B3 C4 D4 E4 F4 G4 A4 | D5");
+  assert.deepStrictEqual(result.overCap, { count: 13, guided: false, legal: true });
+  assert.ok(result.refused);
+});
+
 test("fixed Neotone keeps surviving slots through typed and visual edits", () => {
   const a = app();
   const results = plain(a.get(`(() => {

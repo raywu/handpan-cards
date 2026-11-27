@@ -14826,6 +14826,35 @@ function editorTypedBottom(m, target, typed) {
   }
   return { ok: true, value: cur, ...(notice ? { notice } : {}) };
 }
+// Direct entry into an untouched Standard pan uses the Guided grid. Keep the
+// input's stock seat order as the reference, and accept only a legal full layout.
+function editorTypedGuided(next, solved, zones = editorGuidedZones, previous = null) {
+  const mirror = HPE.layout.resolveMirrors(next.options).top;
+  const prior = previous && editorSolve(previous);
+  const rows = editorGuidedZones.map(ring => {
+    const angles = editorAnglesOf(solved, ring);
+    if (!zones.includes(ring) || !angles.length || angles.length > EDITOR_CAPS[ring] || next.options.seats?.[ring]) return [null];
+    const pitch = name => editorNameEntry(name, ring)[2];
+    const oldAngles = prior?.ok ? editorAnglesOf(prior, ring) : [];
+    const oldNames = oldAngles.length ? editorNames(previous, ring) : [];
+    const old = new Map(oldAngles.map((angle, index) => [pitch(oldNames[index]), angle]));
+    const before = editorNames(next, ring).map((name, index) => old.get(pitch(name)) ?? angles[index]);
+    const size = Math.max(ring === "rim" ? 7 : 3, before.length);
+    const basis = ring === "rim" && size === 7 ? next.options.anchor ?? "one" : undefined;
+    const positions = HPE.layout.guidedGrid(ring, size, basis).map(angle => turnTo(mirror ? 180 - angle : angle));
+    return editorGuidedSeatChoices(ring, before, positions).map(({ seats }) =>
+      basis ? { size, seats, basis } : { size, seats });
+  });
+  for (const rim of rows[0]) {
+    for (const inner of rows[1]) {
+      if (!rim && !inner) return next;
+      const guided = { ...next.options.guided, ...(rim ? { rim } : {}), ...(inner ? { inner } : {}) };
+      const candidate = { ...next, options: { ...next.options, guided } };
+      if (editorSolve(candidate).ok) return candidate;
+    }
+  }
+  return next;
+}
 // A text commit. The same notes and zones keep the model as it is (pins and all); a
 // change to either drops the placement options and says so when pins were set.
 function editorCommitText(m, text) {
@@ -14869,7 +14898,11 @@ function editorCommitText(m, text) {
   if (diffed) return diffed;
   const next = loaded.value;
   if (typed) next.options.seats = typed;
-  if (m.options.guided || (editorIsEmpty(m) && editorStageOf(m).guided)) { const refusal = editorGuidedRetain(m, next); if (refusal) return refusal; }
+  const expand = [];
+  if (m.options.guided || (editorIsEmpty(m) && editorStageOf(m).guided)) {
+    const refusal = editorGuidedRetain(m, next, null, expand);
+    if (refusal) return refusal;
+  }
   if (m.options.profile) {
     const profile = editorProfileFor(next.fields);
     if (profile && m.options.profile.rev === 3) {
@@ -14887,7 +14920,14 @@ function editorCommitText(m, text) {
     } else if (profile) next.options.profile = profile;
   }
   const solved = editorSolve(next);
-  return solved.ok ? { ok: true, value: next, ...reset } : solved;
+  if (!solved.ok) return solved;
+  const stage = editorIsEmpty(m) && editorStageOf(m);
+  const unarranged = stage && !m.options.profile && !m.pins.length &&
+    !m.options.guided && !m.options.seats && !m.options.angles && !stage.guided && !stage.tradedRings?.length &&
+    !Object.values(stage.angles || {}).some(angles => angles.some(Number.isFinite));
+  const value = unarranged ? editorTypedGuided(next, solved)
+    : expand.length ? editorTypedGuided(next, solved, expand, m) : next;
+  return { ok: true, value, ...reset };
 }
 // The pan type is one model change: Neotone proposes the profile and sets the
 // placement options aside, Standard removes the profile.
@@ -16762,7 +16802,7 @@ function editorGuidedHit(pt, includeOpen = false, locked = false, insertMargin =
   return closest;
 }
 
-function editorGuidedRetain(m, next, entries = null) {
+function editorGuidedRetain(m, next, entries = null, expand = null) {
   const guided = {};
   for (const ring of editorGuidedZones) {
     const row = editorIsEmpty(m) ? editorStageOf(m).guided?.[ring] : m.options.guided?.[ring];
@@ -16780,8 +16820,11 @@ function editorGuidedRetain(m, next, entries = null) {
       return seat;
     });
     const available = Array.from({ length: row.size }, (_, i) => i).filter(i => !used.has(i));
-    if (slots.filter(seat => seat === null).length > available.length)
-      return editorAreaRefusal("NO_ROOM", t("editor.guided.use_tray"));
+    if (slots.filter(seat => seat === null).length > available.length) {
+      if (!expand || m.pins.some(pin => pin.ring === ring)) return editorAreaRefusal("NO_ROOM", t("editor.guided.use_tray"));
+      expand.push(ring);
+      continue;
+    }
     guided[ring] = { ...row, seats: slots.map(seat => seat ?? available.shift()) };
   }
   next.options.guided = guided;
@@ -16857,6 +16900,14 @@ function editorSeatSubsets(indices, count) {
   ];
 }
 
+function editorGuidedSeatChoices(ring, before, positions) {
+  return editorSeatSubsets(positions.map((_, index) => index), before.length).flatMap(pool =>
+    editorSeatOrders(ring, before, pool.map(index => positions[index])).map(({ seats, cost }) => ({
+      seats: seats.map(index => pool[index]), cost
+    }))
+  ).sort((a, b) => a.cost - b.cost);
+}
+
 function editorGuidedCompact(result, ring) {
   if (!result.ok || !editorGuidedZones.includes(ring)) return result;
   const m = result.value;
@@ -16876,11 +16927,7 @@ function editorGuidedCompact(result, ring) {
   const current = solve(m);
   if (!current.ok) return result;
   const before = editorAnglesOf(current, ring);
-  const candidates = editorSeatSubsets(positions.map((_, index) => index), count).flatMap(pool =>
-    editorSeatOrders(ring, before, pool.map(index => positions[index])).map(({ seats, cost }) => ({
-      seats: seats.map(index => pool[index]), cost
-    }))
-  ).sort((a, b) => a.cost - b.cost);
+  const candidates = editorGuidedSeatChoices(ring, before, positions);
   for (const { seats } of candidates) {
     const next = editorClone(m);
     const target = staged ? editorStageOf(next) : next.options;
@@ -16981,16 +17028,17 @@ function editorGuidedNeutralMarks(m, solved, source = null, active = null) {
       row ? row.basis : ring === "rim" && ids.length < count ? "one" : undefined);
     const mirror = HPE.layout.resolveMirrors(m.options).top;
     const used = ids.filter((_, i) => !(source?.ring === ring && source.i === i))
-      .map(id => solved.fields[id][4]);
+      .map(id => editorGuidedPoint(solved.geom, ring, solved.fields[id][4]));
     const orbit = editorOrbit(solved.geom, ring) * 100;
     const radius = Math.max(9, editorDrawnReach(solved.geom, ring) * 100);
     return grid.map(angle => mirror ? turnTo(180 - angle) : turnTo(angle))
-      .filter(angle => !(ring === active?.ring && editorGuidedGap(angle, active.projection.landing) < 1e-6) &&
-        !used.some(occupied => editorGuidedGap(angle, occupied) < 1e-6))
+      .filter(angle => !(ring === active?.ring && editorGuidedGap(angle, active.projection.landing) < 1e-6))
       .map(angle => {
         const rad = angle * Math.PI / 180;
+        const x = orbit * Math.cos(rad), y = -orbit * Math.sin(rad);
+        if (used.some(([cx, cy, r]) => Math.hypot(x - cx, y - cy) < radius + r - 1e-6)) return "";
         return `<g class="guided-seat guided-open guided-informational" data-guided-zone="${ring}" aria-hidden="true">
-          <circle cx="${orbit * Math.cos(rad)}" cy="${-orbit * Math.sin(rad)}" r="${radius}"/></g>`;
+          <circle cx="${x}" cy="${y}" r="${radius}"/></g>`;
       }).join("");
   }).join("");
 }

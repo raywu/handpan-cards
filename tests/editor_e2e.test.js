@@ -727,7 +727,52 @@ function run() {
       assert.equal(await savedCount(), 0);
     });
 
+    test("direct Standard scale entry uses Guided seats and neutral guides do not overlap notes", async () => {
+      const seed = "(D3) A3 C4 | D4";
+      await fixture("", {}, 4, 667, 380);
+      await clickReady("#editor-line");
+      await b.send("Input.insertText", { text: seed });
+      await b.key("Enter", "Enter", 13);
+      await b.waitFor("editorSession.history.past.length === 1", { label: "typed scale to commit" });
+      const placed = await model();
+      assert.deepEqual(placed.options.guided, { rim: { size: 7, seats: [0, 5], basis: "one" }, inner: { size: 3, seats: [2] } });
+      await clickReady("#editor-undo");
+      await b.waitFor("editorSession.history.past.length === 0", { label: "Undo to restore the empty pan" });
+      assert.equal(await text(), "");
+      await clickReady("#editor-more");
+      await clickReady("#editor-redo");
+      assert.deepEqual(await model(), placed);
+      await saveAndReopen(9);
+      assert.deepEqual((await model()).options.guided, placed.options.guided);
+
+      await fixture("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 | B4", {}, 4, 667, 380);
+      const neutral = await b.eval(`const pan = editorEl("editor-pan");
+        const marks = [...pan.querySelectorAll(".guided-informational")];
+        const circle = node => ["cx", "cy", "r"].map(attr => Number(node.getAttribute(attr)));
+        return { count: marks.length, overlap: marks.some(mark => {
+          const [x, y, r] = circle(mark.querySelector("circle"));
+          return [...pan.querySelectorAll('.ehit[data-ring="' + mark.dataset.guidedZone + '"]')].some(note => {
+            const [cx, cy, reach] = circle(note);
+            return Math.hypot(x - cx, y - cy) < r + reach - 0.02;
+          });
+        }) };`);
+      assert.ok(neutral.count > 0, "vacant guides remain visible on the legacy layout");
+      assert.equal(neutral.overlap, false);
+    });
+
     test("EDITOR-RC-FORM: the scale input form rejects invalid text and saves corrected notes", async () => {
+      await fixture("", {}, 4, 667, 380);
+      await clickReady("#editor-more");
+      await clickReady("#editor-form-toggle");
+      for (const [field, notes] of [["ding", "D3"], ["inner", "D4"], ["top", "A3 C4"]]) {
+        await clickReady("#editor-form-" + field);
+        await b.send("Input.insertText", { text: notes });
+        await b.key("Enter", "Enter", 13);
+      }
+      const direct = await model();
+      assert.deepEqual(direct.options.guided,
+        { rim: { size: 7, seats: [0, 5], basis: "one" }, inner: { size: 3, seats: [2] } });
+
       await fixture("(D3) A3 B3 C4 E4");
       await clickReady("#editor-more");
       await clickReady("#editor-form-toggle");

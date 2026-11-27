@@ -1,0 +1,12 @@
+# kills: direct Standard scale entry uses Guided seats and neutral guides do not overlap notes
+# suite: node --test --test-name-pattern ^direct.Standard.scale.entry.uses tests/editor_e2e.test.js
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17037,5 +17037,4 @@
+         const rad = angle * Math.PI / 180;
+         const x = orbit * Math.cos(rad), y = -orbit * Math.sin(rad);
+-        if (used.some(([cx, cy, r]) => Math.hypot(x - cx, y - cy) < radius + r - 1e-6)) return "";
+         return `<g class="guided-seat guided-open guided-informational" data-guided-zone="${ring}" aria-hidden="true">
+           <circle cx="${x}" cy="${y}" r="${radius}"/></g>`;
