@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1052,7 +1052,7 @@
+@@ -1104,7 +1104,7 @@
  #editor .editor-toolbar .mode:disabled{opacity:1; cursor:default}
  #editor .editor-toolbar .mode.primary:disabled{background:#F6F4ED; color:#8A847B; border-color:#8A847B}
  #editor-tray{flex:0 0 auto}
--#editor-dialog{position:absolute; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
+-#editor-dialog{position:absolute; inset:0; z-index:12; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
 +#editor-dialog{position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
  #editor-dialog .dlg{background:#F6F4ED; color:#242424; border:2px solid #242424; border-radius:12px; padding:var(--sp-3); margin:var(--sp-3);
    max-width:360px; display:flex; flex-direction:column; gap:var(--sp-2)}

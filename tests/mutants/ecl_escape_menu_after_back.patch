@@ -4,11 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14550,7 +14550,6 @@
+@@ -17254,7 +17254,7 @@
  function editorShowDialog(on) {
    const s = editorSession;
    s.dialog = on;
--  if (on) editorCloseMenu(false);
+-  if (on) { editorCloseMenu(false); if (s.hint) editorSetAreas(false); }
++  if (on && s.hint) editorSetAreas(false);
    const dlg = editorEl("editor-dialog");
-   if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");
-   for (const node of editorEl("editor").children) if (node !== dlg) { node.inert = on; if (on) node.setAttribute("aria-hidden", "true"); else node.removeAttribute("aria-hidden"); }
+   const save = editorEl("editor-dlg-save");
+   save.hidden = !!s.saveAcknowledged;
