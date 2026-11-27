@@ -3447,6 +3447,50 @@ function run() {
       }
     });
 
+    test("Guided Cyclops keyboard nudge skips occupied seats and preserves focus and history", async () => {
+      for (const { mirror, direction, before, first, edge } of [
+        { mirror: false, direction: "Left", before: [72, 108], first: [144, 108], edge: [180, 108] },
+        { mirror: true, direction: "Right", before: [108, 72], first: [36, 72], edge: [0, 72] }
+      ]) {
+        await fresh();
+        await openAdd();
+        await b.eval(`
+          const loaded = editorLoad("(D3) A3 C4 | E4 G4", {
+            mirror: ${mirror}, guided: { inner: { size: 6, seats: [5, 4] } }
+          });
+          if (!loaded.ok) throw Error(loaded.reason);
+          editorSession.history = editorHistoryNew(loaded.value);
+          editorRender();
+          return true;
+        `);
+        const snapshot = () => b.eval(`
+          const history = editorSession.history, m = history.present;
+          return { angles: editorAnglesOf(editorSolve(m), "inner"),
+            guided: m.options.guided.inner.size, pinned: Boolean(m.options.angles?.inner),
+            depth: history.past.length };
+        `);
+        const expectState = (angles, depth) => ({ angles, depth, guided: 6, pinned: false });
+        assert.deepStrictEqual(await snapshot(), expectState(before, 0));
+        assert.equal(await focusKey("inner:0"), true);
+        await enter();
+        await arrow(direction);
+        assert.deepStrictEqual(await snapshot(), expectState(first, 1));
+        assert.match(await status(), new RegExp(`E4 at ${first[0]} degrees`));
+        assert.equal(await activeKey(), "inner:0");
+        assert.deepStrictEqual(await sel(), { ring: "inner", i: 0 });
+        await arrow(direction);
+        assert.deepStrictEqual(await snapshot(), expectState(edge, 2));
+        assert.match(await status(), new RegExp(`E4 at ${edge[0]} degrees`));
+        await arrow(direction);
+        assert.deepStrictEqual(await snapshot(), expectState(edge, 2), "the edge is a no-op");
+        assert.equal(await activeKey(), "inner:0");
+        await press("z", "KeyZ", 90, 2);
+        assert.deepStrictEqual(await snapshot(), expectState(first, 1));
+        await press("Z", "KeyZ", 90, 10);
+        assert.deepStrictEqual(await snapshot(), expectState(edge, 2));
+      }
+    });
+
     test("the nudge is scoped to focus in the pan with a nudgeable pick: elsewhere an arrow moves nothing", async () => {
       await setup();
       await focusKey("bottom:0");

@@ -17623,8 +17623,29 @@ function editorNudge(dir) {
   const { ring, i } = s.sel;
   const solved = editorSolve(m);
   if (!solved.ok) return;
-  const to = stepOf(editorNudgeTarget(stepOf(editorAnglesOf(solved, ring)[i]), dir));
-  editorDo((x) => editorSetAngle(x, ring, i, to, true), t("editor.say.nudged", { name: editorNameAt(m, s.sel), angle: to }));
+  const angles = editorAnglesOf(solved, ring);
+  const name = editorNameAt(m, s.sel);
+  const guided = (editorIsEmpty(m) ? editorStageOf(m).guided : m.options.guided)?.inner;
+  if (ring === "inner" && guided) {
+    const mirror = HPE.layout.resolveMirrors(m.options).top;
+    const from = angles[i];
+    const available = HPE.layout.guidedGrid(ring, guided.size, guided.basis)
+      .map(angle => mirror ? turnTo(180 - angle) : angle)
+      .filter(angle => (angle - from) * dir > 1e-6 &&
+        !angles.some(occupied => editorGuidedGap(angle, occupied) < 1e-6))
+      .sort((a, b) => (a - b) * dir);
+    for (const angle of available) {
+      const plan = editorGuidedPlan(m, { from: "pan", ref: s.sel }, { kind: "spot", ring, guidedAngle: angle });
+      if (!plan?.guided || editorGuidedShowsProjection(plan.guided.projection) ||
+          editorGuidedGap(plan.guided.projection.landing, angle) >= 1e-6) continue;
+      editorDo(plan.step, t("editor.say.nudged", { name, angle: plan.guided.projection.landing }));
+      editorRender();
+      return;
+    }
+    return;
+  }
+  const to = stepOf(editorNudgeTarget(stepOf(angles[i]), dir));
+  editorDo((x) => editorSetAngle(x, ring, i, to, true), t("editor.say.nudged", { name, angle: to }));
   editorRender();
 }
 function editorPanKey(e) {
