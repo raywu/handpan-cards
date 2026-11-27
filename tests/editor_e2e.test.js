@@ -1528,26 +1528,28 @@ function run() {
       assert.strictEqual(await b.eval(`return editorIsDirty(editorSession.base, editorSession.history.present);`), false);
     });
 
-    test("tap-tap placement: a rim note between two rim notes, a cyclops note at its angle, a bottom note at its angle", async () => {
+    test("tap-tap placement: the rim and Cyclops match Guided outlines and the underside keeps its exact angle", async () => {
       await setup(SCALE);
       await hold("B");
-      await tapSpot(...polar(0.722, 22.5));
+      await tapOutlinedSeat("rim");
       assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"]);
       assert.strictEqual(await b.eval(`return editorSession.held === null;`), true, "the hold ends on a placement");
-      await hold("E");
+
       await b.click("#editor-oct-up");
-      await tapSpot(...polar(0.38, 90));
-      let m = await model();
-      assert.strictEqual(m.fields && Object.values(m.fields).filter((f) => f[3] === "inner").length, 3);
-      assert.deepStrictEqual(m.options.angles.inner.filter((a) => a !== null), [90]);
-      assert.strictEqual(m.pins.length, 1);
-      await b.eval(`editorSession.history = editorHistoryNew(editorLoad("[A2] " + ${JSON.stringify(SCALE)}).value); editorRender(); return true;`);
       await hold("E");
+      const innerAngle = await tapOutlinedSeat("inner");
+      assert.equal(await b.eval(`const m = editorSession.history.present;
+        const i = editorNames(m, "inner").indexOf("E5");
+        return editorAnglesOf(editorSolve(m), "inner")[i];`), innerAngle);
+
+      await setup("[A2] " + SCALE);
       await b.click("#editor-oct-down");
       await b.click("#editor-oct-down");
-      await tapSpot(...polar(1.15, 150));
-      m = await model();
-      assert.deepStrictEqual(m.options.angles.bottom.filter((a) => a !== null), [150, 90]);
+      await hold("E");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the underside to clear" });
+      const bottom = await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, "bottom");`);
+      await tapSpot(...polar(bottom, 150));
+      assert.deepStrictEqual((await model()).options.angles.bottom.filter(a => a !== null), [150, 90]);
     });
 
     const BN_ROWS = `const s = editorSolve(editorSession.history.present).value; return ringIds(s.fields, "bottom").map((id) => ({ n: s.fields[id][0] + s.fields[id][1], a: s.fields[id][4], l: s.fields[id][5] }));`;
@@ -1758,17 +1760,21 @@ function run() {
       assert.strictEqual(await b.eval(`return editorDingOf(editorSession.history.present);`), "D3");
     });
 
-    async function tapGuidedRim(touch = false) {
+    async function tapOutlinedSeat(ring, touch = false) {
       await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the cleared pan" });
       const landing = await b.eval(`
-        const node = document.querySelector('#editor-pan .guided-landing[data-guided-zone="rim"] circle');
-        const r = node?.getBoundingClientRect();
-        if (!r) return null;
-        const x = r.x + r.width / 2, y = r.y + r.height / 2;
-        return document.elementFromPoint(x, y)?.closest("#editor-pan") ? {x,y} : null;
+        const zone = ${JSON.stringify(ring)};
+        for (const mark of document.querySelectorAll("#editor-pan .guided-landing, #editor-pan .guided-open:not(.guided-informational)")) {
+          if (mark.dataset.guidedZone !== zone) continue;
+          const r = mark.querySelector("circle").getBoundingClientRect();
+          const x = r.x + r.width / 2, y = r.y + r.height / 2;
+          if (document.elementFromPoint(x, y)?.closest("#editor-pan")) return {x,y,angle:+mark.dataset.angle};
+        }
+        return null;
       `);
-      assert.ok(landing, "the rim growth outline is exposed");
-      await tapPoint(landing, touch);
+      assert.ok(landing, "the " + ring + " outline is exposed");
+      await tapPoint({ x: landing.x, y: landing.y }, touch);
+      return landing.angle;
     }
 
     test("D9 / SE-12: Guided rim growth re-spaces typed custom seats and Undo restores them", async () => {
@@ -1776,7 +1782,7 @@ function run() {
       const before = await model();
       assert.deepStrictEqual(before.options.seats, { rim: [1, 0, 2, 3, 4, 5, 6, 7] }, "the typed order is honoured");
       await hold("B");
-      await tapGuidedRim();
+      await tapOutlinedSeat("rim");
       assert.match(await status(), /^B4 placed\. rim notes re-spaced\./i);
       assert.equal((await model()).options.seats?.rim, undefined);
       assert.ok((await rimNames()).includes("B4"));
@@ -1848,7 +1854,7 @@ function run() {
       const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect();
         return {x:r.x+r.width/2,y:r.y+r.height/2};`);
       await tapPoint(chip, true);
-      await tapGuidedRim(true);
+      await tapOutlinedSeat("rim", true);
       assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"]);
       const angles = () => b.eval(`const m = editorSession.history.present;
         return editorAnglesOf(editorSolve(m), "rim");`);
@@ -2101,19 +2107,28 @@ function run() {
         assert.strictEqual((await model()).options.angles, undefined);
       });
 
-      test("an empty cyclops arc and bottom ring show as targets for a held note and take the first note by tap or drop", async () => {
+      test("an empty Cyclops and underside show outlines and accept the first note", async () => {
         await setup("(D3) " + RIM8);
-        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`), 2, "the empty cyclops arc and bottom band are drawn without a hold (v4 zones)");
-        await hold("E");
+        const outlines = await b.eval(`return { inner: document.querySelectorAll(
+          '#editor-pan .guided-informational[data-guided-zone="inner"]').length,
+          bottom: document.querySelectorAll("#editor-pan .balanced-outline.bottom").length };`);
+        assert.ok(outlines.inner > 0 && outlines.bottom > 0, JSON.stringify(outlines));
         await b.click("#editor-oct-up");
-        assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-pan .etarget")].map((e) => e.dataset.ring);`), ["inner", "bottom"]);
-        await tapSpot(...polar(0.38, 90));
-        assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "inner");`), ["E5"], await status());
         await hold("E");
+        const landing = await tapOutlinedSeat("inner");
+        const inner = await b.eval(`const m = editorSession.history.present;
+          return { pitches: editorNames(m, "inner"), angles: editorAnglesOf(editorSolve(m), "inner") };`);
+        assert.deepStrictEqual(inner, { pitches: ["E5"], angles: [landing] });
+
         await b.click("#editor-oct-down");
         await b.click("#editor-oct-down");
-        await tapSpot(...polar(1.15, 150));
-        assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["E3"], await status());
+        await hold("E");
+        await exposedPan();
+        const radius = await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, "bottom");`);
+        await tapSpot(...polar(radius, 150));
+        assert.deepStrictEqual(await b.eval(`const m = editorSession.history.present;
+          return { pitches: editorNames(m, "bottom"), angles: editorAnglesOf(editorSolve(m), "bottom") };`),
+          { pitches: ["E3"], angles: [150] });
         await hold("F");
         await place("bottom");
         assert.strictEqual(await pill("bottom"), "Bottom 2/12");
