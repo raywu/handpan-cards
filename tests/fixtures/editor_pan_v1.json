@@ -2,7 +2,7 @@
  "_what": "Recorded editor pan, drag and drop oracle after the approved Guided placement and drawer port.",
  "_why": "CONTRACT rule 2 carve-out: these are recorded outputs of the editor as it stood on the base SHA below, not derived from the implementation under test. Regenerate only with an owner-approved render change, never to make a lane pass.",
  "_regen": "node tools/regen_editor_pan_fixture.js",
- "_base": "349ee5f6",
+ "_base": "101269cc",
  "_geometry_note": "geometry rows hold .ehit width, height, dx, dy in viewBox units (px divided by the svg getScreenCTM().a) and the viewBox; absolute rects are never stored. Compared with a 0.25 tolerance. Style rows are sha256/16 of the computed-style records (.editor-panbox transform excluded while dragging and settling). styles.sample/* holds the readable kurd rest record.",
  "specs": [
   {
@@ -361,7 +361,7 @@
   "pinned-cyclops/pan:rim:7": "d03ca0e19fcbff38",
   "pinned-cyclops/pan:inner:0": "0004db5b7ea0bfe2",
   "pinned-cyclops/pan:inner:1": "852c1132c8778e3e",
-  "pinned-cyclops/pan:ding": "2e0a43ef422cea2d",
+  "pinned-cyclops/pan:ding": "abb1a1ebec1f61ca",
   "pinned-bottom/tray:C4": "73b0f9901eec54fd",
   "pinned-bottom/tray:C#4": "061173240f3723f9",
   "pinned-bottom/tray:D4": "016a3b871e5b1828",
@@ -579,43 +579,43 @@
  "source": {
   "editorDragMeasure": "77ecceb55db8b8e262a42deb4d4c3cc65ff0dc04695b85835860925b97456447",
   "editorDragDown": "119e0b4bf71b11119b2098b2c07db17c2b4d76812624c03a230a6a0e97d3faff",
-  "editorDragLift": "a29c2b09e2f48bd00e7e8639d9a0b28716580a8adcd22d0d57cb0efa73a83737",
+  "editorDragLift": "5456eaec116f3131e6e2a872b4bdd4e4e38db0b1cf224b5993f80167aac599b8",
   "editorHitAt": "a752d7d0f02218b4462c2bfe53f59a82fedb68e1eea8ab025ec630dba917aa26",
   "editorDropPlan": "b07f44b3f1558b57b4edbe1b6e2bd7e988cbe15edc3fb29106e7881647038e87",
   "editorNeoDropPlan": "de8aa8a1f8b134f5f02e15b7f07e6041fa75f8b9832e0469c48b89e5d3ccb521",
-  "editorDragSource..editorDragEnd": "da4c57e5c9548856aabe5472f4abf77a6719e542e64b67f27c7b2ea25032f73b",
+  "editorDragSource..editorDragEnd": "9ae624175a4ecb3b082b222abe1420c49caebcbb9c94f908583acccf86a1f440",
   "EDITOR_HIT_AREA": "6b32d4d8f9a605dc10fb469572537cece2fecd96c396c697fdbbaea59ea67bc6",
   "EDITOR_SCALE": "b6eb84ea140c4e09b8b00234256ef72d384c1217ece2e572bb55a21d6d926c5c"
  },
  "domPan": {
-  "kurd/rest": "c2d9357857b7fe6045c7150fd998174f7f18749a539ca9c1aa745aa06aad0d6b",
+  "kurd/rest": "2d0e4c4d6fe81a9178186a6679cc850a4c91dadd88df0221fa139d928a32067f",
   "kurd/selected": "268038e01298e1ac08aa58e15ff50205d0e5d4f1fa2980d486d9bd3c162db999",
   "kurd/held": "2acc409b99a9a1b946033952b056a8d34f198b136fbe83a5c4f9c8c66a41b2b9",
-  "kurd-palette-3/rest": "c2d9357857b7fe6045c7150fd998174f7f18749a539ca9c1aa745aa06aad0d6b",
+  "kurd-palette-3/rest": "2d0e4c4d6fe81a9178186a6679cc850a4c91dadd88df0221fa139d928a32067f",
   "kurd-palette-3/selected": "268038e01298e1ac08aa58e15ff50205d0e5d4f1fa2980d486d9bd3c162db999",
   "kurd-palette-3/held": "2acc409b99a9a1b946033952b056a8d34f198b136fbe83a5c4f9c8c66a41b2b9",
-  "mirror-top/rest": "f205fa3cb2ee8ecffb534e627c8d15a022120a012156e6c3f34c8c37bbde5bba",
+  "mirror-top/rest": "eea384194684482dc87aa449946bbbab5b2dff911961179f1a9d5cc2d1ce0b81",
   "mirror-top/selected": "5d085fa5c1019afcbe0d5a0b514466947a22d08beeb5856e0674d4a05dce10cd",
   "mirror-top/held": "2252fb03882dd5bc2ce44e878bb162a23b7287fb1c71bd863f82f68df7d9e562",
-  "mirror-bottom/rest": "de72aaa1064ab7990565c19ee4a3adc31b5ddd927dd2a74410bfe8eec3d37ed4",
+  "mirror-bottom/rest": "3de3e2fb910374a6a59e6106b5061f1ab9e9d73a74e54939ab0e58af8d8e393f",
   "mirror-bottom/selected": "fa9f9cd7c93950d9c19187d56187352bf3e11db1b2638f5428ee0b7d89986f97",
   "mirror-bottom/held": "dc4b074b53c1b1c0bbf22686b6f9772a4b85c8cde8623e059bd42ebb8f78d38b",
-  "pinned-cyclops/rest": "da4bb6dffdcb61d12975ed2289187de062c51e895d2c5f3903a92e22da0e7279",
+  "pinned-cyclops/rest": "b5a8aafe5c921e0b1175aba56c2defc38ef51ba57b9680c2dcf863b25ba6af86",
   "pinned-cyclops/selected": "fcac25ed6bc6824a698b49bca22820330f9e93651dc2db75b6d79f080ca4850c",
   "pinned-cyclops/held": "916e3b2a96fb8de8cf8533c8d7aa50a92eb9f16d675940d421ba882f5f14cd40",
-  "pinned-bottom/rest": "18b96dc55ba1b3bad39addea70ecbafcb0f2ccde4f297868dca2a62155f187f6",
+  "pinned-bottom/rest": "c8f95c4d18803ebfdf13f190fc237857c0eae2cf23180e893691ec29aabc90c3",
   "pinned-bottom/selected": "d965b3120f467274cfb23dd7b77b0fd5f465b449a66daa8b4cdd0cfee702d239",
   "pinned-bottom/held": "9d9b310854983f5145ed2c82c320c510e6582d9658abb39d576a6867bff7d0b5",
-  "bottom-12/rest": "19816dccff7d0f1beff24a64c7dd1c388025eb08aa7c176a2be0a629ccc4e756",
+  "bottom-12/rest": "0d2384a9c9900907d6f4d0c57f272692a5bd2f9e745098e40ff5843582c10e81",
   "bottom-12/selected": "97eae910e35d89502d67c8d817352fd5a2bb9534945ac35a242655e49138e37f",
   "bottom-12/held": "29b1416048cb91b8db591cb0d44b9c7ed2c16cd175466c04754b8abda1ebf1b3",
-  "rim-at-cap/rest": "1f6e3efd0b4c037efb70eb904c88e4fc042e7ea334be0dfab68b9c3de49010d2",
+  "rim-at-cap/rest": "bed6c924d6263b2736e5f30c9b9c6f9a03635bb5db2ba115689a221e4966d206",
   "rim-at-cap/selected": "22837cf34667da902f458eaf40c986f33b8d5e97a21f3241437a2248b28013b8",
   "rim-at-cap/held": "cf1c692f61caf1c032cdae969ee59c220797534d8cec78bca08ed01be8135ca0",
   "cyclops-at-cap/rest": "31b3a4b711daba2fbac7585cca9d33354f10d427671dc76e7fbfce071d1c451b",
   "cyclops-at-cap/selected": "397ad88d234e5c14f0621cc34aa25beac51e4ec56de81fda1c520dcb5c61217c",
   "cyclops-at-cap/held": "1ec8e33ff4a5e465ef598f6b9f5890ad2a36835021384f62f705454537cb3c25",
-  "over-cap-load/rest": "db9559d19fc02b6ceb4e7b1986e52973359ab714bab04ec6de952f94f66a0535",
+  "over-cap-load/rest": "387dc4771de81763bf48bb5270f700eadd447a2f8b8424a3553f10bbe07a8230",
   "over-cap-load/selected": "caecf151e2b71b68de12f3a8f4000432e7001e1ac037ed2f6244def9910dc208",
   "over-cap-load/held": "1ef4e0b0ba5a89aff53c53d6ec177156e794fce53b38a017ed440a37fc8c1f51",
   "neotone-empty/rest": "f88e883d8b741c5a88c4e06e994fdde031e8a1f32aa789bad1453c8a760ba171",
@@ -627,7 +627,7 @@
   "neotone-fixed-sparse/rest": "bb6ef07679c42c9f1833022be517489507eda50146708f2be3d1d3db06076730",
   "neotone-fixed-sparse/selected": "bb6ef07679c42c9f1833022be517489507eda50146708f2be3d1d3db06076730",
   "neotone-fixed-sparse/held": "bb6ef07679c42c9f1833022be517489507eda50146708f2be3d1d3db06076730",
-  "standard-guided-sparse/rest": "22781f23dada01fb4018c1f0272f95702ff12b7ce26018305b9df8a440906424",
+  "standard-guided-sparse/rest": "84496a81461ca150fb32c08dad5bc165538c1ebe13780695f348921844048ea2",
   "standard-guided-sparse/selected": "cc13923d8e401fabdf7c599a2f145379abd85292887675bfea3739480054f11a",
   "standard-guided-sparse/held": "3979f530d68354c05ae335916dae5b07417bac867501be6ddd4a3c110c667921"
  },
@@ -13473,431 +13473,431 @@
    ]
   },
   "900x600/bottom-12/rest": {
-   "viewBox": "-137.45089721679688 -136.8525390625 274.90179443359375 273.47467041015625",
+   "viewBox": "-137.45419311523438 -137.1666717529297 274.90838623046875 273.8612976074219",
    "ehit": [
     [
      38,
      38,
      118.45,
-     132.1
+     132.42
     ],
     [
      25.14,
      25.14,
      124.88,
-     196.48
+     196.8
     ],
     [
      25.14,
      25.14,
      73.83,
-     175.33
+     175.65
     ],
     [
      25.14,
      25.14,
      175.93,
-     175.33
+     175.65
     ],
     [
      25.14,
      25.14,
      52.68,
-     124.28
+     124.6
     ],
     [
      25.14,
      25.14,
      197.08,
-     124.28
+     124.6
     ],
     [
      25.14,
      25.14,
      73.83,
-     73.23
+     73.55
     ],
     [
      25.14,
      25.14,
      175.93,
-     73.23
+     73.55
     ],
     [
      25.14,
      25.14,
      124.88,
-     52.08
+     52.4
     ],
     [
      22.18,
      22.18,
      102.96,
-     95.82
+     96.14
     ],
     [
      22.18,
      22.18,
      149.76,
-     95.82
+     96.14
     ],
     [
      20.2,
      20.2,
      157.11,
-     237.83
+     238.15
     ],
     [
      20.2,
      20.2,
      97.59,
-     237.83
+     238.15
     ],
     [
      20.2,
      20.2,
      208.67,
-     208.07
+     208.39
     ],
     [
      20.2,
      20.2,
      46.03,
-     208.07
+     208.39
     ],
     [
      20.2,
      20.2,
      238.43,
-     156.51
+     156.83
     ],
     [
      20.2,
      20.2,
      16.27,
-     156.51
+     156.83
     ],
     [
      20.2,
      20.2,
      238.43,
-     96.99
+     97.31
     ],
     [
      20.2,
      20.2,
      16.27,
-     96.99
+     97.31
     ],
     [
      20.2,
      20.2,
      208.67,
-     45.43
+     45.75
     ],
     [
      20.2,
      20.2,
      46.03,
-     45.43
+     45.75
     ],
     [
      20.2,
      20.2,
      157.11,
-     15.67
+     15.99
     ],
     [
      20.2,
      20.2,
      97.59,
-     15.67
+     15.99
     ]
    ]
   },
   "900x600/bottom-12/selected": {
-   "viewBox": "-137.45091247558594 -136.8525390625 274.9018249511719 273.47467041015625",
+   "viewBox": "-137.45594787597656 -137.15328979492188 274.91192626953125 273.8448181152344",
    "ehit": [
     [
      38,
      38,
-     118.45,
-     132.1
+     118.46,
+     132.4
     ],
     [
      25.14,
      25.14,
-     124.88,
-     196.48
+     124.89,
+     196.78
     ],
     [
      25.14,
      25.14,
-     73.83,
-     175.33
+     73.84,
+     175.63
     ],
     [
      25.14,
      25.14,
-     175.93,
-     175.33
+     175.94,
+     175.63
     ],
     [
      25.14,
      25.14,
-     52.68,
-     124.28
+     52.69,
+     124.58
     ],
     [
      25.14,
      25.14,
-     197.08,
-     124.28
+     197.09,
+     124.58
     ],
     [
      25.14,
      25.14,
-     73.83,
-     73.23
+     73.84,
+     73.53
     ],
     [
      25.14,
      25.14,
-     175.93,
-     73.23
+     175.94,
+     73.53
     ],
     [
      25.14,
      25.14,
-     124.88,
-     52.08
+     124.89,
+     52.38
     ],
     [
      22.18,
      22.18,
-     102.96,
-     95.82
+     102.97,
+     96.12
     ],
     [
      22.18,
      22.18,
-     149.76,
-     95.82
+     149.77,
+     96.12
     ],
     [
      20.2,
      20.2,
-     157.11,
-     237.83
+     157.12,
+     238.13
     ],
     [
      20.2,
      20.2,
-     97.59,
-     237.83
+     97.6,
+     238.13
     ],
     [
      20.2,
      20.2,
-     208.67,
-     208.07
+     208.68,
+     208.37
     ],
     [
      20.2,
      20.2,
-     46.03,
-     208.07
+     46.04,
+     208.37
     ],
     [
      20.2,
      20.2,
-     238.43,
-     156.51
+     238.44,
+     156.81
     ],
     [
      20.2,
      20.2,
-     16.27,
-     156.51
+     16.28,
+     156.81
     ],
     [
      20.2,
      20.2,
-     238.43,
-     96.99
+     238.44,
+     97.29
     ],
     [
      20.2,
      20.2,
-     16.27,
-     96.99
+     16.28,
+     97.29
     ],
     [
      20.2,
      20.2,
-     208.67,
-     45.43
+     208.68,
+     45.73
     ],
     [
      20.2,
      20.2,
-     46.03,
-     45.43
+     46.04,
+     45.73
     ],
     [
      20.2,
      20.2,
-     157.11,
-     15.67
+     157.12,
+     15.97
     ],
     [
      20.2,
      20.2,
-     97.59,
-     15.67
+     97.6,
+     15.97
     ]
    ]
   },
   "900x600/bottom-12/held": {
-   "viewBox": "-137.45091247558594 -136.8525390625 274.9018249511719 273.47467041015625",
+   "viewBox": "-137.45594787597656 -137.15328979492188 274.91192626953125 273.8448181152344",
    "ehit": [
     [
      38,
      38,
-     118.45,
-     132.1
+     118.46,
+     132.4
     ],
     [
      25.14,
      25.14,
-     124.88,
-     196.48
+     124.89,
+     196.78
     ],
     [
      25.14,
      25.14,
-     73.83,
-     175.33
+     73.84,
+     175.63
     ],
     [
      25.14,
      25.14,
-     175.93,
-     175.33
+     175.94,
+     175.63
     ],
     [
      25.14,
      25.14,
-     52.68,
-     124.28
+     52.69,
+     124.58
     ],
     [
      25.14,
      25.14,
-     197.08,
-     124.28
+     197.09,
+     124.58
     ],
     [
      25.14,
      25.14,
-     73.83,
-     73.23
+     73.84,
+     73.53
     ],
     [
      25.14,
      25.14,
-     175.93,
-     73.23
+     175.94,
+     73.53
     ],
     [
      25.14,
      25.14,
-     124.88,
-     52.08
+     124.89,
+     52.38
     ],
     [
      22.18,
      22.18,
-     102.96,
-     95.82
+     102.97,
+     96.12
     ],
     [
      22.18,
      22.18,
-     149.76,
-     95.82
+     149.77,
+     96.12
     ],
     [
      20.2,
      20.2,
-     157.11,
-     237.83
+     157.12,
+     238.13
     ],
     [
      20.2,
      20.2,
-     97.59,
-     237.83
+     97.6,
+     238.13
     ],
     [
      20.2,
      20.2,
-     208.67,
-     208.07
+     208.68,
+     208.37
     ],
     [
      20.2,
      20.2,
-     46.03,
-     208.07
+     46.04,
+     208.37
     ],
     [
      20.2,
      20.2,
-     238.43,
-     156.51
+     238.44,
+     156.81
     ],
     [
      20.2,
      20.2,
-     16.27,
-     156.51
+     16.28,
+     156.81
     ],
     [
      20.2,
      20.2,
-     238.43,
-     96.99
+     238.44,
+     97.29
     ],
     [
      20.2,
      20.2,
-     16.27,
-     96.99
+     16.28,
+     97.29
     ],
     [
      20.2,
      20.2,
-     208.67,
-     45.43
+     208.68,
+     45.73
     ],
     [
      20.2,
      20.2,
-     46.03,
-     45.43
+     46.04,
+     45.73
     ],
     [
      20.2,
      20.2,
-     157.11,
-     15.67
+     157.12,
+     15.97
     ],
     [
      20.2,
      20.2,
-     97.59,
-     15.67
+     97.6,
+     15.97
     ]
    ]
   },
@@ -16429,7 +16429,7 @@
   }
  },
  "styles": {
-  "375x667/kurd/rest": "05b4ce14b74d480f",
+  "375x667/kurd/rest": "ad95cecbb73ba7db",
   "sample/375x667": {
    ".editor-panbox": {
     "stroke": "none",
@@ -16507,6 +16507,44 @@
     "visibility": "visible",
     "display": "inline"
    },
+   "g.guided-seat guided-open guided-informational": {
+    "stroke": "none",
+    "stroke-width": "1px",
+    "stroke-dasharray": "none",
+    "stroke-dashoffset": "0px",
+    "stroke-opacity": "1",
+    "fill": "rgb(0, 0, 0)",
+    "fill-opacity": "1",
+    "opacity": "1",
+    "transform": "none",
+    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "pointer-events": "none",
+    "cursor": "pointer",
+    "touch-action": "auto",
+    "visibility": "visible",
+    "display": "inline"
+   },
+   "circle.": {
+    "stroke": "rgb(139, 129, 117)",
+    "stroke-width": "1.35px",
+    "stroke-dasharray": "3.4px, 3px",
+    "stroke-dashoffset": "0px",
+    "stroke-opacity": "1",
+    "fill": "none",
+    "fill-opacity": "1",
+    "opacity": "1",
+    "transform": "none",
+    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "pointer-events": "none",
+    "cursor": "pointer",
+    "touch-action": "auto",
+    "visibility": "visible",
+    "display": "inline"
+   },
    "rect.": {
     "stroke": "none",
     "stroke-width": "1px",
@@ -16540,25 +16578,6 @@
     "font-size": "16px",
     "font-weight": "400",
     "pointer-events": "none",
-    "cursor": "pointer",
-    "touch-action": "auto",
-    "visibility": "visible",
-    "display": "inline"
-   },
-   "circle.": {
-    "stroke": "rgb(0, 0, 0)",
-    "stroke-width": "2px",
-    "stroke-dasharray": "none",
-    "stroke-dashoffset": "0px",
-    "stroke-opacity": "1",
-    "fill": "none",
-    "fill-opacity": "1",
-    "opacity": "1",
-    "transform": "none",
-    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
-    "font-size": "16px",
-    "font-weight": "400",
-    "pointer-events": "auto",
     "cursor": "pointer",
     "touch-action": "auto",
     "visibility": "visible",
@@ -16659,25 +16678,6 @@
     "visibility": "visible",
     "display": "inline"
    },
-   "g.guided-seat guided-open guided-informational": {
-    "stroke": "none",
-    "stroke-width": "1px",
-    "stroke-dasharray": "none",
-    "stroke-dashoffset": "0px",
-    "stroke-opacity": "1",
-    "fill": "rgb(0, 0, 0)",
-    "fill-opacity": "1",
-    "opacity": "1",
-    "transform": "none",
-    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
-    "font-size": "16px",
-    "font-weight": "400",
-    "pointer-events": "none",
-    "cursor": "pointer",
-    "touch-action": "auto",
-    "visibility": "visible",
-    "display": "inline"
-   },
    "circle.ekey": {
     "stroke": "none",
     "stroke-width": "1px",
@@ -16700,53 +16700,53 @@
   },
   "375x667/kurd/selected": "cb69ef7a48332a4c",
   "375x667/kurd/held": "379ca9354df63799",
-  "375x667/kurd/dragging": "0a478668ae7cf1a3",
-  "375x667/kurd/settling": "0a478668ae7cf1a3",
-  "375x667/kurd-palette-3/rest": "05b4ce14b74d480f",
+  "375x667/kurd/dragging": "79a5d1eb68c8c6f9",
+  "375x667/kurd/settling": "79a5d1eb68c8c6f9",
+  "375x667/kurd-palette-3/rest": "ad95cecbb73ba7db",
   "375x667/kurd-palette-3/selected": "cb69ef7a48332a4c",
   "375x667/kurd-palette-3/held": "379ca9354df63799",
-  "375x667/kurd-palette-3/dragging": "0a478668ae7cf1a3",
-  "375x667/kurd-palette-3/settling": "0a478668ae7cf1a3",
-  "375x667/mirror-top/rest": "e4c89c04534e206a",
+  "375x667/kurd-palette-3/dragging": "79a5d1eb68c8c6f9",
+  "375x667/kurd-palette-3/settling": "79a5d1eb68c8c6f9",
+  "375x667/mirror-top/rest": "ad95cecbb73ba7db",
   "375x667/mirror-top/selected": "a8121a08702aa13b",
   "375x667/mirror-top/held": "390841fe4b434366",
-  "375x667/mirror-top/dragging": "3d3f7c1aae04bc37",
-  "375x667/mirror-top/settling": "3d3f7c1aae04bc37",
-  "375x667/mirror-bottom/rest": "e4c89c04534e206a",
+  "375x667/mirror-top/dragging": "79a5d1eb68c8c6f9",
+  "375x667/mirror-top/settling": "79a5d1eb68c8c6f9",
+  "375x667/mirror-bottom/rest": "ad95cecbb73ba7db",
   "375x667/mirror-bottom/selected": "a8121a08702aa13b",
   "375x667/mirror-bottom/held": "390841fe4b434366",
-  "375x667/mirror-bottom/dragging": "3d3f7c1aae04bc37",
-  "375x667/mirror-bottom/settling": "3d3f7c1aae04bc37",
-  "375x667/pinned-cyclops/rest": "bbb53e3253adb885",
+  "375x667/mirror-bottom/dragging": "79a5d1eb68c8c6f9",
+  "375x667/mirror-bottom/settling": "79a5d1eb68c8c6f9",
+  "375x667/pinned-cyclops/rest": "de0f5fe37fafa132",
   "375x667/pinned-cyclops/selected": "0fb3c752b985d976",
   "375x667/pinned-cyclops/held": "26bc6970394ebca3",
-  "375x667/pinned-cyclops/dragging": "394f61dd83eb509f",
-  "375x667/pinned-cyclops/settling": "394f61dd83eb509f",
-  "375x667/pinned-bottom/rest": "59718d91953dd521",
+  "375x667/pinned-cyclops/dragging": "58c8d7d41d983551",
+  "375x667/pinned-cyclops/settling": "58c8d7d41d983551",
+  "375x667/pinned-bottom/rest": "de0f5fe37fafa132",
   "375x667/pinned-bottom/selected": "1741b6421a594fd6",
   "375x667/pinned-bottom/held": "786c9e4ca89b6dbf",
-  "375x667/pinned-bottom/dragging": "588135345ca1bc5b",
-  "375x667/pinned-bottom/settling": "588135345ca1bc5b",
-  "375x667/bottom-12/rest": "f625927d55250adf",
+  "375x667/pinned-bottom/dragging": "58c8d7d41d983551",
+  "375x667/pinned-bottom/settling": "58c8d7d41d983551",
+  "375x667/bottom-12/rest": "8db3b7f46b7fff6e",
   "375x667/bottom-12/selected": "e57c8d1ba25e7f45",
   "375x667/bottom-12/held": "be563b399934500d",
-  "375x667/bottom-12/dragging": "22702f4c1b512aae",
-  "375x667/bottom-12/settling": "22702f4c1b512aae",
-  "375x667/rim-at-cap/rest": "78cae76099126180",
+  "375x667/bottom-12/dragging": "f060ddf8f0aee30b",
+  "375x667/bottom-12/settling": "f060ddf8f0aee30b",
+  "375x667/rim-at-cap/rest": "2ed9092f3c55e5e6",
   "375x667/rim-at-cap/selected": "81b85cd9443bb17b",
   "375x667/rim-at-cap/held": "1eda3744a4d91dee",
-  "375x667/rim-at-cap/dragging": "3986981186284b7d",
-  "375x667/rim-at-cap/settling": "3986981186284b7d",
+  "375x667/rim-at-cap/dragging": "0bac2fefe2f8269a",
+  "375x667/rim-at-cap/settling": "0bac2fefe2f8269a",
   "375x667/cyclops-at-cap/rest": "75b0f7214f30d2be",
   "375x667/cyclops-at-cap/selected": "cb69ef7a48332a4c",
   "375x667/cyclops-at-cap/held": "379ca9354df63799",
   "375x667/cyclops-at-cap/dragging": "df0e45c657feae37",
   "375x667/cyclops-at-cap/settling": "df0e45c657feae37",
-  "375x667/over-cap-load/rest": "78cae76099126180",
+  "375x667/over-cap-load/rest": "2ed9092f3c55e5e6",
   "375x667/over-cap-load/selected": "a6437634ce5b4fea",
   "375x667/over-cap-load/held": "1eda3744a4d91dee",
-  "375x667/over-cap-load/dragging": "3986981186284b7d",
-  "375x667/over-cap-load/settling": "3986981186284b7d",
+  "375x667/over-cap-load/dragging": "0bac2fefe2f8269a",
+  "375x667/over-cap-load/settling": "0bac2fefe2f8269a",
   "375x667/neotone-empty/rest": "4d5d29200a00cbb5",
   "375x667/neotone-empty/selected": "4d5d29200a00cbb5",
   "375x667/neotone-empty/held": "4d5d29200a00cbb5",
@@ -16762,12 +16762,12 @@
   "375x667/neotone-fixed-sparse/held": "3bff212d4e304941",
   "375x667/neotone-fixed-sparse/dragging": "c01e582fc0f1d86f",
   "375x667/neotone-fixed-sparse/settling": "c01e582fc0f1d86f",
-  "375x667/standard-guided-sparse/rest": "78cae76099126180",
+  "375x667/standard-guided-sparse/rest": "2ed9092f3c55e5e6",
   "375x667/standard-guided-sparse/selected": "19ea21b9e952a66c",
   "375x667/standard-guided-sparse/held": "1eda3744a4d91dee",
-  "375x667/standard-guided-sparse/dragging": "3986981186284b7d",
-  "375x667/standard-guided-sparse/settling": "3986981186284b7d",
-  "390x844/kurd/rest": "05b4ce14b74d480f",
+  "375x667/standard-guided-sparse/dragging": "0bac2fefe2f8269a",
+  "375x667/standard-guided-sparse/settling": "0bac2fefe2f8269a",
+  "390x844/kurd/rest": "ad95cecbb73ba7db",
   "sample/390x844": {
    ".editor-panbox": {
     "stroke": "none",
@@ -16845,6 +16845,44 @@
     "visibility": "visible",
     "display": "inline"
    },
+   "g.guided-seat guided-open guided-informational": {
+    "stroke": "none",
+    "stroke-width": "1px",
+    "stroke-dasharray": "none",
+    "stroke-dashoffset": "0px",
+    "stroke-opacity": "1",
+    "fill": "rgb(0, 0, 0)",
+    "fill-opacity": "1",
+    "opacity": "1",
+    "transform": "none",
+    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "pointer-events": "none",
+    "cursor": "pointer",
+    "touch-action": "auto",
+    "visibility": "visible",
+    "display": "inline"
+   },
+   "circle.": {
+    "stroke": "rgb(139, 129, 117)",
+    "stroke-width": "1.35px",
+    "stroke-dasharray": "3.4px, 3px",
+    "stroke-dashoffset": "0px",
+    "stroke-opacity": "1",
+    "fill": "none",
+    "fill-opacity": "1",
+    "opacity": "1",
+    "transform": "none",
+    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "pointer-events": "none",
+    "cursor": "pointer",
+    "touch-action": "auto",
+    "visibility": "visible",
+    "display": "inline"
+   },
    "rect.": {
     "stroke": "none",
     "stroke-width": "1px",
@@ -16878,25 +16916,6 @@
     "font-size": "16px",
     "font-weight": "400",
     "pointer-events": "none",
-    "cursor": "pointer",
-    "touch-action": "auto",
-    "visibility": "visible",
-    "display": "inline"
-   },
-   "circle.": {
-    "stroke": "rgb(0, 0, 0)",
-    "stroke-width": "2px",
-    "stroke-dasharray": "none",
-    "stroke-dashoffset": "0px",
-    "stroke-opacity": "1",
-    "fill": "none",
-    "fill-opacity": "1",
-    "opacity": "1",
-    "transform": "none",
-    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
-    "font-size": "16px",
-    "font-weight": "400",
-    "pointer-events": "auto",
     "cursor": "pointer",
     "touch-action": "auto",
     "visibility": "visible",
@@ -16997,25 +17016,6 @@
     "visibility": "visible",
     "display": "inline"
    },
-   "g.guided-seat guided-open guided-informational": {
-    "stroke": "none",
-    "stroke-width": "1px",
-    "stroke-dasharray": "none",
-    "stroke-dashoffset": "0px",
-    "stroke-opacity": "1",
-    "fill": "rgb(0, 0, 0)",
-    "fill-opacity": "1",
-    "opacity": "1",
-    "transform": "none",
-    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
-    "font-size": "16px",
-    "font-weight": "400",
-    "pointer-events": "none",
-    "cursor": "pointer",
-    "touch-action": "auto",
-    "visibility": "visible",
-    "display": "inline"
-   },
    "circle.ekey": {
     "stroke": "none",
     "stroke-width": "1px",
@@ -17038,53 +17038,53 @@
   },
   "390x844/kurd/selected": "cb69ef7a48332a4c",
   "390x844/kurd/held": "379ca9354df63799",
-  "390x844/kurd/dragging": "0a478668ae7cf1a3",
-  "390x844/kurd/settling": "0a478668ae7cf1a3",
-  "390x844/kurd-palette-3/rest": "05b4ce14b74d480f",
+  "390x844/kurd/dragging": "79a5d1eb68c8c6f9",
+  "390x844/kurd/settling": "79a5d1eb68c8c6f9",
+  "390x844/kurd-palette-3/rest": "ad95cecbb73ba7db",
   "390x844/kurd-palette-3/selected": "cb69ef7a48332a4c",
   "390x844/kurd-palette-3/held": "379ca9354df63799",
-  "390x844/kurd-palette-3/dragging": "0a478668ae7cf1a3",
-  "390x844/kurd-palette-3/settling": "0a478668ae7cf1a3",
-  "390x844/mirror-top/rest": "e4c89c04534e206a",
+  "390x844/kurd-palette-3/dragging": "79a5d1eb68c8c6f9",
+  "390x844/kurd-palette-3/settling": "79a5d1eb68c8c6f9",
+  "390x844/mirror-top/rest": "ad95cecbb73ba7db",
   "390x844/mirror-top/selected": "a8121a08702aa13b",
   "390x844/mirror-top/held": "390841fe4b434366",
-  "390x844/mirror-top/dragging": "3d3f7c1aae04bc37",
-  "390x844/mirror-top/settling": "3d3f7c1aae04bc37",
-  "390x844/mirror-bottom/rest": "e4c89c04534e206a",
+  "390x844/mirror-top/dragging": "79a5d1eb68c8c6f9",
+  "390x844/mirror-top/settling": "79a5d1eb68c8c6f9",
+  "390x844/mirror-bottom/rest": "ad95cecbb73ba7db",
   "390x844/mirror-bottom/selected": "a8121a08702aa13b",
   "390x844/mirror-bottom/held": "390841fe4b434366",
-  "390x844/mirror-bottom/dragging": "3d3f7c1aae04bc37",
-  "390x844/mirror-bottom/settling": "3d3f7c1aae04bc37",
-  "390x844/pinned-cyclops/rest": "bbb53e3253adb885",
+  "390x844/mirror-bottom/dragging": "79a5d1eb68c8c6f9",
+  "390x844/mirror-bottom/settling": "79a5d1eb68c8c6f9",
+  "390x844/pinned-cyclops/rest": "de0f5fe37fafa132",
   "390x844/pinned-cyclops/selected": "0fb3c752b985d976",
   "390x844/pinned-cyclops/held": "26bc6970394ebca3",
-  "390x844/pinned-cyclops/dragging": "394f61dd83eb509f",
-  "390x844/pinned-cyclops/settling": "394f61dd83eb509f",
-  "390x844/pinned-bottom/rest": "59718d91953dd521",
+  "390x844/pinned-cyclops/dragging": "58c8d7d41d983551",
+  "390x844/pinned-cyclops/settling": "58c8d7d41d983551",
+  "390x844/pinned-bottom/rest": "de0f5fe37fafa132",
   "390x844/pinned-bottom/selected": "1741b6421a594fd6",
   "390x844/pinned-bottom/held": "786c9e4ca89b6dbf",
-  "390x844/pinned-bottom/dragging": "588135345ca1bc5b",
-  "390x844/pinned-bottom/settling": "588135345ca1bc5b",
-  "390x844/bottom-12/rest": "f625927d55250adf",
+  "390x844/pinned-bottom/dragging": "58c8d7d41d983551",
+  "390x844/pinned-bottom/settling": "58c8d7d41d983551",
+  "390x844/bottom-12/rest": "8db3b7f46b7fff6e",
   "390x844/bottom-12/selected": "e57c8d1ba25e7f45",
   "390x844/bottom-12/held": "be563b399934500d",
-  "390x844/bottom-12/dragging": "22702f4c1b512aae",
-  "390x844/bottom-12/settling": "22702f4c1b512aae",
-  "390x844/rim-at-cap/rest": "78cae76099126180",
+  "390x844/bottom-12/dragging": "f060ddf8f0aee30b",
+  "390x844/bottom-12/settling": "f060ddf8f0aee30b",
+  "390x844/rim-at-cap/rest": "2ed9092f3c55e5e6",
   "390x844/rim-at-cap/selected": "81b85cd9443bb17b",
   "390x844/rim-at-cap/held": "1eda3744a4d91dee",
-  "390x844/rim-at-cap/dragging": "3986981186284b7d",
-  "390x844/rim-at-cap/settling": "3986981186284b7d",
+  "390x844/rim-at-cap/dragging": "0bac2fefe2f8269a",
+  "390x844/rim-at-cap/settling": "0bac2fefe2f8269a",
   "390x844/cyclops-at-cap/rest": "75b0f7214f30d2be",
   "390x844/cyclops-at-cap/selected": "cb69ef7a48332a4c",
   "390x844/cyclops-at-cap/held": "379ca9354df63799",
   "390x844/cyclops-at-cap/dragging": "df0e45c657feae37",
   "390x844/cyclops-at-cap/settling": "df0e45c657feae37",
-  "390x844/over-cap-load/rest": "78cae76099126180",
+  "390x844/over-cap-load/rest": "2ed9092f3c55e5e6",
   "390x844/over-cap-load/selected": "a6437634ce5b4fea",
   "390x844/over-cap-load/held": "1eda3744a4d91dee",
-  "390x844/over-cap-load/dragging": "3986981186284b7d",
-  "390x844/over-cap-load/settling": "3986981186284b7d",
+  "390x844/over-cap-load/dragging": "0bac2fefe2f8269a",
+  "390x844/over-cap-load/settling": "0bac2fefe2f8269a",
   "390x844/neotone-empty/rest": "4d5d29200a00cbb5",
   "390x844/neotone-empty/selected": "4d5d29200a00cbb5",
   "390x844/neotone-empty/held": "4d5d29200a00cbb5",
@@ -17100,12 +17100,12 @@
   "390x844/neotone-fixed-sparse/held": "3bff212d4e304941",
   "390x844/neotone-fixed-sparse/dragging": "c01e582fc0f1d86f",
   "390x844/neotone-fixed-sparse/settling": "c01e582fc0f1d86f",
-  "390x844/standard-guided-sparse/rest": "78cae76099126180",
+  "390x844/standard-guided-sparse/rest": "2ed9092f3c55e5e6",
   "390x844/standard-guided-sparse/selected": "19ea21b9e952a66c",
   "390x844/standard-guided-sparse/held": "1eda3744a4d91dee",
-  "390x844/standard-guided-sparse/dragging": "3986981186284b7d",
-  "390x844/standard-guided-sparse/settling": "3986981186284b7d",
-  "900x600/kurd/rest": "05b4ce14b74d480f",
+  "390x844/standard-guided-sparse/dragging": "0bac2fefe2f8269a",
+  "390x844/standard-guided-sparse/settling": "0bac2fefe2f8269a",
+  "900x600/kurd/rest": "ad95cecbb73ba7db",
   "sample/900x600": {
    ".editor-panbox": {
     "stroke": "none",
@@ -17183,6 +17183,44 @@
     "visibility": "visible",
     "display": "inline"
    },
+   "g.guided-seat guided-open guided-informational": {
+    "stroke": "none",
+    "stroke-width": "1px",
+    "stroke-dasharray": "none",
+    "stroke-dashoffset": "0px",
+    "stroke-opacity": "1",
+    "fill": "rgb(0, 0, 0)",
+    "fill-opacity": "1",
+    "opacity": "1",
+    "transform": "none",
+    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "pointer-events": "none",
+    "cursor": "pointer",
+    "touch-action": "auto",
+    "visibility": "visible",
+    "display": "inline"
+   },
+   "circle.": {
+    "stroke": "rgb(139, 129, 117)",
+    "stroke-width": "1.35px",
+    "stroke-dasharray": "3.4px, 3px",
+    "stroke-dashoffset": "0px",
+    "stroke-opacity": "1",
+    "fill": "none",
+    "fill-opacity": "1",
+    "opacity": "1",
+    "transform": "none",
+    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "pointer-events": "none",
+    "cursor": "pointer",
+    "touch-action": "auto",
+    "visibility": "visible",
+    "display": "inline"
+   },
    "rect.": {
     "stroke": "none",
     "stroke-width": "1px",
@@ -17216,25 +17254,6 @@
     "font-size": "16px",
     "font-weight": "400",
     "pointer-events": "none",
-    "cursor": "pointer",
-    "touch-action": "auto",
-    "visibility": "visible",
-    "display": "inline"
-   },
-   "circle.": {
-    "stroke": "rgb(0, 0, 0)",
-    "stroke-width": "2px",
-    "stroke-dasharray": "none",
-    "stroke-dashoffset": "0px",
-    "stroke-opacity": "1",
-    "fill": "none",
-    "fill-opacity": "1",
-    "opacity": "1",
-    "transform": "none",
-    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
-    "font-size": "16px",
-    "font-weight": "400",
-    "pointer-events": "auto",
     "cursor": "pointer",
     "touch-action": "auto",
     "visibility": "visible",
@@ -17335,25 +17354,6 @@
     "visibility": "visible",
     "display": "inline"
    },
-   "g.guided-seat guided-open guided-informational": {
-    "stroke": "none",
-    "stroke-width": "1px",
-    "stroke-dasharray": "none",
-    "stroke-dashoffset": "0px",
-    "stroke-opacity": "1",
-    "fill": "rgb(0, 0, 0)",
-    "fill-opacity": "1",
-    "opacity": "1",
-    "transform": "none",
-    "font-family": "\"Nunito Sans\", system-ui, sans-serif",
-    "font-size": "16px",
-    "font-weight": "400",
-    "pointer-events": "none",
-    "cursor": "pointer",
-    "touch-action": "auto",
-    "visibility": "visible",
-    "display": "inline"
-   },
    "circle.ekey": {
     "stroke": "none",
     "stroke-width": "1px",
@@ -17376,53 +17376,53 @@
   },
   "900x600/kurd/selected": "cb69ef7a48332a4c",
   "900x600/kurd/held": "379ca9354df63799",
-  "900x600/kurd/dragging": "0a478668ae7cf1a3",
-  "900x600/kurd/settling": "0a478668ae7cf1a3",
-  "900x600/kurd-palette-3/rest": "05b4ce14b74d480f",
+  "900x600/kurd/dragging": "79a5d1eb68c8c6f9",
+  "900x600/kurd/settling": "79a5d1eb68c8c6f9",
+  "900x600/kurd-palette-3/rest": "ad95cecbb73ba7db",
   "900x600/kurd-palette-3/selected": "cb69ef7a48332a4c",
   "900x600/kurd-palette-3/held": "379ca9354df63799",
-  "900x600/kurd-palette-3/dragging": "0a478668ae7cf1a3",
-  "900x600/kurd-palette-3/settling": "0a478668ae7cf1a3",
-  "900x600/mirror-top/rest": "e4c89c04534e206a",
+  "900x600/kurd-palette-3/dragging": "79a5d1eb68c8c6f9",
+  "900x600/kurd-palette-3/settling": "79a5d1eb68c8c6f9",
+  "900x600/mirror-top/rest": "ad95cecbb73ba7db",
   "900x600/mirror-top/selected": "a8121a08702aa13b",
   "900x600/mirror-top/held": "390841fe4b434366",
-  "900x600/mirror-top/dragging": "3d3f7c1aae04bc37",
-  "900x600/mirror-top/settling": "3d3f7c1aae04bc37",
-  "900x600/mirror-bottom/rest": "e4c89c04534e206a",
+  "900x600/mirror-top/dragging": "79a5d1eb68c8c6f9",
+  "900x600/mirror-top/settling": "79a5d1eb68c8c6f9",
+  "900x600/mirror-bottom/rest": "ad95cecbb73ba7db",
   "900x600/mirror-bottom/selected": "a8121a08702aa13b",
   "900x600/mirror-bottom/held": "390841fe4b434366",
-  "900x600/mirror-bottom/dragging": "3d3f7c1aae04bc37",
-  "900x600/mirror-bottom/settling": "3d3f7c1aae04bc37",
-  "900x600/pinned-cyclops/rest": "bbb53e3253adb885",
+  "900x600/mirror-bottom/dragging": "79a5d1eb68c8c6f9",
+  "900x600/mirror-bottom/settling": "79a5d1eb68c8c6f9",
+  "900x600/pinned-cyclops/rest": "de0f5fe37fafa132",
   "900x600/pinned-cyclops/selected": "0fb3c752b985d976",
   "900x600/pinned-cyclops/held": "26bc6970394ebca3",
-  "900x600/pinned-cyclops/dragging": "394f61dd83eb509f",
-  "900x600/pinned-cyclops/settling": "394f61dd83eb509f",
-  "900x600/pinned-bottom/rest": "59718d91953dd521",
+  "900x600/pinned-cyclops/dragging": "58c8d7d41d983551",
+  "900x600/pinned-cyclops/settling": "58c8d7d41d983551",
+  "900x600/pinned-bottom/rest": "de0f5fe37fafa132",
   "900x600/pinned-bottom/selected": "1741b6421a594fd6",
   "900x600/pinned-bottom/held": "786c9e4ca89b6dbf",
-  "900x600/pinned-bottom/dragging": "588135345ca1bc5b",
-  "900x600/pinned-bottom/settling": "588135345ca1bc5b",
-  "900x600/bottom-12/rest": "f625927d55250adf",
+  "900x600/pinned-bottom/dragging": "58c8d7d41d983551",
+  "900x600/pinned-bottom/settling": "58c8d7d41d983551",
+  "900x600/bottom-12/rest": "8db3b7f46b7fff6e",
   "900x600/bottom-12/selected": "e57c8d1ba25e7f45",
   "900x600/bottom-12/held": "be563b399934500d",
-  "900x600/bottom-12/dragging": "22702f4c1b512aae",
-  "900x600/bottom-12/settling": "22702f4c1b512aae",
-  "900x600/rim-at-cap/rest": "78cae76099126180",
+  "900x600/bottom-12/dragging": "f060ddf8f0aee30b",
+  "900x600/bottom-12/settling": "f060ddf8f0aee30b",
+  "900x600/rim-at-cap/rest": "2ed9092f3c55e5e6",
   "900x600/rim-at-cap/selected": "81b85cd9443bb17b",
   "900x600/rim-at-cap/held": "1eda3744a4d91dee",
-  "900x600/rim-at-cap/dragging": "3986981186284b7d",
-  "900x600/rim-at-cap/settling": "3986981186284b7d",
+  "900x600/rim-at-cap/dragging": "0bac2fefe2f8269a",
+  "900x600/rim-at-cap/settling": "0bac2fefe2f8269a",
   "900x600/cyclops-at-cap/rest": "75b0f7214f30d2be",
   "900x600/cyclops-at-cap/selected": "cb69ef7a48332a4c",
   "900x600/cyclops-at-cap/held": "379ca9354df63799",
   "900x600/cyclops-at-cap/dragging": "df0e45c657feae37",
   "900x600/cyclops-at-cap/settling": "df0e45c657feae37",
-  "900x600/over-cap-load/rest": "78cae76099126180",
+  "900x600/over-cap-load/rest": "2ed9092f3c55e5e6",
   "900x600/over-cap-load/selected": "a6437634ce5b4fea",
   "900x600/over-cap-load/held": "1eda3744a4d91dee",
-  "900x600/over-cap-load/dragging": "3986981186284b7d",
-  "900x600/over-cap-load/settling": "3986981186284b7d",
+  "900x600/over-cap-load/dragging": "0bac2fefe2f8269a",
+  "900x600/over-cap-load/settling": "0bac2fefe2f8269a",
   "900x600/neotone-empty/rest": "4d5d29200a00cbb5",
   "900x600/neotone-empty/selected": "4d5d29200a00cbb5",
   "900x600/neotone-empty/held": "4d5d29200a00cbb5",
@@ -17438,14 +17438,14 @@
   "900x600/neotone-fixed-sparse/held": "3bff212d4e304941",
   "900x600/neotone-fixed-sparse/dragging": "c01e582fc0f1d86f",
   "900x600/neotone-fixed-sparse/settling": "c01e582fc0f1d86f",
-  "900x600/standard-guided-sparse/rest": "78cae76099126180",
+  "900x600/standard-guided-sparse/rest": "2ed9092f3c55e5e6",
   "900x600/standard-guided-sparse/selected": "19ea21b9e952a66c",
   "900x600/standard-guided-sparse/held": "1eda3744a4d91dee",
-  "900x600/standard-guided-sparse/dragging": "3986981186284b7d",
-  "900x600/standard-guided-sparse/settling": "3986981186284b7d"
+  "900x600/standard-guided-sparse/dragging": "0bac2fefe2f8269a",
+  "900x600/standard-guided-sparse/settling": "0bac2fefe2f8269a"
  },
  "behavioural": {
   "drag ux": 10,
-  "tap and hold": 6
+  "tap and hold": 5
  }
 }

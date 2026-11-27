@@ -333,7 +333,7 @@ after(() => {
     _what: "Recorded editor pan, drag and drop oracle after the approved Guided placement and drawer port.",
     _why: "CONTRACT rule 2 carve-out: these are recorded outputs of the editor as it stood on the base SHA below, not derived from the implementation under test. Regenerate only with an owner-approved render change, never to make a lane pass.",
     _regen: "node tools/regen_editor_pan_fixture.js",
-    _base: "349ee5f6",
+    _base: "101269cc",
     _geometry_note: "geometry rows hold .ehit width, height, dx, dy in viewBox units (px divided by the svg getScreenCTM().a) and the viewBox; absolute rects are never stored. Compared with a 0.25 tolerance. Style rows are sha256/16 of the computed-style records (.editor-panbox transform excluded while dragging and settling). styles.sample/* holds the readable kurd rest record.",
     specs: SPECS,
     ...produced,
