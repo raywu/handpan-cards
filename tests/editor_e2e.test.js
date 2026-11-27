@@ -168,6 +168,11 @@ function run() {
     async function aim(ring, angle, landing = angle) {
       let target;
       for (let attempt = 0; attempt < 10; attempt += 1) {
+        const locked = `#editor-pan .guided-landing[data-insert][data-growth][data-guided-zone="${ring}"] circle`;
+        if (await b.eval(`!!document.querySelector(${JSON.stringify(locked)})`)) {
+          await touch("touchMove", await center(locked));
+          return;
+        }
         const point = await b.eval(`
           const svg = document.querySelector("#editor-pan svg");
           const geom = editorSolve(editorSession.history.present).value.geom;
@@ -270,6 +275,117 @@ function run() {
       }
     });
 
+    test("Guided tray reflow keeps one stable drawing while switching between insert and replace", async () => {
+      const seed = "(D3) A3 B3 C4 D4 E4 F4 G4 | D#4 G#4 A#4";
+      const tray = '.tray-note[data-name="C#"]';
+      const zone = '#editor-pan [data-guided-zone="rim"]';
+      const landing = zone + ".guided-landing[data-insert] circle";
+      const survivor = zone + '.guided-reflow[data-replace="2"]';
+      const signature = (ring = "rim") => b.eval(`
+        return [...document.querySelectorAll(${JSON.stringify('#editor-pan [data-guided-zone="' + ring + '"][data-growth]')})]
+          .map(node => [node.dataset.angle, node.dataset.replace ?? null, node.textContent.trim()]);
+      `);
+      const fieldAngles = ring => b.eval(`
+        const fields = Object.values(editorSolve(editorSession.history.present).value.fields);
+        return Object.fromEntries(fields.filter(field => field[3] === ${JSON.stringify(ring)}).map(field => [field[0] + field[1], field[4]]));
+      `);
+      await fixture("(D3) A3 B3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5", {}, 4);
+      await lift(tray);
+      await touch("touchMove", await center('#editor-pan .ehit[data-ring="rim"][data-i="2"]'));
+      await b.waitFor(`document.querySelector('#editor-status').textContent.includes('Replace C4 with C#4')`,
+        { label: "direct replacement when the rim cannot expand" });
+      assert.deepEqual(await signature(), []);
+      const full = await fieldAngles("rim");
+      await touch("touchEnd");
+      await b.waitFor("editorSession.history.past.length === 1", { label: "the full-rim replacement to commit" });
+      const { C4: oldPosition, ...rest } = full;
+      assert.deepEqual(await fieldAngles("rim"), { ...rest, "C#4": oldPosition });
+
+      await fixture(seed, {}, 4);
+      await lift(tray);
+      await b.waitFor(`!!document.querySelector(${JSON.stringify(landing)})`, { label: "the insert projection to open at lift" });
+      const stable = await signature();
+      assert.equal(stable.length, 8);
+      assert.equal(await b.eval(`
+        return [...document.querySelectorAll('#editor-pan [data-editor-drawn-zone="rim"], #editor-pan .ehit[data-ring="rim"]')]
+          .every(node => getComputedStyle(node).visibility === "hidden");
+      `), true);
+      const originalCenterMiss = await b.eval(`
+        const pan = document.querySelector('#editor-pan');
+        return [...pan.querySelectorAll('.ehit[data-ring="rim"]')].some(note => {
+          const r = note.getBoundingClientRect();
+          const target = editorDropTarget({ clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 }, editorDrag.src);
+          return target.kind !== "note" || target.i !== Number(note.dataset.i);
+        });
+      `);
+      assert.equal(originalCenterMiss, true, "hidden note centers no longer target their original positions");
+      await touch("touchMove", await center(survivor + " circle"));
+      await b.waitFor(`document.querySelector('#editor-status').textContent.includes('Replace C4 with C#4')`,
+        { label: "the replacement intent" });
+      assert.deepEqual(await signature(), stable);
+      await touch("touchMove", { x: 30, y: 28 });
+      await b.waitFor(`(() => {
+        const drag = editorDrag;
+        if (!drag || Math.abs(parseFloat(drag.ghost.style.left) - 30) > 3) return false;
+        return ["off", "outside"].includes(editorDropTarget({ clientX: 30, clientY: 28 }, drag.src).kind);
+      })()`, { label: "the drag leaves the pan" });
+      assert.deepEqual(await signature(), stable, "moving away does not unlock the projection");
+      await aim("inner", 60);
+      await b.waitFor(`!!document.querySelector('#editor-pan .guided-landing[data-guided-zone="inner"][data-insert]')`,
+        { label: "switching to the Cyclops preview" });
+      assert.equal((await signature("inner")).length, 4);
+      assert.deepEqual(await signature(), [], "the rim preview no longer paints while Cyclops is active");
+      const rimGap = await b.eval(`
+        const svg = document.querySelector("#editor-pan svg");
+        const m = editorSession.history.present;
+        const geom = editorSolve(m).value.geom;
+        const screen = (angle, radius) => {
+          const a = angle * Math.PI / 180;
+          const p = new DOMPoint(radius * Math.cos(a), -radius * Math.sin(a)).matrixTransform(svg.getScreenCTM());
+          return { x: p.x, y: p.y };
+        };
+        for (const radius of [geom.rim * 112, geom.rim * 100]) {
+          for (let angle = 0; angle < 360; angle += 5) {
+            if ([-3, 0, 3].every(delta => {
+              const pt = screen(angle + delta, radius);
+              const target = editorDropTarget({ clientX: pt.x, clientY: pt.y }, editorDrag.src);
+              return target.kind === "spot" && target.ring === "rim";
+            })) return screen(angle, radius);
+          }
+        }
+        return null;
+      `);
+      assert.ok(rimGap, "an exposed rim approach can switch back from Cyclops");
+      await touch("touchMove", rimGap);
+      await b.waitFor(`!!document.querySelector(${JSON.stringify(landing)})`, { label: "returning to the locked rim preview" });
+      await touch("touchMove", await center(landing));
+      await b.waitFor(`document.querySelector('#editor-status').textContent.includes('Insert C#4 on the rim')`,
+        { label: "the insertion intent" });
+      assert.deepEqual(await signature(), stable);
+      await touch("touchEnd");
+      await b.waitFor("editorSession.history.past.length === 1", { label: "the pictured insertion to commit" });
+      const expected = Object.fromEntries(stable.map(([angle, , name]) => [name, +angle]));
+      assert.deepEqual(await fieldAngles("rim"), expected);
+      await clickReady("#editor-undo");
+      assert.equal(await text(), seed);
+      for (const [ring, arrangement, old, index] of [
+        ["rim", seed, "C4", 2],
+        ["inner", "(D3) A3 | D#4 G#4 A#4", "G#4", 1]
+      ]) {
+        await fixture(arrangement, {}, 4);
+        const before = await fieldAngles(ring);
+        const projected = `#editor-pan .guided-reflow[data-guided-zone="${ring}"][data-replace="${index}"]`;
+        await b.click(tray);
+        await b.waitFor(`drawerExperiment.state === "SHUT" && !!document.querySelector(${JSON.stringify(projected)})`,
+          { label: "the reflowed survivor to be exposed" });
+        await touch("touchStart", await center(projected + " circle"));
+        await touch("touchEnd");
+        await b.waitFor("editorSession.history.past.length === 1", { label: "the pictured replacement to commit" });
+        const { [old]: replacedAt, ...remaining } = before;
+        assert.deepEqual(await fieldAngles(ring), { ...remaining, "C#4": replacedAt });
+      }
+    });
+
     test("Guided low rim placement stays editable after tap and drag", async () => {
       const seed = "(Eb3) Bb3 C4 | A3";
       const tray = '.tray-note[data-name="C#"]';
@@ -279,7 +395,17 @@ function run() {
         const before = await angleSnapshot();
         if (drag) {
           await lift(tray);
-          await aim("rim", 0);
+          const point = await b.eval(`
+            const m = editorSession.history.present;
+            const svg = document.querySelector("#editor-pan svg");
+            const p = new DOMPoint(editorSolve(m).value.geom.rim * 100, 0).matrixTransform(svg.getScreenCTM());
+            return { x: p.x, y: p.y };
+          `);
+          await touch("touchMove", point);
+          await b.waitFor(`!!document.querySelector(${JSON.stringify(circle)})`, { label: "the locked rim preview" });
+          await touch("touchMove", await center(circle));
+          await b.waitFor(`document.querySelector('#editor-status').textContent.includes('Insert C#3 on the rim')`,
+            { label: "the pictured low pitch insert intent" });
           await touch("touchEnd");
         } else {
           await b.click(tray);
@@ -1513,7 +1639,9 @@ function run() {
     const status = () => b.eval(`return document.getElementById("editor-status").textContent;`);
     const rimNames = () => b.eval(`return editorNames(editorSession.history.present, "rim");`);
     const clientOf = (x, y) => b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${x} * 100, -(${y}) * 100).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
-    const noteAt = (ring, i) => b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
+    const noteAt = (ring, i) => b.eval(`const target = document.querySelector('#editor-pan .guided-reflow[data-guided-zone="${ring}"][data-replace="${i}"] circle') ||
+      document.querySelector('#editor-pan .ehit[data-ring="${ring}"][data-i="${i}"]');
+      const r = target.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
     const tapPoint = async (pt, touch = false) => {
       if (touch) {
         await b.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y, id: 1 }] });
@@ -4225,7 +4353,13 @@ function run() {
       const marker = zone === "rim" || zone === "inner"
         ? `.guided-landing[data-guided-zone="${zone}"]` : ".editor-landing";
       for (const delta of [0, -10, 10, -20, 20, -35, 35, -50, 50]) {
-        const point = await pointFor(zone, requested + delta);
+        const locked = await b.eval(`
+          const mark = document.querySelector(${JSON.stringify(marker + "[data-insert][data-growth]")});
+          if (!mark) return null;
+          const bounds = mark.querySelector("circle").getBoundingClientRect();
+          return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+        `);
+        const point = locked || await pointFor(zone, requested + delta);
         await touch("touchMove", point);
         await b.eval(`return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));`);
         const preview = await b.eval(`
@@ -4361,11 +4495,6 @@ function run() {
         for (const mark of document.querySelectorAll(${JSON.stringify(selector)})) {
           const r = mark.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
           if (!document.elementFromPoint(x, y)?.closest("#editor-pan")) continue;
-          if (mark.closest(".guided-reflow")) {
-            const m = editorSession.history.present;
-            const target = editorHitAt(editorSolve(m).value, editorPanPoint({ clientX: x, clientY: y }), true, m);
-            if (target.kind !== "spot" || target.ring !== "rim") continue;
-          }
           return { x, y };
         }
         return null;
@@ -4404,16 +4533,14 @@ function run() {
       assert.deepStrictEqual(await marked(), ["rim:B4"], "the offered rim landing");
       await clickUndo();
       await arm("B");
-      const before = await model();
-      const alternate = '#editor-pan .guided-reflow[data-guided-zone="rim"][data-growth] circle';
-      const offered = await b.eval(`return document.querySelector(${JSON.stringify(landing)}).parentNode.dataset.angle;`);
-      await tapPt(await hitCoords(alternate));
-      assert.notEqual(await b.eval(`return document.querySelector(${JSON.stringify(landing)}).parentNode.dataset.angle;`),
-        offered, "the gesture changes the proposed landing");
-      assert.deepStrictEqual(await marked(), [], "previewing a different landing does not mark a placement");
-      assert.deepStrictEqual(await model(), before);
-      await tapPt(await hitCoords(landing));
-      assert.deepStrictEqual(await marked(), ["rim:B4"], "the confirmed alternate landing");
+      const before = await names("rim");
+      const alternate = '#editor-pan .guided-reflow[data-guided-zone="rim"][data-replace]';
+      const survivor = await b.eval(`return document.querySelector(${JSON.stringify(alternate)}).textContent.trim();`);
+      await tapPt(await hitCoords(alternate + " circle"));
+      assert.deepStrictEqual(await marked(), ["rim:B4"], "replacing a projected survivor marks the incoming note");
+      const after = await names("rim");
+      assert.equal(after.length, before.length);
+      assert.ok(!after.includes(survivor), "the pictured note is the one replaced");
       await clickUndo();
 
       await exposeDrawerControl("#editor-oct-down", key => b.click(key));
@@ -4558,7 +4685,7 @@ function run() {
       await pause(100);
       await b.eval(`for (const type of ["pointermove", "pointerup", "pointercancel"]) window.dispatchEvent(new PointerEvent(type, { pointerId: 99, clientX: 5, clientY: 5, bubbles: true })); return true;`);
       assert.strictEqual(await live(), true, "the stray pointer did not end the drag");
-      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await aimDrag("rim", 22.5);
       await touch("touchEnd");
       await pause(500);
       assert.deepStrictEqual((await names("rim")).slice(-1), ["B4"]);
@@ -4572,7 +4699,7 @@ function run() {
         await pause(300);
         assert.strictEqual(await isDragging(), true, `${w}x${h}`);
         assert.strictEqual(await b.eval(`return getComputedStyle(document.getElementById("editor")).gridTemplateAreas;`), areas, "grid areas are the same while dragging");
-        await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+        await aimDrag("rim", 22.5);
         await touch("touchEnd");
         await pause(500);
         assert.strictEqual(await isDragging(), false, `${w}x${h}`);
@@ -6798,7 +6925,7 @@ function run() {
           "editor.say.stage_need_fifth": "editor.save_needs_rim",
         }[ROW.k] || ROW.k;
         return ROW.mode === "idle" ? [t(idleKey)] : ROW.mode === "held"
-          ? ["editor.held", "editor.guided.tap_growth", "editor.guided.tap_both"]
+          ? ["editor.held", "editor.guided.tap_growth", "editor.guided.tap_both", "editor.guided.tap_intent"]
             .map(key => t(key, { name: editorHeldName() }))
           : [text];`;
       const readClosedFeedback = () => b.eval(`return new Promise(resolve => {
