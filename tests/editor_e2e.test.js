@@ -5129,41 +5129,84 @@ function run() {
       await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...at, button: "left", clickCount: 1 });
     });
 
-    test("EMP: the status line sits between the pan and the counts, within 16px of the pan, and stays in view with no scroll at 375x667 and 320x568", async () => {
+    const feedbackGeometry = () => b.eval(`
+      const box = node => {
+        const { top, right, bottom, left, height } = node.getBoundingClientRect();
+        return { top, right, bottom, left, height };
+      };
+      const status = editorEl("editor-status");
+      const bounds = box(status);
+      const rects = [];
+      const walker = document.createTreeWalker(status, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        if (!walker.currentNode.textContent.trim()) continue;
+        const range = document.createRange();
+        range.selectNodeContents(walker.currentNode);
+        for (const r of range.getClientRects()) {
+          if (r.width > 0) rects.push(r);
+        }
+      }
+      const de = document.documentElement, editor = editorEl("editor");
+      const save = editorEl("editor-save"), sr = box(save);
+      const hit = document.elementFromPoint((sr.left + sr.right) / 2, (sr.top + sr.bottom) / 2);
+      return {
+        bounds, line: box(editorEl("editor-line")), drawer: box(editorEl("drawerexp-handle")),
+        tabs: box(editorEl("editor-tabs")), save: sr, saveHit: save.contains(hit),
+        text: status.textContent.trim(), role: status.getAttribute("role"),
+        live: status.getAttribute("aria-live"), atomic: status.getAttribute("aria-atomic"),
+        floating: getComputedStyle(status.parentNode).position === "absolute",
+        page: [de.scrollWidth, de.scrollHeight], editorTop: editor.scrollTop,
+        lines: new Set(rects.map(r => Math.round(r.top))).size,
+        clipped: rects.some(r => r.left < bounds.left - 1 || r.right > bounds.right + 1 ||
+          r.top < bounds.top - 1 || r.bottom > bounds.bottom + 1)
+      };
+    `);
+    const closeFeedbackDrawer = async () => {
+      if (await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the floating banner above the closed drawer" });
+    };
+
+    test("EMP: the status line floats above the closed drawer, announces errors and stays in view without page scroll", async () => {
       for (const [w, h] of [[375, 667], [320, 568]]) {
         await setup(FULL, w, h);
         await refuse();
-        const r = await b.eval(`const pb = document.querySelector("#editor .editor-panbox"); const st = document.getElementById("editor-status");
-          const de = document.documentElement, ed = document.getElementById("editor");
-          const row = st.parentNode;
-          return { order: pb.nextElementSibling === row && row.className === "editor-statusrow" && row.nextElementSibling.id === "editor-areas", gap: st.getBoundingClientRect().top - pb.getBoundingClientRect().bottom,
-            inView: st.getBoundingClientRect().top >= 0 && st.getBoundingClientRect().bottom <= ${h} && st.getBoundingClientRect().right <= ${w},
-            page: de.scrollHeight === ${h} && de.scrollWidth === ${w}, panel: ed.scrollHeight <= ed.clientHeight && ed.scrollWidth <= ed.clientWidth };`);
-        assert.strictEqual(r.order, true, w + " DOM order");
-        assert.ok(r.gap >= -0.5 && r.gap <= 16, w + " gap " + r.gap);
-        assert.deepStrictEqual([r.inView, r.page, r.panel], [true, true, true], w + " " + JSON.stringify(r));
+        await closeFeedbackDrawer();
+        const r = await feedbackGeometry();
+        assert.ok(r.text && r.floating, JSON.stringify(r));
+        assert.deepStrictEqual([r.role, r.live, r.atomic], ["status", "polite", "true"]);
+        assert.ok(r.bounds.left >= 0 && r.bounds.right <= w && r.bounds.top >= r.line.bottom - 1 &&
+          r.bounds.bottom <= r.drawer.top + 1, `${w}x${h}: ` + JSON.stringify(r));
+        assert.deepStrictEqual(r.page, [w, h]);
+        assert.equal(r.editorTop, 0);
+        assert.equal(r.saveHit, true, "the pinned action stays tappable");
       }
     });
 
-    test("EMP: landscape 1280x800 puts the status in the right column between the line and the counts", async () => {
+    test("EMP: landscape 1280x800 keeps the floating status below the line and the Save button reachable", async () => {
       await setup(FULL, 1280, 800);
-      await refuse();
-      await b.click("#editor-hint-toggle");
-      const r = await b.eval(`const q = (s) => document.querySelector(s).getBoundingClientRect(); const pan = q("#editor .editor-panbox"), st = q("#editor-status");
-        return { right: st.left >= pan.right - 1, belowLine: st.top >= q("#editor-line").bottom - 1, aboveCounts: st.bottom <= q("#editor-areas").top + 1, aboveTabs: st.bottom <= q("#editor-tabs").top + 1 };`);
-      assert.deepStrictEqual(r, { right: true, belowLine: true, aboveCounts: true, aboveTabs: true });
+      await closeFeedbackDrawer();
+      const before = await feedbackGeometry();
+      await b.eval(`editorSession.error = t("editor.full.rim", { max: 12 }); editorRender(); return true;`);
+      const r = await feedbackGeometry();
+      assert.ok(r.text && r.floating && !r.clipped, JSON.stringify(r));
+      assert.ok(r.bounds.top >= r.line.bottom - 1 && r.bounds.bottom <= r.drawer.top + 1, JSON.stringify(r));
+      assert.deepStrictEqual(r.line, before.line);
+      assert.deepStrictEqual(r.tabs, before.tabs);
+      assert.deepStrictEqual(r.save, before.save);
+      assert.equal(r.saveHit, true);
     });
 
-    test("EMP: an error is an ink banner at 14px and a notice is plain text", async () => {
+    test("EMP: an error is an ink banner at 14px and a notice has no error treatment", async () => {
       await setup(FULL);
       await refuse();
-      const [bg, color, size] = await style("#editor-status", ["backgroundColor", "color", "fontSize"]);
-      assert.deepStrictEqual([bg, color, size], ["rgb(36, 36, 36)", "rgb(255, 255, 255)", "14px"]);
-      assert.deepStrictEqual(await style("#editor-status", ["cursor", "borderTopLeftRadius"]), ["auto", "8px"]);
-      const wide = await b.eval(`const q = document.getElementById("editor-status").getBoundingClientRect(), e = document.querySelector("#editor .editor-statusrow").getBoundingClientRect(); return q.width / e.width > 0.8;`);
-      assert.strictEqual(wide, true, "full-width banner");
+      const [bg, color, size, pointer] = await style("#editor-status", ["backgroundColor", "color", "fontSize", "pointerEvents"]);
+      assert.deepStrictEqual([bg, color, size, pointer], ["rgb(36, 36, 36)", "rgb(255, 255, 255)", "14px", "none"]);
+      assert.deepStrictEqual(await style("#editor-status", ["cursor", "borderTopLeftRadius"]), ["auto", "12px"]);
       await b.eval(`editorSession.error = ""; editorSession.held = null; editorSession.say = "Pins reset."; editorSession.plainSay = "Pins reset."; editorRender(); return true;`);
-      assert.strictEqual((await style("#editor-status", ["backgroundColor"]))[0], "rgba(0, 0, 0, 0)", "a notice has no banner");
+      assert.equal(await b.eval(`const status = editorEl("editor-status");
+        return status.textContent.trim() === "Pins reset." && !status.hasAttribute("data-kind") &&
+          ["none", "normal"].includes(getComputedStyle(status, "::before").content);`), true,
+        "a notice uses the banner without the warning icon");
     });
 
     test("EMP: the arrival cue replays for a different error, not for a re-render of the same one, and again after a clear", async () => {
@@ -5214,19 +5257,20 @@ function run() {
     }
 
     for (const w of [375, 390]) {
-      test(`SC ${w} wide: a two-line German error fits the status row without clipping, and the status row keeps its height`, async () => {
+      test(`SC ${w} wide: a two-line German error fits the floating banner without moving controls`, async () => {
         await setup(FULL, w, 700);
-        await b.eval(`const e = document.getElementById("lang-select"); e.value = "de"; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+        await b.eval(`setLang("de"); editorRender(); return true;`);
         await b.waitFor(`document.documentElement.lang === "de"`, { label: "German" });
-        await b.eval(`editorRender(); return true;`);
-        const row = () => b.eval(`const r = document.querySelector("#editor .editor-statusrow").getBoundingClientRect(), st = document.getElementById("editor-status"); return { h: r.height, sh: st.scrollHeight, ch: st.clientHeight, sth: st.getBoundingClientRect().height };`);
-        const before = await row();
-        const long = await b.eval(`return I18N.de["editor.crowded"].replace("{max}", "12");`);
-        await b.eval(`editorSession.error = ${JSON.stringify(long)}; editorRender(); return true;`);
-        const after = await row();
-        assert.ok(after.sth >= 48 - 1 && after.sth > 40, "the banner holds two lines: " + JSON.stringify(after));
-        assert.ok(after.sh <= after.ch + 1, "no clipped text: " + JSON.stringify(after));
-        assert.strictEqual(after.h, before.h, "the status row does not grow: " + JSON.stringify([before, after]));
+        await closeFeedbackDrawer();
+        const before = await feedbackGeometry();
+        const copy = await b.eval(`return t("editor.crowded", { pt: "5.5", floor: "6" });`);
+        await b.eval(`editorSession.error = ${JSON.stringify(copy)}; editorRender(); return true;`);
+        const after = await feedbackGeometry();
+        assert.equal(after.text, copy);
+        assert.ok(after.lines >= 2 && !after.clipped, "both lines fit: " + JSON.stringify(after));
+        assert.ok(after.bounds.bottom <= after.drawer.top + 1, "feedback stays above the drawer");
+        assert.deepStrictEqual([after.line, after.drawer, after.save], [before.line, before.drawer, before.save]);
+        assert.equal(after.saveHit, true, "the expanded banner leaves Save tappable");
       });
     }
 
@@ -5234,26 +5278,31 @@ function run() {
       before(() => { magPinned = false; });
       after(() => { magPinned = true; });
       const touch = (type, pt) => b.send("Input.dispatchTouchEvent", { type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : [] });
-      test("EMP: mid-drag at 390x844 the scaled pan box does not cover the status, which stays the top hit", async () => {
+      test("EMP: mid-drag at 390x844 the scaled pan stays clear of the floating status", async () => {
         await setup(SCALE, 390, 844);
         const chip = await b.eval(`const r = document.querySelector('.tray-note[data-name="B"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
         const to = await b.eval(`const r = document.querySelector('#editor-pan .ehit[data-ring="rim"][data-i="0"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
         await touch("touchStart", chip);
-        for (const k of [0.15, 0.3]) await touch("touchMove", { x: chip.x + (to.x - chip.x) * k, y: chip.y + (to.y - chip.y) * k });
-        await pause(500);
         try {
-          const r = await b.eval(`const pb = document.querySelector("#editor .editor-panbox").getBoundingClientRect(), st = document.getElementById("editor-status"), sq = st.getBoundingClientRect();
-            const hit = document.elementFromPoint(sq.left + sq.width / 2, sq.top + sq.height / 2);
-            return { dragging: document.getElementById("editor").classList.contains("dragging"), mag: parseFloat(getComputedStyle(document.querySelector("#editor .editor-panbox")).getPropertyValue("--ed-mag")) || 1,
-              overlap: pb.bottom > sq.top + 0.5, hit: hit === st || st.contains(hit), text: st.textContent };`);
-          assert.strictEqual(r.dragging, true);
-          assert.ok(r.mag > 1.05, "the pan did grow: " + r.mag);
-          assert.strictEqual(r.overlap, false, "the pan box ends above the status: " + JSON.stringify(r));
-          assert.strictEqual(r.hit, true);
+          for (const k of [0.15, 0.3]) await touch("touchMove", { x: chip.x + (to.x - chip.x) * k, y: chip.y + (to.y - chip.y) * k });
+          await b.waitFor('!!editorDrag?.live && drawerExperiment.state === "SHUT"', { label: "live drag with the drawer closed" });
+          const r = await b.eval(`
+            const pan = editorEl("editor-pan"), st = editorEl("editor-status");
+            const rim = pan.querySelector('svg > circle[r="100"][stroke="#000"]').getBoundingClientRect();
+            const frame = st.getBoundingClientRect(), line = editorEl("editor-line").getBoundingClientRect();
+            const hit = document.elementFromPoint((frame.left + frame.right) / 2, (frame.top + frame.bottom) / 2);
+            const box = document.querySelector("#editor .editor-panbox");
+            const transform = getComputedStyle(box).transform;
+            return { zoom: transform === "none" ? 1 : new DOMMatrix(transform).a,
+              above: rim.top >= line.bottom - 1, below: rim.bottom <= frame.top + 1,
+              passThrough: getComputedStyle(st).pointerEvents === "none" && !st.contains(hit),
+              text: st.textContent };
+          `);
+          assert.ok(r.zoom > 1.05, "the pan grows during drag: " + JSON.stringify(r));
+          assert.deepStrictEqual([r.above, r.below, r.passThrough], [true, true, true], JSON.stringify(r));
           assert.match(r.text, /Dragging/);
         } finally {
-          await touch("touchEnd");
-          await pause(400);
+          await touch("touchCancel");
         }
       });
     });
