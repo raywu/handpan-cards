@@ -14699,7 +14699,7 @@ function editorCommitText(m, text) {
 }
 // A mode change carries the current notes. The previous mode's layout can be
 // restored while its note inventory still matches.
-const EDITOR_MODE_OPTIONS = ["profile", "mirror", "mirrorBottom", "anchor", "seats", "angles", "guided"];
+const EDITOR_MODE_OPTIONS = ["profile", "mirror", "mirrorBottom", "seats", "angles", "guided"];
 function editorPanType(m, kind) {
   const from = editorKindOf(m);
   if (from === kind) return { ok: true, value: m };
@@ -14716,8 +14716,8 @@ function editorPanType(m, kind) {
     Object.assign(next.options, previous.options);
     next.pins = previous.pins;
   } else {
-    if (m.options.anchor === "between") next.options.anchor = "between";
     if (kind === "neotone") {
+      if (next.options.anchor === "one") delete next.options.anchor;
       const profile = editorProfileFor(next.fields);
       if (!profile) return editorRefusal(t("editor.neotone"));
       next.options.profile = profile;

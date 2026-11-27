@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14716,7 +14716,7 @@
-     Object.assign(next.options, previous.options);
+@@ -14717,7 +14717,7 @@
      next.pins = previous.pins;
    } else {
--    if (m.options.anchor === "between") next.options.anchor = "between";
-+    delete next.options.anchor;
      if (kind === "neotone") {
+-      if (next.options.anchor === "one") delete next.options.anchor;
++      delete next.options.anchor;
        const profile = editorProfileFor(next.fields);
        if (!profile) return editorRefusal(t("editor.neotone"));
+       next.options.profile = profile;
