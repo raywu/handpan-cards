@@ -16387,7 +16387,7 @@ function editorWithOverlay(markup, m, solved) {
     } else out += editorNeoMarks(m, fields, geom);
   }
   if (standard && s?.kind === "new" && !editorDrag?.live && !editorGuidedTapSource(m))
-    out += editorGuidedNeutralMarks(m, solved);
+    under += editorGuidedNeutralMarks(m, solved);
   if (standard && !editorDrag?.live) out += editorGuidedTapPreviews(m).map(preview => editorGuidedShowsProjection(preview.projection) ? editorGuidedMarks(preview, false, tab) : editorGuidedOpenSeats(preview, tab)).join("");
   if (unchosen) {
     const ding = editorTargetDing(geom, m);

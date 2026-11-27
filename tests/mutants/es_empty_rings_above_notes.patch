@@ -1,16 +1,15 @@
-# kills: the empty Standard pan paints staged notes above every area ring: at each note centre and where a ring crosses its edge the note is the topmost thing, filled
-# suite: node --test --test-name-pattern the.empty.Standard.pan.paints.staged.notes.above tests/editor_e2e.test.js
-# fault: The empty-state area rings are drawn above the staged notes again.
+# kills: Standard Add keeps resting outlines visible beneath placed notes
+# suite: node --test --test-name-pattern ^Standard.Add.keeps.resting.outlines.visible.beneath.placed.notes$ tests/editor_e2e.test.js
+# fault: Draw resting placement guidance in front of placed notes.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14274,8 +14274,7 @@
-       if (!empty && ringIds(fields, ring).length && !picked) continue;
-       const orb = editorOrbit(geom, ring);
-       const area = `<circle class="etarget${picked ? " picked" : ""}${empty ? " eempty" : ""}" data-ring="${ring}" cx="0" cy="0" r="${(orb * 100).toFixed(2)}"/>`;
--      if (empty) under += area;
--      else out += area;
-+      out += area;
-     }
-     for (const ring of zones) {
-       out += `<circle class="ekey" cx="0" cy="0" r="${(editorOrbit(geom, ring) * 100).toFixed(2)}" role="button" aria-pressed="${s.zone === ring}" ${tab("zone:" + ring)} aria-label="${escapeHtml(editorAreaLabel(m, ring))}"/>`;
+@@ -16387,7 +16387,7 @@
+     } else out += editorNeoMarks(m, fields, geom);
+   }
+   if (standard && s?.kind === "new" && !editorDrag?.live && !editorGuidedTapSource(m))
+-    under += editorGuidedNeutralMarks(m, solved);
++    out += editorGuidedNeutralMarks(m, solved);
+   if (standard && !editorDrag?.live) out += editorGuidedTapPreviews(m).map(preview => editorGuidedShowsProjection(preview.projection) ? editorGuidedMarks(preview, false, tab) : editorGuidedOpenSeats(preview, tab)).join("");
+   if (unchosen) {
+     const ding = editorTargetDing(geom, m);

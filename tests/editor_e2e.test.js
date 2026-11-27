@@ -723,11 +723,11 @@ function run() {
       const r = await b.eval(`const m = editorSession.history.present, st = editorStageOf(m);
         const svg = document.querySelector("#editor-pan svg");
         const view = editorGhostSolve(m).value;
-        const drawn = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff").map((n) => [+n.getAttribute("cx") / 100, -(+n.getAttribute("cy")) / 100]);
+        const drawn = [...svg.querySelectorAll('[data-editor-drawn-zone="bottom"] > circle')].map((n) => [+n.getAttribute("cx") / 100, -(+n.getAttribute("cy")) / 100]);
         const hit = drawn.map((pt) => { const ref = editorHitAt(view, pt, null, m); return ref.kind === "note" ? editorNames(m, ref.ring)[ref.i] + "@" + Math.round(((Math.atan2(pt[1], pt[0]) * 180 / Math.PI) + 360) % 360) : ref.kind; });
         const q = editorPlace(m, "rim", "A3"); const sol = editorSolve(q.value).value.fields;
         const commit = Object.values(sol).filter((f) => f[3] === "bottom" && (f[0] + f[1] === "E3" || f[0] + f[1] === "C3")).map((f) => f[0] + f[1] + "@" + Math.round(f[4])).sort();
-        return { angles: st.angles, drawn: drawn.length, hit: hit.sort(), commit, committed: !editorIsEmpty(q.value) };`);
+        return { angles: st.angles.bottom, drawn: drawn.length, hit: hit.sort(), commit, committed: !editorIsEmpty(q.value) };`);
       assert.deepStrictEqual(r.angles, [135, null, 200]);
       assert.strictEqual(r.committed, true);
       assert.strictEqual(r.hit.filter((h) => h.includes("@")).length, 3, "three staged notes are drawn: " + JSON.stringify(r));
@@ -744,11 +744,11 @@ function run() {
           const m = editorSession.history.present, st = editorStageOf(m);
           const svg = document.querySelector("#editor-pan svg");
           const view = editorGhostSolve(m).value;
-          const drawn = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff").map((n) => [+n.getAttribute("cx") / 100, -(+n.getAttribute("cy")) / 100]);
+          const drawn = [...svg.querySelectorAll('[data-editor-drawn-zone="bottom"] > circle')].map((n) => [+n.getAttribute("cx") / 100, -(+n.getAttribute("cy")) / 100]);
           const hit = drawn.map((pt) => { const ref = editorHitAt(view, pt, null, m); return ref.kind === "note" ? editorNames(m, ref.ring)[ref.i] + "@" + Math.round(((Math.atan2(pt[1], pt[0]) * 180 / Math.PI) + 360) % 360) : ref.kind; });
           const q = editorPlace(m, "rim", "A3"); const sol = editorSolve(q.value).value.fields;
           const commit = Object.values(sol).filter((f) => f[3] === "bottom" && (f[0] + f[1] === "E3" || f[0] + f[1] === "C3")).map((f) => f[0] + f[1] + "@" + Math.round(f[4])).sort();
-          return { log, angles: st.angles, bottom: st.bottom, hit: hit.sort(), commit, committed: !editorIsEmpty(q.value) };`);
+          return { log, angles: st.angles.bottom, bottom: st.bottom, hit: hit.sort(), commit, committed: !editorIsEmpty(q.value) };`);
         assert.deepStrictEqual(r.log, ["ok", "ok", "ok", "ok"], "every tap accepted: " + JSON.stringify(r));
         assert.deepStrictEqual(r.angles, [135, null, 200]);
         assert.strictEqual(r.committed, true, "the fifth commits");
@@ -757,47 +757,41 @@ function run() {
       });
     }
 
-    test("the empty Standard pan paints staged notes above every area ring: at each note centre and where a ring crosses its edge the note is the topmost thing, filled", async () => {
+    test("Standard Add keeps resting outlines visible beneath placed notes", async () => {
       await fresh(390, 844);
       await openAdd();
-      await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => [(x) => editorReplaceDing(x, "C3"), (x) => editorPlace(x, "rim", "D3"), (x) => editorPlace(x, "rim", "G#3"), (x) => editorPlace(x, "rim", "B3"), (x) => editorPlace(x, "inner", "F4"), (x) => editorPlace(x, "bottom", "A2")].reduce((r, f) => (r.ok === false ? r : f(r.value)), { ok: true, value: m })).history;
-        editorRender();
-        const st = document.createElement("style"); st.textContent = "#editor-pan svg > circle, #editor-pan .etarget{pointer-events:all !important}"; document.head.appendChild(st); return true;`);
-      const r = await b.eval(`const svg = document.querySelector("#editor-pan svg"), ctm = svg.getScreenCTM();
-        const px = (x, y) => { const q = new DOMPoint(x, y).matrixTransform(ctm); return [q.x, q.y]; };
-        const rings = [...svg.querySelectorAll(".etarget.eempty:not([data-ring=ding])")].map((e) => +e.getAttribute("r"));
-        const notes = [...svg.children].filter((e) => e.tagName === "circle" && e.getAttribute("fill") === "#fff");
-        const top = (x, y) => { const [cx, cy] = px(x, y); return document.elementFromPoint(cx, cy); };
-        const onNote = (e, n) => e === n || (e && e.tagName === "text" && !!(n.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING));
-        const out = { notes: notes.length, rings: rings.length, centres: [], crossings: 0, wrong: [], fills: [], order: [] };
-        for (const n of notes) {
-          const x = +n.getAttribute("cx"), y = +n.getAttribute("cy"), r = +n.getAttribute("r");
-          out.fills.push(getComputedStyle(n).fill);
-          if (!onNote(top(x, y), n)) out.centres.push([x, y]);
-          for (const R of rings) {
-            const d = Math.hypot(x, y);
-            if (Math.abs(d - R) >= r) continue;
-            const a = (R * R - r * r + d * d) / (2 * d), h = Math.sqrt(Math.max(0, R * R - a * a));
-            const mx = a * x / d, my = a * y / d;
-            for (const sgn of [1, -1]) {
-              const ix = mx + sgn * h * -y / d, iy = my + sgn * h * x / d;
-              const ex = ix + (x - ix) * 0.12, ey = iy + (y - iy) * 0.12;
-              out.crossings += 1;
-              if (!onNote(top(ex, ey), n)) out.wrong.push([ex, ey, (top(ex, ey) || {}).outerHTML]);
-            }
-          }
-        }
-        for (const e of svg.querySelectorAll(".etarget.eempty:not([data-ring=ding])")) for (const n of notes) out.order.push(!!(e.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING));
-        const ring = getComputedStyle(svg.querySelector(".etarget.eempty[data-ring=rim]"));
-        out.ring = { opacity: +ring.opacity, width: parseFloat(ring.strokeWidth), stroke: ring.stroke };
-        return out;`);
-      assert.strictEqual(r.notes, 6, "the ding circle + 3 rim + inner + bottom: " + JSON.stringify(r));
-      assert.deepStrictEqual(r.centres, [], "every note centre is the note itself");
-      assert.ok(r.crossings >= 6, "rings cross the notes in this fixture: " + r.crossings);
-      assert.deepStrictEqual(r.wrong, [], "no ring line is on top of a note");
-      assert.ok(r.order.length > 0 && r.order.every(Boolean), "every area ring precedes every note in paint order");
-      assert.ok(r.fills.every((f) => f !== "none" && f !== "rgba(0, 0, 0, 0)"), "every note is solid: " + JSON.stringify(r.fills));
-      assert.ok(r.ring.opacity < 1 && r.ring.opacity >= 0.5 && r.ring.width <= 2 && r.ring.stroke === "rgb(226, 112, 5)", "the rings are softer but still orange: " + JSON.stringify(r.ring));
+      await b.eval(`editorSession.history = editorApply(editorSession.history, m =>
+        [x => editorReplaceDing(x, "C3"), x => editorPlace(x, "rim", "D3"),
+          x => editorPlace(x, "rim", "G#3"), x => editorPlace(x, "rim", "B3"),
+          x => editorPlace(x, "inner", "F4"), x => editorPlace(x, "bottom", "A2")]
+          .reduce((result, place) => result.ok ? place(result.value) : result, { ok: true, value: m })).history;
+        editorRender(); return true;`);
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to clear the lower pan" });
+      const scene = await b.eval(`const svg = document.querySelector("#editor-pan svg");
+        const guides = [...svg.querySelectorAll(".guided-informational, .balanced-outline.bottom")];
+        const notes = [...svg.querySelectorAll('circle.ehit')];
+        const painted = [...svg.querySelectorAll('[data-editor-drawn-zone] > circle')];
+        const model = editorSession.history.present;
+        const solved = editorSolve(model).value;
+        return {
+          rings: [...new Set(guides.map(guide => guide.dataset.guidedZone || "bottom"))].sort(),
+          guidesBehind: guides.every(guide => painted.every(note =>
+            !!(guide.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING))
+            && getComputedStyle(guide).pointerEvents === "none"),
+          notes: notes.length,
+          missed: notes.flatMap(note => {
+            const r = note.getBoundingClientRect();
+            const clientX = r.x + r.width / 2, clientY = r.y + r.height / 2;
+            const hit = editorHitAt(solved, editorPanPoint({ clientX, clientY }), null, model);
+            const correct = note.dataset.ring === "ding" ? hit.kind === "ding" :
+              hit.ring === note.dataset.ring && hit.i === Number(note.dataset.i);
+            return svg.contains(document.elementFromPoint(clientX, clientY)) && correct ? [] : [note.dataset.ring];
+          })
+        };`);
+      assert.deepStrictEqual(scene, {
+        rings: ["bottom", "inner", "rim"], guidesBehind: true, notes: 6, missed: []
+      });
     });
 
     for (const kind of ["mouse", "touch"]) {
@@ -1538,8 +1532,9 @@ function run() {
       await setup("[E3] " + SCALE);
       const before = await bnRows();
       assert.strictEqual(before.E3.l, "U1");
-      await hold("D#");
       await b.click("#editor-oct-down");
+      await hold("D#");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the armed note to clear the pan" });
       await tapSpot(...polar(1.15, 140));
       const after = await bnRows();
       assert.strictEqual(after.E3.a, before.E3.a, "E3 did not move");
@@ -1552,6 +1547,8 @@ function run() {
       await setup("[A2] [B2] [C3] " + SCALE);
       const before = await bnRows();
       assert.deepStrictEqual([before.A2.a, before.B2.a, before.C3.a], [330, 210, 90]);
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to clear the pan" });
       await tapNote("bottom", 2);
       await tapSpot(...polar(1.15, 240));
       const after = await bnRows();
@@ -1562,12 +1559,15 @@ function run() {
 
     test("BN-E3: removing a bottom note leaves the others where they are drawn on the screen", async () => {
       await setup("[A2] [B2] [C3] " + SCALE);
-      const at = async (i) => noteAt("bottom", i);
-      const [a, c] = [await at(0), await at(2)];
+      const before = await bnRows();
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to clear the pan" });
       await tapNote("bottom", 1);
+      await b.click("#editor-more");
       await b.click("#editor-remove");
       assert.deepStrictEqual(await b.eval(`return editorNames(editorSession.history.present, "bottom");`), ["A2", "C3"]);
-      assert.deepStrictEqual([await at(0), await at(1)], [a, c], "A2 and C3 did not move by a pixel");
+      const after = await bnRows();
+      assert.deepStrictEqual([after.A2.a, after.C3.a], [before.A2.a, before.C3.a], "A2 and C3 keep their drawn angles");
     });
 
     test("BN-E4: a scale with MIRROR BOTTOM stored (record and share link) keeps its numbers on positions, and a bottom add keeps its stored angles", async () => {
