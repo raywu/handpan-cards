@@ -6136,7 +6136,11 @@ function run() {
       await openHelp();
       assert.strictEqual(await b.eval(`return editorSession.hint;`), true, "the hint is open");
       await b.eval(`document.getElementById("editor-more").focus(); return true;`);
-      await b.key("Enter", "Enter", 13);
+      assert.equal(await b.eval("return document.activeElement.id;"), "editor-more");
+      await b.send("Input.dispatchKeyEvent", {
+        type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, text: "\r"
+      });
+      await b.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
       await pause(100);
       assert.strictEqual(await b.eval(`return editorSession.menu;`), true, "the menu is open");
       assert.deepStrictEqual(await b.eval(`return [editorSession.hint, document.getElementById("editor-areas").hidden, document.getElementById("editor-hint-close").hidden];`), [false, true, true], "the hint closed");
