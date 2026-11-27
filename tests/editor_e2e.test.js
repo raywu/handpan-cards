@@ -4127,103 +4127,165 @@ function run() {
       });
     }
 
+    const marked = () => b.eval(`
+      const m = editorSession.history.present;
+      return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map(el => {
+        const { ring, i } = el.dataset;
+        return ring + ":" + editorNameAt(m, { ring, i: Number(i) });
+      }).sort();
+    `);
+    const hitCoords = async selector => {
+      const hit = `(() => {
+        for (const mark of document.querySelectorAll(${JSON.stringify(selector)})) {
+          const r = mark.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+          if (!document.elementFromPoint(x, y)?.closest("#editor-pan")) continue;
+          if (mark.closest(".guided-reflow")) {
+            const m = editorSession.history.present;
+            const target = editorHitAt(editorSolve(m).value, editorPanPoint({ clientX: x, clientY: y }), true, m);
+            if (target.kind !== "spot" || target.ring !== "rim") continue;
+          }
+          return { x, y };
+        }
+        return null;
+      })()`;
+      await b.waitFor(hit, { label: selector + " to be an exposed pan target" });
+      return b.eval(`return ${hit};`);
+    };
+    const tapPt = async pt => {
+      for (const type of ["mousePressed", "mouseReleased"])
+        await b.send("Input.dispatchMouseEvent", { type, ...pt, button: "left", clickCount: 1 });
+    };
+    const closeDrawer = async () => {
+      if (await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the pan is exposed" });
+    };
+    const arm = async name => {
+      const selector = '.tray-note[data-name="' + name + '"]';
+      await exposeDrawerControl(selector, key => b.click(key));
+      await b.click(selector);
+    };
+
     test("drag ux E4: a placed note is highlighted after a drag, a tap, a tap on a zone, a tap on the ding, a trade by two taps and the keyboard, and not after Undo", async () => {
-      const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
-      const tapPt = async (pt) => { for (const type of ["mousePressed", "mouseReleased"]) await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", clickCount: 1 }); };
       await setup(SCALE_);
       await liftFrom(await chipAt("B"), await noteAt("rim", 0));
-      await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+      await waitDrag();
+      await aimDrag("rim", 22.5);
       await touch("touchEnd");
-      await pause(700);
-      assert.deepStrictEqual(await marked(), ["rim8"], "drag add");
+      await waitRelease(false);
+      assert.deepStrictEqual(await marked(), ["rim:B4"], "drag add");
       await clickUndo();
       assert.deepStrictEqual(await marked(), [], "not after Undo");
-      await b.click('.tray-note[data-name="B"]');
-      await tapPt(await spotNow((await geom()).rim - 0.08, 20));
-      assert.deepStrictEqual(await marked(), ["rim8"], "zone tap");
+
+      const landing = '#editor-pan .guided-landing[data-guided-zone="rim"] circle';
+      await arm("B");
+      await tapPt(await hitCoords(landing));
+      assert.deepStrictEqual(await marked(), ["rim:B4"], "the offered rim landing");
       await clickUndo();
-      await b.click('.tray-note[data-name="B"]');
-      const gm = await geom();
-      const pt = await b.eval(`const svg = document.querySelector("#editor-pan svg"); const p = new DOMPoint(${gm.rim} * 100 * Math.cos(0.4), -${gm.rim} * 100 * Math.sin(0.4)).matrixTransform(svg.getScreenCTM()); return { x: p.x, y: p.y };`);
-      await tapPt(pt);
-      assert.strictEqual((await marked()).length, 1, "tap to place");
+      await arm("B");
+      const before = await model();
+      const alternate = '#editor-pan .guided-reflow[data-guided-zone="rim"][data-growth] circle';
+      const offered = await b.eval(`return document.querySelector(${JSON.stringify(landing)}).parentNode.dataset.angle;`);
+      await tapPt(await hitCoords(alternate));
+      assert.notEqual(await b.eval(`return document.querySelector(${JSON.stringify(landing)}).parentNode.dataset.angle;`),
+        offered, "the gesture changes the proposed landing");
+      assert.deepStrictEqual(await marked(), [], "previewing a different landing does not mark a placement");
+      assert.deepStrictEqual(await model(), before);
+      await tapPt(await hitCoords(landing));
+      assert.deepStrictEqual(await marked(), ["rim:B4"], "the confirmed alternate landing");
       await clickUndo();
+
+      await exposeDrawerControl("#editor-oct-down", key => b.click(key));
       await b.click("#editor-oct-down");
-      await b.click('.tray-note[data-name="G"]');
-      await tapPt(await spotNow((await geom()).ding, -90));
-      assert.deepStrictEqual(await marked(), ["ding0"], "ding tap");
+      await arm("G");
+      await tapPt(await pointFor("ding", 0));
+      assert.deepStrictEqual(await marked(), ["ding:G3"], "Ding tap");
       await clickUndo();
+
+      await closeDrawer();
       await tapPt(await noteAt("rim", 0));
       await tapPt(await noteAt("rim", 1));
-      assert.deepStrictEqual(await marked(), ["rim0", "rim1"], "trade, both ends");
+      assert.deepStrictEqual(await marked(), ["rim:A3", "rim:Bb3"], "trade, both ends");
       await clickUndo();
       await b.eval(`document.querySelector('#editor-pan [data-fk="rim:0"]').focus(); return true;`);
       await b.key(" ", "Space", 32);
       await b.key("ArrowRight", "ArrowRight", 39);
       await b.key(" ", "Space", 32);
-      assert.deepStrictEqual(await marked(), ["rim0", "rim1"], "keyboard trade");
+      assert.deepStrictEqual(await marked(), ["rim:A3", "rim:Bb3"], "keyboard trade");
       await clickUndo();
-      await b.click('.tray-note[data-name="B"]');
-      await b.eval(`document.querySelector('#editor-pan [data-fk="rim:0"]').focus(); return true;`);
+      await arm("B");
+      await b.eval(`document.querySelector('#editor-pan .guided-landing[data-guided-zone="rim"][data-fk]').focus(); return true;`);
       await b.key("Enter", "Enter", 13);
-      assert.strictEqual((await marked()).length, 1, "keyboard placement");
+      assert.deepStrictEqual(await marked(), ["rim:B3"], "keyboard placement");
     });
 
     test("drag ux X4: a removal highlights nothing and a cross-ring move highlights only its destination", async () => {
-      const marked = () => b.eval(`return [...document.querySelectorAll("#editor-pan .ehit.editor-new")].map((e) => e.dataset.ring + e.dataset.i);`);
       await setup(SCALE_);
+      await closeDrawer();
       await liftFrom(await noteAt("rim", 2), { x: 195, y: 5 });
+      await waitDrag();
       await touch("touchMove", { x: 195, y: 5 });
       await touch("touchEnd");
-      await pause(700);
-      assert.strictEqual(await b.eval(`return document.getElementById("editor-status").textContent;`), "C4 removed.Undo");
+      await waitRelease(false);
+      assert.strictEqual(await b.eval(`return editorEl("editor-status").textContent;`), "C4 removed.");
+      assert.equal(await b.eval(`return !editorEl("editor-undo").disabled;`), true, "the pinned Undo is available");
       assert.deepStrictEqual(await marked(), [], "removal marks nothing");
       await clickUndo();
-      await liftFrom(await noteAt("rim", 1), await spotNow((await geom()).bottom, -90));
-      await touch("touchMove", await spotNow((await geom()).bottom, -90));
+      await closeDrawer();
+      await liftFrom(await noteAt("rim", 1), await pointFor("bottom", 150));
+      await waitDrag();
+      const preview = await aimDrag("bottom", 150);
       await touch("touchEnd");
-      await pause(700);
+      await waitRelease(false);
       assert.deepStrictEqual(await names("bottom"), ["Bb3"], "moved to the bottom");
-      assert.deepStrictEqual(await marked(), ["bottom0"], "move marks the destination only");
+      assert.deepStrictEqual(await marked(), ["bottom:Bb3"], "move marks only the destination");
+      assert.deepStrictEqual(await b.eval(`return editorAnglesOf(editorSolve(editorSession.history.present), "bottom");`),
+        [preview.angle], "the destination is the previewed underside angle");
     });
 
-    test("drag ux E5: with reduced motion the pan stays at 1x and unscaled, the panel is still out of play, and the highlight is still set", async () => {
+    test("drag ux E5: with reduced motion the camera fits without animation, the drawer closes and the highlight is still set", async () => {
       await setup(SCALE_);
       await b.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
       try {
-        const rest = await geometry();
         await liftFrom(await chipAt("B"), await noteAt("rim", 0));
-        const instant = await panelCss();
-        for (const k of Object.keys(instant)) assert.strictEqual(instant[k].vis, "hidden", "hidden at once, no fade: " + k);
-        await pause(400);
-        const now = await geometry();
-        assert.strictEqual(await isDragging(), true);
-        assert.ok(Math.abs(now.svg.width - rest.svg.width) < 0.5, "rect width unchanged");
-        assert.strictEqual(now.mag, 1);
-        assert.ok(now.transform === "none" || /^matrix\(1, 0, 0, 1, 0, 0\)$/.test(now.transform), "no transform on the pan box: " + now.transform);
-        const css = await panelCss();
-        for (const k of Object.keys(css)) assert.deepStrictEqual(css[k], { opacity: "0", pe: "none", vis: "hidden" }, k);
-        await touch("touchMove", await spotNow((await geom()).rim, 22.5));
+        await waitDrag();
+        const frame = await dragFrame();
+        assert.deepStrictEqual([frame.inert, frame.visible, frame.railPassive], [true, true, true]);
+        assert.ok(frame.zoom > 0 && frame.zoom <= 1.21 &&
+          frame.rim.top >= frame.lineBottom - 1 && frame.rim.bottom <= frame.clearance + 1, JSON.stringify(frame));
+        const durations = await b.eval(`return [".drawerexp", ".editor-panbox"].map(selector =>
+          getComputedStyle(document.querySelector(selector)).transitionDuration);`);
+        assert.deepStrictEqual(durations, ["0s", "0s"], "the fitted camera and drawer do not animate");
+        const preview = await aimDrag("rim", 22.5);
         await touch("touchEnd");
-        await pause(500);
-        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .ehit.editor-new").length;`), 1);
+        await waitRelease(false);
+        assert.deepStrictEqual(await marked(), ["rim:B4"]);
+        assert.equal(await b.eval(`return getComputedStyle(document.querySelector("#editor-pan .ehit.editor-new")).animationName;`),
+          "ed-new-fade", "the highlight fades without a spreading pulse");
+        assert.equal(await b.eval(`const m = editorSession.history.present, i = editorNames(m, "rim").indexOf("B4");
+          return editorAnglesOf(editorSolve(m), "rim")[i];`), preview.angle);
       } finally {
+        await touch("touchCancel");
         await b.send("Emulation.setEmulatedMedia", { features: [] });
       }
     });
 
     test("drag ux E6: a resize during a live drag cancels it, clears dragging and places nothing", async () => {
       await setup(SCALE_);
+      const before = await model(), depth = await dragHistory();
       await liftFrom(await chipAt("B"), await noteAt("rim", 0));
-      await pause(100);
-      assert.strictEqual(await live(), true);
+      await waitDrag();
+      await aimDrag("rim", 22.5);
       await b.setViewport(844, 390, true);
-      await pause(400);
-      assert.strictEqual(await live(), false);
-      assert.strictEqual(await isDragging(), false);
-      for (const [k, v] of Object.entries(await panelCss())) assert.deepStrictEqual(v, { opacity: "1", pe: "auto", vis: "visible" }, "panel restored after resize: " + k);
-      assert.strictEqual((await names("rim")).length, 8);
+      await waitRelease(true);
+      const after = await dragFrame();
+      assert.deepStrictEqual([after.inert, after.visible, after.saveHit, after.zoom], [false, true, true, 1]);
+      await exposeDrawerControl('.tray-note[data-name="B"]', key => b.click(key));
+      const chip = await chipAt("B");
+      assert.equal(await b.eval(`return document.querySelector('.tray-note[data-name="B"]')
+        .contains(document.elementFromPoint(${chip.x}, ${chip.y}));`), true);
       await touch("touchEnd");
+      assert.deepStrictEqual(await model(), before);
+      assert.strictEqual(await dragHistory(), depth);
     });
 
     test("drag ux E6b: a page hidden during a live drag cancels it", async () => {
@@ -4451,22 +4513,52 @@ function run() {
       await fresh();
       await saveNew(SCALE);
       await reopenSelected();
-      await b.click("#editor-delete");
-      assert.match(await label(), /^Press again to delete /);
-      const at = await panNote("rim", 1);
-      await mouse("mousePressed", at);
-      await mouse("mouseReleased", at);
-      assert.strictEqual(await label(), DELETE_LABEL, "disarmed");
-      assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: 1 }, "the same click picked the note");
-      assert.doesNotMatch(await statusText(), /Tap again to remove/);
-      await b.eval(`editorSession.sel = null; editorRender(); return true;`);
-      await b.click("#editor-delete");
-      assert.match(await label(), /^Press again to delete /);
+      if (await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the pan to be exposed" });
+      const exposedRim = async () => {
+        const find = `(() => {
+          for (const note of document.querySelectorAll('#editor-pan .ehit[data-ring="rim"]')) {
+            const r = note.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+            const target = document.elementFromPoint(x, y);
+            if (!target?.closest("#editor-pan")) continue;
+            const source = editorDragSource({ target, clientX: x, clientY: y });
+            if (source?.ref?.ring === "rim" && source.ref.i === Number(note.dataset.i))
+              return { x, y, i: source.ref.i };
+          }
+          return null;
+        })()`;
+        await b.waitFor(find, { label: "a rim note outside the open menu" });
+        return b.eval(`return ${find};`);
+      };
+      const armDelete = async () => {
+        await b.click("#editor-delete");
+        assert.match(await label(), /^Press again to delete /);
+        return exposedRim();
+      };
+      let at = await armDelete();
       await mouse("mousePressed", at);
       assert.strictEqual(await label(), DELETE_LABEL, "disarmed on the press");
-      for (const k of [0.3, 0.6, 1]) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: at.x + 40 * k, y: at.y + 40 * k, button: "left", buttons: 1 });
-      assert.strictEqual(await b.eval(`return !!(editorDrag && editorDrag.live);`), true, "the same press went on to drag");
+      await mouse("mouseReleased", at);
+      assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: at.i },
+        "the same click picked the exposed rim note");
+      assert.doesNotMatch(await statusText(), /Tap again to remove/);
+
+      await mouse("mousePressed", at);
+      await mouse("mouseReleased", at);
+      assert.equal(await b.eval(`return editorSession.sel;`), null);
+      at = await armDelete();
+      const saved = await savedCount(), before = await model();
+      await mouse("mousePressed", at);
+      assert.strictEqual(await label(), DELETE_LABEL, "disarmed on the press");
+      for (const k of [0.3, 0.6, 1]) await b.send("Input.dispatchMouseEvent", {
+        type: "mouseMoved", x: at.x + 40 * k, y: at.y + 40 * k, button: "left", buttons: 1
+      });
+      await b.waitFor("!!editorDrag?.live", { label: "the same press to lift the rim note" });
+      assert.deepStrictEqual(await b.eval("return editorDrag.src.ref;"), { ring: "rim", i: at.i });
+      await b.key("Escape", "Escape", 27);
       await mouse("mouseReleased", { x: at.x + 40, y: at.y + 40 });
+      assert.deepStrictEqual(await model(), before);
+      assert.equal(await savedCount(), saved, "armed Delete never deleted the saved scale");
     });
 
     test("TRI59b a delete that fails shows the error in the editor and leaves the button disarmed", async () => {
