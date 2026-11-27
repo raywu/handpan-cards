@@ -2009,6 +2009,8 @@ function run() {
         await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
         assert.strictEqual((await reset()).disabled, false);
+        await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the pan to clear for note selection" });
         await tapNote("rim", 0);
         assert.deepStrictEqual(await reset(), { aria: "Reset spacing", disabled: true, visible: "Reset spacing" });
         await tapNote("rim", 0);
