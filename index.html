@@ -14451,9 +14451,18 @@ function editorSetName(m, text) {
  * The panel's anchor controls act on the model the way the sheet's buttons act on its
  * globals. A toggle the solver cannot hold is refused. */
 const editorToggleRefused = () => ({ ok: false, code: "TOGGLE_REFUSED", reason: t("sheet.toggle_refused") });
+function editorEffectiveAnchor(m) {
+  const anchor = m.options.anchor || "one";
+  const row = m.options.guided?.rim;
+  if (!row) return anchor;
+  const actual = HPE.layout.guidedGrid("rim", row.size, row.basis);
+  const expected = HPE.layout.guidedGrid("rim", row.size, anchor);
+  const count = anchor === "between" ? 2 : 1;
+  return row.seats.slice(0, count).every((seat, i) => editorGuidedGap(actual[seat], expected[i]) < 1e-6) ? anchor : null;
+}
 function editorSetAnchor(m, to) {
   if (to !== "one" && to !== "between") return editorRefusal(to);
-  if (editorIsEmpty(m) || (m.options.anchor || "one") === to) return { ok: true, value: m };
+  if (editorIsEmpty(m) || editorEffectiveAnchor(m) === to) return { ok: true, value: m };
   const next = editorClone(m);
   if (to === "one" && m.options.profile) delete next.options.anchor; else next.options.anchor = to;
   const row = next.options.guided?.rim;
@@ -16179,7 +16188,7 @@ function editorPickPalette(i) {
 }
 function editorRenderLayout(m) {
   const off = editorIsEmpty(m);
-  const anchor = m.options.anchor || "one";
+  const anchor = editorEffectiveAnchor(m);
   const rows = [["editor-anchor-one", anchor === "one"], ["editor-anchor-between", anchor === "between"]];
   for (const [id, on] of rows) {
     const el = editorEl(id);

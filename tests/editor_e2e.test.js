@@ -4081,6 +4081,28 @@ function run() {
       assert.deepStrictEqual(await rim(), split, "Undo restores the split seats");
     });
 
+    test("a fresh odd Guided rim makes Centre actionable until note 1 is centered", async () => {
+      await setup("(D3) " + RIM8 + " B4");
+      await b.click("#editor-tab-layout");
+      const pressed = id => b.eval(`return document.getElementById("${id}").getAttribute("aria-pressed");`);
+      assert.strictEqual(await pressed("editor-anchor-one"), "false");
+      assert.strictEqual(await pressed("editor-anchor-between"), "false");
+      const first = () => b.eval(`const fields = editorSolve(editorSession.history.present).value.fields;
+        return ringIds(fields, "rim").map(id => fields[id]).find(field => field[5] === "1")[4];`);
+      const before = await first();
+      assert.notStrictEqual(before, 270);
+      const steps = await pastLen();
+      await b.click("#editor-anchor-one");
+      assert.strictEqual(await first(), 270);
+      assert.strictEqual(await pressed("editor-anchor-one"), "true");
+      assert.strictEqual(await pastLen(), steps + 1);
+      await b.click("#editor-anchor-one");
+      assert.strictEqual(await pastLen(), steps + 1);
+      await clickUndo();
+      assert.strictEqual(await first(), before);
+      assert.strictEqual(await pressed("editor-anchor-one"), "false");
+    });
+
     test("the anchor controls are at least 44px", async () => {
       await setup("(D3) " + RIM8 + " [G2]\n");
       await typeLine(BOTTOM);
@@ -4223,7 +4245,7 @@ function run() {
       await enter();
       assert.deepStrictEqual(await sel(), { ring: "rim", i: 0 });
       assert.strictEqual(await b.eval(`return document.querySelector('#editor-pan [data-fk="rim:0"]').getAttribute("aria-pressed");`), "true");
-      assert.match(await status(), /place A3\./);
+      assert.match(await status(), /A3 picked.*swap/);
       await arrow("Down");
       assert.strictEqual(await activeKey(), "rim:1");
       await arrow("Right");
