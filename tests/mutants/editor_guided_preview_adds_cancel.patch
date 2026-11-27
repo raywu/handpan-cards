@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15875,7 +15875,7 @@ function editorStatusNotes(box, s, m, empty) {
+@@ -15875,6 +15875,6 @@ function editorStatusNotes(box, s, m, empty) {
      const canReplace = s.held && previews.length && editorGuidedZones.some(ring => editorNames(m, ring).length);
      box.appendChild(document.createTextNode(feedback + t(canReplace ? "editor.guided.tap_intent" : key, { name })));
      if (growing.length === 1) box.dataset.guidedActions = "single";
@@ -12,4 +12,3 @@ diff --git a/index.html b/index.html
 +    editorAppendCancelHold(box);
    } else if (s.say || s.notice) {
      box.appendChild(document.createTextNode((s.say || t("editor.pins_reset")) + (empty && !editorDraftPitchIssues(m).length ? " " + editorEmptyPrompt(m) : "")));
- 
