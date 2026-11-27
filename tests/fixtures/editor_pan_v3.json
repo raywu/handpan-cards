@@ -2,7 +2,7 @@
  "_what": "Recorded editor oracle after the approved single Guided tray preview. Only held Standard render states and drag source hashes change from v2.",
  "_why": "CONTRACT rule 2 carve-out: these are recorded outputs of the editor as it stood on the base SHA below, not derived from the implementation under test. Regenerate only with an owner-approved render change, never to make a lane pass.",
  "_regen": "node tools/regen_editor_pan_fixture.js /tmp/editor-pan-candidate.json",
- "_base": "cb79b2ee",
+ "_base": "c0ff6d3a",
  "_geometry_note": "Geometry rows hold .ehit width, height and top-left in SVG coordinates. The frame is compared against the live SVG bounds when fitted, and its viewBox is pinned during drag and settle. Note positions use a 0.25-unit tolerance. Fitted margins allow 0.75 units for re-measuring after the viewport changes. Style rows are sha256/16 of the computed-style records (.editor-panbox transform excluded while dragging and settling). styles.sample/* holds the readable kurd rest record.",
  "specs": [
   {
@@ -583,7 +583,7 @@
   "editorHitAt": "a752d7d0f02218b4462c2bfe53f59a82fedb68e1eea8ab025ec630dba917aa26",
   "editorDropPlan": "b07f44b3f1558b57b4edbe1b6e2bd7e988cbe15edc3fb29106e7881647038e87",
   "editorNeoDropPlan": "de8aa8a1f8b134f5f02e15b7f07e6041fa75f8b9832e0469c48b89e5d3ccb521",
-  "editorDragSource..editorDragEnd": "15f523e4ba6c30223c0d7dbbddbc1fc0abae3058d3fa39f2df79f38bd2e5e217",
+  "editorDragSource..editorDragEnd": "f82680d3f1ed289b52e4e89561ec6b6b25fc1a0b122e03f9e5a624d6de2c619a",
   "EDITOR_HIT_AREA": "6b32d4d8f9a605dc10fb469572537cece2fecd96c396c697fdbbaea59ea67bc6",
   "EDITOR_SCALE": "b6eb84ea140c4e09b8b00234256ef72d384c1217ece2e572bb55a21d6d926c5c"
  },
