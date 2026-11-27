@@ -15422,7 +15422,7 @@ function installEditorDrawer() {
   @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
   @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
   `;document.head.append(style);
-  const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,metrics:[],disposed:false,state:'OPEN'};
+  const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};
   let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;
   const reduced=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
   let tapRest=null, revealed=null, dropName=null, placement=null;
@@ -15622,8 +15622,6 @@ function installEditorDrawer() {
       if(lineFocusWidth!==null)lineFocusWidth=innerWidth;
     }
     if(!revealed)box.style.transform='none';
-    const shell=svg.querySelector(':scope>circle[r="100"][stroke="#000"]');
-    if(shell)api.metrics.push({w:innerWidth,h:innerHeight,frame,shell:shell.getBoundingClientRect().height,expanded});
   }
   function camera(e){
     if(!root.isConnected||!root.classList.contains('dragging')||(e&&(!editorDrag||e.pointerId!==editorDrag.id)))return;
