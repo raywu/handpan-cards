@@ -2298,7 +2298,9 @@ function run() {
                 return { x: pt.x, y: pt.y };
               }
               const angle = ${angle} * Math.PI / 180;
-              const orbit = geom[target] || (target === "bottom" ? 1.15 : 0.38);
+              const delta = ${JSON.stringify(opts.midpointDelta ?? null)};
+              const orbit = delta === null ? editorOrbit(geom, target)
+                : (editorOrbit(geom, "inner") + geom.rim) / 2 + delta;
               const pt = new DOMPoint(orbit * Math.cos(angle) * 100, -orbit * Math.sin(angle) * 100)
                 .matrixTransform(svg.getScreenCTM());
               return { x: pt.x, y: pt.y };
@@ -2813,16 +2815,25 @@ function run() {
           await fresh(w, h);
           await openAdd();
           await typeLine(SCALE);
-          await b.click("#editor-hint-toggle");
-          await b.waitFor(`!document.getElementById("editor-areas").hidden`);
+          const openCounts = async () => {
+            await b.click("#editor-more");
+            await b.click("#editor-placement-help");
+            await b.waitFor('!document.getElementById("editor-areas").hidden', { label: "the Placement help counts to appear" });
+          };
+          await openCounts();
           assert.strictEqual(await zoneCount("rim"), "Rim 8/12");
           assert.strictEqual(await zoneCount("inner"), "Cyclops 2/6");
           assert.strictEqual(await zoneCount("bottom"), "Bottom 0/12");
           for (const l of await lineBoxes("#editor-counts .zc")) assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": '" + l.text + "' is at most two line boxes, " + l.h + " vs " + l.lh);
           for (const f of await b.eval(`return [...document.querySelectorAll("#editor-counts .zc")].map((e) => ({ text: e.textContent, sw: e.scrollWidth, cw: e.clientWidth }));`)) assert.ok(f.cw > 0 && f.sw <= f.cw,w + ": '" + f.text + "' does not overflow its box, scrollWidth " + f.sw + " vs clientWidth " + f.cw);
+          await b.click("#editor-hint-close");
           await typeLine("(D3) " + RIM12 + " | C6");
+          await openCounts();
           assert.strictEqual(await zoneCount("rim"), "Rim 12/12 Full");
           assert.strictEqual(await b.eval(`return document.querySelectorAll('#editor-counts [data-zone="rim"] b').length;`), 1);
+          for (const l of await lineBoxes("#editor-counts .zc")) {
+            assert.ok(l.h <= l.lh * 2.6 + 0.5, w + ": " + l.text + " fits after reaching capacity");
+          }
         }
       });
 
@@ -2831,7 +2842,7 @@ function run() {
         const r = await b.eval(`const g = editorSolve(editorSession.history.present).value.geom; const out = {};
           for (const [ring, f, base] of [["rim", 0.85, g.r_note], ["inner", 0.75, g.r_note], ["bottom", 0.85, g.r_bnote]]) {
             const hit = document.querySelector('#editor-pan .ehit[data-ring="' + ring + '"][data-i="0"]');
-            const drawn = [...document.querySelectorAll("#editor-pan svg > circle")].filter((c) => Math.abs(+c.getAttribute("cx") - +hit.getAttribute("cx")) < 0.05 && Math.abs(+c.getAttribute("cy") - +hit.getAttribute("cy")) < 0.05 && !c.getAttribute("class"));
+            const drawn = [...document.querySelectorAll('#editor-pan svg > [data-editor-drawn-zone="' + ring + '"] > circle')].filter((c) => Math.abs(+c.getAttribute("cx") - +hit.getAttribute("cx")) < 0.05 && Math.abs(+c.getAttribute("cy") - +hit.getAttribute("cy")) < 0.05 && !c.getAttribute("class"));
             out[ring] = { want: f * base * 100, hit: +hit.getAttribute("r"), drawn: drawn.map((c) => +c.getAttribute("r")) };
           }
           return out;`);
@@ -2925,14 +2936,16 @@ function run() {
             }
           });
 
-          test("OQA snap back says went back: a rim note dropped on an empty rim spot changes nothing and the status says it went back", async () => {
+          test("OQA snap back says went back: returning a rim note to its own seat leaves layout and history unchanged", async () => {
             await setup(SCALE);
             const before = await core();
-            const p = await noteAt("rim", 0);
-            const q = await noteAt("rim", 1);
-            await gesture(await noteAt("rim", 3), { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, kind);
-            await pause();
+            const angle = await noteAngle("rim", "D4");
+            const steps = await pastLen();
+            await dragPlacedNote("rim", "rim", kind, null,
+              { index: 3, target: { ring: "rim", index: 3 }, accept: async () => true });
             assert.deepStrictEqual(await core(), before);
+            assert.strictEqual(await noteAngle("rim", "D4"), angle);
+            assert.strictEqual(await pastLen(), steps);
             assert.strictEqual(await status(), "D4 went back.");
           });
 
@@ -2949,25 +2962,38 @@ function run() {
             assert.deepStrictEqual(await model(), dragged);
           });
 
-          test("OQA cyclops drop near midpoint: inside the cyclops/rim midpoint lands on the cyclops (ring on the inner orbit), outside on the rim", async () => {
-            await setup("(D3) " + RIM8);
-            await b.click("#editor-oct-up");
-            const mid = await b.eval(`const g = editorSolve(editorSession.history.present).value.geom; return (editorOrbit(g, "inner") + g.rim) / 2;`);
-            await gesture(await chipAt("E"), await clientOf(...polar(mid - 0.02, 90)), kind, { release: false });
-            await pause();
-            const ring = await b.eval(`const c = document.querySelector("#editor-pan .editor-landing"); return c ? Math.hypot(+c.getAttribute("cx"), +c.getAttribute("cy")) : null;`);
-            await endGesture(kind);
-            await pause();
-            assert.ok(ring !== null && Math.abs(ring - (await b.eval(`return editorOrbit(editorSolve(editorSession.history.present).value.geom, "inner");`)) * 100) < 1.5, "landing ring on the inner orbit, got " + ring);
-            await setup("(D3) " + RIM8);
-            await b.click("#editor-oct-up");
-            await gesture(await chipAt("E"), await clientOf(...polar(mid + 0.02, 270)), kind);
-            assert.deepStrictEqual(await names("inner"), [], "outside the midpoint is the rim");
-            assert.ok((await rimNames()).includes("E5"), await status());
-            await setup("(D3) " + RIM8);
-            await b.click("#editor-oct-up");
-            await gesture(await chipAt("E"), await clientOf(...polar(mid - 0.02, 270)), kind);
-            assert.deepStrictEqual(await names("inner"), ["E5"], "inside the midpoint is the cyclops, even empty and in the lower half: " + await status());
+          test("OQA cyclops drop near midpoint: both sides resolve to the visible Guided lane and commit its seat", async () => {
+            for (const { ring, delta, angles } of [
+              { ring: "inner", delta: -0.02, angles: [90, 95, 85, 90] },
+              { ring: "rim", delta: 0.02, angles: [270, 275, 265, 270] },
+              { ring: "inner", delta: -0.02, angles: [270, 275, 265, 270] }
+            ]) {
+              await setup("(D3) " + RIM8);
+              await b.click("#editor-oct-up");
+              const before = await core();
+              const steps = await pastLen();
+              let landing;
+              await dragPlacedNote("tray", ring, kind, null, {
+                tray: "E", angles, midpointDelta: delta,
+                accept: async () => {
+                  landing = await visibleLanding(ring);
+                  return Number.isFinite(landing?.angle);
+                }
+              });
+              assert.strictEqual(await noteAngle(ring, "E5"), landing.angle);
+              const after = await core();
+              assert.strictEqual(after.ding, before.ding);
+              for (const zone of ["rim", "inner", "bottom"]) {
+                const expected = [...before.parts[zone], ...(zone === ring ? ["E5"] : [])];
+                assert.deepStrictEqual(after.parts[zone], expected, "only " + ring + " receives E5");
+              }
+              const orbit = await b.eval(`return editorOrbit(
+                editorSolve(editorSession.history.present).value.geom, ${JSON.stringify(ring)});`);
+              assert.ok(Math.abs(Math.hypot(landing.x, landing.y) - orbit * 100) < 0.25, JSON.stringify(landing));
+              assert.strictEqual(await pastLen(), steps + 1);
+              await clickUndo();
+              assert.deepStrictEqual(await core(), before);
+            }
           });
 
           test("OQA zone highlight occupied; OQA zone full dashed: the hovered zone is .ezone.on although it has notes, a zone at its cap is .full with a Full label", async () => {
