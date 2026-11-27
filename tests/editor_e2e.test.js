@@ -5614,7 +5614,9 @@ function run() {
     `);
     const closeFeedbackDrawer = async () => {
       if (await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
-      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the floating banner above the closed drawer" });
+      await b.waitFor(`drawerExperiment.state === "SHUT" &&
+        editorEl("drawerexp").getAnimations().every(animation => animation.playState !== "running" &&
+          !animation.pending)`, { label: "the closed drawer and its transition to settle" });
     };
 
     test("EMP: the status line floats above the closed drawer, announces errors and stays in view without page scroll", async () => {
@@ -5641,9 +5643,9 @@ function run() {
       const r = await feedbackGeometry();
       assert.ok(r.text && r.floating && !r.clipped, JSON.stringify(r));
       assert.ok(r.bounds.top >= r.line.bottom - 1 && r.bounds.bottom <= r.drawer.top + 1, JSON.stringify(r));
-      assert.deepStrictEqual(r.line, before.line);
-      assert.deepStrictEqual(r.tabs, before.tabs);
-      assert.deepStrictEqual(r.save, before.save);
+      assert.deepStrictEqual(r.line, before.line, "the floating banner does not move the scale line");
+      assert.deepStrictEqual(r.tabs, before.tabs, "the floating banner does not move the drawer tabs");
+      assert.deepStrictEqual(r.save, before.save, "the floating banner does not move the pinned Save button");
       assert.equal(r.saveHit, true);
     });
 
