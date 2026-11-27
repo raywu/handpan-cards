@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14160,7 +14160,6 @@ function editorTabKey(e) {
- const editorMenuItems = () => [...editorEl("editor-menu").querySelectorAll('[role="menuitem"]')];
+@@ -16233,7 +16233,6 @@
+ const editorMenuItems = () => [...editorEl("editor-menu").querySelectorAll('[role="menuitem"]:not([hidden])')];
  function editorOpenMenu() {
    const s = editorSession;
 -  editorCommitName();

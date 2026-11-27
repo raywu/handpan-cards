@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14549,8 +14549,7 @@ function editorBack() {
+@@ -17274,8 +17274,7 @@
  function editorEscape() {
    const s = editorSession;
    if (!s) { closeScaleSheet(); return; }
@@ -12,5 +12,5 @@ diff --git a/index.html b/index.html
 -  else if (s.dialog) editorShowDialog(false);
 +  if (s.dialog) editorShowDialog(false);
    else if (s.menu) editorCloseMenu(true);
-   else if (s.hint) { editorSetAreas(false); editorEl("editor-hint-toggle").focus(); }
+   else if (s.hint) { editorSetAreas(false); editorEl("editor-more").focus(); }
    else if (s.naming) editorCancelName();

@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15044,7 +15044,7 @@ function editorSettle(m, notice) {
+@@ -13740,7 +13740,7 @@
        return { ok: true, value: cur, ...(Object.keys(note).length ? { notice: note } : {}) };
      }
-     if (!cur.pins.length) return solved;
+     if (!cur.pins.length || solved.variant === "innerLabelRoom") return solved;
 -    const newest = cur.pins[cur.pins.length - 1];
 +    const newest = cur.pins[0];
      unpinned.push(newest);

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15267,6 +15267,8 @@ function editorEntries(m) {
+@@ -14470,6 +14470,8 @@
    return out;
  }
  function editorRebuild(m, entries) {
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  if (new Set(all).size !== all.length) return editorRefusal(all.find((n, k) => all.indexOf(n) !== k));
    const parts = Object.fromEntries(EDITOR_RINGS.map((ring) => [ring, entries[ring].map((e) => e.name)]));
    const loaded = editorLoad(editorText(m, parts, entries.ding), { ...m.options, seats: null, angles: null });
-   if (!loaded.ok) return loaded;
+   if (!loaded.ok) return editorTryPitchDraft(m, entries, loaded);

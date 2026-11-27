@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16567,7 +16567,7 @@ function editorMoveSelected(hit, m) {
+@@ -17099,7 +17099,7 @@
  }
- function editorPanTap(pt) {
+ function editorPanTap(pt, pointer = false) {
    const s = editorSession;
 -  if (!s || s.dialog || s.editing || s.naming) return;
 +  if (!s || s.dialog || s.editing) return;

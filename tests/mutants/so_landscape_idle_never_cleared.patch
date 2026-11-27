@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14928,7 +14928,6 @@
-   if (!error) s.lastError = "";
+@@ -15872,7 +15872,6 @@
    status.textContent = "";
+   delete status.dataset.guidedActions;
    status.removeAttribute("data-kind");
 -  status.removeAttribute("data-idle");
    if (error) {

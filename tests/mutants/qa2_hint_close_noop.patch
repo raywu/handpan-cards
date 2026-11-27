@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14854,7 +14854,7 @@ function editorWire() {
+@@ -17710,7 +17710,7 @@
      editorEl("editor-hint-close").focus();
    };
    editorEl("editor-hint-close").onclick = () => {
 -    editorSetAreas(false);
 +    editorSetAreas(true);
-     editorEl("editor-hint-toggle").focus();
+     editorEl("editor-more").focus();
    };
    nameBox.addEventListener("focusin", () => requestAnimationFrame(() => nameBox.scrollIntoView({ block: "nearest" })));

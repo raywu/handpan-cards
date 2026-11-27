@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16195,7 +16195,6 @@
+@@ -17844,7 +17844,6 @@
  async function editorSave(fromDialog = false) {
    const s = editorSession;
    if (!s || s.saving || savePending || s.saveAcknowledged) return;
 -  editorCommitName();
    if (s.editing) editorCommitLine();
    if (s.editing) return;
-   const m = s.history.present;
+   if (typeof editorCommitForm === "function" && !editorCommitForm()) return;

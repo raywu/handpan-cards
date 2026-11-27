@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15803,7 +15803,7 @@
+@@ -16921,7 +16921,7 @@
    }
    if (target.kind === "note" || target.kind === "ding") {
      const to = target.kind === "ding" ? { ring: "ding", i: 0 } : { ring: target.ring, i: target.i };
 -    return to.ring === ref.ring && to.i === ref.i ? snap : { trade: [ref, to] };
 +    return to.ring === ref.ring && to.i === ref.i ? snap : { step: (x) => editorReplace(x, to.ring, to.i, editorNameAt(m, ref)), say: "" };
    }
-   if (target.kind !== "spot" || ref.ring === "ding") return snap;
-   if (target.ring === ref.ring) {
+   if (target.kind !== "spot") return snap;
+   if (ref.ring === "ding") {

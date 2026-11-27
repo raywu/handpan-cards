@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13017,7 +13017,7 @@ function editorStageSettle(m, stage, landedKey) {
+@@ -13907,7 +13907,7 @@
  // A remove can free the room a pin relied on. While the stage could not be completed, the first pin
  // (tap order) whose clearing alone completes it is cleared, else the newest pin; a pin the commit keeps stays.
  function editorStageClearPins(m, st) {
 -  const stuck = (t) => editorStageSettle(m, t).code === "NO_ROOM";
 +  const stuck = (t) => editorStageSettle(m, t).code === "NO_ROOM" || (!!t.ding && !editorGhostSolve(editorWithStage(m, t), true).ok);
    while (st.angles && stuck(st)) {
-     const pins = st.angles.map((a, k) => (a === null ? -1 : k)).filter((k) => k !== -1);
-     const alone = pins.find((k) => { const t = editorClone(st); t.angles[k] = null; editorStageTidyAngles(t); return !stuck(t); });
+     const pins = EDITOR_PINNABLE.flatMap(ring =>
+       (st.angles[ring] || []).flatMap((angle, i) => angle === null ? [] : [{ ring, i }]));

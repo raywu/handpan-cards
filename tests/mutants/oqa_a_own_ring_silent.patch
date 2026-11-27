@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15976,7 +15976,7 @@ function editorMoveSelected(hit, m) {
-   if (hit.kind === "spot" && (s.sel.ring === "ding" || (!m.options.profile && s.sel.ring === hit.ring && hit.angle === undefined))) {
+@@ -17083,7 +17083,7 @@
+   if (hit.kind === "spot" && (!m.options.profile && s.sel.ring === hit.ring && hit.angle === undefined)) {
      const name = editorNameAt(m, s.sel);
      s.error = "";
 -    s.say = s.plainSay = s.sel.ring === "ding" ? t("editor.say.ding_stays") : t("editor.say.same_zone", { name, zone: t("editor.zone." + hit.ring) });

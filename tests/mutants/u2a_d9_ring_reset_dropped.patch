@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15069,7 +15069,6 @@ function editorResize(m, ring, parts, change) {
-   const had = !!(m.options.seats && m.options.seats[ring]);
+@@ -13819,7 +13819,6 @@
+   if (m.options.guided) { const refusal = editorGuidedRetain(m, next); if (refusal) return refusal; }
    const o = next.options;
    if (m.options.seats) o.seats = editorClone(m.options.seats);
 -  if (o.seats) delete o.seats[ring];

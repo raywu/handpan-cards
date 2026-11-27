@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16224,7 +16224,7 @@ function editorMarkDrop(target) {
-     const orb = editorOrbit(geom, target.ring);
-     at = [orb * 100 * Math.cos(a), -orb * 100 * Math.sin(a), editorDrawnReach(geom, target.ring)];
-   }
+@@ -17529,7 +17529,7 @@
+   if (!solved.ok) return;
+   const geom = solved.value.geom;
+   const at = editorLandingAnchor(svg, geom, target);
 -  if (!at) return;
 +  return;
    const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");

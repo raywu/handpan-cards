@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16489,7 +16489,7 @@ function editorDragMove(e) {
+@@ -17421,7 +17421,7 @@
    const pt = editorPanPoint(e);
    const solved = pt && editorSolve(editorSession.history.present);
    const zone = solved && solved.ok ? editorHoverZone(solved.value, pt, editorSession.history.present) : null;
 -  for (const z of document.querySelectorAll("#editor-pan .ezone")) z.classList.toggle("on", z.dataset.ring === zone);
 +  for (const z of document.querySelectorAll("#editor-pan .ezone")) z.classList.toggle("on", z.dataset.ring === zone && !ringIds(editorSession.history.present.fields, z.dataset.ring).length);
    editorMarkDrop(target);
-   if (e.cancelable) e.preventDefault();
- }
+   for (let fit = 0; fit < 4 && window.drawerExperiment?.refreshDrag(e); fit++) {
+     editorMarkDrop(editorDropTarget(e, d.src));

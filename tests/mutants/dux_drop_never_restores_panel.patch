@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14986,7 +14986,7 @@ function editorDragEnd(e) {
-   else if (plan.refuse) s.error = plan.refuse;
-   else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
+@@ -17600,7 +17600,7 @@
+     window.drawerExperiment?.dragRejected(d,rejected?{name:movedName,...dropPoint}:null);
+   }
    editorRender();
 -  if (e) requestAnimationFrame(() => { if (!editorDrag || !editorDrag.live) editorDragRestore(); });
 +  if (e) void 0;

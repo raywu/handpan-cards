@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15442,7 +15442,6 @@ function editorPush(m, fields) {
+@@ -14617,7 +14617,6 @@
  }
  function editorHitAt(solved, pt, holding, model) {
    const { fields, geom } = solved;
 -  if (geom.place) return editorHitAtPlaced(solved, pt, model);
    const toward = (c) => Math.hypot(pt[0] - c[0], pt[1] - c[1]);
    const spots = [];
-   for (const id of Object.keys(fields)) {
+   const ding = editorTargetDing(geom, model);

@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14545,7 +14545,6 @@ const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
+@@ -14686,7 +14686,6 @@
  const editorBare = (m) => {
-   const { view, stage, modeLayouts, ...rest } = m;
+   const { view, stage, layoutHints, modeLayouts, ...rest } = m;
    const o = { ...rest.options };
 -  if (editorIsEmpty(m)) delete o.profile;
    if (o.anchor === "one") delete o.anchor;

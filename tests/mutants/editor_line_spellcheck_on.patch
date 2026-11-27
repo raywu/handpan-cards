@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13666,7 +13666,7 @@ function editorOpen(edit) {
+@@ -15714,7 +15714,7 @@
        editorNode("div", { class: "editor-type", role: "group", "aria-label": t("editor.pantype") },
          button("editor-type-standard", "editor.standard"), button("editor-type-neotone", "editor.neotone"))),
      editorNode("div", { class: "editor-line" },
 -      editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off", spellcheck: "false",
 +      editorNode("input", { id: "editor-line", type: "text", readonly: true, autocomplete: "off", autocapitalize: "off",
-         "aria-label": t("editor.line.aria") })),
+         "aria-label": t("editor.line.aria"), placeholder: t("editor.scale_prefix") + " [C3] [D3] (E3) [F#3] [G3] [A3] B3 [C4] D4 E4 F#4 G4 A4 B4 [C5] D5 E5 | F#5 G5 A5" })),
      editorNode("div", { class: "editor-panbox" },
        editorNode("div", { id: "editor-pan", role: "group", "aria-label": t("editor.pan.aria") })),

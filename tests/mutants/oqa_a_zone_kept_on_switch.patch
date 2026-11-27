@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14915,7 +14915,6 @@ function editorTabStops() {
- }
+@@ -17675,7 +17675,6 @@
  function editorSetPanType(kind) {
+   if (!editorCommitForm()) return;
    if (!editorDo((m) => editorPanType(m, kind))) return;
 -  editorSession.zone = null;
    if (!editorPhoneLandscape()) editorSession.tab = "scale";

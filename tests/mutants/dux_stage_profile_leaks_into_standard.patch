@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12868,7 +12868,6 @@
+@@ -13869,7 +13869,6 @@
  function editorWithStage(m, stage) {
    const options = { ...m.options };
-   if (stage.kind === "neotone") options.profile = { ...(m.options.profile || { id: "paired", rev: 2 }), map: editorStageMap(stage) };
+   if (stage.kind === "neotone") options.profile = { ...(m.options.profile || { id: "paired", rev: 3 }), map: editorStageMap(stage) };
 -  else delete options.profile;
    return { ...m, options, stage };
  }

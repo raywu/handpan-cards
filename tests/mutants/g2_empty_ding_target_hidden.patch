@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14264,7 +14264,7 @@ function editorWithOverlay(markup, m, solved) {
-   }
+@@ -16391,7 +16391,7 @@
    if (unchosen) {
-     const dy = (geom.ding_dy * 100).toFixed(2), dr = (geom.r_ding * 100).toFixed(2);
+     const ding = editorTargetDing(geom, m);
+     const dy = (ding.y * 100).toFixed(2), dr = (ding.r * 100).toFixed(2);
 -    out += `<circle class="etarget eempty" data-ring="ding" cx="0" cy="${dy}" r="${dr}"/>`;
 +    out += ``;
      out += `<circle class="ekey" cx="0" cy="${dy}" r="${dr}" role="button" ${tab("ding:0")} aria-label="${escapeHtml(t("editor.note.aria_ding_empty"))}"/>`;

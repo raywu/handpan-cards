@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15256,7 +15256,7 @@ function editorModelFor(d, kind) {
+@@ -14795,7 +14795,7 @@
  // change to either drops the placement options and says so when pins were set.
  function editorCommitText(m, text) {
    const trimmed = String(text).trim();
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  const reset = {};
    const carried = { ...m.options, seats: null, angles: null };
    delete carried.profile;
-   if (!trimmed) {
+   delete carried.guided;
