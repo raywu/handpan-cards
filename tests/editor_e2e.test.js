@@ -3465,11 +3465,16 @@ function run() {
         `);
         const snapshot = () => b.eval(`
           const history = editorSession.history, m = history.present;
-          return { angles: editorAnglesOf(editorSolve(m), "inner"),
+          const solved = editorSolve(m);
+          return { angles: editorAnglesOf(solved, "inner"),
+            otherAngles: ["rim", "bottom"].map(ring => editorAnglesOf(solved, ring)),
+            pitches: [editorDingOf(m), ...EDITOR_RINGS.flatMap(ring => editorNames(m, ring))],
             guided: m.options.guided.inner.size, pinned: Boolean(m.options.angles?.inner),
             depth: history.past.length };
         `);
-        const expectState = (angles, depth) => ({ angles, depth, guided: 6, pinned: false });
+        const { otherAngles, pitches } = await snapshot();
+        assert.deepStrictEqual(pitches, ["D3", "A3", "C4", "E4", "G4"]);
+        const expectState = (angles, depth) => ({ angles, depth, otherAngles, pitches, guided: 6, pinned: false });
         assert.deepStrictEqual(await snapshot(), expectState(before, 0));
         assert.equal(await focusKey("inner:0"), true);
         await enter();
