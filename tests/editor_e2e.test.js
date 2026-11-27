@@ -249,6 +249,22 @@ function run() {
         assert.equal(placed.notes.length, count);
         assert.equal(placed.angle, angle);
         assert.equal(placed.drawer, false);
+
+        const grown = await angleSnapshot();
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the added note to be exposed" });
+        const inserted = `#editor-pan .ehit[data-ring="${ring}"][data-i="${placed.notes.indexOf("C#4")}"]`;
+        await b.click(inserted);
+        await clickReady("#editor-more");
+        await b.click("#editor-remove");
+        await b.waitFor("editorSession.history.past.length === 2", { label: "one removal transaction" });
+        const compact = await b.eval(`const m = editorSession.history.present;
+          return { count: editorNames(m, "${ring}").length, grid: m.options.guided?.["${ring}"]?.size };`);
+        assert.deepEqual(compact, { count: count - 1, grid: count - 1 });
+        const unaffected = ring === "rim" ? "inner" : "rim";
+        assert.deepEqual((await angleSnapshot())[unaffected], grown[unaffected]);
+
+        await clickUndo();
+        assert.deepEqual(await angleSnapshot(), grown);
         await clickUndo();
         assert.equal(await text(), seed);
       }
