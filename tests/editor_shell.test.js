@@ -2224,10 +2224,11 @@ test("RCF-15: the fifth on the cyclops, or a rim note at or below D3 with no din
   const inner = run([["ding", "C3"], ["inner", "G3"], ["bottom", "A2"], ["bottom", "D3"], ["bottom", "B2", 100]]);
   assert.deepStrictEqual(inner.log, ["ok", "ok", "ok", "ok", "NO_ROOM"], "the fifth sits on the cyclops at the stand-in octave: a rim stand-in is tried");
   assert.deepStrictEqual(JSON.parse(inner.stage).bottom, ["A2", "D3"], "the refusal changed nothing");
-  const low = run([["rim", "A2"], ["bottom", "A2"], ["bottom", "B2", 100], ["bottom", "C3"]]);
-  assert.deepStrictEqual(low.log, ["ok", "ok", "ok", "ok"], "a rim note below D3 can remain staged before the Ding is chosen");
-  assert.deepStrictEqual(JSON.parse(low.stage).bottom, ["A2", "B2", "C3"]);
-  assert.deepStrictEqual(JSON.parse(low.stage).angles.bottom, [270, 100, null]);
+  const low = run([["rim", "G2"], ["bottom", "A2"], ["bottom", "B2", 100], ["bottom", "C3"]]);
+  assert.deepStrictEqual(low.log, ["ok", "ok", "ok", "NO_ROOM"], "the low rim note stages, but the last placement cannot keep both underside pins");
+  assert.deepStrictEqual(JSON.parse(low.stage).rim, ["G2"]);
+  assert.deepStrictEqual(JSON.parse(low.stage).bottom, ["A2", "B2"]);
+  assert.deepStrictEqual(JSON.parse(low.stage).angles.bottom, [270, 100]);
   const alone = run([["ding", "D3"], ["bottom", "A2"], ["bottom", "B2", 100], ["bottom", "C3"]]);
   assert.deepStrictEqual(alone.log, ["ok", "ok", "ok", "NO_ROOM"], "the free note after a pin is refused");
   assert.deepStrictEqual(JSON.parse(alone.stage).bottom, ["A2", "B2"], "the refusal changed nothing");
