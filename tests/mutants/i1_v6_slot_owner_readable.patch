@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11093,7 +11093,6 @@
+@@ -11954,7 +11954,6 @@ function readSavedRecord(record) {
      const profiled = savedObject(record.o) && record.o.profile !== undefined && record.o.profile !== null;
      const pinned = !profiled && innerPinned(record.o);
-     const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION;
+     const profileRecord = record.v === PROFILE_RECORD_VERSION || record.v === PROFILE_ANCHOR_RECORD_VERSION || record.v === FIXED_PROFILE_RECORD_VERSION;
 -    if (record.v === INNER_RECORD_VERSION && savedOwn(record.o, "replaces")) return savedFailure("protected", "opaque-record");
-     if (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o, true) : profileRecord || pinned) ||
-         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED))) return savedFailure("protected", "opaque-record");
-     let canonical = record.s;
+     const guided = savedOwn(record.o || {}, "guided");
+     if (guided !== (record.v === GUIDED_RECORD_VERSION) || (guided && (profiled || !savedObject(record.o.guided) ||
+         !Object.keys(record.o.guided).length || savedOwn(record.o, "replaces")))) return savedFailure("protected", "opaque-record");

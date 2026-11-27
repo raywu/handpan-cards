@@ -4,8 +4,8 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -723,7 +723,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     var plainHome = placeZones(counts, false, false, anchor);
+@@ -864,7 +864,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
      var geom = geometry(counts, home);
      var effective = function (given, solved) {
 -      return solved.map(function (angle, i) { return given[i] === null ? angle : given[i]; });

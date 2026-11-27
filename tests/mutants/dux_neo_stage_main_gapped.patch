@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12950,7 +12950,7 @@
+@@ -14039,7 +14039,7 @@ function editorStageNeoPut(st, slot, name, fixed) {
    if (clash) return clash;
    if (slot < NEO_MAIN) {
-     if (here) st.main[slot] = String(name);
+     if (fixed || here) st.main[slot] = String(name);
 -    else st.main.push(String(name));
 +    else st.main[slot] = String(name);
    } else {
-     st.mutant = Array.from({ length: st.main.length }, (_, k) => st.mutant[k] || null);
+     if (!fixed) st.mutant = Array.from({ length: st.main.length }, (_, k) => st.mutant[k] || null);
      st.mutant[slot - NEO_MAIN] = String(name);

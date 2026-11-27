@@ -4,7 +4,7 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -595,8 +595,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -633,8 +633,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        var angles = HPE.layout.readAngles(pinned, counts);
        if (!angles.ok || !angles.value) return badNote(text);
        var o = result.value.options;
@@ -12,5 +12,5 @@ diff --git a/src/engine/share.js b/src/engine/share.js
 -      var asked = { mirror: mirrors.top, mirrorBottom: mirrors.bottom, anchor: o.anchor, angles: angles.value };
 +      var asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor, angles: angles.value };
        if (o.seats) asked.seats = o.seats;
-       var placed = HPE.layout.solve({ fields: result.value.fields, options: {} }, asked);
-       if (!placed.ok) return badNote(text);
+       if (!carry.guided && !HPE.layout.solve({ fields: result.value.fields, options: {} }, asked).ok)
+         return badNote(text);

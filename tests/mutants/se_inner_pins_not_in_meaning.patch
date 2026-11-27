@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -11632,7 +11632,7 @@ function savedMeaning(deckValue) {
-     angles.value ? angles.value.bottom : null];
-   const inner = angles.value && angles.value.inner;
-   if (o.profile) meaning.push(o.profile.map);
+@@ -11944,7 +11944,7 @@ function savedMeaning(deckValue) {
+     if (o.profile.rev === 3) meaning.push("fixed-profile");
+     meaning.push(o.profile.map);
+   }
 -  else if (inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
 +  else if (false && inner && inner.some(a => a !== null && a !== undefined)) meaning.push(inner);
+   if (o.guided) meaning.push(["guided", o.guided.rim || null, o.guided.inner || null]);
    return JSON.stringify(meaning);
  }
- function readSavedRecord(record) {

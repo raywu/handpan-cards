@@ -4,11 +4,11 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -693,6 +693,7 @@
+@@ -723,6 +723,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
  
    function recordVersion(seed) {
      var opts = (seed && seed.options) || {};
 +    if (opts.anchor === "between") return PROFILE_ANCHOR_RECORD_VERSION;
      if (opts.profile !== undefined && opts.profile !== null) {
+       if (opts.profile.rev === 3) return FIXED_PROFILE_RECORD_VERSION;
        return opts.anchor === "between" ? PROFILE_ANCHOR_RECORD_VERSION : PROFILE_RECORD_VERSION;
-     }

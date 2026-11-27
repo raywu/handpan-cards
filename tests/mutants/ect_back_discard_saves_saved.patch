@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14937,7 +14937,7 @@ function editorWire() {
+@@ -17793,7 +17793,7 @@ function editorWire() {
    }
    editorWireSwipe();
    editorEl("editor-dlg-keep").onclick = () => editorShowDialog(false);
 -  editorEl("editor-dlg-discard").onclick = () => closeScaleSheet();
 +  editorEl("editor-dlg-discard").onclick = () => { if (editingBase) editorSave().then(closeScaleSheet); else closeScaleSheet(); };
    editorEl("editor-dlg-save").onclick = () => {
-     const s = editorSession;
      editorShowDialog(false);
+     editorSave(true);

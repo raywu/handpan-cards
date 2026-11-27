@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9888,7 +9888,6 @@ function buildGenerated(text, options, guard) {
-       }
-     }
+@@ -11597,7 +11597,6 @@ function buildGenerated(text, options, guard) {
+       built.value.options.guided = JSON.parse(JSON.stringify(guided));
+     } else if (moved.value.geom.innerLabels) built.value.geom.innerLabels = moved.value.geom.innerLabels;
      if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
 -    if (bottomAngles !== null) built.value.options.angles = JSON.parse(JSON.stringify(bottomAngles));
    }

@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15647,7 +15647,7 @@
+@@ -15648,7 +15648,7 @@ function installEditorDrawer() {
    function down(e){tapRest=null;api.clearReveal();suppressClick=false;if(!e.isPrimary||e.button>0||gesture||editorDrag)return;e.stopPropagation();gesture={id:e.pointerId,y:e.clientY,x:e.clientX,was:expanded};handle.setPointerCapture(e.pointerId);}
    function move(e){if(!gesture||e.pointerId!==gesture.id)return;e.stopPropagation();if(e.cancelable)e.preventDefault();}
    function up(e){if(!gesture||e.pointerId!==gesture.id)return;const g=gesture;gesture=null;e.stopPropagation();const dy=e.clientY-g.y,dx=e.clientX-g.x;if(e.type==='pointerup'&&Math.abs(dy)>=24&&Math.abs(dy)>Math.abs(dx)){suppressClick=true;dragRest=null;manualDrawer(dy<0);}else if(e.type!=='pointerup')setExpanded(g.was);}
@@ -12,4 +12,4 @@ diff --git a/index.html b/index.html
 +  function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;manualDrawer(false);}
    handle.addEventListener('pointerdown',down);handle.addEventListener('pointermove',move);for(const n of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(n,up);handle.addEventListener('click',click);handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tapRest=null;api.clearReveal();suppressClick=false;e.preventDefault();e.stopPropagation();dragRest=null;manualDrawer(!expanded);}});
    function focusIn(e){if(e.target===scaleLine){lineFocusWidth=innerWidth;return;}if(body.contains(e.target))setExpanded(true,{immediate:true});else if(e.target.closest?.('#editor-pan')){const r=e.target.getBoundingClientRect(),cover=drawer.getBoundingClientRect();if(r.right>cover.left&&r.left<cover.right&&r.bottom>cover.top&&r.top<Math.min(innerHeight,cover.bottom))setExpanded(false,{immediate:true});}}
-   function key(e){clearRejection();const s=editorSession;if(e.key==='Escape'&&!e.target.closest?.('#editor-form')&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}
+   function key(e){clearRejection();const s=editorSession;if(e.key==='Escape'&&drawer.contains(e.target)&&!e.target.closest?.('#editor-form')&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}

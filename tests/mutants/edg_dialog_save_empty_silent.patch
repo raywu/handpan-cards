@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15697,7 +15697,7 @@
+@@ -17261,7 +17261,7 @@ function editorShowDialog(on) {
    save.disabled = editorSubmitOff(s, s.history.present);
    const model = s.history.present;
-   const guidance = save.disabled && !editorCanSave(model) ? editorEmptyPrompt(model) : "";
+   const guidance = save.disabled && !editorCanSave(model) ? editorEmptyPrompt(model, true) : "";
 -  editorEl("editor-dlg-body").textContent = s.saveAcknowledged ? s.saveError : guidance || t("editor.dlg.body");
 +  editorEl("editor-dlg-body").textContent = s.saveAcknowledged ? s.saveError : t("editor.dlg.body");
    if (on) dlg.removeAttribute("hidden"); else dlg.setAttribute("hidden", "");

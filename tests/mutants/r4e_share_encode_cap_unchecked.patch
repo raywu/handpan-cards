@@ -4,8 +4,8 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -370,7 +370,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     if (innerAt !== "") option("ai-" + innerAt);
+@@ -393,7 +393,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     }
      segs.push(checkHex(meaning.join(SEP)));
      var out = segs.join("/");
 -    if (out.length > CAPS.payload) return badNote(out);

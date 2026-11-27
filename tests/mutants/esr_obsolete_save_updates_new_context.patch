@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15227,7 +15227,7 @@ async function editorSave() {
-     const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options), ownsSlot);
+@@ -17907,7 +17907,7 @@ async function editorSave(fromDialog = false) {
+     const command = editorSaveCommand(base, editorKindOf(m) === "neotone" || innerPinned(m.options) || !!m.options.guided, ownsSlot);
      let retried = false;
      let result = await commitSaved({ ...command, collectionId: !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
 -    if (generation !== sheetGeneration || !pageOpen) return;

@@ -4,7 +4,7 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -531,7 +531,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -585,7 +585,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        } else {
          return badNote(text);
        }
@@ -12,4 +12,4 @@ diff --git a/src/engine/share.js b/src/engine/share.js
 +      if (at <= rank && rank !== OPTION_ORDER.at) return badNote(text);
        rank = at;
      }
-     if (profiled && pairs !== 1) return badNote(text);
+     if (guided && !carry.guided) return badNote(text);

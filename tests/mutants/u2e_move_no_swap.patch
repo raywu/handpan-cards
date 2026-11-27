@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13103,7 +13103,7 @@ function editorNeoMove(m, from, to) {
-   if (to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
-   if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoMove(st, from, to));
+@@ -14261,7 +14261,7 @@ function editorNeoMove(m, from, to) {
+   if (m.options.profile.rev !== 3 && to >= NEO_MAIN && map[to] === null && map[to - NEO_MAIN] === null) return editorNeoEmptyField(to - NEO_MAIN + 1);
+   if (editorIsEmpty(m)) return editorStageEdit(m, (st) => editorStageNeoMove(st, from, to, m.options.profile.rev === 3));
    const next = map.slice();
 -  [next[from], next[to]] = [next[to], next[from]];
 +  next[to] = next[from]; next[from] = null;

@@ -4,11 +4,11 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -933,7 +933,6 @@
-       var turn = between && hasMutants(profile.value) ? PROFILE_TURN : 0;
+@@ -1146,7 +1146,6 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+       var turn = between && (profile.value.rev === 3 || hasMutants(profile.value)) ? PROFILE_TURN : 0;
        var placed = placeProfile(source, profile.value, plain.value.geom, plain.value.fields, turn);
        if (placed.ok === false) return placed;
 -      if (turn) plain.value.geom.turn = turn;
-       if (placed.mutants) {
+       if (placed.fixed) {
          plain.value.geom.r_ding = PROFILE.ding.r;
          plain.value.geom.ding_dy = PROFILE.ding.dy;

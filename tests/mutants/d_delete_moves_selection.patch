@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16212,7 +16212,7 @@ savedSnapshotListener=event=>{
+@@ -18213,7 +18213,7 @@ savedSnapshotListener=event=>{
    const beforeRow=event.previous?.entries.find(row=>row.instanceId===oldSelection.id);
    const afterRow=savedState.entries.find(row=>row.instanceId===oldSelection.id);
    const focusedRemoved=!focusedPill && !!focused?.closest?.("#decks") && !allDeckViews().some(view=>view.selection.id===focused.getAttribute("data-selection-id"));
 -  selection=savedResolve(selection,savedState,savedEntries);
 +  selection=savedFallback(savedState,savedEntries);
    const session=editorSession;
-   if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
+   if(pageOpen && session && editingBase && event.source==="remote" && !savePending && !session.editing && !session.naming && !session.dialog && !editorFormHasDraft(session) && !editorIsDirty(session.base,session.history.present) && editorSetName(session.history.present,editorEl("editor-name").value).value===session.history.present){
      const target=savedResolve(editingBase.selection,savedState,savedEntries);
