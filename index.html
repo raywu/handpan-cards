@@ -16645,6 +16645,7 @@ function editorGuidedPlan(m, src, target) {
     return true;
   });
   let projection = project(growingCyclops ? 90 : requestedAngle);
+  // If the top opening is obstructed, retain any legal seat at the requested approach.
   if (growingCyclops && projection.reason === "clearance" &&
       Number.isFinite(requestedAngle) && requestedAngle !== 90) {
     projection = project(requestedAngle);
