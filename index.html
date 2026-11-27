@@ -14850,10 +14850,10 @@ function editorOpen(edit) {
       editorNode("div", { id: "editor-menu", role: "menu", tabindex: "-1", "aria-label": t("editor.more.aria"), hidden: true },
         editorMenuItem("editor-redo", "editor.redo"), editorMenuItem("editor-remove", "editor.remove"), editorMenuItem("editor-reset", "editor.reset"),
         ...(edit ? [editorNode("div", { class: "menu-sep", role: "separator" }), editorDeleteButton()] : []))),
-    editorNode("div", { id: "editor-dialog", role: "alertdialog", "aria-modal": "true", "aria-labelledby": "editor-dlg-title", hidden: true },
+    editorNode("div", { id: "editor-dialog", role: "alertdialog", "aria-modal": "true", "aria-labelledby": "editor-dlg-title", "aria-describedby": "editor-dlg-body", hidden: true },
       editorNode("div", { class: "dlg" },
         editorNode("h3", { id: "editor-dlg-title", text: t("editor.dlg.title") }),
-        editorNode("p", { text: t("editor.dlg.body") }),
+        editorNode("p", { id: "editor-dlg-body", text: t("editor.dlg.body") }),
         editorNode("div", { class: "dlg-actions" },
           button("editor-dlg-save", "editor.dlg.save"), button("editor-dlg-discard", "editor.dlg.discard"), button("editor-dlg-keep", "editor.dlg.keep")))));
   sheet.appendChild(root);
