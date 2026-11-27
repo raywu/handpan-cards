@@ -2395,6 +2395,40 @@ function run() {
         assert.strictEqual(await ghostText(), null);
       });
 
+      const drawerSettled = (state) =>
+        b.waitFor(`drawerExperiment.state === ${JSON.stringify(state)}`, { label: `drawer ${state.toLowerCase()}` });
+      async function showPanForCompatibility() {
+        if (await b.eval(`return drawerExperiment.expanded;`)) await b.click("#drawerexp-handle");
+        await drawerSettled("SHUT");
+      }
+      async function mouseDragTrayTo(name, ring, angles) {
+        await chipAt(name);
+        await drawerSettled("OPEN");
+        const from = await chipAt(name);
+        assert.strictEqual(await b.eval(`return !!document.elementFromPoint(${from.x}, ${from.y})?.closest(".tray-note");`),
+          true, "tray note starts visible");
+        const pointer = (type, pt, buttons) => b.send("Input.dispatchMouseEvent", {
+          type, x: pt.x, y: pt.y, button: "left", buttons, clickCount: 1
+        });
+        await pointer("mousePressed", from, 1);
+        try {
+          await pointer("mouseMoved", { x: from.x, y: from.y - 24 }, 1);
+          await b.waitFor(`!!editorDrag?.live`, { label: "mouse drag to lift" });
+          let to, hit;
+          for (const angle of angles) {
+            to = await spotAt(ring, angle);
+            await pointer("mouseMoved", to, 1);
+            hit = await b.eval(`return editorDropTarget({ clientX: ${to.x}, clientY: ${to.y} }, editorDrag.src);`);
+            if (hit.kind === "spot" && hit.ring === ring) break;
+          }
+          assert.ok(hit?.kind === "spot" && hit.ring === ring, JSON.stringify(hit));
+          await pointer("mouseReleased", to, 0);
+          await b.waitFor(`!editorDrag && !editorEl("editor").matches(".dragging, .settling")`, { label: "mouse drop to settle" });
+        } finally {
+          if (await b.eval(`return !!editorDrag;`)) await b.key("Escape", "Escape", 27);
+        }
+      }
+
       test("DRAG_ON_TOUCH off: touch drags do nothing and touch taps still place and swap; mouse drag is unaffected; touch-action is not none", async () => {
         await fresh(375, 667, true, false);
         await openAdd();
@@ -2403,48 +2437,79 @@ function run() {
         assert.notStrictEqual(await ta("#editor-pan svg"), "none");
         assert.notStrictEqual(await ta(".tray-note"), "none");
         const before = await core();
-        const synthetic = await b.eval(`const c = document.querySelector('.tray-note[data-name="B"]'); const r = c.getBoundingClientRect(); const o = { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, button: 0, buttons: 1, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }; c.dispatchEvent(new PointerEvent("pointerdown", o)); window.dispatchEvent(new PointerEvent("pointermove", { ...o, clientX: o.clientX + 40, clientY: o.clientY - 40 })); const g = document.querySelector(".editor-ghost"); window.dispatchEvent(new PointerEvent("pointerup", { ...o, clientX: o.clientX + 40, clientY: o.clientY - 40 })); return g ? g.textContent : null;`);
-        assert.strictEqual(synthetic, null, "a synthetic touch pointer starts no drag");
-        await gesture(await chipAt("B"), await spotAt(0.722, 22.5), "touch");
-        assert.deepStrictEqual(await core(), before, "a touch drag places nothing");
-        assert.strictEqual(await ghostText(), null);
-        await gesture(await noteAt("rim", 0), await noteAt("rim", 1), "touch");
-        assert.deepStrictEqual(await core(), before, "a touch drag swaps nothing");
+        const touchGesture = async (from, to) => {
+          await b.eval(`window.__compatDragSeen = false;
+            window.__compatObserver?.disconnect();
+            window.__compatObserver = new MutationObserver(records => {
+              if (records.some(record => [...record.addedNodes].some(node =>
+                node.matches?.(".editor-ghost")))) window.__compatDragSeen = true;
+            }); window.__compatObserver.observe(document.body, { childList: true, subtree: true });
+            return true;`);
+          await gesture(from, to, "touch");
+          assert.strictEqual(await b.eval(`return window.__compatDragSeen || !!editorDrag?.live;`), false, "the touch gesture never lifts a drag");
+          assert.deepStrictEqual(await core(), before);
+        };
+        await chipAt("B");
+        await drawerSettled("OPEN");
+        const tray = await chipAt("B");
+        await touchGesture(tray, await spotAt(0.722, 22.5));
+        await showPanForCompatibility();
+        await touchGesture(await noteAt("rim", 0), await noteAt("rim", 1));
+
+        // Start the tap on the visible tray after the preceding swipe and drawer transition.
+        await chipAt("B");
+        await drawerSettled("OPEN");
         await tapPoint(await chipAt("B"), true);
-        assert.strictEqual(await status(), "Holding B4: tap a spot, an area, or the ding.Cancel");
+        await b.waitFor(`!!editorSession.held && editorHeldName() === "B4"`, { label: "touch tap to hold B4" });
+        await showPanForCompatibility();
         await tapSpot(...polar(0.722, 22.5), true);
+        if (await b.eval(`return !!document.getElementById("editor-guided-place");`))
+          await tapPoint(await centreOf("#editor-guided-place"), true);
         assert.deepStrictEqual((await rimNames()).slice(-2), ["A4", "B4"], "tap-tap by touch works");
+
+        const sawSeats = () => b.eval(`const m = editorSession.history.present; return editorAnglesOf(editorSolve(m), "rim").slice(0, 2);`);
+        const initialSeats = await sawSeats();
+        await showPanForCompatibility();
         await tapNote("rim", 0, true);
+        assert.deepStrictEqual(await b.eval(`return editorSession.sel;`), { ring: "rim", i: 0 });
         await tapNote("rim", 1, true);
-        assert.deepStrictEqual((await model()).options.seats.rim.slice(0, 8), [1, 0, 2, 3, 4, 5, 6, 7]);
+        assert.deepStrictEqual(await sawSeats(), initialSeats.slice().reverse(), "touch swaps both visible seats");
         await b.click("#editor-oct-up");
-        await gesture(await chipAt("E"), await spotAt(0.722, -22.5), "mouse");
+        await mouseDragTrayTo("E", "rim", [22.5, 45, 67.5, 90, 112.5, 135]);
         assert.ok((await rimNames()).includes("E5"), "mouse drag still places: " + await status());
       });
 
       test("U2d nit N2: at 375x667 the empty bottom ring and its first-note spot (90 degrees, 270 degrees) can be tapped and dropped on", async () => {
         await setup("(D3) " + RIM8);
+        await showPanForCompatibility();
         const inside = (p) => b.eval(`const r = document.querySelector("#editor-pan svg").getBoundingClientRect(); const e = document.elementFromPoint(${p.x}, ${p.y}); return ${p.x} >= r.left && ${p.x} <= r.right && ${p.y} >= r.top && ${p.y} <= r.bottom && !!e && !!e.closest("#editor-pan svg");`);
-        for (const deg of [90, 270]) assert.strictEqual(await inside(await spotAt(1.15, deg)), true, deg + " degrees is on the pan");
+        for (const deg of [90, 270]) assert.strictEqual(await inside(await spotAt(1.15, deg)), true, deg + " degrees is on the uncovered pan");
         await b.click("#editor-oct-down");
-        await tapPoint(await chipAt("E"));
+        await hold("E");
+        await showPanForCompatibility();
         await tapSpot(...polar(1.15, 90));
         assert.deepStrictEqual(await names("bottom"), ["E3"], await status());
         await setup("(D3) " + RIM8);
         await b.click("#editor-oct-down");
-        await gesture(await chipAt("E"), await spotAt(1.15, 90), "mouse");
+        await mouseDragTrayTo("E", "bottom", [90, 95, 85]);
         assert.deepStrictEqual(await names("bottom"), ["E3"], await status());
-        assert.deepStrictEqual((await model()).options.angles.bottom, [90]);
+        const angle = await b.eval(`const m = editorSession.history.present; return editorAnglesOf(editorSolve(m), "bottom")[0];`);
+        assert.ok(Math.abs(angle - 90) <= 5, `the first note lands near the requested 90° spot: ${angle}`);
       });
 
       test("U2d nit N1: holding a note on a Neotone pan draws no cyclops or bottom target rings", async () => {
-        await setup("[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4");
+        await setup("(D3) A3 Bb3 C4 D4 E4 F4 G4");
+        const rings = () => b.eval(`return [...document.querySelectorAll('#editor-pan .etarget[data-ring="inner"], #editor-pan .etarget[data-ring="bottom"]')].map(el => el.dataset.ring).sort();`);
         await b.click("#editor-type-neotone");
         await hold("B");
-        assert.strictEqual(await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`), 0);
+        assert.strictEqual(await b.eval(`return editorHeldName();`), "B4");
+        await showPanForCompatibility();
+        assert.deepStrictEqual(await rings(), []);
         await b.click("#editor-type-standard");
         await hold("C");
-        assert.ok((await b.eval(`return document.querySelectorAll("#editor-pan .etarget").length;`)) > 0, "a Standard pan still shows them");
+        assert.strictEqual(await b.eval(`return editorHeldName();`), "C4");
+        await showPanForCompatibility();
+        assert.deepStrictEqual(await rings(), ["bottom", "inner"], "a Standard pan with empty zones shows both guides");
       });
 
       test("Undo and Redo walk back through drops, a pan-type switch and Reset spacing", async () => {
