@@ -11,11 +11,12 @@ const NAMED = /^(sheet\.|editor\.rebound$)/;
 
 const ERROR = [
   "reason.NEOTONE_INPUT", "reason.NO_DING", "reason.NO_DING.which", "reason.NO_DING.two", "reason.NO_DING.below", "reason.NO_FIFTH",
-  "reason.BAD_NOTE", "reason.BAD_NOTE.slash", "reason.BAD_NOTE.bracket", "reason.BAD_NOTE.bar", "reason.BAD_NOTE.barEmpty", "reason.BAD_NOTE.barFirst",
+  "reason.BAD_NOTE", "reason.BAD_NOTE.innerLabelRoom", "reason.BAD_NOTE.slash", "reason.BAD_NOTE.bracket", "reason.BAD_NOTE.bar", "reason.BAD_NOTE.barEmpty", "reason.BAD_NOTE.barFirst",
   "reason.NOTE_OUT_OF_RANGE", "reason.NOTE_OUT_OF_ORDER", "reason.NOTE_OUT_OF_ORDER.ding", "reason.NOTE_REPEATED", "reason.NEEDS_NEWER_APP", "reason.NO_THIRDS",
   "reason.PROFILE_UNKNOWN", "reason.PROFILE_MAP_INVALID", "reason.PROFILE_NOTE_MISSING", "reason.PROFILE_NOTE_TWICE", "reason.PROFILE_FULL", "reason.PROFILE_CONFLICT",
   "reason.SMALL_LABELS", "sheet.cannot_trade",
   "editor.full.rim", "editor.full.inner", "editor.full.bottom", "editor.crowded", "editor.say.no_room", "editor.say.zone_is_full",
+  "editor.pitch_repeat", "editor.guided.no_room", "editor.guided.pins", "editor.switch_cyclops",
   "editor.say.ding_required", "editor.say.rim_min", "sheet.toggle_refused", "editor.neo.field_empty", "editor.neo.own_row", "editor.ding_bottom_only", "editor.empty",
   "saved.failure", "saved.ackPending", "saved.sessionAckPending",
 ];
@@ -62,7 +63,7 @@ const EXCLUDED = {
 const CODES = [
   "BAD_NOTE", "NO_DING", "NO_FIFTH", "NOTE_OUT_OF_ORDER", "NOTE_OUT_OF_RANGE", "NOTE_REPEATED", "NEEDS_NEWER_APP", "PROFILE_CONFLICT", "PROFILE_MAP_INVALID",
   "PROFILE_FULL", "SMALL_LABELS", "SEED_REFUSED", "PARTS", "EMPTY", "DUPLICATE_NOTE", "CONFLICTING_LIST", "TRADE", "TOGGLE_REFUSED",
-  "AREA_FULL", "TOO_CROWDED", "NO_ROOM", "FIELD_EMPTY", "OWN_ROW", "FIELDS_FULL",
+  "AREA_FULL", "TOO_CROWDED", "NO_ROOM", "FIELD_EMPTY", "OWN_ROW", "FIELDS_FULL", "DING_REQUIRED", "SWITCH_LAYOUT", "PITCH_REPEATED",
 ];
 const RAW_FALLBACK = {
   SEED_REFUSED: "an import-dialog flag, not written to #editor-status",
@@ -78,6 +79,9 @@ const RAW_FALLBACK = {
   FIELD_EMPTY: "editorApplyResult writes res.reason, the same text as editor.neo.field_empty",
   OWN_ROW: "editorApplyResult writes res.reason, the same text as editor.neo.own_row",
   FIELDS_FULL: "editorApplyResult writes res.reason, the same text as editor.say.zone_is_full",
+  DING_REQUIRED: "The editor uses editor.say.ding_required.",
+  SWITCH_LAYOUT: "The editor uses the underlying layout refusal text.",
+  PITCH_REPEATED: "The editor uses editor.pitch_repeat for a duplicate pitch.",
 };
 
 module.exports = { ROWS, DRIFT, EXCLUDED, CODES, RAW_FALLBACK, LONG_NAME, VALUES };

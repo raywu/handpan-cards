@@ -2193,7 +2193,7 @@ test("RCF-15: a pan-type switch back to a stage that cannot commit is refused fo
   a.run(RCF15_RUN);
   const r = plain(a.get(`(() => {
     const m = __rcf15([["ding", "F3"], ["bottom", "B2", 135], ["bottom", "A3"]]).m;
-    m.stage = { ...m.stage, bottom: [...m.stage.bottom, "G3"], angles: [135, null, 100] };
+    m.stage = { ...m.stage, bottom: [...m.stage.bottom, "G3"], angles: { bottom: [135, null, 100] } };
     const neo = editorPanType(m, "neotone");
     const neoDinged = editorReplaceDing(neo.value, "F3").value;
     const before = JSON.stringify(neoDinged);

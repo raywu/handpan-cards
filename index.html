@@ -1104,7 +1104,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
 #editor .editor-toolbar .mode:disabled{opacity:1; cursor:default}
 #editor .editor-toolbar .mode.primary:disabled{background:#F6F4ED; color:#8A847B; border-color:#8A847B}
 #editor-tray{flex:0 0 auto}
-#editor-dialog{position:absolute; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
+#editor-dialog{position:absolute; inset:0; z-index:12; display:flex; align-items:center; justify-content:center; background:rgba(15,14,11,.55)}
 #editor-dialog .dlg{background:#F6F4ED; color:#242424; border:2px solid #242424; border-radius:12px; padding:var(--sp-3); margin:var(--sp-3);
   max-width:360px; display:flex; flex-direction:column; gap:var(--sp-2)}
 #editor-dialog h3{margin:0; font:700 15px/1.3 "Nunito Sans"}
@@ -14056,7 +14056,8 @@ function editorStageNeoMove(st, from, to, fixed) {
     return null;
   }
   if (from < NEO_MAIN) {
-    [st.main[from], st.main[to]] = [st.main[to] || null, st.main[from]];
+    if (st.main[to] === undefined) return null;
+    [st.main[from], st.main[to]] = [st.main[to], st.main[from]];
     return null;
   }
   const row = Array.from({ length: Math.max(st.main.length, st.mutant.length) }, (_, k) => st.mutant[k] || null);
@@ -14890,7 +14891,11 @@ function editorPanType(m, kind) {
     for (const key of EDITOR_MODE_LAYOUT_KEYS) delete options[key];
     Object.assign(options, previous.layout);
     const next = { ...m, options, pins: previous.pins, modeLayouts };
-    if (previous.stage) next.stage = previous.stage; else delete next.stage;
+    if (previous.stage) {
+      next.stage = previous.stage;
+      const settled = editorStageSettle(next, previous.stage);
+      if (!settled.ok) return settled;
+    } else delete next.stage;
     const solved = editorSolve(next);
     if (solved.ok) return { ok: true, value: next };
   }
