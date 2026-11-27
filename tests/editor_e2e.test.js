@@ -4846,7 +4846,8 @@ function run() {
           hidden: false, hint: "Drag a note onto the handpan.", count: 4, above: true, sibling: true
         });
         const otherTab = tab === "scale" ? "layout" : "scale";
-        await b.click("#editor-tab-" + otherTab);
+        await b.eval(`editorEl("editor-tab-" + editorSession.tab).focus(); return true;`);
+        await b.key("ArrowRight", "ArrowRight", 39);
         assert.equal(await tabNow(), otherTab);
         assert.equal((await help()).hidden, false, "switching tabs keeps Placement help open");
         await b.click("#editor-hint-close");

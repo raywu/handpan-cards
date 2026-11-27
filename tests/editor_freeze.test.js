@@ -275,7 +275,12 @@ function runBrowser() {
 
   const near = (actual, expected, label, tol = 0.25) => {
     if (actual === null || expected === null) { assert.strictEqual(actual, expected, label); return; }
-    assert.strictEqual(actual.viewBox, expected.viewBox, `${label}: viewBox`);
+    // The fitted frame includes SVG text bounds, which vary slightly by platform.
+    const coordinates = actual.viewBox.split(" ").map(Number);
+    const frozen = expected.viewBox.split(" ").map(Number);
+    assert.equal(coordinates.length, 4, `${label}: viewBox coordinate count`);
+    coordinates.forEach((v, i) => assert.ok(Math.abs(v - frozen[i]) <= tol,
+      `${label}: viewBox coordinate ${i} is ${v}, frozen ${frozen[i]}`));
     assert.strictEqual(actual.ehit.length, expected.ehit.length, `${label}: ehit count`);
     actual.ehit.forEach((row, i) => row.forEach((v, j) => assert.ok(Math.abs(v - expected.ehit[i][j]) <= tol,
       `${label}: ehit ${i} field ${j} (w,h,dx,dy in viewBox units) is ${v}, frozen ${expected.ehit[i][j]}`)));
@@ -299,7 +304,9 @@ function runBrowser() {
           expectFrozen("styles", key, sha16(JSON.stringify(styles)));
           if (REGEN && spec.name === "kurd" && state === "rest") produced.styles[`sample/${vp.w}x${vp.h}`] = styles;
           if (vp.w === 375 && state !== "dragging" && state !== "settling") {
-            const html = await b.eval(`return document.getElementById("editor-pan").innerHTML;`);
+            const html = await b.eval(`const pan = document.getElementById("editor-pan").cloneNode(true);
+              pan.querySelector("svg")?.removeAttribute("viewBox");
+              return pan.innerHTML;`);
             expectFrozen("domPan", `${spec.name}/${state}`, sha(html));
           }
         }
