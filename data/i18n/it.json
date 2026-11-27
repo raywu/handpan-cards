@@ -375,6 +375,7 @@
   "editor.guided.tap_intent": "Tocca un contorno evidenziato per inserire {name}. Tocca una nota per sostituirla.",
   "editor.guided.tap": "Tocca un contorno evidenziato per posizionare {name}.",
   "editor.guided.reflow": "{name} posizionata. Le note in {zone} sono state ridistribuite.",
+  "editor.guided.cyclops_drop_hint": "Rilascia la nota sulla posizione Cyclops evidenziata per inserirla.",
   "editor.guided.no_room": "Non c’è spazio qui. Prova un’altra posizione.",
   "editor.guided.offer": "Distribuire uniformemente le note sul bordo?",
   "editor.guided.space": "Distribuisci",

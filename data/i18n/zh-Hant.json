@@ -367,6 +367,7 @@
   "editor.guided.tap_intent": "輕觸高亮輪廓以插入 {name}。輕觸音符即可替換。",
   "editor.guided.tap": "輕觸高亮輪廓以放置 {name}。",
   "editor.guided.reflow": "已放置 {name}，並重新排列{zone}音符。",
+  "editor.guided.cyclops_drop_hint": "將音符拖放到高亮的獨眼位置以插入。",
   "editor.guided.no_room": "此位置沒有足夠空間。請嘗試其他位置。",
   "editor.guided.offer": "均勻排列外圈音符？",
   "editor.guided.space": "均勻排列",

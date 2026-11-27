@@ -375,6 +375,7 @@
   "editor.guided.tap_intent": "Tippe auf einen markierten Umriss, um {name} einzufügen. Tippe auf eine Note, um sie zu ersetzen.",
   "editor.guided.tap": "Tippe auf einen markierten Platz, um {name} zu setzen.",
   "editor.guided.reflow": "{name} platziert. Die Töne in {zone} wurden neu verteilt.",
+  "editor.guided.cyclops_drop_hint": "Lege die Note auf dem markierten Cyclops-Platz ab, um sie einzufügen.",
   "editor.guided.no_room": "Hier ist kein Platz. Versuche eine andere Stelle.",
   "editor.guided.offer": "Randtöne gleichmäßig verteilen?",
   "editor.guided.space": "Gleichmäßig verteilen",

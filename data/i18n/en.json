@@ -375,6 +375,7 @@
   "editor.guided.tap_intent": "Tap a highlighted outline to insert {name}. Tap a note to replace it.",
   "editor.guided.tap": "Tap a highlighted outline to place {name}.",
   "editor.guided.reflow": "{name} placed. Spacing redistributed for {zone} notes.",
+  "editor.guided.cyclops_drop_hint": "Drop on the highlighted Cyclops seat to insert the note.",
   "editor.guided.no_room": "There’s no room at this seat. Try another spot.",
   "editor.guided.offer": "Space the rim notes evenly?",
   "editor.guided.space": "Distribute evenly",

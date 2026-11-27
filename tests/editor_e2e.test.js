@@ -134,8 +134,8 @@ function run() {
       const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     `);
-    async function fixture(text, options = {}, oct = 3, height = 700) {
-      await fresh(390, height);
+    async function fixture(text, options = {}, oct = 3, height = 700, width = 390) {
+      await fresh(width, height);
       await b.click("#strip-add");
       await b.waitFor("!!window.drawerExperiment && !!document.getElementById('editor-line')",
         { label: "the hosted editor to open" });
@@ -274,6 +274,82 @@ function run() {
         assert.deepEqual(await angleSnapshot(), grown);
         await clickUndo();
         assert.equal(await text(), seed);
+      }
+    });
+
+    test("EDITOR-RC-CYCLOPS-TOUCH: a near-edge touch keeps the pictured insertion and a wider miss explains it", async () => {
+      const seed = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 D5 [G#5] [A5] | D#3 E3 B3";
+      const mark = '#editor-pan .guided-landing[data-insert][data-guided-zone="inner"]';
+      for (const [intent, offset] of [["insert", 6], ["miss", 14], ["center", -1]]) {
+        await fixture(seed, {}, 6, 667, 380);
+        await lift('.tray-note[data-name="A"]');
+        for (let attempt = 0; attempt < 8 && !await b.eval(`!!document.querySelector(${JSON.stringify(mark)})`); attempt++) {
+          const approach = await b.eval(`
+            const m = editorSession.history.present, g = editorSolve(m).value.geom;
+            const svg = document.querySelector("#editor-pan svg");
+            for (let i = 0; i < 72; i++) {
+              const a = i * Math.PI / 36;
+              const point = new DOMPoint(g.inner * 100 * Math.cos(a), -g.inner * 100 * Math.sin(a))
+                .matrixTransform(svg.getScreenCTM());
+              const hit = editorDropTarget({ clientX: point.x, clientY: point.y }, editorDrag.src);
+              if (hit.kind === "spot" && hit.ring === "inner") return { x: point.x, y: point.y };
+            }
+            throw Error("no Cyclops approach");
+          `);
+          await touch("touchMove", { x: approach.x + attempt * 0.15, y: approach.y });
+          await b.waitFor(`Math.abs(parseFloat(editorDrag.ghost.style.left) - ${approach.x}) < 2`,
+            { label: "the pointer to approach Cyclops" });
+        }
+        await b.waitFor(`!!document.querySelector(${JSON.stringify(mark)})`, { label: "the fourth Cyclops outline" });
+        const landing = await b.eval(`
+          const node = document.querySelector(${JSON.stringify(mark)});
+          const r = node.querySelector("circle").getBoundingClientRect();
+          const x = r.x + r.width / 2, y = r.y + r.height / 2;
+          if (${offset} < 0) return { x, y, angle: Number(node.dataset.angle) };
+          for (let i = 0; i < 32; i++) {
+            const a = i * Math.PI / 16;
+            const p = { x: x + (r.width / 2 + ${offset}) * Math.cos(a), y: y + (r.height / 2 + ${offset}) * Math.sin(a) };
+            const mouse = editorDropTarget({ clientX: p.x, clientY: p.y, pointerType: "mouse" }, editorDrag.src);
+            if (mouse.kind === "preview-gap" && mouse.ring === "inner") return { ...p, angle: Number(node.dataset.angle) };
+          }
+          throw Error("no near-edge point outside the painted target");
+        `);
+        await touch("touchMove", { x: landing.x, y: landing.y });
+        await b.waitFor(`(() => {
+          const dot = document.querySelector(".editor-drag-contact:not([hidden])");
+          return dot && Math.hypot(parseFloat(dot.style.left) - ${landing.x}, parseFloat(dot.style.top) - ${landing.y}) < 2;
+        })()`, { label: "the actual touch coordinate marker" });
+        if (intent !== "miss") {
+          assert.equal(await b.eval('return editorEl("editor-status").textContent;'), "Insert A6 in Cyclops");
+        }
+        const competition = await b.eval(`
+          const hit = node => {
+            const r = node.getBoundingClientRect();
+            return editorDropTarget({ clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, pointerType: "touch" }, editorDrag.src);
+          };
+          const replacement = hit(document.querySelector('.guided-reflow[data-replace][data-guided-zone="inner"] circle'));
+          const ding = hit(document.querySelector('.ehit[data-ring="ding"]'));
+          return [replacement.kind, replacement.ring, ding.kind];
+        `);
+        assert.deepEqual(competition, ["note", "inner", "ding"]);
+        await touch("touchEnd");
+        await b.waitFor("!editorDrag && !document.querySelector('.editor-drag-contact')", { label: "the touch marker to clear" });
+        if (intent === "miss") {
+          assert.equal(await b.eval('return editorEl("editor-status").textContent;'), "Drop on the highlighted Cyclops seat to insert the note.");
+          assert.equal(await b.eval("return editorSession.history.past.length;"), 0);
+          assert.equal(await text(), seed);
+        } else {
+          const placed = await b.eval(`
+            const m = editorSession.history.present;
+            const notes = editorNames(m, "inner");
+            return { count: notes.length, angle: editorAnglesOf(editorSolve(m), "inner")[notes.indexOf("A6")],
+              history: editorSession.history.past.length };
+          `);
+          assert.deepEqual(placed, { count: 4, angle: landing.angle, history: 1 });
+          await clickReady("#editor-undo");
+          await b.waitFor("editorSession.history.past.length === 0", { label: "Undo to restore the original Cyclops" });
+          assert.equal(await text(), seed);
+        }
       }
     });
 

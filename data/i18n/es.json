@@ -375,6 +375,7 @@
   "editor.guided.tap_intent": "Toca un contorno resaltado para insertar {name}. Toca una nota para reemplazarla.",
   "editor.guided.tap": "Toca un contorno resaltado para colocar {name}.",
   "editor.guided.reflow": "{name} colocada. Se redistribuyeron las notas de {zone}.",
+  "editor.guided.cyclops_drop_hint": "Suelta la nota en el asiento resaltado de Cyclops para insertarla.",
   "editor.guided.no_room": "No hay espacio en esta posición. Prueba otra.",
   "editor.guided.offer": "¿Espaciar las notas del borde por igual?",
   "editor.guided.space": "Distribuir por igual",

@@ -367,6 +367,7 @@
   "editor.guided.tap_intent": "強調された枠をタップして{name}を追加します。音をタップすると置き換えます。",
   "editor.guided.tap": "強調された枠をタップして{name}を配置します。",
   "editor.guided.reflow": "{name}を配置し、{zone}の音の間隔を調整しました。",
+  "editor.guided.cyclops_drop_hint": "強調表示されたCyclopsの位置にドロップして音を追加します。",
   "editor.guided.no_room": "この位置には空きがありません。別の場所を試してください。",
   "editor.guided.offer": "外周の音を等間隔に並べますか？",
   "editor.guided.space": "等間隔に並べる",

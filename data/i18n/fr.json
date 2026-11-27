@@ -375,6 +375,7 @@
   "editor.guided.tap_intent": "Touchez un contour en surbrillance pour insérer {name}. Touchez une note pour la remplacer.",
   "editor.guided.tap": "Touchez un contour en surbrillance pour placer {name}.",
   "editor.guided.reflow": "{name} placée. Les notes de la zone {zone} ont été redistribuées.",
+  "editor.guided.cyclops_drop_hint": "Déposez la note sur l’emplacement Cyclope en surbrillance pour l’insérer.",
   "editor.guided.no_room": "Il n’y a pas de place ici. Essayez un autre emplacement.",
   "editor.guided.offer": "Espacer les notes du bord régulièrement ?",
   "editor.guided.space": "Répartir",

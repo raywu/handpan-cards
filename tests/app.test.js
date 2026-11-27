@@ -9298,7 +9298,7 @@ describe("I18N", () => {
       "editor.guided.tap_growth", "editor.guided.use_tray", "editor.guided.pins", "editor.guided.tap_both",
       "editor.guided.place", "editor.guided.switch_input", "editor.guided.switch_visual", "editor.guided.save_pitch",
       "editor.guided.insert_rim", "editor.guided.insert_inner", "editor.guided.replace", "editor.guided.tap_intent",
-      "editor.dragging_tray",
+      "editor.dragging_tray", "editor.guided.cyclops_drop_hint",
     ];
     const removedLegacyKeys = legacySheetKeys.filter(key => !restoredFieldKeys.includes(key));
     const postBaselineKeys = [...savedKeys, ...addedKeys, ...guidedDrawerKeys];
