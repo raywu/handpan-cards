@@ -2025,6 +2025,69 @@ function run() {
         return true;`);
       const swipeResult = () => b.eval(`return { travel: Math.max(...window.__swipe.ys) - Math.min(...window.__swipe.ys), ghost: window.__swipe.ghost, live: !!(editorDrag && editorDrag.live), top: document.scrollingElement.scrollTop + document.getElementById("editor").scrollTop };`);
 
+      async function dragPlacedNote(ring, destination, kind, inspect) {
+        const open = await b.eval(`return drawerExperiment.expanded;`);
+        if (open) await b.click("#drawerexp-handle");
+        await b.waitFor(`drawerExperiment.state === "SHUT"`, { label: "the drawer to uncover the source note" });
+        const start = await noteAt(ring, 0);
+        const sourceHit = await b.eval(`return !!document.elementFromPoint(${start.x}, ${start.y})?.closest("#editor-pan");`);
+        assert.equal(sourceHit, true, `${ring} note is visible before the drag`);
+        async function pointer(phase, pt) {
+          if (kind === "touch") {
+            const type = { down: "touchStart", move: "touchMove", up: "touchEnd", cancel: "touchCancel" }[phase];
+            await b.send("Input.dispatchTouchEvent", {
+              type, touchPoints: pt ? [{ x: pt.x, y: pt.y, id: 1 }] : []
+            });
+          } else {
+            const type = { down: "mousePressed", move: "mouseMoved", up: "mouseReleased", cancel: "mouseReleased" }[phase];
+            await b.send("Input.dispatchMouseEvent", { type, x: pt.x, y: pt.y, button: "left", buttons: phase === "move" || phase === "down" ? 1 : 0, clickCount: 1 });
+          }
+        }
+        await pointer("down", start);
+        let released = false;
+        try {
+          await pointer("move", { x: start.x + (start.x < 40 ? 28 : -28), y: start.y });
+          await b.waitFor(`!!editorDrag?.live`, { label: `the ${kind} ${ring} drag to lift` });
+          let point, hit;
+          for (let attempt = 0; attempt < 7; attempt++) {
+            point = await b.eval(`
+              const target = ${JSON.stringify(destination)};
+              const svg = document.querySelector("#editor-pan svg");
+              const asEvent = (pt) => ({ clientX: pt.x, clientY: pt.y });
+              if (target === "outside") {
+                const candidates = [4, innerWidth / 2, innerWidth - 4].flatMap(x =>
+                  [4, 12, 22].map(y => ({ x, y })));
+                const outside = candidates.find(pt =>
+                  !document.elementFromPoint(pt.x, pt.y)?.closest("button, input, #editor-pan") &&
+                  editorDropTarget(asEvent(pt), editorDrag.src).kind === "outside");
+                if (!outside) throw new Error("No uncovered point is outside the pan");
+                return outside;
+              }
+              if (target === "ding") {
+                const r = svg.querySelector('.ehit[data-ring="ding"]').getBoundingClientRect();
+                return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+              }
+              const angle = [150, 125, 100, 75, 50, 25, 15][${attempt}] * Math.PI / 180;
+              const orbit = editorSolve(editorSession.history.present).value.geom.bottom || 1.15;
+              const pt = new DOMPoint(orbit * Math.cos(angle) * 100, -orbit * Math.sin(angle) * 100)
+                .matrixTransform(svg.getScreenCTM());
+              return { x: pt.x, y: pt.y };
+            `);
+            await pointer("move", point);
+            hit = await b.eval(`return editorDropTarget({ clientX: ${point.x}, clientY: ${point.y} }, editorDrag.src);`);
+            if (destination === "bottom" ? hit.kind === "spot" && hit.ring === "bottom" : hit.kind === destination) break;
+          }
+          assert.ok(destination === "bottom" ? hit.kind === "spot" && hit.ring === "bottom" : hit.kind === destination,
+            `drag target ${destination}: ${JSON.stringify(hit)}`);
+          if (inspect) await inspect();
+          await pointer("up", kind === "touch" ? null : point);
+          released = true;
+          await b.waitFor(`!editorDrag && !editorEl("editor").matches(".dragging, .settling")`, { label: "the placed-note drag to settle" });
+        } finally {
+          if (!released) await pointer("cancel", kind === "touch" ? null : start);
+        }
+      }
+
       for (const kind of ["mouse", "touch"]) {
         describe(kind, () => {
           test("D3: a tray note dragged to a rim spot, a cyclops spot and a bottom spot is placed there", async () => {
@@ -2128,14 +2191,14 @@ function run() {
             await setup("(D3) A3");
             const before = await core();
             const steps = await pastLen();
-            await gesture(await noteAt("ding", 0), await offPan(), kind);
+            await dragPlacedNote("ding", "outside", kind);
             assert.strictEqual((await core()).ding, "");
             assert.deepStrictEqual(await names("rim"), ["A3"]);
             assert.strictEqual(await b.eval(`return document.getElementById("editor-save").disabled;`), true);
             assert.strictEqual(await pastLen(), steps + 1);
             await clickUndo();
             assert.deepStrictEqual(await core(), before);
-            await gesture(await noteAt("rim", 0), await offPan(), kind);
+            await dragPlacedNote("rim", "outside", kind);
             assert.strictEqual((await core()).ding, "D3");
             assert.deepStrictEqual(await names("rim"), []);
             assert.strictEqual(await b.eval(`return document.getElementById("editor-save").disabled;`), true);
@@ -2211,7 +2274,7 @@ function run() {
             await setup("(A2) E3 A3");
             const before = await core();
             const steps = await pastLen();
-            await gesture(await noteAt("rim", 0), await noteAt("ding", 0), kind);
+            await dragPlacedNote("rim", "ding", kind);
             const swapped = await core();
             assert.strictEqual(swapped.ding, "E3", await status());
             assert.deepStrictEqual(swapped.parts.rim.slice().sort(), ["A2", "A3"]);
@@ -2224,7 +2287,7 @@ function run() {
             await setup("(D3) A3");
             const before = await core();
             const steps = await pastLen();
-            await gesture(await noteAt("rim", 0), await spotAt(1.15, 150), kind);
+            await dragPlacedNote("rim", "bottom", kind);
             assert.deepStrictEqual(await names("bottom"), ["A3"], await status());
             assert.deepStrictEqual(await rimNames(), []);
             assert.strictEqual((await core()).ding, "D3");
@@ -2441,7 +2504,7 @@ function run() {
             const before = await core();
             const steps = await pastLen();
             let cls = null;
-            await gesture(await noteAt("ding", 0), await offPan(), kind, { at: 1, mid: async () => { cls = await ghostClass(); } });
+            await dragPlacedNote("ding", "outside", kind, async () => { cls = await ghostClass(); });
             assert.match(cls, /remove/);
             assert.doesNotMatch(cls, /refuse/);
             const after = await core();
@@ -2458,7 +2521,7 @@ function run() {
             const before = await core();
             const steps = await pastLen();
             let cls = null;
-            await gesture(await noteAt("rim", 0), await offPan(), kind, { at: 1, mid: async () => { cls = await ghostClass(); } });
+            await dragPlacedNote("rim", "outside", kind, async () => { cls = await ghostClass(); });
             assert.match(cls, /remove/);
             assert.doesNotMatch(cls, /refuse/);
             assert.deepStrictEqual(await rimNames(), []);
@@ -2915,7 +2978,10 @@ function run() {
             await typeLine("(D3) A3");
             const before = await linkOf();
             const steps = await pastLen();
+            await b.click("#drawerexp-handle");
+            await b.waitFor(`drawerExperiment.state === "SHUT"`, { label: "the drawer to uncover the last rim note" });
             await tapNote("rim", 0, touch);
+            assert.deepStrictEqual(await selectedOf(), { ring: "rim", i: 0 }, await status());
             await tapSpot(...polar(await orbitOf("bottom"), 150), touch);
             assert.deepStrictEqual(await names("bottom"), ["A3"], await status());
             assert.deepStrictEqual(await names("rim"), []);
