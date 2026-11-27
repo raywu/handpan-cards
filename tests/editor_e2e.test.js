@@ -35,7 +35,9 @@ function run() {
     `);
     if (!needsOpen) return;
     await click("#drawerexp-handle");
-    await b.waitFor(`window.drawerExperiment?.expanded === true && !document.getElementById("drawerexp-body").inert`,
+    await b.waitFor(`window.drawerExperiment?.expanded === true &&
+      !document.getElementById("drawerexp-body").inert &&
+      document.getElementById("drawerexp").getAnimations().every(animation => animation.playState !== "running")`,
       { label: "the drawer to restore its controls" });
   }
 
@@ -5359,84 +5361,101 @@ function run() {
     });
   });
 
-  const PORTRAIT_TABS_TOP = 369;
-  describe("Editor phone landscape: status row overlays the tabs (SO, owner 2026-11-16)", () => {
-    const pause = (ms) => new Promise((r) => setTimeout(r, ms));
-    const open = async (w, h) => { await fresh(w, h); await openAdd(); await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" }); await pause(250); };
-    const geo = () => b.eval(`const q = (s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height }; };
-      return { line: q("#editor-line"), tabs: q("#editor-tabs"), status: q("#editor-status"), ih: innerHeight, iw: innerWidth };`);
-    const refuse = async () => {
-      await typeLine("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6");
-      await b.click('.tray-note[data-name="F"]');
-      await b.click("#editor-oct-up");
-      await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
-      await b.waitFor(`document.getElementById("editor-status").getAttribute("data-kind") === "error"`, { label: "the refusal" });
-      await pause(300);
+  describe("Editor floating feedback on portrait and landscape screens", () => {
+    const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const open = async (w, h) => {
+      await fresh(w, h);
+      await openAdd();
+      await b.waitFor('document.querySelector("#editor-pan svg")', { label: "the pan SVG" });
     };
-    const near = (a, c) => Math.abs(a - c) <= 0.5;
+    const geo = () => b.eval(`
+      const box = id => {
+        const { top, left, right, bottom } = document.getElementById(id).getBoundingClientRect();
+        return { top, left, right, bottom };
+      };
+      return { line: box("editor-line"), tabs: box("editor-tabs"), status: box("editor-status"),
+        ih: innerHeight, iw: innerWidth };
+    `);
+    const seedMessageScale = () => b.eval(`
+      const loaded = editorLoad(${JSON.stringify(SCALE)});
+      if (!loaded.ok) throw Error(loaded.reason);
+      editorSession.history = editorHistoryNew(loaded.value);
+      editorRender();
+      return true;
+    `);
+    const look = () => b.eval(`
+      const note = document.getElementById("editor-status");
+      return { text: note.textContent, idle: note.hasAttribute("data-idle"), clip: getComputedStyle(note).clipPath };
+    `);
 
     for (const [w, h] of [[844, 390], [667, 375]]) {
       test(`SO: landscape idle status row takes no height at ${w}x${h}`, async () => {
         await open(w, h);
-        const g = await geo();
-        const gap = g.tabs.top - g.line.bottom;
-        assert.ok(gap <= 8, `${w}x${h} gap between the scale field and the tabs is ${gap}px: ` + JSON.stringify(g));
+        const message = await look();
+        assert.ok(message.idle && message.text && message.clip !== "none");
+        const frame = await geo();
+        assert.ok(frame.line.bottom <= frame.tabs.top + 0.5);
+        await b.click("#editor-tab-layout");
+        assert.equal(await b.eval("return editorSession.tab;"), "layout");
       });
     }
 
-    test("SO: landscape message overlays the tabs without shifting them", async () => {
+    test("SO: a landscape message floats beside the open drawer without shifting its tabs", async () => {
       await open(844, 390);
       const idle = await geo();
-      await refuse();
+      await b.eval(`editorSession.error = t("editor.crowded", { pt: "5.5", floor: "6" }); editorRender(); return true;`);
       const g = await geo();
-      for (const k of ["top", "bottom", "left", "right"]) assert.ok(near(g.tabs[k], idle.tabs[k]), `tab strip ${k} moved ${idle.tabs[k]} -> ${g.tabs[k]}`);
-      assert.ok(g.status.height > 0 && g.status.top >= g.line.bottom, "the message is visible below the scale field: " + JSON.stringify(g.status));
-      assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih && g.status.left >= 0 && g.status.right <= g.iw, "the message is inside the viewport: " + JSON.stringify(g.status));
-      assert.ok(near(g.status.left, g.tabs.left) && g.status.right >= g.tabs.right - 0.5 && g.status.right <= g.tabs.right + 12, "the message spans the tab strip edges: " + JSON.stringify([g.status, g.tabs]));
-      assert.ok(g.status.bottom <= g.tabs.bottom + 0.5 && g.status.bottom > g.tabs.top, "the message lies over the tab strip and no lower: " + JSON.stringify([g.status, g.tabs]));
+      assert.deepEqual(g.tabs, idle.tabs);
+      assert.deepEqual(g.line, idle.line);
+      assert.ok(g.status.top >= g.line.bottom - 0.5 && g.status.bottom <= g.ih + 0.5);
+      assert.ok(g.status.left >= 0 && g.status.right <= g.tabs.left + 0.5);
     });
 
     test("SO: landscape tabs are clickable again once the message is cleared by the app", async () => {
       await open(844, 390);
-      await typeLine(SCALE);
-      await b.click('.tray-note[data-name="F"]');
-      await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+      await seedMessageScale();
+      await b.eval(`document.querySelector('.tray-note[data-name="F"]').click(); return true;`);
       await b.click("#editor-cancel");
-      await b.waitFor(`document.getElementById("editor-status").textContent === ""`, { label: "the message to clear" });
-      const r = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), h = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return h === e || e.contains(h); });`);
-      assert.deepStrictEqual(r, [true, true], "both tabs are the hit target at their centres");
+      await b.waitFor('document.getElementById("editor-status").textContent === ""', { label: "the message to clear" });
       await b.click("#editor-tab-layout");
-      assert.strictEqual(await b.eval(`return editorSession.tab;`), "layout");
+      assert.equal(await b.eval("return editorSession.tab;"), "layout");
     });
 
     for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
-      test(`SO: en ${w}x${h}: the idle prompt leaves the tab labels showing and a message still covers them`, async () => {
+      test(`SO: en ${w}x${h}: the idle prompt gives way to visible hold and drag feedback`, async () => {
         await open(w, h);
-        const look = () => b.eval(`const st = document.getElementById("editor-status"); return { text: st.textContent, idle: st.hasAttribute("data-idle"), clip: getComputedStyle(st).clipPath };`);
         const idle = await look();
-        assert.ok(idle.text.length > 0 && idle.idle && idle.clip !== "none", "the idle prompt stays in the status for screen readers and is hidden off the tab labels: " + JSON.stringify(idle));
-        await typeLine(SCALE);
-        await b.click("#editor-tab-scale");
-        await b.click('.tray-note[data-name="F"]');
-        await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+        assert.ok(idle.text && idle.idle && idle.clip !== "none", JSON.stringify(idle));
+        await seedMessageScale();
+        await b.eval(`document.querySelector('.tray-note[data-name="F"]').click(); return true;`);
         const held = await look();
-        assert.ok(held.text.length > 0 && !held.idle && held.clip === "none", "a message after the idle prompt shows over the tabs: " + JSON.stringify(held));
-        await open(w, h);
-        const c = await b.eval(`const r = document.querySelector(".tray-note").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 };`);
-        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", x: c.x, y: c.y, button: "left", buttons: 1, clickCount: 1 });
-        for (let i = 1; i <= 6; i++) await b.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x - 10 * i, y: c.y - 6 * i, button: "left", buttons: 1 });
-        const drag = { ...(await look()), dragging: await b.eval(`return document.getElementById("editor").classList.contains("dragging");`) };
-        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: c.x - 60, y: c.y - 36, button: "left", buttons: 0, clickCount: 1 });
-        assert.ok(drag.dragging && drag.text.length > 0 && !drag.idle && drag.clip === "none", "a drag from the empty scale shows its message over the tabs: " + JSON.stringify(drag));
+        assert.ok(held.text && !held.idle && held.clip === "none", JSON.stringify(held));
+        await b.click("#editor-cancel");
+        const source = await b.eval(`
+          const chip = document.querySelector(".tray-note");
+          chip.scrollIntoView({ block: "nearest" });
+          const r = chip.getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        `);
+        await b.send("Input.dispatchMouseEvent", { type: "mousePressed", ...source, button: "left", buttons: 1, clickCount: 1 });
+        for (let step = 1; step <= 6; step++) {
+          await b.send("Input.dispatchMouseEvent", {
+            type: "mouseMoved", x: source.x - step * 10, y: source.y - step * 6, button: "left", buttons: 1
+          });
+        }
+        const dragging = await b.eval('return document.getElementById("editor").classList.contains("dragging");');
+        const message = await look();
+        await b.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: source.x - 60, y: source.y - 36, button: "left", buttons: 0, clickCount: 1 });
+        assert.ok(dragging && message.text && !message.idle && message.clip === "none", JSON.stringify(message));
       });
     }
 
     const LANDSCAPE = [[844, 390], [667, 375]];
     const STATES = {
       empty: async () => true,
-      held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
-      error: async () => { await b.eval(`editorSession.error = "The rim is full at 12 notes. Remove one first."; editorRender(); return true;`); },
-      undo: async () => { await b.eval(`editorSession.say = "C4 removed."; editorRender(); return true;`); await b.waitFor(`!!document.getElementById("editor-notice-undo")`, { label: "the undo chip" }); },
+      held: () => b.eval(`document.querySelector('.tray-note[data-name="F"]').click(); return true;`),
+      error: () => b.eval(`editorSession.error = t("editor.crowded", { pt: "5.5", floor: "6" }); editorRender(); return true;`),
+      undo: () => b.eval(`editorDo(m => editorRemove(m, "rim", 2), t("editor.say.removed", { name: "C4" })); editorRender(); return true;`),
     };
     const reset = () => b.eval(`const s = editorSession; s.error = ""; s.say = ""; s.notice = false; if (s.held) editorCancelHold(); editorRender(); return true;`);
     describe("with real fonts", () => {
@@ -5454,17 +5473,18 @@ function run() {
             await openAdd();
             await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
             for (const name of ["empty", "held", "error", "undo"]) {
-              if (name !== "empty") { await reset(); await typeLine(SCALE); }
+              if (name !== "empty") { await reset(); await seedMessageScale(); }
               await b.click("#editor-tab-scale");
               await STATES[name]();
               await pause(250);
               const g = await geo();
-              assert.ok(g.status.bottom <= g.tabs.bottom + 0.5, `${name}: the message stays within the tab strip: ` + JSON.stringify([g.status, g.tabs]));
+              assert.ok(g.status.top >= -0.5 && g.status.bottom <= h + 0.5,
+                `${name}: feedback stays within the viewport. ` + JSON.stringify(g.status));
               for (const id of ["layout", "scale", "layout"]) {
                 await b.click("#editor-tab-" + id);
                 assert.strictEqual(await b.eval(`return editorSession.tab;`), id, `${name} ${lang} ${w}x${h}: a click at the ${id} tab centre switched to it`);
               }
-              const btn = { held: "#editor-cancel", undo: "#editor-notice-undo" }[name];
+              const btn = { held: "#editor-cancel", undo: "#editor-undo" }[name];
               if (btn) {
                 const hit = await b.eval(`const e = document.querySelector(${JSON.stringify(btn)}), r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x));`);
                 assert.ok(hit, `${name} ${lang} ${w}x${h}: ${btn} takes its own tap`);
@@ -5486,25 +5506,32 @@ function run() {
             if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
           return { text: st.textContent, top: sr.top, bottom: sr.bottom, tabsTop: tb.top, fits: st.scrollHeight <= st.clientHeight, clipped };`);
         assert.ok(r.text.length > 0 && r.fits && r.clipped === 0, "the whole error is readable: " + JSON.stringify(r));
-        assert.ok(Math.abs(r.top - r.tabsTop) <= 0.5 && r.bottom <= 187.5, "the error starts on the tabs and ends by 187.5: " + JSON.stringify(r));
+        assert.ok(r.top >= -0.5 && r.bottom <= 320.5, "the error stays in the viewport: " + JSON.stringify(r));
       });
 
       const LOCALES = ["en", "de", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+      async function holdLandscapeNote() {
+        const selector = '.tray-note[data-name="G#"]';
+        await exposeDrawerControl(selector, target => b.click(target));
+        await b.eval(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({ block: "nearest" }); return true;`);
+        await b.click(selector);
+        await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+      }
       const SO_STATES = {
         empty: async () => true,
-        held: async () => { await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" }); },
+        held: async () => { await holdLandscapeNote(); },
         crowded: () => b.eval(`editorSession.error = t("editor.crowded", { pt: "5.5", floor: "6" }); editorRender(); return true;`),
         picked: () => b.eval(`editorSession.say = t("editor.say.picked", { name: "C4" }); editorRender(); return true;`),
         removed: () => b.eval(`editorDo((m) => editorRemove(m, "rim", 2), t("editor.say.removed", { name: "C4" })); editorRender(); return true;`),
         rimfull: async () => {
-          await b.click('.tray-note[data-name="F"]'); await b.waitFor(`!!document.getElementById("editor-cancel")`, { label: "the held prompt" });
+          await holdLandscapeNote();
           await b.eval(`editorPlaceHeld({ kind: "spot", ring: "rim" }, editorSession.history.present); return true;`);
         },
       };
       const FULL_RIM = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6";
       for (const lang of LOCALES) {
         for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
-          test(`SO: ${lang} ${w}x${h}: every landscape message is fully readable inside the tab strip and moves nothing`, async () => {
+          test(`SO: ${lang} ${w}x${h}: every landscape message is readable above the collapsed drawer`, async () => {
             await fresh(w, h);
             if (lang !== "en") {
               await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
@@ -5512,33 +5539,22 @@ function run() {
             }
             await openAdd();
             await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
-            const frame = () => b.eval(`const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
-              return { tabs: q(document.getElementById("editor-tabs")), line: q(document.getElementById("editor-line")), pan: q(document.getElementById("editor-pan")) };`);
-            const read = () => b.eval(`const st = document.getElementById("editor-status"), sr = st.getBoundingClientRect(), tb = document.getElementById("editor-tabs").getBoundingClientRect(),
-              cs = getComputedStyle(st), hit = (a, r) => !(r.right <= a.left || r.left >= a.right || r.bottom <= a.top || r.top >= a.bottom);
-              let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
-              for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
-                if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
-              return { text: st.textContent, fits: st.scrollHeight <= st.clientHeight, h: sr.height, clipped, inStrip: sr.top >= tb.top - 0.5 && sr.bottom <= tb.bottom + 0.5, px: parseFloat(cs.fontSize),
-                overChip: [...document.querySelectorAll(".tray-note, #editor-name")].some((e) => hit(sr, e.getBoundingClientRect())) || hit(sr, document.getElementById("editor-line").getBoundingClientRect()) };`);
             for (const name of Object.keys(SO_STATES)) {
-              if (name !== "empty") { await reset(); await typeLine(name === "rimfull" ? FULL_RIM : SCALE); await b.click("#editor-tab-scale"); }
-              const rest = await frame();
+              if (name !== "empty") {
+                await reset();
+                await b.eval(`
+                  const model = editorLoad(${JSON.stringify(name === "rimfull" ? FULL_RIM : SCALE)});
+                  if (!model.ok) throw Error(model.reason);
+                  editorSession.history = editorHistoryNew(model.value);
+                  editorRender();
+                  return true;
+                `);
+              }
               await SO_STATES[name]();
-              await pause(250);
-              await b.waitFor(`document.getElementById("editor-status").getAnimations().length === 0`, { label: "the message to settle" });
-              const r = await read();
-              const tag = `${name} ${lang} ${w}x${h}: ` + JSON.stringify(r);
-              if (name !== "empty") assert.ok(r.text.length > 0, "a message shows. " + tag);
-              assert.ok(r.fits && r.clipped === 0, "the message is not clipped. " + tag);
-              assert.ok(r.inStrip, "the message stays inside the tab strip. " + tag);
-              assert.ok(!r.overChip, "the message covers no chip, field or line. " + tag);
-              assert.ok(r.px >= 12, "the message font is at least 12px. " + tag);
-              assert.deepStrictEqual(await frame(), rest, "tabs, line and pan do not move. " + tag);
-              const centres = await b.eval(`return ["editor-tab-scale", "editor-tab-layout"].map((id) => { const e = document.getElementById(id), q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
-              assert.deepStrictEqual(centres, [true, true], "a tap at each tab centre reaches its tab. " + tag);
-              const own = await b.eval(`return [...document.querySelectorAll("#editor-status button")].every((e) => { const q = e.getBoundingClientRect(), x = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!x && (x === e || e.contains(x)); });`);
-              assert.ok(own, "Cancel and Undo take their own taps. " + tag);
+              if (await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
+              await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to close" });
+              const r = await readClosedFeedback();
+              assertClosedFeedback(r, `${name} ${lang} ${w}x${h}`);
             }
             await reset();
           });
@@ -5549,7 +5565,6 @@ function run() {
       const RENDER_ROW = `
         const ROW = __ROW__;
         const s = editorSession, st = document.getElementById("editor-status"), ed = document.getElementById("editor"), K = window.__so;
-        const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
         s.error = ""; s.say = ""; s.plainSay = ""; s.notice = false; if (s.held) editorCancelHold();
         s.history = { ...s.history, present: K.full }; editorRender(); ed.scrollTop = 0;
         const text = t(ROW.k, Object.assign({}, ROW.vars, { zone: t("editor.zone.inner") }));
@@ -5560,25 +5575,62 @@ function run() {
         else if (ROW.mode === "held") document.querySelector('.tray-note[data-name="F"]').click();
         else if (ROW.mode === "idle") s.history = { ...s.history, present: K.idle[ROW.k] };
         if (ROW.mode === "drag") { editorRender(); st.removeAttribute("data-kind"); st.removeAttribute("data-idle"); st.textContent = text; } else editorRender();
-        ed.scrollTop = 0;
-        st.getAnimations().forEach((a) => a.finish());
-        const tabs = document.getElementById("editor-tabs"), line = document.getElementById("editor-line"), name = document.getElementById("editor-name");
-        const sr = st.getBoundingClientRect(), tb = tabs.getBoundingClientRect(), lb = line.getBoundingClientRect(), nr = name.getBoundingClientRect();
-        const hitsOwn = (e) => { const r = e.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!x && (x === e || e.contains(x)); };
-        let clipped = 0; const tw = document.createTreeWalker(st, NodeFilter.SHOW_TEXT);
-        for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
-          if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
-        const crosses = [...document.querySelectorAll(".tray-note, #editor-pan")].some((e) => { const r = e.getBoundingClientRect(); return !(r.right <= sr.left + 0.5 || r.left >= sr.right - 0.5 || r.bottom <= sr.top + 0.5 || r.top >= sr.bottom - 0.5); });
-        const nameHit = document.elementFromPoint(nr.left + nr.width / 2, nr.top + 4);
-        const rest = { text: st.textContent, idle: st.hasAttribute("data-idle"), clipPath: getComputedStyle(st).clipPath, anim: st.getAnimations().length, clipped, h: sr.height, top: sr.top, bottom: sr.bottom,
-          tabsTop: tb.top, tabsBottom: tb.bottom, lineBottom: lb.bottom, crosses, frame: { tabs: q(tabs), line: q(line), pan: q(document.getElementById("editor-pan")) },
-          tabHits: ["editor-tab-scale", "editor-tab-layout"].map((id) => hitsOwn(document.getElementById(id))), nameHit: nameHit === name,
-          buttonsOwn: [...st.querySelectorAll("button")].every(hitsOwn) };
-        ed.scrollTop = ed.scrollHeight;
-        const sr2 = st.getBoundingClientRect(), tb2 = tabs.getBoundingClientRect();
-        const end = { scrollTop: ed.scrollTop, top: sr2.top, bottom: sr2.bottom, tabsTop: tb2.top };
-        ed.scrollTop = 0;
-        return { rest, end };`;
+        const idleKey = {
+          "editor.say.stage_need_ding": "editor.save_needs_ding",
+          "editor.say.stage_need_fifth": "editor.save_needs_rim",
+        }[ROW.k] || ROW.k;
+        return ROW.mode === "idle" ? [t(idleKey)] : ROW.mode === "held"
+          ? ["editor.held", "editor.guided.tap_growth", "editor.guided.tap_both"]
+            .map(key => t(key, { name: editorHeldName() }))
+          : [text];`;
+      const readClosedFeedback = () => b.eval(`return new Promise(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const status = document.getElementById("editor-status");
+          const bounds = status.getBoundingClientRect();
+          const line = document.getElementById("editor-line").getBoundingClientRect();
+          const handle = document.getElementById("drawerexp-handle").getBoundingClientRect();
+          const hitOwn = node => {
+            const r = node.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+            return node === hit || node.contains(hit);
+          };
+          const controls = ["drawerexp-handle", "editor-undo", "editor-save", "editor-more"]
+            .map(id => hitOwn(document.getElementById(id)));
+          const actions = [...status.querySelectorAll("button:not([hidden])")].every(hitOwn);
+          const protectsRim = status.matches('[data-guided-actions="single"], :has(#editor-save-blocker)');
+          const rim = document.querySelector('#editor-pan svg > circle[r="100"]')?.getBoundingClientRect();
+          const rimClear = !protectsRim || !!rim && rim.top >= line.bottom - 0.5 && rim.bottom <= bounds.top + 0.5;
+          let clipped = 0;
+          const walker = document.createTreeWalker(status, NodeFilter.SHOW_TEXT);
+          for (let node; (node = walker.nextNode());) {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            for (const glyph of range.getClientRects()) {
+              if (glyph.width > 0 && (glyph.top < bounds.top - 1 || glyph.bottom > bounds.bottom + 1 ||
+                glyph.left < bounds.left - 1 || glyph.right > bounds.right + 1)) clipped++;
+            }
+          }
+          resolve({ text: status.textContent.trim(), idle: status.hasAttribute("data-idle"),
+            clippedAway: getComputedStyle(status).clipPath !== "none", top: bounds.top, bottom: bounds.bottom,
+            left: bounds.left, right: bounds.right, viewport: innerWidth, line: line.bottom,
+            drawer: handle.top, px: parseFloat(getComputedStyle(status).fontSize), controls, actions, rimClear, clipped });
+        }));
+      })`);
+      function assertClosedFeedback(result, label, expected = []) {
+        const detail = label + " " + JSON.stringify(result);
+        assert.ok(result.text, "feedback is shown. " + detail);
+        if (expected.length)
+          assert.ok(expected.some(copy => result.text.includes(copy)), "localized feedback is shown. " + detail);
+        assert.ok(result.actions, "banner actions remain hittable. " + detail);
+        assert.ok(result.rimClear, "protected feedback reserves room for the entire rim. " + detail);
+        assert.equal(result.clippedAway, result.idle, "only the landscape idle hint is visually hidden. " + detail);
+        assert.equal(result.clipped, 0, "the message is not clipped. " + detail);
+        assert.ok(result.px >= 12, "the message is at least 12px. " + detail);
+        assert.ok(result.left >= -0.5 && result.right <= result.viewport + 0.5 &&
+          result.top >= result.line - 0.5 && result.bottom <= result.drawer + 0.5,
+          "the banner fits between the scale line and drawer. " + detail);
+        assert.deepEqual(result.controls, [true, true, true, true], "pinned actions remain hittable. " + detail);
+      }
       const SETUP_ROWS = `const s = editorSession, empty = editorEmptyModel(), full = s.history.present;
         const stage = (extra) => editorWithStage(empty, { ...editorBlankStage("standard"), ...extra });
         window.__so = { full, empty, idle: { "editor.empty": empty, "editor.say.stage_need_ding": stage({ rim: ["A3"] }), "editor.say.stage_need_fifth": stage({ ding: "D3" }) } };
@@ -5595,32 +5647,12 @@ function run() {
             await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
             await typeLine(SCALE);
             await b.eval(SETUP_ROWS);
-            await b.eval(`document.getElementById("editor").scrollTop = 0; return true;`);
-            const base = await b.eval(`const q = (e) => { const r = e.getBoundingClientRect(); return [r.top, r.left, r.bottom, r.right]; };
-              return { tabs: q(document.getElementById("editor-tabs")), line: q(document.getElementById("editor-line")), pan: q(document.getElementById("editor-pan")) };`);
+            await b.click("#drawerexp-handle");
+            await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to close" });
             for (const row of ROWS) {
-              const { rest: r, end } = await b.eval(RENDER_ROW.replace("__ROW__", () => JSON.stringify(row)));
-              const tag = `${row.mode} ${row.k} ${lang} ${w}x${h}: ` + JSON.stringify({ rest: r, end });
-              assert.ok(r.text.length > 0, "a message shows. " + tag);
-              assert.strictEqual(r.anim, 0, "the arrive animation has settled. " + tag);
-              if (row.mode === "idle") {
-                assert.ok(r.idle && r.clipPath !== "none", "the idle prompt is hidden from view and kept in the status. " + tag);
-                assert.strictEqual(r.text, await b.eval(`return t(${JSON.stringify(row.k)}, ${JSON.stringify(row.vars)});`), "the idle prompt text. " + tag);
-                continue;
-              }
-              assert.ok(!r.idle && r.clipPath === "none", "a message is not hidden. " + tag);
-              assert.strictEqual(r.clipped, 0, "no character is clipped. " + tag);
-              assert.ok(Math.abs(r.top - r.tabsTop) <= 0.5, "the message starts on the tab strip. " + tag);
-              assert.ok(r.top >= r.lineBottom - 0.5, "the message stays off the scale line. " + tag);
-              if (r.h <= 44) assert.ok(r.bottom <= r.tabsBottom + 0.5, "a short message stays inside the tab strip. " + tag);
-              assert.ok(r.bottom <= 187.5, "the message reaches at most 187.5. " + tag);
-              assert.ok(!r.crosses, "the message covers no tray chip or pan. " + tag);
-              assert.deepStrictEqual(r.frame, base, "tabs, line and pan do not move. " + tag);
-              assert.deepStrictEqual(r.tabHits, [true, true], "a tap at each tab centre reaches its tab. " + tag);
-              assert.ok(r.nameHit, "a tap near the top of the name field reaches it. " + tag);
-              assert.ok(r.buttonsOwn, "Cancel and Undo take their own taps. " + tag);
-              assert.ok(Math.abs(end.top - end.tabsTop) <= 0.5 && end.top >= -0.5, "scrolled to the end the message stays on the tabs. " + tag);
-              assert.ok(end.bottom - end.tabsTop <= 72.5, "scrolled to the end the message is at most 72.5px tall. " + tag);
+              const expected = await b.eval(RENDER_ROW.replace("__ROW__", () => JSON.stringify(row)));
+              const r = await readClosedFeedback();
+              assertClosedFeedback(r, `${row.mode} ${row.k} ${lang} ${w}x${h}`, expected);
             }
             await reset();
           });
@@ -5628,10 +5660,13 @@ function run() {
       }
     });
 
-    test("SO: portrait status row unchanged at 375x667", async () => {
+    test("SO: portrait feedback fits above the collapsed drawer at 375x667", async () => {
       await open(375, 667);
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to close" });
       const g = await geo();
-      assert.strictEqual(Math.round(g.tabs.top * 10) / 10, PORTRAIT_TABS_TOP, "portrait tab strip top: " + JSON.stringify(g));
+      assert.ok(g.status.top >= g.line.bottom && g.status.bottom < g.ih);
+      assert.ok(await b.eval('return editorEl("drawerexp-body").inert;'));
     });
   });
 

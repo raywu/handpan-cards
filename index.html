@@ -15828,11 +15828,6 @@ function editorAppendCancelHold(box) {
   cancel.onclick = editorGuidedDismissTap;
   box.appendChild(cancel);
 }
-function editorAppendCancelHold(box) {
-  const cancel = editorNode("button", { id: "editor-cancel", type: "button", class: "mode", text: t("editor.cancel") });
-  cancel.onclick = editorCancelHold;
-  box.appendChild(cancel);
-}
 function editorStatusNotes(box, s, m, empty) {
   if (editorGuidedTapSource(m) || s.held) {
     const previews = editorGuidedTapPreviews(m);
