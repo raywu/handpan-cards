@@ -3037,7 +3037,17 @@ function run() {
       });
 
       describe("OQB owner QA gap 8", () => {
-        const rings = () => b.eval(`return { esel: document.querySelectorAll("#editor-pan .esel").length, picked: document.querySelectorAll("#editor-pan .etarget.picked").length, on: document.querySelectorAll("#editor-tray .tray-note.on").length, pressed: document.querySelectorAll('#editor-tray .tray-note[aria-pressed="true"]').length };`);
+        const rings = () => b.eval(`
+          const { sel, zone, held } = editorSession;
+          const count = selector => document.querySelectorAll(selector).length;
+          return { sel, zone, held: !!held,
+            esel: count("#editor-pan .esel"),
+            pressedNotes: count('#editor-pan .ehit[aria-pressed="true"]'),
+            picked: count("#editor-pan .etarget.picked, #editor-pan .balanced-outline.picked"),
+            pressedZones: count('#editor-pan [data-fk^="zone:"][aria-pressed="true"]'),
+            on: count("#editor-tray .tray-note.on"),
+            pressed: count('#editor-tray .tray-note[aria-pressed="true"]') };
+        `);
         const countClicks = () => b.eval(`window.__seen = { capture: 0, bubble: 0 };
           window.addEventListener("click", () => { window.__seen.capture += 1; }, true);
           document.addEventListener("click", () => { window.__seen.bubble += 1; });
@@ -3046,30 +3056,39 @@ function run() {
 
         for (const kind of ["mouse", "touch"]) {
           test("OQB lift clears rings (" + kind + "): once a drag lifts, no selection ring, picked zone ring or held chip is left on the pan or tray", async () => {
+            const clearLift = async label => {
+              assert.deepStrictEqual(await rings(), {
+                sel: null, zone: null, held: false, esel: 0, pressedNotes: 0, picked: 0, pressedZones: 0, on: 0, pressed: 0
+              }, label);
+            };
             await setup(SCALE);
+            await b.click("#drawerexp-handle");
+            await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the placed notes to be exposed" });
             await tapNote("rim", 3, kind === "touch");
-            assert.strictEqual((await rings()).esel, 1, "the tap selected a note");
-            await gesture(await noteAt("rim", 5), await spotAt(0.722, 22.5), kind, { release: false });
-            await pause();
-            assert.deepStrictEqual(await rings(), { esel: 0, picked: 0, on: 0, pressed: 0 }, "a selected note, drag lifted");
-            await endGesture(kind);
-            await pause();
+            const selected = await rings();
+            assert.ok(selected.esel === 1 && selected.pressedNotes === 1, "the tap selected a note");
+            await dragPlacedNote("rim", "outside", kind, () => clearLift("a selected note, drag lifted"),
+              { index: 5, cancel: true });
+
             await setup(SCALE);
-            await tapSpot(...polar(0.38, 90), kind === "touch");
-            assert.strictEqual((await rings()).picked, 1, "the tap picked the cyclops");
-            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { release: false });
-            await pause();
-            assert.deepStrictEqual(await rings(), { esel: 0, picked: 0, on: 0, pressed: 0 }, "a picked zone, drag lifted");
-            await endGesture(kind);
-            await pause();
-            await setup(SCALE);
-            await hold("G");
-            assert.strictEqual((await rings()).on, 1, "the tap held a chip");
-            await gesture(await chipAt("B"), await spotAt(0.722, 22.5), kind, { release: false });
-            await pause();
-            assert.deepStrictEqual(await rings(), { esel: 0, picked: 0, on: 0, pressed: 0 }, "a held chip, drag lifted");
-            await endGesture(kind);
-            await pause();
+            await tapSpot(...polar(1.15, 150), kind === "touch");
+            const picked = await rings();
+            assert.strictEqual(picked.zone, "bottom", "the tap selected the underside area");
+            assert.ok(picked.picked > 0 && picked.pressedZones === 1, JSON.stringify(picked));
+            await dragPlacedNote("rim", "outside", kind, () => clearLift("a picked zone, drag lifted"),
+              { tray: "B", cancel: true });
+
+            // In split landscape, picking a tray pitch leaves other tray
+            // buttons exposed. A drag then clears the already held pitch.
+            await fresh(844, 390);
+            await openAdd();
+            await typeLine(SCALE);
+            await tapPoint(await chipAt("G"), kind === "touch");
+            const held = await rings();
+            assert.ok(held.held && held.on === 1 && held.pressed === 1, JSON.stringify(held));
+            assert.equal(await b.eval("return drawerExperiment.expanded;"), true);
+            await dragPlacedNote("rim", "outside", kind, () => clearLift("a held chip, drag lifted"),
+              { tray: "B", cancel: true });
           });
         }
 
@@ -3109,18 +3128,17 @@ function run() {
         for (const kind of ["mouse", "touch"]) {
           test("OQB click elsewhere after drop fires (" + kind + "): a press on another control right after a drop is not eaten", async () => {
             await setup(SCALE);
-            const before = await core();
-            await gesture(await noteAt("rim", 3), await offPan(), kind, { release: false });
-            await endGesture(kind);
-            const undo = await centreOf("#editor-notice-undo");
-            await tapPoint(undo, kind === "touch");
-            if (kind === "touch") await b.eval(`const u = document.getElementById("editor-notice-undo"); if (u) u.click(); return true;`);
-            let after = await core();
-            for (let waited = 0; waited < 1500 && JSON.stringify(after) !== JSON.stringify(before); waited += 80) {
-              await pause();
-              after = await core();
-            }
-            assert.deepStrictEqual(after, before, "Undo ran");
+            const before = await core(), depth = await pastLen();
+            await dragPlacedNote("rim", "outside", kind, null, { index: 3 });
+            assert.ok(!(await names("rim")).includes("D4"), "the native drop removed its source");
+            assert.equal(await pastLen(), depth + 1);
+            await b.waitFor(`(() => {
+              const undo = editorEl("editor-undo"), r = undo.getBoundingClientRect();
+              return !undo.disabled && undo.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+            })()`, { label: "the pinned Undo to accept the first post-drop press" });
+            await tapPoint(await centreOf("#editor-undo"), kind === "touch");
+            await b.waitFor(`editorSession.history.past.length === ${depth}`, { label: "one native Undo press to run" });
+            assert.deepStrictEqual(await core(), before, "the first native press restored the dropped note");
           });
         }
       });
