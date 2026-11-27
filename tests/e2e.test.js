@@ -6024,7 +6024,7 @@ function run() {
     //    paints a background at all; ~10.4 from --table, ~12.08 measured
     //    under the ab_root_bg_dropped mutant) - so it needs a tight
     //    tolerance (~5) that sits strictly between those two numbers.
-    async function edgeCheck(tol, alt, altTol) {
+    async function edgeCheck(tol, paper = false) {
       const shot = await b.send("Page.captureScreenshot", { format: "png" });
       return b.eval(`
         return new Promise((resolve, reject) => {
@@ -6037,8 +6037,14 @@ function run() {
             ctx.drawImage(img, 0, 0);
             const data = ctx.getImageData(0, 0, w, h).data;
             const table = ${JSON.stringify(TABLE)};
-            const table2 = ${JSON.stringify(alt || TABLE2)};
-            const tol2 = ${altTol === undefined ? tol : altTol};
+            const table2 = ${JSON.stringify(paper ? PAPER : TABLE2)};
+            const tol2 = ${paper ? 4 : tol};
+            const row = (selector) => {
+              const el = document.querySelector(selector);
+              return el ? el.getBoundingClientRect().top * h / innerHeight : -Infinity;
+            };
+            const drawerTop = ${paper} ? row("#editor .drawerexp") : -Infinity;
+            const railTop = ${paper} ? row("#editor .editor-toolbar") : -Infinity;
             const dist = (r, g, bch, t) =>
               Math.sqrt((r - t[0]) ** 2 + (g - t[1]) ** 2 + (bch - t[2]) ** 2);
             let bad = null;
@@ -6046,9 +6052,16 @@ function run() {
               if (bad || x < 0 || y < 0 || x >= w || y >= h) return;
               const i = (y * w + x) * 4;
               const r = data[i], g = data[i + 1], bch = data[i + 2];
-              if (dist(r, g, bch, table) > ${tol} && dist(r, g, bch, table2) > tol2) {
-                bad = { x, y, r, g, b: bch };
+              if (dist(r, g, bch, table) <= ${tol} || dist(r, g, bch, table2) <= tol2) return;
+              // The approved full-width drawer casts a #24242414 shadow over the paper.
+              if (y >= drawerTop - 40 && y < drawerTop) {
+                const alpha = (table2[0] - r) / (table2[0] - 36);
+                const shaded = table2.map(value => value + (36 - value) * alpha);
+                if (alpha >= 0 && alpha <= 21 / 255 && dist(r, g, bch, shaded) <= 2) return;
               }
+              if (Math.abs(y - drawerTop) <= 1 && dist(r, g, bch, [138, 132, 123]) <= 2) return;
+              if (Math.abs(y - railTop) <= 1 && dist(r, g, bch, [199, 193, 182]) <= 2) return;
+              bad = { x, y, r, g, b: bch };
             };
             for (let x = 0; x < w; x++) {
               for (let f = 0; f < ${FRAME}; f++) { check(x, f); check(x, h - 1 - f); }
@@ -6085,7 +6098,7 @@ function run() {
         await b.setViewport(390, 844, true);
         await openSheet();
         await b.settle();
-        const r = await edgeCheck(20, PAPER, 4);
+        const r = await edgeCheck(20, true);
         assert.strictEqual(r.bad, null,
           `edge pixel neither table nor paper coloured with the sheet open: ${JSON.stringify(r.bad)}`);
       } finally {
