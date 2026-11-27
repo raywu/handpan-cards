@@ -3389,6 +3389,15 @@ function run() {
       const names = (ring) => b.eval(`return editorNames(editorSession.history.present, ${JSON.stringify(ring)});`);
       const pastLen = () => b.eval(`return editorSession.history.past.length;`);
 
+      const uncoverPan = async () => {
+        if (await b.eval(`return drawerExperiment.expanded;`)) await b.click("#drawerexp-handle");
+        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to uncover the tapped position" });
+      };
+      const readReset = () => b.eval(`const reset = document.getElementById("editor-reset");
+        return { enabled: !reset.disabled, label: reset.getAttribute("aria-label") };`);
+      const bottomAngle = (name) => b.eval(`const m = editorSession.history.present;
+        return editorAnglesOf(editorSolve(m), "bottom")[editorNames(m, "bottom").indexOf(${JSON.stringify(name)})];`);
+
       for (const touch of [false, true]) {
         describe(touch ? "touch" : "mouse", () => {
           test("a selected note moves to a tapped ring as one Undo step", async () => {
@@ -3396,11 +3405,13 @@ function run() {
             await openAdd();
             await typeLine(SCALE);
             const before = await linkOf();
+            await uncoverPan();
             await tapNote("rim", 1, touch);
-            assert.strictEqual(await status(), "Bb3 picked. Tap another note to swap, or tap a spot to move it.");
+            assert.deepStrictEqual(await selectedOf(), { ring: "rim", i: 1 });
             const past = await pastLen();
-            await place("bottom");
+            await tapSpot(...polar(await orbitOf("bottom"), 150), touch);
             assert.deepStrictEqual(await names("bottom"), ["Bb3"], await status());
+            assert.strictEqual(await bottomAngle("Bb3"), 150);
             assert.strictEqual((await names("rim")).length, 7);
             assert.strictEqual(await selectedOf(), null);
             assert.strictEqual(await pastLen(), past + 1);
@@ -3433,38 +3444,52 @@ function run() {
             assert.strictEqual(await linkOf(), before);
           });
 
-          test("empty cyclops arc accepts a first note at the 5 degree angle, says it stays, and draws a pin ring", async () => {
-            await fresh(375, 667);
-            await openAdd();
-            await typeLine("(D3) " + RIM8);
-            assert.deepStrictEqual(await b.eval(`return [...document.querySelectorAll("#editor-pan .etarget")].map((e) => e.dataset.ring);`), ["inner", "bottom"]);
-            assert.strictEqual(await pinRings(), 0);
-            await hold("G");
+          test("an empty Cyclops accepts its visible Guided seat and Undo restores the prior layout", async () => {
+            await setup("(D3) " + RIM8);
+            const before = await linkOf();
             await b.click("#editor-oct-up");
-            await tapSpot(...polar(0.38, 62), touch);
-            assert.deepStrictEqual(await names("inner"), ["G5"], await status());
-            const said = (await status()).match(/^G5 placed on the cyclops at (\d+) degrees\. It stays there\./);
-            assert.ok(said, await status());
-            assert.strictEqual(Number(said[1]) % 5, 0);
-            assert.deepStrictEqual((await model()).options.angles.inner, [Number(said[1])]);
-            assert.strictEqual(await pinRings(), 1, "the pinned cyclops note carries a pin ring");
-            await hold("F");
-            await place("rim");
-            assert.match(await status(), /^F5 added to the rim\./);
-            assert.strictEqual(await pinRings(), 1, "an auto note has no pin ring");
+            const steps = await pastLen();
+            await hold("G");
+            await uncoverPan();
+            const landing = await tapOutlinedSeat("inner", touch);
+            const placement = await b.eval(`const m = editorSession.history.present;
+              return { notes: editorNames(m, "inner"), angles: editorAnglesOf(editorSolve(m), "inner") };`);
+            assert.deepStrictEqual(placement, { notes: ["G5"], angles: [landing] }, await status());
+            assert.strictEqual(await pinRings(), 0, "the Guided seat does not add a custom angle pin");
+            assert.strictEqual(await pastLen(), steps + 1);
+            await clickUndo();
+            assert.strictEqual(await linkOf(), before);
           });
 
-          test("with nothing held, a tap on the empty cyclops arc or bottom band selects the zone and Reset spacing scopes to it", async () => {
-            await fresh(375, 667);
-            await openAdd();
-            await typeLine("(D3) " + RIM8);
+          test("zone taps scope Reset to that ring and preserve pins on the other ring", async () => {
+            await setup("(D3) " + RIM8);
+            await uncoverPan();
             await tapSpot(...polar(0.38, 90), touch);
-            assert.strictEqual(await status(), "Cyclops selected.");
+            assert.match(await status(), /^Cyclops selected\./);
             assert.strictEqual(await b.eval(`return editorSession.zone;`), "inner");
-            assert.strictEqual(await b.eval(`return document.querySelector("#editor-pan .etarget[data-ring=inner]").classList.contains("picked");`), true);
-            await tapSpot(...polar(await orbitOf("bottom"), 200), touch);
-            assert.strictEqual(await status(), "Bottom selected.");
-            assert.strictEqual(await b.eval(`return document.getElementById("editor-reset").getAttribute("aria-label");`), "Reset bottom spacing");
+            assert.deepStrictEqual(await readReset(), { enabled: false, label: "Reset cyclops spacing" });
+            await tapSpot(...polar(await orbitOf("bottom"), 150), touch);
+            assert.match(await status(), /^Bottom selected\./);
+            assert.deepStrictEqual(await readReset(), { enabled: false, label: "Reset bottom spacing" });
+
+            await setup("[A2] " + SCALE);
+            await b.eval(`const loaded = editorLoad(${JSON.stringify("[A2] " + SCALE)}, { angles: { inner: [125, null], bottom: [60] } });
+              if (!loaded.ok) throw new Error(loaded.reason);
+              editorSession.history = editorHistoryNew(loaded.value);
+              editorRender(); return true;`);
+            const before = await linkOf();
+            const angles = (await model()).options.angles;
+            assert.deepStrictEqual(angles, { inner: [125, null], bottom: [60] });
+            await uncoverPan();
+            await tapSpot(...polar(await orbitOf("bottom"), 150), touch);
+            assert.strictEqual(await b.eval(`return editorSession.zone;`), "bottom");
+            await b.click("#editor-more");
+            assert.deepStrictEqual(await readReset(), { enabled: true, label: "Reset bottom spacing" });
+            await b.click("#editor-reset");
+            assert.deepStrictEqual((await model()).options.angles, { inner: angles.inner });
+            assert.strictEqual(await pastLen(), 1);
+            await clickUndo();
+            assert.strictEqual(await linkOf(), before);
           });
         });
       }
