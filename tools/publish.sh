@@ -27,3 +27,6 @@ fi
 if [ "${CF_PAGES_BRANCH:-}" = "claude/rc-upgrade" ] && [ -f editor-balanced-mock.html ]; then
   cp editor-balanced-mock.html "$out/editor-balanced-mock.html"
 fi
+if [ "${CF_PAGES_BRANCH:-}" = "claude/crowded-placement-preview" ]; then
+  cp editor-crowded-placement.html "$out/editor-crowded-placement.html"
+fi

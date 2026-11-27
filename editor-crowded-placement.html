@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crowded placement preview</title>
+<style>html{color-scheme:light dark}body{margin:0;padding:12px} </style>
+</head><body><div class="viz-dotted-background">
+  <section id="crowded-placement-demo" aria-label="Scale editor placement preview">
+    <header><strong>Edit this scale</strong><select aria-label="Crowded ring"><option value="rim">Crowded rim</option><option value="inner">Crowded Cyclops</option></select></header>
+    <div class="notation" aria-label="Scale notes"></div>
+    <div class="pan" aria-label="Handpan rim">
+      <span class="ding">D3</span>
+      
+      <div class="seats"></div>
+    </div>
+    <div class="status" role="status">Drag or tap D5 to place it.</div>
+    <div class="actions">
+      <button type="button" class="undo" disabled>Undo</button>
+      <button type="button" class="tray" aria-pressed="false">D5</button>
+      <button type="button" class="cancel" disabled>Cancel</button>
+    </div>
+  </section>
+</div>
+<style>
+  #crowded-placement-demo {color-scheme:light dark; --paper:light-dark(#f5f2ea,#24211d); --ink:light-dark(#242322,#f3ede0); --field:light-dark(#fff,#2e2a25); --line:light-dark(#8c8174,#ab9c8b); --gold:light-dark(#89541b,#f1be76); --preview:light-dark(#f0e3cd,#45351e); --band:light-dark(#242322,#131211); --accent:light-dark(#6754ac,#b9a5fa); container-type:inline-size; box-sizing:border-box; background:var(--paper); color:var(--ink); width:min(100%,410px); margin:auto; padding:13px; border-radius:14px; font:400 16px system-ui,sans-serif; }
+  #crowded-placement-demo header,#crowded-placement-demo .actions {display:flex;align-items:center;justify-content:space-between;gap:8px}
+  #crowded-placement-demo header {margin-bottom:10px}
+  #crowded-placement-demo header select {font:inherit;color:inherit;background:var(--field);border:1px solid var(--line);border-radius:7px;padding:7px 12px}
+  #crowded-placement-demo .notation {border:1px solid var(--line);background:var(--field);padding:9px;border-radius:8px;min-height:1.5em}
+  #crowded-placement-demo .pan {position:relative;box-sizing:border-box;width:calc(100% - 12px);max-width:346px;aspect-ratio:1;border:2px solid var(--ink);border-radius:50%;margin:12px auto;user-select:none}
+  #crowded-placement-demo .ding,#crowded-placement-demo .seat {position:absolute;display:grid;place-items:center;box-sizing:border-box;transform:translate(-50%,-50%);border:1.5px solid var(--ink);border-radius:50%;background:var(--field);color:var(--ink);font:inherit;padding:0}
+  #crowded-placement-demo .ding {left:50%;top:50%;width:22%;aspect-ratio:1}
+  #crowded-placement-demo .seat {width:15%;aspect-ratio:1;cursor:pointer;transition:left .19s ease,top .19s ease}
+  #crowded-placement-demo .seat[data-insert] {border:2px dashed var(--gold);background:var(--preview)}
+  #crowded-placement-demo .seat[data-replace] {outline:2px solid var(--gold);outline-offset:2px}
+  #crowded-placement-demo .status {display:grid;align-content:center;min-height:2.6em;background:var(--band);color:#fff;border-radius:8px;padding:8px 11px;margin-bottom:9px}
+  #crowded-placement-demo .actions button {min-height:42px;border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:var(--field);color:var(--ink);font:inherit;cursor:pointer}
+  #crowded-placement-demo .actions button:disabled {opacity:.5;cursor:default}
+  #crowded-placement-demo .actions .tray {touch-action:none;border-color:var(--accent);min-width:72px}
+  #crowded-placement-demo .actions .tray[aria-pressed=true] {background:var(--accent);color:light-dark(#fff,#221832)}
+  #crowded-placement-demo .pan.dragging .seat {transition:none}
+  #crowded-placement-demo .projected {position:absolute;width:8%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;border:1.5px dashed var(--accent);background:var(--preview);opacity:.75}
+  #crowded-placement-demo .seat[data-insert] {z-index:2}
+  #crowded-placement-demo .seat[data-replace] {z-index:3}
+  #crowded-placement-demo .pan[data-zone=inner] .ding {top:62%}
+  #crowded-placement-demo .pan[data-zone=inner] .seat {width:14%}
+  #crowded-placement-demo .seat:not([data-armed]) {cursor:default}
+  @media(prefers-reduced-motion:reduce){#crowded-placement-demo .seat{transition:none}}
+</style>
+<script>
+(() => {
+  const root = document.getElementById('crowded-placement-demo');
+  const pan = root.querySelector('.pan');
+  const seats = root.querySelector('.seats');
+  const status = root.querySelector('.status');
+  const zone = root.querySelector('select');
+  const tray = root.querySelector('.tray');
+  const undo = root.querySelector('.undo');
+  const cancel = root.querySelector('.cancel');
+  const source = 'D5';
+  const setups = {
+    rim: { notes:['B♭5','G4','C5','E5','A3','C4','E4','G3','F4','D4','B♭3'], at:1, label:'on the rim' },
+    inner: { notes:['F5','B♭5','G5','A5','C6'], at:2, label:'in Cyclops' }
+  };
+  let notes, previous, armed, active, pointer, skipClick;
+  const current = () => setups[zone.value];
+  const hint = 'Tap the dashed seat to insert D5. Tap a note to replace it.';
+  const buttons = Array.from({length:12}, (_, i) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'seat';
+    button.dataset.index = i;
+    button.addEventListener('click', () => { if (armed) commit(i); });
+    button.addEventListener('focus', () => { if (armed) highlight(i); });
+    button.addEventListener('pointerenter', () => { if (armed && !pointer) highlight(i); });
+    seats.append(button);
+    return button;
+  });
+  function position(index,count) {
+    if (zone.value === 'rim') {
+      const angle = (-90 + index * 360 / count) * Math.PI / 180;
+      return [50 + Math.cos(angle)*41, 50 + Math.sin(angle)*41];
+    }
+    const angle = (205 + index * 130 / (count-1)) * Math.PI / 180;
+    return [50 + Math.cos(angle)*38, 62 + Math.sin(angle)*38];
+  }
+  function locate(el,point) {
+    el.style.left = point[0]+'%';
+    el.style.top = point[1]+'%';
+  }
+  function updateStatus(message) {
+    if (status.textContent !== message) status.textContent = message;
+  }
+  function highlight(index) {
+    if (index === active) return;
+    active = index;
+    for (const [i,button] of buttons.entries()) button.toggleAttribute('data-replace',i===index && i<notes.length);
+    if (active === notes.length) {
+      updateStatus('Insert D5 '+current().label+' · '+notes.length+' → '+(notes.length+1)+' seats');
+    } else if (active !== null) {
+      updateStatus('Replace '+notes[active]+' with D5');
+    } else updateStatus(hint);
+  }
+  function render(message) {
+    active = null;
+    pan.dataset.zone = zone.value;
+    buttons.forEach((button,i) => {
+      const empty = i === notes.length;
+      const visible = !empty ? i < notes.length : armed;
+      button.style.display = visible ? '' : 'none';
+      button.disabled = !armed;
+      button.toggleAttribute('data-armed',armed);
+      button.removeAttribute('data-replace');
+      if (!visible) return;
+      const at = current().at;
+      const shownCount = notes.length + Number(armed);
+      const shownIndex = empty ? at : armed && i >= at ? i + 1 : i;
+      locate(button,position(shownIndex,shownCount));
+      button.toggleAttribute('data-insert',empty);
+      button.textContent = empty ? source : notes[i];
+      button.setAttribute('aria-label',empty ? 'Insert D5 '+current().label : armed ? 'Replace '+notes[i]+' with D5' : notes[i]);
+    });
+    tray.disabled = notes.includes(source);
+    tray.setAttribute('aria-pressed',String(armed));
+    cancel.disabled = !armed;
+    undo.disabled = !previous;
+    root.querySelector('.notation').textContent = '(D3) '+(zone.value==='inner'?'A3 C4 E4 G4 | ':'')+notes.join(' ');
+    updateStatus(message || (armed ? hint : 'Drag or tap D5 to place it.'));
+  }
+  function commit(index) {
+    previous = notes.slice();
+    const insert = index === notes.length;
+    const old = notes[index];
+    if (insert) notes.splice(current().at,0,source);
+    else notes[index] = source;
+    armed = false;
+    render(insert ? 'D5 inserted '+current().label+'. Notes redistributed.' : old+' replaced by D5.');
+  }
+  function target(event) {
+    const point = document.elementFromPoint(event.clientX,event.clientY)?.closest('#crowded-placement-demo .seat');
+    return point ? Number(point.dataset.index) : null;
+  }
+  tray.addEventListener('pointerdown',event => {
+    if (event.button !== 0 || tray.disabled) return;
+    skipClick = false;
+    pointer = {id:event.pointerId,x:event.clientX,y:event.clientY,dragged:false};
+    tray.setPointerCapture(event.pointerId);
+  });
+  tray.addEventListener('pointermove',event => {
+    if (!pointer || pointer.id !== event.pointerId) return;
+    if (!pointer.dragged && Math.hypot(event.clientX-pointer.x,event.clientY-pointer.y) >= 7) {
+      pointer.dragged = true;
+      armed = true;
+      pan.classList.add('dragging');
+      render();
+    }
+    if (pointer.dragged) highlight(target(event));
+  });
+  tray.addEventListener('pointerup',event => {
+    if (!pointer) return;
+    const dragged = pointer.dragged;
+    pointer = null;
+    pan.classList.remove('dragging');
+    if (!dragged) return;
+    skipClick = true;
+    const index = target(event);
+    if (index !== null) commit(index);
+    else { armed = false; render('D5 wasn’t placed.'); }
+  });
+  tray.addEventListener('pointercancel',() => {
+    pointer = null;
+    armed = false;
+    pan.classList.remove('dragging');
+    render();
+  });
+  tray.addEventListener('click',event => {
+    if (skipClick && event.detail) { skipClick = false; return; }
+    armed = !armed;
+    render();
+  });
+  undo.addEventListener('click',() => { notes = previous; previous = null; armed = false; render(); });
+  cancel.addEventListener('click',() => { armed = false; render(); tray.focus(); });
+  zone.addEventListener('change',reset);
+  root.addEventListener('keydown',event => { if (event.key === 'Escape' && armed) cancel.click(); });
+  function reset() { notes = current().notes.slice(); previous = null; armed = false; render(); }
+  reset();
+})();
+</script>
+</body></html>
