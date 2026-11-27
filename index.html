@@ -15834,7 +15834,10 @@ function editorStatusNotes(box, s, m, empty) {
     const previews = editorGuidedTapPreviews(m);
     const growing = previews.filter(preview => editorGuidedShowsProjection(preview.projection));
     const key = growing.length === 2 ? "editor.guided.tap_both" : growing.length ? "editor.guided.tap_growth" : s.held ? "editor.held" : "editor.say.picked";
-    box.appendChild(document.createTextNode(t(key, { name: s.held ? editorHeldName() : editorNameAt(m, s.sel) })));
+    const name = s.held ? editorHeldName() : editorNameAt(m, s.sel);
+    const picked = t("editor.say.picked", { name });
+    const feedback = !s.held && s.say && s.say !== picked ? s.say + " " : "";
+    box.appendChild(document.createTextNode(feedback + t(key, { name })));
     if (growing.length === 1) {
       box.dataset.guidedActions = "single";
       const place = editorNode("button", { id: "editor-guided-place", type: "button", class: "mode", text: t("editor.guided.place") });
