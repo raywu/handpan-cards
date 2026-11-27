@@ -40,6 +40,27 @@ test("fixed Neotone keeps surviving slots through typed and visual edits", () =>
   assert.strictEqual(results.same, true);
 });
 
+test("mode round trips preserve Guided seats and legacy Neotone share layouts", () => {
+  const a = app();
+  const codes = plain(a.get(`(() => {
+    const text = "(D3) A3 C4 E4";
+    const guided = editorLoad(text, { guided: { rim: { size: 7, seats: [1, 3, 0] } } }).value;
+    const map = ["r57", "r60", "r64", ...Array(15).fill(null)];
+    const legacy = editorLoad(text, { anchor: "between", profile: { id: "paired", rev: 2, map } }).value;
+    const code = m => HPE.share.encode({ fields: m.fields, options: editorCommitOptions(m) }).value;
+    const twoSwitches = (m, other, original) =>
+      editorPanType(editorPanType(m, other).value, original).value;
+    return {
+      standard: [code(guided), code(twoSwitches(guided, "neotone", "standard"))],
+      legacy: [code(legacy), code(twoSwitches(legacy, "standard", "neotone"))],
+    };
+  })()`));
+  assert.match(codes.standard[0], /^B/);
+  assert.match(codes.legacy[0], /^9/);
+  assert.strictEqual(codes.standard[0], codes.standard[1]);
+  assert.strictEqual(codes.legacy[0], codes.legacy[1]);
+});
+
 // CARD-SPEC Pan type and Mirror: conversion is one Undo step, Neotone owns
 // placement, and Undo restores the original mirrored Standard scale exactly.
 for (const flags of [{ mirror: true }, { mirrorBottom: false }, { mirrorBottom: true }]) {

@@ -14543,7 +14543,7 @@ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
 const editorCanSave = (m) => !editorIsEmpty(m);
 const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
 const editorBare = (m) => {
-  const { view, stage, ...rest } = m;
+  const { view, stage, modeLayouts, ...rest } = m;
   const o = { ...rest.options };
   if (editorIsEmpty(m)) delete o.profile;
   if (o.anchor === "one") delete o.anchor;
@@ -14697,28 +14697,37 @@ function editorCommitText(m, text) {
   const solved = editorSolve(next);
   return solved.ok ? { ok: true, value: next, ...reset } : solved;
 }
-// The pan type is one model change: Neotone proposes the profile and sets the
-// placement options aside, Standard removes the profile.
+// A mode change carries the current notes. The previous mode's layout can be
+// restored while its note inventory still matches.
+const EDITOR_MODE_OPTIONS = ["profile", "mirror", "mirrorBottom", "anchor", "seats", "angles", "guided"];
 function editorPanType(m, kind) {
-  if (editorKindOf(m) === kind) return { ok: true, value: m };
+  const from = editorKindOf(m);
+  if (from === kind) return { ok: true, value: m };
   if (editorIsEmpty(m)) return editorStagePanType(m, kind);
   const next = editorClone(m);
-  if (kind === "standard") {
-    delete next.options.profile;
-    return { ok: true, value: next };
-  }
-  next.options.mirror = false;
-  delete next.options.mirrorBottom;
-  const profile = editorProfileFor(next.fields);
-  if (!profile) return editorRefusal(t("editor.neotone"));
-  const hadPins = next.pins.length > 0;
-  next.options.profile = profile;
-  if (next.options.anchor === "one") delete next.options.anchor;
-  delete next.options.seats;
-  delete next.options.angles;
+  const notes = HPE.core.formatSeed(m.fields);
+  const previous = next.modeLayouts?.[kind];
+  const options = Object.fromEntries(EDITOR_MODE_OPTIONS.filter(key => key in next.options)
+    .map(key => [key, next.options[key]]));
+  next.modeLayouts = { ...next.modeLayouts, [from]: { notes, options, pins: next.pins } };
+  for (const key of EDITOR_MODE_OPTIONS) delete next.options[key];
   next.pins = [];
+  if (previous?.notes === notes) {
+    Object.assign(next.options, previous.options);
+    next.pins = previous.pins;
+  } else {
+    if (m.options.anchor === "between") next.options.anchor = "between";
+    if (kind === "neotone") {
+      const profile = editorProfileFor(next.fields);
+      if (!profile) return editorRefusal(t("editor.neotone"));
+      next.options.profile = profile;
+      next.options.mirror = false;
+    }
+  }
   const solved = editorSolve(next);
-  return solved.ok ? { ok: true, value: next, ...(hadPins ? { notice: { pinsReset: true } } : {}) } : solved;
+  if (!solved.ok) return solved;
+  const pinsReset = m.pins.length > 0 && next.pins.length === 0;
+  return { ok: true, value: next, ...(pinsReset ? { notice: { pinsReset: true } } : {}) };
 }
 // What a Save commits: a Standard model's own options, or with a profile the
 // palette, name and profile alone (ENGINE-SPEC 18, rule I1), as commitOptions does.
