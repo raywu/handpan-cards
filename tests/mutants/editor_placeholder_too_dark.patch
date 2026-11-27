@@ -1,15 +1,15 @@
-# kills: QA1 every editor input with placeholder text paints it lighter than typed text, in main's drawer placeholder grey (#8A847B)
+# kills: QA1 every editor input with placeholder text paints it lighter than typed text
 # suite: node --test --test-name-pattern QA1.every.editor.input tests/editor_e2e.test.js
-# The name placeholder goes back to the darker #6B665E, so the suggestion reads like typed text.
+# fault: Both scale-editor placeholders use the same ink as typed text.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -908,7 +908,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
- #editor-line[aria-invalid="true"]{border-color:#242424; border-width:2px}
- #editor-name{flex:1 1 auto; min-width:0; width:auto; box-sizing:border-box; min-height:44px; padding:9px var(--sp-3); font:500 16px/1.3 "Nunito Sans"; color:#242424;
-   background:#fff; border:1px solid #8A847B; border-radius:8px; text-overflow:ellipsis}
--#editor-name::placeholder{color:#8A847B; opacity:1}
-+#editor-name::placeholder{color:#6B665E; opacity:1}
- #editor .editor-statusrow{transition:transform 220ms cubic-bezier(.2,.8,.2,1); flex:0 0 auto; display:flex; align-items:center; gap:var(--sp-2); position:relative; z-index:2; box-sizing:border-box}
- #editor-status{flex:1 1 0; min-width:0; min-height:40px; margin:0; font:600 13px/20px "Nunito Sans"; display:flex; align-items:center; gap:var(--sp-2); position:relative; box-sizing:border-box}
- @media (max-width:420px){#editor-status{min-height:48px}}
+@@ -15355,7 +15355,7 @@
+   const style=document.createElement('style');style.textContent=`
+   #scale-sheet.onepanel #editor{position:relative;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:6px;padding-bottom:0!important}
+   #editor #editor-line{font-size:16px}
+-  #editor #editor-line::placeholder,#editor #editor-name::placeholder{color:#77716a;opacity:1}
++  #editor #editor-line::placeholder,#editor #editor-name::placeholder{color:#242424;opacity:1}
+   #editor .panexp-stage{position:relative;flex:0 0 auto;margin-inline:-10px;width:calc(100% + 20px);overflow:visible}
+   #editor .panexp-stage>.editor-panbox{height:100%!important;width:100%;min-height:0;transition:none;transform-origin:0 0}
+   #editor .drawerexp{position:absolute;z-index:8;bottom:var(--rail-height,60px);left:0;right:0;background:#F6F4ED;border-top:1px solid #8A847B;box-shadow:0 -5px 16px #24242414;transform:translateY(var(--drawerexp-offset,0px));transition:transform 180ms cubic-bezier(.2,.8,.2,1);isolation:isolate}

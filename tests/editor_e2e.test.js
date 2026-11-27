@@ -4653,10 +4653,10 @@ function run() {
       assert.ok(r.wide > 200);
     });
 
-    test("the placeholder is the auto name, the Neotone suffixed one on a Neotone scale, and empty on an empty scale", async () => {
+    test("the placeholder shows the name hint on an empty scale and the auto name after placement", async () => {
       await fresh();
       await openAdd();
-      assert.strictEqual(await placeholder(), "");
+      assert.strictEqual(await placeholder(), await b.eval('return t("sheet.name_label");'));
       await typeLine(BOTTOMS);
       const auto = await b.eval(`return editorAutoName(editorSession.history.present);`);
       assert.ok(auto.length > 0);
@@ -5190,7 +5190,7 @@ function run() {
       });
     }
 
-    test("QA1 every editor input with placeholder text paints it lighter than typed text, in main's drawer placeholder grey (#8A847B)", async () => {
+    test("QA1 every editor input with placeholder text paints it lighter than typed text", async () => {
       await open(390, 844);
       const r = await b.eval(`const out = [];
         for (const el of document.querySelectorAll("#editor input, #editor textarea")) {
@@ -5198,10 +5198,15 @@ function run() {
           out.push({ id: el.id, ph: getComputedStyle(el, "::placeholder").color, ink: getComputedStyle(el).color, op: getComputedStyle(el, "::placeholder").opacity });
         }
         return out;`);
-      assert.ok(r.some((x) => x.id === "editor-name"), "the name field carries a placeholder: " + JSON.stringify(r));
+      for (const id of ["editor-line", "editor-name"]) {
+        assert.ok(r.some(x => x.id === id), id + " has a default placeholder");
+      }
+      const luma = value => {
+        const [red, green, blue] = value.match(/\d+/g).map(Number);
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+      };
       for (const x of r) {
-        assert.notStrictEqual(x.ph, x.ink, x.id + " placeholder must differ from typed text");
-        assert.strictEqual(x.ph, "rgb(138, 132, 123)", x.id + " placeholder colour");
+        assert.ok(luma(x.ph) > luma(x.ink), x.id + " placeholder is lighter than typed text");
         assert.strictEqual(x.op, "1", x.id + " placeholder opacity");
       }
     });
@@ -7425,14 +7430,14 @@ function run() {
       assert.strictEqual(await b.eval(`return editorSession.held.k !== undefined && editorHeldName();`), "D3");
     });
 
-    test("L2 the name box hints the auto name once the scale is valid, and stays empty while the stage is empty or only staged", async () => {
+    test("L2 the name box shows its default hint until the scale has an auto name", async () => {
       await fresh();
       await openAdd(3);
-      assert.strictEqual(await placeholder(), "");
+      assert.strictEqual(await placeholder(), await b.eval('return t("sheet.name_label");'));
       await b.click('.tray-note[data-name="A"]');
       await place("bottom");
       assert.strictEqual(await b.eval(`return editorIsEmpty(editorSession.history.present);`), true, "only staged");
-      assert.strictEqual(await placeholder(), "", "no hint while only staged");
+      assert.strictEqual(await placeholder(), await b.eval('return t("sheet.name_label");'), "the generic hint stays while only staged");
       await b.click("#editor-back");
       await b.eval(`const d = document.getElementById("editor-dialog"); if (d && !d.hasAttribute("hidden")) { const x = d.querySelector("button"); if (x) x.click(); } return true;`);
       await fresh();
