@@ -1,15 +1,15 @@
-# kills: NR: a cyclops edit after a mapped switch leaves nothing to restore on the way back
-# suite: node --test --test-name-pattern NR:.a.cyclops.edit.after.a.mapped.switch.leaves.nothing.to.restore.on.the.way.back tests/editor_shell.test.js
-# fault: A switch back restores the other kind's parked stage even after an edit made it unmappable.
+# kills: NR: adding a Cyclops note after switching blocks conversion and preserves the Standard draft
+# suite: node --test --test-name-pattern ^NR..adding.a.Cyclops.note.after.switching.blocks.conversion.and.preserves.the.Standard.draft tests/editor_shell.test.js
+# fault: Pretend a blocked Cyclops conversion succeeded without converting.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13015,7 +13015,7 @@ function editorStagePanType(m, kind) {
-   const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
-   const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
-   const mapped = unchanged ? null : editorStageMapped(old, kind);
--  const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
-+  const parked = other && other.kind === kind;
-   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
-   if (old.ding) next.ding = old.ding;
-   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
+@@ -14906,7 +14906,7 @@
+   if (editorKindOf(m) === kind) return { ok: true, value: m };
+   const notes = editorPartsOf(m);
+   if (kind === "neotone" && notes.inner.length)
+-    return editorAreaRefusal("FIELDS_FULL", t("editor.switch_cyclops"));
++    return { ok: true, value: m };
+   if (kind === "neotone" && (notes.rim.length > NEO_MAIN || notes.bottom.length > NEO_MAIN))
+     return editorAreaRefusal("FIELDS_FULL", HPE.core.REASONS.PROFILE_FULL.reason);
+   const hints = editorLinkedHints(m);

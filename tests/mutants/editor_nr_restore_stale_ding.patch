@@ -1,15 +1,15 @@
 # kills: NR: a ding change on the other pan type then a switch back restores the notes with the new ding
-# suite: node --test --test-name-pattern NR:.a.ding.change tests/editor_shell.test.js
-# The restoring switch back keeps the remembered stage's old ding instead of the ding chosen on the other pan type.
+# suite: node --test --test-name-pattern ^NR..a.ding.change.on.the.other.pan.type.then.a.switch.back.restores.the.notes.with.the.new.ding tests/editor_shell.test.js
+# fault: Reuse the remembered Ding even when the player changed it in the other mode.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13153,7 +13153,7 @@ function editorStagePanType(m, kind) {
-   const mapped = unchanged ? null : editorStageMapped(old, kind);
-   const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
-   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
--  if (old.ding) next.ding = old.ding;
-+  if (old.ding && !unchanged) next.ding = old.ding;
-   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
-   const staged = editorWithStage(m, next);
-   const done = editorStageSettle(staged, next);
+@@ -14930,7 +14930,7 @@
+     });
+   }
+   const stage = editorBlankStage(kind);
+-  const ding = editorDingOf(m);
++  const ding = m.modeLayouts?.[kind]?.stage?.ding || editorDingOf(m);
+   if (ding) stage.ding = ding;
+   if (kind === "standard") {
+     Object.assign(stage, notes);

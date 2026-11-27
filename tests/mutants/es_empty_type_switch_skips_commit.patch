@@ -1,15 +1,15 @@
-# kills: empty stage: a switch that restores parked notes commits them when the ding and a fifth are there, in the same one Undo step
-# suite: node --test --test-name-pattern empty.stage..a.switch.that.restores.parked.notes.commits.them tests/editor_shell.test.js
-# fault: A pan type switch that restores parked notes leaves the pan staged, so Save stays disabled although the ding and a fifth are there.
+# kills: empty stage: the pan type of a non-empty model behaves as before
+# suite: node --test --test-name-pattern ^empty.stage..the.pan.type.of.a.non-empty.model.behaves.as.before tests/editor_shell.test.js
+# fault: Leave valid complete edited scales in the transient stage after mode conversion.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13156,7 +13156,7 @@
-   if (old.ding) next.ding = old.ding;
-   if (Object.values(old).some((v) => Array.isArray(v) && v.some(Boolean))) next.other = old;
-   const staged = editorWithStage(m, next);
--  const done = editorStageSettle(staged, next);
-+  const done = { ok: false };
-   return done.ok || done.code === "NO_ROOM" ? done : { ok: true, value: staged, notice: { stageRefused: reasonText(done) } };
- }
- function editorNameEntry(name, zone, label) {
+@@ -14964,7 +14964,7 @@
+   delete options.guided;
+   if (kind === "neotone") { delete options.mirror; delete options.mirrorBottom; }
+   const draft=editorWithStage({...m,fields:{},options,pins:[],layoutHints:hints},stage);
+-  const result=editorStageSettle(draft,stage);
++  const result={ ok: true, value: draft };
+   if (!result.ok) return editorAreaRefusal("SWITCH_LAYOUT",result.reason);
+   let value=result.value;
+   if (kind === "standard" && !editorIsEmpty(value)) {

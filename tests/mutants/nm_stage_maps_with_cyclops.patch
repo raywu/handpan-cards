@@ -1,15 +1,15 @@
-# kills: empty stage: a stage with a cyclops note keeps today's park and restore on the switch, nothing is mapped
-# suite: node --test --test-name-pattern empty.stage..a.stage.with.a.cyclops.note.keeps.today tests/editor_shell.test.js
-# fault: The staged switch maps even when notes are on the cyclops, which Neotone has no place for, so they are lost.
+# kills: NR: a blocked Cyclops conversion adds no Undo step
+# suite: node --test --test-name-pattern ^NR..a.blocked.Cyclops.conversion.adds.no.Undo.step tests/editor_shell.test.js
+# fault: Convert and drop existing Cyclops notes when the destination has no Cyclops ring.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12990,7 +12990,7 @@
- }
- function editorStageMapped(old, kind) {
-   if (kind === "neotone") {
--    const fits = !old.inner.length && old.rim.length <= NEO_MAIN && old.bottom.length <= old.rim.length;
-+    const fits = old.rim.length <= NEO_MAIN && old.bottom.length <= old.rim.length;
-     return fits && old.rim.length ? { kind, main: [...old.rim], mutant: [...old.bottom] } : null;
-   }
-   const bottom = old.mutant.filter(Boolean);
+@@ -14905,8 +14905,6 @@
+ function editorConvertMode(m, kind) {
+   if (editorKindOf(m) === kind) return { ok: true, value: m };
+   const notes = editorPartsOf(m);
+-  if (kind === "neotone" && notes.inner.length)
+-    return editorAreaRefusal("FIELDS_FULL", t("editor.switch_cyclops"));
+   if (kind === "neotone" && (notes.rim.length > NEO_MAIN || notes.bottom.length > NEO_MAIN))
+     return editorAreaRefusal("FIELDS_FULL", HPE.core.REASONS.PROFILE_FULL.reason);
+   const hints = editorLinkedHints(m);

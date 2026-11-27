@@ -1,15 +1,15 @@
-# kills: empty stage: Standard to Neotone maps the rim to the main fields and the bottom to the mutants, in order, with the ding
-# suite: node --test --test-name-pattern empty.stage..Standard.to.Neotone.maps.the.rim tests/editor_shell.test.js
-# fault: Switching the pan type of a staged pan never maps the notes across kinds, so Neotone opens blank as before.
+# kills: empty stage: a mapped switch is one Undo step and Undo restores the exact prior stage; the mapped stage never reaches the export or a save
+# suite: node --test --test-name-pattern ^empty.stage..a.mapped.switch.is.one.Undo.step.and.Undo.restores.the.exact.prior.stage..the.mapped.stage.never.reaches.the.export.or.a.save tests/editor_shell.test.js
+# fault: Omit staged rim notes when mapping them into the fixed main slots.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13014,7 +13014,7 @@ function editorStagePanType(m, kind) {
-   const { other, ...old } = editorStageOf(m);
-   const flat = (st) => JSON.stringify(Object.entries(st).filter(([k]) => k !== "ding" && k !== "other").sort());
-   const unchanged = !!other && other.kind === kind && flat(editorStageMapped(other, old.kind) || {}) === flat(old);
--  const mapped = unchanged ? null : editorStageMapped(old, kind);
-+  const mapped = null;
-   const parked = other && other.kind === kind && editorStageMapped(other, old.kind) === null;
-   const next = unchanged || (!mapped && parked) ? { ...other } : mapped || editorBlankStage(kind);
-   if (old.ding) next.ding = old.ding;
+@@ -14944,7 +14944,7 @@
+     stage.angles = { bottom: notes.bottom.map(name => hints.bottom[editorLayoutKey("bottom",name)] ?? null) };
+     editorStageTidyAngles(stage);
+   } else {
+-    for (const [ring,row,start] of [["rim",stage.main,0],["bottom",stage.mutant,NEO_MAIN]]) {
++    for (const [ring,row,start] of [["bottom",stage.mutant,NEO_MAIN]]) {
+       const remaining=[];
+       for (const name of notes[ring]) {
+         const slot=hints.neo[editorLayoutKey(ring,name)];

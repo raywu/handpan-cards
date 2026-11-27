@@ -1,23 +1,15 @@
-# kills: QA4 hint after type switch: the info button is in the visible Scale name row after a pan-type tap from Layout
-# suite: node --test --test-name-pattern QA4.hint.after tests/editor_e2e.test.js
-# fault: Only editorSetTab re-parents the info button (not the tab render), so a pan-type tap from Layout strands it in the hidden panel.
+# kills: EDITOR-RC-DRAWER: the short-screen drawer closes and reopens with Save reachable
+# suite: node --test --test-name-pattern ^EDITOR-RC-DRAWER..the.short-screen.drawer.closes.and.reopens.with.Save.reachable tests/editor_e2e.test.js
+# fault: Ignore the drawer handle when the player tries to reopen its controls.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -13999,7 +13999,7 @@ function editorRenderTabs() {
-     if (on) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
-   }
-   const tog = editorEl("editor-hint-toggle"), row = editorEl("editor-panel-" + s.tab).querySelector(".editor-hintrow");
--  if (tog && row && tog.parentNode !== row) {
-+  if (tog && row && false) {
-     const had = document.activeElement === tog;
-     row.appendChild(tog);
-     if (had) tog.focus();
-@@ -14055,6 +14055,7 @@ function editorSetTab(tab, focus) {
-   editorCloseMenu();
-   s.tab = tab;
-   editorRenderTabs();
-+  editorEl(tab === "scale" ? "editor-panel-scale" : "editor-panel-layout").querySelector(".editor-hintrow").appendChild(editorEl("editor-hint-toggle"));
-   if (tab === "scale") editorRegionPin(); else editorEl("editor-region").scrollTop = 0;
-   editorPlaceAreas();
-   if (focus) editorEl("editor-tab-" + tab).focus();
+@@ -15647,7 +15647,7 @@
+   function down(e){tapRest=null;api.clearReveal();suppressClick=false;if(!e.isPrimary||e.button>0||gesture||editorDrag)return;e.stopPropagation();gesture={id:e.pointerId,y:e.clientY,x:e.clientX,was:expanded};handle.setPointerCapture(e.pointerId);}
+   function move(e){if(!gesture||e.pointerId!==gesture.id)return;e.stopPropagation();if(e.cancelable)e.preventDefault();}
+   function up(e){if(!gesture||e.pointerId!==gesture.id)return;const g=gesture;gesture=null;e.stopPropagation();const dy=e.clientY-g.y,dx=e.clientX-g.x;if(e.type==='pointerup'&&Math.abs(dy)>=24&&Math.abs(dy)>Math.abs(dx)){suppressClick=true;dragRest=null;manualDrawer(dy<0);}else if(e.type!=='pointerup')setExpanded(g.was);}
+-  function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;manualDrawer(!expanded);}
++  function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;manualDrawer(false);}
+   handle.addEventListener('pointerdown',down);handle.addEventListener('pointermove',move);for(const n of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(n,up);handle.addEventListener('click',click);handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tapRest=null;api.clearReveal();suppressClick=false;e.preventDefault();e.stopPropagation();dragRest=null;manualDrawer(!expanded);}});
+   function focusIn(e){if(e.target===scaleLine){lineFocusWidth=innerWidth;return;}if(body.contains(e.target))setExpanded(true,{immediate:true});else if(e.target.closest?.('#editor-pan')){const r=e.target.getBoundingClientRect(),cover=drawer.getBoundingClientRect();if(r.right>cover.left&&r.left<cover.right&&r.bottom>cover.top&&r.top<Math.min(innerHeight,cover.bottom))setExpanded(false,{immediate:true});}}
+   function key(e){clearRejection();const s=editorSession;if(e.key==='Escape'&&!e.target.closest?.('#editor-form')&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}
