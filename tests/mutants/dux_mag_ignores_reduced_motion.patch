@@ -4,10 +4,10 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15428,7 +15428,6 @@ function installEditorDrawer() {
-   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
-   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
-   @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
+@@ -15515,7 +15515,6 @@
+   #editor[data-phone-landscape] #editor-title{flex:0 1 10rem}
+   #editor[data-phone-landscape] .editor-head #editor-name{flex:1 1 10rem;min-width:44px;text-overflow:ellipsis}
+   #editor[data-phone-landscape] #editor-menu{max-height:var(--split-menu-max);overflow:auto;overscroll-behavior:contain}
 -  @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
    `;document.head.append(style);
    const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};

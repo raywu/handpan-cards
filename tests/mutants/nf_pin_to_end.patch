@@ -4,9 +4,9 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15607,6 +15607,7 @@ function installEditorDrawer() {
-     const vh=visualViewport?.height||innerHeight, rr=root.getBoundingClientRect();
-     const top=root.querySelector('.editor-line').getBoundingClientRect().bottom-rr.top+6;
+@@ -15724,6 +15724,7 @@
+     if(split&&feedbackBanner.scrollHeight>feedbackBanner.clientHeight)feedbackBanner.tabIndex=0;
+     else feedbackBanner.removeAttribute('tabindex');
      drawer.style.setProperty('--drawerexp-body-max',Math.max(88,vh-rr.top-top-chrome.offsetHeight-toolbar.offsetHeight-8)+'px');sync();
 +    body.scrollTop=body.scrollHeight;
      if(root.classList.contains('dragging')||root.classList.contains('settling'))return;

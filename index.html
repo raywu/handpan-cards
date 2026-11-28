@@ -15503,11 +15503,46 @@ function installEditorDrawer() {
   #editor-pan .eslot.unavailable{opacity:.45}
   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
-  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
+  #editor[data-phone-landscape]>.editor-line{position:absolute;top:var(--split-line-top);left:50%;right:8px;margin:0;width:auto}
+  #editor[data-phone-landscape] .panexp-stage{width:calc(50% - 8px);margin-inline:0}
+  #editor[data-phone-landscape] .drawerexp{left:50%;top:var(--split-top);transform:none;box-shadow:none;border-top:0}
+  #editor[data-phone-landscape] .drawerexp-chrome{display:none}
+  #editor[data-phone-landscape] .drawerexp-body{height:100%;max-height:none;padding-inline:8px}
+  #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height) + 4px) 8px!important}
+  #editor[data-phone-landscape] #editor-status:not(:empty){max-height:var(--split-feedback);overflow:auto;overscroll-behavior:contain;pointer-events:auto}
+  #editor[data-phone-landscape].dragging #editor-tabs,#editor[data-phone-landscape].dragging #editor-panels,
+  #editor[data-phone-landscape].dragging #editor-layout,#editor[data-phone-landscape].dragging #editor-tray{opacity:1;visibility:visible}
+  #editor[data-phone-landscape] #editor-title{flex:0 1 10rem}
+  #editor[data-phone-landscape] .editor-head #editor-name{flex:1 1 10rem;min-width:44px;text-overflow:ellipsis}
+  #editor[data-phone-landscape] #editor-menu{max-height:var(--split-menu-max);overflow:auto;overscroll-behavior:contain}
   @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
   `;document.head.append(style);
   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};
   let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;
+  const nameField=root.querySelector('#editor-name'), nameRow=nameField.parentElement;
+  const nameHome=document.createComment('scale name');nameField.before(nameHome);
+  const head=root.querySelector('.editor-head');
+  function syncSplit(){
+    const split=editorPhoneLandscape();
+    if(split===root.hasAttribute('data-phone-landscape'))return;
+    const hadHandleFocus=document.activeElement===handle;
+    root.toggleAttribute('data-phone-landscape',split);
+    if(split&&!expanded)setExpanded(true,{immediate:true});
+    if(split&&hadHandleFocus)root.querySelector('#editor-tab-'+editorSession.tab)?.focus({preventScroll:true});
+    const focused=document.activeElement===nameField;
+    // Moving an active input would blur it and commit its draft. Relocate on blur.
+    if(!focused)placeName();
+  }
+  function placeName(){
+    const split=editorPhoneLandscape();
+    if(split&&nameField.parentElement!==head){head.insertBefore(nameField,head.lastElementChild);return true;}
+    if(!split&&nameField.parentElement!==nameRow){nameHome.after(nameField);return true;}
+    return false;
+  }
+  const nameBlur=()=>requestAnimationFrame(()=>{
+    if(root.isConnected&&document.activeElement!==nameField&&placeName())layout();
+  });
+  nameField.addEventListener('blur',nameBlur);
   const reduced=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
   let tapRest=null, revealed=null, dropName=null, placement=null;
   function syncReminder(){
@@ -15667,6 +15702,7 @@ function installEditorDrawer() {
     drawer.style.setProperty('--drawerexp-offset',expanded?'0px':body.getBoundingClientRect().height+'px');
   }
   function setExpanded(next,{focus=false,immediate=false}={}){
+    if(editorPhoneLandscape()&&(!next||expanded))return;
     const was=expanded;expanded=!!next;if(expanded){placement=null;dropName=null;}syncReminder();const g=++generation;clearTimeout(timer);
     if(!expanded&&editorSession.hint)editorSetAreas(false);
     if(!expanded&&body.contains(document.activeElement))handle.focus({preventScroll:true});
@@ -15681,7 +15717,17 @@ function installEditorDrawer() {
   function layout(){
     if(!root.isConnected)return;
     const vh=visualViewport?.height||innerHeight, rr=root.getBoundingClientRect();
+    syncSplit();
+    const split=editorPhoneLandscape();
+    root.style.setProperty('--split-line-top',(head.getBoundingClientRect().bottom-rr.top+2)+'px');
     const top=root.querySelector('.editor-line').getBoundingClientRect().bottom-rr.top+6;
+    const splitFeedback=Math.max(24,Math.min(48,Math.floor((vh-rr.top-top-toolbar.offsetHeight)*.32)));
+    root.style.setProperty('--split-top',top+'px');
+    root.style.setProperty('--split-feedback',splitFeedback+'px');
+    root.style.setProperty('--split-menu-max',Math.max(44,toolbar.getBoundingClientRect().top-rr.top-16)+'px');
+    const feedbackBanner=root.querySelector('#editor-status');
+    if(split&&feedbackBanner.scrollHeight>feedbackBanner.clientHeight)feedbackBanner.tabIndex=0;
+    else feedbackBanner.removeAttribute('tabindex');
     drawer.style.setProperty('--drawerexp-body-max',Math.max(88,vh-rr.top-top-chrome.offsetHeight-toolbar.offsetHeight-8)+'px');sync();
     if(root.classList.contains('dragging')||root.classList.contains('settling'))return;
     const svg=document.querySelector('#editor-pan svg');if(!svg)return;
@@ -15702,10 +15748,12 @@ function installEditorDrawer() {
     const h = Math.min(restingShell * frame.h / 200, canvasWidth * frame.h / frame.w,
       Math.max(80, vh - rr.top - top - 56), availableHeight, clearHandleHeight);
     if(lineFocusWidth!==innerWidth||!stage.style.height){
-      stage.style.height=`${Math.max(80,h)}px`;
+      const splitHeight=Math.min(canvasWidth * frame.h / frame.w, toolbar.getBoundingClientRect().top-stageBounds.top-splitFeedback-9);
+      stage.style.height=`${split?Math.max(1,splitHeight):Math.max(80,h)}px`;
       if(lineFocusWidth!==null)lineFocusWidth=innerWidth;
     }
     if(!revealed)box.style.transform='none';
+    if(split&&editorSession.hint)editorPlaceAreas();
   }
   function camera(e){
     if(!root.isConnected||!root.classList.contains('dragging')||(e&&(!editorDrag||e.pointerId!==editorDrag.id)))return;
@@ -15715,16 +15763,19 @@ function installEditorDrawer() {
     const previous=transform||{x:0,y:0,z:1};
     const top=(matrix.f+matrix.d*frame.y-r.top-previous.y)/previous.z;
     const bottom=(matrix.f+matrix.d*(frame.y+frame.h)-r.top-previous.y)/previous.z;
-    const band=root.querySelector('.editor-line').getBoundingClientRect().bottom+4;
+    const band=(editorPhoneLandscape()?r.top:root.querySelector('.editor-line').getBoundingClientRect().bottom)+4;
     const obstacles=[toolbar,chrome,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])];
     const overlapsPan=el=>{const b=el.getBoundingClientRect();return b.left<r.right&&b.right>r.left;};
-    const limit=lowestClearance=Math.min(lowestClearance,...obstacles.filter(overlapsPan).map(el=>el.getBoundingClientRect().top-4));
+    const split=editorPhoneLandscape();
+    const limit=lowestClearance=Math.min(lowestClearance,...(split
+      ? [toolbar.getBoundingClientRect().top-parseFloat(root.style.getPropertyValue('--split-feedback'))-8]
+      : obstacles.filter(overlapsPan).map(el=>el.getBoundingClientRect().top-4)));
     const left=(matrix.e+matrix.a*frame.x-r.left-previous.x)/previous.z;
     const right=(matrix.e+matrix.a*(frame.x+frame.w)-r.left-previous.x)/previous.z;
-    const fitHeight=(limit-band)/(bottom-top), fitWidth=(innerWidth-8)/(right-left);
+    const fitHeight=(limit-band)/(bottom-top), fitWidth=(split?r.width-8:innerWidth-8)/(right-left);
     const z=Math.max(.1,Math.min(api.zoom,fitHeight,fitWidth));
     let ax=.5,ay=0;if(pointer){ax=Math.max(0,Math.min(1,(pointer.x-r.left)/r.width));ay=Math.max(0,Math.min(1,(pointer.y-r.top)/r.height));}
-    const minX=4-r.left-left*z,maxX=innerWidth-4-r.left-right*z;
+    const minX=(split?r.left:0)+4-r.left-left*z,maxX=(split?r.right:innerWidth)-4-r.left-right*z;
     const anchorX=-r.width*(z-1)*ax;
     const x=minX<=maxX?Math.max(minX,Math.min(maxX,anchorX)):anchorX;
     transform={x,y:Math.max(band-r.top-top*z,Math.min(limit-r.top-bottom*z,-r.height*(z-1)*ay)),z};paint();
@@ -15732,7 +15783,7 @@ function installEditorDrawer() {
   function paint(){if(transform)box.style.transform=`translate(${transform.x}px,${transform.y}px) scale(${transform.z})`;}
   function feedback(){
     if(!root.classList.contains('dragging'))return;
-    const ghost=editorDrag?.ghost;if(ghost){const r=ghost.getBoundingClientRect(),dx=r.left<4?4-r.left:r.right>innerWidth-4?innerWidth-4-r.right:0;const lo=stage.getBoundingClientRect().top+4,hi=chrome.getBoundingClientRect().top-4,dy=r.top<lo?lo-r.top:r.bottom>hi?hi-r.bottom:0;ghost.style.left=(parseFloat(ghost.style.left)+dx)+'px';ghost.style.top=(parseFloat(ghost.style.top)+dy)+'px';}
+    const ghost=editorDrag?.ghost;if(ghost){const r=ghost.getBoundingClientRect(),dx=r.left<4?4-r.left:r.right>innerWidth-4?innerWidth-4-r.right:0;const lo=stage.getBoundingClientRect().top+4,hi=(editorPhoneLandscape()?toolbar:chrome).getBoundingClientRect().top-4,dy=r.top<lo?lo-r.top:r.bottom>hi?hi-r.bottom:0;ghost.style.left=(parseFloat(ghost.style.left)+dx)+'px';ghost.style.top=(parseFloat(ghost.style.top)+dy)+'px';}
   }
   api.covered=e=>[drawer,toolbar,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])].some(el=>{
     const r=el.getBoundingClientRect();
@@ -15752,7 +15803,7 @@ function installEditorDrawer() {
   function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;manualDrawer(!expanded);}
   handle.addEventListener('pointerdown',down);handle.addEventListener('pointermove',move);for(const n of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(n,up);handle.addEventListener('click',click);handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tapRest=null;api.clearReveal();suppressClick=false;e.preventDefault();e.stopPropagation();dragRest=null;manualDrawer(!expanded);}});
   function focusIn(e){if(e.target===scaleLine){lineFocusWidth=innerWidth;return;}if(body.contains(e.target))setExpanded(true,{immediate:true});else if(e.target.closest?.('#editor-pan')){const r=e.target.getBoundingClientRect(),cover=drawer.getBoundingClientRect();if(r.right>cover.left&&r.left<cover.right&&r.bottom>cover.top&&r.top<Math.min(innerHeight,cover.bottom))setExpanded(false,{immediate:true});}}
-  function key(e){clearRejection();const s=editorSession;if(e.key==='Escape'&&drawer.contains(e.target)&&!e.target.closest?.('#editor-form')&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}
+  function key(e){clearRejection();if(editorPhoneLandscape())return;const s=editorSession;if(e.key==='Escape'&&drawer.contains(e.target)&&!e.target.closest?.('#editor-form')&&expanded&&!s.hint&&!s.dialog&&!s.menu&&!s.editing&&!s.naming&&!s.held&&!s.sel&&!editorDrag){e.preventDefault();e.stopImmediatePropagation();setExpanded(false,{focus:true});}}
 
   function resize(){api.clearPlacement();const changedWidth=innerWidth!==lastWidth;const rotation=changedWidth||(lineFocusWidth===null&&(innerWidth>innerHeight)!==lastOrientation);lastWidth=innerWidth;if(rotation)lastOrientation=innerWidth>innerHeight;gesture=null;if(rotation){dragRest=null;setExpanded(true,{immediate:true});}layout();}
   function lineBlur(){lineFocusWidth=null;requestAnimationFrame(layout);}
@@ -15794,13 +15845,13 @@ function installEditorDrawer() {
       const keepClosed=placement?.drag===rest.drag||rest.rejected;
       setExpanded(keepClosed?false:rest.expanded,{immediate:true});
       body.scrollTop=rest.scroll;
-      if(keepClosed&&(!rest.focus?.isConnected||body.contains(rest.focus)))handle.focus({preventScroll:true});
-      else if(rest.focus?.isConnected&&(!body.contains(rest.focus)||!keepClosed&&rest.expanded))rest.focus.focus({preventScroll:true});
+      if(keepClosed&&!editorPhoneLandscape()&&(!rest.focus?.isConnected||body.contains(rest.focus)))handle.focus({preventScroll:true});
+      else if(rest.focus?.isConnected&&(!body.contains(rest.focus)||editorPhoneLandscape()||!keepClosed&&rest.expanded))rest.focus.focus({preventScroll:true});
     }
     if(!root.classList.contains('settling')){layout();showDrop();showRejection();}
   });classObserver.observe(root,{attributes:true,attributeFilter:['class']});
   const panObserver=new MutationObserver(()=>{if(root.classList.contains('dragging'))feedback();else layout();});panObserver.observe(document.getElementById('editor-pan'),{childList:true,subtree:true});
-  const statusObserver=new MutationObserver(()=>{syncReminder();sync();});statusObserver.observe(document.getElementById('editor-status'),{childList:true,subtree:true});
+  const statusObserver=new MutationObserver(()=>{syncReminder();sync();if(editorPhoneLandscape())layout();});statusObserver.observe(document.getElementById('editor-status'),{childList:true,subtree:true});
   const lifetime=new MutationObserver(()=>{if(!root.isConnected)api.dispose();});lifetime.observe(document.body,{childList:true,subtree:true});
   api.dispose=()=>{if(api.disposed)return;api.disposed=true;clearRejection();clearTimeout(timer);generation++;classObserver.disconnect();panObserver.disconnect();statusObserver.disconnect();lifetime.disconnect();scaleLine.removeEventListener('blur',lineBlur);root.removeEventListener('pointerdown',onEditStart,true);root.removeEventListener('focusin',focusIn);root.removeEventListener('keydown',key,true);window.removeEventListener('resize',resize);visualViewport?.removeEventListener('resize',onVisualResize);style.remove();};
   api.focusField=id=>{const field=document.getElementById(id);if(!field||!body.contains(field))return false;const panel=field.closest('[role=tabpanel]');if(panel?.hidden)editorSetTab(panel.id==='editor-panel-scale'?'scale':'layout',false);setExpanded(true,{immediate:true});field.focus({preventScroll:true});return document.activeElement===field;};api.layout=layout;api.setExpanded=setExpanded;api.expanded=true;layout();setExpanded(true,{immediate:true});return api;
@@ -15989,7 +16040,7 @@ function editorRenderBody() {
     save.setAttribute("aria-describedby", explanation.id);
   } else save.removeAttribute("aria-describedby");
   if (!error) editorGuidedOfferButtons(status, s, m);
-  if (statusFocus) (editorEl(statusFocus) || document.getElementById("drawerexp-handle"))?.focus({ preventScroll: true });
+  if (statusFocus) (editorEl(statusFocus) || editorEl(editorPhoneLandscape() ? "editor-more" : "drawerexp-handle"))?.focus({ preventScroll: true });
   const solved = editorSolve(m);
   const box = editorEl("editor-pan");
   const had = box.contains(document.activeElement) && document.activeElement.dataset ? document.activeElement.dataset.fk : null;
@@ -16253,7 +16304,7 @@ function editorRenderTabs() {
     if (had) tog.focus();
   }
 }
-// Phone landscape (the S4 media query): #editor is the one scroll box and the region does not scroll, so nothing pins to an end there.
+// Short landscape keeps the visual editor and its independently scrollable controls side by side.
 const editorPhoneLandscape = () => matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px)").matches;
 // The region rests scrolled to its end so the tray sits above the toolbar, but never past the name row clearing the sticky strip; a render re-pins only when it was already there.
 function editorRegionRest(rg) {
@@ -16273,7 +16324,10 @@ function editorPlaceAreas() {
   if (areas.hidden) return;
   const parts = getComputedStyle(rg).display === "contents" ? [editorEl("editor-tabs"), editorEl("editor-panels")] : [rg];
   const rs = parts.map((e) => e.getBoundingClientRect()), box = ebox;
-  const top = Math.max(Math.min(...rs.map((r) => r.top)), box.top + ed.clientTop), bottom = Math.max(...rs.map((r) => r.bottom)), left = Math.min(...rs.map((r) => r.left)), right = Math.max(...rs.map((r) => r.right));
+  const splitPane = ed.hasAttribute("data-phone-landscape") ? editorEl("drawerexp-body").getBoundingClientRect() : null;
+  const top = Math.max(Math.min(...rs.map((r) => r.top)), splitPane?.top ?? box.top + ed.clientTop);
+  const bottom = Math.min(Math.max(...rs.map((r) => r.bottom)), splitPane?.bottom ?? Infinity);
+  const left = Math.min(...rs.map((r) => r.left)), right = Math.max(...rs.map((r) => r.right));
   const st = areas.style;
   st.top = top - box.top - ed.clientTop + ed.scrollTop + "px";
   st.left = left - box.left - ed.clientLeft + "px";
@@ -17896,7 +17950,7 @@ function editorDragEnd(e) {
 }
 function editorSaveIntoView() {
   const save = editorEl("editor-save");
-  if (save && window.matchMedia("(orientation:landscape) and (max-height:500px) and (min-width:560px)").matches) save.scrollIntoView({ block: "nearest" });
+  if (save && editorPhoneLandscape()) save.scrollIntoView({ block: "nearest" });
 }
 function editorDragUp(e) {
   if (editorDrag && e.pointerId === editorDrag.id) editorDragEnd(e.type === "pointerup" ? e : null);

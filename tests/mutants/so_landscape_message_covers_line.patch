@@ -1,14 +1,14 @@
 # kills: SO: a landscape message floats beside the open drawer without shifting its tabs
 # suite: node --test --test-name-pattern ^SO:.a.landscape.message.floats.beside.the.open.drawer.without.shifting.its.tabs tests/editor_e2e.test.js
-# fault: Anchor the open-drawer banner to the editor top so it overlaps the scale line.
+# fault: Anchor the landscape banner at the top instead of above the action rail.
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15420,6 +15420,7 @@ function installEditorDrawer() {
-   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
-   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
-   @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor .panexp-stage{width:calc(50% - 12px);margin-inline:0}#editor .drawerexp{left:50%}#editor .editor-statusrow{inset:auto 12px calc(var(--rail-height,60px) + 54px) calc(50% + 8px)!important}#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height,60px) + 10px) 12px!important}}
-+  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{top:0!important;bottom:auto!important}}
+@@ -15516,6 +15516,7 @@
+   #editor[data-phone-landscape] .editor-head #editor-name{flex:1 1 10rem;min-width:44px;text-overflow:ellipsis}
+   #editor[data-phone-landscape] #editor-menu{max-height:var(--split-menu-max);overflow:auto;overscroll-behavior:contain}
    @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
++  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor:not(.dragging):has(.drawerexp[data-expanded=true]) .editor-statusrow{top:0!important;bottom:auto!important}}
    `;document.head.append(style);
    const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};
+   let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;

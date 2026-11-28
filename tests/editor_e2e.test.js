@@ -176,7 +176,7 @@ function run() {
       const point = await center(selector);
       await touch("touchStart", point);
       await touch("touchMove", { x: point.x, y: point.y - 20 });
-      await b.waitFor("!!editorDrag?.live && !drawerExperiment.expanded",
+      await b.waitFor("!!editorDrag?.live && (editorPhoneLandscape() || !drawerExperiment.expanded)",
         { label: "the touch drag to lift and clear the drawer" });
     }
     async function aim(ring, angle, landing = angle) {
@@ -739,6 +739,71 @@ function run() {
       await b.waitFor('!editorEl("drawerexp-body").inert', { label: "the reopened drawer to restore controls" });
       assert.equal(await b.eval('return editorEl("drawerexp-handle").getAttribute("aria-expanded");'), "true");
       assert.equal(await savedCount(), 0);
+    });
+
+    test("EDITOR-RC-LANDSCAPE: short phone landscape keeps controls and the full pan accessible", async () => {
+      await fixture("(D3) A3 C4 E4", {}, 3, 320, 568);
+      const frame = () => b.eval(`
+        const rect = selector => document.querySelector(selector).getBoundingClientRect();
+        const hit = selector => {
+          const node = document.querySelector(selector), r = rect(selector);
+          return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        };
+        const svg = document.querySelector("#editor-pan svg");
+        const bounds = svg.getBBox(), matrix = svg.getScreenCTM();
+        const topLeft = new DOMPoint(bounds.x, bounds.y).matrixTransform(matrix);
+        const bottomRight = new DOMPoint(bounds.x + bounds.width, bounds.y + bounds.height).matrixTransform(matrix);
+        const status = editorEl("editor-status"), banner = status.getBoundingClientRect();
+        const rail = rect(".editor-toolbar");
+        const activeBanner = banner.height && !status.hasAttribute("data-idle");
+        return { whole: topLeft.y >= 0 && bottomRight.y <= (activeBanner ? banner.top : rail.top) + 1 &&
+          topLeft.x >= 0 && bottomRight.x <= rect("#drawerexp").left &&
+          (!activeBanner || banner.bottom <= rail.top),
+          save: hit("#editor-save"), expanded: drawerExperiment.expanded,
+          grip: !!editorEl("drawerexp-handle").getClientRects().length,
+          nameInHeader: !!editorEl("editor-name").closest(".editor-head") };
+      `);
+      assert.deepEqual(await frame(), { whole: true, save: true, expanded: true, grip: false, nameInHeader: true });
+      await clickReady("#editor-name");
+      await b.send("Input.insertText", { text: "Landscape test scale" });
+      await b.key("Enter", "Enter", 13);
+      assert.equal((await model()).options.name, "Landscape test scale");
+      await clickReady("#editor-name");
+      await b.eval('editorEl("editor-name").select(); return true;');
+      await b.send("Input.insertText", { text: "Discarded" });
+      await b.key("Escape", "Escape", 27);
+      assert.equal((await model()).options.name, "Landscape test scale");
+      await clickReady('.tray-note[data-name="F"]');
+      await clickReady('#editor-pan .ehit[data-ring="ding"]');
+      assert.match(await text(), /\(F3\)/);
+      assert.equal((await frame()).expanded, true);
+      await lift('.tray-note[data-name="G"]');
+      try {
+        await touch("touchMove", await center('#editor-pan .ehit[data-ring="ding"]'));
+        assert.equal((await frame()).expanded, true);
+        await touch("touchEnd");
+      } finally {
+        if (touching) await touch("touchCancel");
+      }
+      await b.waitFor('!editorDrag && !editorEl("editor").matches(".dragging, .settling")',
+        { label: "the landscape touch placement to settle" });
+      assert.match(await text(), /\(G3\)/);
+      assert.equal((await frame()).whole, true);
+      assert.equal((await frame()).save, true);
+      assert.equal((await frame()).expanded, true);
+      const placed = await model();
+      await lift('.tray-note[data-name="B"]');
+      try {
+        await b.setViewport(380, 667, true);
+        await b.waitFor('!editorDrag', { label: "rotation to cancel the active drag" });
+      } finally {
+        if (touching) await touch("touchCancel");
+      }
+      await b.waitFor('!editorPhoneLandscape() && !!editorEl("drawerexp-handle").getClientRects().length',
+        { label: "the portrait drawer to return" });
+      assert.deepEqual(await model(), placed);
+      await clickReady("#drawerexp-handle");
+      await b.waitFor('editorEl("drawerexp-body").inert', { label: "the portrait drawer to collapse" });
     });
 
     test("EDITOR-RC-TYPED-GUIDED: direct Standard scale entry uses Guided seats and neutral guides do not overlap notes", async () => {
@@ -6276,13 +6341,14 @@ function run() {
 
     const panFrame = () => b.eval(`
       const rim = document.querySelector('#editor-pan svg > circle[r="100"]').getBoundingClientRect();
-      const grip = editorEl("drawerexp-handle").getBoundingClientRect();
+      const handle = editorEl("drawerexp-handle");
+      const grip = handle.getBoundingClientRect();
       const tabs = editorEl("editor-tabs").getBoundingClientRect();
       const body = editorEl("drawerexp-body").getBoundingClientRect();
       const rail = editorEl("editor-save").getBoundingClientRect();
       return { diameter: rim.height, round: Math.abs(rim.width - rim.height) < 1,
         whole: rim.left >= 0 && rim.right <= innerWidth && rim.top >= 0 &&
-          (rim.right <= grip.left + 1 || rim.bottom <= grip.top + 1),
+          (handle.getClientRects().length ? rim.right <= grip.left + 1 || rim.bottom <= grip.top + 1 : rim.bottom <= rail.top + 1),
         split: rim.right <= tabs.left + 1, tabs: tabs.top >= 0 && tabs.bottom <= body.bottom + 1,
         rail: rail.top >= 0 && rail.bottom <= innerHeight,
         drawerScroll: getComputedStyle(editorEl("drawerexp-body")).overflowY === "auto",
@@ -6309,7 +6375,7 @@ function run() {
         await open(w, h);
         const r = await panFrame();
         assert.ok(r.whole && r.round && r.split && r.tabs && r.rail && r.drawerScroll && !r.pageScroll, JSON.stringify(r));
-        assert.ok(r.diameter >= h * .35 && r.diameter <= h * .5 + 1, JSON.stringify(r));
+        assert.ok(r.diameter >= h * .35 && r.diameter <= h - 88, JSON.stringify(r));
         assert.deepStrictEqual((await drawerHits()).rail, [true, true, true]);
       });
     }
@@ -6407,6 +6473,11 @@ function run() {
         await b.click("#editor-tab-scale");
         await b.click("#editor-name");
         assert.equal(await b.eval("return document.activeElement.id;"), "editor-name");
+        if (w > h) {
+          assert.ok(await b.eval(`return !editorEl("drawerexp-handle").getClientRects().length &&
+            !editorEl("drawerexp-body").inert;`));
+          return;
+        }
         await b.click("#drawerexp-handle");
         await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to collapse" });
         const closed = await drawerHits();
@@ -6850,15 +6921,18 @@ function run() {
       }
     }
 
-    for (const [w, h] of [[844, 390], [844, 340], [667, 375]]) {
+    for (const [w, h] of [[844, 390], [844, 340], [667, 375], [568, 320]]) {
       test(`LS ${w}x${h}: at rest the drawer and pan occupy separate landscape columns`, async () => {
         await open(w, h);
         const frame = await b.eval(`
           const pan = document.querySelector(".panexp-stage").getBoundingClientRect();
           const drawer = document.getElementById("drawerexp").getBoundingClientRect();
-          return { split: pan.right <= drawer.left + 1, open: drawerExperiment.expanded, tab: editorSession.tab };
+          const handle = document.getElementById("drawerexp-handle");
+          const name = document.getElementById("editor-name");
+          return { split: pan.right <= drawer.left + 1, open: drawerExperiment.expanded, tab: editorSession.tab,
+            handleVisible: !!handle.getClientRects().length, nameInHeader: !!name.closest(".editor-head") };
         `);
-        assert.deepEqual(frame, { split: true, open: true, tab: "scale" });
+        assert.deepEqual(frame, { split: true, open: true, tab: "scale", handleVisible: false, nameInHeader: true });
         await pinnedSave();
       });
 
@@ -6866,7 +6940,7 @@ function run() {
         await open(w, h);
         const scale = await sweep();
         assert.deepEqual(scale.covered, []);
-        assert.ok(scale.count >= 17 && scale.scrollTop > 0 && scale.rootTop === 0, JSON.stringify(scale));
+        assert.ok(scale.count >= 16 && scale.scrollTop >= 0 && scale.rootTop === 0, JSON.stringify(scale));
         await b.click("#editor-tab-layout");
         const layout = await sweep();
         assert.deepEqual(layout.covered, []);
@@ -6886,13 +6960,50 @@ function run() {
       });
     }
 
+    test("LS height breakpoint: a closed drawer becomes persistent without a width change", async () => {
+      await open(844, 520);
+      await b.click("#drawerexp-handle");
+      await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the stacked drawer to close" });
+      await b.setViewport(844, 480, true);
+      await b.waitFor('editorPhoneLandscape() && !editorEl("drawerexp-body").inert',
+        { label: "split controls to become accessible" });
+      assert.equal(await b.eval('return drawerExperiment.state;'), "OPEN");
+      await b.click("#editor-tab-layout");
+      assert.equal(await b.eval("return editorSession.tab;"), "layout");
+    });
+
+    test("LS 568x320: a German header keeps the long name and mode controls tappable", async () => {
+      await fresh(568, 320);
+      await b.eval(`const language = document.getElementById("lang-select");
+        language.value = "de"; language.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
+      await b.waitFor('document.documentElement.lang === "de"', { label: "German to be applied" });
+      await openAdd();
+      await b.click("#editor-name");
+      await b.send("Input.insertText", { text: "Ein langer Name für die Handpan mit vielen Tönen" });
+      await b.key("Enter", "Enter", 13);
+      const header = await b.eval(`
+        const hit = id => {
+          const e = editorEl(id), r = e.getBoundingClientRect();
+          return r.width >= 44 && r.height >= 44 &&
+            e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        };
+        const ids = ["editor-back", "editor-name", "editor-type-standard", "editor-type-neotone"];
+        return { hits: ids.map(hit), title: editorEl("editor-title").getBoundingClientRect().width,
+          name: editorEl("editor-name").value };
+      `);
+      assert.deepEqual(header.hits, [true, true, true, true]);
+      assert.ok(header.title > 32 && header.name.startsWith("Ein langer Name"));
+    });
+
     test("LS 844x390: Save stays pinned as a chip is dragged into the rim", async () => {
       await open(844, 390);
       await typeLine(SCALE);
       await pinnedSave();
       await dragLandscapeNote("rim");
       assert.match(await text(), /B4/);
-      assert.equal(await b.eval("return drawerExperiment.expanded;"), false);
+      assert.equal(await b.eval("return drawerExperiment.expanded;"), true);
+      assert.doesNotMatch(await b.eval('return editorEl("editor-status").textContent;'), /open the drawer/i);
+      assert.deepEqual((await sweep()).covered, []);
       await pinnedSave();
     });
 
@@ -6975,8 +7086,30 @@ function run() {
       const g = await geo();
       assert.deepEqual(g.tabs, idle.tabs);
       assert.deepEqual(g.line, idle.line);
-      assert.ok(g.status.top >= g.line.bottom - 0.5 && g.status.bottom <= g.ih + 0.5);
+      assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih + 0.5);
+      const railTop = await b.eval('return editorEl("editor-save").closest(".editor-toolbar").getBoundingClientRect().top;');
+      assert.ok(Math.abs(g.status.bottom - (railTop - 4)) <= 1);
       assert.ok(g.status.left >= 0 && g.status.right <= g.tabs.left + 0.5);
+    });
+
+    test("SO: short landscape long feedback scrolls from the keyboard with Save and the tray reachable", async () => {
+      await open(568, 320);
+      await b.eval(`
+        const s = editorSession;
+        s.error = t("editor.crowded", { pt: "5.5", floor: "6" }).repeat(4);
+        editorRender();
+        return true;
+      `);
+      await b.waitFor('editorEl("editor-status").tabIndex === 0', { label: "overflow feedback to enter the tab order" });
+      await b.eval('editorEl("editor-status").focus(); return true;');
+      await b.key("End", "End", 35);
+      await b.waitFor('editorEl("editor-status").scrollTop > 0', { label: "the keyboard to scroll the status" });
+      await b.click("#editor-tab-scale");
+      const buttons = await b.eval(`return ["#editor-save", ".tray-note"].map(selector => {
+        const node = document.querySelector(selector), r = node.getBoundingClientRect();
+        return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+      });`);
+      assert.deepEqual(buttons, [true, true]);
     });
 
     test("SO: landscape tabs are clickable again once the message is cleared by the app", async () => {
@@ -7073,7 +7206,9 @@ function run() {
           for (let n; (n = tw.nextNode());) { for (let i = 0; i < n.data.length; i++) { const g = document.createRange(); g.setStart(n, i); g.setEnd(n, i + 1); const c = g.getClientRects()[0];
             if (c && c.width > 0 && (c.bottom > sr.bottom + 0.5 || c.top < sr.top - 0.5)) clipped++; } }
           return { text: st.textContent, top: sr.top, bottom: sr.bottom, tabsTop: tb.top, fits: st.scrollHeight <= st.clientHeight, clipped };`);
-        assert.ok(r.text.length > 0 && r.fits && r.clipped === 0, "the whole error is readable: " + JSON.stringify(r));
+        assert.ok(r.text.length > 0, "the error is present: " + JSON.stringify(r));
+        if (!r.fits) assert.equal(await b.eval('return editorEl("editor-status").tabIndex;'), 0);
+        else assert.equal(r.clipped, 0);
         assert.ok(r.top >= -0.5 && r.bottom <= 320.5, "the error stays in the viewport: " + JSON.stringify(r));
       });
 
@@ -7099,7 +7234,7 @@ function run() {
       const FULL_RIM = "(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 | C6";
       for (const lang of LOCALES) {
         for (const [w, h] of [[844, 390], [667, 375], [932, 430], [568, 320]]) {
-          test(`SO: ${lang} ${w}x${h}: every landscape message is readable above the collapsed drawer`, async () => {
+          test(`SO: ${lang} ${w}x${h}: every landscape message is accessible with persistent controls`, async () => {
             await fresh(w, h);
             if (lang !== "en") {
               await b.eval(`const e = document.getElementById("lang-select"); e.value = ${JSON.stringify(lang)}; e.dispatchEvent(new Event("change", { bubbles: true })); return true;`);
@@ -7119,10 +7254,8 @@ function run() {
                 `);
               }
               await SO_STATES[name]();
-              if (await b.eval("return drawerExperiment.expanded;")) await b.click("#drawerexp-handle");
-              await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to close" });
-              const r = await readClosedFeedback();
-              assertClosedFeedback(r, `${name} ${lang} ${w}x${h}`);
+              const r = await readSplitFeedback();
+              assertSplitFeedback(r, `${name} ${lang} ${w}x${h}`);
             }
             await reset();
           });
@@ -7151,23 +7284,27 @@ function run() {
           ? ["editor.held", "editor.guided.tap_growth", "editor.guided.tap_both", "editor.guided.tap_intent"]
             .map(key => t(key, { name: editorHeldName() }))
           : [text];`;
-      const readClosedFeedback = () => b.eval(`return new Promise(resolve => {
+      const readSplitFeedback = () => b.eval(`return new Promise(resolve => {
         requestAnimationFrame(() => requestAnimationFrame(() => {
           const status = document.getElementById("editor-status");
           const bounds = status.getBoundingClientRect();
-          const line = document.getElementById("editor-line").getBoundingClientRect();
-          const handle = document.getElementById("drawerexp-handle").getBoundingClientRect();
+          const toolbar = document.getElementById("editor-save").closest(".editor-toolbar").getBoundingClientRect();
+          const drawer = editorEl("drawerexp").getBoundingClientRect();
           const hitOwn = node => {
             const r = node.getBoundingClientRect();
             const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
             return node === hit || node.contains(hit);
           };
-          const controls = ["drawerexp-handle", "editor-undo", "editor-save", "editor-more"]
+          const controls = ["editor-undo", "editor-save", "editor-more"]
             .map(id => hitOwn(document.getElementById(id)));
-          const actions = [...status.querySelectorAll("button:not([hidden])")].every(hitOwn);
+          const actions = [...status.querySelectorAll("button:not([hidden])")].every(button => {
+            button.scrollIntoView({ block: "nearest" });
+            return hitOwn(button);
+          });
+          status.scrollTop = 0;
           const protectsRim = status.matches('[data-guided-actions="single"], :has(#editor-save-blocker)');
           const rim = document.querySelector('#editor-pan svg > circle[r="100"]')?.getBoundingClientRect();
-          const rimClear = !protectsRim || !!rim && rim.top >= line.bottom - 0.5 && rim.bottom <= bounds.top + 0.5;
+          const rimClear = !protectsRim || !!rim && rim.top >= 0 && rim.bottom <= bounds.top + 0.5;
           let clipped = 0;
           const walker = document.createTreeWalker(status, NodeFilter.SHOW_TEXT);
           for (let node; (node = walker.nextNode());) {
@@ -7180,11 +7317,12 @@ function run() {
           }
           resolve({ text: status.textContent.trim(), idle: status.hasAttribute("data-idle"),
             clippedAway: getComputedStyle(status).clipPath !== "none", top: bounds.top, bottom: bounds.bottom,
-            left: bounds.left, right: bounds.right, viewport: innerWidth, line: line.bottom,
-            drawer: handle.top, px: parseFloat(getComputedStyle(status).fontSize), controls, actions, rimClear, clipped });
+            left: bounds.left, right: bounds.right, viewport: innerWidth, seam: drawer.left, rail: toolbar.top,
+            scrollable: status.tabIndex === 0 && getComputedStyle(status).overflowY === "auto" && status.scrollHeight > status.clientHeight,
+            horizontalOverflow: status.scrollWidth > status.clientWidth + 1, expanded: drawerExperiment.expanded, px: parseFloat(getComputedStyle(status).fontSize), controls, actions, rimClear, clipped });
         }));
       })`);
-      function assertClosedFeedback(result, label, expected = []) {
+      function assertSplitFeedback(result, label, expected = []) {
         const detail = label + " " + JSON.stringify(result);
         assert.ok(result.text, "feedback is shown. " + detail);
         if (expected.length)
@@ -7192,12 +7330,14 @@ function run() {
         assert.ok(result.actions, "banner actions remain hittable. " + detail);
         assert.ok(result.rimClear, "protected feedback reserves room for the entire rim. " + detail);
         assert.equal(result.clippedAway, result.idle, "only the landscape idle hint is visually hidden. " + detail);
-        assert.equal(result.clipped, 0, "the message is not clipped. " + detail);
+        assert.equal(result.horizontalOverflow, false, "feedback wraps in its column. " + detail);
+        assert.ok(result.scrollable || result.clipped === 0, "the whole message fits or is keyboard-scrollable. " + detail);
         assert.ok(result.px >= 12, "the message is at least 12px. " + detail);
-        assert.ok(result.left >= -0.5 && result.right <= result.viewport + 0.5 &&
-          result.top >= result.line - 0.5 && result.bottom <= result.drawer + 0.5,
-          "the banner fits between the scale line and drawer. " + detail);
-        assert.deepEqual(result.controls, [true, true, true, true], "pinned actions remain hittable. " + detail);
+        assert.ok(result.left >= -0.5 && result.right <= result.seam + 0.5 &&
+          result.top >= -0.5 && result.bottom <= result.rail + 0.5,
+          "the banner stays in the pan column above the rail. " + detail);
+        assert.equal(result.expanded, true, "the drawer remains open. " + detail);
+        assert.deepEqual(result.controls, [true, true, true], "pinned actions remain hittable. " + detail);
       }
       const SETUP_ROWS = `const s = editorSession, empty = editorEmptyModel(), full = s.history.present;
         const stage = (extra) => editorWithStage(empty, { ...editorBlankStage("standard"), ...extra });
@@ -7215,12 +7355,10 @@ function run() {
             await b.waitFor(`document.querySelector("#editor-pan svg")`, { label: "the pan svg" });
             await typeLine(SCALE);
             await b.eval(SETUP_ROWS);
-            await b.click("#drawerexp-handle");
-            await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the drawer to close" });
             for (const row of ROWS) {
               const expected = await b.eval(RENDER_ROW.replace("__ROW__", () => JSON.stringify(row)));
-              const r = await readClosedFeedback();
-              assertClosedFeedback(r, `${row.mode} ${row.k} ${lang} ${w}x${h}`, expected);
+              const r = await readSplitFeedback();
+              assertSplitFeedback(r, `${row.mode} ${row.k} ${lang} ${w}x${h}`, expected);
             }
             await reset();
           });
@@ -7915,12 +8053,12 @@ function run() {
         });
       }
       for (const [w, h] of LANDSCAPE_NF) {
-        test(`NF guard ${w}x${h}: the landscape column is unchanged`, async () => {
+        test(`NF guard ${w}x${h}: the landscape header name stays clear while feedback shows`, async () => {
           await openAt(w, h, "en");
           const before = await geo();
           const tray = await trayGeometry();
-          clear(before, `${w}x${h} landscape`);
-          assert.ok(before.tray.t >= before.n.b - 0.5, "the note tray is below the name field");
+          assert.ok(before.n.b <= before.strip.t + 0.5, "the name is in the header above the controls");
+          assert.deepStrictEqual(before.hits, ["self", "self", "self", "self"]);
           assert.equal(tray.top, 0, "the landscape drawer opens at the start");
           assert.equal(tray.editorTop, 0, "the landscape editor itself does not scroll");
           assert.equal(tray.firstHit, true, "the first note takes taps");
@@ -7934,7 +8072,7 @@ function run() {
           assert.deepStrictEqual(feedback.saveAfter, tray.saveBefore, "floating feedback does not move Save");
           assert.equal(feedback.firstHit, true, "the first note takes taps while feedback is shown");
           assert.equal(feedback.saveHit, true, "Save takes taps while feedback is shown");
-          clear(after, `${w}x${h} landscape crowded`);
+          assert.deepStrictEqual(after.hits, before.hits, "the header field remains hittable");
         });
       }
     });
