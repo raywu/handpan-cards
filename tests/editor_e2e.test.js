@@ -876,22 +876,60 @@ function run() {
     });
 
     test("EDITOR-RC-TYPED-GUIDED: direct Standard scale entry uses Guided seats and neutral guides do not overlap notes", async () => {
-      const seed = "(D3) A3 C4 | D4";
+      const seed = "[B2] (D3) [E3] A3 C4 | D4";
       await fixture("", {}, 4, 667, 380);
+      const border = () => b.eval('return getComputedStyle(editorEl("editor-line")).borderTopStyle');
+      assert.equal(await border(), "dashed");
       await clickReady("#editor-line");
+      assert.equal(await border(), "solid");
       await b.send("Input.insertText", { text: seed });
       await b.key("Enter", "Enter", 13);
       await b.waitFor("editorSession.history.past.length === 1", { label: "typed scale to commit" });
       const placed = await model();
       assert.deepEqual(placed.options.guided, { rim: { size: 7, seats: [0, 5], basis: "one" }, inner: { size: 3, seats: [2] } });
+      const underside = placed.options.angles.bottom;
+      assert.equal(underside.length, 2);
+      assert.ok(underside.every(angle => [20, 70, 110, 160, 200, 250, 290, 340].includes(angle)));
+      assert.equal(await b.eval('return editorEl("editor-pan").querySelectorAll(".balanced-outline.bottom").length'), 6);
+      assert.equal(await border(), "dashed");
       await clickReady("#editor-undo");
       await b.waitFor("editorSession.history.past.length === 0", { label: "Undo to restore the empty pan" });
       assert.equal(await text(), "");
       await clickReady("#editor-more");
       await clickReady("#editor-redo");
       assert.deepEqual(await model(), placed);
+      const shared = await b.eval(`
+        const exported = editorExport(editorSession.history.present);
+        const imported = editorLoadShare(exported.code);
+        if (!imported.ok) throw Error(imported.reason);
+        return { guided: imported.value.options.guided, bottom: editorAnglesOf(editorSolve(imported.value), "bottom") };
+      `);
+      assert.deepEqual(shared, { guided: placed.options.guided, bottom: underside });
       await saveAndReopen(9);
+      assert.deepEqual((await model()).options.angles.bottom, underside);
       assert.deepEqual((await model()).options.guided, placed.options.guided);
+
+      await fixture("", {}, 4, 667, 380);
+      const cases = await b.eval(`const empty = editorSession.history.present;
+        const names = ["C2", "D2", "E2", "F2", "G2", "A2", "B2", "C3", "C#3"];
+        return [1, 8, 9].map(count => {
+          const seed = names.slice(0, count).map(name => "[" + name + "]").join(" ") + " (D3) A3 C4 | D4";
+          const result = editorCommitText(empty, seed);
+          return result.ok ? [editorNames(result.value, "bottom").length, result.value.options.angles?.bottom ?? null] : result.code;
+        });`);
+      assert.deepEqual(cases.map(([count]) => count), [1, 8, 9]);
+      assert.equal(cases[0][1].length, 1);
+      assert.equal(new Set(cases[1][1]).size, 8);
+      assert.equal(cases[2][1], null);
+
+      await fixture("[B2] (D3) A3 C4", { angles: { bottom: [135] }, mirrorBottom: true }, 4, 667, 380);
+      const retained = await b.eval(`
+        const m = editorSession.history.present;
+        const result = editorCommitText(m, editorLineText(m));
+        if (!result.ok) throw Error(result.reason);
+        return editorAnglesOf(editorSolve(result.value), "bottom");
+      `);
+      assert.deepEqual(retained, [135]);
 
       await fixture("(D3) A3 Bb3 C4 D4 E4 F4 G4 A4 C5 | B4", {}, 4, 667, 380);
       const neutral = await b.eval(`const pan = editorEl("editor-pan");
@@ -2020,7 +2058,7 @@ function run() {
         const i = editorNames(m, "inner").indexOf("E5");
         return editorAnglesOf(editorSolve(m), "inner")[i];`), innerAngle);
 
-      await setup("[A2] " + SCALE);
+      await fixture("[A2] " + SCALE);
       await b.click("#editor-oct-down");
       await b.click("#editor-oct-down");
       await hold("E");
@@ -2049,7 +2087,7 @@ function run() {
     });
 
     test("BN-E2 (QA video 2): a note moved across its neighbours takes its number from where it lands; nothing swaps back", async () => {
-      await setup("[A2] [B2] [C3] " + SCALE);
+      await fixture("[A2] [B2] [C3] " + SCALE);
       const before = await bnRows();
       assert.deepStrictEqual([before.A2.a, before.B2.a, before.C3.a], [330, 210, 90]);
       await b.click("#drawerexp-handle");
@@ -2097,12 +2135,12 @@ function run() {
     });
 
     test("BN-E5: a held note placed on the bottom area (no position) goes to the middle of the widest stretch, nearest bottom centre", async () => {
-      await setup("[A2] " + SCALE);
+      await fixture("[A2] " + SCALE);
       await hold("G");
       await b.click("#editor-oct-down");
       await place("bottom");
       assert.deepStrictEqual((await model()).options.angles.bottom, [90, 270]);
-      await setup("[A2] [B2] " + SCALE);
+      await fixture("[A2] [B2] " + SCALE);
       await hold("G");
       await b.click("#editor-oct-down");
       await place("bottom");
@@ -6568,6 +6606,7 @@ function run() {
         const before = await frame();
         for (const dismiss of ["close", "escape"]) {
           await openPlacementHelp();
+          assert.match(await b.eval('return editorEl("editor-notation").textContent'), /OPTIONAL INNER NOTES.*BOTTOM NOTE/);
           assert.equal(await b.eval("return document.activeElement.id;"), "editor-hint-close");
           assert.deepEqual(await frame(), before);
           const geometry = await b.eval(`
