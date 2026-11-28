@@ -1,0 +1,15 @@
+# kills: CAS2 a Save refused because the scale was deleted elsewhere saves the draft as a new scale
+# suite: node --test --test-name-pattern ^CAS2.a.Save.refused.because.the.scale.was.deleted.elsewhere tests/editor_e2e.test.js
+# fault: The retry resends the original edit command instead of a separate save.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15231,7 +15231,7 @@ async function editorSave() {
+     if (!result.ok && result.kind === "conflict") {
+       await reconcileSavedCollection();
+       retried = true;
+-      result = await commitSaved({ type: "save-as-separate", collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });
++      result = await commitSaved({ ...command, collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });
+       if (generation !== sheetGeneration || !pageOpen) return;
+     }
+     if (!result.ok) {

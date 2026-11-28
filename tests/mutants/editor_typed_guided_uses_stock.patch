@@ -1,0 +1,14 @@
+# kills: fresh Standard text seeds legal Guided rows without changing explicit order or reopened layouts
+# suite: node --test --test-name-pattern ^fresh.Standard.text.seeds tests/editor_shell.test.js
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14926,6 +14926,5 @@
+     !m.options.guided && !m.options.seats && !m.options.angles && !stage.guided && !stage.tradedRings?.length &&
+     !Object.values(stage.angles || {}).some(angles => angles.some(Number.isFinite));
+-  const value = unarranged ? editorTypedBottomGuides(editorTypedGuided(next, solved), solved)
+-    : expand.length ? editorTypedGuided(next, solved, expand, m) : next;
++  const value = expand.length ? editorTypedGuided(next, solved, expand, m) : next;
+   return { ok: true, value, ...reset };
+ }

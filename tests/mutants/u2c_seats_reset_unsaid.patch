@@ -1,0 +1,15 @@
+# kills: D9 / SE-12: Guided rim growth re-spaces typed custom seats and Undo restores them
+# suite: node --test --test-name-pattern ^D9.*Guided.rim.growth tests/editor_e2e.test.js
+# fault: The banner omits the re-spacing confirmation after a Guided placement.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16660,7 +16660,7 @@ function editorGuidedPlan(m, src, target) {
+   }
+   return {
+     step: model => model === m ? accepted : editorRefusal(name),
+-    say: projection.reflow ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
++    say: false ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
+       : ref ? t("editor.say.moved", { name }) : editorPlaceSay(name, { ring }),
+     guided: { ring, id: name, projection, solved: accepted.solved, insert: src.from === "tray" }
+   };

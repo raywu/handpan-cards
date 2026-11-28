@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -12593,7 +12593,6 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)reconcileS
+@@ -12328,7 +12328,6 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)reconcileS
  function selectDeck(wanted, persist = true, trackSelection = true) {
    navigationGeneration++;
    pendingRecoveryShare=null;

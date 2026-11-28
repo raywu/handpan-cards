@@ -1,0 +1,15 @@
+# kills: BN-M11: freezing an untouched ring keeps every U label for 1 to 12 notes, both anchors, mirror off and on; a note moves at most 2.5 degrees
+# suite: node --test --test-name-pattern ^BN.M11..freezing.an.untouched.ring.keeps.every.U.label.for.1.to.12.notes..both.anchors..mirror.off.and.on..a.note.moves.at.most.2.5.degrees$ tests/editor_model.test.js
+# The freeze snaps with the one-sided stepOf instead of the symmetric snap.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12887,7 +12887,7 @@
+  * all sit on their even spots afterwards is stored as untouched again. */
+ const editorFrozenCase = (m, ring) => ring === "bottom" && editorKindOf(m) === "standard" && !editorIsEmpty(m)
+   && editorNames(m, "bottom").length > 0 && editorSolve(m).ok;
+-const editorFreezeBottom = (m) => editorAnglesOf(editorSolve(m), "bottom").map(snapSym);
++const editorFreezeBottom = (m) => editorAnglesOf(editorSolve(m), "bottom").map(stepOf);
+ const editorBottomGap = (a) => Math.min(turnTo(a - 270), 360 - turnTo(a - 270));
+ /** The middle of the widest empty stretch of the ring; the one nearest bottom centre on a tie, right first. */
+ function editorWidestMidpoint(angles) {

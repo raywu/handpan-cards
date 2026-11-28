@@ -1612,3 +1612,19 @@ test("the PDF adapters keep chord i equal to the app's chord i", () => {
     assert.equal(JSON.stringify(pdf.chords[i]), JSON.stringify([c.main, c.sup, c.subtitle, c.fields, c.roots]), `generated #${i}`);
   });
 });
+
+test("NT: a turned card keys main and mutant tones by the turned angles", () => {
+  const E = loadEngine(["core", "layout"]);
+  const turned = E.layout.profileAngles(20);
+  const spec = { 1: ["C", 4, 0, "main", 0, "1"], 2: ["D", 4, 0, "mutant", 0, "2"] };
+  const place = { 1: [turned[0], 0, 0, "main"], 2: [turned[0], 0, 0, "mutant"] };
+  const plan = P.neoPlan(spec, { place, turn: 20, n_in: 0 }, () => "on");
+  assert.equal(plan.hasMut, true);
+  const first = plan.tones[0];
+  assert.equal(first.theta, turned[0]);
+  assert.equal(first.main && first.main.id, "1");
+  assert.equal(first.lens && first.lens.id, "2");
+  const flat = P.neoPlan(spec, { place: { 1: [270, 0, 0, "main"], 2: [270, 0, 0, "mutant"] }, n_in: 0 }, () => "on");
+  assert.equal(flat.tones[0].main.id, "1");
+  assert.equal(flat.tones[0].theta, 270);
+});

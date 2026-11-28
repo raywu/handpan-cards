@@ -1,0 +1,15 @@
+# kills: OQA tablet landscape: full rim respects viewport height and cap with reachable drawer actions
+# suite: node --test --test-name-pattern ^OQA.tablet.landscape tests/editor_e2e.test.js
+# fault: Tablet landscape sizes the pan from the cap without respecting available viewport height.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15612,7 +15612,7 @@
+     const svg=document.querySelector('#editor-pan svg');if(!svg)return;
+     const bb=svg.getBBox(),pad=4;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};
+     svg.setAttribute('viewBox',`${frame.x} ${frame.y} ${frame.w} ${frame.h}`);
+-    const restingShell = Math.min(innerHeight / 2, 480);
++    const restingShell = innerWidth > innerHeight && innerHeight > 500 ? 480 : Math.min(innerHeight / 2, 480);
+     const canvasWidth = Math.min(root.clientWidth - 8, stage.clientWidth);
+     const banner = root.querySelector('#editor-status[data-guided-actions="single"], #editor-status:has(#editor-save-blocker)');
+     const stageBounds = stage.getBoundingClientRect();

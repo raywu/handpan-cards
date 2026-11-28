@@ -1,0 +1,15 @@
+# kills: with reduced motion the tabs and panels do not animate in or out of play
+# suite: node --test --test-name-pattern ^with.reduced.motion.the.tabs tests/editor_e2e.test.js
+# fault: With reduced motion the tabs and panels still slide while a note is dragged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1342,7 +1342,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-pan .editor-landing.editor-new{animation:ed-new-pulse 520ms cubic-bezier(.2,.8,.2,1) 1}
+ @media (prefers-reduced-motion: reduce){
+   #editor .editor-panbox, #editor.dragging .editor-panbox{transform:none; transition:none}
+-  #editor-areas, #editor-tabs, #editor-panels, #editor-layout, #editor .editor-toolbar, #editor-tray{transition:none}
++  #editor-areas, #editor-layout, #editor .editor-toolbar, #editor-tray{transition:none}
+   #editor.dragging #editor-areas, #editor.dragging #editor-tabs, #editor.dragging #editor-panels, #editor.dragging #editor-layout, #editor.dragging .editor-toolbar, #editor.dragging #editor-tray{transform:none; transition:none}
+   #editor-pan .ehit.editor-new{stroke-width:4; animation:ed-new-fade 900ms linear 1 both}
+   #editor-pan .editor-landing.editor-new{animation:none}

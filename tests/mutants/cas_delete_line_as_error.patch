@@ -1,0 +1,15 @@
+# kills: CAS10 a Delete refused because the scale changed elsewhere keeps it and says so
+# suite: node --test --test-name-pattern ^CAS10.a.Delete.refused.because.the.scale.changed tests/editor_e2e.test.js
+# fault: The kept line is shown as an error message instead of a plain line.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15496,7 +15496,7 @@ async function deleteDeck(id) {
+     if(editorSession&&result.kind==="conflict"&&!editorTargetExists()){closeScaleSheet();return;}
+     if(editorSession){
+       editorDeleteFailed(result.kind==="conflict"?"":savedErrorText(result));
+-      if(result.kind==="conflict"&&editorSession){editorSession.say=editorSession.plainSay=t("editor.say.del_kept");editorRender();}
++      if(result.kind==="conflict"&&editorSession){editorSession.error=t("editor.say.del_kept");editorRender();}
+       return;
+     }
+     say(savedErrorText(result),"warn");

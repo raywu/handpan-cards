@@ -1,0 +1,13 @@
+# kills: while the name is being typed a tap or key on the pan changes nothing
+# suite: node --test --test-name-pattern=while.the.name.is.being.typed tests/editor_e2e.test.js
+# fault: a pan tap is ignored while the name is typed is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17241,5 +17241,5 @@ function editorGuidedReveal(m, source, target, angle) {
+ function editorPanTap(pt, pointer = false) {
+   const s = editorSession;
+-  if (!s || s.dialog || s.editing || s.naming) return;
++  if (!s || s.dialog || s.editing) return;
+   const m = s.history.present;
+   const solved = editorSolve(m);

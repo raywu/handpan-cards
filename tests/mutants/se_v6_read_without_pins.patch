@@ -1,0 +1,15 @@
+# kills: SE-G1: a v6 record is read exactly when angles.inner is pinned and the record is unprofiled
+# suite: node --test --test-name-pattern ^SE-G1..a.v6.record.is.read.exactly.when.angles.inner.is.pinned.and.the.record.is.unprofiled$ tests/editor_model.test.js
+# fault: Read an unprofiled v6 record whether or not it pins the Cyclops.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11958,7 +11958,7 @@ function readSavedRecord(record) {
+     const guided = savedOwn(record.o || {}, "guided");
+     if (guided !== (record.v === GUIDED_RECORD_VERSION) || (guided && (profiled || !savedObject(record.o.guided) ||
+         !Object.keys(record.o.guided).length || savedOwn(record.o, "replaces")))) return savedFailure("protected", "opaque-record");
+-    if (!guided && (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o) : profileRecord || pinned) ||
++    if (!guided && (record.v === INNER_RECORD_VERSION ? profiled : (profiled ? record.v !== recordVersionFor(record.o) : profileRecord || pinned) ||
+         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED)))) return savedFailure("protected", "opaque-record");
+     let canonical = record.s;
+     if (record.v < SHARE_VERSION) {

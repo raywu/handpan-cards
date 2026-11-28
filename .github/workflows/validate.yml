@@ -107,9 +107,43 @@ jobs:
           path: artifacts/python-results.json
 
   js-tests:
-    name: js suites (unit + e2e)
+    name: js suites (unit + e2e) [${{ matrix.shard }}/2]
     needs: changes
     if: needs.changes.outputs.code == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      # The print regression test prints a real PDF over CDP and measures the
+      # card frames with pymupdf; nothing else in this job needs python.
+      - run: pip install -r requirements-ci.txt
+      # No npm install: the e2e harness drives the Chrome already present on the
+      # runner over CDP, so this repo stays dependency-free.
+      - name: Show browser in use
+        run: node -e "console.log(require('./tests/helpers/cdp.js').findBrowser())"
+      - name: App units and browser e2e
+        run: python3 tests/suite_health.py --emit-js artifacts/js-results-${{ matrix.shard }}.json --js-shard ${{ matrix.shard }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: js-results-${{ matrix.shard }}
+          path: artifacts/js-results-${{ matrix.shard }}.json
+
+  js-serial-pilot:
+    name: JS serial pilot
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && github.head_ref == 'claude/editor-ci-speed-pilot-2'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -139,10 +173,13 @@ jobs:
       # coverage).
       - name: App units and browser e2e
         run: python3 tests/suite_health.py --emit-js artifacts/js-results.json
+      - name: Report editor browser cases
+        if: always()
+        run: python3 tools/report_editor_browser.py artifacts/js-results.json >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: js-results
+          name: js-results-serial-pilot
           path: artifacts/js-results.json
 
   suite-health:
@@ -165,8 +202,14 @@ jobs:
           path: artifacts
       - uses: actions/download-artifact@v4
         with:
-          name: js-results
+          pattern: js-results-[12]
+          merge-multiple: true
           path: artifacts
+      - name: Assemble exact JS inventory
+        run: python3 tests/suite_health.py --merge-js artifacts/js-results-1.json artifacts/js-results-2.json artifacts/js-results.json
+      - name: Report editor browser cases
+        if: always()
+        run: python3 tools/report_editor_browser.py artifacts/js-results.json >> "$GITHUB_STEP_SUMMARY"
       # Both runners exit 0 when they collect nothing, and a decorated skip is
       # easy to miss in a log. This asserts a floor and forbids silent skips -
       # from the artifacts python-tests/js-tests already produced, not by

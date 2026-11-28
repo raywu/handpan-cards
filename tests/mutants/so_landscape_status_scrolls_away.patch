@@ -1,0 +1,15 @@
+# kills: SO: de 568x320: every landscape message is accessible with persistent controls
+# suite: node --test --test-name-pattern ^SO..de.568x320..every.landscape.message.is.accessible.with.persistent.controls tests/editor_e2e.test.js
+# fault: Anchor the landscape banner partly below the visible viewport.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15510,7 +15510,7 @@
+   #editor[data-phone-landscape] .drawerexp{left:50%;top:var(--split-top);transform:none;box-shadow:none;border-top:0}
+   #editor[data-phone-landscape] .drawerexp-chrome{display:none}
+   #editor[data-phone-landscape] .drawerexp-body{height:100%;max-height:none;padding-inline:8px max(8px,env(safe-area-inset-right,0px))}
+-  #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) var(--split-status-bottom) max(8px,env(safe-area-inset-left,0px))!important}
++  #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) -24px max(8px,env(safe-area-inset-left,0px))!important}
+   #editor[data-phone-landscape] #editor-status:not(:empty){max-height:var(--split-feedback);overflow:auto;overscroll-behavior:contain;pointer-events:none}
+   #editor[data-phone-landscape] #editor-status[tabindex="0"]{pointer-events:auto}
+   #editor[data-phone-landscape].dragging #editor-status:not(:has(button)){opacity:.3}

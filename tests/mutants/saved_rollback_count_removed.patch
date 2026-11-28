@@ -4,8 +4,8 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15486,7 +15486,7 @@ function savedErrorText(result) {
-   return t(result.kind === "conflict" ? "saved.conflict" : "saved.failure");
+@@ -15459,7 +15459,7 @@ function savedErrorText(result) {
+   return t("saved.failure");
  }
  function savedNewerCount() {
 -  if (!savedState) return 0;

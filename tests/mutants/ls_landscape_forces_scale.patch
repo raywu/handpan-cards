@@ -1,0 +1,15 @@
+# kills: LS 844x390: a Neotone switch from the Layout tab keeps the Layout tab
+# suite: node --test --test-name-pattern ^LS.844x390..a.Neotone.switch tests/editor_e2e.test.js
+# fault: In phone landscape a pan-type switch forces the Scale tab again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17676,7 +17676,7 @@
+   if (!editorCommitForm()) return;
+   if (!editorDo((m) => editorPanType(m, kind))) return;
+   editorSession.zone = null;
+-  if (!editorPhoneLandscape()) editorSession.tab = "scale";
++  editorSession.tab = "scale";
+   editorRender();
+ }
+ function editorWire() {

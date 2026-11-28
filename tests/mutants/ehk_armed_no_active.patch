@@ -1,0 +1,14 @@
+# kills: EHK3 an armed Delete item shows the main pressed ink #5A49A6 while pressed
+# suite: node --test --test-name-pattern ^EHK3. tests/editor_e2e.test.js
+# fault: The armed Delete item has no pressed colour.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -1048,7 +1048,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor .editor-toolbar #editor-menu .menuitem{flex:0 0 auto; min-height:44px; justify-content:flex-start; text-align:left; border:none; background:none; padding-inline:var(--sp-2)}
+ #editor .editor-toolbar #editor-menu .menuitem[aria-disabled="true"]{opacity:.45; cursor:default}
+ #editor .editor-toolbar #editor-menu .menuitem.armed{background:none; color:#242424}
+-#editor .editor-toolbar #editor-menu .menuitem.armed:active{color:#5A49A6}
+ #editor .editor-toolbar #editor-menu .rs-full{display:inline}
+ #editor .editor-toolbar #editor-menu .rs-short{display:none}
+ #editor-menu .menu-sep{height:1px; background:#8A847B; margin:var(--sp-1) 0}

@@ -4,7 +4,7 @@
 diff --git a/src/engine/layout.js b/src/engine/layout.js
 --- a/src/engine/layout.js
 +++ b/src/engine/layout.js
-@@ -694,7 +694,7 @@
+@@ -785,7 +785,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
        var ids = zones[ZONES[z]];
        for (i = 0; i < ids.length; i += 1) {
          var seat = list ? list[i] : i;
@@ -12,4 +12,4 @@ diff --git a/src/engine/layout.js b/src/engine/layout.js
 +        fields[ids[i]][5] = source[ids[list ? list[i] : i]][5];
        }
      }
-     if (seats && seats.angles && seats.home) cyclicLabels(source, zones.bottom, seats.home, seats.angles, fields);
+     positionLabels(source, zones.bottom, fields);

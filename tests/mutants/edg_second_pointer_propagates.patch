@@ -1,0 +1,15 @@
+# kills: edg another pointer pressed on a tray chip ends the drag and starts none of its own
+# suite: node --test --test-name-pattern ^edg.another.pointer.pressed.on.a.tray.chip tests/editor_e2e.test.js
+# fault: The second-pointer guard no longer stops the event, so the same press reaches the drag-down handler on the editor and arms a new drag.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15010,7 +15010,7 @@ function editorWire() {
+   editorEl("editor-pan").onclick = editorPanClick;
+   editorEl("editor-pan").onkeydown = editorPanKey;
+   editorEl("editor-pan").addEventListener("focusin", editorPanFocus);
+-  editorEl("editor").addEventListener("pointerdown", (e) => { if (editorDrag && e.pointerId !== editorDrag.id) { e.stopImmediatePropagation(); editorDragEnd(null); } });
++  editorEl("editor").addEventListener("pointerdown", (e) => { if (editorDrag && e.pointerId !== editorDrag.id) { editorDragEnd(null); } });
+   editorEl("editor").addEventListener("pointerdown", editorDragDown);
+   editorEl("editor").addEventListener("contextmenu", (e) => { if (editorDrag) e.preventDefault(); });
+   editorEl("editor-oct-down").onclick = () => editorTrayView({ oct: editorView(editorSession.history.present).oct - 1 });

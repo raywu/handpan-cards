@@ -4,7 +4,7 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15495,7 +15495,7 @@ function updateSavedStatus() {
+@@ -15291,7 +15291,7 @@ function updateSavedStatus() {
    const protectedData=savedMode === "protected" || !!savedRecovery;
    let text=protectedData?t("saved.recovery"):savedMode === "session"?t("saved.session"):"";
    if(!text && savedIssue?.detail==="acknowledged-publication-pending")text=t("saved.ackPending");

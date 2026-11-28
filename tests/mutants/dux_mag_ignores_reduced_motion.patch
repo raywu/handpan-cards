@@ -1,0 +1,14 @@
+# kills: drag ux E5: with reduced motion the camera fits without animation, the drawer closes and the highlight is still set
+# suite: node --test --test-name-pattern ^drag.ux.E5 tests/editor_e2e.test.js
+# fault: The control drawer still animates when reduced motion is requested.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15515,7 +15515,6 @@
+   #editor[data-phone-landscape] #editor-title{flex:0 1 10rem}
+   #editor[data-phone-landscape] .editor-head #editor-name{flex:1 1 10rem;min-width:44px;text-overflow:ellipsis}
+   #editor[data-phone-landscape] #editor-menu{max-height:var(--split-menu-max);overflow:auto;overscroll-behavior:contain}
+-  @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
+   `;document.head.append(style);
+   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};
+   let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;

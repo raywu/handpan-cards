@@ -1,0 +1,15 @@
+# kills: NT: a turned card keys main and mutant tones by the turned angles
+# suite: node --test --test-name-pattern ^NT..a.turned.card.keys.main.and.mutant tests/pdfcards.test.js
+# why: pdfcards ignores geom.turn when keying tonefields.
+diff --git a/src/engine/pdfcards.js b/src/engine/pdfcards.js
+--- a/src/engine/pdfcards.js
++++ b/src/engine/pdfcards.js
+@@ -503,7 +503,7 @@
+     }
+     if (hasMut) {
+       pd.angles.forEach(function (base) {
+-        var ang = (base + (g.turn || 0)) % 360;
++        var ang = base % 360;
+         var t = { theta: ang, orbit: pd.main.orbit, r: pd.main.r,
+                   main: main[ang] === undefined ? null : entry(main[ang]),
+                   lens: mut[ang] === undefined ? null : entry(mut[ang]) };

@@ -1,0 +1,16 @@
+# kills: EHC hint card 390x844: the open card covers the tabs and carries the close button at its top right
+# suite: node --test --test-name-pattern ^EHC.hint.card.390x844: tests/editor_e2e.test.js
+# fault: The Placement help card paints under the drawer and leaves its tab buttons exposed.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15394,7 +15394,8 @@
+   @keyframes placement-rejected-out{from{opacity:1}to{opacity:0}}
+   @media(prefers-reduced-motion:reduce){#editor .placement-rejected-timed{animation:none}}
+   #editor #editor-hint-toggle{display:none!important}
+-  #editor #editor-areas,#editor #editor-hint-close{z-index:11}
++  #editor #editor-areas{z-index:7}
++  #editor #editor-hint-close{z-index:11}
+   #editor #editor-menu [hidden]{display:none!important}
+   #editor #editor-status:empty{display:none}
+   #editor.dragging .drawerexp-row button,#editor.dragging #editor-status button{pointer-events:none}

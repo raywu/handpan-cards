@@ -1,0 +1,14 @@
+# kills: P0 Placement help 390x844: the overlay preserves frame and pinned rail, and dismissal restores More focus
+# suite: node --test --test-name-pattern ^P0.Placement.help.390x844: tests/editor_e2e.test.js
+# fault: The retired info button becomes visible again when the Placement help overlay is open.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15394,6 +15394,7 @@
+   @keyframes placement-rejected-out{from{opacity:1}to{opacity:0}}
+   @media(prefers-reduced-motion:reduce){#editor .placement-rejected-timed{animation:none}}
+   #editor #editor-hint-toggle{display:none!important}
++  #editor #editor-hint-toggle[aria-expanded="true"]{display:flex!important;visibility:visible}
+   #editor #editor-areas,#editor #editor-hint-close{z-index:11}
+   #editor #editor-menu [hidden]{display:none!important}
+   #editor #editor-status:empty{display:none}

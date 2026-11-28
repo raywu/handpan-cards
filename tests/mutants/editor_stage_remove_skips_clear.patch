@@ -1,0 +1,15 @@
+# kills: RCF-16: remove the 270 note and the fifth still commits
+# suite: node --test --test-name-pattern RCF.16..remove.the.270.note tests/editor_shell.test.js
+# fault: A remove is accepted without clearing the pin it freed, so the fifth is refused late.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14203,7 +14203,7 @@ function editorRemove(m, ring, i) {
+     return editorStageCommit({ ...m, fields: {}, pins: [] }, stage);
+   }
+   if (editorIsEmpty(m)) {
+-    const removed = editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); editorStageClearPins(m, st); });
++    const removed = editorStageEdit(m, (st) => { editorStageRemove(st, ring, i); });
+     return editorGuidedCompact(removed, ring);
+   }
+   const parts = editorPartsOf(m);

@@ -1,0 +1,16 @@
+# kills: U2b-12: dirty means the model differs from the one the panel opened with
+# suite: node --test --test-name-pattern ^U2b-12..dirty.means.the.model.differs.from.the.one.the.panel.opened.with$ tests/editor_shell.test.js
+# fault: Back never prompts, so edits are lost silently.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14551,8 +14551,7 @@
+   if (!o.name) delete o.name;
+   return { ...rest, options: o };
+ };
+-const editorIsDirty = (base, m) => JSON.stringify(editorBare(base)) !== JSON.stringify(editorBare(m)) ||
+-  (editorIsEmpty(base) && editorIsEmpty(m) && !!(editorLineText(base) || editorLineText(m)) && JSON.stringify(editorStageOf(base)) !== JSON.stringify(editorStageOf(m)));
++const editorIsDirty = (base, m) => false;
+ function editorDraftLineText(m) {
+   const fields = {};
+   const ding = editorDingOf(m);

@@ -1,0 +1,14 @@
+# kills: NF en 320x568: scrolled to its end, a render leaves the region there and the octave row takes its taps
+# suite: node --test --test-name-pattern ^NF.en.320x568..scrolled.to.its.end tests/editor_e2e.test.js
+# fault: Rendering resets the actual control drawer scroll and moves the octave row.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15724,6 +15724,7 @@
+     if(split&&feedbackBanner.scrollHeight>feedbackBanner.clientHeight)feedbackBanner.tabIndex=0;
+     else feedbackBanner.removeAttribute('tabindex');
+     drawer.style.setProperty('--drawerexp-body-max',Math.max(88,vh-rr.top-top-chrome.offsetHeight-toolbar.offsetHeight-8)+'px');sync();
++    body.scrollTop=0;
+     if(root.classList.contains('dragging')||root.classList.contains('settling'))return;
+     const svg=document.querySelector('#editor-pan svg');if(!svg)return;
+     const bb=svg.getBBox(),pad=4;frame={x:bb.x-pad,y:bb.y-pad,w:bb.width+pad*2,h:bb.height+pad*2};

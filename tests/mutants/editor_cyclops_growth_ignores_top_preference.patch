@@ -1,0 +1,15 @@
+# kills: Guided Cyclops growth places tray additions at the visible top from either side
+# suite: node --test --test-name-pattern ^Guided.Cyclops.growth.places tests/editor_model.test.js
+# fault: Choose the opening from the approach angle instead of the upper-left guided default.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16644,7 +16644,7 @@
+     accepted = { ...result, solved: placed.value };
+     return true;
+   });
+-  let projection = project(growingCyclops ? 90 : requestedAngle);
++  let projection = project(requestedAngle);
+   // If the top opening is obstructed, retain any legal seat at the requested approach.
+   if (growingCyclops && projection.reason === "clearance" &&
+       Number.isFinite(requestedAngle) && requestedAngle !== 90) {

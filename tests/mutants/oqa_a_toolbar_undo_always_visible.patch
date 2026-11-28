@@ -1,0 +1,14 @@
+# kills: EDITOR-RC-CYCLOPS-SNAP: a moved Cyclops note lands at the visible Guided seat
+# suite: node --test --test-name-pattern ^EDITOR-RC-CYCLOPS-SNAP..a.moved.Cyclops.note.lands.at.the.visible.Guided.seat tests/editor_e2e.test.js
+# fault: Hide the pinned Undo control when the drawer is minimized.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15924,6 +15924,7 @@
+   editorRenderForm(m);
+   editorRenderLayout(m);
+   editorEl("editor-undo").disabled = !editorCanUndo(s.history);
++  editorEl("editor-undo").hidden = window.drawerExperiment?.expanded === false;
+   editorEl("editor-redo").disabled = !editorCanRedo(s.history);
+   editorEl("editor-remove").disabled = !s.sel;
+   editorEl("editor-fixed-slots").hidden = !m.options.profile || m.options.profile.rev === 3;

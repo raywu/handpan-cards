@@ -1,0 +1,15 @@
+# kills: BN-M2: an add with no position lands in the middle of the widest empty stretch (nearest bottom centre, right first on a tie); the others stay
+# suite: node --test --test-name-pattern ^BN.M2..an.add.with.no.position.lands.in.the.middle.of.the.widest.empty.stretch..nearest.bottom.centre..right.first.on.a.tie...the.others.stay$ tests/editor_model.test.js
+# The add takes the first stretch, not the widest.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12899,7 +12899,7 @@
+     const cand = { mid, gap, near: editorBottomGap(mid), right: turnTo(mid - 270) < 180 };
+     const wins = !best || cand.gap > best.gap + 1e-9 || (Math.abs(cand.gap - best.gap) <= 1e-9
+       && (cand.near < best.near - 1e-9 || (Math.abs(cand.near - best.near) <= 1e-9 && cand.right && !best.right)));
+-    if (wins) best = cand;
++    if (!best) best = cand;
+   });
+   return best.mid;
+ }

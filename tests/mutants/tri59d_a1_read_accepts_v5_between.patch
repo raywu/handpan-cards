@@ -1,0 +1,15 @@
+# kills: TRI59d record 7 is read exactly when the record is a profile carrying between
+# suite: node --test --test-name-pattern ^TRI59d.record.7.is.read tests/persist.test.js
+# why: A legacy record 5 profile carrying between reads.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11958,7 +11958,7 @@ function readSavedRecord(record) {
+     const guided = savedOwn(record.o || {}, "guided");
+     if (guided !== (record.v === GUIDED_RECORD_VERSION) || (guided && (profiled || !savedObject(record.o.guided) ||
+         !Object.keys(record.o.guided).length || savedOwn(record.o, "replaces")))) return savedFailure("protected", "opaque-record");
+-    if (!guided && (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o) : profileRecord || pinned) ||
++    if (!guided && (record.v === INNER_RECORD_VERSION ? !pinned || profiled : (profiled ? record.v !== recordVersionFor(record.o) && !(record.v === PROFILE_RECORD_VERSION && record.o.profile.rev !== 3 && record.o.anchor === "between") : profileRecord || pinned) ||
+         (profiled && (savedOwn(record.o, "replaces") || !HPE.core.PROFILE_ENABLED)))) return savedFailure("protected", "opaque-record");
+     let canonical = record.s;
+     if (record.v < SHARE_VERSION) {

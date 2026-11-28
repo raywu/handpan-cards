@@ -1,0 +1,14 @@
+# kills: with reduced motion the swipe cue does not slide, it only brightens when armed
+# suite: node --test --test-name-pattern ^with.reduced.motion.the.swipe.cue tests/editor_e2e.test.js
+# fault: The editor swipe cue slides and scales under reduced motion.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17005,7 +17005,6 @@
+   const paint = (dx, armed) => {
+     const c = swipeCue, mag = Math.abs(dx);
+     c.el.classList.toggle("armed", armed);
+-    if (reducedMotion.matches) { c.el.style.transform = ""; c.el.style.opacity = armed ? "1" : "0.6"; return; }
+     const out = 48 - Math.min(mag, 48);
+     c.el.style.transform = `translateX(${dx < 0 ? out : -out}px) scale(${armed ? 1.1 : 0.8 + 0.2 * Math.min(mag, 48) / 48})`;
+     c.el.style.opacity = String(Math.min(1, mag / 48));

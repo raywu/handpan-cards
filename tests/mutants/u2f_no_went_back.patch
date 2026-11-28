@@ -1,0 +1,15 @@
+# kills: OQA snap back says went back: returning a rim note to its own seat leaves layout and history unchanged
+# suite: node --test --test-name-pattern ^OQA.snap.back.says tests/editor_e2e.test.js
+# fault: A placed note dropped off its seat snaps back without the went-back copy.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17794,7 +17794,7 @@ function editorDragEnd(e) {
+   else if (target.kind === "preview-gap" && target.ring === "inner" && src.from === "tray") {
+     s.say = t("editor.guided.cyclops_drop_hint");
+   }
+-  else if (plan.snap && src.from === "pan" && src.ref.ring !== "ding") s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
++  else if (false) s.say = s.plainSay = t("editor.say.went_back", { name: editorNameAt(m, src.ref) });
+   if (e && s.error) {
+     const rejected=s.history===priorHistory && dropPoint;
+     if(rejected)s.error=t("editor.drop_not_placed",{name:movedName})+" "+s.error;

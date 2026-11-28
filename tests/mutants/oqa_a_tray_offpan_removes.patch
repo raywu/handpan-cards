@@ -1,0 +1,14 @@
+# kills: OQA tray drag off cancels: no history step and no status message
+# suite: node --test --test-name-pattern ^OQA.tray.drag.off tests/editor_e2e.test.js
+# fault: A tray note released off the pan answers with a refusal.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15898,6 +15898,7 @@ function editorDropPlan(m, src, target) {
+     if (target.kind === "ding") return { step: (x) => editorReplaceDing(x, src.name), say: t("editor.say.ding_replace", { old: editorDingOf(m), new: src.name }) };
+     if (target.kind === "note") return { step: (x) => editorReplace(x, target.ring, target.i, src.name), say: t("editor.say.replaced", { old: editorNameAt(m, target), new: src.name }) };
+     if (target.kind === "spot") return { step: (x) => editorPlace(x, target.ring, src.name, target.angle), say: editorPlaceSay(src.name, target) };
++    if (target.kind === "outside") return { refuse: t("editor.say.rim_min") };
+     return snap;
+   }
+   const ref = src.ref;

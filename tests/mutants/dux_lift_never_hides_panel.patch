@@ -1,0 +1,14 @@
+# kills: drag ux E1: a live drag sets dragging and takes the panel out of play; a press that does not move does not
+# suite: node --test --test-name-pattern ^drag.ux.E1 tests/editor_e2e.test.js
+# fault: A live drag never marks the editor dragging.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16596,7 +16596,6 @@
+   clearTimeout(editorSettleTimer);
+   root.classList.remove("settling");
+   root.style.setProperty("--ed-mag", String(editorDragMeasure()));
+-  root.classList.add("dragging");
+   window.addEventListener("resize", editorDragCancel);
+   window.addEventListener("orientationchange", editorDragCancel);
+   document.addEventListener("visibilitychange", editorDragHidden);

@@ -1,0 +1,15 @@
+# kills: N-b: focusing the scale name keeps half-typed, invalid notes text in the notes field
+# suite: node --test --test-name-pattern ^N.b..focusing.the.scale.name.keeps.half.typed..invalid.notes.text.in.the.notes.field tests/editor_e2e.test.js
+# note: N-b: focusing the name field keeps half-typed invalid notes text
+# fault: Focusing the name field cancels the edit and drops the typed text.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16855,6 +16855,7 @@
+     const s = editorSession;
+     if (!s || s.dialog) return;
+     s.naming = true;
++    if (s.editing) editorCancelEdit();
+     if (s.editing) editorCommitLine();
+   };
+   nameBox.onblur = editorCommitName;

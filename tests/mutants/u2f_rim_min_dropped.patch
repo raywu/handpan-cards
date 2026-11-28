@@ -1,0 +1,15 @@
+# kills: U2f-3 (D4, OQA): a placed note released outside the pan is removed; a missing Ding or rim stays editable; a covered drop snaps back
+# suite: node --test --test-name-pattern ^U2f-3. tests/editor_shell.test.js
+# fault: Treat the rimless draft as saveable after the last rim note moves.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14682,7 +14682,7 @@
+  * check's reference) and the text line's mode. */
+ const editorEmptyModel = () => ({ fields: {}, options: {}, pins: [] });
+ const editorIsEmpty = (m) => !Object.keys(m.fields).length;
+-const editorCanSave = (m) => !editorIsEmpty(m);
++const editorCanSave = (m) => !editorIsEmpty(m) || (!!editorDingOf(m) && !editorNames(m, "rim").length);
+ const editorKindOf = (m) => (m.options.profile ? "neotone" : "standard");
+ const editorBare = (m) => {
+   const { view, stage, layoutHints, modeLayouts, ...rest } = m;

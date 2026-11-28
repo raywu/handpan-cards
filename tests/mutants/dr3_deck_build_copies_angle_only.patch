@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9884,7 +9884,6 @@ function buildGenerated(text, options, guard) {
+@@ -11589,7 +11589,6 @@ function buildGenerated(text, options, guard) {
      for (const id of Object.keys(moved.value.fields)) {
        if (built.value.fields[id]) {
          built.value.fields[id][4] = moved.value.fields[id][4];
 -        built.value.fields[id][5] = moved.value.fields[id][5];
        }
      }
-     if (wanted !== null) built.value.options.seats = JSON.parse(JSON.stringify(wanted));
+     if (guided !== null) {

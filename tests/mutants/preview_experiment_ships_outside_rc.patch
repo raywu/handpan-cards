@@ -1,0 +1,14 @@
+# kills: test_editor_experiment_is_published_only_on_rc_preview
+# suite: python3 -m unittest -k test_editor_experiment_is_published_only_on_rc_preview tests.test_site_files
+# The experimental page escapes its preview-only publishing guard.
+diff --git a/tools/publish.sh b/tools/publish.sh
+--- a/tools/publish.sh
++++ b/tools/publish.sh
+@@ -18,6 +18,6 @@ done
+ if [ -n "${CF_PAGES_BRANCH:-}" ] && [ "$CF_PAGES_BRANCH" != "main" ]; then
+   cp qa-seed.html "$out/qa-seed.html"
+ fi
+-if [ "${CF_PAGES_BRANCH:-}" = "claude/rc-upgrade" ] && [ -f editor-pan-experiment.html ]; then
++if [ -f editor-pan-experiment.html ]; then
+   cp editor-pan-experiment.html "$out/editor-pan-experiment.html"
+ fi

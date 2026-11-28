@@ -1,0 +1,17 @@
+# kills: TRI59b the last-scale refusal resets the button title and leaves no stale arming text
+# suite: node --test --test-name-pattern ^TRI59b.the.last.scale.refusal tests/editor_e2e.test.js
+# fault: The refusal leaves the armed tooltip and the arming note behind.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15881,8 +15881,8 @@ function editorDeleteTap() {
+     if (Date.now() - s.delArmedAt < EDITOR_DELETE_GUARD_MS) return;
+     s.delArmed = false;
+     if (wouldEmpty(editingId)) {
+-      editorResetDeleteButton(b);
+-      s.delNote = "";
++      b.classList.remove("armed");
++      b.setAttribute("aria-label", t("sheet.del_idle"));
+       s.say = s.plainSay = t("sheet.del_refusal", { name: editedDeck().name });
+       return editorRender();
+     }

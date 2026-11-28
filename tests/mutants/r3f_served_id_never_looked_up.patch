@@ -4,12 +4,12 @@
 diff --git a/tools/sandbox.js b/tools/sandbox.js
 --- a/tools/sandbox.js
 +++ b/tools/sandbox.js
-@@ -47,7 +47,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next",
-   "scale-preview",
-   // Stage 2: the page header. The sheet became a full-screen page, so it has a
-   // BACK control and a visible title where the drawer had neither.
--  "scale-back", "scale-title",
-+  "scale-back", "scale-title", "settings-title",
-   // The sheet's tabs, their panels and the NEXT button (plan 2026-10-19-sheet-tabs).
-   "scale-tabs", "scale-tab-scale", "scale-tab-layout", "scale-panel-scale", "scale-panel-layout", "scale-next",
-   // The footer lip (plan 2026-10-19-sheet-tabs 3.7).
+@@ -48,7 +48,7 @@ const ELEMENT_IDS = ["decks", "card", "front", "back", "count", "prev", "next",
+   // Share URL lane SU-A: the COPY LINK control and its readonly fallback input.
+   "share-copy", "share-url", "about", "about-open", "about-close",
+   // Saved variants: the reviewed status, conflict action and explicit temporary-use controls.
+-  "saved-status", "saved-temporary-use"];
++  "saved-status", "saved-temporary-use", "settings-title"];
+ 
+ /** Copy a value out of the vm realm, so assert.deepStrictEqual can compare it. */
+ const plain = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));

@@ -1,5 +1,5 @@
-# kills: SV3 E1: copied saved layout opens the selected variant in a fresh profile
-# suite: node --test --test-name-pattern=^SV3.E1: tests/e2e.test.js
+# kills: SV3 E1: a copied saved layout's share code keeps its custom bottom angles
+# suite: node --test --test-name-pattern ^SV3.E1: tests/app.test.js
 # fault: A copied variant link omits its custom absolute bottom placement.
 diff --git a/index.html b/index.html
 --- a/index.html

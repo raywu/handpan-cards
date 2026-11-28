@@ -1,0 +1,15 @@
+# kills: P0 Placement help 390x844: the overlay preserves frame and pinned rail, and dismissal restores More focus
+# suite: node --test --test-name-pattern ^P0.Placement.help.390x844: tests/editor_e2e.test.js
+# fault: A tap on the overlay's x does not close it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -18098,7 +18098,7 @@ function editorWire() {
+     editorEl("editor-hint-close").focus();
+   };
+   editorEl("editor-hint-close").onclick = () => {
+-    editorSetAreas(false);
++    editorSetAreas(true);
+     editorEl("editor-more").focus();
+   };
+   nameBox.addEventListener("focusin", () => requestAnimationFrame(() => {
