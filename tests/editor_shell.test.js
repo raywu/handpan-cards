@@ -2082,7 +2082,7 @@ test("RCF-6: typed-then-tapped, a loaded scale and the typed line never get the 
   assert.deepStrictEqual(tapped, plain(a.get(`editorPlace(__m, "bottom", "C3")`)), "same as with no session at all");
   asSession(a, "new");
   a.run(`globalThis.__m = editorCommitText(editorEmptyModel(), "[A2] (D3) A3 Bb3 C4 D4 E4 F4 G4 A4").value; true`);
-  assert.strictEqual(a.get("__m.options.angles"), undefined, "the typed line stores no angle");
+  assert.deepStrictEqual(plain(a.get("__m.options.angles")), { bottom: [70] }, "direct text uses a guide, not the tap default");
 });
 
 test("RCF-7: a tapped or dragged bottom angle is kept on the empty stage and wins over the default, in every session", () => {
