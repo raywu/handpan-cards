@@ -678,6 +678,63 @@ function run() {
       assert.deepEqual(await snapshot(), moved);
     });
 
+    test("Standard no-Ding drafts retain neutral guidance when a duplicate tray note is armed", async () => {
+      const cases = [
+        { rim: ["D#3", "E3"], inner: ["C3", "C#3", "F#3"], duplicate: "E" },
+        { rim: ["D3", "A3"], inner: ["G#3"], duplicate: "D" }
+      ];
+      const guides = () => b.eval(`const pan = editorEl("editor-pan");
+        return [...pan.querySelectorAll(".guided-informational")].map(mark => ({
+          ring: mark.dataset.guidedZone,
+          hidden: mark.getAttribute("aria-hidden"),
+          hittable: mark.hasAttribute("data-fk") || getComputedStyle(mark).pointerEvents !== "none"
+        }));`);
+      for (const { rim, inner, duplicate } of cases) {
+        await fixture("", {}, 3, 844, 390);
+        await b.eval(`let model = editorSession.history.present;
+          for (const [ring, names] of Object.entries(${JSON.stringify({ rim, inner })})) {
+            for (const name of names) {
+              const next = editorPlace(model, ring, name);
+              if (!next.ok) throw Error(next.reason);
+              model = next.value;
+            }
+          }
+          editorSession.history = editorHistoryNew(model);
+          editorRender();
+          return true;`);
+        const idle = await guides();
+        assert.ok(idle.some(mark => mark.ring === "rim"));
+        if (inner.length === 1) assert.ok(idle.some(mark => mark.ring === "inner"));
+        const before = await model();
+        await b.click(`.tray-note[data-name="${duplicate}"]`);
+        await b.waitFor('drawerExperiment.state === "SHUT" && !!editorSession.held');
+        assert.deepEqual(await guides(), idle);
+        assert.ok(idle.every(mark => mark.hidden === "true" && !mark.hittable));
+        assert.equal(await b.eval('return editorGuidedTapPreviews(editorSession.history.present).length'), 0);
+        if (inner.length === 3) {
+          await clickReady("#editor-cancel");
+          await b.waitFor('!editorSession.held');
+          assert.deepEqual(await guides(), idle);
+          continue;
+        }
+        const vacant = await center('.guided-informational[data-guided-zone="rim"] circle');
+        for (const type of ["mousePressed", "mouseReleased"]) {
+          await b.send("Input.dispatchMouseEvent", { type, ...vacant, button: "left", clickCount: 1 });
+        }
+        await b.waitFor('!!document.querySelector(".placement-rejected-marker")');
+        assert.match(await b.eval('return editorEl("editor-status").textContent'), /An exact pitch can appear only once/);
+        assert.deepEqual(await model(), before);
+        assert.equal(await b.eval('return editorSession.history.past.length'), 0);
+      }
+      await fixture("(D3) A3 C4 | D4", { angles: { inner: [125] } }, 3, 844, 390);
+      await b.click('.tray-note[data-name="B"]');
+      await b.waitFor('drawerExperiment.state === "SHUT" && !!editorSession.held');
+      const active = await b.eval(`return [...editorEl("editor-pan").querySelectorAll('.guided-open:not(.guided-informational), .guided-landing')]
+        .map(mark => mark.dataset.guidedZone);`);
+      assert.ok(active.length > 0 && active.every(ring => ring === "rim"));
+      assert.ok((await guides()).some(mark => mark.ring === "inner"));
+    });
+
     test("EDITOR-RC-DUPLICATE: a duplicate drag explains the pitch conflict", async () => {
       await fixture("(D3) A3 B3 C4 D4 E4 F4 G4");
       const before = await model();

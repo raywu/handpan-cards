@@ -16597,9 +16597,17 @@ function editorWithOverlay(markup, m, solved) {
       out += editorNeoMarks(m, fields, geom, "landing");
     } else out += editorNeoMarks(m, fields, geom);
   }
-  if (standard && s?.kind === "new" && !editorDrag?.live && !editorGuidedTapSource(m))
-    under += editorGuidedNeutralMarks(m, solved);
-  if (standard && !editorDrag?.live) out += previews.map(preview => editorGuidedShowsProjection(preview.projection) ? editorGuidedMarks(preview, m, tab) : editorGuidedOpenSeats(preview, tab)).join("");
+  if (standard && !editorDrag?.live) {
+    const overlays = new Map(previews.map(preview => [preview.ring, editorGuidedShowsProjection(preview.projection)
+      ? editorGuidedMarks(preview, m, tab) : editorGuidedOpenSeats(preview, tab)]));
+    if (s?.kind === "new") {
+      const zones = editorGuidedZones.filter(ring => !overlays.get(ring));
+      const obstacles = previews.filter(({ ring }) => projected.has(ring)).flatMap(({ ring, solved: preview }) =>
+        ringIds(preview.fields, ring).map(id => editorGuidedPoint(preview.geom, ring, preview.fields[id][4])));
+      under += editorGuidedNeutralMarks(m, solved, null, null, { zones, obstacles });
+    }
+    out += [...overlays.values()].join("");
+  }
   if (unchosen) {
     const ding = editorTargetDing(geom, m);
     const dy = (ding.y * 100).toFixed(2), dr = (ding.r * 100).toFixed(2);
@@ -17161,10 +17169,10 @@ function editorGuidedKey(s, m, fk) {
 }
 
 // Informational guides use the current layout and never add a hit target.
-function editorGuidedNeutralMarks(m, solved, source = null, active = null) {
+function editorGuidedNeutralMarks(m, solved, source = null, active = null, { zones = editorGuidedZones, obstacles = [] } = {}) {
   if (m.options.profile) return "";
   const stage = editorIsEmpty(m) ? editorStageOf(m) : null;
-  return editorGuidedZones.filter(ring => ring !== active?.ring || !editorGuidedShowsProjection(active.projection)).map(ring => {
+  return zones.filter(ring => ring !== active?.ring || !editorGuidedShowsProjection(active.projection)).map(ring => {
     const count = ring === "rim" ? 7 : 3;
     const row = (stage?.guided || m.options.guided)?.[ring];
     const ids = ringIds(solved.fields, ring);
@@ -17173,7 +17181,7 @@ function editorGuidedNeutralMarks(m, solved, source = null, active = null) {
       row ? row.basis : ring === "rim" && ids.length < count ? "one" : undefined);
     const mirror = HPE.layout.resolveMirrors(m.options).top;
     const used = ids.filter((_, i) => !(source?.ring === ring && source.i === i))
-      .map(id => editorGuidedPoint(solved.geom, ring, solved.fields[id][4]));
+      .map(id => editorGuidedPoint(solved.geom, ring, solved.fields[id][4])).concat(obstacles);
     const orbit = editorOrbit(solved.geom, ring) * 100;
     const radius = Math.max(9, editorDrawnReach(solved.geom, ring) * 100);
     return grid.map(angle => mirror ? turnTo(180 - angle) : turnTo(angle))
