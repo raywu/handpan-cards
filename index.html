@@ -15753,7 +15753,7 @@ function installEditorDrawer() {
       if(lineFocusWidth!==null)lineFocusWidth=innerWidth;
     }
     if(!revealed)box.style.transform='none';
-    if(split&&editorSession.hint)editorPlaceAreas();
+    if(editorSession.hint)editorPlaceAreas();
   }
   function camera(e){
     if(!root.isConnected||!root.classList.contains('dragging')||(e&&(!editorDrag||e.pointerId!==editorDrag.id)))return;
@@ -16363,7 +16363,6 @@ function editorRegionAtEnd() {
 function editorRegionResize() {
   const rg = editorSession && editorEl("editor-region");
   if (!rg) return;
-  editorPlaceAreas();
   if (rg.contains(document.activeElement)) {
     if (document.activeElement.id === "editor-name") requestAnimationFrame(() => document.activeElement.scrollIntoView({ block: "nearest" }));
     return;

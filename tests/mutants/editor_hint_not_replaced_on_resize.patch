@@ -4,11 +4,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14028,7 +14028,6 @@ function editorRegionAtEnd() {
- function editorRegionResize() {
-   const rg = editorSession && editorEl("editor-region");
-   if (!rg) return;
--  editorPlaceAreas();
-   if (rg.contains(document.activeElement)) {
-     if (document.activeElement.id === "editor-name") requestAnimationFrame(() => document.activeElement.scrollIntoView({ block: "nearest" }));
-     return;
+@@ -15753,7 +15753,6 @@
+       if(lineFocusWidth!==null)lineFocusWidth=innerWidth;
+     }
+     if(!revealed)box.style.transform='none';
+-    if(editorSession.hint)editorPlaceAreas();
+   }
+   function camera(e){
+     if(!root.isConnected||!root.classList.contains('dragging')||(e&&(!editorDrag||e.pointerId!==editorDrag.id)))return;

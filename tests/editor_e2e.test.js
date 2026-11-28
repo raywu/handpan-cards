@@ -6611,8 +6611,7 @@ function run() {
     test("P0 Placement help resize: the open overlay follows the drawer when the viewport rotates", async () => {
       await open(375, 667);
       await openPlacementHelp();
-      await b.setViewport(844, 390, true);
-      await b.waitFor(`(() => {
+      const covered = () => b.waitFor(`(() => {
         const card = document.getElementById("editor-areas");
         const tabs = [...document.querySelectorAll("#editor-tabs [role=tab]")];
         return !card.hidden && tabs.length === 2 && tabs.every(tab => {
@@ -6620,6 +6619,10 @@ function run() {
           return card.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
         });
       })()`, { label: "the help overlay to cover the rotated tabs" });
+      await b.setViewport(844, 390, true);
+      await covered();
+      await b.setViewport(375, 667, true);
+      await covered();
       assert.deepEqual((await drawerHits()).rail, [true, true, true]);
       await b.key("Escape", "Escape", 27);
       assert.ok(await b.eval('return document.getElementById("editor-areas").hidden;'));
