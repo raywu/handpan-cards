@@ -2058,7 +2058,7 @@ function run() {
         const i = editorNames(m, "inner").indexOf("E5");
         return editorAnglesOf(editorSolve(m), "inner")[i];`), innerAngle);
 
-      await fixture("[A2] " + SCALE);
+      await setupLegacy("[A2] " + SCALE);
       await b.click("#editor-oct-down");
       await b.click("#editor-oct-down");
       await hold("E");
@@ -2087,7 +2087,7 @@ function run() {
     });
 
     test("BN-E2 (QA video 2): a note moved across its neighbours takes its number from where it lands; nothing swaps back", async () => {
-      await fixture("[A2] [B2] [C3] " + SCALE);
+      await setupLegacy("[A2] [B2] [C3] " + SCALE);
       const before = await bnRows();
       assert.deepStrictEqual([before.A2.a, before.B2.a, before.C3.a], [330, 210, 90]);
       await b.click("#drawerexp-handle");
@@ -2135,12 +2135,12 @@ function run() {
     });
 
     test("BN-E5: a held note placed on the bottom area (no position) goes to the middle of the widest stretch, nearest bottom centre", async () => {
-      await fixture("[A2] " + SCALE);
+      await setupLegacy("[A2] " + SCALE);
       await hold("G");
       await b.click("#editor-oct-down");
       await place("bottom");
       assert.deepStrictEqual((await model()).options.angles.bottom, [90, 270]);
-      await fixture("[A2] [B2] " + SCALE);
+      await setupLegacy("[A2] [B2] " + SCALE);
       await hold("G");
       await b.click("#editor-oct-down");
       await place("bottom");
@@ -4151,7 +4151,7 @@ function run() {
       }
 
       test("the pin ring appears only on a pinned note, and a rim note tap still selects first (the drawn circle is hit first)", async () => {
-        await fixture("(D3) " + RIM8 + " [G2]", {}, 3, 667, 375);
+        await setupLegacy("(D3) " + RIM8 + " [G2]", 375, 667);
         assert.strictEqual(await pinRings(), 0);
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
         assert.strictEqual(await pinRings(), 1);
