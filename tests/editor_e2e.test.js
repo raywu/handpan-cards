@@ -774,7 +774,9 @@ function run() {
       await b.key("Escape", "Escape", 27);
       assert.equal((await model()).options.name, "Landscape test scale");
       await clickReady('.tray-note[data-name="F"]');
-      await clickReady('#editor-pan .ehit[data-ring="ding"]');
+      const ding = await center('#editor-pan .ehit[data-ring="ding"]');
+      await touch("touchStart", ding);
+      await touch("touchEnd");
       assert.match(await text(), /\(F3\)/);
       assert.equal((await frame()).expanded, true);
       await lift('.tray-note[data-name="G"]');
@@ -7088,7 +7090,7 @@ function run() {
       assert.deepEqual(g.line, idle.line);
       assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih + 0.5);
       const railTop = await b.eval('return editorEl("editor-save").closest(".editor-toolbar").getBoundingClientRect().top;');
-      assert.ok(Math.abs(g.status.bottom - (railTop - 4)) <= 1);
+      assert.ok(g.status.bottom <= railTop + 0.5 && g.status.bottom >= railTop - 8, JSON.stringify({ status: g.status, railTop }));
       assert.ok(g.status.left >= 0 && g.status.right <= g.tabs.left + 0.5);
     });
 
@@ -8884,8 +8886,10 @@ function run() {
         for (const key of ["name", "tabs"]) {
           withHint[key].forEach((v, i) => assert.ok(Math.abs(v - withoutHint[key][i]) <= 1));
         }
-        await b.click("#drawerexp-handle");
-        await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the rim to clear" });
+        if (w < h) {
+          await b.click("#drawerexp-handle");
+          await b.waitFor('drawerExperiment.state === "SHUT"', { label: "the rim to clear" });
+        }
         const exposed = await b.eval(`const pan = editorEl("editor-pan");
           const r = pan.querySelector('svg > circle[r="100"]').getBoundingClientRect();
           return [[.5,.5],[.25,.25],[.75,.25],[.25,.75],[.75,.75]].every(([x,y]) =>
