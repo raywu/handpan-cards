@@ -35,7 +35,8 @@ test("fresh Standard text seeds legal Guided rows without changing explicit orde
   })()`));
   assert.deepStrictEqual(result.guided, { rim: { size: 7, seats: [0, 5], basis: "one" }, inner: { size: 3, seats: [2] } });
   assert.deepStrictEqual(result.fromDraft, result.guided);
-  assert.deepStrictEqual(result.typed, { rim: [270, 115.7], inner: [90], bottom: result.stock.bottom });
+  assert.deepStrictEqual(result.stock.bottom, [90]);
+  assert.deepStrictEqual(result.typed, { rim: [270, 115.7], inner: [90], bottom: [70] });
   assert.deepStrictEqual(result.mirrored.rim, [270, 64.3]);
   assert.deepStrictEqual(result.ordered, { line: "(D3) C4 A3", seats: { rim: [1, 0] } });
   assert.ok(result.unchangedTyped);
