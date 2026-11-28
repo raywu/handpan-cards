@@ -138,9 +138,10 @@ class Handpan101PageTest(unittest.TestCase):
     def test_scale_links_resolve_to_existing_pages(self):
         hrefs = [a["href"] for t, a in page().tags if t == "a" and a.get("href", "").startswith("/scales/")]
         self.assertIn("/scales/d-kurd-9/", hrefs)
+        self.assertEqual(hrefs.count("/scales/"), 1)
         for href in hrefs:
             with self.subTest(href=href):
-                self.assertRegex(href, r"^/scales/[a-z0-9-]+/$")
+                self.assertRegex(href, r"^/scales/(?:[a-z0-9-]+/)?$")
                 self.assertTrue(os.path.isfile(os.path.join(ROOT, href.strip("/"), "index.html")))
 
     def test_good_first_scales_link_their_pages(self):
