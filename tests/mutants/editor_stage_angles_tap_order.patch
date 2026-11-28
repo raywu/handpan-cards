@@ -1,0 +1,15 @@
+# kills: RCF-12: staged bottom notes tapped out of pitch order keep their own angles through the commit
+# suite: node --test --test-name-pattern staged.bottom.notes.tapped.out.of.pitch.order tests/editor_shell.test.js
+# fault: The commit hands the engine the stage angles in tap order instead of the order the engine seats the bottom ring (pitch).
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13965,7 +13965,7 @@
+     if (!list) continue;
+     const order = st[ring].map((_, i) => i);
+     if (!insertionOrder) order.sort((a, b) => editorNameEntry(st[ring][a], ring)[2] - editorNameEntry(st[ring][b], ring)[2]);
+-    result[ring] = order.map(i => list[i] ?? null);
++    result[ring] = ring === "bottom" ? list.slice() : order.map(i => list[i] ?? null);
+   }
+   return result;
+ }

@@ -1,0 +1,15 @@
+# kills: empty stage: the rim with no ding stays staged, a note that is no fifth stays staged, and so do inner and bottom before the ding
+# suite: node --test --test-name-pattern empty.stage..the.rim.with.no.ding.stays.staged..a.note.that.is.no.fifth.stays.staged..and.so.do.inner.and.bottom.before.the.ding tests/editor_shell.test.js
+# fault: A note that is no fifth over the ding is refused at the commit instead of staying staged.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13936,7 +13936,7 @@
+   } else {
+     built = editorNeoBuild(staged, { rim: stage.main.filter(Boolean), inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
+   }
+-  if (!built.ok) return built.code === "NO_FIFTH" || built.code === "NOTE_OUT_OF_ORDER" ? { ok: true, value: staged } : built;
++  if (!built.ok) return built.code === "NOTE_OUT_OF_ORDER" ? { ok: true, value: staged } : built;
+   return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
+ }
+ // Draft pins follow insertion order. The engine expects MIDI order within each ring.

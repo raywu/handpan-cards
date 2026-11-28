@@ -1,0 +1,15 @@
+# kills: U2f-8 (row 24): a tray note announces Guided reflow or an exact underside placement as appropriate
+# suite: node --test --test-name-pattern ^U2f-8 tests/editor_shell.test.js
+# fault: A cyclops or bottom placement says only that the note was added.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16458,7 +16458,7 @@
+   window.drawerExperiment?.cancelTapArm();
+ }
+ const editorNameAt = (m, ref) => (ref.ring === "ding" ? editorDingOf(m) : editorNames(m, ref.ring)[ref.i]);
+-const editorPlaceSay = (name, target) => (target.angle !== undefined && EDITOR_PINNABLE.includes(target.ring)
++const editorPlaceSay = (name, target) => (false && EDITOR_PINNABLE.includes(target.ring)
+   ? t("editor.say.placed", { name, zone: t("editor.zone." + target.ring), angle: ((Math.round(target.angle) % 360) + 360) % 360 })
+   : t("editor.say.added", { name, zone: t("editor.zone." + target.ring) }));
+ // What a dropped or tapped note does at a target, as data: a step with its

@@ -1,0 +1,15 @@
+# kills: a dirty editor shows the dialog and Keep editing retains the edits and the history entry
+# suite: node --test --test-name-pattern ^a.dirty.editor.shows.the.dialog tests/editor_e2e.test.js
+# fault: History back on a dirty editor closes it without asking.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15192,7 +15192,7 @@
+   const s = editorSession;
+   if (!s) return false;
+   editorCommitName();
+-  if (!editorHasChanges(s)) return false;
++  if (true) return false;
+   history.pushState({ scalePage: true }, "", sheetRoute());
+   sheetRouted = true;
+   if (!s.dialog) editorShowDialog(true);

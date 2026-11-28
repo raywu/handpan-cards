@@ -481,8 +481,10 @@ def draw_neo_pan(c, cx, cy, R, spec, active, roots, numbers):
         return BLUE if s == "root" else GREEN
 
     if has_mut:
-        tones = [(a, pd["main"]["orbit"], pd["main"]["r"], main.get(a),
-                  mut.get(a)) for a in pd["angles"]]
+        turn = g.get("turn", 0)
+        tones = [((a + turn) % 360, pd["main"]["orbit"], pd["main"]["r"],
+                  main.get((a + turn) % 360), mut.get((a + turn) % 360))
+                 for a in pd["angles"]]
     else:
         tones = [(pl[0], pl[1], pl[2], int(k), None)
                  for k, pl in sorted(place.items(), key=lambda kv: int(kv[0]))]
@@ -633,8 +635,9 @@ def draw_pan(c, cx, cy, R, spec, active=frozenset(), roots=frozenset(),
                 nr = orb - rr - R * g["n_in"]
                 col, fnt = INK, "Label"
             c.setFillColor(col); c.setFont(fnt, nfs)
-            c.drawCentredString(cx + nr * math.cos(a),
-                                cy + nr * math.sin(a) - nfs * 0.36, lab)
+            alternate = g.get("innerLabels", {}).get(str(i)) if zone == "inner" else None
+            nx, ny = (R * alternate[0], R * alternate[1]) if alternate else (nr * math.cos(a), nr * math.sin(a))
+            c.drawCentredString(cx + nx, cy + ny - nfs * 0.36, lab)
 
 
 # ---- page assembly --------------------------------------------------------

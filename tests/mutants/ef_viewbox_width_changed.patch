@@ -1,0 +1,15 @@
+# kills: T0 pan hash: editorWithOverlay(pan(...)) is byte-identical for every frozen model and state
+# suite: node --test --test-name-pattern ^T0.pan.hash: tests/editor_freeze.test.js
+# The pan svg viewBox grows by one unit in width, so every frozen pan changes.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12601,7 +12601,7 @@ function pan(d, ch, opts) {
+   // its acoustic ext, bottom, inner_ring, r_note and n_* are stale, unread.
+   const placed = g.place || null;
+   const vb = placed ? R * HPE.pdfcards.profileExtent(g) : ext;
+-  let s = `<svg viewBox="${-vb} ${-vb} ${2*vb} ${2*vb}"${
++  let s = `<svg viewBox="${-vb} ${-vb} ${2*vb+1} ${2*vb}"${
+     interactive ? ` data-ext="${vb}"` : ""} xmlns="http://www.w3.org/2000/svg">`;
+ 
+   const P = (orb, ang) => [orb * Math.cos(ang * Math.PI / 180), -orb * Math.sin(ang * Math.PI / 180)];

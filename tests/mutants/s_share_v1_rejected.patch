@@ -5,10 +5,10 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -599,7 +599,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     // while making every version this build knows decodable, so a v1 link
-     // still opens in a v2 app and only a genuinely NEWER one is refused.
-     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
+@@ -674,7 +674,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === PROFILE_ANCHOR_VERSION) newest = PROFILE_ANCHOR_VERSION;
+     if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === FIXED_PROFILE_VERSION) newest = FIXED_PROFILE_VERSION;
+     if (INDEX[text.charAt(0)] === GUIDED_VERSION) newest = GUIDED_VERSION;
 -    var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));
 +    var VERSION = newest;
  

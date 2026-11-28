@@ -1,0 +1,15 @@
+# kills: QA1 every editor input with placeholder text paints it lighter than typed text
+# suite: node --test --test-name-pattern QA1.every.editor.input tests/editor_e2e.test.js
+# fault: Both scale-editor placeholders use the same ink as typed text.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15355,7 +15355,7 @@
+   const style=document.createElement('style');style.textContent=`
+   #scale-sheet.onepanel #editor{position:relative;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:6px;padding-bottom:0!important}
+   #editor #editor-line{font-size:16px}
+-  #editor #editor-line::placeholder,#editor #editor-name::placeholder{color:#77716a;opacity:1}
++  #editor #editor-line::placeholder,#editor #editor-name::placeholder{color:#242424;opacity:1}
+   #editor .panexp-stage{position:relative;flex:0 0 auto;margin-inline:-10px;width:calc(100% + 20px);overflow:visible}
+   #editor .panexp-stage>.editor-panbox{height:100%!important;width:100%;min-height:0;transition:none;transform-origin:0 0}
+   #editor .drawerexp{position:absolute;z-index:8;bottom:var(--rail-height,60px);left:0;right:0;background:#F6F4ED;border-top:1px solid #8A847B;box-shadow:0 -5px 16px #24242414;transform:translateY(var(--drawerexp-offset,0px));transition:transform 180ms cubic-bezier(.2,.8,.2,1);isolation:isolate}

@@ -1,0 +1,15 @@
+# kills: P0 Placement help 390x664: the overlay preserves frame and pinned rail, and dismissal restores More focus
+# suite: node --test --test-name-pattern ^P0.Placement.help.390x664: tests/editor_e2e.test.js
+# fault: Keep Placement help open after a pointer press outside it.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17719,7 +17719,7 @@
+   const del = editorEl("editor-delete");
+   if (del) del.onclick = editorMenuPick(editorDeleteTap);
+   editorEl("editor").addEventListener("pointerdown", (e) => {
+-    if (editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target)) editorSetAreas(false);
++    if (false && editorSession.hint && !editorEl("editor-areas").contains(e.target) && !editorEl("editor-hint-toggle").contains(e.target) && !editorEl("editor-hint-close").contains(e.target)) editorSetAreas(false);
+     const menu = editorEl("editor-menu");
+     if (!menu.contains(e.target) && !editorEl("editor-more").contains(e.target)) editorCloseMenu(false);
+     else if (del && e.target !== del && !del.contains(e.target)) editorDisarmDelete();

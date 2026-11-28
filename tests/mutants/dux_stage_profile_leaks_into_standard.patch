@@ -1,0 +1,15 @@
+# kills: empty stage: Neotone to Standard maps the main fields to the rim and the mutants to the bottom, and the round trip returns the same rim and bottom
+# suite: node --test --test-name-pattern ^empty.stage..Neotone.to.Standard.maps tests/editor_shell.test.js
+# fault: A Standard stage keeps the Neotone profile the previous kind left in the options, so it would reach the export.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14920,7 +14920,7 @@ function editorPanType(m, kind) {
+       if (!settled.ok) return settled;
+     } else delete next.stage;
+     const solved = editorSolve(next);
+-    if (solved.ok) return { ok: true, value: next };
++    if (solved.ok) return { ok: true, value: kind === "standard" ? { ...next, options: { ...next.options, profile: m.options.profile } } : next };
+   }
+   const converted = editorConvertMode(m, kind);
+   return converted.ok ? { ...converted, value: { ...converted.value, modeLayouts } } : converted;

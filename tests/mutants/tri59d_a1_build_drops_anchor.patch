@@ -1,0 +1,15 @@
+# kills: TRI59d A1: buildGenerated keeps anchor between on a profile seed, solves it turned, and drops anchor one
+# suite: node --test --test-name-pattern ^TRI59d.A1..buildGenerated tests/app.test.js
+# why: buildGenerated deletes the anchor from a profile deck, so a v9 link opens and saves unturned.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -11489,7 +11489,7 @@ function buildGenerated(text, options, guard) {
+       built.value.geom = placed.value.geom;
+       built.value.fields = placed.value.fields;
+       for (const name of ["mirror", "mirrorBottom"]) delete built.value.options[name];
+-      if (!between) delete built.value.options.anchor;
++      delete built.value.options.anchor;
+       if (seed.value.options.parent == null) built.value.options.parent = null;
+     }
+     built.value.options.profile = JSON.parse(JSON.stringify(given));

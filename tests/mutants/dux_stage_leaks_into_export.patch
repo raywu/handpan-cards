@@ -1,0 +1,15 @@
+# kills: empty stage: the stage never reaches the export, and a staged model cannot be saved
+# suite: node --test --test-name-pattern empty.stage:.the.stage.never.reaches tests/editor_shell.test.js
+# fault: editorExport carries the model's in-memory stage, so a staged pan reaches the share code and the record.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -12785,7 +12785,7 @@ function editorExport(m) {
+   const seed = { fields: m.fields, options: m.options };
+   const code = shareCode(seed);
+   return { s: HPE.core.formatSeed(m.fields), options: m.options, record: scaleRecord(seed), solve: HPE.layout.solve(seed),
+-    code: code.ok ? code.value : undefined, link: shareLink(seed) };
++    code: code.ok ? code.value : undefined, link: shareLink(seed), stage: m.stage };
+ }
+ const editorNames = (m, ring) => (editorIsEmpty(m) ? editorStageNames(m, ring) : ringIds(m.fields, ring).map((id) => m.fields[id][0] + m.fields[id][1]));
+ const editorDingOf = (m) => (editorIsEmpty(m) ? editorStageOf(m).ding || "" : Object.keys(m.fields).filter((id) => m.fields[id][3] === "ding").map((id) => m.fields[id][0] + m.fields[id][1])[0]);

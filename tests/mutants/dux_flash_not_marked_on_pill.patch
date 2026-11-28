@@ -1,0 +1,15 @@
+# kills: drag ux E4: a placed note is highlighted after a drag, a tap, a tap on a zone, a tap on the ding, a trade by two taps and the keyboard, and not after Undo
+# suite: node --test --test-name-pattern ^drag.ux.E4 tests/editor_e2e.test.js
+# fault: A pill or tap placement is not highlighted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17006,7 +17006,7 @@
+   if (!plan.step && !plan.refuse) return;
+   const point = pointer && editorRejectedPoint(m, hit, pt);
+   const priorHistory = s.history;
+-  const placed = plan.step ? editorDo(plan.step, plan.say, true) : false;
++  const placed = plan.step ? editorDo(plan.step, plan.say, false) : false;
+   if (plan.refuse) s.error = plan.refuse;
+   if (placed) s.held = null;
+   const rejected = !placed && point && s.error && s.history === priorHistory;

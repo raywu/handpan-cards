@@ -1,0 +1,15 @@
+# kills: Neotone conversion E4: {"mirror":true} permits placement, export and exact Undo
+# suite: node --test --test-name-pattern ^Neotone.conversion.E4:.*mirror.:true tests/editor_shell.test.js
+# why: Keeping the Standard top-mirror flag makes a valid Neotone E4 addition fail.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14962,7 +14962,7 @@
+   delete options.seats;
+   delete options.angles;
+   delete options.guided;
+-  if (kind === "neotone") { delete options.mirror; delete options.mirrorBottom; }
++  if (kind === "neotone") { delete options.mirrorBottom; }
+   const draft=editorWithStage({...m,fields:{},options,pins:[],layoutHints:hints},stage);
+   const result=editorStageSettle(draft,stage);
+   if (!result.ok) return editorAreaRefusal("SWITCH_LAYOUT",result.reason);

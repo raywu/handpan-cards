@@ -4,12 +4,12 @@
 diff --git a/src/engine/core.js b/src/engine/core.js
 --- a/src/engine/core.js
 +++ b/src/engine/core.js
-@@ -956,7 +956,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+@@ -970,7 +970,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
      }
      var key;
      for (key in byKey) {
 -      if (has(byKey, key) && !has(shape.value.seen, key)) return scaleErr("PROFILE_NOTE_MISSING");
 +      if (false) return scaleErr("PROFILE_NOTE_MISSING");
      }
-     return ok({ id: "paired", rev: 2, map: map });
+     return ok({ id: "paired", rev: raw.rev, map: map });
    }

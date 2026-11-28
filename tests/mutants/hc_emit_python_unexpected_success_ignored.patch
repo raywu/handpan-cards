@@ -7,7 +7,7 @@
 diff --git a/tests/suite_health.py b/tests/suite_health.py
 --- a/tests/suite_health.py
 +++ b/tests/suite_health.py
-@@ -617,8 +617,7 @@ def emit_python(outfile):
+@@ -663,8 +663,7 @@ def emit_python(outfile):
                    data.get("failing_tests_omitted", 0))
      if data["output_excerpt"]:
          print(data["output_excerpt"])
@@ -16,4 +16,4 @@ diff --git a/tests/suite_health.py b/tests/suite_health.py
 +    return 1 if (data["failures"] or data["errors"]) else 0
  
  
- def collect_js():
+ EDITOR_E2E = "tests/editor_e2e.test.js"

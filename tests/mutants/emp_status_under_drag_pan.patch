@@ -1,0 +1,15 @@
+# kills: EMP: mid-drag at 390x844 the scaled pan stays clear of the floating status
+# suite: node --test --test-name-pattern ^EMP..mid.drag.at.390x844 tests/editor_e2e.test.js
+# fault: Translate the scaled pan below the maximum camera clearance so the visible rim crosses the banner.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15643,7 +15643,7 @@
+     const minX=(split?r.left:0)+4-r.left-left*z,maxX=(split?r.right:innerWidth)-4-r.left-right*z;
+     const anchorX=-r.width*(z-1)*ax;
+     const x=minX<=maxX?Math.max(minX,Math.min(maxX,anchorX)):anchorX;
+-    transform={x,y:Math.max(band-r.top-top*z,Math.min(limit-r.top-bottom*z,-r.height*(z-1)*ay)),z};paint();
++    transform={x,y:limit-r.top-bottom*z+80,z};paint();
+   }
+   function paint(){if(transform)box.style.transform=`translate(${transform.x}px,${transform.y}px) scale(${transform.z})`;}
+   function feedback(){

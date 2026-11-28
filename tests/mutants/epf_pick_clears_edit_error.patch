@@ -1,0 +1,15 @@
+# kills: EPF: a palette pick is refused while a rejected text line is still being edited, and the error stays visible
+# suite: node --test --test-name-pattern ^EPF..a.palette.pick.is.refused.while.a.rejected.text.line.is.still.being.edited..and.the.error.stays.visible tests/editor_e2e.test.js
+# note: EPF: a rejected text line keeps its error banner when a dot is tapped
+# fault: The pick no longer checks for a pending parse error, so editorDo clears the banner while editing stays on.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16031,6 +16031,6 @@
+ function editorPickPalette(i) {
+   const s = editorSession;
+-  if (!s || s.dialog || (s.editing && s.error)) return;
++  if (!s || s.dialog) return;
+   editorDo((m) => editorSetPalette(m, i));
+   editorRender();
+ }

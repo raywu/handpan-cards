@@ -1,0 +1,15 @@
+# kills: drag ux unit 1: the magnify factor grows into the freed space, capped at 1.35, the viewport width, and never below 1
+# suite: node --test --test-name-pattern ^drag.ux.unit.1 tests/editor_shell.test.js
+# fault: The magnify factor is always 1.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16556,7 +16556,7 @@
+ const EDITOR_MAG_MAX = 1.35, EDITOR_MAG_PAD = 14, EDITOR_MAG_EDGE = 8;
+ function editorMagnify(panRect, freedPx, viewport) {
+   if (!(panRect.height > 0) || !(panRect.width > 0)) return 1;
+-  return Math.max(1, Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
++  return Math.max(1, 0 * Math.min(EDITOR_MAG_MAX, (panRect.height + freedPx) / panRect.height, viewport.width / panRect.width));
+ }
+ function editorStatusBelow() {
+   const box = editorEl("editor").querySelector(".editor-panbox").getBoundingClientRect();

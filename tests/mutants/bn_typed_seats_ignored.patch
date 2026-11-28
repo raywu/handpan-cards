@@ -1,0 +1,15 @@
+# kills: BN-M9: a typed line that only adds or removes bottom names freezes the rest (rim and cyclops pins kept, no pinsReset); a rename with no stable match and a line that changes another ring respread
+# suite: node --test --test-name-pattern ^BN.M9..a.typed.line.that.only.adds.or.removes.bottom.names.freezes.the.rest..rim.and.cyclops.pins.kept..no.pinsReset...a.rename.with.no.stable.match.and.a.line.that.changes.another.ring.respread$ tests/editor_model.test.js
+# A bottom add typed with a rim or cyclops reorder drops the reorder.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13652,7 +13652,7 @@
+   if (!others || editorDingOf(m) !== editorDingOf(target)) return null;
+   const was0 = HPE.core.parseSeed(editorLineText(m), m.options);
+   const before = was0.ok ? HPE.core.typedSeats(was0.value) : null;
+-  if (["rim", "inner"].some((r) => editorTypedKey(typed, r) !== editorTypedKey(before, r))) return null;
++
+   const was = editorNames(m, "bottom"), now = editorNames(target, "bottom");
+   if (was.filter((n) => now.includes(n)).join("\n") !== now.filter((n) => was.includes(n)).join("\n")) return null;
+   const removed = was.map((n, i) => (now.includes(n) ? -1 : i)).filter((i) => i >= 0);

@@ -1,0 +1,14 @@
+# kills: AF save on screen 838x390 seat: after a touch drop Save is fully in view and hit at its centre
+# suite: node --test --test-name-pattern AF.save.on.screen tests/editor_e2e.test.js
+# fault: The pinned Save action cannot receive pointer input.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15516,6 +15516,7 @@
+   #editor[data-phone-landscape] .editor-head #editor-name{flex:1 1 10rem;min-width:44px;text-overflow:ellipsis}
+   #editor[data-phone-landscape] #editor-menu{max-height:var(--split-menu-max);overflow:auto;overscroll-behavior:contain}
+   @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
++  #editor .editor-toolbar #editor-save{pointer-events:none!important}
+   `;document.head.append(style);
+   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};
+   let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;

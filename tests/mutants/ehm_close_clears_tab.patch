@@ -1,0 +1,16 @@
+# kills: EHC hint card 360x640: the open card covers the tabs and carries the close button at its top right
+# suite: node --test --test-name-pattern ^EHC.hint.card tests/editor_e2e.test.js
+# the hint close button sits below the tab strip, away from the card top
+# fault: The close button goes back to below the tab strip instead of the top of the hint card.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14073,7 +14073,7 @@
+   st.width = right - left + "px";
+   st.height = bottom - top + "px";
+   const cl = editorEl("editor-hint-close").style;
+-  cl.top = top - box.top - ed.clientTop + ed.scrollTop + 4 + "px";
++  cl.top = editorEl("editor-tabs").getBoundingClientRect().bottom - box.top - ed.clientTop + 4 + "px";
+   cl.left = right - box.left - ed.clientLeft - 48 + "px";
+ }
+ function editorSetAreas(open) {

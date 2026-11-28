@@ -1,0 +1,15 @@
+# kills: CAS3 a Save refused by a whole-list change writes exactly one new scale
+# suite: node --test --test-name-pattern ^CAS3.a.Save.refused.by.a.whole.list.change tests/editor_e2e.test.js
+# fault: The retry sends the collection id captured when the editor opened, so a whole-list change refuses it again.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15231,7 +15231,7 @@ async function editorSave() {
+     if (!result.ok && result.kind === "conflict") {
+       await reconcileSavedCollection();
+       retried = true;
+-      result = await commitSaved({ type: "save-as-separate", collectionId: savedState?.collectionId, candidate }, { signal: controller.signal });
++      result = await commitSaved({ type: "save-as-separate", collectionId: !base ? savedState?.collectionId : base.collectionId, candidate }, { signal: controller.signal });
+       if (generation !== sheetGeneration || !pageOpen) return;
+     }
+     if (!result.ok) {

@@ -1,0 +1,15 @@
+# kills: U2d nit N1: holding a note on a Neotone pan draws no cyclops or bottom target rings
+# suite: node --test --test-name-pattern ^U2d.nit.N1 tests/editor_e2e.test.js
+# fault: A Neotone pan draws the cyclops and bottom target rings for a held note.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16394,7 +16394,7 @@
+     out += `<circle class="etarget eempty" data-ring="ding" cx="0" cy="${dy}" r="${dr}"/>`;
+     out += `<circle class="ekey" cx="0" cy="${dy}" r="${dr}" role="button" ${tab("ding:0")} aria-label="${escapeHtml(t("editor.note.aria_ding_empty"))}"/>`;
+   }
+-  if (s && standard) {
++  if (s) {
+     const balanced = s.kind === "new";
+     if (balanced) under += `<rect aria-hidden="true" pointer-events="none" fill="none" x="-118.13" y="-118.13" width="236.26" height="236.26"/>`;
+     const zones = empty || balanced ? EDITOR_RINGS : ["inner", "bottom"];

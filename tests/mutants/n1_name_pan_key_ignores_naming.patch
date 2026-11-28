@@ -1,0 +1,15 @@
+# kills: while the name is being typed a tap or key on the pan changes nothing
+# suite: node --test --test-name-pattern=while.the.name.is.being.typed tests/editor_e2e.test.js
+# fault: a pan key is ignored while the name is typed is broken.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16953,7 +16953,7 @@ function editorNudge(dir) {
+ function editorPanKey(e) {
+   const s = editorSession;
+   const el = e.target.closest ? e.target.closest("[data-fk]") : null;
+-  if (!s || !el || s.dialog || s.editing || s.naming || e.altKey || e.ctrlKey || e.metaKey) return;
++  if (!s || !el || s.dialog || s.editing || e.altKey || e.ctrlKey || e.metaKey) return;
+   const fk = el.dataset.fk;
+   const m = s.history.present;
+   if (e.key === "Enter" || e.key === " ") {

@@ -1,0 +1,15 @@
+# kills: SO: en 844x390: the idle prompt gives way to visible hold and drag feedback
+# suite: node --test --test-name-pattern ^SO..en.844x390..the.idle.prompt.gives.way.to.visible.hold.and.drag.feedback tests/editor_e2e.test.js
+# fault: Leave the idle clip on live drag feedback.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17555,7 +17555,7 @@ function editorDragLift(d) {
+   if (d.src.chip) d.src.chip.classList.add("dragging");
+   const status = editorEl("editor-status");
+   status.removeAttribute("data-kind");
+-  status.removeAttribute("data-idle");
++  status.setAttribute("data-idle", "");
+   status.textContent = editorDragMessage(d.src);
+   editorGuidedDragStart(d);
+ }

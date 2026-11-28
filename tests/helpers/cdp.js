@@ -760,6 +760,9 @@ async function launchOnce(opts = {}) {
       const d = params.exceptionDetails || {};
       EXCEPTIONS.push(String((d.exception && d.exception.description) || d.text || "uncaught exception"));
     });
+    b.on("Page.javascriptDialogOpening", (params) => {
+      if (params.type === "beforeunload") return b.send("Page.handleJavaScriptDialog", { accept: true });
+    });
     await b.send("Page.enable");
     await b.send("Runtime.enable");
     // F-18, plan section 15: classic scrollbars take layout width on Linux CI and

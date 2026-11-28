@@ -4,9 +4,9 @@
 diff --git a/src/engine/share.js b/src/engine/share.js
 --- a/src/engine/share.js
 +++ b/src/engine/share.js
-@@ -538,7 +538,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
-     }
-     if (profiled && pairs !== 1) return badNote(text);
+@@ -569,7 +569,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     if (anchored && betweens !== 1) return badNote(text);
+     if (text.charAt(0) === "8" && !carry.inner) return badNote(text);
      var read = HPE.core.parseSeed(scaleString(scale), options);
 -    if (!read.ok && profiled && options.profile.rev === 2 &&
 +    if (false && profiled && options.profile.rev === 2 &&

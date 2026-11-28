@@ -4,11 +4,11 @@
 diff --git a/.github/workflows/validate.yml b/.github/workflows/validate.yml
 --- a/.github/workflows/validate.yml
 +++ b/.github/workflows/validate.yml
-@@ -87,7 +87,6 @@ jobs:
+@@ -109,7 +109,6 @@
    js-tests:
-     name: js suites (unit + e2e)
+     name: js suites (unit + e2e) [${{ matrix.shard }}/2]
      needs: changes
 -    if: needs.changes.outputs.code == 'true'
-     runs-on: ubuntu-latest
-     steps:
-       - uses: actions/checkout@v4
+     strategy:
+       fail-fast: false
+       matrix:

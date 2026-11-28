@@ -1,15 +1,16 @@
-# kills: SHC E1: saved fine nudge keeps B fallback after A rejects and opens B in a fresh profile
-# suite: node --test --test-reporter=tap --test-name-pattern ^SHC.E1: tests/e2e.test.js
-# Old A may overwrite the manual URL after saved B has completed.
+# kills: SHC U1: latest LINK owns fallback in both completion orders and at identical URLs
+# suite: node --test --test-name-pattern ^SHC.U1: tests/app.test.js
+# a LINK copy from an old route still owns the new route
+# copyLink current() drops generation and href checks
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -20262,7 +20262,7 @@ function copyLink() {
+@@ -17249,7 +17249,7 @@ function copyLink() {
    const href = location.href;
    const deck_kind = deckKind(deck());
    let noticeRevision = announcementRevision;
 -  const current = () => generation === linkUIGeneration && href === location.href &&
 +  const current = () =>
-     !shareCopy.disabled && !sheetOpen && !aboutOpen && !subpage &&
+     !shareCopy.disabled && !pageOpen && !aboutOpen && !subpage &&
      !(panelOpen && !desktopMQ.matches) && !document.hidden;
    if (!current()) return;

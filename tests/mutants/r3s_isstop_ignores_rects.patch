@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -14334,7 +14334,7 @@ scaleBox.addEventListener("blur", () => { const hint = hintToAnnounce(); if (hin
+@@ -15525,7 +15525,7 @@ const HOLD_MS = 250, HOLD_SLOP = 8, MOUSE_SLOP = 4, GHOST_LIFT = 36, GHOST_RETUR
  // A stop is a control the page renders and the user can operate. Rendering is
  // asked of the browser (a control inside a hidden ancestor, or unrendered by
  // CSS, has no client rects), never of a hand-kept mode table.
 -const isStop = el => !!el && !el.disabled && el.getClientRects().length > 0;
 +const isStop = el => !!el && !el.disabled;
- function cycleTabStops(stops, e) {
+ function cycleTabStops(all, e) {
+   const stops = typeof getComputedStyle === "function" ? all.filter(el => getComputedStyle(el).visibility !== "hidden") : all;
    if (!stops.length) return;
-   const i = stops.indexOf(document.activeElement);

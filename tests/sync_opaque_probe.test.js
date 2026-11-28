@@ -1,5 +1,5 @@
 // Opaque-record probe for the sign-in release: a synced saved-scale row written by a
-// NEWER build (record version 6 or 7; this release reads up to 5) must never be lost
+// NEWER build (record version 6 or 7 when the probe was cut; the editor RC now reads both) must never be lost
 // or rewritten by pull, push, or the deletion of a different scale. The fixture bytes
 // were frozen from editor-rc-int 2971e9bb (tests/fixtures/opaque_records_v6_v7.json);
 // the verdict comes from THIS tree's readSavedRecord, not the build that wrote them.
@@ -64,12 +64,10 @@ const setup = async version => {
 };
 
 describe("opaque record probe (sign-in release vs newer-build rows)", () => {
-  test("precondition: this tree cannot read record 6 or 7 but reads the readable fixture", async () => {
+  test("precondition: this tree reads the editor's record 7 and the readable fixture", async () => {
     const app = boot();
-    for (const v of ["v6", "v7"]) {
-      assert.strictEqual(FIX.records[v].v, v === "v6" ? 6 : 7);
-      assert.strictEqual(app.get(`readSavedRecord(${JSON.stringify(FIX.records[v])}).ok`), false, v);
-    }
+    assert.strictEqual(FIX.records.v7.v, 7);
+    assert.strictEqual(app.get(`readSavedRecord(${JSON.stringify(FIX.records.v7)}).ok`), true);
     assert.strictEqual(app.get(`readSavedRecord(${JSON.stringify(FIX.readableV4)}).ok`), true);
   });
 

@@ -1,0 +1,15 @@
+# kills: empty stage: options and the view are carried across the commit
+# suite: node --test --test-name-pattern empty.stage..options.and.the.view.are.carried.across.the.commit tests/editor_shell.test.js
+# fault: The commit of a staged model drops the view the model carried.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13937,7 +13937,7 @@ function editorStageCommit(m, stage, landedKey) {
+     built = editorNeoBuild(staged, { rim: stage.main.filter(Boolean), inner: [], bottom: stage.mutant.filter(Boolean) }, editorStageMap(stage), landedKey);
+   }
+   if (!built.ok) return built.code === "NO_FIFTH" || built.code === "NOTE_OUT_OF_ORDER" ? { ok: true, value: staged } : built;
+-  return m.view ? { ...built, value: { ...built.value, view: m.view } } : built;
++  return built;
+ }
+ // Draft pins follow insertion order. The engine expects MIDI order within each ring.
+ function editorStageTidyAngles(st) {
