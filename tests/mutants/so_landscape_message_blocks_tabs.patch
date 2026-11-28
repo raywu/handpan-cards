@@ -1,0 +1,14 @@
+# kills: SO: en 844x390: while a message shows a real click at each tab centre switches tabs and the message buttons stay tappable
+# suite: node --test --test-name-pattern ^SO..en.844x390..while.a.message.shows.a.real.click.at.each.tab.centre.switches.tabs.and.the.message.buttons.stay.tappable tests/editor_e2e.test.js
+# fault: Make the floating status layer intercept taps across the open drawer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15516,6 +15516,7 @@
+   #editor[data-phone-landscape] .editor-head #editor-name{flex:1 1 10rem;min-width:44px;text-overflow:ellipsis}
+   #editor[data-phone-landscape] #editor-menu{max-height:var(--split-menu-max);overflow:auto;overscroll-behavior:contain}
+   @media(prefers-reduced-motion:reduce){#editor .drawerexp{transition:none}}
++  @media(orientation:landscape) and (max-height:500px) and (min-width:560px){#editor:has(#editor-status:not(:empty):not([data-idle])) .editor-statusrow::after{content:"";position:fixed;inset:0;pointer-events:auto}}
+   `;document.head.append(style);
+   const api=window.drawerExperiment={root,mode:'focused',zoom:1.2,disposed:false,state:'OPEN'};
+   let frame=null, pointer=null, lowestClearance=Infinity, dragRest=null, transform=null, expanded=true, generation=0,timer=0,lastWidth=innerWidth,lastOrientation=innerWidth>innerHeight;

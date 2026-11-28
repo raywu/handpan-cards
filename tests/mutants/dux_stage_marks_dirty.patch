@@ -1,0 +1,14 @@
+# kills: empty stage: placed notes are dirty and a pan type change on an empty model stays clean
+# suite: node --test --test-name-pattern empty.stage..placed.notes.are.dirty.and.a.pan.type.change.on.an.empty.model.stays.clean tests/editor_shell.test.js
+# fault: An empty model keeps its staged Neotone profile in the bare form, so staging makes it dirty.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14686,7 +14686,6 @@
+ const editorBare = (m) => {
+   const { view, stage, layoutHints, modeLayouts, ...rest } = m;
+   const o = { ...rest.options };
+-  if (editorIsEmpty(m)) delete o.profile;
+   if (o.anchor === "one") delete o.anchor;
+   if (o.mirrorBottom === !!o.mirror) delete o.mirrorBottom;
+   if (!o.name) delete o.name;

@@ -1,0 +1,15 @@
+# kills: v4: while dragging a placed note, the source carries lift and the landing outline follows a note or Ding
+# suite: node --test --test-name-pattern ^v4: tests/editor_e2e.test.js
+# fault: No landing ring is drawn while dragging.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17695,7 +17695,7 @@ function editorMarkDrop(target) {
+   if (!solved.ok) return;
+   const geom = solved.value.geom;
+   const at = editorLandingAnchor(svg, geom, target);
+-  if (!at) return;
++  return;
+   const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+   ring.setAttribute("class", "editor-landing");
+   if (replace) ring.setAttribute("data-replace", "");

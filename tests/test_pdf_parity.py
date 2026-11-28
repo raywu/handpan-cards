@@ -334,6 +334,56 @@ class PrintParityTest(unittest.TestCase):
             self.assertNotEqual(_glyphs(home), _glyphs(there),
                                 "three moved bottom notes changed no glyph")
 
+    def test_cyclops_alternate_number_matches_in_browser_pdf_and_offline_print(self):
+        proc = subprocess.run([NODE, "-e", """
+const { loadEngine } = require("./tools/engine_loader.js");
+const HPE = loadEngine(["core", "voicing", "layout", "naming", "select"]);
+const text = "(A3) C#4 E4 | A#3";
+const seed = HPE.core.parseSeed(text).value;
+const built = HPE.select.build(seed).value;
+const solved = HPE.layout.solve(seed, { angles: { inner: [15] } });
+if (!solved.ok) throw Error(solved.reason);
+process.stdout.write(JSON.stringify({ seed: text, deck: {
+  ...built, geom: solved.value.geom, fields: solved.value.fields,
+} }));
+"""], capture_output=True, text=True, cwd=paths.ROOT, timeout=30, check=True)
+        payload = json.loads(proc.stdout)
+        self.assertTrue(payload["deck"]["geom"]["innerLabels"])
+        with tempfile.TemporaryDirectory() as tmp:
+            py, js, default = (os.path.join(tmp, name + ".pdf") for name in ("py", "js", "default"))
+            hifi.build(py, decks.from_generated(payload), chords_only=True)
+            _js_pdf(payload, js, variant="shop")
+            self.assertEqual(_glyphs(py), _glyphs(js))
+            del payload["deck"]["geom"]["innerLabels"]
+            hifi.build(default, decks.from_generated(payload), chords_only=True)
+            self.assertNotEqual(_glyphs(py), _glyphs(default))
+
+    def test_guided_share_seats_match_in_browser_pdf_and_offline_print(self):
+        proc = subprocess.run([NODE, "-e", """
+const { boot } = require("./tools/sandbox.js");
+const app = boot();
+const payload = app.get(`(() => {
+  const seed = "(D3) A3 C4 D4 | E4 F4";
+  const guided = { rim: { size: 7, seats: [1, 5, 0] }, inner: { size: 3, seats: [0, 2] } };
+  const built = buildGenerated(seed, { guided });
+  if (!built.ok) throw Error(built.reason);
+  const encoded = shareCode(built.value);
+  const decoded = HPE.share.decode(encoded.value);
+  if (!decoded.ok) throw Error(decoded.reason);
+  const reopened = buildGenerated(seed, decoded.value.options);
+  if (!reopened.ok) throw Error(reopened.reason);
+  return { seed, deck: reopened.value };
+})()`);
+process.stdout.write(JSON.stringify(payload));
+"""], capture_output=True, text=True, cwd=paths.ROOT, timeout=30, check=True)
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload["deck"]["options"]["guided"]["rim"]["size"], 7)
+        with tempfile.TemporaryDirectory() as tmp:
+            py, js = (os.path.join(tmp, name + ".pdf") for name in ("py", "js"))
+            hifi.build(py, decks.from_generated(payload), chords_only=True)
+            _js_pdf(payload, js, variant="shop")
+            self.assertEqual(_glyphs(py), _glyphs(js))
+
     def test_PA_the_profile_cases_are_swept_and_carry_geom_place(self):
         # Neotone lane P: a sweep that silently dropped the paired-area decks
         # would still pass every other check here.

@@ -1,0 +1,13 @@
+# kills: typed Guided rim anchor moves the labeled first notes while preserving the other rings
+# suite: node --test --test-name-pattern ^typed.Guided.rim.anchor tests/editor_shell.test.js
+
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14455,5 +14455,5 @@
+   const anchor = m.options.anchor || "one";
+   const row = m.options.guided?.rim;
+-  if (!row) return anchor;
++  if (!row || anchor === "one") return anchor;
+   const actual = HPE.layout.guidedGrid("rim", row.size, row.basis);
+   const expected = HPE.layout.guidedGrid("rim", row.size, anchor);

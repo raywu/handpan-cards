@@ -1,0 +1,14 @@
+# kills: OQA zone counts: 'Rim 8/12' per zone, 'Full' joins the count at the cap, each count at most two line boxes (375 and 820)
+# suite: node --test --test-name-pattern OQA.zone.counts tests/editor_e2e.test.js
+# fault: A zone count is clipped to a 30px box on one line, so its text overflows the box.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -945,6 +945,7 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+ #editor-areas[hidden]{display:none}
+ #editor-counts{display:flex; flex-wrap:wrap; gap:var(--sp-1) var(--sp-3); font:500 13px/20px "Nunito Sans"}
+ #editor-counts .zc.full{font-weight:700}
++#editor-counts .zc{display:inline-block;width:30px;white-space:nowrap;overflow:hidden}
+ #editor-region{flex:1 1 0; min-height:0; margin-top:6px; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; padding-inline:4px; margin-inline:-4px;
+   scrollbar-width:none; scroll-padding-top:48px}
+ #editor-region::-webkit-scrollbar{display:none}

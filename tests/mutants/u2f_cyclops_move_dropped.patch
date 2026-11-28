@@ -1,0 +1,15 @@
+# kills: U2f move at 375x667: a Cyclops note snaps to the visible Guided landing and Undo restores its seat
+# suite: node --test --test-name-pattern ^U2f.move.*Cyclops tests/editor_e2e.test.js
+# fault: A Cyclops note dropped on its own arc no longer moves.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16659,7 +16659,7 @@ function editorGuidedPlan(m, src, target) {
+     return { refuse: t("editor.guided.no_room") };
+   }
+   return {
+-    step: model => model === m ? accepted : editorRefusal(name),
++    step: model => model === m ? (ref?.ring === "inner" && ring === "inner" ? { ok: true, value: model } : accepted) : editorRefusal(name),
+     say: projection.reflow ? t("editor.guided.reflow", { name, zone: t("editor.zone." + ring) })
+       : ref ? t("editor.say.moved", { name }) : editorPlaceSay(name, { ring }),
+     guided: { ring, id: name, projection, solved: accepted.solved, insert: src.from === "tray" }

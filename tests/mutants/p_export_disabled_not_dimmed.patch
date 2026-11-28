@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1643,8 +1643,6 @@ html.account-open, html.export-open{overflow:hidden}
- #settings-panel .mode:disabled, #scale-sheet .mode:disabled, #settings-panel .prints button:disabled{
+@@ -1278,8 +1278,6 @@ html.account-open, html.export-open{overflow:hidden}
    background:#F6F4ED; color:#8A847B; border-color:#8A847B; opacity:1}
  
+ #scale-sheet .sheetlabel,#scale-sheet .sheethint {color:#5E5850}
 -#export .mode:disabled, #export .mode:disabled:hover{background:#F6F4ED; color:#8A847B; border-color:#8A847B; cursor:default}
 -
- #scale-sheet #scale-title{color:#242424}
- #scale-sheet .sheetlabel, #scale-sheet .sheethint, #scale-sheet #scale-parse, #scale-sheet #scale-refusal,
- #scale-sheet #scale-msg, #scale-sheet #scale-or span, #scale-sheet #scale-fields-note, #scale-sheet #scale-line-note,
+ /* field-guide:end */
+ 
+ /* ---- CJK (i18n): Latin face first, then the system CJK families ------------ */

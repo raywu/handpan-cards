@@ -1,0 +1,15 @@
+# kills: EDITOR-RC-GUIDED-STABLE: Guided tray reflow keeps one stable drawing while switching between insert and replace
+# suite: node --test --test-name-pattern ^EDITOR.RC.GUIDED.STABLE: tests/editor_e2e.test.js
+# fault: The placement target repaints the note geometry instead of retaining the active preview.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17676,7 +17676,7 @@ function editorMarkDrop(target) {
+       d.preview = editorGuidedShowsProjection(guided.projection) ? plan : null;
+       if (d.preview) (d.guidedPlans ||= {})[guided.ring] = d.preview;
+     }
+-    const shown = d.preview?.guided || (candidate.ok && guided);
++    const shown = candidate.ok && guided;
+     const current = editorSolve(model);
+     if (current.ok) svg.insertAdjacentHTML("beforeend", editorGuidedNeutralMarks(model, current.value, d.src.ref, shown));
+     if (shown) svg.insertAdjacentHTML("beforeend", editorGuidedMarks(shown, model));

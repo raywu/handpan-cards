@@ -1,0 +1,16 @@
+# kills: FA-06 360x640 after system Back with the menu open the dialog closes the menu and the first Escape leaves the Save-changes dialog and focus returns to Back
+# suite: node --test --test-name-pattern ^FA-06.360x640 tests/editor_e2e.test.js
+# A mutant: opening the Save-changes dialog no longer closes the "..." menu.
+#
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17254,7 +17254,7 @@
+ function editorShowDialog(on) {
+   const s = editorSession;
+   s.dialog = on;
+-  if (on) { editorCloseMenu(false); if (s.hint) editorSetAreas(false); }
++  if (on && s.hint) editorSetAreas(false);
+   const dlg = editorEl("editor-dialog");
+   const save = editorEl("editor-dlg-save");
+   save.hidden = !!s.saveAcknowledged;

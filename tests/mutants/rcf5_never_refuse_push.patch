@@ -1,0 +1,14 @@
+# kills: RCF-F5: a push the settle refuses is still refused and names the pin
+# suite: node --test --test-name-pattern RCF.F5..a.push.the.settle.refuses tests/editor_shell.test.js
+# fault: A staged push the settle refuses is silently ignored instead of refused.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14162,6 +14162,7 @@
+   if (m.options.profile) return editorNeoInsert(m, ring, name);
+   if (editorIsEmpty(m)) {
+     const added = editorStageEdit(m, (st) => editorStagePush(st, ring, name, angle));
++    if (!added.ok) return { ok: true, value: m };
+     if (ring === "inner" && Number.isFinite(angle) && added.ok && editorIsEmpty(added.value) && !editorStagePinsFit(added.value))
+       return editorNoRoom(added.value, ring, editorNames(added.value, ring).length - 1, angle);
+     return added;

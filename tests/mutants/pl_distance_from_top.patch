@@ -1,0 +1,15 @@
+# kills: BN-L3: a bottom note drawn at 270 reads U1 and one drawn at 90 reads the last number
+# suite: node --test --test-name-pattern ^BN.L3..a.bottom.note.drawn.at.270.reads.U1.and.one.drawn.at.90.reads.the.last.number$ tests/layout.test.js
+# Distance is measured from the top of the ring, not bottom centre.
+diff --git a/src/engine/layout.js b/src/engine/layout.js
+--- a/src/engine/layout.js
++++ b/src/engine/layout.js
+@@ -807,7 +807,7 @@
+     var order = ids.map(function (id, i) { return i; });
+     var key = function (i) {
+       var a = fields[ids[i]][4];
+-      return { d: angleGap(a, 270), right: norm(a - 270) < 180 };
++      return { d: angleGap(a, 90), right: norm(a - 270) < 180 };
+     };
+     order.sort(function (x, y) {
+       var kx = key(x);

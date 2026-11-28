@@ -1,0 +1,15 @@
+# kills: P0 phone landscape 844x390: the rim and scrollable drawer are side by side with a pinned action rail
+# suite: node --test --test-name-pattern ^P0.phone.landscape.844x390 tests/editor_e2e.test.js
+# fault: The short wide editor stacks the drawer over the rim instead of arranging them side by side.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15507,7 +15507,7 @@
+   #editor[data-phone-landscape] .panexp-stage{width:calc(50% - 8px - env(safe-area-inset-left,0px));margin:0 0 0 env(safe-area-inset-left,0px)}
+   #editor[data-phone-landscape] .editor-toolbar{left:50%!important;padding-right:max(8px,env(safe-area-inset-right,0px))}
+   #editor[data-phone-landscape]>.editor-head{padding-inline:env(safe-area-inset-left,0px) env(safe-area-inset-right,0px)}
+-  #editor[data-phone-landscape] .drawerexp{left:50%;top:var(--split-top);transform:none;box-shadow:none;border-top:0}
++  #editor[data-phone-landscape] .drawerexp{left:0;top:var(--split-top);transform:none;box-shadow:none;border-top:0}
+   #editor[data-phone-landscape] .drawerexp-chrome{display:none}
+   #editor[data-phone-landscape] .drawerexp-body{height:100%;max-height:none;padding-inline:8px max(8px,env(safe-area-inset-right,0px))}
+   #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) var(--split-status-bottom) max(8px,env(safe-area-inset-left,0px))!important}

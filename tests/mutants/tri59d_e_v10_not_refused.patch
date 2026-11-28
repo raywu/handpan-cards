@@ -1,0 +1,15 @@
+# kills: SE: version 12 and above is NEEDS_NEWER_APP, and an app pinned below v6 refuses v8
+# suite: node --test --test-name-pattern ^SE..version.12.and.above.is.NEEDS.NEWER.APP..and.an.app.pinned.below.v6.refuses.v8$ tests/share.test.js
+# fault: An unsupported version 12 or above bypasses the newer-app check.
+diff --git a/src/engine/share.js b/src/engine/share.js
+--- a/src/engine/share.js
++++ b/src/engine/share.js
+@@ -671,7 +671,7 @@ var HPE = (typeof HPE !== "undefined") ? HPE : {};
+     // still opens in a v2 app and only a genuinely NEWER one is refused.
+     var newest = HPE.core.PROFILE_ENABLED ? PROFILE_VERSION : NEWEST;
+     if (INDEX[text.charAt(0)] === INNER_VERSION && NEWEST >= ANGLES_VERSION) newest = INNER_VERSION;
+-    if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === PROFILE_ANCHOR_VERSION) newest = PROFILE_ANCHOR_VERSION;
++    if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] >= PROFILE_ANCHOR_VERSION) newest = INDEX[text.charAt(0)];
+     if (HPE.core.PROFILE_ENABLED && INDEX[text.charAt(0)] === FIXED_PROFILE_VERSION) newest = FIXED_PROFILE_VERSION;
+     if (INDEX[text.charAt(0)] === GUIDED_VERSION) newest = GUIDED_VERSION;
+     var VERSION = Math.max(OLDEST, Math.min(INDEX[text.charAt(0)], newest));

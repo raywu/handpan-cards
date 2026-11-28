@@ -1,0 +1,15 @@
+# kills: LS 844x390: at rest the drawer and pan occupy separate landscape columns
+# suite: node --test --test-name-pattern ^LS.844x390..at.rest.the.drawer.and.pan.occupy.separate.landscape.columns$ tests/editor_e2e.test.js
+# fault: Give the pan the full landscape width so it overlaps the open drawer.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15504,7 +15504,7 @@
+   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
+   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
+   #editor[data-phone-landscape]>.editor-line{position:absolute;top:var(--split-line-top);left:50%;right:max(8px,env(safe-area-inset-right,0px));margin:0;width:auto}
+-  #editor[data-phone-landscape] .panexp-stage{width:calc(50% - 8px - env(safe-area-inset-left,0px));margin:0 0 0 env(safe-area-inset-left,0px)}
++  #editor[data-phone-landscape] .panexp-stage{width:100%;margin-inline:0}
+   #editor[data-phone-landscape] .editor-toolbar{left:50%!important;padding-right:max(8px,env(safe-area-inset-right,0px))}
+   #editor[data-phone-landscape]>.editor-head{padding-inline:env(safe-area-inset-left,0px) env(safe-area-inset-right,0px)}
+   #editor[data-phone-landscape] .drawerexp{left:50%;top:var(--split-top);transform:none;box-shadow:none;border-top:0}

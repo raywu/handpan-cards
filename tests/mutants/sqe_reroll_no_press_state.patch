@@ -6,11 +6,11 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -1251,7 +1251,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
+@@ -1095,7 +1095,6 @@ body:has(#scale-sheet:not([hidden])) #settings-trigger{visibility:hidden}
  .mode:active{background:#2e281e}
  .mode.on:active{background:#ddd9cf; border-color:#ddd9cf}
  .shuffle:active{color:#f6f4ed}
 -.shuffle.reroll:active{background:#2e281e}
  .card:active{box-shadow:0 0 0 3px rgba(234,230,223,.22)}
- #scale-generate:active, #scale-next:active{background:#ddd9cf; border-color:#ddd9cf}
- #scale-generate:disabled:active{background:#f6f4ed; border-color:#f6f4ed}
+ 
+ /* ---- the first screen and the about overlay (about-off-main plan, lane O) ----

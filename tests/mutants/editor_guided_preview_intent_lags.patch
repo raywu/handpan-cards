@@ -1,0 +1,13 @@
+# kills: D3: a tray note dragged to the rim, Cyclops and underside follows each live landing
+# suite: node --test --test-name-pattern ^D3:.a.tray.note.dragged.to.the.rim tests/editor_e2e.test.js
+# fault: The live banner keeps the previous action until the pointer moves after the projection.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17684,5 +17684,5 @@ function editorMarkDrop(target, pointer) {
+     // A ring can reflow directly under a stationary pointer. Report the
+     // newly drawn target immediately, using the same hit as pointerup.
+-    if (pointer && d.preview && d.preview !== previous) {
++    if (false && pointer && d.preview && d.preview !== previous) {
+       const visible = editorDropTarget(pointer, d.src);
+       if (visible.locked || visible.previewAt) {

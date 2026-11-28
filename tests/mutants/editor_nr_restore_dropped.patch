@@ -1,0 +1,15 @@
+# kills: mode round trips preserve Guided seats and legacy Neotone share layouts
+# suite: node --test --test-name-pattern ^mode.round.trips.preserve.Guided.seats tests/editor_shell.test.js
+# fault: Switching back rebuilds from linked note positions and loses the exact legacy Neotone revision and share code.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -14885,7 +14885,7 @@
+   const modeLayouts = { ...m.modeLayouts, [from]: {
+     notation, layout, pins: m.pins, stage: m.stage
+   } };
+-  if (previous?.notation === notation && (!!previous.stage === editorIsEmpty(m))) {
++  if (false && previous?.notation === notation && (!!previous.stage === editorIsEmpty(m))) {
+     const options = { ...m.options };
+     for (const key of EDITOR_MODE_LAYOUT_KEYS) delete options[key];
+     Object.assign(options, previous.layout);

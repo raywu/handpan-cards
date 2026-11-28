@@ -1,0 +1,15 @@
+# kills: RCF-15: the fifth on the cyclops, or a rim note at or below D3 with no ding, is tried too, and a refusal changes nothing
+# suite: node --test --test-name-pattern RCF.15..the.fifth.on.the.cyclops tests/editor_shell.test.js
+# fault: With the fifth only on the cyclops the settle trial has no rim note, so the commit never runs and a stage the commit would refuse is accepted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13003,7 +13003,7 @@
+   full.ding = stage.ding || name(dingMidi);
+   const fifth = dingMidi + 7;
+   if (!top.some((x) => x % 12 === fifth % 12)) full.rim.push(name(fifth));
+-  if (!full.rim.length) {
++  if (false) {
+     const taken = [...full.rim, ...full.inner].map(midi);
+     const pick = [name(fifth), name(fifth + 12), ...EDITOR_GHOST.rim].find((n) => midi(n) > dingMidi && !taken.includes(midi(n)));
+     full.rim.push(pick);

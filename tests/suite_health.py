@@ -37,47 +37,45 @@ FLOORS = {
     # python
     "tests/test_deck_data.py": 28,
     "tests/test_pdf_build.py": 9,
-    "tests/test_gen_deck.py": 32,
-    "tests/test_print.py": 55,
+    "tests/test_gen_deck.py": 33,
+    "tests/test_print.py": 59,
     "tests/test_render_agreement.py": 60,
-    "tests/test_fixture_integrity.py": 47,
+    "tests/test_fixture_integrity.py": 50,
     "tests/test_failure_diagnosability.py": 23,
     "tests/test_readme_currency.py": 11,
     "tests/test_sync_schema_lint.py": 14,
-    "tests/test_suite_health.py": 31,
+    "tests/test_suite_health.py": 33,
     "tests/test_font_subset.py": 7,
     "tests/test_pdf_emitter.py": 7,
     "tests/test_pdf_deck_adapter.py": 4,
     "tests/test_pdf_parity.py": 16,
-    "tests/test_icons.py": 6,
-    "tests/test_scale_pages.py": 130,
-    "tests/test_site_files.py": 14,
+    "tests/test_icons.py": 19,
+    "tests/test_scale_pages.py": 158,
+    "tests/test_site_files.py": 20,
     "tests/test_ci_scope.py": 36,
     # node
-    "tests/app.test.js": 1320,
-    "tests/seat_sweeps_tap_add.test.js": 3,
-    "tests/seat_sweeps_tap_edit.test.js": 3,
-    "tests/seat_sweeps_keys.test.js": 4,
-    "tests/e2e.test.js": 637,
-    "tests/e2e_sync.test.js": 33,
+    "tests/app.test.js": 801,
+    "tests/e2e.test.js": 415,
+    "tests/e2e_sync.test.js": 50,
     "tests/harness.test.js": 67,
-    "tests/drawer_grid.test.js": 3,
-    "tests/drawer_seats.test.js": 28,
-    "tests/drawer_drag.test.js": 33,
     # pre-seeded for the scale-engine lanes; each lane raises its own row only.
-    "tests/core.test.js": 103,
+    "tests/core.test.js": 123,
     "tests/import.test.js": 131,
     "tests/import_gold.test.js": 8,
     "tests/voicing.test.js": 18,
-    "tests/layout.test.js": 144,
+    "tests/layout.test.js": 174,
     "tests/naming.test.js": 37,
     "tests/select.test.js": 55,
-    "tests/share.test.js": 113,
-    "tests/link_corpus.test.js": 7,
-    "tests/storage_corpus.test.js": 18,
-    "tests/preview.test.js": 14,
+    "tests/share.test.js": 154,
+    "tests/link_corpus.test.js": 14,
+    "tests/editor_model.test.js": 52,
+    "tests/editor_shell.test.js": 173,
+    "tests/editor_e2e.test.js": 593,
+    "tests/editor_freeze.test.js": 8,
+    "tests/storage_corpus.test.js": 25,
+    "tests/preview.test.js": 2,
     "tests/pdf.test.js": 16,
-    "tests/pdfcards.test.js": 80,
+    "tests/pdfcards.test.js": 81,
     "tests/coverage_merge.test.js": 18,
     "tests/mutation_harness.test.js": 54,
     "tests/pdf_builtin.test.js": 13,
@@ -85,9 +83,9 @@ FLOORS = {
     "tests/swipe.test.js": 21,
     "tests/sync.test.js": 178,
     "tests/sync_opaque_probe.test.js": 7,
-    "tests/scale.test.js": 14,
-    "tests/sandbox_events.test.js": 5,
-    "tests/persist.test.js": 7,
+    "tests/sync_v6_v7.test.js": 9,
+    "tests/scale.test.js": 15,
+    "tests/persist.test.js": 11,
     "tests/pgenv.test.js": 3,
 }
 
@@ -96,7 +94,7 @@ FLOORS = {
 # settle() self-tests in harness.test.js do not need a browser, but the file
 # still carries the same skip-if-no-browser guard as e2e.test.js, so it must
 # be listed here too.)
-E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/drawer_grid.test.js", "tests/drawer_seats.test.js", "tests/drawer_drag.test.js", "tests/e2e_sync.test.js"}
+E2E_FILES = {"tests/e2e.test.js", "tests/harness.test.js", "tests/editor_e2e.test.js", "tests/editor_freeze.test.js", "tests/e2e_sync.test.js"}
 
 # Aggregate floors, unchanged since the constants this table replaced.
 LEGACY_PYTHON = 40
@@ -394,7 +392,7 @@ def timed_run(path):
     return result
 
 
-def run_node_file(path):
+def run_node_file(path, *, name_pattern=None):
     """-> (total, failed, skipped, cancelled, returncode, output) for one node
     test file.
 
@@ -408,8 +406,12 @@ def run_node_file(path):
     still exits non-zero. A caller that only checked `failed` would call that
     green.
     """
+    command = ["node", "--test", "--test-reporter=tap"]
+    if name_pattern is not None:
+        command.extend(["--test-name-pattern", name_pattern])
+    command.append(path)
     try:
-        proc = subprocess.Popen(["node", "--test", "--test-reporter=tap", path],
+        proc = subprocess.Popen(command,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 text=True, cwd=paths.ROOT, start_new_session=True)
     except FileNotFoundError:
@@ -665,25 +667,102 @@ def emit_python(outfile):
                  or data["unexpected_successes"]) else 0
 
 
-def collect_js():
-    """Run every tests/*.test.js file once, per file; return raw data."""
-    have_browser, probe_problem = probe_browser()
-    found = sorted(
+EDITOR_E2E = "tests/editor_e2e.test.js"
+EDITOR_REQUIRED = {
+    "EDITOR-EXIT-CLEAN", "EDITOR-EXIT-INVALID", "EDITOR-EXIT-KEEP", "EDITOR-EXIT-SAVE",
+    "EDITOR-RC-STANDARD-GROW",
+    "EDITOR-RC-TYPED-GUIDED",
+    "EDITOR-RC-LANDSCAPE",
+    "EDITOR-RC-GUIDED-STABLE",
+    "EDITOR-RC-CYCLOPS-SNAP",
+    "EDITOR-RC-CYCLOPS-TOUCH",
+    "EDITOR-RC-GUIDED-SAVE",
+    "EDITOR-RC-NEOTONE-SAVE",
+    "EDITOR-RC-DUPLICATE",
+    "EDITOR-RC-DUPLICATE-REDUCED",
+    "EDITOR-RC-REFUSED-GUIDES",
+    "EDITOR-RC-DRAWER",
+    "EDITOR-RC-FORM",
+}
+
+_EDITOR_TAP = re.compile(r"^\s*(ok|not ok) \d+ - (EDITOR-[A-Z0-9-]+): (.+)$", re.M)
+
+
+def editor_cases(tap):
+    """Extract tagged leaf results from the existing editor TAP stream."""
+    cases = []
+    for match in _EDITOR_TAP.finditer(tap):
+        outcome, case_id, title = match.groups()
+        directive = _TAP_DIRECTIVE.search(title)
+        status = "pass" if outcome == "ok" else "fail"
+        if directive:
+            status = directive.group().strip().split()[1].lower()
+            title = title[:directive.start()]
+        else:
+            diagnostic = re.match(r"\n[ \t]+---\n(.*?)^[ \t]+\.\.\.$",
+                                  tap[match.end():], re.M | re.S)
+            if diagnostic and re.search(r"^\s+failureType: ['\"]cancel",
+                                        diagnostic[1], re.M):
+                status = "cancelled"
+        cases.append({"id": case_id, "name": title, "status": status})
+    return cases
+
+
+def editor_case_problems(cases, required=None):
+    required = EDITOR_REQUIRED if required is None else required
+    return [
+        case_id for case_id in sorted(required)
+        if [case["status"] for case in cases if case["id"] == case_id] != ["pass"]
+    ]
+
+
+def discover_js():
+    return sorted(
         os.path.relpath(f, paths.ROOT).replace(os.sep, "/")
         for f in glob.glob(os.path.join(paths.ROOT, "tests", "*.test.js")))
+
+
+def js_partition(found, shard):
+    # Keep the longest browser and shell files apart. Distribute smaller files
+    # deterministically, including files added after the schedule was measured.
+    large = {
+        "tests/editor_shell.test.js": 1,
+        "tests/e2e.test.js": 1,
+        "tests/editor_e2e.test.js": 2,
+        "tests/app.test.js": 2,
+        "tests/e2e_sync.test.js": 2,
+    }
+    smaller = (path for path in found if path not in large)
+    assignment = large | {path: 1 + index % 2 for index, path in enumerate(smaller)}
+    return [path for path in found if assignment[path] == shard]
+
+
+def collect_js(shard=None):
+    """Run each selected JS file once, using the unchanged per-file runner."""
+    have_browser, probe_problem = probe_browser()
+    found = discover_js()
+    if shard is not None:
+        found = js_partition(found, shard)
     files = {}
     any_red = False
     for path in found:
         if path in E2E_FILES and not have_browser:
             files[path] = {"skipped_no_browser": True}
+            any_red |= path == EDITOR_E2E
             continue
+        started = time.monotonic()
         total, failed, skipped, cancelled, returncode, out = timed_run(path)
+        elapsed = round(time.monotonic() - started, 2)
         if total is None:
             files[path] = {"total": None, "error": out}
             any_red = True
             continue
         entry = {"total": total, "failed": failed, "skipped": skipped,
-                 "browser_skips": 0, "cancelled": cancelled, "returncode": returncode}
+                 "elapsed_seconds": elapsed, "browser_skips": 0, "cancelled": cancelled, "returncode": returncode}
+        if path == EDITOR_E2E:
+            entry["editor_cases"] = editor_cases(out)
+            entry["editor_required_without_pass"] = editor_case_problems(entry["editor_cases"])
+            any_red |= bool(entry["editor_required_without_pass"])
         if skipped:
             entry["browser_skips"] = len(
                 re.findall(r"^ok .*(?:browser|chrom).*# SKIP", out, re.M | re.I))
@@ -704,9 +783,12 @@ def collect_js():
     }, any_red
 
 
-def emit_js(outfile):
+def emit_js(outfile, shard=None):
     """Run the node suites and write collect_js()'s data to `outfile`."""
-    data, any_red = collect_js()
+    data, any_red = collect_js() if shard is None else collect_js(shard)
+    if shard is not None:
+        data["shard"] = shard
+        any_red |= not data["have_browser"]
     os.makedirs(os.path.dirname(os.path.abspath(outfile)) or ".", exist_ok=True)
     with open(outfile, "w") as f:
         json.dump(data, f, indent=2)
@@ -803,6 +885,10 @@ def verify_js(data):
             if floor:
                 problems.append(f"{path}: no result in artifact, floor is {floor}")
             continue
+        if path == EDITOR_E2E:
+            absent = editor_case_problems(entry.get("editor_cases", []))
+            if absent:
+                problems.append(f"{path}: required editor cases without a pass: {', '.join(absent)}")
         if entry.get("skipped_no_browser"):
             continue
         if entry.get("total") is None:
@@ -879,6 +965,46 @@ def verify(py_path, js_path):
     return problems
 
 
+def merge_js_shards(first, second):
+    """Match each CI artifact against discovery on the aggregator checkout."""
+    found = discover_js()
+    files = {}
+    for shard, data in enumerate((first, second), 1):
+        if data.get("shard") != shard:
+            raise ValueError(f"wrong JS shard identity: expected {shard}")
+        if data.get("have_browser") is not True or data.get("probe_problem"):
+            raise ValueError(f"JS shard {shard} did not have a working browser")
+        expected = js_partition(found, shard)
+        entries = data.get("files")
+        if (data.get("found") != expected or not isinstance(entries, dict)
+                or set(entries) != set(expected) or files.keys() & entries.keys()):
+            raise ValueError(f"JS shard {shard} does not match its exact file inventory")
+        if any(not isinstance(entry, dict) or entry.get("skipped_no_browser")
+               for entry in entries.values()):
+            raise ValueError(f"JS shard {shard} has missing or skipped-browser results")
+        files.update(entries)
+    if set(files) != set(found):
+        raise ValueError("merged JS file inventory differs from checkout")
+    return {"have_browser": True, "probe_problem": None, "found": found, "files": files}
+
+
+def emit_merged_js(first, second, outfile):
+    try:
+        shards = []
+        for path in (first, second):
+            shard, error = _load_artifact(path, _JS_ARTIFACT_KEYS)
+            if error:
+                raise ValueError(error)
+            shards.append(shard)
+        merged = merge_js_shards(*shards)
+        with open(outfile, "w") as stream:
+            json.dump(merged, stream, indent=2)
+    except (OSError, ValueError) as exc:
+        print(f"FAIL: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -889,12 +1015,18 @@ if __name__ == "__main__":
                     help="run the node suites once and write their results here")
     ap.add_argument("--verify", nargs=2, metavar=("PY_JSON", "JS_JSON"),
                     help="verify two previously emitted artifacts; runs nothing")
+    ap.add_argument("--js-shard", type=int, choices=(1, 2), help="emit one CI JS shard")
+    ap.add_argument("--merge-js", nargs=3, metavar=("SHARD_1", "SHARD_2", "OUTFILE"))
     args = ap.parse_args()
+    if args.js_shard is not None and not args.emit_js:
+        ap.error("--js-shard requires --emit-js")
+    if args.merge_js:
+        sys.exit(emit_merged_js(*args.merge_js))
 
     if args.emit_python:
         sys.exit(emit_python(args.emit_python))
     if args.emit_js:
-        sys.exit(emit_js(args.emit_js))
+        sys.exit(emit_js(args.emit_js, args.js_shard))
     if args.verify:
         issues = verify(*args.verify)
         print()

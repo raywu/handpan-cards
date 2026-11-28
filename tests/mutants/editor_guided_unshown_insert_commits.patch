@@ -1,0 +1,16 @@
+# kills: EDITOR-RC-GUIDED-STABLE: Guided tray reflow keeps one stable drawing while switching between insert and replace
+# suite: node --test --test-name-pattern ^EDITOR.RC.GUIDED.STABLE: tests/editor_e2e.test.js
+# fault: Pointerup is allowed to insert a reflow that never painted.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -17756,8 +17756,7 @@ function editorDragEnd(e) {
+   const resolved = target.locked ? d.preview : editorDropPlan(m, src, target);
+   // The last pointer event can skip a painted frame. Only commit growth or
+   // reflow when the pointer releases over the insertion the player saw.
+-  const plan = !target.locked && resolved.guided?.insert && editorGuidedShowsProjection(resolved.guided.projection)
+-    ? { snap: true } : resolved;
++  const plan = resolved;
+   const movedName = src.from === "tray" ? src.name : editorNameAt(m, src.ref);
+   const priorHistory=s.history;
+   const dropPoint = e && editorRejectedPoint(m, target, editorPanPoint(e));

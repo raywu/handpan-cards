@@ -1,0 +1,14 @@
+# kills: ECL3 a pasted link with a dirty editor asks, keeps the draft and leaves no dead history entry
+# suite: node --test --test-name-pattern ^ECL3.a.pasted.link.with.a.dirty.editor tests/editor_e2e.test.js
+# fault: A pasted navigation over a dirty editor is treated as Back and pushes a dead history entry.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16095,7 +16095,6 @@ window.addEventListener("popstate", (e) => {
+   if (pendingPop) { pendingPop = false; syncRoute(); return; }
+   observeLinkRoute();
+   if (pageOpen && returnPop) { returnPop = false; return; }
+-  if (pageOpen && editorPasteGuard(e.state)) return;
+   if (aboutOpen) { hideAbout(); return; }
+   if (subpage) { hideSubpage(); return; }
+   if (location.hash === ABOUT_ROUTE || (location.hash === ACCOUNT_ROUTE && history.state?.account) || (location.hash === EXPORT_ROUTE && history.state?.export)) { syncRoute(); return; }

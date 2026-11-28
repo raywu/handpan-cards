@@ -1,0 +1,15 @@
+# kills: RCF-12: staged bottom notes tapped out of pitch order keep their own angles through the commit
+# suite: node --test --test-name-pattern ^RCF.12: tests/editor_shell.test.js
+# fault: The underside pins are handed to the pitch-ordered solver in tap order, swapping the newly inserted lowest note's angle at settlement.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -13964,7 +13964,7 @@
+     const list = st.angles[ring];
+     if (!list) continue;
+     const order = st[ring].map((_, i) => i);
+-    if (!insertionOrder) order.sort((a, b) => editorNameEntry(st[ring][a], ring)[2] - editorNameEntry(st[ring][b], ring)[2]);
++    if (!insertionOrder && ring !== "bottom") order.sort((a, b) => editorNameEntry(st[ring][a], ring)[2] - editorNameEntry(st[ring][b], ring)[2]);
+     result[ring] = order.map(i => list[i] ?? null);
+   }
+   return result;

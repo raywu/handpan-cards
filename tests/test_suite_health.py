@@ -881,6 +881,64 @@ class VerifyArtifactsTest(unittest.TestCase):
         self.assertEqual(suite_health.verify(py_path, js_path), [])
 
 
+class EditorCaseReportTest(unittest.TestCase):
+    def test_named_editor_tap_distinguishes_pass_skip_todo_and_cancellation(self):
+        tap = """    ok 1 - EDITOR-EXIT-INVALID: Discard exits
+    ok 2 - EDITOR-ONE: One # SKIP no browser
+    not ok 3 - EDITOR-TWO: Two # TODO pending
+    not ok 4 - EDITOR-THREE: Three
+      ---
+      error: 'A diagnostic with an ellipsis...'
+      failureType: 'cancelledByParent'
+      ...
+"""
+        cases = suite_health.editor_cases(tap)
+        self.assertEqual([case["status"] for case in cases],
+                         ["pass", "skip", "todo", "cancelled"])
+        with mock.patch.object(suite_health, "EDITOR_REQUIRED", {"EDITOR-EXIT-INVALID"}):
+            self.assertEqual(suite_health.editor_case_problems(cases), [])
+
+    def test_verifier_rejects_missing_required_case_and_skipped_browser(self):
+        path = suite_health.EDITOR_E2E
+        healthy = {"total": 12, "failed": 0, "skipped": 0, "browser_skips": 0,
+                   "returncode": 0, "cancelled": 0}
+        passed = {**healthy, "editor_cases": [{"id": "EDITOR-EXIT-INVALID", "status": "pass"}]}
+        with mock.patch.object(suite_health, "JS_FILES", [path]), \
+             mock.patch.object(suite_health, "FLOORS", {path: 1}):
+            for entry in (healthy, {"skipped_no_browser": True}, passed):
+                with self.subTest(entry=entry):
+                    data = {"have_browser": True, "found": [path], "files": {path: entry}}
+                    problems = suite_health.verify_js(data)
+                    self.assertEqual(any("EDITOR-EXIT-INVALID" in problem for problem in problems),
+                                     entry is not passed, problems)
+
+
+class EditorHostedRevisionTest(unittest.TestCase):
+    def test_reports_observed_revision_before_and_after_browser_run(self):
+        import hashlib
+        from pathlib import Path
+        from tools import run_editor_rc
+
+        expected = hashlib.sha256(b"expected revision").hexdigest()
+        changed = hashlib.sha256(b"different revision").hexdigest()
+        tap = "ok 1 - EDITOR-EXIT-INVALID: Discard exits\n"
+        for observed, fails in ((expected, False), (changed, True)):
+            with self.subTest(observed=observed), tempfile.TemporaryDirectory() as folder:
+                html = Path(folder) / "index.html"
+                html.write_bytes(b"expected revision")
+                with mock.patch.dict(os.environ), \
+                     mock.patch.object(run_editor_rc, "served_digest", side_effect=[expected, observed]), \
+                     mock.patch.object(suite_health, "run_node_file", return_value=(1, 0, 0, 0, 0, tap)), \
+                     mock.patch.object(suite_health, "EDITOR_REQUIRED", {"EDITOR-EXIT-INVALID"}), \
+                     contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(run_editor_rc.run(html, html.parent, wait=0), fails)
+                report = json.loads((html.parent / "editor-rc.json").read_text())
+                self.assertEqual(report["expected_sha256"], expected)
+                self.assertEqual(report["served_sha256_before"], expected)
+                self.assertEqual(report["served_sha256_after"], observed)
+                self.assertEqual("harness_error" in report, fails)
+
+
 class TimedRunTest(unittest.TestCase):
     def test_timed_run_prints_the_wall_clock_and_returns_the_result(self):
         old = suite_health.run_node_file
@@ -893,6 +951,43 @@ class TimedRunTest(unittest.TestCase):
             suite_health.run_node_file = old
         self.assertEqual(got, (1, 0, 0, 0, 0, "out"))
         self.assertRegex(buf.getvalue(), r"tests/x\.test\.js: wall \d+\.\ds")
+
+
+class MergeJsShardsTest(unittest.TestCase):
+    def test_emit_records_shard_identity_and_fails_without_browser(self):
+        from unittest.mock import patch
+
+        data = {"found": [], "files": {}, "have_browser": False, "probe_problem": None}
+        with tempfile.TemporaryDirectory() as directory:
+            outfile = os.path.join(directory, "js.json")
+            with patch.object(suite_health, "collect_js", return_value=(data, False)) as collect:
+                self.assertEqual(suite_health.emit_js(outfile, 2), 1)
+            collect.assert_called_once_with(2)
+            with open(outfile) as stream:
+                self.assertEqual(json.load(stream)["shard"], 2)
+
+    def test_exact_inventory_and_working_browser_are_required(self):
+        from unittest.mock import patch
+
+        found = ["tests/a.test.js", "tests/b.test.js", "tests/editor_e2e.test.js"]
+        shards = []
+        for shard in (1, 2):
+            selected = suite_health.js_partition(found, shard)
+            shards.append({"shard": shard, "have_browser": True, "probe_problem": None,
+                           "found": selected, "files": dict.fromkeys(selected, {"total": 1})})
+        with patch.object(suite_health, "discover_js", return_value=found):
+            self.assertEqual(suite_health.merge_js_shards(*shards)["found"], found)
+            for change in (
+                {"shard": 2},
+                {"have_browser": False},
+                {"probe_problem": "Chrome failed"},
+                {"found": []},
+                {"found": shards[0]["found"] * 2},
+                {"files": {}},
+                {"files": {**shards[0]["files"], found[-1]: {"total": 0}}},
+            ):
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    suite_health.merge_js_shards({**shards[0], **change}, shards[1])
 
 
 if __name__ == "__main__":

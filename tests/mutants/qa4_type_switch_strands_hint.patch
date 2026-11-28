@@ -1,0 +1,15 @@
+# kills: EDITOR-RC-DRAWER: the short-screen drawer closes and reopens with Save reachable
+# suite: node --test --test-name-pattern ^EDITOR-RC-DRAWER..the.short-screen.drawer.closes.and.reopens.with.Save.reachable tests/editor_e2e.test.js
+# fault: Ignore the drawer handle when the player tries to reopen its controls.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15800,7 +15800,7 @@ function installEditorDrawer() {
+   function down(e){tapRest=null;api.clearReveal();suppressClick=false;if(!e.isPrimary||e.button>0||gesture||editorDrag)return;e.stopPropagation();gesture={id:e.pointerId,y:e.clientY,x:e.clientX,was:expanded};handle.setPointerCapture(e.pointerId);}
+   function move(e){if(!gesture||e.pointerId!==gesture.id)return;e.stopPropagation();if(e.cancelable)e.preventDefault();}
+   function up(e){if(!gesture||e.pointerId!==gesture.id)return;const g=gesture;gesture=null;e.stopPropagation();const dy=e.clientY-g.y,dx=e.clientX-g.x;if(e.type==='pointerup'&&Math.abs(dy)>=24&&Math.abs(dy)>Math.abs(dx)){suppressClick=true;dragRest=null;manualDrawer(dy<0);}else if(e.type!=='pointerup')setExpanded(g.was);}
+-  function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;manualDrawer(!expanded);}
++  function click(e){e.stopPropagation();tapRest=null;api.clearReveal();if(suppressClick){suppressClick=false;return;}dragRest=null;manualDrawer(false);}
+   handle.addEventListener('pointerdown',down);handle.addEventListener('pointermove',move);for(const n of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(n,up);handle.addEventListener('click',click);handle.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tapRest=null;api.clearReveal();suppressClick=false;e.preventDefault();e.stopPropagation();dragRest=null;manualDrawer(!expanded);}});
+   function focusIn(e){
+     if(e.target===scaleLine){lineFocusWidth=innerWidth;return;}

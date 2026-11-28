@@ -1,0 +1,15 @@
+# kills: counts: Standard shows Rim, Cyclops, Bottom and Ding; Neotone shows Main, Mutant and Ding with no Full mark
+# suite: node --test --test-name-pattern ^counts:.Standard.shows tests/editor_e2e.test.js
+# fault: A zone at its cap is not marked Full, so the owner cannot tell why a note will not drop.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16200,7 +16200,7 @@ function editorRenderCounts(m) {
+   const box = editorEl("editor-counts");
+   const rows = editorCountRows(m);
+   box.replaceChildren(...rows.map(([zone, n, max, capped]) => {
+-    const full = capped && n >= max;
++    const full = false;
+     const node = editorNode("span", { class: "zc" + (full ? " full" : ""), "data-zone": zone, text: t("editor.count." + zone, { n, max }) });
+     if (full) node.appendChild(editorNode("b", { text: " " + t("editor.zone_full") }));
+     return node;

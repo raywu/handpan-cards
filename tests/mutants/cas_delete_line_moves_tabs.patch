@@ -1,0 +1,16 @@
+# kills: CAS13 320x568 en: the delete line keeps the tabs and name within 1px and covers no pan circle
+# suite: node --test --test-name-pattern ^CAS13.+the.delete.line.keeps tests/editor_e2e.test.js
+# fault: The kept line is a node inserted above the tab strip, so it pushes the tabs and the scale field down.
+# note: CAS13: the delete line keeps the tabs and name within 1px and covers no pan circle
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15496,7 +15496,7 @@ async function deleteDeck(id) {
+     if(editorSession&&result.kind==="conflict"&&!editorTargetExists()){closeScaleSheet();return;}
+     if(editorSession){
+       editorDeleteFailed(result.kind==="conflict"?"":savedErrorText(result));
+-      if(result.kind==="conflict"&&editorSession){editorSession.say=editorSession.plainSay=t("editor.say.del_kept");editorRender();}
++      if(result.kind==="conflict"&&editorSession){editorRender();editorEl("editor-tabs").before(editorNode("p",{id:"editor-del-line",text:t("editor.say.del_kept")}));}
+       return;
+     }
+     say(savedErrorText(result),"warn");

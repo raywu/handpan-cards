@@ -1,0 +1,15 @@
+# kills: EMP: an error is an ink banner at 14px and a notice has no error treatment
+# suite: node --test --test-name-pattern ^EMP..an.error.is.an.ink.banner tests/editor_e2e.test.js
+# fault: Remove the visible ink fill from the floating error banner.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -15396,7 +15396,7 @@
+   #editor .editor-statusrow{position:absolute!important;inset:auto 12px var(--feedback-bottom,116px)!important;transform:none!important;z-index:9;min-height:0!important;height:auto!important;width:auto;margin:0!important;pointer-events:none}
+   #editor #editor-status{position:relative!important;inset:auto!important;min-height:0;padding:0;margin:0;width:100%;pointer-events:none}
+   #editor #editor-status:not(:empty){padding:6px 8px 8px;box-sizing:border-box;background:#242424;color:#F6F4ED;border-radius:12px;box-shadow:0 5px 16px #0003;line-height:1.3}
+-  #editor #editor-status[data-kind=error]{background:#242424;color:#fff;display:block;text-indent:20px}
++  #editor #editor-status[data-kind=error]{background:transparent;color:#242424;display:block;text-indent:20px}
+   #editor #editor-status[data-kind=error]::before{position:absolute;left:8px;top:6px;text-indent:0}
+   #editor #editor-status[data-kind=error] #editor-cancel{display:inline-flex;align-items:center;min-height:44px;margin-inline-start:8px;text-indent:0}
+   #editor #editor-status button{position:static!important;transform:none!important;flex:0 0 auto;pointer-events:auto}

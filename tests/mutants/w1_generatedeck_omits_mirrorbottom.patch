@@ -5,12 +5,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -9876,7 +9876,7 @@ function buildGenerated(text, options, guard) {
-     options.angles.bottom.some(a => a !== null && a !== undefined) ? options.angles : null;
-   if (wanted !== null || bottomAngles !== null) {
+@@ -11581,7 +11581,7 @@ function buildGenerated(text, options, guard) {
+   const guided = options?.guided && Object.keys(options.guided).length ? options.guided : null;
+   if (wanted !== null || bottomAngles !== null || guided !== null) {
      const o = built.value.options;
 -    const asked = { mirror: !!o.mirror, mirrorBottom: !!o.mirrorBottom, anchor: o.anchor };
 +    const asked = { mirror: !!o.mirror, anchor: o.anchor };
      if (wanted !== null) asked.seats = wanted;
      if (bottomAngles !== null) asked.angles = bottomAngles;
-     const moved = HPE.layout.solve({ fields: seed.value.fields, options: {} }, asked);
+     const moved = HPE.layout.solve({ fields: seed.value.fields, options: guided === null ? {} : { guided } }, asked);

@@ -823,8 +823,126 @@ function failed(r) {
   return ks.some((k) => r.rules[k].fail > 0) || r.invarianceFailureCount > 0 || r.gutterCells > 0;
 }
 
+/* -------------------------------------------------------- editor cell (--absolute)
+ * The scale editor's fit oracle (docs/plans/2026-11-08-editor-panel-simplify.md
+ * 5.1 and lane I1). It has no base: the editor does not exist on origin/main, so
+ * it asserts absolute thresholds on the candidate only. Per language, per
+ * viewport and per profile (Standard, Neotone) it measures both tabs and the
+ * open "..." menu. */
+const EDITOR_LANGS = ["de", "en", "es", "fr", "it", "ja", "zh-Hans", "zh-Hant"];
+const EDITOR_CELLS = [[375, 667], [320, 568]];
+const TARGET_MIN_PX = 44, TARGET_TOL_PX = 0.5, COUNTS_MIN_PX = 12, TEXT_CONTRAST_MIN = 4.5;
+const OCT_WRAP_LANGS = ["de", "ja"];
+
+const EDITOR_MEASURE_SRC = `(function () {
+  const $ = (id) => document.getElementById(id);
+  const vis = (e) => !!e && e.offsetParent !== null && !e.closest("[hidden]");
+  const lum = (c) => { const k = [c[0], c[1], c[2]].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * k[0] + 0.7152 * k[1] + 0.0722 * k[2]; };
+  const rgb = (s) => { const m = /rgba?\\(([^)]+)\\)/.exec(s); if (!m) return null; const p = m[1].split(/[ ,\\/]+/).filter(Boolean).map(Number); return { c: p.slice(0, 3), a: p.length > 3 ? p[3] : 1 }; };
+  const bgOf = (e) => { for (let n = e; n; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c && c.a > 0.99) return c.c; } return [255, 255, 255]; };
+  const ratio = (fg, bg) => { const a = lum(fg), b = lum(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+  const contrast = (pair, e) => { const f = rgb(getComputedStyle(e).color); return f ? { pair, ratio: Math.round(ratio(f.c, bgOf(e)) * 100) / 100 } : null; };
+  const ed = $("editor");
+  const targets = [], clipped = [], contrastRows = [];
+  const sel = ["#editor-tabs .edtab", "#editor .tray-note", "#editor-sharps", "#editor-flats", "#editor-more", "#editor-name", "#editor-oct-down", "#editor-oct-up",
+    "#editor-anchor-one", "#editor-anchor-between", "#editor-palette", "#editor-save", "#editor-undo", "#editor-menu [role=menuitem]", "#editor-type-standard", "#editor-type-neotone"];
+  const clipIds = ["editor-oct-label", "editor-oct", "editor-sharps", "editor-flats", "editor-anchor-one", "editor-anchor-between", "editor-palette", "editor-more", "editor-save", "editor-undo", "editor-tab-scale", "editor-tab-layout"];
+  const sweep = () => {
+    for (const q of sel) for (const e of document.querySelectorAll(q)) if (vis(e)) {
+      const r = e.getBoundingClientRect(); const id = (e.id || q) + (e.dataset && e.dataset.name ? " " + e.dataset.name : "");
+      if (!targets.some((t) => t.id === id)) targets.push({ id, w: r.width, h: r.height });
+    }
+    for (const id of clipIds.concat([...document.querySelectorAll("#editor-menu [role=menuitem]")].map((e) => e.id))) {
+      const e = $(id); if (!vis(e)) continue;
+      const box = e.getBoundingClientRect();
+      if (e.scrollWidth > e.clientWidth + 0.5 || box.left < -0.5 || box.right > innerWidth + 0.5) { clipped.push(id); continue; }
+      const range = document.createRange(); range.selectNodeContents(e);
+      for (const r of range.getClientRects()) if (r.width && (r.left < box.left - 0.5 || r.right > box.right + 0.5)) { clipped.push(id); break; }
+    }
+  };
+  const panelNatural = {}, panelBox = {};
+  for (const tab of ["scale", "layout"]) { $("editor-tab-" + tab).click(); panelBox[tab] = $("editor-panels").getBoundingClientRect().height; }
+  const saved = ed.style.getPropertyValue("--ed-panel-h");
+  ed.style.setProperty("--ed-panel-h", "0px");
+  let octWrap = false;
+  for (const tab of ["scale", "layout"]) {
+    $("editor-tab-" + tab).click();
+    panelNatural[tab] = $("editor-panel-" + tab).getBoundingClientRect().height;
+    sweep();
+    if (tab === "scale") {
+      const row = document.querySelector("#editor .editor-octaves");
+      const tops = [...row.children].filter(vis).map((c) => c.getBoundingClientRect().top + c.getBoundingClientRect().height / 2);
+      octWrap = Math.max(...tops) - Math.min(...tops) > 4;
+    }
+  }
+  if (saved) ed.style.setProperty("--ed-panel-h", saved); else ed.style.removeProperty("--ed-panel-h");
+  $("editor-tab-scale").click();
+  $("editor-more").click(); sweep(); $("editor-more").click();
+  const pairs = [["save", "editor-save"], ["tab", "editor-tab-scale"], ["hint", "editor-hint"], ["counts", "editor-counts"]];
+  for (const [pair, id] of pairs) { const e = $(id); if (vis(e)) { const c = contrast(pair, e); if (c) contrastRows.push(c); } }
+  const counts = $("editor-counts");
+  return { overflowDoc: Math.max(0, document.documentElement.scrollWidth - innerWidth), overflowEditor: Math.max(0, ed.scrollWidth - ed.clientWidth),
+    clipped, octWrap, panelDelta: Math.abs(panelBox.scale - panelBox.layout), countsPx: counts ? parseFloat(getComputedStyle(counts).fontSize) : 0, targets, contrast: contrastRows,
+    panelNatural: Math.max(panelNatural.scale, panelNatural.layout) };
+})()`;
+
+function judgeEditorCell(m, lang, width) {
+  const out = [];
+  if (m.overflowDoc > 0 || m.overflowEditor > 0) out.push(`horizontal overflow: document ${m.overflowDoc}px, editor ${m.overflowEditor}px`);
+  if (m.clipped.length) out.push(`clipped text or off-screen control: ${m.clipped.join(", ")}`);
+  if (m.panelDelta > TARGET_TOL_PX) out.push(`tab switch changes the panel height by ${m.panelDelta}px`);
+  if (m.octWrap && width === 320 && OCT_WRAP_LANGS.includes(lang)) out.push("octave row wraps at 320");
+  if (m.countsPx < COUNTS_MIN_PX) out.push(`counts text ${m.countsPx}px is under ${COUNTS_MIN_PX}px`);
+  for (const t of m.targets) if (Math.min(t.w, t.h) < TARGET_MIN_PX - TARGET_TOL_PX) out.push(`target ${t.id} is ${t.w}x${t.h}px, under ${TARGET_MIN_PX}px`);
+  for (const c of m.contrast) if (c.ratio < TEXT_CONTRAST_MIN) out.push(`contrast ${c.pair} ${c.ratio} is under ${TEXT_CONTRAST_MIN}`);
+  return out;
+}
+
+async function openEditor(b, url, lang) {
+  await prepareBrowser(b, url, lang);
+  await b.eval(`const d = allDeckViews()[0].deck; openEditSheet(d, document.getElementById("deck-add")); return true;`);
+  await b.waitFor(`!!document.getElementById("editor-line")`, { label: "the editor panel" });
+}
+
+async function runEditorAbsolute({ html, fontMode, langs = EDITOR_LANGS, log }) {
+  const { launch } = require("../../tests/helpers/cdp.js");
+  const server = await serve(html);
+  const url = `http://127.0.0.1:${server.address().port}/index.html`;
+  const b = await launch({ realFonts: fontMode === "real" });
+  if (!b) throw new PanelFitError("no browser found (set CHROME_BIN)");
+  const rows = [], failures = [];
+  let panelH = 0;
+  try {
+    for (const lang of langs) {
+      for (const [w, h] of EDITOR_CELLS) {
+        await openEditor(b, url, lang);
+        if (rows.length === 0) checkFontMode(fontMode, await b.eval(`return window.__pf.fonts();`));
+        await b.setViewport(w, h, true);
+        await b.eval(`return document.fonts.ready.then(() => true);`);
+        for (const profile of ["standard", "neotone"]) {
+          if (profile === "neotone") await b.eval(`document.getElementById("editor-type-neotone").click(); return true;`);
+          await b.eval(`return document.fonts.ready.then(() => true);`);
+          const m = await b.eval(`return ${EDITOR_MEASURE_SRC};`);
+          const bad = judgeEditorCell(m, lang, w);
+          if (w === 375 && h === 667) panelH = Math.max(panelH, m.panelNatural);
+          rows.push({ lang, w, h, profile, overflow: Math.max(m.overflowDoc, m.overflowEditor), panelNatural: m.panelNatural, targets: m.targets.length });
+          for (const f of bad) failures.push(`${fontMode} ${lang} ${w}x${h} ${profile}: ${f}`);
+        }
+      }
+    }
+  } finally { await b.close(); server.close(); }
+  if (log) {
+    log(`=== editor fit (absolute): font ${fontMode}`);
+    for (const r of rows) log(`${r.lang.padEnd(8)} ${r.w}x${r.h} ${r.profile.padEnd(8)} overflow ${r.overflow}px  panel natural ${r.panelNatural.toFixed(1)}px  targets ${r.targets}`);
+    log(`--ed-panel-h needed at 375x667 (max natural panel height): ${Math.ceil(panelH)}px`);
+    log(`editor fit failures: ${failures.length}`);
+    for (const f of failures) log(`    ${f}`);
+  }
+  return { rows, failures, panelH };
+}
+
 function parseArgs(argv) {
-  const o = { base: "origin/main", candidate: null, font: "both", workers: 2, widths: null, lang: null };
+  const o = { base: "origin/main", candidate: null, font: "both", workers: 2, widths: null, lang: null, absolute: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--base") o.base = argv[++i];
@@ -832,6 +950,7 @@ function parseArgs(argv) {
     else if (a === "--font") o.font = argv[++i];
     else if (a === "--workers") o.workers = Number(argv[++i]);
     else if (a === "--lang") o.lang = argv[++i];
+    else if (a === "--absolute") o.absolute = true;
     else if (a === "--widths") o.widths = argv[++i].split("-").map(Number);
     else throw new PanelFitError(`unknown argument ${a}`);
   }
@@ -842,6 +961,16 @@ function parseArgs(argv) {
 async function main(argv) {
   const o = parseArgs(argv);
   const out = (s) => process.stdout.write(s + "\n");
+  if (o.absolute) {
+    const html = readRoot(o.candidate, "candidate");
+    let bad = false;
+    for (const fontMode of o.font === "both" ? ["real", "fallback"] : [o.font]) {
+      const r = await runEditorAbsolute({ html, fontMode, langs: o.lang ? [o.lang] : EDITOR_LANGS, log: out });
+      if (r.failures.length) bad = true;
+    }
+    out(bad ? "editor fit: FAIL" : "editor fit: PASS");
+    return bad ? 1 : 0;
+  }
   const baseHtml = readRoot(o.base, "base");
   const candHtml = readRoot(o.candidate, "candidate");
   const candLabel = o.candidate || "working tree";
@@ -864,6 +993,7 @@ module.exports = {
   overflowViewports, gutterMessage, neutraliseScrollbars, prepareBrowser, failed, PanelFitError, judgeCell, vectorsEqual, vectorOf, assertRunComplete,
   tallyJudgement, tallyGutter, invarianceWidths, checkFontMode, WALK_FN, parseCondition, edgeStarts, rawEdges, bands, sheetDisposition, checkRuleKind,
   MEASURE_SRC, Root, readRoot,
+  EDITOR_LANGS, EDITOR_CELLS, judgeEditorCell, runEditorAbsolute,
 };
 
 if (require.main === module) {
