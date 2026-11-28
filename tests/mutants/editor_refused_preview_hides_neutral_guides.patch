@@ -1,5 +1,5 @@
-# kills: Standard no-Ding drafts retain neutral guidance when a duplicate tray note is armed
-# suite: node --test --test-name-pattern ^Standard.no-Ding.drafts.retain.neutral.guidance tests/editor_e2e.test.js
+# kills: EDITOR-RC-REFUSED-GUIDES: Standard no-Ding drafts retain neutral guidance when a duplicate tray note is armed
+# suite: node --test --test-name-pattern ^EDITOR-RC-REFUSED-GUIDES: tests/editor_e2e.test.js
 # fault: A selected source suppresses resting guides even when no active preview exists.
 diff --git a/index.html b/index.html
 --- a/index.html

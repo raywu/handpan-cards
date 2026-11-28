@@ -678,7 +678,7 @@ function run() {
       assert.deepEqual(await snapshot(), moved);
     });
 
-    test("Standard no-Ding drafts retain neutral guidance when a duplicate tray note is armed", async () => {
+    test("EDITOR-RC-REFUSED-GUIDES: Standard no-Ding drafts retain neutral guidance when a duplicate tray note is armed", async () => {
       const cases = [
         { rim: ["D#3", "E3"], inner: ["C3", "C#3", "F#3"], duplicate: "E" },
         { rim: ["D3", "A3"], inner: ["G#3"], duplicate: "D" }
