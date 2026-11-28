@@ -140,48 +140,6 @@ jobs:
           name: js-results-${{ matrix.shard }}
           path: artifacts/js-results-${{ matrix.shard }}.json
 
-  js-serial-pilot:
-    name: JS serial pilot
-    needs: changes
-    if: needs.changes.outputs.code == 'true' && github.head_ref == 'claude/editor-ci-speed-pilot-2'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements-ci.txt
-      # The print regression test prints a real PDF over CDP and measures the
-      # card frames with pymupdf; nothing else in this job needs python.
-      - run: pip install -r requirements-ci.txt
-      # No npm install: the e2e harness drives the Chrome already present on the
-      # runner over CDP, so this repo stays dependency-free.
-      - name: Show browser in use
-        run: node -e "console.log(require('./tests/helpers/cdp.js').findBrowser())"
-      # This IS the gate, not a precursor to one: --emit-js runs every
-      # tests/*.test.js file once via collect_js() and returns 1 if any file
-      # came back red - a failed count above zero, OR (F2 bounce, 2026-10-01)
-      # a non-zero `node --test` exit code or a non-zero `# cancelled` count,
-      # which node 22 reports with `fail 0` for a per-test timeout or a
-      # throwing before()/after() hook (finding 11, 2026-10-01 - a prior
-      # version of this step ran `node --test "tests/*.test.js"` here AND
-      # again inside collect_js(), doubling this job's wall time for no extra
-      # coverage).
-      - name: App units and browser e2e
-        run: python3 tests/suite_health.py --emit-js artifacts/js-results.json
-      - name: Report editor browser cases
-        if: always()
-        run: python3 tools/report_editor_browser.py artifacts/js-results.json >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: js-results-serial-pilot
-          path: artifacts/js-results.json
-
   suite-health:
     name: suite health
     needs: [changes, python-tests, js-tests]
