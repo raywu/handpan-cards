@@ -727,7 +727,7 @@ RELEASE_SAFETY_FIXTURE_SHA256 = {
     "editor_pan_v3.json": "55f359157abfab717a2b7a87711d0886a7d6fbb94c68f66b1e818d0c1de1dc09",
     "editor_pan_v4.json": "8f76619443c92a4eb9f6f6365debb54fbb78a028e9d9370af76614e874720e6e",
     "editor_pan_v5.json": "571adb7cfbfd766398bd705200ecd98589dabd3277c88c2ab83db5b912d18903",
-    "editor_pan_v6.json": "36d68864d00d79447e16a4f5d6a00d01f653a851808d67d5031f90cc10a1ddf9",
+    "editor_pan_v6.json": "1a2af66242625aa33fcd19b3d2a1596a62d6a92f4d4287c0e2ae56b0d40ef2d9",
     "engine_parity_golden_v1.json": "9f83e3752b922534286ce714cce1991b711dcdaf47b9290a0eea67e9bec5ae7b",
 }
 
