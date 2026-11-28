@@ -15503,13 +15503,17 @@ function installEditorDrawer() {
   #editor-pan .eslot.unavailable{opacity:.45}
   @media(max-height:600px){#scale-sheet.onepanel #editor{gap:1px;padding-top:4px}}
   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
-  #editor[data-phone-landscape]>.editor-line{position:absolute;top:var(--split-line-top);left:50%;right:8px;margin:0;width:auto}
-  #editor[data-phone-landscape] .panexp-stage{width:calc(50% - 8px);margin-inline:0}
+  #editor[data-phone-landscape]>.editor-line{position:absolute;top:var(--split-line-top);left:50%;right:max(8px,env(safe-area-inset-right,0px));margin:0;width:auto}
+  #editor[data-phone-landscape] .panexp-stage{width:calc(50% - 8px - env(safe-area-inset-left,0px));margin:0 0 0 env(safe-area-inset-left,0px)}
+  #editor[data-phone-landscape] .editor-toolbar{left:50%!important;padding-right:max(8px,env(safe-area-inset-right,0px))}
+  #editor[data-phone-landscape]>.editor-head{padding-inline:env(safe-area-inset-left,0px) env(safe-area-inset-right,0px)}
   #editor[data-phone-landscape] .drawerexp{left:50%;top:var(--split-top);transform:none;box-shadow:none;border-top:0}
   #editor[data-phone-landscape] .drawerexp-chrome{display:none}
-  #editor[data-phone-landscape] .drawerexp-body{height:100%;max-height:none;padding-inline:8px}
-  #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height) + 4px) 8px!important}
-  #editor[data-phone-landscape] #editor-status:not(:empty){max-height:var(--split-feedback);overflow:auto;overscroll-behavior:contain;pointer-events:auto}
+  #editor[data-phone-landscape] .drawerexp-body{height:100%;max-height:none;padding-inline:8px max(8px,env(safe-area-inset-right,0px))}
+  #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) var(--split-status-bottom) max(8px,env(safe-area-inset-left,0px))!important}
+  #editor[data-phone-landscape] #editor-status:not(:empty){max-height:var(--split-feedback);overflow:auto;overscroll-behavior:contain;pointer-events:none}
+  #editor[data-phone-landscape] #editor-status[tabindex="0"]{pointer-events:auto}
+  #editor[data-phone-landscape].dragging #editor-status:not(:has(button)){opacity:.3}
   #editor[data-phone-landscape].dragging #editor-tabs,#editor[data-phone-landscape].dragging #editor-panels,
   #editor[data-phone-landscape].dragging #editor-layout,#editor[data-phone-landscape].dragging #editor-tray{opacity:1;visibility:visible}
   #editor[data-phone-landscape] #editor-title{flex:0 1 10rem}
@@ -15713,7 +15717,7 @@ function installEditorDrawer() {
     if(immediate||reduced())finish();else timer=setTimeout(finish,200);
     if(focus&&was!==expanded)handle.focus({preventScroll:true});
   }
-  let lineFocusWidth=null;
+  let lineFocusWidth=null, splitBottom=0;
   function layout(){
     if(!root.isConnected)return;
     const vh=visualViewport?.height||innerHeight, rr=root.getBoundingClientRect();
@@ -15722,6 +15726,11 @@ function installEditorDrawer() {
     root.style.setProperty('--split-line-top',(head.getBoundingClientRect().bottom-rr.top+2)+'px');
     const top=root.querySelector('.editor-line').getBoundingClientRect().bottom-rr.top+6;
     const splitFeedback=Math.max(24,Math.min(48,Math.floor((vh-rr.top-top-toolbar.offsetHeight)*.32)));
+    if(split){
+      const safeBottom=Math.max(0,parseFloat(getComputedStyle(toolbar).paddingBottom)-8);
+      splitBottom=Math.min(rr.bottom,vh+(visualViewport?.offsetTop||0))-safeBottom;
+      root.style.setProperty('--split-status-bottom',Math.max(4,rr.bottom-splitBottom+4)+'px');
+    }
     root.style.setProperty('--split-top',top+'px');
     root.style.setProperty('--split-feedback',splitFeedback+'px');
     root.style.setProperty('--split-menu-max',Math.max(44,toolbar.getBoundingClientRect().top-rr.top-16)+'px');
@@ -15748,7 +15757,7 @@ function installEditorDrawer() {
     const h = Math.min(restingShell * frame.h / 200, canvasWidth * frame.h / frame.w,
       Math.max(80, vh - rr.top - top - 56), availableHeight, clearHandleHeight);
     if(lineFocusWidth!==innerWidth||!stage.style.height){
-      const splitHeight=Math.min(canvasWidth * frame.h / frame.w, toolbar.getBoundingClientRect().top-stageBounds.top-splitFeedback-9);
+      const splitHeight=Math.min(canvasWidth * frame.h / frame.w, splitBottom-stageBounds.top-5);
       stage.style.height=`${split?Math.max(1,splitHeight):Math.max(80,h)}px`;
       if(lineFocusWidth!==null)lineFocusWidth=innerWidth;
     }
@@ -15768,7 +15777,7 @@ function installEditorDrawer() {
     const overlapsPan=el=>{const b=el.getBoundingClientRect();return b.left<r.right&&b.right>r.left;};
     const split=editorPhoneLandscape();
     const limit=lowestClearance=Math.min(lowestClearance,...(split
-      ? [toolbar.getBoundingClientRect().top-parseFloat(root.style.getPropertyValue('--split-feedback'))-8]
+      ? [splitBottom-4]
       : obstacles.filter(overlapsPan).map(el=>el.getBoundingClientRect().top-4)));
     const left=(matrix.e+matrix.a*frame.x-r.left-previous.x)/previous.z;
     const right=(matrix.e+matrix.a*(frame.x+frame.w)-r.left-previous.x)/previous.z;
@@ -15783,12 +15792,28 @@ function installEditorDrawer() {
   function paint(){if(transform)box.style.transform=`translate(${transform.x}px,${transform.y}px) scale(${transform.z})`;}
   function feedback(){
     if(!root.classList.contains('dragging'))return;
-    const ghost=editorDrag?.ghost;if(ghost){const r=ghost.getBoundingClientRect(),dx=r.left<4?4-r.left:r.right>innerWidth-4?innerWidth-4-r.right:0;const lo=stage.getBoundingClientRect().top+4,hi=(editorPhoneLandscape()?toolbar:chrome).getBoundingClientRect().top-4,dy=r.top<lo?lo-r.top:r.bottom>hi?hi-r.bottom:0;ghost.style.left=(parseFloat(ghost.style.left)+dx)+'px';ghost.style.top=(parseFloat(ghost.style.top)+dy)+'px';}
+    const ghost=editorDrag?.ghost;
+    if(!ghost)return;
+    const r=ghost.getBoundingClientRect(), rail=toolbar.getBoundingClientRect();
+    const dx=r.left<4?4-r.left:r.right>innerWidth-4?innerWidth-4-r.right:0;
+    const lo=stage.getBoundingClientRect().top+4;
+    const ceiling=editorPhoneLandscape()?(r.right>rail.left?Math.min(splitBottom,rail.top):splitBottom):chrome.getBoundingClientRect().top;
+    const hi=ceiling-4, dy=r.top<lo?lo-r.top:r.bottom>hi?hi-r.bottom:0;
+    ghost.style.left=(parseFloat(ghost.style.left)+dx)+'px';
+    ghost.style.top=(parseFloat(ghost.style.top)+dy)+'px';
   }
-  api.covered=e=>[drawer,toolbar,...(root.querySelector('#editor-status').textContent.trim()?[status]:[])].some(el=>{
-    const r=el.getBoundingClientRect();
-    return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
-  });
+  api.covered=e=>{
+    const banner=root.querySelector('#editor-status');
+    const obstacles=[drawer,toolbar];
+    if(editorPhoneLandscape()){
+      if(banner.tabIndex===0)obstacles.push(banner);
+      else obstacles.push(...banner.querySelectorAll('button:not([hidden])'));
+    }else if(banner.textContent.trim())obstacles.push(status);
+    return obstacles.some(el=>{
+      const r=el.getBoundingClientRect();
+      return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+    });
+  };
   function manualDrawer(next){
     if(next&&!expanded&&typeof editorGuidedTapPreviews==='function'&&editorGuidedTapPreviews(editorSession.history.present).length){
       tapRest=null;

@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -15505,7 +15505,7 @@
-   @media(min-width:640px) and (orientation:portrait){#scale-sheet.onepanel #editor{max-width:100%}#editor>.editor-head,#editor>.editor-line{width:min(100%,492px);align-self:center}}
-   #editor[data-phone-landscape]>.editor-line{position:absolute;top:var(--split-line-top);left:50%;right:8px;margin:0;width:auto}
-   #editor[data-phone-landscape] .panexp-stage{width:calc(50% - 8px);margin-inline:0}
+@@ -15507,7 +15507,7 @@
+   #editor[data-phone-landscape] .panexp-stage{width:calc(50% - 8px - env(safe-area-inset-left,0px));margin:0 0 0 env(safe-area-inset-left,0px)}
+   #editor[data-phone-landscape] .editor-toolbar{left:50%!important;padding-right:max(8px,env(safe-area-inset-right,0px))}
+   #editor[data-phone-landscape]>.editor-head{padding-inline:env(safe-area-inset-left,0px) env(safe-area-inset-right,0px)}
 -  #editor[data-phone-landscape] .drawerexp{left:50%;top:var(--split-top);transform:none;box-shadow:none;border-top:0}
 +  #editor[data-phone-landscape] .drawerexp{left:0;top:var(--split-top);transform:none;box-shadow:none;border-top:0}
    #editor[data-phone-landscape] .drawerexp-chrome{display:none}
-   #editor[data-phone-landscape] .drawerexp-body{height:100%;max-height:none;padding-inline:8px}
-   #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) calc(var(--rail-height) + 4px) 8px!important}
+   #editor[data-phone-landscape] .drawerexp-body{height:100%;max-height:none;padding-inline:8px max(8px,env(safe-area-inset-right,0px))}
+   #editor[data-phone-landscape] .editor-statusrow{inset:auto calc(50% + 8px) var(--split-status-bottom) max(8px,env(safe-area-inset-left,0px))!important}

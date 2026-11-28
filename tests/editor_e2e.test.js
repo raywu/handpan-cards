@@ -756,9 +756,9 @@ function run() {
         const status = editorEl("editor-status"), banner = status.getBoundingClientRect();
         const rail = rect(".editor-toolbar");
         const activeBanner = banner.height && !status.hasAttribute("data-idle");
-        return { whole: topLeft.y >= 0 && bottomRight.y <= (activeBanner ? banner.top : rail.top) + 1 &&
+        return { whole: topLeft.y >= 0 && bottomRight.y <= innerHeight + 1 && bottomRight.x <= rail.left + 1 &&
           topLeft.x >= 0 && bottomRight.x <= rect("#drawerexp").left &&
-          (!activeBanner || banner.bottom <= rail.top),
+          (!activeBanner || banner.bottom <= innerHeight && banner.right <= rail.left + 1),
           save: hit("#editor-save"), expanded: drawerExperiment.expanded,
           grip: !!editorEl("drawerexp-handle").getClientRects().length,
           nameInHeader: !!editorEl("editor-name").closest(".editor-head") };
@@ -806,6 +806,73 @@ function run() {
       assert.deepEqual(await model(), placed);
       await clickReady("#drawerexp-handle");
       await b.waitFor('editorEl("drawerexp-body").inert', { label: "the portrait drawer to collapse" });
+    });
+
+    for (const neotone of [false, true]) {
+      const mode = neotone ? "Neotone" : "Standard";
+      test(`LS touch sizing: ${mode} keeps the pan large under passive feedback`, async (t) => {
+        await fixture("(D3) A3 C4 E4", {}, 3, 320, 568);
+        if (neotone) await clickReady("#editor-type-neotone");
+        const frame = () => b.eval(`
+          const pan = editorEl("editor-pan");
+          const rim = pan.querySelector('svg > circle[r="100"]').getBoundingClientRect();
+          return { x: rim.x, y: rim.y, size: rim.width };
+        `);
+        const before = await frame();
+        assert.ok(before.size >= 210, mode + " shell diameter " + before.size);
+        await b.eval(`editorSession.say = "Note placed."; editorRender(); return true;`);
+        const hit = await b.eval(`
+          const pan = editorEl("editor-pan"), banner = editorEl("editor-status");
+          const b = banner.getBoundingClientRect(), svg = pan.querySelector("svg").getBoundingClientRect();
+          const x = (Math.max(b.left, svg.left) + Math.min(b.right, svg.right)) / 2;
+          const y = (Math.max(b.top, svg.top) + Math.min(b.bottom, svg.bottom)) / 2;
+          const noteDiameters = [...pan.querySelectorAll('.ehit[data-ring]')].map(mark => mark.getBoundingClientRect().width);
+          return { overlaps: svg.top < b.bottom && svg.bottom > b.top,
+            hitsPan: pan.contains(document.elementFromPoint(x, y)),
+            blocked: drawerExperiment.covered({clientX:x, clientY:y}), noteDiameters };
+        `);
+        t.diagnostic(JSON.stringify({ mode, shell: before.size, noteDiameters: hit.noteDiameters }));
+        assert.ok(hit.overlaps && hit.hitsPan && !hit.blocked, JSON.stringify(hit));
+        assert.deepEqual(await frame(), before);
+        await clickReady('.tray-note[data-name="G"]');
+        const slot = neotone ? (await model()).options.profile.map.slice(0, 9).indexOf(null) : -1;
+        const target = await center(neotone ? `#editor-pan .eslot[data-slot="${slot}"]` : '#editor-pan .ehit[data-ring="ding"]');
+        await touch("touchStart", target);
+        await touch("touchEnd");
+        assert.match(await text(), neotone ? /\bG3\b/ : /\(G3\)/,
+          await b.eval('return editorEl("editor-status").textContent;'));
+        const rail = await b.eval(`return ["editor-save", "editor-undo", "editor-more"].map(id => {
+          const el = editorEl(id), r = el.getBoundingClientRect();
+          return r.left >= innerWidth / 2 && r.width >= 44 && r.height >= 44
+            && el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        });`);
+        assert.deepEqual(rail, [true, true, true]);
+      });
+    }
+
+    test("LS touch sizing: a bottom note lifts through feedback and release on Save preserves the draft", async () => {
+      await fixture("[A2] (D3) A3 C4 E4", { angles: { bottom: [270] } }, 3, 320, 568);
+      await b.eval(`editorSession.say = "A2 placed on the bottom. Move it again when you’re ready."; editorRender(); return true;`);
+      const selector = '#editor-pan .ehit[data-ring="bottom"]';
+      const point = await center(selector);
+      const overlap = await b.eval(`
+        const r = editorEl("editor-status").getBoundingClientRect();
+        return ${point.x} >= r.left && ${point.x} <= r.right && ${point.y} >= r.top && ${point.y} <= r.bottom;
+      `);
+      assert.equal(overlap, true, "the native lift starts at the partly covered bottom note");
+      const before = await model();
+      const steps = await b.eval("return editorSession.history.past.length;");
+      await lift(selector);
+      try {
+        await touch("touchMove", await center("#editor-save"));
+        await touch("touchEnd");
+      } finally {
+        if (touching) await touch("touchCancel");
+      }
+      await b.waitFor('!editorDrag && !editorEl("editor").matches(".dragging, .settling")',
+        { label: "a release over Save to settle" });
+      assert.deepEqual(await model(), before);
+      assert.equal(await b.eval("return editorSession.history.past.length;"), steps);
     });
 
     test("EDITOR-RC-TYPED-GUIDED: direct Standard scale entry uses Guided seats and neutral guides do not overlap notes", async () => {
@@ -6350,7 +6417,7 @@ function run() {
       const rail = editorEl("editor-save").getBoundingClientRect();
       return { diameter: rim.height, round: Math.abs(rim.width - rim.height) < 1,
         whole: rim.left >= 0 && rim.right <= innerWidth && rim.top >= 0 &&
-          (handle.getClientRects().length ? rim.right <= grip.left + 1 || rim.bottom <= grip.top + 1 : rim.bottom <= rail.top + 1),
+          (handle.getClientRects().length ? rim.right <= grip.left + 1 || rim.bottom <= grip.top + 1 : rim.bottom <= innerHeight + 1),
         split: rim.right <= tabs.left + 1, tabs: tabs.top >= 0 && tabs.bottom <= body.bottom + 1,
         rail: rail.top >= 0 && rail.bottom <= innerHeight,
         drawerScroll: getComputedStyle(editorEl("drawerexp-body")).overflowY === "auto",
@@ -6404,7 +6471,7 @@ function run() {
           const rail = editorEl("editor-save").getBoundingClientRect();
           return { left:rim.left, right:rim.right, top:rim.top, bottom:rim.bottom, rail:rail.top,
             zoom:new DOMMatrix(getComputedStyle(box).transform).a };`);
-        assert.ok(r.left >= 0 && r.right <= 844 && r.top >= 0 && r.bottom <= r.rail + 1 &&
+        assert.ok(r.left >= 0 && r.right <= 844 && r.top >= 0 && r.bottom <= 390 + 1 && r.right <= 844 / 2 + 1 &&
           r.zoom > 0 && r.zoom <= 1.2, JSON.stringify(r));
       } finally {
         await touch("touchCancel");
@@ -7092,8 +7159,7 @@ function run() {
       assert.deepEqual(g.tabs, idle.tabs);
       assert.deepEqual(g.line, idle.line);
       assert.ok(g.status.top >= 0 && g.status.bottom <= g.ih + 0.5);
-      const railTop = await b.eval('return editorEl("editor-save").closest(".editor-toolbar").getBoundingClientRect().top;');
-      assert.ok(g.status.bottom <= railTop + 0.5 && g.status.bottom >= railTop - 8, JSON.stringify({ status: g.status, railTop }));
+      assert.ok(g.status.bottom <= g.ih + 0.5 && g.status.bottom >= g.ih - 8, JSON.stringify(g.status));
       assert.ok(g.status.left >= 0 && g.status.right <= g.tabs.left + 0.5);
     });
 
@@ -7293,7 +7359,6 @@ function run() {
         requestAnimationFrame(() => requestAnimationFrame(() => {
           const status = document.getElementById("editor-status");
           const bounds = status.getBoundingClientRect();
-          const toolbar = document.getElementById("editor-save").closest(".editor-toolbar").getBoundingClientRect();
           const drawer = editorEl("drawerexp").getBoundingClientRect();
           const hitOwn = node => {
             const r = node.getBoundingClientRect();
@@ -7307,9 +7372,8 @@ function run() {
             return hitOwn(button);
           });
           status.scrollTop = 0;
-          const protectsRim = status.matches('[data-guided-actions="single"], :has(#editor-save-blocker)');
           const rim = document.querySelector('#editor-pan svg > circle[r="100"]')?.getBoundingClientRect();
-          const rimClear = !protectsRim || !!rim && rim.top >= 0 && rim.bottom <= bounds.top + 0.5;
+          const rimClear = !!rim && rim.top >= 0 && rim.bottom <= innerHeight + 0.5;
           let clipped = 0;
           const walker = document.createTreeWalker(status, NodeFilter.SHOW_TEXT);
           for (let node; (node = walker.nextNode());) {
@@ -7322,7 +7386,7 @@ function run() {
           }
           resolve({ text: status.textContent.trim(), idle: status.hasAttribute("data-idle"),
             clippedAway: getComputedStyle(status).clipPath !== "none", top: bounds.top, bottom: bounds.bottom,
-            left: bounds.left, right: bounds.right, viewport: innerWidth, seam: drawer.left, rail: toolbar.top,
+            left: bounds.left, right: bounds.right, viewport: innerWidth, seam: drawer.left, rail: innerHeight,
             scrollable: status.tabIndex === 0 && getComputedStyle(status).overflowY === "auto" && status.scrollHeight > status.clientHeight,
             horizontalOverflow: status.scrollWidth > status.clientWidth + 1, expanded: drawerExperiment.expanded, px: parseFloat(getComputedStyle(status).fontSize), controls, actions, rimClear, clipped });
         }));
@@ -7333,7 +7397,7 @@ function run() {
         if (expected.length)
           assert.ok(expected.some(copy => result.text.includes(copy)), "localized feedback is shown. " + detail);
         assert.ok(result.actions, "banner actions remain hittable. " + detail);
-        assert.ok(result.rimClear, "protected feedback reserves room for the entire rim. " + detail);
+        assert.ok(result.rimClear, "the pan stays inside the viewport. " + detail);
         assert.equal(result.clippedAway, result.idle, "only the landscape idle hint is visually hidden. " + detail);
         assert.equal(result.horizontalOverflow, false, "feedback wraps in its column. " + detail);
         assert.ok(result.scrollable || result.clipped === 0, "the whole message fits or is keyboard-scrollable. " + detail);
