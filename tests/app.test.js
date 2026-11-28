@@ -9307,7 +9307,8 @@ describe("I18N", () => {
       "compose.IN_BOTTOM", "compose.IN_TOP", "compose.NOT_ABOVE_DING", "compose.NOT_A_NOTE",
       "compose.NO_FIFTH", "compose.NO_OCTAVE_FITS", "compose.OCTAVES_GUESSED",
       "compose.OCTAVES_GUESSED_INNER", "compose.OUT_OF_RANGE", "compose.SOLFEGE", "compose.TOP_EMPTY",
-      "compose.TYPE_NOTES_ONLY", "sheet.bottom", "sheet.ding", "sheet.inner", "sheet.name_label", "sheet.top",
+      "compose.TYPE_NOTES_ONLY", "sheet.bottom", "sheet.ding", "sheet.inner", "sheet.line_label",
+      "sheet.line_sub", "sheet.name_label", "sheet.top",
     ];
     const guidedDrawerKeys = [
       "editor.drawer.collapse", "editor.drawer.expand", "editor.next_note", "editor.placement_help",
