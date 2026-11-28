@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guided pitch order · Handpan Theory</title>
+<style>
+:root{color-scheme:light;--paper:#f6f4ed;--ink:#242424;--muted:#5e5850;--border:#8a847b;--violet:#6756b5}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 system-ui,sans-serif}
+main{max-width:590px;margin:auto;padding:20px clamp(14px,4vw,24px) 32px}h1{font-size:25px;margin:0 0 13px;font-weight:650;letter-spacing:-.025em}
+form,.actions,.presets,.grow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+label{display:block;font-size:14px;font-weight:650;margin:0 0 5px}
+input,button{font:inherit;color:inherit;border:1px solid var(--border);border-radius:8px;background:white;min-height:44px;padding:7px 12px}
+input{flex:1;min-width:150px}button{cursor:pointer;font-weight:600;font-size:14px}
+button.primary{background:var(--violet);color:white;border-color:var(--violet)}
+button:disabled{opacity:.52;cursor:default}button[aria-pressed=true]{background:#ece6ff;border-color:var(--violet)}
+:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
+canvas{display:block;width:100%;aspect-ratio:1;margin:8px auto;max-width:485px}
+.presets button{flex:1;min-width:42px;padding-inline:7px}
+.intro{margin:0 0 12px;color:var(--muted);font-size:14px}
+output{display:block;background:#242424;color:white;border-radius:10px;padding:10px 13px;min-height:44px;margin:0 0 14px;font-size:14px}
+section{border-top:1px solid #c6bfb1;padding-top:12px;margin-top:12px}
+section h2{font-size:15px;margin:0 0 8px}.grow button{flex:1}.actions{margin-top:8px}.actions button{flex:1}
+</style>
+<main>
+<h1>Guided pitch order</h1>
+<p class="intro">Try the Safari example, choose a Cyclops count, or enter your own Standard scale.</p>
+<label for="scale">Scale notation</label>
+<form><input id="scale" autocomplete="off" spellcheck="false"><button class="primary">Place scale</button></form>
+<canvas width="960" height="960" aria-label="Handpan layout"></canvas>
+<output aria-live="polite"></output>
+<div class="presets"><button id="reset">Safari example</button><button id="rim">7 rim notes</button></div>
+<section>
+<h2>Cyclops examples</h2>
+<div class="presets" id="counts" aria-label="Cyclops note count"></div>
+</section>
+<section>
+<h2>Preview one more note</h2>
+<div class="grow" id="growth"></div>
+<div class="actions"><button id="cancel" disabled>Cancel preview</button><button id="apply" class="primary" disabled>Place note</button><button id="undo" disabled>Undo</button></div>
+</section>
+</main>
+<script>
+const byId = id => document.getElementById(id);
+const line = byId('scale'), canvas = document.querySelector('canvas'), context = canvas.getContext('2d');
+const status = document.querySelector('output');
+const safari = '[B2] (D3) [E3] A3 C4 | D4';
+const rimNotes = 'A3 B3 C4 D4 E4 F4 G4'.split(' ');
+const innerNotes = 'F4 G4 A4 B4 C5 D5'.split(' ');
+const chromatic = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const pitch = note => {
+  const [,letter, accidental, octave] = /^([A-G])([#b]?)(\d)$/.exec(note) || [];
+  if (!letter) throw new Error('Use note names with octaves, such as C#4 or Bb3.');
+  return Number(octave)*12 + chromatic.indexOf(letter) + (accidental==='#'?1:accidental==='b'?-1:0);
+};
+const sort = notes => notes.slice().sort((a,b)=>pitch(a)-pitch(b));
+let layout, preview = null;
+const history = [];
+function parse(value) {
+  const chunks = value.trim().split(/\s*\|\s*/);
+  const ding = chunks[0].match(/\(([^)]+)\)/);
+  if (!ding || chunks.length>2) throw new Error('Use (D3) A3 C4 | D4, with bottom notes in square brackets.');
+  const bottom = [...chunks[0].matchAll(/\[([^\]]+)\]/g)].map(match=>match[1]);
+  const rim = chunks[0].replace(ding[0],'').replace(/\[[^\]]+\]/g,'').trim().split(/\s+/).filter(Boolean);
+  const inner = chunks[1]?.trim().split(/\s+/).filter(Boolean) || [];
+  if (rim.length>12 || inner.length>6 || bottom.length>12) throw new Error('Use up to 12 rim, 6 Cyclops and 12 bottom notes.');
+  const pitches = [ding[1],...rim,...inner,...bottom].map(pitch);
+  if (new Set(pitches).size !== pitches.length) throw new Error('Use each exact pitch once.');
+  return {ding:ding[1],rim:sort(rim),inner:sort(inner),bottom:sort(bottom)};
+}
+function fmt(model) {
+  const tokens = [{value:'('+model.ding+')',name:model.ding},...model.rim.map(name=>({value:name,name})),
+    ...model.bottom.map(name=>({value:'['+name+']',name}))];
+  return tokens.sort((a,b)=>pitch(a.name)-pitch(b.name)).map(token=>token.value).join(' ')
+    + (model.inner.length ? ' | '+model.inner.join(' ') : '');
+}
+function assign(value) {
+  try { const next = parse(value); if(layout) history.push(layout); layout=next; preview=null; line.value=fmt(next); paint(); }
+  catch(error){status.textContent=error.message;}
+}
+function zigzag(count, center, step, paired) {
+  return Array.from({length:count},(_,i)=> center + (paired ? (i%2 ? -1 : 1)*(Math.floor(i/2)+.5)
+    : i===0 ? 0 : (i%2 ? 1 : -1)*Math.ceil(i/2))*step);
+}
+function dot(angle,radius) {
+  const a=angle*Math.PI/180;
+  return [240+Math.cos(a)*radius,240-Math.sin(a)*radius];
+}
+function circle(x,y,r,{text='',number='',guide=false,land=false,bottom=false}={}) {
+  const c=context;
+  c.beginPath();c.arc(x,y,r,0,Math.PI*2);
+  c.setLineDash(guide||bottom?[4,4]:[]);c.lineWidth=land?2.5:1.7;
+  c.fillStyle=land?'#eee7fb':guide?'#f6f4ed':'#ffffff';
+  c.strokeStyle=land?'#6756b5':bottom?'#a17a37':guide?'#8a847b':'#242424';
+  c.fill();c.stroke();c.setLineDash([]);
+  c.textAlign='center';c.textBaseline='middle';c.fillStyle='#242424';
+  if (text) { c.font='17px system-ui'; c.fillText(text,x,y); }
+  if (number) { c.font='13px system-ui'; c.fillText(number,x,y+r+9); }
+}
+function paint() {
+  const model=preview?.model || layout;
+  const c=context;c.setTransform(2,0,0,2,0,0);c.clearRect(0,0,480,480);
+  c.beginPath();c.arc(240,240,201,0,Math.PI*2);c.strokeStyle='#242424';c.lineWidth=3;c.stroke();
+  const rimSize=Math.max(7,model.rim.length);
+  const fromBottom = angle => (angle - 270 + 540) % 360 - 180;
+  const rimAngles=rimSize===7 ? zigzag(rimSize,270,-360/rimSize,false)
+    : Array.from({length:rimSize},(_,i)=>90+i*360/rimSize)
+      .sort((a,b)=>Math.abs(fromBottom(a))-Math.abs(fromBottom(b)) || fromBottom(a)-fromBottom(b));
+  // At the bottom, the negative angular direction points to screen left.
+  rimAngles.forEach((angle,i)=>circle(...dot(angle,157),24,{text:model.rim[i],number:model.rim[i]?i+1:'',
+    guide:!model.rim[i],land:preview?.note===model.rim[i]}));
+  const count=model.inner.length, innerSize=count || 3;
+  const step=innerSize>1?Math.min(76,180/(innerSize-1)):0;
+  zigzag(innerSize,90,step,innerSize%2===0).forEach((angle,i)=>circle(...dot(angle,89),20,{
+    text:model.inner[i],number:model.inner[i]?model.rim.length+i+1:'',
+    guide:!model.inner[i],land:preview?.note===model.inner[i]}));
+  circle(240, count?264:240,32,{text:model.ding});
+  const underside=[20,160,70,110,200,250,290,340];
+  model.bottom.forEach((name,i)=>circle(...dot(underside[i]??i*30,225),16,{text:name,bottom:true}));
+  canvas.setAttribute('aria-label', 'Rim low to high: '+model.rim.join(', ') + '. Cyclops low to high: '+model.inner.join(', '));
+  const landing = preview && model[preview.ring].indexOf(preview.note);
+  const innerAngle = preview?.ring==='inner' && zigzag(innerSize,90,step,innerSize%2===0)[landing];
+  const side = innerAngle===90?'top center':innerAngle>90?'left side':'right side';
+  status.textContent=preview ? preview.note+' previews '+(preview.ring==='inner'?'on the '+side+' of Cyclops':'at rim seat '+(landing+1))+'. Notes shift to keep pitch order.'
+    : 'Rim '+model.rim.length+' of 12 · Cyclops '+model.inner.length+' of 6';
+  byId('cancel').disabled=!preview; byId('apply').disabled=!preview; byId('undo').disabled=!history.length;
+  for (const button of byId('counts').children) button.setAttribute('aria-pressed', Number(button.textContent)===count);
+  for (const button of byId('growth').children) {
+    const {ring,band}=button.dataset;
+    button.disabled=layout[ring].length >= (ring==='inner'?6:12) || nextPitch(ring,band)===null;
+  }
+}
+function nextPitch(ring, band) {
+  const notes=layout[ring], values=notes.map(pitch), occupied=new Set([layout.ding,...layout.inner,...layout.rim,...layout.bottom].map(pitch));
+  const low=values[0] ?? pitch(layout.ding)+5, high=values.at(-1) ?? low+3;
+  const target=band==='low'?low-1:band==='mid'?Math.floor((low+high)/2):high+1;
+  const pool=Array.from({length:30},(_,i)=>pitch(layout.ding)+i+1).filter(n=>!occupied.has(n));
+  const constrained=pool.filter(n=>band==='low'?n<low:band==='mid'?n>low&&n<high:n>high);
+  const picked=constrained.sort((a,b)=>Math.abs(a-target)-Math.abs(b-target))[0];
+  return picked===undefined?null:chromatic[picked%12]+Math.floor(picked/12);
+}
+function grow(ring,band) {
+  const note=nextPitch(ring,band);
+  preview={ring,note,model:{...layout,[ring]:sort([...layout[ring],note])}};
+  paint();
+}
+function button(parent, label, action) {
+  const element=document.createElement('button');element.textContent=label;element.type='button';element.onclick=action;parent.append(element);
+  return element;
+}
+for(let count=1;count<=6;count++)button(byId('counts'),count,()=>assign('(D3) A3 C4 | '+innerNotes.slice(0,count).join(' ')));
+for(const [label,ring,band] of [['Add rim','rim','high'],['Lower Cyclops','inner','low'],['Between Cyclops','inner','mid'],['Higher Cyclops','inner','high']])
+  Object.assign(button(byId('growth'),label,()=>grow(ring,band)).dataset,{ring,band});
+document.querySelector('form').onsubmit=event=>{event.preventDefault();assign(line.value);};
+byId('reset').onclick=()=>assign(safari);
+byId('rim').onclick=()=>assign('(D3) '+rimNotes.join(' ')+' | D#4 G#4 A#4');
+byId('cancel').onclick=()=>{preview=null;paint();};
+byId('apply').onclick=()=>{history.push(layout);layout=preview.model;preview=null;line.value=fmt(layout);paint();};
+byId('undo').onclick=()=>{layout=history.pop();preview=null;line.value=fmt(layout);paint();};
+assign(safari);
+</script>
+</html>
