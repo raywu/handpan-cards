@@ -1,0 +1,15 @@
+# kills: Standard no-Ding drafts retain neutral guidance when a duplicate tray note is armed
+# suite: node --test --test-name-pattern ^Standard.no-Ding.drafts.retain.neutral.guidance tests/editor_e2e.test.js
+# fault: A selected source suppresses resting guides even when no active preview exists.
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -16604,7 +16604,7 @@
+       const zones = editorGuidedZones.filter(ring => !overlays.get(ring));
+       const obstacles = previews.filter(({ ring }) => projected.has(ring)).flatMap(({ ring, solved: preview }) =>
+         ringIds(preview.fields, ring).map(id => editorGuidedPoint(preview.geom, ring, preview.fields[id][4])));
+-      under += editorGuidedNeutralMarks(m, solved, null, null, { zones, obstacles });
++      if (!editorGuidedTapSource(m)) under += editorGuidedNeutralMarks(m, solved, null, null, { zones, obstacles });
+     }
+     out += [...overlays.values()].join("");
+   }

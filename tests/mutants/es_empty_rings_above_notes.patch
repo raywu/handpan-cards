@@ -4,12 +4,12 @@
 diff --git a/index.html b/index.html
 --- a/index.html
 +++ b/index.html
-@@ -16433,7 +16433,7 @@ function editorWithOverlay(markup, m, solved) {
-     } else out += editorNeoMarks(m, fields, geom);
+@@ -16604,7 +16604,7 @@
+       const zones = editorGuidedZones.filter(ring => !overlays.get(ring));
+       const obstacles = previews.filter(({ ring }) => projected.has(ring)).flatMap(({ ring, solved: preview }) =>
+         ringIds(preview.fields, ring).map(id => editorGuidedPoint(preview.geom, ring, preview.fields[id][4])));
+-      under += editorGuidedNeutralMarks(m, solved, null, null, { zones, obstacles });
++      out += editorGuidedNeutralMarks(m, solved, null, null, { zones, obstacles });
+     }
+     out += [...overlays.values()].join("");
    }
-   if (standard && s?.kind === "new" && !editorDrag?.live && !editorGuidedTapSource(m))
--    under += editorGuidedNeutralMarks(m, solved);
-+    out += editorGuidedNeutralMarks(m, solved);
-   if (standard && !editorDrag?.live) out += previews.map(preview => editorGuidedShowsProjection(preview.projection) ? editorGuidedMarks(preview, m, tab) : editorGuidedOpenSeats(preview, tab)).join("");
-   if (unchosen) {
-     const ding = editorTargetDing(geom, m);
