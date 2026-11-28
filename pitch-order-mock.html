@@ -107,12 +107,12 @@ function paint() {
       .sort((a,b)=>Math.abs(fromBottom(a))-Math.abs(fromBottom(b)) || fromBottom(a)-fromBottom(b));
   // At the bottom, the negative angular direction points to screen left.
   rimAngles.forEach((angle,i)=>circle(...dot(angle,157),24,{text:model.rim[i],number:model.rim[i]?i+1:'',
-    guide:!model.rim[i],land:preview?.note===model.rim[i]}));
+    guide:!model.rim[i],land:!!preview&&preview.note===model.rim[i]}));
   const count=model.inner.length, innerSize=count || 3;
   const step=innerSize>1?Math.min(76,180/(innerSize-1)):0;
   zigzag(innerSize,90,step,innerSize%2===0).forEach((angle,i)=>circle(...dot(angle,89),20,{
     text:model.inner[i],number:model.inner[i]?model.rim.length+i+1:'',
-    guide:!model.inner[i],land:preview?.note===model.inner[i]}));
+    guide:!model.inner[i],land:!!preview&&preview.note===model.inner[i]}));
   circle(240, count?264:240,32,{text:model.ding});
   const underside=[20,160,70,110,200,250,290,340];
   model.bottom.forEach((name,i)=>circle(...dot(underside[i]??i*30,225),16,{text:name,bottom:true}));
