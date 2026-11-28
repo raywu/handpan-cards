@@ -47,6 +47,7 @@ class CiScopeTest(unittest.TestCase):
         aggregate = "always() && needs.changes.outputs.code != 'false'"
         want = {"data": plain, "python-tests": plain, "js-tests": plain, "mutation-gate-shard": plain,
                 "panel-fit": plain, "suite-health": aggregate, "mutation-gate": aggregate}
+        want["js-serial-pilot"] = plain + " && github.head_ref == 'claude/editor-ci-speed-pilot'"
         self.assertEqual(sorted(want), sorted(n for n in all_jobs if n != "changes"))
         for name, body in all_jobs.items():
             if name == "changes":
