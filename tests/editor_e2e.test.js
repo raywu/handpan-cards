@@ -4151,9 +4151,7 @@ function run() {
       }
 
       test("the pin ring appears only on a pinned note, and a rim note tap still selects first (the drawn circle is hit first)", async () => {
-        await fresh(375, 667);
-        await openAdd();
-        await typeLine("(D3) " + RIM8 + " [G2]");
+        await fixture("(D3) " + RIM8 + " [G2]", {}, 3, 667, 375);
         assert.strictEqual(await pinRings(), 0);
         await b.eval(`editorSession.history = editorApply(editorSession.history, (m) => editorSetAngle(m, "bottom", 0, 60, true)).history; editorRender(); return true;`);
         assert.strictEqual(await pinRings(), 1);
